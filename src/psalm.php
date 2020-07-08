@@ -529,12 +529,17 @@ $stdout_report_options->format = $output_format;
 $stdout_report_options->show_snippet = !isset($options['show-snippet']) || $options['show-snippet'] !== "false";
 $stdout_report_options->pretty = isset($options['pretty-print']) && $options['pretty-print'] !== "false";
 
+/** @var list<string>|string $report_file_paths type guaranteed by argument to getopt() */
+$report_file_paths = $options['report'] ?? [];
+if (is_string($report_file_paths)) {
+    $report_file_paths = [$report_file_paths];
+}
 $project_analyzer = new ProjectAnalyzer(
     $config,
     $providers,
     $stdout_report_options,
     ProjectAnalyzer::getFileReportOptions(
-        isset($options['report']) && is_string($options['report']) ? [$options['report']] : [],
+        $report_file_paths,
         isset($options['report-show-info'])
             ? $options['report-show-info'] !== 'false' && $options['report-show-info'] !== '0'
             : true

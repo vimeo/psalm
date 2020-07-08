@@ -791,6 +791,25 @@ class MethodSignatureTest extends TestCase
                         public function getPrevious(): ?\Throwable;
                         public function getTraceAsString(): string;
                     }'
+            ],
+            'allowExecptionToStringWithNoType' => [
+                '<?php
+                    class E extends Exception {
+                        public function __toString() {
+                            return "hello";
+                        }
+                    }'
+            ],
+            'allowExecptionToStringIn71' => [
+                '<?php
+                    class E extends Exception {
+                        public function __toString() : string {
+                            return "hello";
+                        }
+                    }',
+                [],
+                [],
+                '7.1'
             ]
         ];
     }

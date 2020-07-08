@@ -121,7 +121,7 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
                         $mapping_function_ids,
                         $context,
                         $function_call_arg,
-                        $array_arg
+                        \array_slice($call_args, 1)
                     );
                 }
 
@@ -182,6 +182,7 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
                     )
                 );
                 $atomic_type->is_list = $array_arg_atomic_type->is_list;
+                $atomic_type->sealed = $array_arg_atomic_type->sealed;
 
                 return new Type\Union([$atomic_type]);
             }
@@ -295,13 +296,14 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
 
     /**
      * @param non-empty-array<string> $mapping_function_ids
+     * @param array<PhpParser\Node\Arg> $array_args
      */
     private static function getReturnTypeFromMappingIds(
         \Psalm\Internal\Analyzer\StatementsAnalyzer $statements_source,
         array $mapping_function_ids,
         Context $context,
         PhpParser\Node\Arg $function_call_arg,
-        PhpParser\Node\Arg $array_arg
+        array $array_args
     ) : Type\Union {
         $mapping_return_type = null;
 
@@ -313,6 +315,24 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
             $function_id_return_type = null;
 
             foreach ($mapping_function_id_parts as $mapping_function_id_part) {
+                $fake_args = [];
+
+                foreach ($array_args as $array_arg) {
+                    $fake_args[] = new PhpParser\Node\Arg(
+                        new PhpParser\Node\Expr\ArrayDimFetch(
+                            $array_arg->value,
+                            new PhpParser\Node\Expr\Variable(
+                                '__fake_offset_var__',
+                                $array_arg->value->getAttributes()
+                            ),
+                            $array_arg->value->getAttributes()
+                        ),
+                        false,
+                        false,
+                        $array_arg->getAttributes()
+                    );
+                }
+
                 if (strpos($mapping_function_id_part, '::') !== false) {
                     $is_instance = false;
 
@@ -334,21 +354,7 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
                                 $callable_method_name,
                                 $function_call_arg->getAttributes()
                             ),
-                            [
-                                new PhpParser\Node\Arg(
-                                    new PhpParser\Node\Expr\ArrayDimFetch(
-                                        $array_arg->value,
-                                        new PhpParser\Node\Expr\Variable(
-                                            '__fake_offset_var__',
-                                            $array_arg->value->getAttributes()
-                                        ),
-                                        $array_arg->value->getAttributes()
-                                    ),
-                                    false,
-                                    false,
-                                    $array_arg->getAttributes()
-                                )
-                            ],
+                            $fake_args,
                             $function_call_arg->getAttributes()
                         );
 
@@ -363,10 +369,8 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
                             $context
                         );
 
-                        unset(
-                            $context->vars_in_scope['$__fake_offset_var__'],
-                            $context->vars_in_scope['$__method_call_var__']
-                        );
+                        unset($context->vars_in_scope['$__fake_offset_var__']);
+                        unset($context->vars_in_scope['$__method_call_var__']);
                     } else {
                         $fake_method_call = new PhpParser\Node\Expr\StaticCall(
                             new PhpParser\Node\Name\FullyQualified(
@@ -377,21 +381,7 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
                                 $callable_method_name,
                                 $function_call_arg->getAttributes()
                             ),
-                            [
-                                new PhpParser\Node\Arg(
-                                    new PhpParser\Node\Expr\ArrayDimFetch(
-                                        $array_arg->value,
-                                        new PhpParser\Node\Expr\Variable(
-                                            '__fake_offset_var__',
-                                            $array_arg->value->getAttributes()
-                                        ),
-                                        $array_arg->value->getAttributes()
-                                    ),
-                                    false,
-                                    false,
-                                    $array_arg->getAttributes()
-                                )
-                            ],
+                            $fake_args,
                             $function_call_arg->getAttributes()
                         );
 
@@ -413,21 +403,7 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
                             $mapping_function_id_part,
                             $function_call_arg->getAttributes()
                         ),
-                        [
-                            new PhpParser\Node\Arg(
-                                new PhpParser\Node\Expr\ArrayDimFetch(
-                                    $array_arg->value,
-                                    new PhpParser\Node\Expr\Variable(
-                                        '__fake_offset_var__',
-                                        $array_arg->value->getAttributes()
-                                    ),
-                                    $array_arg->value->getAttributes()
-                                ),
-                                false,
-                                false,
-                                $array_arg->getAttributes()
-                            )
-                        ],
+                        $fake_args,
                         $function_call_arg->getAttributes()
                     );
 

@@ -460,7 +460,9 @@ class ArgumentsAnalyzer
 
         if ($function_storage) {
             $template_types = CallAnalyzer::getTemplateTypesForCall(
+                $codebase,
                 $class_storage,
+                $self_fq_class_name,
                 $calling_class_storage,
                 $function_storage->template_types ?: []
             );

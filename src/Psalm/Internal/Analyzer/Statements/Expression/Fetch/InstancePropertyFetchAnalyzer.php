@@ -999,7 +999,9 @@ class InstancePropertyFetchAnalyzer
         ClassLikeStorage $declaring_class_storage
     ) : Type\Union {
         $template_types = CallAnalyzer::getTemplateTypesForCall(
+            $codebase,
             $declaring_class_storage,
+            $declaring_class_storage->name,
             $calling_class_storage,
             $calling_class_storage->template_types ?: []
         );
@@ -1074,7 +1076,9 @@ class InstancePropertyFetchAnalyzer
     ) : void {
         $codebase = $statements_analyzer->getCodebase();
 
-        if (!$codebase->taint || !$codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())) {
+        if (!$codebase->taint
+            || !$codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
+        ) {
             return;
         }
 
@@ -1095,6 +1099,13 @@ class InstancePropertyFetchAnalyzer
             );
 
             if ($var_id) {
+                $var_type = $statements_analyzer->node_data->getType($stmt->var);
+
+                if ($var_type && \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())) {
+                    $var_type->parent_nodes = [];
+                    return;
+                }
+
                 $var_node = TaintNode::getForAssignment(
                     $var_id,
                     $var_location
@@ -1115,8 +1126,6 @@ class InstancePropertyFetchAnalyzer
                     'property-fetch'
                         . ($stmt->name instanceof PhpParser\Node\Identifier ? '-' . $stmt->name : '')
                 );
-
-                $var_type = $statements_analyzer->node_data->getType($stmt->var);
 
                 if ($var_type && $var_type->parent_nodes) {
                     foreach ($var_type->parent_nodes as $parent_node) {

@@ -1,8 +1,13 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use Psalm\Codebase;
 use Psalm\CodeLocation;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Type\TemplateResult;
+use Psalm\Internal\Type\UnionTemplateHandler;
 use Psalm\StatementsSource;
+use Psalm\Type\Atomic;
 use function preg_quote;
 use function preg_replace;
 use function stripos;
@@ -119,5 +124,59 @@ class TClassString extends TString
     public function getChildNodes() : array
     {
         return $this->as_type ? [$this->as_type] : [];
+    }
+
+    public function replaceTemplateTypesWithStandins(
+        TemplateResult $template_result,
+        ?Codebase $codebase = null,
+        ?StatementsAnalyzer $statements_analyzer = null,
+        Atomic $input_type = null,
+        ?int $input_arg_offset = null,
+        ?string $calling_class = null,
+        ?string $calling_function = null,
+        bool $replace = true,
+        bool $add_upper_bound = false,
+        int $depth = 0
+    ) : Atomic {
+        $class_string = clone $this;
+
+        if (!$class_string->as_type) {
+            return $class_string;
+        }
+
+        if ($input_type instanceof TLiteralClassString) {
+            $input_object_type = new TNamedObject($input_type->value);
+        } elseif ($input_type instanceof TClassString && $input_type->as_type) {
+            $input_object_type = $input_type->as_type;
+        } else {
+            $input_object_type = new TObject();
+        }
+
+        $as_type = UnionTemplateHandler::replaceTemplateTypesWithStandins(
+            new \Psalm\Type\Union([$class_string->as_type]),
+            $template_result,
+            $codebase,
+            $statements_analyzer,
+            new \Psalm\Type\Union([$input_object_type]),
+            $input_arg_offset,
+            $calling_class,
+            $calling_function,
+            $replace,
+            $add_upper_bound,
+            $depth
+        );
+
+        $as_type_types = \array_values($as_type->getAtomicTypes());
+
+        $class_string->as_type = \count($as_type_types) === 1
+            && $as_type_types[0] instanceof TNamedObject
+            ? $as_type_types[0]
+            : null;
+
+        if (!$class_string->as_type) {
+            $class_string->as = 'object';
+        }
+
+        return $class_string;
     }
 }

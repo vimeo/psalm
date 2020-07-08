@@ -38,11 +38,15 @@ class ParsedDocblock
             $description_lines = explode("\n", $this->description);
 
             foreach ($description_lines as $line) {
-                $doc_comment_text .= $left_padding . (trim($line) ? ' ' . $line : '') . "\n";
+                $doc_comment_text .= $left_padding . ' *' . (trim($line) ? ' ' . $line : '') . "\n";
             }
         }
 
         if ($this->tags) {
+            if (!empty($trimmed_description)) {
+                $doc_comment_text .= $left_padding . ' *' . "\n";
+            }
+
             $last_type = null;
 
             foreach ($this->tags as $type => $lines) {

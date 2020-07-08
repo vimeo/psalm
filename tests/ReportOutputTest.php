@@ -126,7 +126,8 @@ echo $a;';
                 'column_to' => 26,
                 'error_level' => -1,
                 'shortcode' => 24,
-                'link' => 'https://psalm.dev/024'
+                'link' => 'https://psalm.dev/024',
+                'taint_trace' => null
             ],
             [
                 'severity' => 'error',
@@ -147,6 +148,7 @@ echo $a;';
                 'error_level' => 1,
                 'shortcode' => 138,
                 'link' => 'https://psalm.dev/138',
+                'taint_trace' => null
             ],
             [
                 'severity' => 'error',
@@ -166,7 +168,8 @@ echo $a;';
                 'column_to' => 49,
                 'error_level' => 1,
                 'shortcode' => 47,
-                'link' => 'https://psalm.dev/047'
+                'link' => 'https://psalm.dev/047',
+                'taint_trace' => null
             ],
             [
                 'severity' => 'error',
@@ -186,7 +189,8 @@ echo $a;';
                 'column_to' => 15,
                 'error_level' => -1,
                 'shortcode' => 20,
-                'link' => 'https://psalm.dev/020'
+                'link' => 'https://psalm.dev/020',
+                'taint_trace' => null
             ],
             [
                 'severity' => 'info',
@@ -206,7 +210,8 @@ echo $a;';
                 'column_to' => 8,
                 'error_level' => 3,
                 'shortcode' => 126,
-                'link' => 'https://psalm.dev/126'
+                'link' => 'https://psalm.dev/126',
+                'taint_trace' => null
             ],
         ];
 

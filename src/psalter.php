@@ -14,8 +14,8 @@ ini_set('display_errors', '1');
 ini_set('display_startup_errors', '1');
 $memLimit = getMemoryLimitInBytes();
 // Magic number is 4096M in bytes
-if ($memLimit > 0 && $memLimit < 4294967296) {
-    ini_set('memory_limit', '4096M');
+if ($memLimit > 0 && $memLimit < 8 * 1024 * 1024 * 1024) {
+    ini_set('memory_limit', (string) (8 * 1024 * 1024 * 1024));
 }
 
 gc_collect_cycles();
@@ -404,16 +404,13 @@ foreach ($plugins as $plugin_path) {
 
 $find_unused_code = array_key_exists('find-unused-code', $options);
 
-if ($config->find_unused_code) {
-    $find_unused_code = true;
-}
-
 foreach ($keyed_issues as $issue_name => $_) {
     // MissingParamType requires the scanning of all files to inform possible params
     if (strpos($issue_name, 'Unused') !== false
         || $issue_name === 'MissingParamType'
         || $issue_name === 'UnnecessaryVarAnnotation'
-        || $issue_name === 'all') {
+        || $issue_name === 'all'
+    ) {
         $find_unused_code = true;
     }
 }

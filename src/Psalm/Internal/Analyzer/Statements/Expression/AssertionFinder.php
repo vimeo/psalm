@@ -714,11 +714,7 @@ class AssertionFinder
                 if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
                     $false_type = Type::getFalse();
 
-                    if (!TypeAnalyzer::isContainedBy(
-                        $codebase,
-                        $var_type,
-                        $false_type
-                    ) && !TypeAnalyzer::isContainedBy(
+                    if (!TypeAnalyzer::canExpressionTypesBeIdentical(
                         $codebase,
                         $false_type,
                         $var_type

@@ -525,6 +525,7 @@ class AssignmentAnalyzer
 
                 $new_assign_type = null;
                 $assigned = false;
+                $has_null = false;
 
                 foreach ($assign_value_type->getAtomicTypes() as $assign_value_atomic_type) {
                     if ($assign_value_atomic_type instanceof Type\Atomic\ObjectLike
@@ -587,6 +588,8 @@ class AssignmentAnalyzer
                             // fall through
                         }
                     } elseif ($assign_value_atomic_type instanceof Type\Atomic\TNull) {
+                        $has_null = true;
+
                         if (IssueBuffer::accepts(
                             new PossiblyNullArrayAccess(
                                 'Cannot access array value on null variable ' . $array_var_id,
@@ -787,7 +790,9 @@ class AssignmentAnalyzer
                     if ($list_var_id) {
                         $context->vars_in_scope[$list_var_id] = $new_assign_type ?: Type::getMixed();
 
-                        if ($context->error_suppressing && ($offset || $can_be_empty)) {
+                        if (($context->error_suppressing && ($offset || $can_be_empty))
+                            || $has_null
+                        ) {
                             $context->vars_in_scope[$list_var_id]->addType(new Type\Atomic\TNull);
                         }
                     }
@@ -945,17 +950,21 @@ class AssignmentAnalyzer
                 && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
             ) {
                 if ($context->vars_in_scope[$var_id]->parent_nodes) {
-                    $var_location = new CodeLocation($statements_analyzer->getSource(), $assign_var);
+                    if (\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())) {
+                        $context->vars_in_scope[$var_id]->parent_nodes = [];
+                    } else {
+                        $var_location = new CodeLocation($statements_analyzer->getSource(), $assign_var);
 
-                    $new_parent_node = \Psalm\Internal\Taint\TaintNode::getForAssignment($var_id, $var_location);
+                        $new_parent_node = \Psalm\Internal\Taint\TaintNode::getForAssignment($var_id, $var_location);
 
-                    $codebase->taint->addTaintNode($new_parent_node);
+                        $codebase->taint->addTaintNode($new_parent_node);
 
-                    foreach ($context->vars_in_scope[$var_id]->parent_nodes as $parent_node) {
-                        $codebase->taint->addPath($parent_node, $new_parent_node, '=', [], $removed_taints);
+                        foreach ($context->vars_in_scope[$var_id]->parent_nodes as $parent_node) {
+                            $codebase->taint->addPath($parent_node, $new_parent_node, '=', [], $removed_taints);
+                        }
+
+                        $context->vars_in_scope[$var_id]->parent_nodes = [$new_parent_node];
                     }
-
-                    $context->vars_in_scope[$var_id]->parent_nodes = [$new_parent_node];
                 }
             }
         }
@@ -1121,6 +1130,7 @@ class AssignmentAnalyzer
 
                 if ($codebase->taint
                     && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
+                    && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
                 ) {
                     $stmt_left_type = $statements_analyzer->node_data->getType($stmt->var);
                     $stmt_right_type = $statements_analyzer->node_data->getType($stmt->expr);

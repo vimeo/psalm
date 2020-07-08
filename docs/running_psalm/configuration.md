@@ -105,6 +105,15 @@ If not using all docblock types, you can still use docblock property types. Defa
   usePhpDocMethodsWithoutMagicCall="[bool]"
 >
 ```
+The PHPDoc `@property`, `@property-read` and `@property-write` annotations normally only apply to classes with `__get`/`__set` methods. Setting this to `true` allows you to use the `@property`, `@property-read` and `@property-write` annotations to override property existance checks and resulting property types. Defaults to `false`.
+
+#### usePhpDocPropertiesWithoutMagicCall
+
+```xml
+<psalm
+  usePhpDocPropertiesWithoutMagicCall="[bool]"
+>
+```
 The PHPDoc `@method` annotation normally only applies to classes with a `__call` method. Setting this to `true` allows you to use the `@method` annotation to override inherited method return types. Defaults to `false`.
 
 #### strictBinaryOperands

@@ -6,6 +6,7 @@ use function array_intersect_key;
 use function array_merge;
 use function count;
 use function explode;
+use InvalidArgumentException;
 use function number_format;
 use function pathinfo;
 use PhpParser;
@@ -17,6 +18,7 @@ use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\FileManipulation\FunctionDocblockManipulator;
+use Psalm\Internal\FileManipulation\PropertyDocblockManipulator;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\IssueBuffer;
@@ -669,9 +671,15 @@ class Analyzer
                             if ($referencing_base_classlike === $unchanged_signature_classlike) {
                                 $newly_invalidated_methods[$referencing_method_id] = true;
                             } else {
-                                $referencing_storage = $codebase->classlike_storage_provider->get(
-                                    $referencing_base_classlike
-                                );
+                                try {
+                                    $referencing_storage = $codebase->classlike_storage_provider->get(
+                                        $referencing_base_classlike
+                                    );
+                                } catch (InvalidArgumentException $_) {
+                                    // Workaround for #3671
+                                    $newly_invalidated_methods[$referencing_method_id] = true;
+                                    $referencing_storage = null;
+                                }
 
                                 if (isset($referencing_storage->used_traits[$unchanged_signature_classlike])
                                     || isset($referencing_storage->parent_classes[$unchanged_signature_classlike])
@@ -1327,6 +1335,11 @@ class Analyzer
         FileManipulationBuffer::add(
             $file_path,
             FunctionDocblockManipulator::getManipulationsForFile($file_path)
+        );
+
+        FileManipulationBuffer::add(
+            $file_path,
+            PropertyDocblockManipulator::getManipulationsForFile($file_path)
         );
 
         $file_manipulations = FileManipulationBuffer::getManipulationsForFile($file_path);

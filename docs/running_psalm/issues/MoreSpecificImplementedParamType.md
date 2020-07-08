@@ -1,6 +1,6 @@
 # MoreSpecificImplementedParamType
 
-Emitted when a class implements an interface method but a param type is less specific than the interface method param type
+Emitted when a class implements an interface method but a param type is more specific than the interface method param type
 
 ```php
 <?php

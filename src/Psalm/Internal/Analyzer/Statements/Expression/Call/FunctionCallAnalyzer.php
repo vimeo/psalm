@@ -1047,6 +1047,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
 
         if (!$codebase->taint
             || !$codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
+            || \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
         ) {
             return;
         }
@@ -1175,6 +1176,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     || $current === '|'
                     || $current === ':'
                     || $current === '#'
+                    || $current === '.'
                     || $current === ' '
                 ) {
                     continue;

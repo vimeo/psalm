@@ -44,6 +44,10 @@ class ForAnalyzer
                 && \is_string($init->var->name)
                 && ($init_var_type = $statements_analyzer->node_data->getType($init->expr))
             ) {
+                if ($init_var_type->isSingleIntLiteral()) {
+                    $context->vars_in_scope['$' . $init->var->name] = Type::getInt();
+                }
+
                 $init_var_types[$init->var->name] = $init_var_type;
             }
         }

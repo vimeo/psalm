@@ -1694,6 +1694,9 @@ class ClassTemplateExtendsTest extends TestCase
                             $this->elements = $elements;
                         }
 
+                        /**
+                         * @psalm-suppress InvalidReturnType
+                         */
                         public function getIterator()
                         {
                             /**
@@ -4159,6 +4162,151 @@ class ClassTemplateExtendsTest extends TestCase
                             $this->value = $value;
                         }
                     }'
+            ],
+            'classStringTemplatedExtends' => [
+                '<?php
+                    /** @template T */
+                    interface CrudRequest {}
+
+                    /** @implements CrudRequest<string> */
+                    class StringRequest implements CrudRequest {}
+
+                    /** @template T */
+                    interface CrudNew {
+                        /** @param class-string<CrudRequest<T>> $requestClass */
+                        public function handle(string $requestClass): void;
+                    }
+
+                    class StringNew {
+                        /** @param CrudNew<string> $crudNew */
+                        public function foo($crudNew): void {
+                            $crudNew->handle(StringRequest::class);
+                        }
+                    }'
+            ],
+            'extendTemplateTypeInParamAsType' => [
+                '<?php
+                    /**
+                     * @template TKey as object
+                     * @template-implements Operation<TKey>
+                     */
+                    final class Apply implements Operation
+                    {
+                        /**
+                         * @return \Closure(array<TKey>): void
+                         */
+                        public function i(): Closure
+                        {
+                            return
+                                /**
+                                 * @psalm-param array<TKey> $collection
+                                 */
+                                static function (array $collection): void{};
+                        }
+                    }
+
+                    /**
+                     * @template TKey as object
+                     */
+                    interface Operation
+                    {
+                        /**
+                         * @psalm-return \Closure(array<TKey>): void
+                         */
+                        public function i(): Closure;
+                    }'
+            ],
+            'traitSelfAsParam' => [
+                '<?php
+                    trait InstancePool {
+                        /**
+                         * @template T as self
+                         * @param callable():?T $callback
+                         * @return ?T
+                         */
+                        public static function getInstance(callable $callback)
+                        {
+                            return $callback();
+                        }
+                    }
+
+                    class Foo
+                    {
+                        use InstancePool;
+                    }
+
+                    class Bar
+                    {
+                        public function a(): void
+                        {
+                            Foo::getInstance(function () {
+                                return new Foo();
+                            });
+                        }
+                    }'
+            ],
+            'extendsWithArraySameObject' => [
+                '<?php
+                    /**
+                     * @template Tv
+                     */
+                    interface C1 {
+                        /**
+                         * @return C1<array<int, Tv>>
+                         */
+                        public function zip(): C1;
+                    }
+
+                    /**
+                     * @template Tv
+                     * @extends C1<Tv>
+                     */
+                    interface C2 extends C1 {
+                        /**
+                         * @return C2<array<int, Tv>>
+                         */
+                        public function zip(): C2;
+                    }',
+                [],
+                [],
+                '7.4'
+            ],
+            'extendsWithArrayDifferentObject' => [
+                '<?php
+                    /**
+                     * @template Tv
+                     */
+                    interface C1 {
+                        /**
+                         * @return D1<array<int, Tv>>
+                         */
+                        public function zip(): D1;
+                    }
+
+                    /**
+                     * @template Tv
+                     * @extends C1<Tv>
+                     */
+                    interface C2 extends C1 {
+                        /**
+                         * @return D2<array<int, Tv>>
+                         */
+                        public function zip(): D2;
+                    }
+
+                    /**
+                     * @template Tv
+                     */
+                    interface D1 {}
+
+                    /**
+                     * @template Tv
+                     * @extends D1<Tv>
+                     */
+                    interface D2 extends D1 {}',
+                [],
+                [],
+                '7.4'
             ],
         ];
     }

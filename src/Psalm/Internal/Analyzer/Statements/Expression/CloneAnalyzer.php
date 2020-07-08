@@ -24,7 +24,8 @@ class CloneAnalyzer
         PhpParser\Node\Expr\Clone_ $stmt,
         Context $context
     ) : bool {
-        $codebase_methods = $statements_analyzer->getCodebase()->methods;
+        $codebase = $statements_analyzer->getCodebase();
+        $codebase_methods = $codebase->methods;
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
             return false;
         }
@@ -50,26 +51,30 @@ class CloneAnalyzer
                 } elseif ($clone_type_part instanceof TObject) {
                     $possibly_valid = true;
                 } elseif ($clone_type_part instanceof TNamedObject) {
-                    $clone_method_id = new \Psalm\Internal\MethodIdentifier(
-                        $clone_type_part->value,
-                        '__clone'
-                    );
-
-                    $does_method_exist = $codebase_methods->methodExists(
-                        $clone_method_id,
-                        $context->calling_method_id,
-                        new CodeLocation($statements_analyzer->getSource(), $stmt)
-                    );
-                    $is_method_visible = MethodAnalyzer::isMethodVisible(
-                        $clone_method_id,
-                        $context,
-                        $statements_analyzer->getSource()
-                    );
-                    if ($does_method_exist && !$is_method_visible) {
+                    if (!$codebase->classlikes->classOrInterfaceExists($clone_type_part->value)) {
                         $invalid_clones[] = $clone_type_part->getId();
                     } else {
-                        $possibly_valid = true;
-                        $immutable_cloned = true;
+                        $clone_method_id = new \Psalm\Internal\MethodIdentifier(
+                            $clone_type_part->value,
+                            '__clone'
+                        );
+
+                        $does_method_exist = $codebase_methods->methodExists(
+                            $clone_method_id,
+                            $context->calling_method_id,
+                            new CodeLocation($statements_analyzer->getSource(), $stmt)
+                        );
+                        $is_method_visible = MethodAnalyzer::isMethodVisible(
+                            $clone_method_id,
+                            $context,
+                            $statements_analyzer->getSource()
+                        );
+                        if ($does_method_exist && !$is_method_visible) {
+                            $invalid_clones[] = $clone_type_part->getId();
+                        } else {
+                            $possibly_valid = true;
+                            $immutable_cloned = true;
+                        }
                     }
                 } elseif ($clone_type_part instanceof TTemplateParam) {
                     $atomic_types = \array_merge($atomic_types, $clone_type_part->as->getAtomicTypes());

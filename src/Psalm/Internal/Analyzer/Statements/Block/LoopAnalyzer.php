@@ -44,7 +44,8 @@ class LoopAnalyzer
         array $post_expressions,
         LoopScope $loop_scope,
         Context &$inner_context = null,
-        $is_do = false
+        bool $is_do = false,
+        bool $always_enters_loop = false
     ) {
         $traverser = new PhpParser\NodeTraverser;
 
@@ -64,6 +65,8 @@ class LoopAnalyzer
         $original_protected_var_ids = $loop_scope->loop_parent_context->protected_var_ids;
 
         $codebase = $statements_analyzer->getCodebase();
+
+        $inner_do_context = null;
 
         if ($pre_conditions) {
             foreach ($pre_conditions as $i => $pre_condition) {
@@ -159,18 +162,20 @@ class LoopAnalyzer
 
             IssueBuffer::startRecording();
 
-            foreach ($pre_conditions as $condition_offset => $pre_condition) {
-                $asserted_var_ids = array_merge(
-                    self::applyPreConditionToLoopContext(
-                        $statements_analyzer,
-                        $pre_condition,
-                        $pre_condition_clauses[$condition_offset],
-                        $loop_scope->loop_context,
-                        $loop_scope->loop_parent_context,
-                        $is_do
-                    ),
-                    $asserted_var_ids
-                );
+            if (!$is_do) {
+                foreach ($pre_conditions as $condition_offset => $pre_condition) {
+                    $asserted_var_ids = array_merge(
+                        self::applyPreConditionToLoopContext(
+                            $statements_analyzer,
+                            $pre_condition,
+                            $pre_condition_clauses[$condition_offset],
+                            $loop_scope->loop_context,
+                            $loop_scope->loop_parent_context,
+                            $is_do
+                        ),
+                        $asserted_var_ids
+                    );
+                }
             }
 
             // record all the vars that existed before we did the first pass through the loop
@@ -188,8 +193,6 @@ class LoopAnalyzer
             $old_referenced_var_ids = $inner_context->referenced_var_ids;
             $inner_context->referenced_var_ids = [];
 
-            $asserted_var_ids = array_unique($asserted_var_ids);
-
             $inner_context->protected_var_ids = $loop_scope->protected_var_ids;
 
             $statements_analyzer->analyze($stmts, $inner_context);
@@ -197,6 +200,26 @@ class LoopAnalyzer
             self::updateLoopScopeContexts($loop_scope, $pre_outer_context);
 
             $inner_context->protected_var_ids = $original_protected_var_ids;
+
+            if ($is_do) {
+                $inner_do_context = clone $inner_context;
+
+                foreach ($pre_conditions as $condition_offset => $pre_condition) {
+                    $asserted_var_ids = array_merge(
+                        self::applyPreConditionToLoopContext(
+                            $statements_analyzer,
+                            $pre_condition,
+                            $pre_condition_clauses[$condition_offset],
+                            $inner_context,
+                            $loop_scope->loop_parent_context,
+                            $is_do
+                        ),
+                        $asserted_var_ids
+                    );
+                }
+            }
+
+            $asserted_var_ids = array_unique($asserted_var_ids);
 
             foreach ($post_expressions as $post_expression) {
                 if (ExpressionAnalyzer::analyze($statements_analyzer, $post_expression, $inner_context) === false) {
@@ -327,15 +350,17 @@ class LoopAnalyzer
                     }
                 }
 
-                foreach ($pre_conditions as $condition_offset => $pre_condition) {
-                    self::applyPreConditionToLoopContext(
-                        $statements_analyzer,
-                        $pre_condition,
-                        $pre_condition_clauses[$condition_offset],
-                        $inner_context,
-                        $loop_scope->loop_parent_context,
-                        false
-                    );
+                if (!$is_do) {
+                    foreach ($pre_conditions as $condition_offset => $pre_condition) {
+                        self::applyPreConditionToLoopContext(
+                            $statements_analyzer,
+                            $pre_condition,
+                            $pre_condition_clauses[$condition_offset],
+                            $inner_context,
+                            $loop_scope->loop_parent_context,
+                            false
+                        );
+                    }
                 }
 
                 foreach ($asserted_var_ids as $var_id) {
@@ -367,6 +392,21 @@ class LoopAnalyzer
                 self::updateLoopScopeContexts($loop_scope, $pre_outer_context);
 
                 $inner_context->protected_var_ids = $original_protected_var_ids;
+
+                if ($is_do) {
+                    $inner_do_context = clone $inner_context;
+
+                    foreach ($pre_conditions as $condition_offset => $pre_condition) {
+                        self::applyPreConditionToLoopContext(
+                            $statements_analyzer,
+                            $pre_condition,
+                            $pre_condition_clauses[$condition_offset],
+                            $inner_context,
+                            $loop_scope->loop_parent_context,
+                            $is_do
+                        );
+                    }
+                }
 
                 foreach ($post_expressions as $post_expression) {
                     if (ExpressionAnalyzer::analyze($statements_analyzer, $post_expression, $inner_context) === false) {
@@ -521,6 +561,38 @@ class LoopAnalyzer
                     }
                 }
             }
+        }
+
+        if ($always_enters_loop) {
+            foreach ($inner_context->vars_in_scope as $var_id => $type) {
+                // if there are break statements in the loop it's not certain
+                // that the loop has finished executing, so the assertions at the end
+                // the loop in the while conditional may not hold
+                if (in_array(ScopeAnalyzer::ACTION_BREAK, $loop_scope->final_actions, true)
+                    || in_array(ScopeAnalyzer::ACTION_CONTINUE, $loop_scope->final_actions, true)
+                ) {
+                    if (isset($loop_scope->possibly_defined_loop_parent_vars[$var_id])) {
+                        $loop_scope->loop_parent_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                            $type,
+                            $loop_scope->possibly_defined_loop_parent_vars[$var_id]
+                        );
+                    }
+                } else {
+                    if ($codebase->find_unused_variables
+                        && !isset($loop_scope->loop_parent_context->vars_in_scope[$var_id])
+                        && isset($inner_context->unreferenced_vars[$var_id])
+                    ) {
+                        $loop_scope->loop_parent_context->unreferenced_vars[$var_id]
+                            = $inner_context->unreferenced_vars[$var_id];
+                    }
+
+                    $loop_scope->loop_parent_context->vars_in_scope[$var_id] = $type;
+                }
+            }
+        }
+
+        if ($inner_do_context) {
+            $inner_context = $inner_do_context;
         }
     }
 

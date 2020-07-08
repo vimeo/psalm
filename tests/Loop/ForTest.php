@@ -117,6 +117,14 @@ class ForTest extends \Psalm\Tests\TestCase
 
                     echo $i * $j;'
             ],
+            'reconcileOuterVars' => [
+                '<?php
+                    for ($i = 0; $i < 2; $i++) {
+                        if ($i === 0) {
+                            continue;
+                        }
+                    }'
+            ],
         ];
     }
 

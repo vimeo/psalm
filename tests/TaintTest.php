@@ -20,6 +20,10 @@ class TaintTest extends TestCase
             $this->markTestSkipped('Skipped due to a bug.');
         }
 
+        if (\strtoupper(\substr(\PHP_OS, 0, 3)) === 'WIN') {
+            $this->markTestSkipped('Skip taint tests in Windows for now');
+        }
+
         $file_path = self::$src_dir_path . 'somefile.php';
 
         $this->addFile(
@@ -44,6 +48,10 @@ class TaintTest extends TestCase
     {
         if (\strpos($this->getTestName(), 'SKIPPED-') !== false) {
             $this->markTestSkipped();
+        }
+
+        if (\strtoupper(\substr(\PHP_OS, 0, 3)) === 'WIN') {
+            $this->markTestSkipped('Skip taint tests in Windows for now');
         }
 
         $this->expectException(\Psalm\Exception\CodeException::class);
@@ -457,6 +465,27 @@ class TaintTest extends TestCase
 
                     echo $a->x;'
             ],
+            'suppressTaintedInput' => [
+                '<?php
+                    function unsafe() {
+                        /**
+                         * @psalm-suppress TaintedInput
+                         */
+                        echo $_GET["x"];
+                    }'
+            ],
+            'suppressTaintedAssignment' => [
+                '<?php
+                    $b = $_GET["x"];
+
+                    /**
+                     * @psalm-suppress TaintedInput
+                     */
+                    $a = $b;
+
+
+                    echo $a;'
+            ]
         ];
     }
 
@@ -1455,6 +1484,52 @@ class TaintTest extends TestCase
                     echo $b->x;',
                 'error_message' => 'TaintedInput',
             ],
+            'taintUnserialize' => [
+                '<?php
+                    $cb = unserialize($_POST[\'x\']);',
+                'error_message' => 'TaintedInput',
+            ],
+            'taintCreateFunction' => [
+                '<?php
+                    $cb = create_function(\'$a\', $_GET[\'x\']);',
+                'error_message' => 'TaintedInput',
+            ],
+            'taintException' => [
+                '<?php
+                    $e = new Exception();
+                    echo $e;',
+                'error_message' => 'TaintedInput',
+            ],
+            'taintError' => [
+                '<?php
+                    function foo() {}
+                    try {
+                        foo();
+                    } catch (TypeError $e) {
+                        echo "Caught: {$e->getTraceAsString()}\n";
+                    }',
+                'error_message' => 'TaintedInput',
+            ],
+            'taintThrowable' => [
+                '<?php
+                    function foo() {}
+                    try {
+                        foo();
+                    } catch (Throwable $e) {
+                        echo "Caught: $e";  // TODO: ("Caught" . $e) does not work.
+                    }',
+                'error_message' => 'TaintedInput',
+            ],
+            /*
+            // TODO: Stubs do not support this type of inference even with $this->message = $message.
+            // Most uses of getMessage() would be with caught exceptions, so this is not representative of real code.
+            'taintException' => [
+                '<?php
+                    $x = new Exception($_GET["x"]);
+                    echo $x->getMessage();',
+                'error_message' => 'TaintedInput',
+            ],
+            */
         ];
     }
 }

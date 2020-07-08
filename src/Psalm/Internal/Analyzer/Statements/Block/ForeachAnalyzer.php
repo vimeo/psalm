@@ -305,37 +305,19 @@ class ForeachAnalyzer
 
         $loop_scope->protected_var_ids = $context->protected_var_ids;
 
-        LoopAnalyzer::analyze($statements_analyzer, $stmt->stmts, [], [], $loop_scope, $inner_loop_context);
+        LoopAnalyzer::analyze(
+            $statements_analyzer,
+            $stmt->stmts,
+            [],
+            [],
+            $loop_scope,
+            $inner_loop_context,
+            false,
+            $always_non_empty_array
+        );
 
         if (!$inner_loop_context) {
             throw new \UnexpectedValueException('There should be an inner loop context');
-        }
-
-        if ($always_non_empty_array) {
-            foreach ($inner_loop_context->vars_in_scope as $var_id => $type) {
-                // if there are break statements in the loop it's not certain
-                // that the loop has finished executing, so the assertions at the end
-                // the loop in the while conditional may not hold
-                if (in_array(ScopeAnalyzer::ACTION_BREAK, $loop_scope->final_actions, true)
-                    || in_array(ScopeAnalyzer::ACTION_CONTINUE, $loop_scope->final_actions, true)
-                ) {
-                    if (isset($loop_scope->possibly_defined_loop_parent_vars[$var_id])) {
-                        $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
-                            $type,
-                            $loop_scope->possibly_defined_loop_parent_vars[$var_id]
-                        );
-                    }
-                } else {
-                    if ($codebase->find_unused_variables
-                        && !isset($context->vars_in_scope[$var_id])
-                        && isset($inner_loop_context->unreferenced_vars[$var_id])
-                    ) {
-                        $context->unreferenced_vars[$var_id] = $inner_loop_context->unreferenced_vars[$var_id];
-                    }
-
-                    $context->vars_in_scope[$var_id] = $type;
-                }
-            }
         }
 
         $foreach_context->loop_scope = null;

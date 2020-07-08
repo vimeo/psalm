@@ -135,6 +135,30 @@ class Taint
         return $sink_descriptor;
     }
 
+    /**
+     * @return list<array{location: ?CodeLocation, label: string, entry_path_type: string}>
+     */
+    public function getIssueTrace(Taintable $source) : array
+    {
+        $previous_source = $source->previous;
+
+        $node = [
+            'location' => $source->code_location,
+            'label' => $source->label,
+            'entry_path_type' => \end($source->path_types) ?: ''
+        ];
+
+        if ($previous_source) {
+            if ($previous_source === $source) {
+                return [];
+            }
+
+            return array_merge($this->getIssueTrace($previous_source), [$node]);
+        }
+
+        return [$node];
+    }
+
     public function addThreadData(self $taint) : void
     {
         $this->sources += $taint->sources;
@@ -255,10 +279,11 @@ class Taint
 
                     if (IssueBuffer::accepts(
                         new TaintedInput(
-                            'Detected tainted ' . implode(', ', $matching_taints)
-                                . ' in path: ' . $this->getPredecessorPath($generated_source)
-                                . ' -> ' . $this->getSuccessorPath($sinks[$to_id]),
-                            $issue_location
+                            'Detected tainted ' . implode(', ', $matching_taints),
+                            $issue_location,
+                            $this->getIssueTrace($generated_source),
+                            $this->getPredecessorPath($generated_source)
+                                . ' -> ' . $this->getSuccessorPath($sinks[$to_id])
                         )
                     )) {
                         // fall through

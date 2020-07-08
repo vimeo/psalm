@@ -122,7 +122,8 @@ abstract class CodeIssue
             $location->getColumn(),
             $location->getEndColumn(),
             (int) static::SHORTCODE,
-            (int) static::ERROR_LEVEL
+            (int) static::ERROR_LEVEL,
+            $this instanceof TaintedInput ? $this->getTaintTrace() : null
         );
     }
 }

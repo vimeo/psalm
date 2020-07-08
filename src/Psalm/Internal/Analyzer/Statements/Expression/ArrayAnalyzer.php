@@ -202,7 +202,10 @@ class ArrayAnalyzer
                 $array_keys[$item_key_value] = true;
             }
 
-            if ($codebase->taint) {
+            if ($codebase->taint
+                && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
+                && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
+            ) {
                 if ($item_value_type = $statements_analyzer->node_data->getType($item->value)) {
                     if ($item_value_type->parent_nodes) {
                         $var_location = new CodeLocation($statements_analyzer->getSource(), $item);

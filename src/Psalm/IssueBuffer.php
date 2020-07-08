@@ -100,6 +100,10 @@ class IssueBuffer
 
     public static function addUnusedSuppression(string $file_path, int $offset, string $issue_type) : void
     {
+        if ($issue_type === 'TaintedInput') {
+            return;
+        }
+
         if (isset(self::$used_suppressions[$file_path][$offset])) {
             return;
         }
@@ -222,7 +226,7 @@ class IssueBuffer
         $emitted_key = $issue_type . '-' . $e->getShortLocation() . ':' . $e->getLocation()->getColumn();
 
         if ($reporting_level === Config::REPORT_INFO) {
-            if (!self::alreadyEmitted($emitted_key)) {
+            if ($issue_type === 'TaintedInput' || !self::alreadyEmitted($emitted_key)) {
                 self::$issues_data[$e->getFilePath()][] = $e->toIssueData(Config::REPORT_INFO);
             }
 
@@ -232,15 +236,19 @@ class IssueBuffer
         if ($config->throw_exception) {
             \Psalm\Internal\Analyzer\FileAnalyzer::clearCache();
 
+            $message = $e instanceof \Psalm\Issue\TaintedInput
+                ? $e->getJourneyMessage()
+                : $e->getMessage();
+
             throw new Exception\CodeException(
                 $issue_type
                     . ' - ' . $e->getShortLocationWithPrevious()
                     . ':' . $e->getLocation()->getColumn()
-                    . ' - ' . $e->getMessage()
+                    . ' - ' . $message
             );
         }
 
-        if (!self::alreadyEmitted($emitted_key)) {
+        if ($issue_type === 'TaintedInput' || !self::alreadyEmitted($emitted_key)) {
             ++self::$error_count;
             self::$issues_data[$e->getFilePath()][] = $e->toIssueData(Config::REPORT_ERROR);
         }
@@ -595,7 +603,7 @@ class IssueBuffer
                 }
             }
 
-            if (self::$fixable_issue_counts && $show_suggestions) {
+            if (self::$fixable_issue_counts && $show_suggestions && !$codebase->taint) {
                 echo str_repeat('-', 30) . "\n";
 
                 $total_count = \array_sum(self::$fixable_issue_counts);

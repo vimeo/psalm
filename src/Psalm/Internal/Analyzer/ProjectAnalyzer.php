@@ -21,6 +21,7 @@ use Psalm\Issue\MismatchingDocblockParamType;
 use Psalm\Issue\MismatchingDocblockReturnType;
 use Psalm\Issue\MissingClosureReturnType;
 use Psalm\Issue\MissingParamType;
+use Psalm\Issue\MissingPropertyType;
 use Psalm\Issue\MissingReturnType;
 use Psalm\Issue\PossiblyUndefinedGlobalVariable;
 use Psalm\Issue\PossiblyUndefinedVariable;
@@ -209,6 +210,7 @@ class ProjectAnalyzer
         MismatchingDocblockReturnType::class,
         MissingClosureReturnType::class,
         MissingParamType::class,
+        MissingPropertyType::class,
         MissingReturnType::class,
         PossiblyUndefinedGlobalVariable::class,
         PossiblyUndefinedVariable::class,
@@ -351,6 +353,7 @@ class ProjectAnalyzer
             '.txt' => Report::TYPE_TEXT,
             '.emacs' => Report::TYPE_EMACS,
             '.pylint' => Report::TYPE_PYLINT,
+            '.console' => Report::TYPE_CONSOLE,
         ];
 
         foreach ($report_file_paths as $report_file_path) {
@@ -361,6 +364,7 @@ class ProjectAnalyzer
                     $o->format = $type;
                     $o->show_info = $show_info;
                     $o->output_path = $report_file_path;
+                    $o->use_color = false;
                     $report_options[] = $o;
                     continue 2;
                 }

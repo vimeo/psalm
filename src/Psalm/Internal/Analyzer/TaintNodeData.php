@@ -2,125 +2,92 @@
 
 namespace Psalm\Internal\Analyzer;
 
-class IssueData
+/**
+ * @psalm-immutable
+ */
+class TaintNodeData
 {
     /**
-     * @var string
-     */
-    public $severity;
-
-    /**
      * @var int
-     * @readonly
      */
     public $line_from;
 
     /**
      * @var int
-     * @readonly
      */
     public $line_to;
 
     /**
      * @var string
-     * @readonly
      */
-    public $type;
+    public $label;
 
     /**
      * @var string
-     * @readonly
      */
-    public $message;
+    public $entry_path_type;
+
+    /**
+     * @var ?string
+     */
+    public $entry_path_description;
 
     /**
      * @var string
-     * @readonly
      */
     public $file_name;
 
     /**
      * @var string
-     * @readonly
      */
     public $file_path;
 
     /**
      * @var string
-     * @readonly
      */
     public $snippet;
 
     /**
      * @var string
-     * @readonly
      */
     public $selected_text;
 
     /**
      * @var int
-     * @readonly
      */
     public $from;
 
     /**
      * @var int
-     * @readonly
      */
     public $to;
 
     /**
      * @var int
-     * @readonly
      */
     public $snippet_from;
 
     /**
      * @var int
-     * @readonly
      */
     public $snippet_to;
 
     /**
      * @var int
-     * @readonly
      */
     public $column_from;
 
     /**
      * @var int
-     * @readonly
      */
     public $column_to;
 
     /**
-     * @var int
-     */
-    public $error_level;
-
-    /**
-     * @var int
-     * @readonly
-     */
-    public $shortcode;
-
-    /**
-     * @var string
-     * @readonly
-     */
-    public $link;
-
-    /**
-     * @var ?list<TaintNodeData|array{label: string, entry_path_type: string}>
-     */
-    public $taint_trace;
-
-    /**
-     * @param string $severity
+     * @param string $label
+     * @param string $entry_path_type
+     * @param ?string $entry_path_description
      * @param int $line_from
      * @param int $line_to
-     * @param string $type
-     * @param string $message
      * @param string $file_name
      * @param string $file_path
      * @param string $snippet
@@ -131,16 +98,13 @@ class IssueData
      * @param int $snippet_to
      * @param int $column_from
      * @param int $column_to
-     * @param int $error_level
-     * @param int $shortcode
-     * @param ?list<TaintNodeData|array{label: string, entry_path_type: string}> $taint_trace
      */
     public function __construct(
-        $severity,
+        $label,
+        $entry_path_type,
+        $entry_path_description,
         $line_from,
         $line_to,
-        $type,
-        $message,
         $file_name,
         $file_path,
         $snippet,
@@ -150,16 +114,13 @@ class IssueData
         $snippet_from,
         $snippet_to,
         $column_from,
-        $column_to,
-        $shortcode = 0,
-        $error_level = -1,
-        $taint_trace = null
+        $column_to
     ) {
-        $this->severity = $severity;
+        $this->label = $label;
+        $this->entry_path_type = $entry_path_type;
+        $this->entry_path_description = $entry_path_description;
         $this->line_from = $line_from;
         $this->line_to = $line_to;
-        $this->type = $type;
-        $this->message = $message;
         $this->file_name = $file_name;
         $this->file_path = $file_path;
         $this->snippet = $snippet;
@@ -170,9 +131,5 @@ class IssueData
         $this->snippet_to = $snippet_to;
         $this->column_from = $column_from;
         $this->column_to = $column_to;
-        $this->shortcode = $shortcode;
-        $this->error_level = $error_level;
-        $this->link = 'https://psalm.dev/' . \str_pad((string) $shortcode, 3, "0", \STR_PAD_LEFT);
-        $this->taint_trace = $taint_trace;
     }
 }

@@ -663,6 +663,10 @@ class FunctionCallTest extends TestCase
                     '$a' => 'false|string',
                 ],
             ],
+            'echo' => [
+                '<?php
+                echo false;',
+            ],
             'printrOutput' => [
                 '<?php
                     function foo(string $s) : void {

@@ -120,7 +120,10 @@ class FilterVarReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTy
 
         $codebase = $statements_source->getCodebase();
 
-        if ($codebase->taint) {
+        if ($codebase->taint
+            && $codebase->config->trackTaintsInPath($statements_source->getFilePath())
+            && !\in_array('TaintedInput', $statements_source->getSuppressedIssues())
+        ) {
             $function_return_sink = TaintNode::getForMethodReturn(
                 $function_id,
                 $function_id,

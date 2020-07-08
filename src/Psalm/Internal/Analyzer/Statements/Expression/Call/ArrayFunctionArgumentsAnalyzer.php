@@ -483,6 +483,10 @@ class ArrayFunctionArgumentsAnalyzer
         $codebase = $statements_analyzer->getCodebase();
 
         if (!$closure_type instanceof Type\Atomic\TFn) {
+            if ($method_id === 'array_map') {
+                return;
+            }
+
             if (!$closure_arg->value instanceof PhpParser\Node\Scalar\String_
                 && !$closure_arg->value instanceof PhpParser\Node\Expr\Array_
                 && !$closure_arg->value instanceof PhpParser\Node\Expr\BinaryOp\Concat

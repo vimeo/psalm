@@ -499,25 +499,16 @@ class SwitchCaseAnalyzer
                 new ParadoxicalCondition(
                     'All possible case statements have been met, default is impossible here',
                     new CodeLocation($statements_analyzer->getSource(), $case)
-                )
+                ),
+                $statements_analyzer->getSuppressedIssues()
             )) {
                 return false;
             }
         }
 
-        $vars = array_diff_key(
-            $case_context->vars_possibly_in_scope,
-            $original_context->vars_possibly_in_scope
-        );
-
         // if we're leaving this block, add vars to outer for loop scope
         if ($case_exit_type === 'continue') {
-            if ($context->loop_scope) {
-                $context->loop_scope->vars_possibly_in_scope = array_merge(
-                    $vars,
-                    $context->loop_scope->vars_possibly_in_scope
-                );
-            } else {
+            if (!$context->loop_scope) {
                 if (IssueBuffer::accepts(
                     new ContinueOutsideLoop(
                         'Continue called when not in loop',
