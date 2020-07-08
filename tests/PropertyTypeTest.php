@@ -2074,6 +2074,20 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'MissingPropertyType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:32 - Property A::$foo does not have a ' .
                     'declared type - consider int|null',
             ],
+            'missingPropertyTypeWithConstructorInitConditionallySet' => [
+                '<?php
+                    class A {
+                        public $foo;
+
+                        public function __construct() {
+                            if (rand(0, 1)) {
+                                $this->foo = 5;
+                            }
+                        }
+                    }',
+                'error_message' => 'MissingPropertyType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:32 - Property A::$foo does not have a ' .
+                    'declared type - consider int|null',
+            ],
             'badAssignment' => [
                 '<?php
                     class A {

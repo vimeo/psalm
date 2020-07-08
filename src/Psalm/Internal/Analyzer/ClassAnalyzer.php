@@ -1379,7 +1379,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 true
             );
 
-            foreach ($uninitialized_typed_properties as $property_id => $property_storage) {
+            foreach ($uninitialized_properties as $property_id => $property_storage) {
                 list(,$property_name) = explode('::$', $property_id);
 
                 if (!isset($method_context->vars_in_scope['$this->' . $property_name])) {
@@ -1418,22 +1418,29 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     && $error_location
                     && (!$end_type->initialized || $property_storage !== $constructor_class_property_storage)
                 ) {
-                    $expected_visibility = $uninitialized_private_properties
-                        ? 'private or final '
-                        : '';
+                    if ($property_storage->type) {
+                        $expected_visibility = $uninitialized_private_properties
+                            ? 'private or final '
+                            : '';
 
-                    if (IssueBuffer::accepts(
-                        new PropertyNotSetInConstructor(
-                            'Property ' . $class_storage->name . '::$' . $property_name
-                                . ' is not defined in constructor of '
-                                . $this->fq_class_name . ' and in any ' . $expected_visibility
-                                . 'methods called in the constructor',
-                            $error_location,
-                            $property_id
-                        ),
-                        $storage->suppressed_issues + $this->getSuppressedIssues()
-                    )) {
-                        // do nothing
+                        if (IssueBuffer::accepts(
+                            new PropertyNotSetInConstructor(
+                                'Property ' . $class_storage->name . '::$' . $property_name
+                                    . ' is not defined in constructor of '
+                                    . $this->fq_class_name . ' and in any ' . $expected_visibility
+                                    . 'methods called in the constructor',
+                                $error_location,
+                                $property_id
+                            ),
+                            $storage->suppressed_issues + $this->getSuppressedIssues()
+                        )) {
+                            // do nothing
+                        }
+                    } elseif (!$property_storage->has_default) {
+                        if (isset($this->inferred_property_types[$property_name])) {
+                            $this->inferred_property_types[$property_name]->addType(new Type\Atomic\TNull());
+                            $this->inferred_property_types[$property_name]->setFromDocblock();
+                        }
                     }
                 }
             }
