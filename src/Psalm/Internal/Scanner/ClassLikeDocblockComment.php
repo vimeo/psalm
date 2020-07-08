@@ -36,8 +36,14 @@ class ClassLikeDocblockComment
 
     /**
      * @var null|string
+     * @deprecated
      */
     public $mixin = null;
+
+    /**
+     * @var string[]
+     */
+    public $mixins = [];
 
     /**
      * @var array<int, array{string, ?string, ?string, bool, int}>

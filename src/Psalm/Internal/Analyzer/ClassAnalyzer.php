@@ -51,6 +51,7 @@ use function str_replace;
 use function count;
 use function array_search;
 use function array_keys;
+use function array_merge;
 
 /**
  * @internal
@@ -486,8 +487,11 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             }
         }
 
-        if ($storage->mixin && $storage->mixin_declaring_fqcln === $storage->name) {
-            $union = new Type\Union([$storage->mixin]);
+        if (($storage->templatedMixins || $storage->namedMixins)
+            && $storage->mixin_declaring_fqcln === $storage->name) {
+            /** @var non-empty-array<int, Type\Atomic\TTemplateParam|Type\Atomic\TNamedObject> $mixins */
+            $mixins = array_merge($storage->templatedMixins, $storage->namedMixins);
+            $union = new Type\Union($mixins);
             $union->check(
                 $this,
                 new CodeLocation(
