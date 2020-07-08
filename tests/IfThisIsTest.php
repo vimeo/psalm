@@ -1,7 +1,7 @@
 <?php
 namespace Psalm\Tests;
 
-class SelfOutTest extends TestCase
+class IfThisIsTest extends TestCase
 {
     use Traits\ValidCodeAnalysisTestTrait;
     use Traits\InvalidCodeAnalysisTestTrait;
