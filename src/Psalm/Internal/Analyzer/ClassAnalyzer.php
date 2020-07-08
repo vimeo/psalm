@@ -4,6 +4,7 @@ namespace Psalm\Internal\Analyzer;
 use PhpParser;
 use Psalm\Aliases;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
+use Psalm\Internal\FileManipulation\PropertyDocblockManipulator;
 use Psalm\Internal\Type\UnionTemplateHandler;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
@@ -1662,6 +1663,29 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 );
             }
 
+            $project_analyzer = ProjectAnalyzer::getInstance();
+
+            if ($codebase->alter_code
+                && isset($project_analyzer->getIssuesToFix()['MissingPropertyType'])
+                && !\in_array('MissingPropertyType', $this->getSuppressedIssues())
+                && $suggested_type
+            ) {
+                if ($suggested_type->hasMixed() || $suggested_type->isNull()) {
+                    return;
+                }
+
+                self::addOrUpdatePropertyType(
+                    $project_analyzer,
+                    $stmt,
+                    $property_id,
+                    $suggested_type,
+                    $this,
+                    $suggested_type->from_docblock
+                );
+
+                return;
+            }
+
             if (IssueBuffer::accepts(
                 new MissingPropertyType(
                     $message,
@@ -1672,6 +1696,53 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 // fall through
             }
         }
+    }
+
+    private static function addOrUpdatePropertyType(
+        ProjectAnalyzer $project_analyzer,
+        PhpParser\Node\Stmt\Property $property,
+        string $property_id,
+        Type\Union $inferred_type,
+        StatementsSource $source,
+        bool $docblock_only = false
+    ) : void {
+        $manipulator = PropertyDocblockManipulator::getForProperty(
+            $project_analyzer,
+            $source->getFilePath(),
+            $property_id,
+            $property
+        );
+
+        $codebase = $project_analyzer->getCodebase();
+
+        $allow_native_type = !$docblock_only
+            && $codebase->php_major_version >= 7
+            && ($codebase->php_major_version > 7 || $codebase->php_minor_version >= 4)
+            && $codebase->allow_backwards_incompatible_changes;
+
+        $manipulator->setType(
+            $allow_native_type
+                ? (string) $inferred_type->toPhpString(
+                    $source->getNamespace(),
+                    $source->getAliasedClassesFlipped(),
+                    $source->getFQCLN(),
+                    $codebase->php_major_version,
+                    $codebase->php_minor_version
+                ) : null,
+            $inferred_type->toNamespacedString(
+                $source->getNamespace(),
+                $source->getAliasedClassesFlipped(),
+                $source->getFQCLN(),
+                false
+            ),
+            $inferred_type->toNamespacedString(
+                $source->getNamespace(),
+                $source->getAliasedClassesFlipped(),
+                $source->getFQCLN(),
+                true
+            ),
+            $inferred_type->canBeFullyExpressedInPhp()
+        );
     }
 
     /**

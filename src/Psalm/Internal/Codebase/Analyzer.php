@@ -18,6 +18,7 @@ use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\FileManipulation\FunctionDocblockManipulator;
+use Psalm\Internal\FileManipulation\PropertyDocblockManipulator;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\IssueBuffer;
@@ -1334,6 +1335,11 @@ class Analyzer
         FileManipulationBuffer::add(
             $file_path,
             FunctionDocblockManipulator::getManipulationsForFile($file_path)
+        );
+
+        FileManipulationBuffer::add(
+            $file_path,
+            PropertyDocblockManipulator::getManipulationsForFile($file_path)
         );
 
         $file_manipulations = FileManipulationBuffer::getManipulationsForFile($file_path);

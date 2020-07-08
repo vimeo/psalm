@@ -21,6 +21,7 @@ use Psalm\Issue\MismatchingDocblockParamType;
 use Psalm\Issue\MismatchingDocblockReturnType;
 use Psalm\Issue\MissingClosureReturnType;
 use Psalm\Issue\MissingParamType;
+use Psalm\Issue\MissingPropertyType;
 use Psalm\Issue\MissingReturnType;
 use Psalm\Issue\PossiblyUndefinedGlobalVariable;
 use Psalm\Issue\PossiblyUndefinedVariable;
@@ -209,6 +210,7 @@ class ProjectAnalyzer
         MismatchingDocblockReturnType::class,
         MissingClosureReturnType::class,
         MissingParamType::class,
+        MissingPropertyType::class,
         MissingReturnType::class,
         PossiblyUndefinedGlobalVariable::class,
         PossiblyUndefinedVariable::class,
