@@ -183,6 +183,63 @@ class MissingPropertyTypeTest extends FileManipulationTest
                 ['MissingPropertyType'],
                 true,
             ],
+            'addMissingDocblockTypesSpacedProperly' => [
+                '<?php
+                    class A {
+                        public $u;
+                        public $v;
+
+                        public function __construct(int $i, int $j) {
+                            $this->u = $i;
+                            $this->v = $j;
+                        }
+                    }',
+                '<?php
+                    class A {
+                        /**
+                         * @var int
+                         */
+                        public $u;
+
+                        /**
+                         * @var int
+                         */
+                        public $v;
+
+                        public function __construct(int $i, int $j) {
+                            $this->u = $i;
+                            $this->v = $j;
+                        }
+                    }',
+                '7.1',
+                ['MissingPropertyType'],
+                true,
+            ],
+            'addMissingTypehintsSpacedProperly' => [
+                '<?php
+                    class A {
+                        public $u;
+                        public $v;
+
+                        public function __construct(int $i, int $j) {
+                            $this->u = $i;
+                            $this->v = $j;
+                        }
+                    }',
+                '<?php
+                    class A {
+                        public int $u;
+                        public int $v;
+
+                        public function __construct(int $i, int $j) {
+                            $this->u = $i;
+                            $this->v = $j;
+                        }
+                    }',
+                '7.4',
+                ['MissingPropertyType'],
+                true,
+            ],
         ];
     }
 }

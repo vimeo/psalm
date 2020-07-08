@@ -16,6 +16,7 @@ abstract class FileManipulationTest extends \Psalm\Tests\TestCase
     {
         FileAnalyzer::clearCache();
         \Psalm\Internal\FileManipulation\FunctionDocblockManipulator::clearCache();
+        \Psalm\Internal\FileManipulation\PropertyDocblockManipulator::clearCache();
 
         $this->file_provider = new Provider\FakeFileProvider();
     }

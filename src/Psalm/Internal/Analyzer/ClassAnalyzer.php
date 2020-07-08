@@ -1633,15 +1633,15 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             // gets inherited property type
             $class_property_type = $codebase->properties->getPropertyType($property_id, false, $source, $context);
 
-            if ($class_property_type) {
+            $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+
+            $property_storage = $class_storage->properties[$property_name];
+
+            if ($class_property_type && ($property_storage->type_location || !$codebase->alter_code)) {
                 return;
             }
 
             $message = 'Property ' . $property_id . ' does not have a declared type';
-
-            $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
-
-            $property_storage = $class_storage->properties[$property_name];
 
             $suggested_type = $property_storage->suggested_type;
 

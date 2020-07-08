@@ -66,6 +66,9 @@ class PropertyDocblockManipulator
     /** @var string */
     private $indentation;
 
+    /** @var bool */
+    private $add_newline = false;
+
     /** @var string|null */
     private $type_description;
 
@@ -120,6 +123,22 @@ class PropertyDocblockManipulator
             $this->indentation = '';
 
             return;
+        }
+
+        if (!$docblock) {
+            $preceding_semicolon_pos = strrpos($file_contents, ";", $preceding_newline_pos - strlen($file_contents));
+
+            if ($preceding_semicolon_pos) {
+                $preceding_space = substr(
+                    $file_contents,
+                    $preceding_semicolon_pos + 1,
+                    $preceding_newline_pos - $preceding_semicolon_pos - 1
+                );
+
+                if (!\substr_count($preceding_space, "\n")) {
+                    $this->add_newline = true;
+                }
+            }
         }
 
         $first_line = substr($file_contents, $preceding_newline_pos + 1, $this->docblock_end - $preceding_newline_pos);
@@ -245,13 +264,24 @@ class PropertyDocblockManipulator
                 || $manipulator->docblock_start !== $manipulator->docblock_end
             ) {
                 $file_manipulations[$manipulator->docblock_start] = new FileManipulation(
-                    $manipulator->docblock_start,
+                    $manipulator->docblock_start
+                        - ($manipulator->add_newline ? strlen($manipulator->indentation) : 0),
                     $manipulator->docblock_end,
-                    $manipulator->getDocblock()
+                    ($manipulator->add_newline ? "\n" . $manipulator->indentation : '')
+                        . $manipulator->getDocblock()
                 );
             }
         }
 
         return $file_manipulations;
+    }
+
+    /**
+     * @return void
+     */
+    public static function clearCache()
+    {
+        self::$manipulators = [];
+        self::$ordered_manipulators = [];
     }
 }

@@ -759,8 +759,13 @@ class InstancePropertyAssignmentAnalyzer
                     $context
                 );
 
-                if (!$class_property_type) {
-                    $class_property_type = Type::getMixed();
+                if (!$class_property_type
+                    || (isset($declaring_class_storage->properties[$prop_name])
+                        && !$declaring_class_storage->properties[$prop_name]->type_location)
+                ) {
+                    if (!$class_property_type) {
+                        $class_property_type = Type::getMixed();
+                    }
 
                     $source_analyzer = $statements_analyzer->getSource()->getSource();
 
@@ -779,7 +784,9 @@ class InstancePropertyAssignmentAnalyzer
                                     : Type::combineUnionTypes(Type::getNull(), $assignment_value_type);
                         }
                     }
-                } else {
+                }
+
+                if (!$class_property_type->isMixed()) {
                     $class_property_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
                         $codebase,
                         clone $class_property_type,
