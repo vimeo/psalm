@@ -351,6 +351,7 @@ class ProjectAnalyzer
             '.txt' => Report::TYPE_TEXT,
             '.emacs' => Report::TYPE_EMACS,
             '.pylint' => Report::TYPE_PYLINT,
+            '.console' => Report::TYPE_CONSOLE,
         ];
 
         foreach ($report_file_paths as $report_file_path) {
@@ -361,6 +362,7 @@ class ProjectAnalyzer
                     $o->format = $type;
                     $o->show_info = $show_info;
                     $o->output_path = $report_file_path;
+                    $o->use_color = false;
                     $report_options[] = $o;
                     continue 2;
                 }
