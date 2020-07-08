@@ -417,7 +417,8 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         && !$storage->if_this_is_type->equals($class_type)) {
                         if (IssueBuffer::accepts(
                             new IfThisIsMismatch(
-                                'Class is not ' . (string) $storage->if_this_is_type . ' as required by psalm-if-this-is',
+                                'Class is not ' . (string) $storage->if_this_is_type
+                                . ' as required by psalm-if-this-is',
                                 new CodeLocation($source, $stmt->name)
                             ),
                             $statements_analyzer->getSuppressedIssues()
