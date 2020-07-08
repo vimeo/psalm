@@ -415,15 +415,15 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     $storage = $codebase->methods->getStorage($method_id);
                     if ($storage->if_this_is_type
                         && !$storage->if_this_is_type->equals($class_type)) {
-                            if (IssueBuffer::accepts(
-                                new IfThisIsMismatch(
-                                    'Class is not ' . (string) $storage->if_this_is_type . ' as required by psalm-if-this-is',
-                                    new CodeLocation($source, $stmt->name)
-                                ),
-                                $statements_analyzer->getSuppressedIssues()
-                            )) {
-                                // keep going
-                            }
+                        if (IssueBuffer::accepts(
+                            new IfThisIsMismatch(
+                                'Class is not ' . (string) $storage->if_this_is_type . ' as required by psalm-if-this-is',
+                                new CodeLocation($source, $stmt->name)
+                            ),
+                            $statements_analyzer->getSuppressedIssues()
+                        )) {
+                            // keep going
+                        }
                     }
                     if ($storage->self_out_type) {
                         $self_out_type = $storage->self_out_type;
