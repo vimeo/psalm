@@ -499,7 +499,8 @@ class SwitchCaseAnalyzer
                 new ParadoxicalCondition(
                     'All possible case statements have been met, default is impossible here',
                     new CodeLocation($statements_analyzer->getSource(), $case)
-                )
+                ),
+                $statements_analyzer->getSuppressedIssues()
             )) {
                 return false;
             }
