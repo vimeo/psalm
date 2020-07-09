@@ -304,8 +304,8 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
         $symbol_at_position = $codebase->getReferenceAtPosition('somefile.php', new Position(6, 26));
 
         $this->assertNotNull($symbol_at_position);
-        $this->assertSame( 16, $symbol_at_position[1]->start->character );
-        $this->assertSame( 30, $symbol_at_position[1]->end->character );
+        $this->assertSame(16, $symbol_at_position[1]->start->character);
+        $this->assertSame(30, $symbol_at_position[1]->end->character);
     }
 
     /**
