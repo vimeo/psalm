@@ -1217,8 +1217,8 @@ class Codebase
             return null;
         }
 
-        $start_pos = null;
-        $end_pos = null;
+        $reference_start_pos = null;
+        $reference_end_pos = null;
 
         ksort($reference_map);
 
@@ -1230,17 +1230,18 @@ class Codebase
             if ($offset > $end_pos) {
                 continue;
             }
-
+            $reference_start_pos = $start_pos;
+            $reference_end_pos = $end_pos;
             $reference = $possible_reference;
         }
 
-        if ($reference === null || $start_pos === null || $end_pos === null) {
+        if ($reference === null || $reference_start_pos === null || $reference_end_pos === null) {
             return null;
         }
 
         $range = new Range(
-            self::getPositionFromOffset($start_pos, $file_contents),
-            self::getPositionFromOffset($end_pos, $file_contents)
+            self::getPositionFromOffset($reference_start_pos, $file_contents),
+            self::getPositionFromOffset($reference_end_pos, $file_contents)
         );
 
         return [$reference, $range];
