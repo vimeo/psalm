@@ -588,7 +588,7 @@ class ConditionalReturnTypeTest extends TestCase
                         }
                     }'
             ],
-            'checkNullOrFalse' => [
+            'SKIPPED-checkNullOrFalse' => [
                 '<?php
                     /**
                      * @template T of mixed|false|null
