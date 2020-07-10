@@ -135,7 +135,14 @@ class ArrayFunctionArgumentsAnalyzer
     ) {
         $array_arg = $args[0]->value;
 
-        if ($is_push) {
+        $unpacked_args = array_filter(
+            $args,
+            function($arg) {
+                return $arg->unpack;
+            }
+        );
+
+        if ($is_push && !$unpacked_args) {
             for ($i = 1; $i < count($args); $i++) {
                 if (ExpressionAnalyzer::analyze(
                     $statements_analyzer,
