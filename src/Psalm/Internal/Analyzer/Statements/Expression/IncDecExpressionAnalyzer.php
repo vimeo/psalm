@@ -89,7 +89,7 @@ class IncDecExpressionAnalyzer
                     $context->assigned_var_ids[$var_id] = true;
                     $context->possibly_assigned_var_ids[$var_id] = true;
 
-                    if (!$context->inside_isset || !$context->inside_loop) {
+                    if (!$context->inside_isset) {
                         $statements_analyzer->registerVariableAssignment(
                             $var_id,
                             $location
