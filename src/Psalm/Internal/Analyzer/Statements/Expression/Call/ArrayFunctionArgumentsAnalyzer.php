@@ -3,6 +3,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use PhpParser;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
@@ -133,6 +134,38 @@ class ArrayFunctionArgumentsAnalyzer
         bool $is_push
     ) {
         $array_arg = $args[0]->value;
+
+        if ($is_push) {
+            for ($i = 1; $i < count($args); $i++) {
+                if (ExpressionAnalyzer::analyze(
+                    $statements_analyzer,
+                    $args[$i]->value,
+                    $context
+                ) === false) {
+                    return false;
+                }
+
+                $old_node_data = $statements_analyzer->node_data;
+
+                $statements_analyzer->node_data = clone $statements_analyzer->node_data;
+
+                ArrayAssignmentAnalyzer::analyze(
+                    $statements_analyzer,
+                    new PhpParser\Node\Expr\ArrayDimFetch(
+                        $args[0]->value,
+                        null,
+                        $args[$i]->value->getAttributes()
+                    ),
+                    $context,
+                    $args[$i]->value,
+                    $statements_analyzer->node_data->getType($args[$i]->value) ?: Type::getMixed()
+                );
+
+                $statements_analyzer->node_data = $old_node_data;
+            }
+
+            return;
+        }
 
         $context->inside_call = true;
 
