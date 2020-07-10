@@ -587,9 +587,9 @@ if ($config->find_unused_variables || $find_unused_variables) {
     $project_analyzer->getCodebase()->reportUnusedVariables();
 }
 
-if (isset($options['track-tainted-input'])
+if ($config->run_taint_analysis || (isset($options['track-tainted-input'])
     || isset($options['security-analysis'])
-    || isset($options['taint-analysis'])
+    || isset($options['taint-analysis']))
 ) {
     $project_analyzer->trackTaintedInputs();
 }

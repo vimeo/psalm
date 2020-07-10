@@ -305,6 +305,16 @@ For backwards compatibility, this defaults to `true`, but if you do not rely on 
 
 When `true`, Psalm will treat all classes as if they had sealed methods, meaning that if you implement the magic method `__call`, you also have to add `@method` for each magic method. Defaults to false.
 
+#### runTaintAnalysis
+
+```xml
+<psalm
+  runTaintAnalysis="[bool]"
+>
+```
+
+When `true`, Psalm will run [Taint Analysis](../security_analysis/index.md) on your codebase. This config is the same as if you were running Psalm with `--taint-analysis`.
+
 ### Running Psalm
 
 #### autoloader
