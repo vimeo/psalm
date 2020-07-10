@@ -400,6 +400,11 @@ class Config
     public $find_unused_variables = false;
 
     /**
+     * @var bool
+     */
+    public $run_taint_analysis = false;
+
+    /**
      * Whether to resolve file and directory paths from the location of the config file,
      * instead of the current working directory.
      *
@@ -801,7 +806,8 @@ class Config
             'ensureArrayIntOffsetsExist' => 'ensure_array_int_offsets_exist',
             'reportMixedIssues' => 'show_mixed_issues',
             'skipChecksOnUnresolvableIncludes' => 'skip_checks_on_unresolvable_includes',
-            'sealAllMethods' => 'seal_all_methods'
+            'sealAllMethods' => 'seal_all_methods',
+            'runTaintAnalysis' => 'run_taint_analysis',
         ];
 
         foreach ($booleanAttributes as $xmlName => $internalName) {
