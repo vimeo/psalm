@@ -588,12 +588,13 @@ class ConditionalReturnTypeTest extends TestCase
                         }
                     }'
             ],
-            'SKIPPED-checkNullOrFalse' => [
+            'checkNullOrFalse' => [
                 '<?php
                     /**
                      * @template T of mixed|false|null
                      * @param T $i
                      * @return (T is false ? no-return : T is null ? no-return : T)
+                     * @psalm-suppress LessSpecificReturnType
                      */
                     function orThrow($i) {
                         if ($i === false || $i === null) {
