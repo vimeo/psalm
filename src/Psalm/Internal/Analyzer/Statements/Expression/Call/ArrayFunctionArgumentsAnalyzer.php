@@ -235,11 +235,7 @@ class ArrayFunctionArgumentsAnalyzer
                     );
                 } else {
                     if ($objectlike_list) {
-                        if ($is_push) {
-                            \array_push($objectlike_list->properties, $arg_value_type);
-                        } else {
-                            \array_unshift($objectlike_list->properties, $arg_value_type);
-                        }
+                        \array_unshift($objectlike_list->properties, $arg_value_type);
 
                         $by_ref_type = new Type\Union([$objectlike_list]);
                     } elseif ($array_type instanceof TList) {
