@@ -277,8 +277,6 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
 
     /**
      * @return void
-    /**
-     * @return void
      */
     public function testGetSymbolPositionMethodWrongReturnType()
     {
