@@ -4,6 +4,7 @@ namespace Psalm\Tests;
 use const DIRECTORY_SEPARATOR;
 use function getcwd;
 use Psalm\Config;
+use Psalm\Internal\IncludeCollector;
 
 class TestConfig extends Config
 {
@@ -33,6 +34,7 @@ class TestConfig extends Config
         }
 
         $this->project_files = self::$cached_project_files;
+        $this->setIncludeCollector(new IncludeCollector());
 
         $this->collectPredefinedConstants();
         $this->collectPredefinedFunctions();

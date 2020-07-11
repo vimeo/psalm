@@ -5,6 +5,7 @@ use Psalm\ErrorBaseline;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider;
 use Psalm\Config;
+use Psalm\Internal\IncludeCollector;
 use Psalm\IssueBuffer;
 use Psalm\Progress\DebugProgress;
 use Psalm\Progress\DefaultProgress;
@@ -213,7 +214,14 @@ $path_to_config = get_path_to_config($options);
 
 $vendor_dir = getVendorDir($current_dir);
 
-$first_autoloader = requireAutoloaders($current_dir, isset($options['r']), $vendor_dir);
+require_once __DIR__ . '/' . 'Psalm/Internal/IncludeCollector.php';
+
+$include_collector = new IncludeCollector();
+$first_autoloader = $include_collector->runAndCollect(
+    function () use ($current_dir, $options, $vendor_dir) {
+        return requireAutoloaders($current_dir, isset($options['r']), $vendor_dir);
+    }
+);
 
 
 if (array_key_exists('v', $options)) {
@@ -311,6 +319,8 @@ if (isset($options['i'])) {
         $config->level = $config_level;
     }
 }
+
+$config->setIncludeCollector($include_collector);
 
 if ($config->resolve_from_config_file) {
     $current_dir = $config->base_dir;

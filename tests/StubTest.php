@@ -11,6 +11,7 @@ use const DIRECTORY_SEPARATOR;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
+use Psalm\Internal\IncludeCollector;
 use Psalm\Tests\Internal\Provider;
 
 class StubTest extends TestCase
@@ -59,6 +60,7 @@ class StubTest extends TestCase
         );
         $project_analyzer->setPhpVersion('7.3');
 
+        $config->setIncludeCollector(new IncludeCollector());
         $config->visitComposerAutoloadFiles($project_analyzer, null);
 
         return $project_analyzer;
