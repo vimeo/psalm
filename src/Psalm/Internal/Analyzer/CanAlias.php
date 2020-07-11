@@ -63,6 +63,12 @@ trait CanAlias
                     break;
 
                 case PhpParser\Node\Stmt\Use_::TYPE_NORMAL:
+                    $codebase->analyzer->addOffsetReference(
+                        $this->getFilePath(),
+                        (int) $use->getAttribute('startFilePos'),
+                        (int) $use->getAttribute('endFilePos'),
+                        $use_path
+                    );
                     if ($codebase->collect_locations) {
                         // register the path
                         $codebase->use_referencing_locations[strtolower($use_path)][] =

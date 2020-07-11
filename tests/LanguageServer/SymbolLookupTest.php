@@ -278,6 +278,33 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
     /**
      * @return void
      */
+    public function testGetSymbolPositionUseStatement()
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace B;
+                use StreamWrapper;
+                '
+        );
+
+        $codebase->file_provider->openFile('somefile.php');
+        $codebase->scanFiles();
+        $this->analyzeFile('somefile.php', new Context());
+
+        $symbol_at_position = $codebase->getReferenceAtPosition('somefile.php', new Position(2, 25));
+        $this->assertNotNull($symbol_at_position);
+
+        $this->assertSame('StreamWrapper', $symbol_at_position[0]);
+    }
+
+    /**
+     * @return void
+     */
     public function testGetSymbolPositionRange()
     {
         $codebase = $this->project_analyzer->getCodebase();
