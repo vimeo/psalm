@@ -505,6 +505,17 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
         }
 
+        if ($storage->signature_return_type && $storage->signature_return_type_location) {
+            list($start, $end) = $storage->signature_return_type_location->getSelectionBounds();
+
+            $codebase->analyzer->addOffsetReference(
+                $this->getFilePath(),
+                $start,
+                $end,
+                (string) $storage->signature_return_type
+            );
+        }
+
         if (ReturnTypeAnalyzer::checkReturnType(
             $this->function,
             $project_analyzer,
@@ -574,17 +585,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     );
                 }
             }
-        }
-
-        if ($storage->signature_return_type && $storage->signature_return_type_location) {
-            list($start, $end) = $storage->signature_return_type_location->getSelectionBounds();
-
-            $codebase->analyzer->addOffsetReference(
-                $this->getFilePath(),
-                $start,
-                $end,
-                (string) $storage->signature_return_type
-            );
         }
 
         if ($this->function instanceof Closure
@@ -977,13 +977,17 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $signature_type_location = $function_param->signature_type_location;
 
             if ($signature_type && $signature_type_location && $signature_type->hasObjectType()) {
+                $referenced_type = $signature_type;
+                if ($referenced_type->isNullable()) {
+                    $referenced_type = clone $referenced_type;
+                    $referenced_type->removeType('null');
+                }
                 list($start, $end) = $signature_type_location->getSelectionBounds();
-
                 $codebase->analyzer->addOffsetReference(
                     $this->getFilePath(),
                     $start,
                     $end,
-                    (string) $signature_type
+                    (string) $referenced_type
                 );
             }
 
