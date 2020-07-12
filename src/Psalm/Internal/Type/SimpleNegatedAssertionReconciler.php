@@ -147,7 +147,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             );
         }
 
-        if ($assertion === 'null' && !$existing_var_type->hasMixed()) {
+        if ($assertion === 'null' && !$existing_var_type->isMixed()) {
             return self::reconcileNull(
                 $existing_var_type,
                 $key,
@@ -158,7 +158,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             );
         }
 
-        if ($assertion === 'false' && !$existing_var_type->hasMixed()) {
+        if ($assertion === 'false' && !$existing_var_type->isMixed()) {
             return self::reconcileFalse(
                 $existing_var_type,
                 $key,
@@ -390,6 +390,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                     $is_equality
                 );
 
+                $did_remove_type = true;
                 $existing_var_type->bustCache();
             }
         }
@@ -452,6 +453,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                     $is_equality
                 );
 
+                $did_remove_type = true;
                 $existing_var_type->bustCache();
             }
         }

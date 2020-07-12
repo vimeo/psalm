@@ -1670,6 +1670,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             $project_analyzer = ProjectAnalyzer::getInstance();
 
             if ($codebase->alter_code
+                && $source === $this
                 && isset($project_analyzer->getIssuesToFix()['MissingPropertyType'])
                 && !\in_array('MissingPropertyType', $this->getSuppressedIssues())
                 && $suggested_type

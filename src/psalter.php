@@ -4,6 +4,7 @@ require_once('command_functions.php');
 use Psalm\DocComment;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Config;
+use Psalm\Internal\IncludeCollector;
 use Psalm\IssueBuffer;
 use Psalm\Progress\DebugProgress;
 use Psalm\Progress\DefaultProgress;
@@ -185,7 +186,14 @@ if (isset($options['r']) && is_string($options['r'])) {
 
 $vendor_dir = getVendorDir($current_dir);
 
-$first_autoloader = requireAutoloaders($current_dir, isset($options['r']), $vendor_dir);
+require_once __DIR__ . '/Psalm/Internal/IncludeCollector.php';
+$include_collector = new IncludeCollector();
+$first_autoloader = $include_collector->runAndCollect(
+    function () use ($current_dir, $options, $vendor_dir) {
+        return requireAutoloaders($current_dir, isset($options['r']), $vendor_dir);
+    }
+);
+
 
 // If Xdebug is enabled, restart without it
 (new \Composer\XdebugHandler\XdebugHandler('PSALTER'))->check();
@@ -195,6 +203,7 @@ $paths_to_check = getPathsToCheck(isset($options['f']) ? $options['f'] : null);
 $path_to_config = get_path_to_config($options);
 
 $config = initialiseConfig($path_to_config, $current_dir, \Psalm\Report::TYPE_CONSOLE, $first_autoloader);
+$config->setIncludeCollector($include_collector);
 
 if ($config->resolve_from_config_file) {
     $current_dir = $config->base_dir;

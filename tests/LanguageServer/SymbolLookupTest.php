@@ -278,6 +278,128 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
     /**
      * @return void
      */
+    public function testGetSymbolPositionNullableArg()
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace B;
+                class AClass {
+                }
+                function B( ?AClass $class ) {
+                }'
+        );
+
+        $codebase->file_provider->openFile('somefile.php');
+        $codebase->scanFiles();
+        $this->analyzeFile('somefile.php', new Context());
+
+        $symbol_at_position = $codebase->getReferenceAtPosition('somefile.php', new Position(4, 33));
+        $this->assertNotNull($symbol_at_position);
+
+        $this->assertSame('B\AClass', $symbol_at_position[0]);
+    }
+  
+    /**
+     * @return void
+     */
+    public function testGetSymbolPositionMethodWrongReturnType()
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace B;
+                class AClass {
+                    /**
+                     * @return Some
+                     */
+                    protected function get_command() : AClass {
+                    }
+                }
+                '
+        );
+
+        $codebase->file_provider->openFile('somefile.php');
+        $codebase->scanFiles();
+        $this->analyzeFile('somefile.php', new Context());
+
+        $symbol_at_position = $codebase->getReferenceAtPosition('somefile.php', new Position(6, 60));
+        $this->assertNotNull($symbol_at_position);
+
+        $this->assertSame('B\AClass', $symbol_at_position[0]);
+    }
+  
+    /**
+     * @return void
+     */
+    public function testGetSymbolPositionUseStatement()
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace B;
+                use StreamWrapper;
+                '
+        );
+
+        $codebase->file_provider->openFile('somefile.php');
+        $codebase->scanFiles();
+        $this->analyzeFile('somefile.php', new Context());
+
+        $symbol_at_position = $codebase->getReferenceAtPosition('somefile.php', new Position(2, 25));
+        $this->assertNotNull($symbol_at_position);
+
+        $this->assertSame('StreamWrapper', $symbol_at_position[0]);
+    }
+
+    /**
+     * @return void
+     */
+    public function testGetSymbolPositionRange()
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace B;
+
+                function foo() : string {
+                }
+
+                $active_symbol = foo();'
+        );
+
+        $codebase->file_provider->openFile('somefile.php');
+        $codebase->scanFiles();
+        $this->analyzeFile('somefile.php', new Context());
+
+        // This is focusing the $active_symbol variable, the LSP Range that is
+        // returned should also point to the same variable (that's where hover popovers will show)
+        $symbol_at_position = $codebase->getReferenceAtPosition('somefile.php', new Position(6, 26));
+
+        $this->assertNotNull($symbol_at_position);
+        $this->assertSame(16, $symbol_at_position[1]->start->character);
+        $this->assertSame(30, $symbol_at_position[1]->end->character);
+    }
+
+    /**
+     * @return void
+     */
     public function testGetTypeInDocblock()
     {
         $codebase = $this->project_analyzer->getCodebase();

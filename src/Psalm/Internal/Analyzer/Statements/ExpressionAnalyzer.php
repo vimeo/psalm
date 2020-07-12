@@ -69,7 +69,10 @@ class ExpressionAnalyzer
                     $stmt,
                     $context->self,
                     $statements_analyzer,
-                    $codebase
+                    $codebase,
+                    false,
+                    true,
+                    false
                 );
             }
         }

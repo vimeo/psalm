@@ -3,6 +3,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use PhpParser;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
@@ -134,6 +135,45 @@ class ArrayFunctionArgumentsAnalyzer
     ) {
         $array_arg = $args[0]->value;
 
+        $unpacked_args = array_filter(
+            $args,
+            function ($arg) {
+                return $arg->unpack;
+            }
+        );
+
+        if ($is_push && !$unpacked_args) {
+            for ($i = 1; $i < count($args); $i++) {
+                if (ExpressionAnalyzer::analyze(
+                    $statements_analyzer,
+                    $args[$i]->value,
+                    $context
+                ) === false) {
+                    return false;
+                }
+
+                $old_node_data = $statements_analyzer->node_data;
+
+                $statements_analyzer->node_data = clone $statements_analyzer->node_data;
+
+                ArrayAssignmentAnalyzer::analyze(
+                    $statements_analyzer,
+                    new PhpParser\Node\Expr\ArrayDimFetch(
+                        $args[0]->value,
+                        null,
+                        $args[$i]->value->getAttributes()
+                    ),
+                    $context,
+                    $args[$i]->value,
+                    $statements_analyzer->node_data->getType($args[$i]->value) ?: Type::getMixed()
+                );
+
+                $statements_analyzer->node_data = $old_node_data;
+            }
+
+            return;
+        }
+
         $context->inside_call = true;
 
         if (ExpressionAnalyzer::analyze(
@@ -202,11 +242,7 @@ class ArrayFunctionArgumentsAnalyzer
                     );
                 } else {
                     if ($objectlike_list) {
-                        if ($is_push) {
-                            \array_push($objectlike_list->properties, $arg_value_type);
-                        } else {
-                            \array_unshift($objectlike_list->properties, $arg_value_type);
-                        }
+                        \array_unshift($objectlike_list->properties, $arg_value_type);
 
                         $by_ref_type = new Type\Union([$objectlike_list]);
                     } elseif ($array_type instanceof TList) {

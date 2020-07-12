@@ -88,11 +88,15 @@ class IncDecExpressionAnalyzer
                     $location = new CodeLocation($statements_analyzer, $stmt->var);
                     $context->assigned_var_ids[$var_id] = true;
                     $context->possibly_assigned_var_ids[$var_id] = true;
-                    $statements_analyzer->registerVariableAssignment(
-                        $var_id,
-                        $location
-                    );
-                    $context->unreferenced_vars[$var_id] = [$location->getHash() => $location];
+
+                    if (!$context->inside_isset) {
+                        $statements_analyzer->registerVariableAssignment(
+                            $var_id,
+                            $location
+                        );
+
+                        $context->unreferenced_vars[$var_id] = [$location->getHash() => $location];
+                    }
                 }
 
                 // removes dependent vars from $context

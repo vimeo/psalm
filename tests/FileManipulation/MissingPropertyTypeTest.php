@@ -261,6 +261,33 @@ class MissingPropertyTypeTest extends FileManipulationTest
                 ['MissingPropertyType'],
                 true,
             ],
+            'dontAddMissingPropertyTypeInTrait' => [
+                '<?php
+                    trait T {
+                        public $u;
+                    }
+                    class A {
+                        use T;
+
+                        public function bar() {
+                            $this->u = 5;
+                        }
+                    }',
+                '<?php
+                    trait T {
+                        public $u;
+                    }
+                    class A {
+                        use T;
+
+                        public function bar() {
+                            $this->u = 5;
+                        }
+                    }',
+                '7.4',
+                ['MissingPropertyType'],
+                true,
+            ],
         ];
     }
 }
