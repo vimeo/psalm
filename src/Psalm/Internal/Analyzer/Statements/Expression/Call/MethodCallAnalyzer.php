@@ -5,6 +5,7 @@ use PhpParser;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Analyzer\TypeAnalyzer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\CodeLocation;
 use Psalm\Context;
@@ -414,7 +415,12 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 if ($codebase->methods->hasStorage($method_id)) {
                     $storage = $codebase->methods->getStorage($method_id);
                     if ($storage->if_this_is_type
-                        && !$storage->if_this_is_type->equals($class_type)) {
+                        && !TypeAnalyzer::isContainedBy(
+                            $codebase,
+                            $storage->if_this_is_type,
+                            $class_type
+                        )
+                    ) {
                         if (IssueBuffer::accepts(
                             new IfThisIsMismatch(
                                 'Class is not ' . (string) $storage->if_this_is_type
