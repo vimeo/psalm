@@ -197,7 +197,12 @@ class AssertionFinder
                 throw new \UnexpectedValueException('Assertions should be set');
             }
 
+            if (count($expr_assertions) !== 1) {
+                return [];
+            }
+
             $if_types = \Psalm\Type\Algebra::negateTypes($expr_assertions);
+
             return $if_types;
         }
 
