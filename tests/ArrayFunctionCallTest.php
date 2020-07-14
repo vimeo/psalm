@@ -811,11 +811,12 @@ class ArrayFunctionCallTest extends TestCase
                     $h = array_column(makeGenericArray(), 0);
                     $i = array_column(makeShapeArray(), 0);
                     $j = array_column(makeUnionArray(), 0);
+                    $k = array_column([[0 => "test"]], 0);
                 ',
                 'assertions' => [
-                    '$a' => 'list<int>',
-                    '$b' => 'list<int>',
-                    '$c' => 'array<string, int>',
+                    '$a' => 'non-empty-list<int>',
+                    '$b' => 'non-empty-list<int>',
+                    '$c' => 'non-empty-array<string, int>',
                     '$d' => 'list<mixed>',
                     '$e' => 'list<mixed>',
                     '$f' => 'array<array-key, mixed>',
@@ -823,6 +824,7 @@ class ArrayFunctionCallTest extends TestCase
                     '$h' => 'list<mixed>',
                     '$i' => 'list<string>',
                     '$j' => 'list<mixed>',
+                    '$k' => 'non-empty-list<string>',
                 ],
             ],
             'splatArrayIntersect' => [
