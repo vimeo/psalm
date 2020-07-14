@@ -821,7 +821,7 @@ class ArrayFunctionCallTest extends TestCase
                     '$f' => 'array<array-key, mixed>',
                     '$g' => 'list<mixed>',
                     '$h' => 'list<mixed>',
-                    '$i' => 'list<string>',
+                    '$i' => 'non-empty-list<string>',
                     '$j' => 'list<mixed>',
                 ],
             ],
