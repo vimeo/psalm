@@ -46,6 +46,19 @@ class SwitchAnalyzer
             $statements_analyzer
         );
 
+        if (!$switch_var_id
+            && ($stmt->cond instanceof PhpParser\Node\Expr\FuncCall
+                || $stmt->cond instanceof PhpParser\Node\Expr\MethodCall
+                || $stmt->cond instanceof PhpParser\Node\Expr\StaticCall
+            )
+        ) {
+            $switch_var_id = '$__tmp_switch__' . (int) $stmt->cond->getAttribute('startFilePos');
+
+            $condition_type = $statements_analyzer->node_data->getType($stmt->cond) ?: Type::getMixed();
+
+            $context->vars_in_scope[$switch_var_id] = $condition_type;
+        }
+
         $original_context = clone $context;
 
         // the last statement always breaks, by default
