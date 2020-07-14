@@ -299,7 +299,8 @@ class Functions
     ) : bool {
         $impure_functions = [
             // file io
-            'chdir', 'chgrp', 'chmod', 'chown', 'chroot', 'closedir', 'copy', 'file_put_contents',
+            'chdir', 'chgrp', 'chmod', 'chown', 'chroot', 'copy', 'file_put_contents',
+            'opendir', 'readdir', 'closedir', 'rewinddir', 'scandir',
             'fopen', 'fread', 'fwrite', 'fclose', 'touch', 'fpassthru', 'fputs', 'fscanf', 'fseek',
             'ftruncate', 'fprintf', 'symlink', 'mkdir', 'unlink', 'rename', 'rmdir', 'popen', 'pclose',
             'fgetcsv', 'fputcsv', 'umask', 'finfo_close', 'readline_add_history', 'stream_set_timeout',
