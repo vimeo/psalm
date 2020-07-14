@@ -3202,6 +3202,13 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                     }',
                 'error_message' => 'ArgumentTypeCoercion',
             ],
+            'getClassCannotBeStringEquals' => [
+                '<?php
+                    function foo(Exception $e) : void {
+                        if (get_class($e) == "InvalidArgumentException") {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
         ];
     }
 }

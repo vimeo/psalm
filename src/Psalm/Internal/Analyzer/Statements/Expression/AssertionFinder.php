@@ -1010,7 +1010,10 @@ class AssertionFinder
             if ($codebase
                 && $other_type
                 && $var_type
-                && $conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
+                && ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
+                    || ($other_type->isString()
+                        && $var_type->isString())
+                )
             ) {
                 $parent_source = $source->getSource();
 
