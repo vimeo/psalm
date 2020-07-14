@@ -802,7 +802,7 @@ class ArrayFunctionCallTest extends TestCase
                     /** @return array<array{0:string}|int> */
                     function makeUnionArray(): array { return []; }
                     /** @return non-empty-array<array{0:string}> */
-                    function makeNonEmptyShapeArray(): array { return []; }
+                    function makeNonEmptyShapeArray(): array { return ["test"]; }
                     $a = array_column([[1], [2], [3]], 0);
                     $b = array_column([["a" => 1], ["a" => 2], ["a" => 3]], "a");
                     $c = array_column([["k" => "a", "v" => 1], ["k" => "b", "v" => 2]], "v", "k");
