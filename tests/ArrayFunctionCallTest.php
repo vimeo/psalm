@@ -813,9 +813,9 @@ class ArrayFunctionCallTest extends TestCase
                     $j = array_column(makeUnionArray(), 0);
                 ',
                 'assertions' => [
-                    '$a' => 'list<int>',
-                    '$b' => 'list<int>',
-                    '$c' => 'array<string, int>',
+                    '$a' => 'non-empty-list<int>',
+                    '$b' => 'non-empty-list<int>',
+                    '$c' => 'non-empty-array<string, int>',
                     '$d' => 'list<mixed>',
                     '$e' => 'list<mixed>',
                     '$f' => 'array<array-key, mixed>',
