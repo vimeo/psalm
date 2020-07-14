@@ -135,8 +135,7 @@ function array_flip(array $arr)
  *
  * @param array<TKey, mixed> $arr
  *
- * @return TKey|null
- * @psalm-ignore-nullable-return
+ * @return (TKey is empty ? null : ($arr is non-empty-array ? TKey : TKey|null))
  * @psalm-pure
  */
 function key($arr)
@@ -148,8 +147,7 @@ function key($arr)
  *
  * @param array<TKey, mixed> $arr
  *
- * @return TKey|null
- * @psalm-ignore-nullable-return
+ * @return (TKey is empty ? null : ($arr is non-empty-array ? TKey : TKey|null))
  * @psalm-pure
  */
 function array_key_first($arr)
@@ -161,8 +159,7 @@ function array_key_first($arr)
  *
  * @param array<TKey, mixed> $arr
  *
- * @return TKey|null
- * @psalm-ignore-nullable-return
+ * @return (TKey is empty ? null : ($arr is non-empty-array ? TKey : TKey|null))
  * @psalm-pure
  */
 function array_key_last($arr)

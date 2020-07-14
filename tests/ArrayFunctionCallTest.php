@@ -766,30 +766,79 @@ class ArrayFunctionCallTest extends TestCase
                 '<?php
                     $a = ["one" => 1, "two" => 3];
                     $b = key($a);
-                    $c = $a[$b];',
+                    $c = null;
+                    if ($b !== null) {
+                        $c = $a[$b];
+                    }',
                 'assertions' => [
                     '$b' => 'null|string',
-                    '$c' => 'int',
+                    '$c' => 'int|null',
                 ],
             ],
-            'array_key_first' => [
+            'arrayKeyFirst' => [
+                '<?php
+                    /** @return array<string, int> */
+                    function makeArray(): array { return ["one" => 1, "two" => 3]; }
+                    $a = makeArray();
+                    $b = array_key_first($a);
+                    $c = null;
+                    if ($b !== null) {
+                        $c = $a[$b];
+                    }',
+                'assertions' => [
+                    '$b' => 'null|string',
+                    '$c' => 'int|null',
+                ],
+            ],
+            'arrayKeyFirstNonEmpty' => [
                 '<?php
                     $a = ["one" => 1, "two" => 3];
                     $b = array_key_first($a);
                     $c = $a[$b];',
                 'assertions' => [
-                    '$b' => 'null|string',
+                    '$b' => 'string',
                     '$c' => 'int',
                 ],
             ],
-            'array_key_last' => [
+            'arrayKeyFirstEmpty' => [
+                '<?php
+                    $a = [];
+                    $b = array_key_first($a);',
+                'assertions' => [
+                    '$b' => 'null'
+                ],
+            ],
+            'arrayKeyLast' => [
+                '<?php
+                    /** @return array<string, int> */
+                    function makeArray(): array { return ["one" => 1, "two" => 3]; }
+                    $a = makeArray();
+                    $b = array_key_last($a);
+                    $c = null;
+                    if ($b !== null) {
+                        $c = $a[$b];
+                    }',
+                'assertions' => [
+                    '$b' => 'null|string',
+                    '$c' => 'int|null',
+                ],
+            ],
+            'arrayKeyLastNonEmpty' => [
                 '<?php
                     $a = ["one" => 1, "two" => 3];
                     $b = array_key_last($a);
                     $c = $a[$b];',
                 'assertions' => [
-                    '$b' => 'null|string',
+                    '$b' => 'string',
                     '$c' => 'int',
+                ],
+            ],
+            'arrayKeyLastEmpty' => [
+                '<?php
+                    $a = [];
+                    $b = array_key_last($a);',
+                'assertions' => [
+                    '$b' => 'null'
                 ],
             ],
             'arrayColumnInference' => [
