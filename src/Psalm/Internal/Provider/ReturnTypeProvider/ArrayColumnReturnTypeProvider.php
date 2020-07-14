@@ -107,11 +107,11 @@ class ArrayColumnReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
 
         if (isset($call_args[2]) && (string)$third_arg_type !== 'null') {
             $type = $have_at_least_one_res ?
-                (new Type\Atomic\TNonEmptyArray([$result_key_type, $result_element_type ?? Type::getMixed()]))
+                new Type\Atomic\TNonEmptyArray([$result_key_type, $result_element_type ?? Type::getMixed()])
                 : new Type\Atomic\TArray([$result_key_type, $result_element_type ?? Type::getMixed()]);
         } else {
             $type = $have_at_least_one_res ?
-                (new Type\Atomic\TNonEmptyList($result_element_type ?? Type::getMixed()))
+                new Type\Atomic\TNonEmptyList($result_element_type ?? Type::getMixed())
                 : new Type\Atomic\TList($result_element_type ?? Type::getMixed());
         }
 
