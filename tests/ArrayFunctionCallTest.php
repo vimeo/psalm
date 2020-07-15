@@ -765,14 +765,9 @@ class ArrayFunctionCallTest extends TestCase
             'key' => [
                 '<?php
                     $a = ["one" => 1, "two" => 3];
-                    $b = key($a);
-                    $c = null;
-                    if ($b !== null) {
-                        $c = $a[$b];
-                    }',
+                    $b = key($a);',
                 'assertions' => [
-                    '$b' => 'null|string',
-                    '$c' => 'int|null',
+                    '$b' => 'string',
                 ],
             ],
             'arrayKeyFirst' => [
