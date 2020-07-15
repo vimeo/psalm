@@ -132,10 +132,11 @@ function array_flip(array $arr)
 
 /**
  * @psalm-template TKey as array-key
+ * @psalm-template TArray as array<TKey, mixed>
  *
- * @param array<TKey, mixed> $arr
+ * @param TArray $arr
  *
- * @return (TKey is empty ? null : ($arr is non-empty-array ? TKey : TKey|null))
+ * @return (TArray is array<empty, empty> ? null : (TArray is non-empty-array ? TKey : TKey|null))
  * @psalm-pure
  */
 function key($arr)
@@ -144,10 +145,11 @@ function key($arr)
 
 /**
  * @psalm-template TKey as array-key
+ * @psalm-template TArray as array<TKey, mixed>
  *
- * @param array<TKey, mixed> $arr
+ * @param TArray $arr
  *
- * @return (TKey is empty ? null : ($arr is non-empty-array ? TKey : TKey|null))
+ * @return (TArray is array<empty, empty> ? null : (TArray is non-empty-array ? TKey : TKey|null))
  * @psalm-pure
  */
 function array_key_first($arr)
@@ -156,10 +158,11 @@ function array_key_first($arr)
 
 /**
  * @psalm-template TKey as array-key
+ * @psalm-template TArray as array<TKey, mixed>
  *
- * @param array<TKey, mixed> $arr
+ * @param TArray $arr
  *
- * @return (TKey is empty ? null : ($arr is non-empty-array ? TKey : TKey|null))
+ * @return (TArray is array<empty, empty> ? null : (TArray is non-empty-array ? TKey : TKey|null))
  * @psalm-pure
  */
 function array_key_last($arr)

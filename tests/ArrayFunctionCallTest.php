@@ -770,6 +770,16 @@ class ArrayFunctionCallTest extends TestCase
                     '$b' => 'string',
                 ],
             ],
+            'keyNonEmptyArray' => [
+                '<?php
+                    /**
+                     * @param non-empty-array $arr
+                     * @return array-key
+                     */
+                    function foo(array $arr) {
+                        return key($arr);
+                    }',
+            ],
             'arrayKeyFirst' => [
                 '<?php
                     /** @return array<string, int> */
