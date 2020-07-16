@@ -100,8 +100,43 @@ class MethodCallTest extends TestCase
         $this->analyzeFile('somefile.php', new \Psalm\Context());
     }
 
+    /**
+     * @return void
+     */
+    public function testPropertyMethodCallMutationFreeMemoize()
+    {
+        $this->project_analyzer->getConfig()->memoize_method_calls = true;
 
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class Foo
+                {
+                    private ?string $bar;
 
+                    public function __construct(?string $bar) {
+                        $this->bar = $bar;
+                    }
+
+                    /**
+                     * @psalm-mutation-free
+                     */
+                    public function getBar(): ?string {
+                        return $this->bar;
+                    }
+                }
+
+                function doSomething(Foo $foo): string {
+                    if ($foo->getBar() !== null){
+                        return $foo->getBar();
+                    }
+
+                    return "hello";
+                }'
+        );
+
+        $this->analyzeFile('somefile.php', new \Psalm\Context());
+    }
 
     /**
      * @return void
@@ -120,6 +155,45 @@ class MethodCallTest extends TestCase
                         $this->int = 1;
                     }
 
+                    final public function getInt(): ?int {
+                        return $this->int;
+                    }
+                }
+
+                function printInt(int $int): void {
+                    echo $int;
+                }
+
+                $obj = new SomeClass();
+
+                if ($obj->getInt()) {
+                    printInt($obj->getInt());
+                }'
+        );
+
+        $this->analyzeFile('somefile.php', new \Psalm\Context());
+    }
+
+    /**
+     * @return void
+     */
+    public function testUnchainedMutationFreeMethodCallMemoize()
+    {
+        $this->project_analyzer->getConfig()->memoize_method_calls = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class SomeClass {
+                    private ?int $int;
+
+                    public function __construct() {
+                        $this->int = 1;
+                    }
+
+                    /**
+                     * @psalm-mutation-free
+                     */
                     public function getInt(): ?int {
                         return $this->int;
                     }
@@ -692,7 +766,7 @@ class MethodCallTest extends TestCase
                         public $a;
 
                         /** @return int|string|null */
-                        function getA() {
+                        final public function getA() {
                             return $this->a;
                         }
 
@@ -718,7 +792,7 @@ class MethodCallTest extends TestCase
                         public $a;
 
                         /** @return string|null */
-                        function getA() {
+                        final public function getA() {
                             return $this->a;
                         }
                     }
@@ -772,6 +846,57 @@ class MethodCallTest extends TestCase
                 '<?php
                     $pdo = new PDO("test");
                     $pdo->query("SELECT * FROM projects", PDO::FETCH_NAMED);'
+            ],
+            'unchainedInferredMutationFreeMethodCallMemoize' => [
+                '<?php
+                    class SomeClass {
+                        private ?int $int;
+
+                        public function __construct() {
+                            $this->int = 1;
+                        }
+
+                        /**
+                         * @psalm-mutation-free
+                         */
+                        public function getInt(): ?int {
+                            return $this->int;
+                        }
+                    }
+
+                    function printInt(int $int): void {
+                        echo $int;
+                    }
+
+                    $obj = new SomeClass();
+
+                    if ($obj->getInt()) {
+                        printInt($obj->getInt());
+                    }',
+            ],
+            'unchainedInferredInferredFinalMutationFreeMethodCallMemoize' => [
+                '<?php
+                    class SomeClass {
+                        private ?int $int;
+
+                        public function __construct() {
+                            $this->int = 1;
+                        }
+
+                        final public function getInt(): ?int {
+                            return $this->int;
+                        }
+                    }
+
+                    function printInt(int $int): void {
+                        echo $int;
+                    }
+
+                    $obj = new SomeClass();
+
+                    if ($obj->getInt()) {
+                        printInt($obj->getInt());
+                    }',
             ],
         ];
     }
@@ -1221,6 +1346,31 @@ class MethodCallTest extends TestCase
                     /** @psalm-suppress UndefinedClass */
                     new Missing($class_arg);',
                 'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'unchainedInferredInferredMutationFreeMethodCallDontMemoize' => [
+                '<?php
+                    class SomeClass {
+                        private ?int $int;
+
+                        public function __construct() {
+                            $this->int = 1;
+                        }
+
+                        public function getInt(): ?int {
+                            return $this->int;
+                        }
+                    }
+
+                    function printInt(int $int): void {
+                        echo $int;
+                    }
+
+                    $obj = new SomeClass();
+
+                    if ($obj->getInt()) {
+                        printInt($obj->getInt());
+                    }',
+                'error_message' => 'PossiblyNullArgument',
             ],
         ];
     }

@@ -709,22 +709,20 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                 );
             }
 
-            if (!$can_memoize) {
-                if ($lhs_var_id !== '$this'
-                    && (isset($class_storage_for_method->methods[$method_name_lc]))
-                    && !$class_storage_for_method->methods[$method_name_lc]->overridden_somewhere
-                    && !$class_storage_for_method->methods[$method_name_lc]->overridden_downstream
-                ) {
-                    $plain_getter_property = $class_storage_for_method->methods[$method_name_lc]->plain_getter;
+            if ($lhs_var_id !== '$this'
+                && (isset($class_storage_for_method->methods[$method_name_lc]))
+                && ($can_memoize || $class_storage_for_method->methods[$method_name_lc]->final)
+            ) {
+                $plain_getter_property = $class_storage_for_method->methods[$method_name_lc]->plain_getter;
 
-                    if ($plain_getter_property) {
-                        $getter_var_id = $lhs_var_id . '->' . $plain_getter_property;
+                if ($plain_getter_property) {
+                    $getter_var_id = $lhs_var_id . '->' . $plain_getter_property;
 
-                        if (isset($context->vars_in_scope[$getter_var_id])) {
-                            $return_type_candidate = clone $context->vars_in_scope[$getter_var_id];
-                        } else {
-                            $plain_getter_property = null;
-                        }
+                    if (isset($context->vars_in_scope[$getter_var_id])) {
+                        $return_type_candidate = clone $context->vars_in_scope[$getter_var_id];
+                        $can_memoize = false;
+                    } else {
+                        $plain_getter_property = null;
                     }
                 }
             }

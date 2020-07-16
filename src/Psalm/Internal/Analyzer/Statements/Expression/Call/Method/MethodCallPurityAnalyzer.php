@@ -78,8 +78,14 @@ class MethodCallPurityAnalyzer
                     && (isset($stmt->var->external_mutation_free) || isset($stmt->var->pure))))
             && !$context->inside_unset
         ) {
-            if ($method_storage->mutation_free && !$method_storage->mutation_free_inferred) {
-                if ($context->inside_conditional && !$method_storage->assertions) {
+            if ($method_storage->mutation_free
+                && (!$method_storage->mutation_free_inferred
+                    || $method_storage->final)
+            ) {
+                if ($context->inside_conditional
+                    && !$method_storage->assertions
+                    && !$method_storage->if_true_assertions
+                ) {
                     /** @psalm-suppress UndefinedPropertyAssignment */
                     $stmt->pure = true;
                 }
