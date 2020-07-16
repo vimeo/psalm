@@ -892,6 +892,24 @@ class MethodCallTest extends TestCase
 
                     if ($main->getProperty() !== null && $main->getProperty()->test()) {}'
             ],
+            'getterTypeInferring' => [
+                '<?php
+                    class A {
+                        /** @var int|string|null */
+                        public $a;
+
+                        /** @return int|string|null */
+                        final public function getValue() {
+                            return $this->a;
+                        }
+                    }
+
+                    $a = new A();
+
+                    if (is_string($a->getValue())) {
+                        echo strlen($a->getValue());
+                    }',
+            ],
         ];
     }
 
@@ -1365,6 +1383,26 @@ class MethodCallTest extends TestCase
                         printInt($obj->getInt());
                     }',
                 'error_message' => 'PossiblyNullArgument',
+            ],
+            'getterTypeInferringWithChange' => [
+                '<?php
+                    class A {
+                        /** @var int|string|null */
+                        public $val;
+
+                        /** @return int|string|null */
+                        final public function getValue() {
+                            return $this->val;
+                        }
+                    }
+
+                    $a = new A();
+
+                    if (is_string($a->getValue())) {
+                        $a->val = 5;
+                        echo strlen($a->getValue());
+                    }',
+                'error_message' => 'InvalidScalarArgument',
             ],
         ];
     }

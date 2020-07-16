@@ -750,6 +750,12 @@ class InstancePropertyAssignmentAnalyzer
                             }
                         }
                     }
+
+                    if ($property_storage->getter_method) {
+                        $getter_id = $lhs_var_id . '->' . $property_storage->getter_method . '()';
+
+                        unset($context->vars_in_scope[$getter_id]);
+                    }
                 }
 
                 $class_property_type = $codebase->properties->getPropertyType(

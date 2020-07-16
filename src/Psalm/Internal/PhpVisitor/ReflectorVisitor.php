@@ -1949,10 +1949,23 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 && $stmt->stmts[0]->expr instanceof PhpParser\Node\Expr\PropertyFetch
                 && $stmt->stmts[0]->expr->var instanceof PhpParser\Node\Expr\Variable
                 && $stmt->stmts[0]->expr->var->name === 'this'
+                && $stmt->stmts[0]->expr->name instanceof PhpParser\Node\Identifier
             ) {
-                $storage->mutation_free = true;
-                $storage->external_mutation_free = true;
-                $storage->mutation_free_inferred = !$stmt->isFinal() && !$class_storage->final;
+                $property_name = $stmt->stmts[0]->expr->name->name;
+
+                if (isset($class_storage->properties[$property_name])
+                    && $class_storage->properties[$property_name]->type
+                    && ($class_storage->properties[$property_name]->type->isNullable()
+                        || $class_storage->properties[$property_name]->type->isFalsable()
+                        || $class_storage->properties[$property_name]->type->hasArray()
+                    )
+                ) {
+                    $storage->mutation_free = true;
+                    $storage->external_mutation_free = true;
+                    $storage->mutation_free_inferred = !$stmt->isFinal() && !$class_storage->final;
+
+                    $class_storage->properties[$property_name]->getter_method = strtolower($stmt->name->name);
+                }
             } elseif (strpos($stmt->name->name, 'assert') === 0) {
                 $var_assertions = [];
 
