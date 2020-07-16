@@ -5,7 +5,7 @@ Emitted when `--find-dead-code` is turned on and Psalm finds a method call whose
 ```php
 <?php
 
-class A {
+final class A {
     private string $foo;
 
     public function __construct(string $foo) {

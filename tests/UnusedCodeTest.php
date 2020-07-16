@@ -882,7 +882,7 @@ class UnusedCodeTest extends TestCase
             ],
             'unusedMethodCall' => [
                 '<?php
-                    class A {
+                    final class A {
                         private string $foo;
 
                         public function __construct(string $foo) {
