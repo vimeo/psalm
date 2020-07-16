@@ -1766,7 +1766,6 @@ class Codebase
      * @psalm-suppress PossiblyUnusedMethod
      */
     public function addTaintSink(
-        Type\Union $expr_type,
         string $taint_id,
         array $taints = \Psalm\Type\TaintKindGroup::ALL_INPUT,
         ?CodeLocation $code_location = null
@@ -1775,7 +1774,7 @@ class Codebase
             return;
         }
 
-        $source = new \Psalm\Internal\Taint\Sink(
+        $sink = new \Psalm\Internal\Taint\Sink(
             $taint_id,
             $taint_id,
             $code_location,
@@ -1783,10 +1782,6 @@ class Codebase
             $taints
         );
 
-        $this->taint->addSink($source);
-
-        $expr_type->parent_nodes = [
-            $source,
-        ];
+        $this->taint->addSink($sink);
     }
 }
