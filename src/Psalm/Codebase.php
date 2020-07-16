@@ -1759,4 +1759,34 @@ class Codebase
             $source,
         ];
     }
+
+    /**
+     * @param array<string> $taints
+     *
+     * @psalm-suppress PossiblyUnusedMethod
+     */
+    public function addTaintSink(
+        Type\Union $expr_type,
+        string $taint_id,
+        array $taints = \Psalm\Type\TaintKindGroup::ALL_INPUT,
+        ?CodeLocation $code_location = null
+    ) : void {
+        if (!$this->taint) {
+            return;
+        }
+
+        $source = new \Psalm\Internal\Taint\Sink(
+            $taint_id,
+            $taint_id,
+            $code_location,
+            null,
+            $taints
+        );
+
+        $this->taint->addSink($source);
+
+        $expr_type->parent_nodes = [
+            $source,
+        ];
+    }
 }
