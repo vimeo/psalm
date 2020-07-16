@@ -147,7 +147,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             );
         }
 
-        if ($assertion === 'null' && !$existing_var_type->isMixed()) {
+        if ($assertion === 'null' && !$existing_var_type->hasMixed()) {
             return self::reconcileNull(
                 $existing_var_type,
                 $key,
@@ -158,7 +158,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             );
         }
 
-        if ($assertion === 'false' && !$existing_var_type->isMixed()) {
+        if ($assertion === 'false' && !$existing_var_type->hasMixed()) {
             return self::reconcileFalse(
                 $existing_var_type,
                 $key,

@@ -144,6 +144,10 @@ class ArrayFunctionArgumentsAnalyzer
 
         if ($is_push && !$unpacked_args) {
             for ($i = 1; $i < count($args); $i++) {
+                $was_inside_assignment = $context->inside_assignment;
+
+                $context->inside_assignment = true;
+
                 if (ExpressionAnalyzer::analyze(
                     $statements_analyzer,
                     $args[$i]->value,
@@ -151,6 +155,8 @@ class ArrayFunctionArgumentsAnalyzer
                 ) === false) {
                     return false;
                 }
+
+                $context->inside_assignment = $was_inside_assignment;
 
                 $old_node_data = $statements_analyzer->node_data;
 
