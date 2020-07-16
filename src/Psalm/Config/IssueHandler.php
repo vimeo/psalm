@@ -146,6 +146,20 @@ class IssueHandler
     }
 
     /**
+     * @param string $var_name
+     *
+     * @return string|null
+     */
+    public function getReportingLevelForVariable($var_name)
+    {
+        foreach ($this->custom_levels as $custom_level) {
+            if ($custom_level->allowsVariable($var_name)) {
+                return $custom_level->getErrorLevel();
+            }
+        }
+    }
+
+    /**
      * @return       string[]
      * @psalm-return array<string>
      */
@@ -174,6 +188,7 @@ class IssueHandler
                     && $issue_name !== 'PropertyIssue'
                     && $issue_name !== 'FunctionIssue'
                     && $issue_name !== 'ArgumentIssue'
+                    && $issue_name !== 'VariableIssue'
                     && $issue_name !== 'ClassIssue'
                     && $issue_name !== 'CodeIssue'
                     && $issue_name !== 'PsalmInternalError'
