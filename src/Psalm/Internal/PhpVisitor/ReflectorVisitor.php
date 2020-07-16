@@ -1955,10 +1955,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
                 if (isset($class_storage->properties[$property_name])
                     && $class_storage->properties[$property_name]->type
-                    && ($class_storage->properties[$property_name]->type->isNullable()
-                        || $class_storage->properties[$property_name]->type->isFalsable()
-                        || $class_storage->properties[$property_name]->type->hasArray()
-                    )
                 ) {
                     $storage->mutation_free = true;
                     $storage->external_mutation_free = true;

@@ -880,7 +880,7 @@ class UnusedCodeTest extends TestCase
                     strlen("goodbye");',
                 'error_message' => 'UnusedFunctionCall',
             ],
-            'unusedMethodCall' => [
+            'unusedMethodCallSimple' => [
                 '<?php
                     final class A {
                         private string $foo;
