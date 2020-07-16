@@ -1346,6 +1346,8 @@ class FunctionCallAnalyzer extends CallAnalyzer
                                     $class_type->defining_class
                                 );
                             }
+                        } else {
+                            $class_string_types[] = new Type\Atomic\TClassString();
                         }
                     }
 

@@ -937,6 +937,28 @@ class SwitchTypeTest extends TestCase
                             echo "bar";
                     }'
             ],
+            'switchGetClassProperty' => [
+                '<?php
+                    class A {}
+                    class B {}
+
+                    class C {
+                        /** @var mixed */
+                        public $a;
+
+                        function foo() : void {
+                            if (rand(0, 1)) {
+                                $this->a = new A();
+                            }
+
+                            /** @psalm-suppress MixedArgument */
+                            switch (get_class($this->a)) {
+                                case B::class:
+                                    echo "here";
+                            }
+                        }
+                    }',
+            ],
         ];
     }
 
