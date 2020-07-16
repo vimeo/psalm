@@ -60,6 +60,11 @@ class FileFilter
     /**
      * @var array<string>
      */
+    protected $var_names = [];
+
+    /**
+     * @var array<string>
+     */
     protected $files_lowercase = [];
 
     /**
@@ -310,6 +315,13 @@ class FileFilter
             }
         }
 
+        if ($e->referencedVariable) {
+            /** @var \SimpleXMLElement $referenced_variable */
+            foreach ($e->referencedVariable as $referenced_variable) {
+                $filter->var_names[] = strtolower((string)$referenced_variable['name']);
+            }
+        }
+
         return $filter;
     }
 
@@ -457,6 +469,16 @@ class FileFilter
     public function allowsProperty($property_id)
     {
         return in_array(strtolower($property_id), $this->property_ids, true);
+    }
+
+    /**
+     * @param  string  $var_name
+     *
+     * @return bool
+     */
+    public function allowsVariable($var_name)
+    {
+        return in_array(strtolower($var_name), $this->var_names, true);
     }
 
     /**

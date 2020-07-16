@@ -425,6 +425,11 @@ class ConfigTest extends \Psalm\Tests\TestCase
                                 <referencedProperty name="Psalm\Bodger::$find3" />
                             </errorLevel>
                         </UndefinedPropertyFetch>
+                        <UndefinedGlobalVariable>
+                            <errorLevel type="suppress">
+                                <referencedVariable name="a" />
+                            </errorLevel>
+                        </UndefinedGlobalVariable>
                     </issueHandlers>
                 </psalm>'
             )
@@ -554,6 +559,21 @@ class ConfigTest extends \Psalm\Tests\TestCase
             $config->getReportingLevelForMethod(
                 'UndefinedFunction',
                 'foobar'
+            )
+        );
+
+        $this->assertSame(
+            'suppress',
+            $config->getReportingLevelForVariable(
+                'UndefinedGlobalVariable',
+                'a'
+            )
+        );
+
+        $this->assertNull(
+            $config->getReportingLevelForVariable(
+                'UndefinedGlobalVariable',
+                'b'
             )
         );
     }

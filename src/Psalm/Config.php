@@ -2,6 +2,7 @@
 namespace Psalm;
 
 use Composer\Semver\Semver;
+use Psalm\Issue\VariableIssue;
 use Webmozart\PathUtil\Path;
 use function array_merge;
 use function array_pop;
@@ -1416,6 +1417,8 @@ class Config
             $reporting_level = $this->getReportingLevelForProperty($issue_type, $e->property_id);
         } elseif ($e instanceof ArgumentIssue && $e->function_id) {
             $reporting_level = $this->getReportingLevelForArgument($issue_type, $e->function_id);
+        } elseif ($e instanceof VariableIssue) {
+            $reporting_level = $this->getReportingLevelForVariable($issue_type, $e->var_name);
         }
 
         if ($reporting_level === null) {
@@ -1625,6 +1628,19 @@ class Config
     {
         if (isset($this->issue_handlers[$issue_type])) {
             return $this->issue_handlers[$issue_type]->getReportingLevelForProperty($property_id);
+        }
+    }
+
+    /**
+     * @param   string $issue_type
+     * @param   string $var_name
+     *
+     * @return  string|null
+     */
+    public function getReportingLevelForVariable(string $issue_type, string $var_name)
+    {
+        if (isset($this->issue_handlers[$issue_type])) {
+            return $this->issue_handlers[$issue_type]->getReportingLevelForVariable($var_name);
         }
     }
 
