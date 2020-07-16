@@ -623,9 +623,6 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
 
         $can_memoize = false;
 
-        $class_storage_for_method = $codebase->methods->getClassLikeStorageForMethod($method_id);
-        $plain_getter_property = null;
-
         $return_type_candidate = MethodCallReturnTypeFetcher::fetch(
             $statements_analyzer,
             $codebase,
@@ -707,24 +704,6 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                     $context,
                     $config
                 );
-            }
-
-            if ($lhs_var_id !== '$this'
-                && (isset($class_storage_for_method->methods[$method_name_lc]))
-                && ($can_memoize || $class_storage_for_method->methods[$method_name_lc]->final)
-            ) {
-                $plain_getter_property = $class_storage_for_method->methods[$method_name_lc]->plain_getter;
-
-                if ($plain_getter_property) {
-                    $getter_var_id = $lhs_var_id . '->' . $plain_getter_property;
-
-                    if (isset($context->vars_in_scope[$getter_var_id])) {
-                        $return_type_candidate = clone $context->vars_in_scope[$getter_var_id];
-                        $can_memoize = false;
-                    } else {
-                        $plain_getter_property = null;
-                    }
-                }
             }
 
             $has_packed_arg = false;
@@ -814,7 +793,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
         }
 
         if (!$args && $lhs_var_id) {
-            if (($config->memoize_method_calls || $can_memoize) && !$plain_getter_property) {
+            if ($config->memoize_method_calls || $can_memoize) {
                 $method_var_id = $lhs_var_id . '->' . $method_name_lc . '()';
 
                 if (isset($context->vars_in_scope[$method_var_id])) {

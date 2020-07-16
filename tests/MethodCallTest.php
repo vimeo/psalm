@@ -759,32 +759,6 @@ class MethodCallTest extends TestCase
 
                     takesWithoutArguments(new C);'
             ],
-            'getterTypeInferring' => [
-                '<?php
-                    class A {
-                        /** @var int|string|null */
-                        public $a;
-
-                        /** @return int|string|null */
-                        final public function getA() {
-                            return $this->a;
-                        }
-
-                        function takesNullOrA(?A $a) : void {}
-                    }
-
-                    $a = new A();
-
-                    $a->a = 1;
-                    echo $a->getA() + 2;
-
-                    $a->a = "string";
-                    echo strlen($a->getA());
-
-                    $a->a = null;
-                    $a->takesNullOrA($a->getA());
-                    '
-            ],
             'getterAutomagicAssertion' => [
                 '<?php
                     class A {
@@ -897,6 +871,26 @@ class MethodCallTest extends TestCase
                     if ($obj->getInt()) {
                         printInt($obj->getInt());
                     }',
+            ],
+            'inferredFinalMethod' => [
+                '<?php
+                    class PropertyClass {
+                        public function test() : bool {
+                            return true;
+                        }
+                    }
+
+                    class MainClass {
+                        private ?PropertyClass $property = null;
+
+                        final public function getProperty(): ?PropertyClass {
+                            return $this->property;
+                        }
+                    }
+
+                    $main = new MainClass();
+
+                    if ($main->getProperty() !== null && $main->getProperty()->test()) {}'
             ],
         ];
     }
