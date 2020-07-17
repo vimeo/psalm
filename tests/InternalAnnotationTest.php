@@ -263,7 +263,7 @@ class InternalAnnotationTest extends TestCase
 
                     namespace B {
                         class Bat {
-                            public function batBat() {
+                            public function batBat(): void {
                                 \A\Foo::barBar();
                             }
                         }
