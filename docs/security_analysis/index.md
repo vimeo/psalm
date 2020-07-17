@@ -2,7 +2,7 @@
 
 Psalm can attempt to find connections between user-controlled input (like `$_GET['name']`) and places that we don’t want unescaped user-controlled input to end up (like `echo "<h1>$name</h1>"` by looking at the ways that data flows through your application (via assignments, function/method calls and array/property access).
 
-You can enable this mode with the `--taint-analysis` command line flag.
+You can enable this mode with the `--taint-analysis` command line flag. When taint analysis is enabled, no other analysis is performed.
 
 Tainted input is anything that can be controlled, wholly or in part, by a user of your application. In taint analysis, tainted input is called a _taint source_.
 
@@ -19,7 +19,7 @@ Example sinks:
  - `<div id="section_<?= $id ?>">`
  - `$pdo->exec("select * from users where name='" . $name . "'")`
 
-## Taint types
+## Taint Types
 
 Psalm recognises a number of taint types by default, defined in the [Psalm\Type\TaintKind](https://github.com/vimeo/psalm/blob/master/src/Psalm/Type/TaintKind.php) class:
 
@@ -44,7 +44,12 @@ Psalm currently defines a number of different for builtin functions and methods,
 
 You can also [define your own taint sinks](custom_taint_sinks.md).
 
-## Avoiding false-positives
+## Avoiding False-Positives
 
 Nobody likes to wade through a ton of false-positives – [here’s a guide to avoiding them](avoiding_false_positives.md).
 
+## Using Baseline With Taint Analysis
+
+Since taint analysis is performed separtely from other static code analysis, it makes sense to use a separate baseline for it.
+
+You can use --use-baseline=PATH option to set a different baseline for taint analysis.
