@@ -1268,6 +1268,18 @@ class TaintTest extends TestCase
                     echo (new A())->rawinput();',
                 'error_message' => 'TaintedInput',
             ],
+            'taintStringObtainedUsingStrval' => [
+                '<?php
+                    $unsafe = strval($_GET[\'unsafe\']);
+                    echo $unsafe',
+                'error_message' => 'TaintedInput',
+            ],
+            'taintStringObtainedUsingSprintf' => [
+                '<?php
+                    $unsafe = sprintf("%s", strval($_GET[\'unsafe\']));
+                    echo $unsafe;',
+                'error_message' => 'TaintedInput',
+            ],
             'encapsulatedString' => [
                 '<?php
                     $unsafe = $_GET[\'unsafe\'];
