@@ -8,8 +8,10 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Issue\InaccessibleProperty;
+use Psalm\Issue\InternalClass;
 use Psalm\Issue\InvalidClass;
 use Psalm\Issue\MissingDependency;
+use Psalm\Issue\PsalmInternalError;
 use Psalm\Issue\ReservedWord;
 use Psalm\Issue\UndefinedClass;
 use Psalm\Issue\UndefinedDocblockClass;
@@ -395,6 +397,25 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
 
                 if ($file_manipulations) {
                     FileManipulationBuffer::add($code_location->file_path, $file_manipulations);
+                }
+            }
+        }
+
+        if (!$inferred) {
+            if ($class_storage->psalm_internal) {
+                $sourceNamespace = $statements_source->getNamespace();
+                if (!$sourceNamespace || ! NamespaceAnalyzer::isWithin($sourceNamespace, $class_storage->psalm_internal)) {
+                    if (IssueBuffer::accepts(
+                        new InternalClass(
+                            $class_storage->name . ' is internal to ' . $class_storage->psalm_internal,
+                            $code_location,
+                            $class_storage->name
+                        ),
+                        $suppressed_issues
+                    )
+                    ) {
+                        // fall through
+                    }
                 }
             }
         }

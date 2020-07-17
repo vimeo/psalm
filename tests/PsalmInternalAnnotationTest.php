@@ -186,6 +186,26 @@ class PsalmInternalAnnotationTest extends TestCase
                         }
                     }',
             ],
+            'internalClassWithInstanceOf' => [
+                '<?php
+                    namespace A\B {
+                        interface Bar {};
+
+                        /**
+                         * @internal
+                         * @psalm-internal A\B
+                         */
+                        class Foo { }
+                    }
+
+                    namespace A\B\C {
+                        class Bat {
+                            public function batBat(\A\B\Bar $bar) : void {
+                                $bar instanceOf \A\B\Foo;
+                            }
+                        }
+                    }',
+            ],
             'internalClassWithExtends' => [
                 '<?php
                     namespace A\B {
@@ -412,6 +432,27 @@ class PsalmInternalAnnotationTest extends TestCase
                         }
                     }',
                 'error_message' => 'InternalClass',
+            ],
+            'internalClassWithInstanceOf' => [
+                '<?php
+                    namespace A\B {
+                        interface Bar {};
+
+                        /**
+                         * @internal
+                         * @psalm-internal A\B
+                         */
+                        class Foo { }
+                    }
+
+                    namespace A\C {
+                        class Bat {
+                            public function batBat(\A\B\Bar $bar) : void {
+                                $bar instanceOf \A\B\Foo;
+                            }
+                        }
+                    }',
+                'error_message' => 'A\B\Foo is internal to A\B',
             ],
             'internalClassWithExtends' => [
                 '<?php
