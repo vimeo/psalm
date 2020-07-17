@@ -117,6 +117,30 @@ class PsalmInternalAnnotationTest extends TestCase
                         }
                     }',
             ],
+            'internalClassWithPropertyFetch' => [
+                '<?php
+                    namespace A\B {
+                        /**
+                         * @internal
+                         * @psalm-internal A\B
+                         */
+                        class Foo {
+                            public int $barBar = 0;
+                        }
+
+                        function getFoo(): Foo {
+                            return new Foo();
+                        }
+                    }
+
+                    namespace A\B\C {
+                        class Bat {
+                            public function batBat(\A\B\Foo $instance): void {
+                                \A\B\getFoo()->barBar;
+                            }
+                        }
+                    }',
+            ],
             'internalClassExtendingNamespaceWithStaticCall' => [
                 '<?php
                     namespace A {
@@ -318,6 +342,31 @@ class PsalmInternalAnnotationTest extends TestCase
                         }
                     }',
                 'error_message' => 'InternalClass',
+            ],
+            'internalClassWithPropertyFetch' => [
+                '<?php
+                    namespace A\B {
+                        /**
+                         * @internal
+                         * @psalm-internal A\B
+                         */
+                        class Foo {
+                            public int $barBar = 0;
+                        }
+
+                        function getFoo(): Foo {
+                            return new Foo();
+                        }
+                    }
+
+                    namespace A\C {
+                        class Bat {
+                            public function batBat(): void {
+                                \A\B\getFoo()->barBar;
+                            }
+                        }
+                    }',
+                'error_message' => 'A\B\Foo::$barBar is marked internal to A\B',
             ],
             'internalClassWithInstanceCall' => [
                 '<?php

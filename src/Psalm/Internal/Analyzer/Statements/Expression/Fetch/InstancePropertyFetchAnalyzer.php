@@ -28,6 +28,7 @@ use Psalm\Issue\UndefinedPropertyFetch;
 use Psalm\Issue\UndefinedThisPropertyFetch;
 use Psalm\Issue\UninitializedProperty;
 use Psalm\IssueBuffer;
+use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type\Atomic\TGenericObject;

@@ -20,6 +20,7 @@ use Psalm\Type;
 use function reset;
 use function strpos;
 use function strtolower;
+use function strlen;
 
 /**
  * @internal
@@ -259,6 +260,28 @@ class Populator
 
             foreach ($storage->properties as $property) {
                 $property->internal = true;
+            }
+        }
+
+        if ($storage->psalm_internal
+            && !$storage->is_interface
+            && !$storage->is_trait
+        ) {
+            foreach ($storage->methods as $method) {
+                if (null === $method->psalm_internal ||
+                    strlen($storage->psalm_internal) > strlen($method->psalm_internal)
+                ) {
+                    $method->psalm_internal = $storage->psalm_internal;
+                }
+            }
+
+
+            foreach ($storage->properties as $property) {
+                if (null === $property->psalm_internal ||
+                    strlen($storage->psalm_internal) > strlen($property->psalm_internal)
+                ) {
+                    $property->psalm_internal = $storage->psalm_internal;
+                }
             }
         }
 
