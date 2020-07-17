@@ -685,10 +685,6 @@ class ClassLikes
             return true;
         }
 
-        if (isset($this->classlike_aliases[strtolower($fq_interface_name)])) {
-            return true;
-        }
-
         return isset($this->existing_interfaces[$fq_interface_name]);
     }
 
