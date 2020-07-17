@@ -406,6 +406,9 @@ class Config
      */
     public $run_taint_analysis = false;
 
+    /** @var bool */
+    public $use_phpstorm_meta_path = true;
+
     /**
      * Whether to resolve file and directory paths from the location of the config file,
      * instead of the current working directory.
@@ -813,6 +816,7 @@ class Config
             'skipChecksOnUnresolvableIncludes' => 'skip_checks_on_unresolvable_includes',
             'sealAllMethods' => 'seal_all_methods',
             'runTaintAnalysis' => 'run_taint_analysis',
+            'usePhpStormMetaPath' => 'use_phpstorm_meta_path',
         ];
 
         foreach ($booleanAttributes as $xmlName => $internalName) {
@@ -1782,14 +1786,16 @@ class Config
 
         $phpstorm_meta_path = $this->base_dir . DIRECTORY_SEPARATOR . '.phpstorm.meta.php';
 
-        if (is_file($phpstorm_meta_path)) {
-            $stub_files[] = $phpstorm_meta_path;
-        } elseif (is_dir($phpstorm_meta_path)) {
-            $phpstorm_meta_path = realpath($phpstorm_meta_path);
+        if ($this->use_phpstorm_meta_path) {
+            if (is_file($phpstorm_meta_path)) {
+                $stub_files[] = $phpstorm_meta_path;
+            } elseif (is_dir($phpstorm_meta_path)) {
+                $phpstorm_meta_path = realpath($phpstorm_meta_path);
 
-            foreach (glob($phpstorm_meta_path . '/*.meta.php', GLOB_NOSORT) as $glob) {
-                if (is_file($glob) && realpath(dirname($glob)) === $phpstorm_meta_path) {
-                    $stub_files[] = $glob;
+                foreach (glob($phpstorm_meta_path . '/*.meta.php', GLOB_NOSORT) as $glob) {
+                    if (is_file($glob) && realpath(dirname($glob)) === $phpstorm_meta_path) {
+                        $stub_files[] = $glob;
+                    }
                 }
             }
         }
