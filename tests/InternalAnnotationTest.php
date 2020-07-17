@@ -76,6 +76,29 @@ class InternalAnnotationTest extends TestCase
                         }
                     }',
             ],
+            'internalClassWithPropertyFetch' => [
+                '<?php
+                    namespace A\B {
+                        /**
+                         * @internal
+                         */
+                        class Foo {
+                            public int $barBar = 0;
+                        }
+
+                        function getFoo(): Foo {
+                            return new Foo();
+                        }
+                    }
+
+                    namespace A\C {
+                        class Bat {
+                            public function batBat(\A\B\Foo $instance): void {
+                                \A\B\getFoo()->barBar;
+                            }
+                        }
+                    }',
+            ],
             'internalClassExtendingNamespaceWithStaticCall' => [
                 '<?php
                     namespace A {
@@ -292,6 +315,30 @@ class InternalAnnotationTest extends TestCase
                         }
                     }',
                 'error_message' => 'InternalMethod',
+            ],
+            'internalClassWithPropertyFetch' => [
+                '<?php
+                    namespace A\B {
+                        /**
+                         * @internal
+                         */
+                        class Foo {
+                            public int $barBar = 0;
+                        }
+
+                        function getFoo(): Foo {
+                            return new Foo();
+                        }
+                    }
+
+                    namespace C {
+                        class Bat {
+                            public function batBat(): void {
+                                \A\B\getFoo()->barBar;
+                            }
+                        }
+                    }',
+                'error_message' => 'A\B\Foo::$barBar is marked internal',
             ],
             'internalClassWithNew' => [
                 '<?php
