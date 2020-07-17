@@ -1432,4 +1432,19 @@ class ConfigTest extends \Psalm\Tests\TestCase
         $cfg = Config::loadFromXML($root, "<?xml version=\"1.0\"?><psalm phpVersion='8.0'></psalm>");
         $this->assertSame('8.0', $cfg->getPhpVersion());
     }
+
+    /** @return void */
+    public function testSetsUsePhpStormMetaPath()
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm usePhpStormMetaPath="false">
+                </psalm>'
+            )
+        );
+
+        $this->assertFalse($this->project_analyzer->getConfig()->use_phpstorm_meta_path);
+    }
 }
