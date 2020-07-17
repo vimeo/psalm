@@ -1222,6 +1222,13 @@ class TaintTest extends TestCase
                     echo $c;',
                 'error_message' => 'TaintedInput',
             ],
+            'ImplodeIndirect' => [
+                '<?php
+                    /** @var array $unsafe */
+                    $unsafe = $_GET[\'unsafe\'];
+                    echo implode(" ", $unsafe);',
+                'error_message' => 'TaintedInput',
+            ],
             'taintThroughPregReplaceCallback' => [
                 '<?php
                     $a = $_GET["bad"];
@@ -1266,6 +1273,18 @@ class TaintTest extends TestCase
                     }
 
                     echo (new A())->rawinput();',
+                'error_message' => 'TaintedInput',
+            ],
+            'taintStringObtainedUsingStrval' => [
+                '<?php
+                    $unsafe = strval($_GET[\'unsafe\']);
+                    echo $unsafe',
+                'error_message' => 'TaintedInput',
+            ],
+            'taintStringObtainedUsingSprintf' => [
+                '<?php
+                    $unsafe = sprintf("%s", strval($_GET[\'unsafe\']));
+                    echo $unsafe;',
                 'error_message' => 'TaintedInput',
             ],
             'encapsulatedString' => [
