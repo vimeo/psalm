@@ -136,7 +136,7 @@ function array_flip(array $arr)
  *
  * @param TArray $arr
  *
- * @return (TArray is array<empty, empty> ? null : (TArray is non-empty-array ? TKey : TKey|null))
+ * @return (TArray is array<empty, empty> ? null : TKey|null)
  * @psalm-pure
  */
 function key($arr)

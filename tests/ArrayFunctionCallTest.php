@@ -767,14 +767,22 @@ class ArrayFunctionCallTest extends TestCase
                     $a = ["one" => 1, "two" => 3];
                     $b = key($a);',
                 'assertions' => [
-                    '$b' => 'string',
+                    '$b' => 'null|string',
+                ],
+            ],
+            'keyEmptyArray' => [
+                '<?php
+                    $a = [];
+                    $b = key($a);',
+                'assertions' => [
+                    '$b' => 'null',
                 ],
             ],
             'keyNonEmptyArray' => [
                 '<?php
                     /**
                      * @param non-empty-array $arr
-                     * @return array-key
+                     * @return null|array-key
                      */
                     function foo(array $arr) {
                         return key($arr);
