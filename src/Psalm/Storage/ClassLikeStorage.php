@@ -88,11 +88,6 @@ class ClassLikeStorage
     public $deprecated = false;
 
     /**
-     * @var bool
-     */
-    public $internal = false;
-
-    /**
      * @var null|string
      */
     public $psalm_internal = null;

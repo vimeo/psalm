@@ -250,19 +250,6 @@ class Populator
             }
         }
 
-        if ($storage->internal
-            && !$storage->is_interface
-            && !$storage->is_trait
-        ) {
-            foreach ($storage->methods as $method) {
-                $method->internal = true;
-            }
-
-            foreach ($storage->properties as $property) {
-                $property->internal = true;
-            }
-        }
-
         if ($storage->psalm_internal
             && !$storage->is_interface
             && !$storage->is_trait

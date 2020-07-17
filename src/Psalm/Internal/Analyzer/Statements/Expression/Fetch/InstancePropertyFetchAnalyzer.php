@@ -835,21 +835,6 @@ class InstancePropertyFetchAnalyzer
                         }
                     }
                 }
-
-                if ($property_storage->internal && $context->self) {
-                    if (! NamespaceAnalyzer::nameSpaceRootsMatch($context->self, $declaring_property_class)) {
-                        if (IssueBuffer::accepts(
-                            new InternalProperty(
-                                $property_id . ' is marked internal',
-                                new CodeLocation($statements_analyzer->getSource(), $stmt),
-                                $property_id
-                            ),
-                            $statements_analyzer->getSuppressedIssues()
-                        )) {
-                            // fall through
-                        }
-                    }
-                }
             }
 
             $class_property_type = $codebase->properties->getPropertyType(

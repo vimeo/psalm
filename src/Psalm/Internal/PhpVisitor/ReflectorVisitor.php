@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Internal\PhpVisitor;
 
+use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use function array_filter;
 use function array_merge;
 use function array_pop;
@@ -1308,8 +1309,12 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 }
 
                 $storage->deprecated = $docblock_info->deprecated;
-                $storage->internal = $docblock_info->internal;
-                $storage->psalm_internal = $docblock_info->psalm_internal;
+                if ($docblock_info->internal && ! $docblock_info->psalm_internal && null !== $this->namespace_name) {
+                    $storage->psalm_internal = $this->namespace_name->getFirst();
+                } else {
+                    $storage->psalm_internal = $docblock_info->psalm_internal;
+                }
+
                 $storage->final = $storage->final || $docblock_info->final;
 
                 if ($docblock_info->mixin) {
@@ -2123,7 +2128,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
 
         if ($class_storage && ! $class_storage->is_trait) {
-            $storage->internal = $class_storage->internal;
             $storage->psalm_internal = $class_storage->psalm_internal;
         }
 
@@ -2180,8 +2184,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $storage->deprecated = true;
         }
 
-        if ($docblock_info->internal) {
-            $storage->internal = true;
+        if ($docblock_info->internal && ! $docblock_info->psalm_internal && null !== $this->namespace_name) {
+            $storage->psalm_internal = $this->namespace_name->getFirst();
         }
 
         if (null === $class_storage ||
@@ -3403,8 +3407,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $property_storage->stmt_location = new CodeLocation($this->file_scanner, $stmt);
             $property_storage->has_default = $property->default ? true : false;
             $property_storage->deprecated = $var_comment ? $var_comment->deprecated : false;
-            $property_storage->internal = $var_comment ? $var_comment->internal : false;
             $property_storage->psalm_internal = $var_comment ? $var_comment->psalm_internal : null;
+            if (! $property_storage->psalm_internal && $var_comment && $var_comment->internal){
+                $property_storage->psalm_internal = NamespaceAnalyzer::getNameSpaceRoot($fq_classlike_name);
+            }
             $property_storage->readonly = $var_comment ? $var_comment->readonly : false;
             $property_storage->allow_private_mutation = $var_comment ? $var_comment->allow_private_mutation : false;
 

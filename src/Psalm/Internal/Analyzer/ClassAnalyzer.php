@@ -302,27 +302,6 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     }
                 }
 
-                if ($parent_class_storage->internal) {
-                    $code_location = new CodeLocation(
-                        $this,
-                        $class->extends,
-                        $class_context ? $class_context->include_location : null,
-                        true
-                    );
-                    if (! NamespaceAnalyzer::nameSpaceRootsMatch($fq_class_name, $parent_fq_class_name)) {
-                        if (IssueBuffer::accepts(
-                            new InternalClass(
-                                $parent_fq_class_name . ' is marked internal',
-                                $code_location,
-                                $parent_fq_class_name
-                            ),
-                            $storage->suppressed_issues + $this->getSuppressedIssues()
-                        )) {
-                            // fall through
-                        }
-                    }
-                }
-
                 if ($parent_class_storage->psalm_internal &&
                     ! NamespaceAnalyzer::isWithin($fq_class_name, $parent_class_storage->psalm_internal)
                 ) {
