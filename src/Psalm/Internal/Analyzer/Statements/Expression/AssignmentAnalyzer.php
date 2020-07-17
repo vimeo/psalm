@@ -210,6 +210,9 @@ class AssignmentAnalyzer
                         }
                     }
 
+                    $parent_nodes = $context->vars_in_scope[$var_comment->var_id]->parent_nodes ?? [];
+                    $var_comment_type->parent_nodes = $parent_nodes;
+
                     $context->vars_in_scope[$var_comment->var_id] = $var_comment_type;
                 } catch (\UnexpectedValueException $e) {
                     if (IssueBuffer::accepts(
@@ -284,6 +287,7 @@ class AssignmentAnalyzer
             }
 
             $assign_value_type = $comment_type;
+            $assign_value_type->parent_nodes = $temp_assign_value_type->parent_nodes ?? [];
         } elseif (!$assign_value_type) {
             $assign_value_type = $assign_value
                 ? ($statements_analyzer->node_data->getType($assign_value) ?: Type::getMixed())
