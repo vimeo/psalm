@@ -1222,6 +1222,13 @@ class TaintTest extends TestCase
                     echo $c;',
                 'error_message' => 'TaintedInput',
             ],
+            'ImplodeIndirect' => [
+                '<?php
+                    /** @var array $unsafe */
+                    $unsafe = $_GET[\'unsafe\'];
+                    echo implode(" ", $unsafe);',
+                'error_message' => 'TaintedInput',
+            ],
             'taintThroughPregReplaceCallback' => [
                 '<?php
                     $a = $_GET["bad"];
