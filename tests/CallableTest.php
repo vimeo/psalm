@@ -835,7 +835,7 @@ class CallableTest extends TestCase
                      */
                     function foo($arg): void {}
 
-                    foo([\'a\', \'b\']);'
+                    foo(["a", "b"]);'
             ],
         ];
     }
