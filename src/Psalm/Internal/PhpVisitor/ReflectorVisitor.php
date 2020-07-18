@@ -2127,7 +2127,11 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         $doc_comment = $stmt->getDocComment();
 
 
-        if ($class_storage && ! $class_storage->is_trait) {
+        if ($class_storage &&
+                !$class_storage->is_trait &&
+                $class_storage->psalm_internal &&
+            (null === $storage->psalm_internal || strlen($class_storage->psalm_internal) > strlen($storage->psalm_internal))
+        ) {
             $storage->psalm_internal = $class_storage->psalm_internal;
         }
 
