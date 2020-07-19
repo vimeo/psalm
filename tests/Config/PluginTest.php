@@ -22,6 +22,8 @@ use Psalm\PluginRegistrationSocket;
 use Psalm\Tests\Internal\Provider;
 use Psalm\Tests\TestConfig;
 use function sprintf;
+use function ob_start;
+use function ob_end_clean;
 
 class PluginTest extends \Psalm\Tests\TestCase
 {
