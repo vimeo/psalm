@@ -869,7 +869,9 @@ class PluginTest extends \Psalm\Tests\TestCase
         $this->project_analyzer->stdout_report_options->format = \Psalm\Report::TYPE_JSON;
 
         $this->project_analyzer->check('tests/fixtures/DummyProject', true);
+        ob_start();
         \Psalm\IssueBuffer::finish($this->project_analyzer, true, microtime(true));
+        ob_end_clean();
     }
 
     /**
