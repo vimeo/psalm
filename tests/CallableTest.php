@@ -828,6 +828,15 @@ class CallableTest extends TestCase
 
                     if ($isCalled === true) {}'
             ],
+            'notCallableListNoUndefinedClass' => [
+                '<?php
+                    /**
+                     * @param array|callable $arg
+                     */
+                    function foo($arg): void {}
+
+                    foo(["a", "b"]);'
+            ],
         ];
     }
 
