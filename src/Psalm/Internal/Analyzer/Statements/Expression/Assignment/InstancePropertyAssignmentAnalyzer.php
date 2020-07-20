@@ -727,6 +727,7 @@ class InstancePropertyAssignmentAnalyzer
                                     || $codebase->classExtends($context->self, $appearing_property_class))
                                 && (\strpos($context->calling_method_id, '::__construct')
                                     || \strpos($context->calling_method_id, '::unserialize')
+                                    || \strpos($context->calling_method_id, '::__unserialize')
                                     || $property_storage->allow_private_mutation
                                     || $property_var_pure_compatible);
 
