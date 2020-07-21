@@ -712,6 +712,26 @@ class CallAnalyzer
                 );
 
                 $type_assertions = array_merge($type_assertions, $assert_type_assertions);
+            } elseif ($arg_value && $assertion->rule === [['falsy']]) {
+                $assert_clauses = \Psalm\Type\Algebra::negateFormula(
+                    \Psalm\Type\Algebra::getFormula(
+                        \spl_object_id($arg_value),
+                        $arg_value,
+                        $context->self,
+                        $statements_analyzer,
+                        $statements_analyzer->getCodebase()
+                    )
+                );
+
+                $simplified_clauses = \Psalm\Type\Algebra::simplifyCNF(
+                    array_merge($context->clauses, $assert_clauses)
+                );
+
+                $assert_type_assertions = \Psalm\Type\Algebra::getTruthsFromFormula(
+                    $simplified_clauses
+                );
+
+                $type_assertions = array_merge($type_assertions, $assert_type_assertions);
             }
         }
 
