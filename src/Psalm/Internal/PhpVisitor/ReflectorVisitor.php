@@ -2,7 +2,6 @@
 namespace Psalm\Internal\PhpVisitor;
 
 use function array_filter;
-use function array_key_exists;
 use function array_merge;
 use function array_pop;
 use function assert;
@@ -37,7 +36,6 @@ use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\IncludeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
-use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\PropertyMap;
 use Psalm\Internal\Scanner\FileScanner;
@@ -67,7 +65,6 @@ use function strtolower;
 use function substr;
 use function trim;
 use function preg_split;
-use php_user_filter;
 use function strlen;
 
 /**

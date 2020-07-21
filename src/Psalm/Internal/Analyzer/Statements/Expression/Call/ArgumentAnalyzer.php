@@ -10,7 +10,8 @@ use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\CastAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\TypeAnalyzer;
+use Psalm\Internal\Type\Comparator\CallableTypeComparator;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Taint\Sink;
 use Psalm\Internal\Taint\TaintNode;
 use Psalm\Internal\Type\TemplateResult;
@@ -600,7 +601,7 @@ class ArgumentAnalyzer
             && !\Psalm\Internal\Codebase\InternalCallMapHandler::inCallMap($input_type->getSingleStringLiteral()->value)
         ) {
             foreach ($input_type->getAtomicTypes() as $key => $atomic_type) {
-                $candidate_callable = TypeAnalyzer::getCallableFromAtomic(
+                $candidate_callable = CallableTypeComparator::getCallableFromAtomic(
                     $codebase,
                     $atomic_type,
                     null,
@@ -614,9 +615,9 @@ class ArgumentAnalyzer
             }
         }
 
-        $union_comparison_results = new \Psalm\Internal\Analyzer\TypeComparisonResult();
+        $union_comparison_results = new \Psalm\Internal\Type\Comparator\TypeComparisonResult();
 
-        $type_match_found = TypeAnalyzer::isContainedBy(
+        $type_match_found = UnionTypeComparator::isContainedBy(
             $codebase,
             $input_type,
             $param_type,
@@ -660,7 +661,7 @@ class ArgumentAnalyzer
 
             foreach ($input_type->getAtomicTypes() as $input_type_part) {
                 if ($input_type_part instanceof Type\Atomic\ObjectLike) {
-                    $potential_method_id = TypeAnalyzer::getCallableMethodIdFromObjectLike(
+                    $potential_method_id = CallableTypeComparator::getCallableMethodIdFromObjectLike(
                         $input_type_part,
                         $codebase,
                         $context->calling_method_id,
@@ -749,7 +750,7 @@ class ArgumentAnalyzer
         }
 
         if (!$type_match_found && !$union_comparison_results->type_coerced) {
-            $types_can_be_identical = TypeAnalyzer::canBeContainedBy(
+            $types_can_be_identical = UnionTypeComparator::canBeContainedBy(
                 $codebase,
                 $input_type,
                 $param_type,

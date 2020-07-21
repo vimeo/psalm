@@ -540,17 +540,6 @@ abstract class Atomic implements TypeNode
         }
     }
 
-    /**
-     * @param  Atomic $other
-     *
-     * @return bool
-     */
-    public function shallowEquals(Atomic $other)
-    {
-        return $this->getKey() === $other->getKey()
-            && !($other instanceof ObjectLike && $this instanceof ObjectLike);
-    }
-
     public function __toString()
     {
         return '';

@@ -5,7 +5,6 @@ use PhpParser;
 use Psalm\Context;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
-use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Type;
 use function strtolower;
 use function implode;

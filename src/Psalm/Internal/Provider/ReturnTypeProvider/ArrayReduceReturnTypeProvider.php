@@ -8,7 +8,7 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
-use Psalm\Internal\Analyzer\TypeAnalyzer;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Issue\InvalidArgument;
 use Psalm\IssueBuffer;
@@ -123,14 +123,14 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
 
                 if ($carry_param->type
                     && (
-                        !TypeAnalyzer::isContainedBy(
+                        !UnionTypeComparator::isContainedBy(
                             $codebase,
                             $initial_type,
                             $carry_param->type
                         )
                         || (
                             !$reduce_return_type->hasMixed()
-                                && !TypeAnalyzer::isContainedBy(
+                                && !UnionTypeComparator::isContainedBy(
                                     $codebase,
                                     $reduce_return_type,
                                     $carry_param->type
@@ -156,7 +156,7 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
                 if ($item_param->type
                     && $array_arg_atomic_type
                     && !$array_arg_atomic_type->type_params[1]->hasMixed()
-                    && !TypeAnalyzer::isContainedBy(
+                    && !UnionTypeComparator::isContainedBy(
                         $codebase,
                         $array_arg_atomic_type->type_params[1],
                         $item_param->type

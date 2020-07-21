@@ -7,7 +7,7 @@ use function get_class;
 use function is_string;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
-use Psalm\Internal\Analyzer\TypeAnalyzer;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\ParadoxicalCondition;
 use Psalm\Issue\RedundantCondition;
 use Psalm\Issue\TypeDoesNotContainType;
@@ -1254,7 +1254,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                             $const_type_atomic = $const_type_atomic->getGenericArrayType();
                         }
 
-                        if (TypeAnalyzer::isContainedBy(
+                        if (UnionTypeComparator::isContainedBy(
                             $codebase,
                             $const_type_atomic->type_params[0],
                             $existing_var_type

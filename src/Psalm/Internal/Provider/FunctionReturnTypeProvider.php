@@ -1,7 +1,6 @@
 <?php
 namespace Psalm\Internal\Provider;
 
-use const PHP_VERSION;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
@@ -9,7 +8,6 @@ use Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface;
 use Psalm\StatementsSource;
 use Psalm\Type;
 use function strtolower;
-use function version_compare;
 
 class FunctionReturnTypeProvider
 {

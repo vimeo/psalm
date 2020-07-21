@@ -2,7 +2,6 @@
 declare(strict_types=1);
 namespace Psalm\Internal\PhpVisitor;
 
-use function array_map;
 use PhpParser\Node;
 use PhpParser\NodeVisitorAbstract;
 

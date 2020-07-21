@@ -7,7 +7,7 @@ use Psalm\Internal\Analyzer\AlgebraAnalyzer;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\TypeAnalyzer;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Clause;
 use Psalm\CodeLocation;
 use Psalm\Context;
@@ -834,7 +834,7 @@ class IfAnalyzer
                     && isset($outer_context->byref_constraints[$var_id])
                     && $byref_constraint->type
                     && ($outer_constraint_type = $outer_context->byref_constraints[$var_id]->type)
-                    && !TypeAnalyzer::isContainedBy(
+                    && !UnionTypeComparator::isContainedBy(
                         $codebase,
                         $byref_constraint->type,
                         $outer_constraint_type
@@ -1285,7 +1285,7 @@ class IfAnalyzer
                     && isset($outer_context->byref_constraints[$var_id])
                     && ($outer_constraint_type = $outer_context->byref_constraints[$var_id]->type)
                     && $byref_constraint->type
-                    && !TypeAnalyzer::isContainedBy(
+                    && !UnionTypeComparator::isContainedBy(
                         $codebase,
                         $byref_constraint->type,
                         $outer_constraint_type
@@ -1628,7 +1628,7 @@ class IfAnalyzer
                     && isset($outer_context->byref_constraints[$var_id])
                     && ($outer_constraint_type = $outer_context->byref_constraints[$var_id]->type)
                     && $byref_constraint->type
-                    && !TypeAnalyzer::isContainedBy(
+                    && !UnionTypeComparator::isContainedBy(
                         $codebase,
                         $byref_constraint->type,
                         $outer_constraint_type

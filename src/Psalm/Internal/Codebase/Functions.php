@@ -15,7 +15,6 @@ use Psalm\Storage\FunctionStorage;
 use function strpos;
 use function strtolower;
 use function substr;
-use Closure;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Internal\MethodIdentifier;
 
@@ -449,7 +448,7 @@ class Functions
         foreach ($function_callable->params as $i => $param) {
             if ($param->type && $param->type->hasCallableType() && isset($args[$i])) {
                 foreach ($param->type->getAtomicTypes() as $possible_callable) {
-                    $possible_callable = \Psalm\Internal\Analyzer\TypeAnalyzer::getCallableFromAtomic(
+                    $possible_callable = \Psalm\Internal\Type\Comparator\CallableTypeComparator::getCallableFromAtomic(
                         $codebase,
                         $possible_callable
                     );

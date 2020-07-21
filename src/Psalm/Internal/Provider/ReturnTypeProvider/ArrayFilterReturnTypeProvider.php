@@ -2,7 +2,6 @@
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use function array_map;
-use function assert;
 use function count;
 use function is_string;
 use PhpParser;

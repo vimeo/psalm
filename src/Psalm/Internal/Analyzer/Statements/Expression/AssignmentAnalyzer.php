@@ -9,7 +9,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAss
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\StaticPropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\TypeAnalyzer;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Exception\DocblockParseException;
@@ -384,7 +384,7 @@ class AssignmentAnalyzer
                 && isset($context->byref_constraints[$var_id])
                 && ($outer_constraint_type = $context->byref_constraints[$var_id]->type)
             ) {
-                if (!TypeAnalyzer::isContainedBy(
+                if (!UnionTypeComparator::isContainedBy(
                     $codebase,
                     $assign_value_type,
                     $outer_constraint_type,

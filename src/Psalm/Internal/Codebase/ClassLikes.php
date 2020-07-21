@@ -13,7 +13,6 @@ use const PHP_EOL;
 use PhpParser;
 use function preg_match;
 use function preg_replace;
-use Psalm\Aliases;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Exception\UnpopulatedClasslikeException;
@@ -40,7 +39,6 @@ use function strlen;
 use function strrpos;
 use function strtolower;
 use function substr;
-use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 
 /**
  * @internal

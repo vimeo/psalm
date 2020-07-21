@@ -6,7 +6,6 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\StatementsSource;
 use Psalm\Type;
-use function strtolower;
 
 class ArraySliceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface
 {

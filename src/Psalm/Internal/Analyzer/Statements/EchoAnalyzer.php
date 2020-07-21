@@ -2,7 +2,6 @@
 namespace Psalm\Internal\Analyzer\Statements;
 
 use PhpParser;
-use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CastAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;

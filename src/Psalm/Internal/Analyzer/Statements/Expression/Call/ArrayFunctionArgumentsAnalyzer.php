@@ -8,10 +8,10 @@ use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\TypeAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Type\TypeCombination;
 use Psalm\Internal\Type\UnionTemplateHandler;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\InvalidArgument;
@@ -801,9 +801,9 @@ class ArrayFunctionArgumentsAnalyzer
                 );
             }
 
-            $union_comparison_results = new \Psalm\Internal\Analyzer\TypeComparisonResult();
+            $union_comparison_results = new \Psalm\Internal\Type\Comparator\TypeComparisonResult();
 
-            $type_match_found = TypeAnalyzer::isContainedBy(
+            $type_match_found = UnionTypeComparator::isContainedBy(
                 $codebase,
                 $input_type,
                 $closure_param_type,
@@ -841,7 +841,7 @@ class ArrayFunctionArgumentsAnalyzer
             }
 
             if (!$union_comparison_results->type_coerced && !$type_match_found) {
-                $types_can_be_identical = TypeAnalyzer::canExpressionTypesBeIdentical(
+                $types_can_be_identical = UnionTypeComparator::canExpressionTypesBeIdentical(
                     $codebase,
                     $input_type,
                     $closure_param_type

@@ -5,7 +5,7 @@ use PhpParser;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\TypeAnalyzer;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\CodeLocation;
 use Psalm\FileSource;
 use Psalm\Issue\DocblockTypeContradiction;
@@ -87,7 +87,7 @@ class AssertionFinder
                                 $source->getTemplateTypeMap() ?: []
                             );
 
-                            if (!TypeAnalyzer::canExpressionTypesBeIdentical(
+                            if (!UnionTypeComparator::canExpressionTypesBeIdentical(
                                 $codebase,
                                 $instanceof_type,
                                 $var_type
@@ -517,11 +517,11 @@ class AssertionFinder
             ) {
                 $null_type = Type::getNull();
 
-                if (!TypeAnalyzer::isContainedBy(
+                if (!UnionTypeComparator::isContainedBy(
                     $codebase,
                     $var_type,
                     $null_type
-                ) && !TypeAnalyzer::isContainedBy(
+                ) && !UnionTypeComparator::isContainedBy(
                     $codebase,
                     $null_type,
                     $var_type
@@ -620,7 +620,7 @@ class AssertionFinder
                 if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
                     $true_type = Type::getTrue();
 
-                    if (!TypeAnalyzer::canExpressionTypesBeIdentical(
+                    if (!UnionTypeComparator::canExpressionTypesBeIdentical(
                         $codebase,
                         $true_type,
                         $var_type
@@ -725,7 +725,7 @@ class AssertionFinder
                 if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
                     $false_type = Type::getFalse();
 
-                    if (!TypeAnalyzer::canExpressionTypesBeIdentical(
+                    if (!UnionTypeComparator::canExpressionTypesBeIdentical(
                         $codebase,
                         $false_type,
                         $var_type
@@ -788,7 +788,7 @@ class AssertionFinder
             ) {
                 $empty_array_type = Type::getEmptyArray();
 
-                if (!TypeAnalyzer::canExpressionTypesBeIdentical(
+                if (!UnionTypeComparator::canExpressionTypesBeIdentical(
                     $codebase,
                     $empty_array_type,
                     $var_type
@@ -1020,7 +1020,7 @@ class AssertionFinder
                             && $other_type->getSingleStringLiteral()->value === $this_class_name))
                 ) {
                     // do nothing
-                } elseif (!TypeAnalyzer::canExpressionTypesBeIdentical(
+                } elseif (!UnionTypeComparator::canExpressionTypesBeIdentical(
                     $codebase,
                     $other_type,
                     $var_type
@@ -1060,7 +1060,7 @@ class AssertionFinder
             && $other_type
             && $conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
         ) {
-            if (!TypeAnalyzer::canExpressionTypesBeIdentical($codebase, $var_type, $other_type)) {
+            if (!UnionTypeComparator::canExpressionTypesBeIdentical($codebase, $var_type, $other_type)) {
                 if (IssueBuffer::accepts(
                     new TypeDoesNotContainType(
                         $var_type->getId() . ' cannot be identical to ' . $other_type->getId(),
@@ -1133,11 +1133,11 @@ class AssertionFinder
                 if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical) {
                     $null_type = Type::getNull();
 
-                    if (!TypeAnalyzer::isContainedBy(
+                    if (!UnionTypeComparator::isContainedBy(
                         $codebase,
                         $var_type,
                         $null_type
-                    ) && !TypeAnalyzer::isContainedBy(
+                    ) && !UnionTypeComparator::isContainedBy(
                         $codebase,
                         $null_type,
                         $var_type
@@ -1232,11 +1232,11 @@ class AssertionFinder
                 if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical) {
                     $false_type = Type::getFalse();
 
-                    if (!TypeAnalyzer::isContainedBy(
+                    if (!UnionTypeComparator::isContainedBy(
                         $codebase,
                         $var_type,
                         $false_type
-                    ) && !TypeAnalyzer::isContainedBy(
+                    ) && !UnionTypeComparator::isContainedBy(
                         $codebase,
                         $false_type,
                         $var_type
@@ -1341,11 +1341,11 @@ class AssertionFinder
                 if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical) {
                     $true_type = Type::getTrue();
 
-                    if (!TypeAnalyzer::isContainedBy(
+                    if (!UnionTypeComparator::isContainedBy(
                         $codebase,
                         $var_type,
                         $true_type
-                    ) && !TypeAnalyzer::isContainedBy(
+                    ) && !UnionTypeComparator::isContainedBy(
                         $codebase,
                         $true_type,
                         $var_type
@@ -1408,11 +1408,11 @@ class AssertionFinder
                 if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical) {
                     $empty_array_type = Type::getEmptyArray();
 
-                    if (!TypeAnalyzer::isContainedBy(
+                    if (!UnionTypeComparator::isContainedBy(
                         $codebase,
                         $var_type,
                         $empty_array_type
-                    ) && !TypeAnalyzer::isContainedBy(
+                    ) && !UnionTypeComparator::isContainedBy(
                         $codebase,
                         $empty_array_type,
                         $var_type
@@ -1627,7 +1627,7 @@ class AssertionFinder
                                 && $other_type->getSingleStringLiteral()->value === $this_class_name))
                     ) {
                         // do nothing
-                    } elseif (!TypeAnalyzer::canExpressionTypesBeIdentical(
+                    } elseif (!UnionTypeComparator::canExpressionTypesBeIdentical(
                         $codebase,
                         $other_type,
                         $var_type
@@ -2100,7 +2100,7 @@ class AssertionFinder
             return;
         }
 
-        if (!TypeAnalyzer::isContainedBy(
+        if (!UnionTypeComparator::isContainedBy(
             $codebase,
             $first_var_type,
             $expected_type

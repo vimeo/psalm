@@ -6,6 +6,7 @@ use Psalm\Aliases;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\FileManipulation\PropertyDocblockManipulator;
 use Psalm\Internal\Type\UnionTemplateHandler;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Config;
@@ -2168,7 +2169,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                                 null
                             );
 
-                            if (!TypeAnalyzer::isContainedBy($codebase, $extended_type, $template_type_copy)) {
+                            if (!UnionTypeComparator::isContainedBy($codebase, $extended_type, $template_type_copy)) {
                                 if (IssueBuffer::accepts(
                                     new InvalidTemplateParam(
                                         'Extended template param ' . $template_name

@@ -5,7 +5,7 @@ use PhpParser;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\TypeAnalyzer;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\CodeLocation;
 use Psalm\Context;
@@ -829,14 +829,14 @@ class CallAnalyzer
                     if (isset($template_result->upper_bounds[$template_name][$defining_id])) {
                         $upper_bound_type = $template_result->upper_bounds[$template_name][$defining_id][0];
 
-                        $union_comparison_result = new \Psalm\Internal\Analyzer\TypeComparisonResult();
+                        $union_comparison_result = new \Psalm\Internal\Type\Comparator\TypeComparisonResult();
 
                         if (count($template_result->lower_bounds_unintersectable_types) > 1) {
                             $upper_bound_type = $template_result->lower_bounds_unintersectable_types[0];
                             $lower_bound_type = $template_result->lower_bounds_unintersectable_types[1];
                         }
 
-                        if (!TypeAnalyzer::isContainedBy(
+                        if (!UnionTypeComparator::isContainedBy(
                             $statements_analyzer->getCodebase(),
                             $upper_bound_type,
                             $lower_bound_type,

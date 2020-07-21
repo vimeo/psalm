@@ -9,7 +9,7 @@ use function explode;
 use function implode;
 use function preg_quote;
 use function preg_replace;
-use Psalm\Internal\Analyzer\TypeAnalyzer;
+use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\TypeCombination;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
@@ -593,7 +593,7 @@ abstract class Type
                         if ($type_1_atomic instanceof TNamedObject
                             && $type_2_atomic instanceof TNamedObject
                         ) {
-                            if (TypeAnalyzer::isAtomicContainedBy(
+                            if (AtomicTypeComparator::isContainedBy(
                                 $codebase,
                                 $type_2_atomic,
                                 $type_1_atomic
@@ -601,7 +601,7 @@ abstract class Type
                                 $combined_type->removeType($t1_key);
                                 $combined_type->addType(clone $type_2_atomic);
                                 $intersection_performed = true;
-                            } elseif (TypeAnalyzer::isAtomicContainedBy(
+                            } elseif (AtomicTypeComparator::isContainedBy(
                                 $codebase,
                                 $type_1_atomic,
                                 $type_2_atomic

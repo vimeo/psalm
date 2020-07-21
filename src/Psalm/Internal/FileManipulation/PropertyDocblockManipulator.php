@@ -1,20 +1,15 @@
 <?php
 namespace Psalm\Internal\FileManipulation;
 
-use PhpParser;
 use function array_shift;
 use function count;
 use function ltrim;
 use PhpParser\Node\Stmt\Property;
-use function preg_match;
 use Psalm\DocComment;
 use Psalm\FileManipulation;
-use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use function str_replace;
-use function str_split;
 use function strlen;
-use function strpos;
 use function strrpos;
 use function substr;
 

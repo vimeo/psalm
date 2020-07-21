@@ -26,7 +26,6 @@ use Psalm\Progress\Progress;
 use function strpos;
 use function substr;
 use function usort;
-use function array_diff_key;
 use function array_values;
 
 /**

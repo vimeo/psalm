@@ -4,9 +4,10 @@ namespace Psalm\Internal\Type;
 
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\TypeAnalyzer;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Type\Union;
 use Psalm\Type\Atomic;
+use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use function array_merge;
 use function array_values;
 use function count;
@@ -380,7 +381,7 @@ class UnionTemplateHandler
             }
 
             if ($base_type instanceof Atomic\TCallable) {
-                $matching_atomic_type = TypeAnalyzer::getCallableFromAtomic(
+                $matching_atomic_type = CallableTypeComparator::getCallableFromAtomic(
                     $codebase,
                     $atomic_input_type,
                     null,
@@ -609,7 +610,7 @@ class UnionTemplateHandler
                 && (
                     $atomic_type->as->isMixed()
                     || !$codebase
-                    || TypeAnalyzer::canBeContainedBy(
+                    || UnionTypeComparator::canBeContainedBy(
                         $codebase,
                         $input_type,
                         $atomic_type->as,
@@ -681,7 +682,7 @@ class UnionTemplateHandler
             $matching_input_keys = [];
 
             if ($codebase
-                && TypeAnalyzer::canBeContainedBy(
+                && UnionTypeComparator::canBeContainedBy(
                     $codebase,
                     $input_type,
                     $replacement_type,

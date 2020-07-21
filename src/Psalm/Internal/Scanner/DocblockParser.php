@@ -3,14 +3,12 @@
 namespace Psalm\Internal\Scanner;
 
 use const PREG_OFFSET_CAPTURE;
-use function array_filter;
 use function explode;
 use function implode;
 use function min;
 use function preg_match;
 use function preg_replace;
 use function rtrim;
-use function str_repeat;
 use function str_replace;
 use function strlen;
 use function strpos;

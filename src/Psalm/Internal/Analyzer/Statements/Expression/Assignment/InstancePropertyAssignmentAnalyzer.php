@@ -11,8 +11,7 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\InstancePropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\TypeAnalyzer;
-use Psalm\Internal\FileManipulation\FileManipulationBuffer;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\DeprecatedProperty;
@@ -45,7 +44,6 @@ use Psalm\Type\Atomic\TObject;
 use function count;
 use function in_array;
 use function strtolower;
-use function explode;
 use Psalm\Internal\Taint\TaintNode;
 
 /**
@@ -914,9 +912,9 @@ class InstancePropertyAssignmentAnalyzer
                 continue;
             }
 
-            $union_comparison_results = new \Psalm\Internal\Analyzer\TypeComparisonResult();
+            $union_comparison_results = new \Psalm\Internal\Type\Comparator\TypeComparisonResult();
 
-            $type_match_found = TypeAnalyzer::isContainedBy(
+            $type_match_found = UnionTypeComparator::isContainedBy(
                 $codebase,
                 $assignment_value_type,
                 $class_property_type,
@@ -985,7 +983,7 @@ class InstancePropertyAssignmentAnalyzer
             }
 
             if (!$type_match_found && !$union_comparison_results->type_coerced) {
-                if (TypeAnalyzer::canBeContainedBy(
+                if (UnionTypeComparator::canBeContainedBy(
                     $codebase,
                     $assignment_value_type,
                     $class_property_type,

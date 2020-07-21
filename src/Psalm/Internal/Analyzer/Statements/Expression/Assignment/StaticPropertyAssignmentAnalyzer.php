@@ -2,51 +2,25 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression\Assignment;
 
 use PhpParser;
-use PhpParser\Node\Expr\PropertyFetch;
-use PhpParser\Node\Stmt\PropertyProperty;
 use Psalm\Internal\Analyzer\ClassAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
-use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
-use Psalm\Internal\Analyzer\Statements\Expression\Fetch\InstancePropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\TypeAnalyzer;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\Issue\DeprecatedProperty;
 use Psalm\Issue\ImplicitToStringCast;
-use Psalm\Issue\InaccessibleProperty;
-use Psalm\Issue\InternalProperty;
-use Psalm\Issue\InvalidPropertyAssignment;
 use Psalm\Issue\InvalidPropertyAssignmentValue;
-use Psalm\Issue\LoopInvalidation;
-use Psalm\Issue\MixedAssignment;
-use Psalm\Issue\MixedPropertyAssignment;
 use Psalm\Issue\MixedPropertyTypeCoercion;
-use Psalm\Issue\NoInterfaceProperties;
-use Psalm\Issue\NullPropertyAssignment;
-use Psalm\Issue\PossiblyFalsePropertyAssignmentValue;
-use Psalm\Issue\PossiblyInvalidPropertyAssignment;
 use Psalm\Issue\PossiblyInvalidPropertyAssignmentValue;
-use Psalm\Issue\PossiblyNullPropertyAssignment;
-use Psalm\Issue\PossiblyNullPropertyAssignmentValue;
 use Psalm\Issue\PropertyTypeCoercion;
-use Psalm\Issue\UndefinedClass;
 use Psalm\Issue\UndefinedPropertyAssignment;
-use Psalm\Issue\UndefinedMagicPropertyAssignment;
-use Psalm\Issue\UndefinedThisPropertyAssignment;
 use Psalm\IssueBuffer;
 use Psalm\Type;
-use Psalm\Type\Atomic\TNamedObject;
-use Psalm\Type\Atomic\TNull;
-use Psalm\Type\Atomic\TObject;
-use function count;
-use function in_array;
 use function strtolower;
 use function explode;
-use Psalm\Internal\Taint\TaintNode;
 
 /**
  * @internal
@@ -224,9 +198,9 @@ class StaticPropertyAssignmentAnalyzer
             $class_storage->parent_class
         );
 
-        $union_comparison_results = new \Psalm\Internal\Analyzer\TypeComparisonResult();
+        $union_comparison_results = new \Psalm\Internal\Type\Comparator\TypeComparisonResult();
 
-        $type_match_found = TypeAnalyzer::isContainedBy(
+        $type_match_found = UnionTypeComparator::isContainedBy(
             $codebase,
             $assignment_value_type,
             $class_property_type,
@@ -289,7 +263,7 @@ class StaticPropertyAssignmentAnalyzer
         }
 
         if (!$type_match_found && !$union_comparison_results->type_coerced) {
-            if (TypeAnalyzer::canBeContainedBy($codebase, $assignment_value_type, $class_property_type)) {
+            if (UnionTypeComparator::canBeContainedBy($codebase, $assignment_value_type, $class_property_type)) {
                 if (IssueBuffer::accepts(
                     new PossiblyInvalidPropertyAssignmentValue(
                         $var_id . ' with declared type \''

@@ -2,9 +2,8 @@
 namespace Psalm\Internal\TypeVisitor;
 
 use Psalm\CodeLocation;
-use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
-use Psalm\Internal\Analyzer\TypeAnalyzer;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type\Atomic\TArray;
@@ -266,7 +265,7 @@ class TypeChecker extends NodeVisitor
                     $this->source->getParentFQCLN()
                 );
 
-                if (!TypeAnalyzer::isContainedBy($codebase, $type_param, $expected_type_param)) {
+                if (!UnionTypeComparator::isContainedBy($codebase, $type_param, $expected_type_param)) {
                     if (IssueBuffer::accepts(
                         new InvalidTemplateParam(
                             'Extended template param ' . $template_name

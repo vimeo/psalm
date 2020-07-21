@@ -17,8 +17,6 @@ use LanguageServerProtocol\TextDocumentItem;
 use LanguageServerProtocol\VersionedTextDocumentIdentifier;
 use Psalm\Codebase;
 use Psalm\Internal\LanguageServer\LanguageServer;
-use function strlen;
-use function strpos;
 use function substr_count;
 
 /**

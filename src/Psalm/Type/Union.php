@@ -11,7 +11,7 @@ use function implode;
 use function is_string;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
-use Psalm\Internal\Analyzer\TypeAnalyzer;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeCombination;
 use Psalm\StatementsSource;
@@ -1383,7 +1383,7 @@ class Union implements TypeNode
                         $template_type = Type::getNull();
                     }
 
-                    if (TypeAnalyzer::isContainedBy(
+                    if (UnionTypeComparator::isContainedBy(
                         $codebase,
                         $template_type,
                         $atomic_type->conditional_type
@@ -1393,12 +1393,12 @@ class Union implements TypeNode
                             $template_result,
                             $codebase
                         );
-                    } elseif (TypeAnalyzer::isContainedBy(
+                    } elseif (UnionTypeComparator::isContainedBy(
                         $codebase,
                         $template_type,
                         $atomic_type->as_type
                     )
-                        && !TypeAnalyzer::isContainedBy(
+                        && !UnionTypeComparator::isContainedBy(
                             $codebase,
                             $atomic_type->as_type,
                             $template_type

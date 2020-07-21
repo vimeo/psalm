@@ -5,7 +5,7 @@ use PhpParser;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\TypeAnalyzer;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\EmptyArrayAccess;
@@ -232,7 +232,7 @@ class ArrayFetchAnalyzer
                             || $offset_atomic_type instanceof TInt
                         ) {
                             if (!isset($const_array_key_atomic_types[$offset_key])
-                                && !TypeAnalyzer::isContainedBy(
+                                && !UnionTypeComparator::isContainedBy(
                                     $codebase,
                                     new Type\Union([$offset_atomic_type]),
                                     $const_array_key_type
@@ -240,7 +240,7 @@ class ArrayFetchAnalyzer
                             ) {
                                 $new_offset_type->removeType($offset_key);
                             }
-                        } elseif (!TypeAnalyzer::isContainedBy(
+                        } elseif (!UnionTypeComparator::isContainedBy(
                             $codebase,
                             $const_array_key_type,
                             new Type\Union([$offset_atomic_type])
@@ -631,7 +631,7 @@ class ArrayFetchAnalyzer
                             }
                         }
 
-                        $union_comparison_results = new \Psalm\Internal\Analyzer\TypeComparisonResult();
+                        $union_comparison_results = new \Psalm\Internal\Type\Comparator\TypeComparisonResult();
 
                         if ($original_type instanceof TTemplateParam && $templated_offset_type) {
                             foreach ($templated_offset_type->as->getAtomicTypes() as $offset_as) {
@@ -652,7 +652,7 @@ class ArrayFetchAnalyzer
                                 }
                             }
                         } else {
-                            $offset_type_contained_by_expected = TypeAnalyzer::isContainedBy(
+                            $offset_type_contained_by_expected = UnionTypeComparator::isContainedBy(
                                 $codebase,
                                 $offset_type,
                                 $expected_offset_type,
@@ -708,7 +708,7 @@ class ArrayFetchAnalyzer
                                     $expected_offset_types[] = $expected_offset_type->getId();
                                 }
 
-                                if (TypeAnalyzer::canExpressionTypesBeIdentical(
+                                if (UnionTypeComparator::canExpressionTypesBeIdentical(
                                     $codebase,
                                     $offset_type,
                                     $expected_offset_type
@@ -999,9 +999,9 @@ class ArrayFetchAnalyzer
                                 ? Type::getArrayKey()
                                 : $generic_key_type;
 
-                        $union_comparison_results = new \Psalm\Internal\Analyzer\TypeComparisonResult();
+                        $union_comparison_results = new \Psalm\Internal\Type\Comparator\TypeComparisonResult();
 
-                        $is_contained = TypeAnalyzer::isContainedBy(
+                        $is_contained = UnionTypeComparator::isContainedBy(
                             $codebase,
                             $offset_type,
                             $key_type,
@@ -1011,14 +1011,14 @@ class ArrayFetchAnalyzer
                         );
 
                         if ($context->inside_isset && !$is_contained) {
-                            $is_contained = TypeAnalyzer::isContainedBy(
+                            $is_contained = UnionTypeComparator::isContainedBy(
                                 $codebase,
                                 $key_type,
                                 $offset_type,
                                 true,
                                 $offset_type->ignore_falsable_issues
                             )
-                            || TypeAnalyzer::canBeContainedBy(
+                            || UnionTypeComparator::canBeContainedBy(
                                 $codebase,
                                 $offset_type,
                                 $key_type,
@@ -1157,7 +1157,7 @@ class ArrayFetchAnalyzer
                     $valid_offset_type = Type::getInt();
                 }
 
-                if (!TypeAnalyzer::isContainedBy(
+                if (!UnionTypeComparator::isContainedBy(
                     $codebase,
                     $offset_type,
                     $valid_offset_type,

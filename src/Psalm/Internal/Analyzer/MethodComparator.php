@@ -4,6 +4,8 @@ namespace Psalm\Internal\Analyzer;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\ImplementedParamTypeMismatch;
 use Psalm\Issue\ImplementedReturnTypeMismatch;
 use Psalm\Issue\MethodSignatureMismatch;
@@ -446,12 +448,12 @@ class MethodComparator
         $is_contained_by = $codebase->php_major_version >= 7
             && $codebase->php_minor_version >= 4
             && $guide_param_signature_type
-            ? TypeAnalyzer::isContainedBy(
+            ? UnionTypeComparator::isContainedBy(
                 $codebase,
                 $guide_param_signature_type,
                 $implementer_param_signature_type
             )
-            : TypeAnalyzer::isContainedByInPhp(
+            : UnionTypeComparator::isContainedByInPhp(
                 $guide_param_signature_type,
                 $implementer_param_signature_type
             );
@@ -603,7 +605,7 @@ class MethodComparator
 
         $union_comparison_results = new TypeComparisonResult();
 
-        if (!TypeAnalyzer::isContainedBy(
+        if (!UnionTypeComparator::isContainedBy(
             $codebase,
             $guide_method_storage_param_type,
             $implementer_method_storage_param_type,
@@ -630,7 +632,7 @@ class MethodComparator
                     }
                 }
             } else {
-                if (TypeAnalyzer::isContainedBy(
+                if (UnionTypeComparator::isContainedBy(
                     $codebase,
                     $implementer_method_storage_param_type,
                     $guide_method_storage_param_type,
@@ -721,12 +723,12 @@ class MethodComparator
         $is_contained_by = $codebase->php_major_version >= 7
             && $codebase->php_minor_version >= 4
             && $implementer_signature_return_type
-            ? TypeAnalyzer::isContainedBy(
+            ? UnionTypeComparator::isContainedBy(
                 $codebase,
                 $implementer_signature_return_type,
                 $guide_signature_return_type
             )
-            : TypeAnalyzer::isContainedByInPhp($implementer_signature_return_type, $guide_signature_return_type);
+            : UnionTypeComparator::isContainedByInPhp($implementer_signature_return_type, $guide_signature_return_type);
 
         if (!$is_contained_by) {
             if ($guide_classlike_storage->is_trait === $implementer_classlike_storage->is_trait
@@ -848,7 +850,7 @@ class MethodComparator
 
         $union_comparison_results = new TypeComparisonResult();
 
-        if (!TypeAnalyzer::isContainedBy(
+        if (!UnionTypeComparator::isContainedBy(
             $codebase,
             $implementer_method_storage_return_type,
             $guide_method_storage_return_type,

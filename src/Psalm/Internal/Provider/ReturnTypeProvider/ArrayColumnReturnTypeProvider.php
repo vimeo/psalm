@@ -1,11 +1,9 @@
 <?php
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
-use function assert;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\Internal\Codebase\CallMap;
 use Psalm\StatementsSource;
 use Psalm\Type;
 

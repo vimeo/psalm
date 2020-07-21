@@ -5,14 +5,13 @@ use PhpParser;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
-use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\TypeAnalyzer;
+use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\CodeLocation;
 use Psalm\Context;
@@ -577,7 +576,7 @@ class ForeachAnalyzer
                     }
                 }
 
-                if (TypeAnalyzer::isAtomicContainedBy(
+                if (AtomicTypeComparator::isContainedBy(
                     $codebase,
                     $iterator_atomic_type,
                     new Type\Atomic\TIterable([Type::getMixed(), Type::getMixed()])

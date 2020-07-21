@@ -3,8 +3,6 @@ namespace Psalm\Internal\Analyzer;
 
 use PhpParser;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
-use Psalm\Internal\Taint\TaintNode;
-use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Type;
 use function strtolower;

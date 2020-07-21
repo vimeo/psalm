@@ -13,7 +13,7 @@ use const PHP_URL_USER;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\Internal\Analyzer\TypeAnalyzer;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\StatementsSource;
 use Psalm\Type;
 
@@ -57,7 +57,7 @@ class ParseUrlReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
                         new Type\Atomic\TLiteralInt(PHP_URL_PORT),
                     ]);
 
-                    if (TypeAnalyzer::isContainedBy(
+                    if (UnionTypeComparator::isContainedBy(
                         $codebase,
                         $component_type,
                         $acceptable_string_component_type
@@ -81,7 +81,7 @@ class ParseUrlReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
                         return $nullable_falsable_string;
                     }
 
-                    if (TypeAnalyzer::isContainedBy(
+                    if (UnionTypeComparator::isContainedBy(
                         $codebase,
                         $component_type,
                         $acceptable_int_component_type

@@ -505,7 +505,7 @@ class ClassTemplateTest extends TestCase
                 '<?php
                     namespace Bar;
 
-                    /** @template T */
+                    /** @template T as object */
                     class Foo
                     {
                         /**
@@ -2279,7 +2279,7 @@ class ClassTemplateTest extends TestCase
                 '<?php
                     class TEM {
                         /**
-                         * @template Entity
+                         * @template Entity as object
                          * @psalm-param class-string<Entity> $type
                          * @psalm-return EQB<Entity>
                          */
@@ -2292,7 +2292,7 @@ class ClassTemplateTest extends TestCase
                     }
 
                     /**
-                     * @template Entity
+                     * @template Entity as object
                      */
                     class EQB {
                         /**

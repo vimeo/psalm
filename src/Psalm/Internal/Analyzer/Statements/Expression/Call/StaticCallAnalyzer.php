@@ -1085,7 +1085,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     if ($method_storage->abstract
                         && $stmt->class instanceof PhpParser\Node\Name
                         && (!$context->self
-                            || !\Psalm\Internal\Analyzer\TypeAnalyzer::isContainedBy(
+                            || !\Psalm\Internal\Type\Comparator\UnionTypeComparator::isContainedBy(
                                 $codebase,
                                 $context->vars_in_scope['$this']
                                     ?? new Type\Union([

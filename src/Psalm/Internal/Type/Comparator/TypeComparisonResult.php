@@ -1,6 +1,6 @@
 <?php
 
-namespace Psalm\Internal\Analyzer;
+namespace Psalm\Internal\Type\Comparator;
 
 class TypeComparisonResult
 {

@@ -43,7 +43,7 @@ class ArrayAssignmentAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         Context $context,
-        $assign_value,
+        ?PhpParser\Node\Expr $assign_value,
         Type\Union $assignment_value_type
     ) {
         $nesting = 0;

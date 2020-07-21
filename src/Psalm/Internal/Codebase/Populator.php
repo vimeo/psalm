@@ -4,11 +4,10 @@ namespace Psalm\Internal\Codebase;
 use function array_keys;
 use function array_merge;
 use function count;
-use function explode;
 use function is_int;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
-use Psalm\Internal\Analyzer\TypeAnalyzer;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
@@ -356,14 +355,14 @@ class Populator
                                     !== $declaring_method_storage->signature_return_type
                             ) {
                                 if ($declaring_method_storage->signature_return_type
-                                    && TypeAnalyzer::isSimplyContainedBy(
+                                    && UnionTypeComparator::isSimplyContainedBy(
                                         $method_storage->signature_return_type,
                                         $declaring_method_storage->signature_return_type
                                     )
                                 ) {
                                     $method_storage->return_type = $declaring_method_storage->return_type;
                                     $method_storage->inherited_return_type = true;
-                                } elseif (TypeAnalyzer::isSimplyContainedBy(
+                                } elseif (UnionTypeComparator::isSimplyContainedBy(
                                     $declaring_method_storage->return_type,
                                     $method_storage->signature_return_type
                                 )) {
@@ -850,7 +849,7 @@ class Populator
                                 && $interface_method_storage->signature_return_type
                                 && $interface_method_storage->return_type
                                     !== $interface_method_storage->signature_return_type
-                                && TypeAnalyzer::isSimplyContainedBy(
+                                && UnionTypeComparator::isSimplyContainedBy(
                                     $interface_method_storage->signature_return_type,
                                     $method_storage->signature_return_type
                                 )
