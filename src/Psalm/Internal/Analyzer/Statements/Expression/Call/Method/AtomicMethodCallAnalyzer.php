@@ -844,7 +844,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                         (string) $appearing_method_id,
                         (string) $declaring_method_id,
                         $context,
-                        $source,
+                        $statements_analyzer,
                         $codebase,
                         $file_manipulations,
                         $return_type_candidate
