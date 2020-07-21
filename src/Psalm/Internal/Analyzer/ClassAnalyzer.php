@@ -1483,7 +1483,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         ClassLikeStorage $storage,
         Context $class_context,
         Context $global_context = null,
-        MethodAnalyzer &$constructor_analyzer = null
+        MethodAnalyzer &$constructor_analyzer = null,
+        TraitAnalyzer $previous_trait_analyzer = null
     ) {
         $codebase = $this->getCodebase();
 
@@ -1502,7 +1503,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 if (IssueBuffer::accepts(
                     new UndefinedTrait(
                         'Trait ' . $fq_trait_name . ' does not exist',
-                        new CodeLocation($this, $trait_name)
+                        new CodeLocation($previous_trait_analyzer ?: $this, $trait_name)
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues()
                 )) {
@@ -1513,7 +1514,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     if (IssueBuffer::accepts(
                         new UndefinedTrait(
                             'Trait ' . $fq_trait_name . ' has wrong casing',
-                            new CodeLocation($this, $trait_name)
+                            new CodeLocation($previous_trait_analyzer ?: $this, $trait_name)
                         ),
                         $storage->suppressed_issues + $this->getSuppressedIssues()
                     )) {
@@ -1530,7 +1531,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     if (IssueBuffer::accepts(
                         new DeprecatedTrait(
                             'Trait ' . $fq_trait_name . ' is deprecated',
-                            new CodeLocation($this, $trait_name)
+                            new CodeLocation($previous_trait_analyzer ?: $this, $trait_name)
                         ),
                         $storage->suppressed_issues + $this->getSuppressedIssues()
                     )) {
@@ -1542,7 +1543,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     if (IssueBuffer::accepts(
                         new MutableDependency(
                             $storage->name . ' is marked immutable but ' . $fq_trait_name . ' is not',
-                            new CodeLocation($this, $trait_name)
+                            new CodeLocation($previous_trait_analyzer ?: $this, $trait_name)
                         ),
                         $storage->suppressed_issues + $this->getSuppressedIssues()
                     )) {
@@ -1585,7 +1586,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                             $storage,
                             $class_context,
                             $global_context,
-                            $constructor_analyzer
+                            $constructor_analyzer,
+                            $trait_analyzer
                         ) === false) {
                             return false;
                         }
