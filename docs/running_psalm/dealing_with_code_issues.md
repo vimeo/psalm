@@ -22,7 +22,7 @@ There are two ways to suppress an issue – via the Psalm config or via a functi
 
 You can use the `<issueHandlers>` tag in the config file to influence how issues are treated.
 
-Some issue types allow the use of `referencedMethod` and `referencedClass` to isolate known trouble spots.
+Some issue types allow the use of `referencedMethod`, `referencedClass` or `referencedVariable` to isolate known trouble spots.
 
 ```xml
 <issueHandlers>
@@ -50,6 +50,11 @@ Some issue types allow the use of `referencedMethod` and `referencedClass` to is
         <referencedProperty name="Symfony\Component\Validator\ConstraintValidator::$context" />
     </errorLevel>
   </PropertyNotSetInConstructor>
+  <UndefinedGlobalVariable>
+    <errorLevel type="suppress">
+      <referencedVariable name="fooBar" /> <!-- if your variable is "$fooBar" -->
+    </errorLevel>
+</UndefinedGlobalVariable>
 </issueHandlers>
 ```
 
