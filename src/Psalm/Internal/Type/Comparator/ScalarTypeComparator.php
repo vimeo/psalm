@@ -183,7 +183,7 @@ class ScalarTypeComparator
             return true;
         }
 
-         if ($container_type_part instanceof TArrayKey
+        if ($container_type_part instanceof TArrayKey
             && $input_type_part instanceof TNumeric
         ) {
             return true;
