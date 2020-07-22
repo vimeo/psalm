@@ -1,4 +1,7 @@
 <?php
+
+namespace Psalm;
+
 require_once __DIR__ . '/command_functions.php';
 use PackageVersions\Versions;
 use Psalm\Internal\PluginManager\Command\DisableCommand;
@@ -9,7 +12,7 @@ use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Input\InputOption;
 
 $current_dir = (string)getcwd() . DIRECTORY_SEPARATOR;
-$vendor_dir = getVendorDir($current_dir);
+$vendor_dir = \Psalm\getVendorDir($current_dir);
 requireAutoloaders($current_dir, false, $vendor_dir);
 
 $app = new Application('psalm-plugin', Versions::getVersion('vimeo/psalm'));

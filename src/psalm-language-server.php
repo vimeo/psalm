@@ -1,9 +1,8 @@
 <?php
-require_once('command_functions.php');
 
-use Psalm\Config;
-use Psalm\Internal\Analyzer\ProjectAnalyzer;
-use Psalm\Internal\IncludeCollector;
+use Psalm;
+
+require_once('command_functions.php');
 
 gc_disable();
 
@@ -11,6 +10,10 @@ gc_disable();
 error_reporting(-1);
 
 require_once __DIR__ . '/Psalm/Internal/exception_handler.php';
+
+use Psalm\Config;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\IncludeCollector;
 
 $valid_short_options = [
     'h',
@@ -190,14 +193,14 @@ if (isset($options['r']) && is_string($options['r'])) {
     $current_dir = $root_path . DIRECTORY_SEPARATOR;
 }
 
-$vendor_dir = getVendorDir($current_dir);
+$vendor_dir = \Psalm\getVendorDir($current_dir);
 
 require_once __DIR__ . '/Psalm/Internal/IncludeCollector.php';
 $include_collector = new IncludeCollector();
 
 $first_autoloader = $include_collector->runAndCollect(
     function () use ($current_dir, $options, $vendor_dir) {
-        return requireAutoloaders($current_dir, isset($options['r']), $vendor_dir);
+        return \Psalm\requireAutoloaders($current_dir, isset($options['r']), $vendor_dir);
     }
 );
 
@@ -210,7 +213,7 @@ $ini_handler->check();
 
 setlocale(LC_CTYPE, 'C');
 
-$path_to_config = get_path_to_config($options);
+$path_to_config = \Psalm\get_path_to_config($options);
 
 if (isset($options['tcp'])) {
     if (!is_string($options['tcp'])) {
@@ -221,7 +224,7 @@ if (isset($options['tcp'])) {
 
 $find_dead_code = isset($options['find-dead-code']);
 
-$config = initialiseConfig($path_to_config, $current_dir, \Psalm\Report::TYPE_CONSOLE, $first_autoloader);
+$config = \Psalm\initialiseConfig($path_to_config, $current_dir, \Psalm\Report::TYPE_CONSOLE, $first_autoloader);
 $config->setIncludeCollector($include_collector);
 
 if ($config->resolve_from_config_file) {
@@ -239,13 +242,13 @@ if (isset($options['clear-cache'])) {
     exit;
 }
 
-$providers = new Psalm\Internal\Provider\Providers(
-    new Psalm\Internal\Provider\FileProvider,
-    new Psalm\Internal\Provider\ParserCacheProvider($config),
-    new Psalm\Internal\Provider\FileStorageCacheProvider($config),
-    new Psalm\Internal\Provider\ClassLikeStorageCacheProvider($config),
-    new Psalm\Internal\Provider\FileReferenceCacheProvider($config),
-    new Psalm\Internal\Provider\ProjectCacheProvider($current_dir . DIRECTORY_SEPARATOR . 'composer.lock')
+$providers = new \Psalm\Internal\Provider\Providers(
+    new \Psalm\Internal\Provider\FileProvider,
+    new \Psalm\Internal\Provider\ParserCacheProvider($config),
+    new \Psalm\Internal\Provider\FileStorageCacheProvider($config),
+    new \Psalm\Internal\Provider\ClassLikeStorageCacheProvider($config),
+    new \Psalm\Internal\Provider\FileReferenceCacheProvider($config),
+    new \Psalm\Internal\Provider\ProjectCacheProvider($current_dir . DIRECTORY_SEPARATOR . 'composer.lock')
 );
 
 $project_analyzer = new ProjectAnalyzer(

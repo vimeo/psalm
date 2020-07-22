@@ -1,5 +1,15 @@
 <?php
+
+namespace Psalm;
+
+gc_collect_cycles();
+gc_disable();
+
+// show all errors
+error_reporting(-1);
+
 require_once('command_functions.php');
+require_once __DIR__ . '/Psalm/Internal/exception_handler.php';
 
 use Psalm\ErrorBaseline;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
@@ -11,9 +21,48 @@ use Psalm\Progress\DebugProgress;
 use Psalm\Progress\DefaultProgress;
 use Psalm\Progress\LongProgress;
 use Psalm\Progress\VoidProgress;
-
-// show all errors
-error_reporting(-1);
+use function array_slice;
+use function getopt;
+use function implode;
+use function array_map;
+use function substr;
+use function preg_replace;
+use function in_array;
+use function fwrite;
+use const STDERR;
+use const PHP_EOL;
+use function array_key_exists;
+use function ini_set;
+use function is_array;
+use function getcwd;
+use const DIRECTORY_SEPARATOR;
+use function is_string;
+use function realpath;
+use function file_exists;
+use function array_values;
+use function array_filter;
+use function strpos;
+use function count;
+use function preg_match;
+use function file_put_contents;
+use function is_numeric;
+use function chdir;
+use function max;
+use function ini_get;
+use const PHP_OS;
+use function version_compare;
+use const PHP_VERSION;
+use function is_null;
+use function setlocale;
+use const LC_CTYPE;
+use function microtime;
+use function str_repeat;
+use function json_encode;
+use function array_merge;
+use function array_sum;
+use function gc_collect_cycles;
+use function gc_disable;
+use function error_reporting;
 
 $valid_short_options = [
     'f:',
@@ -79,9 +128,6 @@ $valid_long_options = [
     'error-level:',
 ];
 
-gc_collect_cycles();
-gc_disable();
-
 $args = array_slice($argv, 1);
 
 // get options from command line
@@ -101,8 +147,6 @@ if (isset($options['refactor'])) {
     require_once __DIR__ . '/psalm-refactor.php';
     exit;
 }
-
-require_once __DIR__ . '/Psalm/Internal/exception_handler.php';
 
 array_map(
     /**
@@ -212,7 +256,7 @@ if (isset($options['r']) && is_string($options['r'])) {
 
 $path_to_config = get_path_to_config($options);
 
-$vendor_dir = getVendorDir($current_dir);
+$vendor_dir = \Psalm\getVendorDir($current_dir);
 
 require_once __DIR__ . '/' . 'Psalm/Internal/IncludeCollector.php';
 
@@ -278,21 +322,21 @@ if (isset($options['i'])) {
         $init_source_dir = $args[0];
     }
 
-    $vendor_dir = getVendorDir($current_dir);
+    $vendor_dir = \Psalm\getVendorDir($current_dir);
 
     if ($init_level === null) {
         echo "Calculating best config level based on project files\n";
-        Psalm\Config\Creator::createBareConfig($current_dir, $init_source_dir, $vendor_dir);
+        \Psalm\Config\Creator::createBareConfig($current_dir, $init_source_dir, $vendor_dir);
         $config = \Psalm\Config::getInstance();
     } else {
         try {
-            $template_contents = Psalm\Config\Creator::getContents(
+            $template_contents = \Psalm\Config\Creator::getContents(
                 $current_dir,
                 $init_source_dir,
                 $init_level,
                 $vendor_dir
             );
-        } catch (Psalm\Exception\ConfigCreationException $e) {
+        } catch (\Psalm\Exception\ConfigCreationException $e) {
             die($e->getMessage() . PHP_EOL);
         }
 
@@ -415,7 +459,7 @@ if (isset($options['set-baseline'])) {
     }
 }
 
-$paths_to_check = getPathsToCheck(isset($options['f']) ? $options['f'] : null);
+$paths_to_check = \Psalm\getPathsToCheck(isset($options['f']) ? $options['f'] : null);
 
 $plugins = [];
 
@@ -777,13 +821,13 @@ if (!isset($options['i'])) {
     echo "\n" . 'Detected level ' . $init_level . ' as a suitable initial default' . "\n";
 
     try {
-        $template_contents = Psalm\Config\Creator::getContents(
+        $template_contents = \Psalm\Config\Creator::getContents(
             $current_dir,
             $init_source_dir,
             $init_level,
             $vendor_dir
         );
-    } catch (Psalm\Exception\ConfigCreationException $e) {
+    } catch (\Psalm\Exception\ConfigCreationException $e) {
         die($e->getMessage() . PHP_EOL);
     }
 
