@@ -1309,8 +1309,12 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 }
 
                 $storage->deprecated = $docblock_info->deprecated;
-                if ($docblock_info->internal && ! $docblock_info->psalm_internal && null !== $this->namespace_name) {
-                    $storage->psalm_internal = $this->namespace_name->getFirst();
+
+                if ($docblock_info->internal
+                    && !$docblock_info->psalm_internal
+                    && $this->aliases->namespace
+                ) {
+                    $storage->psalm_internal = explode('\\', $this->aliases->namespace)[0];
                 } else {
                     $storage->psalm_internal = $docblock_info->psalm_internal;
                 }
@@ -2128,11 +2132,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
 
         if ($class_storage
-                && !$class_storage->is_trait
-                && $class_storage->psalm_internal
-            && (
-                null === $storage->psalm_internal ||
-                strlen($class_storage->psalm_internal) > strlen($storage->psalm_internal)
+            && !$class_storage->is_trait
+            && $class_storage->psalm_internal
+            && (!$storage->psalm_internal
+                || strlen($class_storage->psalm_internal) > strlen($storage->psalm_internal)
             )
         ) {
             $storage->psalm_internal = $class_storage->psalm_internal;
@@ -2191,13 +2194,14 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $storage->deprecated = true;
         }
 
-        if ($docblock_info->internal && ! $docblock_info->psalm_internal && null !== $this->namespace_name) {
-            $storage->psalm_internal = $this->namespace_name->getFirst();
-        }
-
-        if (null === $class_storage ||
-            null === $class_storage->psalm_internal ||
-            (null !== $docblock_info->psalm_internal
+        if ($docblock_info->internal
+            && !$docblock_info->psalm_internal
+            && $this->aliases->namespace
+        ) {
+            $storage->psalm_internal = explode('\\', $this->aliases->namespace)[0];
+        } elseif (!$class_storage
+            || !$class_storage->psalm_internal
+            || ($docblock_info->psalm_internal
                 && strlen($docblock_info->psalm_internal) > strlen($class_storage->psalm_internal)
             )
         ) {
