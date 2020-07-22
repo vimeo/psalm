@@ -449,10 +449,18 @@ class TypeCombination
                     && $overwrite_empty_array)
             ) {
                 if ($combination->all_arrays_lists) {
-                    $array_type = new TNonEmptyList($generic_type_params[1]);
+                    if ($combination->objectlike_entries
+                        && $combination->objectlike_sealed
+                    ) {
+                        $array_type = new ObjectLike([$generic_type_params[1]]);
+                        $array_type->previous_key_type = Type::getInt();
+                        $array_type->previous_value_type = $combination->array_type_params[1];
+                    } else {
+                        $array_type = new TNonEmptyList($generic_type_params[1]);
 
-                    if ($combination->array_counts && count($combination->array_counts) === 1) {
-                        $array_type->count = array_keys($combination->array_counts)[0];
+                        if ($combination->array_counts && count($combination->array_counts) === 1) {
+                            $array_type->count = array_keys($combination->array_counts)[0];
+                        }
                     }
                 } else {
                     $array_type = new TNonEmptyArray($generic_type_params);

@@ -259,6 +259,8 @@ class ObjectLike extends \Psalm\Type\Atomic
         $key_types = [];
         $value_type = null;
 
+        $has_defined_keys = false;
+
         foreach ($this->properties as $key => $property) {
             if (is_int($key)) {
                 $key_types[] = new Type\Atomic\TLiteralInt($key);
@@ -272,6 +274,10 @@ class ObjectLike extends \Psalm\Type\Atomic
                 $value_type = clone $property;
             } else {
                 $value_type = Type::combineUnionTypes($property, $value_type);
+            }
+
+            if (!$value_type->possibly_undefined) {
+                $has_defined_keys = true;
             }
         }
 
@@ -287,7 +293,7 @@ class ObjectLike extends \Psalm\Type\Atomic
 
         $value_type->possibly_undefined = false;
 
-        if ($this->sealed || $this->previous_value_type) {
+        if ($this->previous_value_type || $has_defined_keys) {
             $array_type = new TNonEmptyArray([$key_type, $value_type]);
             $array_type->count = count($this->properties);
         } else {

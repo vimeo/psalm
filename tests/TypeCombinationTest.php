@@ -564,6 +564,13 @@ class TypeCombinationTest extends TestCase
                     'numeric-string',
                 ],
             ],
+            'combineNonEmptyListWithObjectLikeList' => [
+                'array{0: null|string}<int, string>',
+                [
+                    'non-empty-list<string>',
+                    'array{null}'
+                ],
+            ],
         ];
     }
 

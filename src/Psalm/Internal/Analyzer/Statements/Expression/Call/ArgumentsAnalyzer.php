@@ -1024,7 +1024,12 @@ class ArgumentsAnalyzer
             )
         ) {
             if (in_array($method_id, ['array_pop', 'array_shift'], true)) {
-                ArrayFunctionArgumentsAnalyzer::handleByRefArrayAdjustment($statements_analyzer, $arg, $context);
+                ArrayFunctionArgumentsAnalyzer::handleByRefArrayAdjustment(
+                    $statements_analyzer,
+                    $arg,
+                    $context,
+                    $method_id === 'array_shift'
+                );
 
                 return;
             }

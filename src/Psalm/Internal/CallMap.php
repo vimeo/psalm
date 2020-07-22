@@ -13677,7 +13677,7 @@ return [
 'stomp_version' => ['string'],
 'StompException::getDetails' => ['string'],
 'StompFrame::__construct' => ['void', 'command='=>'string', 'headers='=>'array', 'body='=>'string'],
-'str_getcsv' => ['list<string>|array{0: null}', 'input'=>'string', 'delimiter='=>'string', 'enclosure='=>'string', 'escape='=>'string'],
+'str_getcsv' => ['non-empty-list<?string>', 'input'=>'string', 'delimiter='=>'string', 'enclosure='=>'string', 'escape='=>'string'],
 'str_ireplace' => ['string|string[]', 'search'=>'string|array', 'replace'=>'string|array', 'subject'=>'string|array', '&w_replace_count='=>'int'],
 'str_pad' => ['string', 'input'=>'string', 'pad_length'=>'int', 'pad_string='=>'string', 'pad_type='=>'int'],
 'str_repeat' => ['string', 'input'=>'string', 'multiplier'=>'int'],

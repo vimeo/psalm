@@ -43,7 +43,8 @@ class ArrayTypeComparator
 
             foreach ($input_type_part->type_params[0]->getAtomicTypes() as $atomic_key_type) {
                 if ($atomic_key_type instanceof TLiteralString || $atomic_key_type instanceof TLiteralInt) {
-                    $properties[$atomic_key_type->value] = $input_type_part->type_params[1];
+                    $properties[$atomic_key_type->value] = clone $input_type_part->type_params[1];
+                    $properties[$atomic_key_type->value]->possibly_undefined = true;
                 } else {
                     $all_string_int_literals = false;
                 }
@@ -51,6 +52,14 @@ class ArrayTypeComparator
 
             if ($all_string_int_literals && $properties) {
                 $input_type_part = new ObjectLike($properties);
+
+                return ObjectLikeComparator::isContainedBy(
+                    $codebase,
+                    $input_type_part,
+                    $container_type_part,
+                    $allow_interface_equality,
+                    $atomic_comparison_result
+                );
             }
         }
 
@@ -98,31 +107,6 @@ class ArrayTypeComparator
 
         if ($container_type_part instanceof ObjectLike) {
             $generic_container_type_part = $container_type_part->getGenericArrayType();
-
-            $container_params_can_be_undefined = (bool) array_reduce(
-                $container_type_part->properties,
-                /**
-                 * @param bool $carry
-                 *
-                 * @return bool
-                 */
-                function ($carry, Type\Union $item) {
-                    return $carry || $item->possibly_undefined;
-                },
-                false
-            );
-
-            if ($prior_input_type_part instanceof TArray
-                && !$prior_input_type_part->type_params[0]->hasMixed()
-                && !($prior_input_type_part->type_params[1]->isEmpty()
-                    && $container_params_can_be_undefined)
-            ) {
-                $all_types_contain = false;
-
-                if ($atomic_comparison_result) {
-                    $atomic_comparison_result->type_coerced = true;
-                }
-            }
 
             $container_type_part = $generic_container_type_part;
         }
@@ -231,11 +215,11 @@ class ArrayTypeComparator
 
         if ($container_type_part instanceof Type\Atomic\TNonEmptyArray
             && !$input_type_part instanceof Type\Atomic\TNonEmptyArray
-            && !($prior_input_type_part instanceof ObjectLike
-                && ($prior_input_type_part->sealed
-                    || $prior_input_type_part->previous_value_type
+            && !($input_type_part instanceof ObjectLike
+                && ($input_type_part->sealed
+                    || $input_type_part->previous_value_type
                     || \array_filter(
-                        $prior_input_type_part->properties,
+                        $input_type_part->properties,
                         function ($prop_type) {
                             return !$prop_type->possibly_undefined;
                         }

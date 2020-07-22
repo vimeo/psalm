@@ -843,6 +843,16 @@ class ReturnTypeTest extends TestCase
                         }
                     }'
             ],
+            'compareObjectLikeToPotentiallyUnfilledArray' => [
+                '<?php
+                    /**
+                     * @param array<"from"|"to", bool> $a
+                     * @return array{from?: bool, to?: bool}
+                     */
+                    function foo(array $a) : array {
+                        return $a;
+                    }',
+            ],
         ];
     }
 
@@ -1241,6 +1251,17 @@ class ReturnTypeTest extends TestCase
                 $res = map(function(int $i): string { return (string) $i; })([1,2,3]);
                 ',
                 'error_message' => 'InvalidReturnStatement - src/somefile.php:8:28 - The inferred type \'Closure(B):void\' does not match the declared return type \'callable(A):void\' for map',
+            ],
+            'compareObjectLikeToAlwaysFilledArray' => [
+                '<?php
+                    /**
+                     * @param array<"from"|"to", bool> $a
+                     * @return array{from: bool, to: bool}
+                     */
+                    function foo(array $a) : array {
+                        return $a;
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
             ],
         ];
     }

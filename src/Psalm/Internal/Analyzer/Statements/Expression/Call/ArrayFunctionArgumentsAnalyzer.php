@@ -438,7 +438,8 @@ class ArrayFunctionArgumentsAnalyzer
     public static function handleByRefArrayAdjustment(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Arg $arg,
-        Context $context
+        Context $context,
+        bool $is_array_shift
     ) {
         $var_id = ExpressionIdentifier::getVarId(
             $arg->value,
@@ -456,6 +457,20 @@ class ArrayFunctionArgumentsAnalyzer
 
                 foreach ($array_atomic_types as $array_atomic_type) {
                     if ($array_atomic_type instanceof ObjectLike) {
+                        if ($is_array_shift && $array_atomic_type->is_list) {
+                            $array_atomic_type = clone $array_atomic_type;
+
+                            $array_properties = $array_atomic_type->properties;
+
+                            \array_shift($array_properties);
+
+                            if (!$array_properties) {
+                                $array_properties = [$array_atomic_type->previous_value_type ?: Type::getMixed()];
+                            }
+
+                            $array_atomic_type->properties = $array_properties;
+                        }
+
                         $array_atomic_type = $array_atomic_type->getGenericArrayType();
                     }
 
