@@ -3415,7 +3415,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $property_storage->has_default = $property->default ? true : false;
             $property_storage->deprecated = $var_comment ? $var_comment->deprecated : false;
             $property_storage->psalm_internal = $var_comment ? $var_comment->psalm_internal : null;
-            if (! $property_storage->psalm_internal && $var_comment && $var_comment->internal){
+            if (! $property_storage->psalm_internal && $var_comment && $var_comment->internal) {
                 $property_storage->psalm_internal = NamespaceAnalyzer::getNameSpaceRoot($fq_classlike_name);
             }
             $property_storage->readonly = $var_comment ? $var_comment->readonly : false;
