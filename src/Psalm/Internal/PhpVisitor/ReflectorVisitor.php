@@ -2130,7 +2130,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         if ($class_storage
                 && !$class_storage->is_trait
                 && $class_storage->psalm_internal
-            (
+            && (
                 null === $storage->psalm_internal ||
                 strlen($class_storage->psalm_internal) > strlen($storage->psalm_internal)
             )
