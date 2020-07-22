@@ -2,6 +2,10 @@
 
 use Psalm;
 
+use Psalm\Config;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\IncludeCollector;
+
 require_once('command_functions.php');
 
 gc_disable();
@@ -10,10 +14,6 @@ gc_disable();
 error_reporting(-1);
 
 require_once __DIR__ . '/Psalm/Internal/exception_handler.php';
-
-use Psalm\Config;
-use Psalm\Internal\Analyzer\ProjectAnalyzer;
-use Psalm\Internal\IncludeCollector;
 
 $valid_short_options = [
     'h',

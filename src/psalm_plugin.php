@@ -10,6 +10,9 @@ use Psalm\Internal\PluginManager\Command\ShowCommand;
 use Psalm\Internal\PluginManager\PluginListFactory;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Input\InputOption;
+use function getcwd;
+use const DIRECTORY_SEPARATOR;
+use function dirname;
 
 $current_dir = (string)getcwd() . DIRECTORY_SEPARATOR;
 $vendor_dir = \Psalm\getVendorDir($current_dir);
