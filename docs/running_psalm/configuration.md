@@ -331,7 +331,7 @@ if your application registers one or more custom autoloaders, and/or declares un
   throwExceptionOnError="[bool]"
 >
 ```
-Useful in testing, things makes Psalm throw a regular-old exception when it encounters an error. Defaults to `false`.
+Useful in testing, this makes Psalm throw a regular-old exception when it encounters an error. Defaults to `false`.
 
 #### hideExternalErrors
 ```xml
