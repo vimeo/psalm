@@ -696,42 +696,14 @@ class Reconciler
                                         $class_property_type = Type::getMixed();
                                     }
                                 } else {
-                                    $property_id = $existing_key_type_part->value . '::$' . $property_name;
+                                    $class_property_type = self::getPropertyType(
+                                        $codebase,
+                                        $existing_key_type_part->value,
+                                        $property_name
+                                    );
 
-                                    if (!$codebase->properties->propertyExists($property_id, true)) {
+                                    if (!$class_property_type) {
                                         return null;
-                                    }
-
-                                    $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
-                                        $property_id,
-                                        true
-                                    );
-
-                                    if ($declaring_property_class === null) {
-                                        return null;
-                                    }
-
-                                    $class_property_type = $codebase->properties->getPropertyType(
-                                        $property_id,
-                                        false,
-                                        null,
-                                        null
-                                    );
-
-                                    $declaring_class_storage = $codebase->classlike_storage_provider->get(
-                                        $declaring_property_class
-                                    );
-
-                                    if ($class_property_type) {
-                                        $class_property_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
-                                            $codebase,
-                                            clone $class_property_type,
-                                            $declaring_class_storage->name,
-                                            $declaring_class_storage->name,
-                                            null
-                                        );
-                                    } else {
-                                        $class_property_type = Type::getMixed();
                                     }
                                 }
                             }
@@ -773,6 +745,58 @@ class Reconciler
         }
 
         return $existing_keys[$base_key];
+    }
+
+    private static function getPropertyType(
+        Codebase $codebase,
+        string $fq_class_name,
+        string $property_name
+    ) : ?Type\Union {
+        $property_id = $fq_class_name . '::$' . $property_name;
+
+        if (!$codebase->properties->propertyExists($property_id, true)) {
+            $declaring_class_storage = $codebase->classlike_storage_provider->get(
+                $fq_class_name
+            );
+
+            if (isset($declaring_class_storage->pseudo_property_get_types['$' . $property_name])) {
+                return clone $declaring_class_storage->pseudo_property_get_types['$' . $property_name];
+            }
+
+            return null;
+        }
+
+        $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
+            $property_id,
+            true
+        );
+
+        if ($declaring_property_class === null) {
+            return null;
+        }
+
+        $class_property_type = $codebase->properties->getPropertyType(
+            $property_id,
+            false,
+            null,
+            null
+        );
+
+        $declaring_class_storage = $codebase->classlike_storage_provider->get(
+            $declaring_property_class
+        );
+
+        if ($class_property_type) {
+            return \Psalm\Internal\Type\TypeExpander::expandUnion(
+                $codebase,
+                clone $class_property_type,
+                $declaring_class_storage->name,
+                $declaring_class_storage->name,
+                null
+            );
+        }
+
+        return Type::getMixed();
     }
 
     /**
