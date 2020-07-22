@@ -67,28 +67,6 @@ class MethodCallProhibitionAnalyzer
                 }
             }
         }
-
-        if ($storage->internal
-            && $context->self
-            && !$context->collect_initializations
-            && !$context->collect_mutations
-        ) {
-            $declaring_class = $method_id->fq_class_name;
-            if (! NamespaceAnalyzer::nameSpaceRootsMatch($context->self, $declaring_class)) {
-                if (IssueBuffer::accepts(
-                    new InternalMethod(
-                        'The method ' . $codebase_methods->getCasedMethodId($method_id) .
-                            ' has been marked as internal',
-                        $code_location,
-                        (string) $method_id
-                    ),
-                    $suppressed_issues
-                )) {
-                    // fall through
-                }
-            }
-        }
-
         return null;
     }
 }

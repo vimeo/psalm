@@ -425,21 +425,6 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                     }
                 }
 
-                if ($storage->internal && $context->self) {
-                    if (! NamespaceAnalyzer::nameSpaceRootsMatch($context->self, $fq_class_name)) {
-                        if (IssueBuffer::accepts(
-                            new InternalClass(
-                                $fq_class_name . ' is marked internal',
-                                new CodeLocation($statements_analyzer->getSource(), $stmt),
-                                $fq_class_name
-                            ),
-                            $statements_analyzer->getSuppressedIssues()
-                        )) {
-                            // fall through
-                        }
-                    }
-                }
-
                 $method_id = new \Psalm\Internal\MethodIdentifier($fq_class_name, '__construct');
 
                 if ($codebase->methods->methodExists(

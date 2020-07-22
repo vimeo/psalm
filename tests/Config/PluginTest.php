@@ -185,6 +185,8 @@ class PluginTest extends \Psalm\Tests\TestCase
         $this->addFile(
             $file_path,
             '<?php
+                namespace Psalm;
+
                 class A {
                     const C = [
                         "foo" => \Psalm\Internal\Analyzer\ProjectAnalyzer::class . "::foo",

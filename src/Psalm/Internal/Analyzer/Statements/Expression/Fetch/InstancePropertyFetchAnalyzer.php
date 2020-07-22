@@ -28,6 +28,7 @@ use Psalm\Issue\UndefinedPropertyFetch;
 use Psalm\Issue\UndefinedThisPropertyFetch;
 use Psalm\Issue\UninitializedProperty;
 use Psalm\IssueBuffer;
+use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type\Atomic\TGenericObject;
@@ -825,21 +826,6 @@ class InstancePropertyFetchAnalyzer
                         if (IssueBuffer::accepts(
                             new InternalProperty(
                                 $property_id . ' is marked internal to ' . $property_storage->psalm_internal,
-                                new CodeLocation($statements_analyzer->getSource(), $stmt),
-                                $property_id
-                            ),
-                            $statements_analyzer->getSuppressedIssues()
-                        )) {
-                            // fall through
-                        }
-                    }
-                }
-
-                if ($property_storage->internal && $context->self) {
-                    if (! NamespaceAnalyzer::nameSpaceRootsMatch($context->self, $declaring_property_class)) {
-                        if (IssueBuffer::accepts(
-                            new InternalProperty(
-                                $property_id . ' is marked internal',
                                 new CodeLocation($statements_analyzer->getSource(), $stmt),
                                 $property_id
                             ),

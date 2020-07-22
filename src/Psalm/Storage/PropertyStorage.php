@@ -67,11 +67,6 @@ class PropertyStorage
     /**
      * @var bool
      */
-    public $internal = false;
-
-    /**
-     * @var bool
-     */
     public $readonly = false;
 
     /**

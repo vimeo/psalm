@@ -690,21 +690,6 @@ class InstancePropertyAssignmentAnalyzer
                         }
                     }
 
-                    if ($property_storage->internal && $context->self) {
-                        if (! NamespaceAnalyzer::nameSpaceRootsMatch($context->self, $declaring_property_class)) {
-                            if (IssueBuffer::accepts(
-                                new InternalProperty(
-                                    $property_id . ' is marked internal',
-                                    new CodeLocation($statements_analyzer->getSource(), $stmt),
-                                    $property_id
-                                ),
-                                $statements_analyzer->getSuppressedIssues()
-                            )) {
-                                // fall through
-                            }
-                        }
-                    }
-
                     // prevents writing to readonly properties
                     if ($property_storage->readonly) {
                         $appearing_property_class = $codebase->properties->getAppearingClassForProperty(

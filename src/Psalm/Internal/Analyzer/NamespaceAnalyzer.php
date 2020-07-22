@@ -184,16 +184,11 @@ class NamespaceAnalyzer extends SourceAnalyzer implements StatementsSource
         return $className === $namespace || strpos($className, $namespace) === 0;
     }
 
-    public static function nameSpaceRootsMatch(string $fqcnA, string $fqcnB): bool
-    {
-        return strtolower(self::getNameSpaceRoot($fqcnA)) === strtolower(self::getNameSpaceRoot($fqcnB));
-    }
-
     /**
      * @param string $fullyQualifiedClassName, e.g. '\Psalm\Internal\Analyzer\NamespaceAnalyzer'
      * @return string , e.g. 'Psalm'
      */
-    private static function getNameSpaceRoot(string $fullyQualifiedClassName): string
+    public static function getNameSpaceRoot(string $fullyQualifiedClassName): string
     {
         return preg_replace('/^([^\\\]+).*/', '$1', $fullyQualifiedClassName);
     }
