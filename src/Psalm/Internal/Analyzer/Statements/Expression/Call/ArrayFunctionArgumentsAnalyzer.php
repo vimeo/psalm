@@ -217,6 +217,14 @@ class ArrayFunctionArgumentsAnalyzer
                 }
 
                 $array_type = $array_type->getGenericArrayType();
+
+                if ($objectlike_list) {
+                    if ($array_type instanceof TNonEmptyArray) {
+                        $array_type = new TNonEmptyList($array_type->type_params[1]);
+                    } else {
+                        $array_type = new TList($array_type->type_params[1]);
+                    }
+                }
             }
 
             $by_ref_type = new Type\Union([clone $array_type]);
@@ -242,9 +250,29 @@ class ArrayFunctionArgumentsAnalyzer
                         new Type\Union([new TArray([Type::getInt(), Type::getMixed()])])
                     );
                 } elseif ($arg->unpack) {
+                    $arg_value_type = clone $arg_value_type;
+
+                    foreach ($arg_value_type->getAtomicTypes() as $arg_value_atomic_type) {
+                        if ($arg_value_atomic_type instanceof ObjectLike) {
+                            $was_list = $arg_value_atomic_type->is_list;
+
+                            $arg_value_atomic_type = $arg_value_atomic_type->getGenericArrayType();
+
+                            if ($was_list) {
+                                if ($arg_value_atomic_type instanceof TNonEmptyArray) {
+                                    $arg_value_atomic_type = new TNonEmptyList($arg_value_atomic_type->type_params[1]);
+                                } else {
+                                    $arg_value_atomic_type = new TList($arg_value_atomic_type->type_params[1]);
+                                }
+                            }
+
+                            $arg_value_type->addType($arg_value_atomic_type);
+                        }
+                    }
+
                     $by_ref_type = Type::combineUnionTypes(
                         $by_ref_type,
-                        clone $arg_value_type
+                        $arg_value_type
                     );
                 } else {
                     if ($objectlike_list) {
