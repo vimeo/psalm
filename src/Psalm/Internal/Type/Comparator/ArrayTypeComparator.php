@@ -112,9 +112,9 @@ class ArrayTypeComparator
                 false
             );
 
-            if ($input_type_part instanceof TArray
-                && !$input_type_part->type_params[0]->hasMixed()
-                && !($input_type_part->type_params[1]->isEmpty()
+            if ($prior_input_type_part instanceof TArray
+                && !$prior_input_type_part->type_params[0]->hasMixed()
+                && !($prior_input_type_part->type_params[1]->isEmpty()
                     && $container_params_can_be_undefined)
             ) {
                 $all_types_contain = false;
