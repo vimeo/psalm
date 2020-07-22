@@ -406,6 +406,20 @@ class ArrayFunctionArgumentsAnalyzer
              */
             $replacement_array_type = $replacement_arg_type->getAtomicTypes()['array'];
 
+            if ($replacement_array_type instanceof ObjectLike) {
+                $was_list = $replacement_array_type->is_list;
+
+                $replacement_array_type = $replacement_array_type->getGenericArrayType();
+
+                if ($was_list) {
+                    if ($replacement_array_type instanceof TNonEmptyArray) {
+                        $replacement_array_type = new TNonEmptyList($replacement_array_type->type_params[1]);
+                    } else {
+                        $replacement_array_type = new TList($replacement_array_type->type_params[1]);
+                    }
+                }
+            }
+
             $by_ref_type = TypeCombination::combineTypes([$array_type, $replacement_array_type]);
 
             AssignmentAnalyzer::assignByRefParam(
@@ -465,7 +479,13 @@ class ArrayFunctionArgumentsAnalyzer
                             \array_shift($array_properties);
 
                             if (!$array_properties) {
-                                $array_properties = [$array_atomic_type->previous_value_type ?: Type::getMixed()];
+                                $array_properties = [
+                                    $array_atomic_type->previous_value_type
+                                        ? clone $array_atomic_type->previous_value_type
+                                        : Type::getMixed()
+                                ];
+
+                                $array_properties[0]->possibly_undefined = true;
                             }
 
                             $array_atomic_type->properties = $array_properties;

@@ -455,6 +455,7 @@ class TypeCombination
                         $array_type = new ObjectLike([$generic_type_params[1]]);
                         $array_type->previous_key_type = Type::getInt();
                         $array_type->previous_value_type = $combination->array_type_params[1];
+                        $array_type->is_list = true;
                     } else {
                         $array_type = new TNonEmptyList($generic_type_params[1]);
 

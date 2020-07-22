@@ -292,6 +292,17 @@ class ArrayFunctionCallTest extends TestCase
                         return 0;
                     }',
             ],
+            'arrayShiftFunkyObjectLikeList' => [
+                '<?php
+                    /**
+                     * @param non-empty-list<string>|array{null} $arr
+                     * @return array<int, string>
+                     */
+                    function foo(array $arr) {
+                        array_shift($arr);
+                        return $arr;
+                    }'
+            ],
             'arrayPopNonEmptyAfterCountEqualsOne' => [
                 '<?php
                     /** @var array<string, int> */
@@ -1013,18 +1024,23 @@ class ArrayFunctionCallTest extends TestCase
                 'assertions' => [],
                 'error_levels' => ['MissingClosureReturnType', 'MixedAssignment'],
             ],
-            'arraySplice' => [
+            'arraySpliceArray' => [
                 '<?php
                     $a = [1, 2, 3];
                     $c = $a;
                     $b = ["a", "b", "c"];
-                    array_splice($a, -1, 1, $b);
-                    $d = [1, 2, 3];
-                    $e = array_splice($d, -1, 1);',
+                    array_splice($a, rand(-10, 0), rand(0, 10), $b);',
                 'assertions' => [
                     '$a' => 'non-empty-list<int|string>',
                     '$b' => 'array{string, string, string}',
                     '$c' => 'array{int, int, int}',
+                ],
+            ],
+            'arraySpliceReturn' => [
+                '<?php
+                    $d = [1, 2, 3];
+                    $e = array_splice($d, -1, 1);',
+                'assertions' => [
                     '$e' => 'array<array-key, mixed>'
                 ],
             ],

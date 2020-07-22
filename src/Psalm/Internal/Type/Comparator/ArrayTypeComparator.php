@@ -32,8 +32,6 @@ class ArrayTypeComparator
     ) : bool {
         $all_types_contain = true;
 
-        $prior_input_type_part = $input_type_part;
-
         if ($container_type_part instanceof ObjectLike
             && $input_type_part instanceof TArray
         ) {
@@ -215,17 +213,6 @@ class ArrayTypeComparator
 
         if ($container_type_part instanceof Type\Atomic\TNonEmptyArray
             && !$input_type_part instanceof Type\Atomic\TNonEmptyArray
-            && !($input_type_part instanceof ObjectLike
-                && ($input_type_part->sealed
-                    || $input_type_part->previous_value_type
-                    || \array_filter(
-                        $input_type_part->properties,
-                        function ($prop_type) {
-                            return !$prop_type->possibly_undefined;
-                        }
-                    )
-                )
-            )
         ) {
             if ($all_types_contain && $atomic_comparison_result) {
                 $atomic_comparison_result->type_coerced = true;
