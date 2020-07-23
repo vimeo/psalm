@@ -250,24 +250,24 @@ class Populator
             }
         }
 
-        if ($storage->psalm_internal
+        if ($storage->internal
             && !$storage->is_interface
             && !$storage->is_trait
         ) {
             foreach ($storage->methods as $method) {
-                if (null === $method->psalm_internal ||
-                    strlen($storage->psalm_internal) > strlen($method->psalm_internal)
+                if (null === $method->internal ||
+                    strlen($storage->internal) > strlen($method->internal)
                 ) {
-                    $method->psalm_internal = $storage->psalm_internal;
+                    $method->internal = $storage->internal;
                 }
             }
 
 
             foreach ($storage->properties as $property) {
-                if (null === $property->psalm_internal ||
-                    strlen($storage->psalm_internal) > strlen($property->psalm_internal)
+                if (null === $property->internal ||
+                    strlen($storage->internal) > strlen($property->internal)
                 ) {
-                    $property->psalm_internal = $storage->psalm_internal;
+                    $property->internal = $storage->internal;
                 }
             }
         }

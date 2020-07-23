@@ -90,7 +90,7 @@ class ClassLikeStorage
     /**
      * @var null|string
      */
-    public $psalm_internal = null;
+    public $internal = null;
 
     /**
      * @var null|Type\Atomic\TTemplateParam|Type\Atomic\TNamedObject

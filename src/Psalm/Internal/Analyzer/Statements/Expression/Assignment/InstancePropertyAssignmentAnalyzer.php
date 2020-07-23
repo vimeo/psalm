@@ -676,11 +676,11 @@ class InstancePropertyAssignmentAnalyzer
                         }
                     }
 
-                    if ($property_storage->psalm_internal && $context->self) {
-                        if (! NamespaceAnalyzer::isWithin($context->self, $property_storage->psalm_internal)) {
+                    if ($property_storage->internal && $context->self) {
+                        if (! NamespaceAnalyzer::isWithin($context->self, $property_storage->internal)) {
                             if (IssueBuffer::accepts(
                                 new InternalProperty(
-                                    $property_id . ' is internal to ' . $property_storage->psalm_internal,
+                                    $property_id . ' is internal to ' . $property_storage->internal,
                                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                                     $property_id
                                 ),

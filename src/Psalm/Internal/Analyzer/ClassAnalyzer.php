@@ -302,12 +302,12 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     }
                 }
 
-                if ($parent_class_storage->psalm_internal &&
-                    ! NamespaceAnalyzer::isWithin($fq_class_name, $parent_class_storage->psalm_internal)
+                if ($parent_class_storage->internal &&
+                    ! NamespaceAnalyzer::isWithin($fq_class_name, $parent_class_storage->internal)
                 ) {
                     if (IssueBuffer::accepts(
                         new InternalClass(
-                            $parent_fq_class_name . ' is internal to ' . $parent_class_storage->psalm_internal,
+                            $parent_fq_class_name . ' is internal to ' . $parent_class_storage->internal,
                             $code_location,
                             $parent_fq_class_name
                         ),

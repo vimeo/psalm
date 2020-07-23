@@ -79,7 +79,7 @@ class PropertyStorage
     /**
      * @var null|string
      */
-    public $psalm_internal = null;
+    public $internal = null;
 
     /**
      * @var ?string

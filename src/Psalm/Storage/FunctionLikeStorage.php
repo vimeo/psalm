@@ -69,7 +69,7 @@ abstract class FunctionLikeStorage
     /**
      * @var null|string
      */
-    public $psalm_internal;
+    public $internal;
 
     /**
      * @var bool

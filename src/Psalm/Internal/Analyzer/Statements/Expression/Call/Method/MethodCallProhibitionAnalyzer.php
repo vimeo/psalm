@@ -48,16 +48,16 @@ class MethodCallProhibitionAnalyzer
             }
         }
 
-        if ($storage->psalm_internal
+        if ($storage->internal
             && $context->self
             && !$context->collect_initializations
             && !$context->collect_mutations
         ) {
-            if (!NamespaceAnalyzer::isWithin($context->self, $storage->psalm_internal)) {
+            if (!NamespaceAnalyzer::isWithin($context->self, $storage->internal)) {
                 if (IssueBuffer::accepts(
                     new InternalMethod(
                         'The method ' . $codebase_methods->getCasedMethodId($method_id) .
-                        ' is internal to ' . $storage->psalm_internal,
+                        ' is internal to ' . $storage->internal,
                         $code_location,
                         (string) $method_id
                     ),
