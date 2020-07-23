@@ -250,23 +250,16 @@ class Populator
             }
         }
 
-        if ($storage->internal
-            && !$storage->is_interface
-            && !$storage->is_trait
-        ) {
+        if (!$storage->is_interface && !$storage->is_trait) {
             foreach ($storage->methods as $method) {
-                if (null === $method->internal ||
-                    strlen($storage->internal) > strlen($method->internal)
-                ) {
+                if (strlen($storage->internal) > strlen($method->internal)) {
                     $method->internal = $storage->internal;
                 }
             }
 
 
             foreach ($storage->properties as $property) {
-                if (null === $property->internal ||
-                    strlen($storage->internal) > strlen($property->internal)
-                ) {
+                if (strlen($storage->internal) > strlen($property->internal)) {
                     $property->internal = $storage->internal;
                 }
             }

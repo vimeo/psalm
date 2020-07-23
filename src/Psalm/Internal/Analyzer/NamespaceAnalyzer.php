@@ -178,6 +178,9 @@ class NamespaceAnalyzer extends SourceAnalyzer implements StatementsSource
      */
     public static function isWithin(string $className, string $namespace): bool
     {
+        if ($namespace === '') {
+            return true; // required to prevent a warning from strpos with empty needle in PHP < 8
+        }
         $className = strtolower(trim($className, '\\') . '\\');
         $namespace = strtolower(trim($namespace, '\\') . '\\');
 

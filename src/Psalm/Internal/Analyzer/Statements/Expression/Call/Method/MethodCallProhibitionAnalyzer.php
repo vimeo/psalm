@@ -48,8 +48,7 @@ class MethodCallProhibitionAnalyzer
             }
         }
 
-        if ($storage->internal
-            && $context->self
+        if ($context->self
             && !$context->collect_initializations
             && !$context->collect_mutations
         ) {
