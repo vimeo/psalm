@@ -216,9 +216,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
                 $context->vars_in_scope['$this'] = new Type\Union([$this_object_type]);
 
-                if ($storage->external_mutation_free
-                    && !$storage->mutation_free_inferred
-                ) {
+                if ($appearing_class_storage->external_mutation_free) {
                     $context->vars_in_scope['$this']->reference_free = true;
 
                     if ($this->function->name->name !== '__construct') {
