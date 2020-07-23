@@ -719,7 +719,7 @@ class ImmutableAnnotationTest extends TestCase
                          * @psalm-mutation-free
                          */
                         public function getShortMutating() : string {
-                            $this->s .= "hello";
+                            $this->s = "hello";
                             return substr($this->s, 0, 5);
                         }
                     }',

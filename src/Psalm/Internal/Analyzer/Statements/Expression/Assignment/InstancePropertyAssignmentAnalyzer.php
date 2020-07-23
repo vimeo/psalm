@@ -16,6 +16,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\DeprecatedProperty;
 use Psalm\Issue\ImplicitToStringCast;
+use Psalm\Issue\ImpurePropertyAssignment;
 use Psalm\Issue\InaccessibleProperty;
 use Psalm\Issue\InternalProperty;
 use Psalm\Issue\InvalidPropertyAssignment;
@@ -732,6 +733,21 @@ class InstancePropertyAssignmentAnalyzer
 
                                 $visitor->traverse($assignment_value_type);
                             }
+                        }
+                    } elseif ($context->mutation_free
+                        && !$context->collect_mutations
+                        && !$context->collect_initializations
+                        && isset($context->vars_in_scope[$lhs_var_id])
+                        && !$context->vars_in_scope[$lhs_var_id]->allow_mutations
+                    ) {
+                        if (IssueBuffer::accepts(
+                            new ImpurePropertyAssignment(
+                                'Cannot assign to a property from a mutation-free context',
+                                new CodeLocation($statements_analyzer, $stmt)
+                            ),
+                            $statements_analyzer->getSuppressedIssues()
+                        )) {
+                            // fall through
                         }
                     }
 
