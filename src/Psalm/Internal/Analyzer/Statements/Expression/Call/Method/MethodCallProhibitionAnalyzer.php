@@ -57,7 +57,7 @@ class MethodCallProhibitionAnalyzer
                 if (IssueBuffer::accepts(
                     new InternalMethod(
                         'The method ' . $codebase_methods->getCasedMethodId($method_id) .
-                        ' has been marked as internal to ' . $storage->psalm_internal,
+                        ' is internal to ' . $storage->psalm_internal,
                         $code_location,
                         (string) $method_id
                     ),

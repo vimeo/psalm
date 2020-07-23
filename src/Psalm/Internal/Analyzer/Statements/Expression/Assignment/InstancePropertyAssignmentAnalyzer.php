@@ -680,7 +680,7 @@ class InstancePropertyAssignmentAnalyzer
                         if (! NamespaceAnalyzer::isWithin($context->self, $property_storage->psalm_internal)) {
                             if (IssueBuffer::accepts(
                                 new InternalProperty(
-                                    $property_id . ' is marked internal to ' . $property_storage->psalm_internal,
+                                    $property_id . ' is internal to ' . $property_storage->psalm_internal,
                                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                                     $property_id
                                 ),

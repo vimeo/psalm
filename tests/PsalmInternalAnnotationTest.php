@@ -317,7 +317,7 @@ class PsalmInternalAnnotationTest extends TestCase
                             }
                         }
                     }',
-                'error_message' => 'The method A\B\Foo::barBar has been marked as internal to A\B',
+                'error_message' => 'The method A\B\Foo::barBar is internal to A\B',
             ],
             'internalToClassMethodWithCall' => [
                 '<?php
@@ -339,7 +339,7 @@ class PsalmInternalAnnotationTest extends TestCase
                             }
                         }
                     }',
-                'error_message' => 'The method A\B\Foo::barBar has been marked as internal to A\B\Foo',
+                'error_message' => 'The method A\B\Foo::barBar is internal to A\B\Foo',
             ],
             'internalClassWithStaticCall' => [
                 '<?php
@@ -386,7 +386,7 @@ class PsalmInternalAnnotationTest extends TestCase
                             }
                         }
                     }',
-                'error_message' => 'A\B\Foo::$barBar is marked internal to A\B',
+                'error_message' => 'A\B\Foo::$barBar is internal to A\B',
             ],
             'internalClassWithInstanceCall' => [
                 '<?php
@@ -412,7 +412,7 @@ class PsalmInternalAnnotationTest extends TestCase
                             }
                         }
                     }',
-                'error_message' => 'The method A\B\Foo::barBar has been marked as internal to A\B',
+                'error_message' => 'The method A\B\Foo::barBar is internal to A\B',
             ],
             'internalClassWithNew' => [
                 '<?php
@@ -489,7 +489,7 @@ class PsalmInternalAnnotationTest extends TestCase
                             }
                         }
                     }',
-                'error_message' => 'A\B\Foo::$foo is marked internal to A\B',
+                'error_message' => 'A\B\Foo::$foo is internal to A\B',
             ],
             'internalPropertySet' => [
                 '<?php
@@ -511,7 +511,7 @@ class PsalmInternalAnnotationTest extends TestCase
                             }
                         }
                     }',
-                'error_message' => 'A\B\Foo::$foo is marked internal to A\B',
+                'error_message' => 'A\B\Foo::$foo is internal to A\B',
             ],
             'internalClassMissingNamespace' => [
                     '<?php

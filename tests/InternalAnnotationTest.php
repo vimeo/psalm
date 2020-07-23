@@ -338,7 +338,7 @@ class InternalAnnotationTest extends TestCase
                             }
                         }
                     }',
-                'error_message' => 'A\B\Foo::$barBar is marked internal',
+                'error_message' => 'A\B\Foo::$barBar is internal',
             ],
             'internalClassWithNew' => [
                 '<?php
