@@ -909,10 +909,8 @@ class MethodComparator
                 if (is_string($key)) {
                     $new_bases = [];
 
-                    foreach ($mapped_type->getAtomicTypes() as $mapped_atomic_type) {
-                        if ($mapped_atomic_type instanceof Type\Atomic\TTemplateParam) {
-                            $new_bases[] = $mapped_atomic_type->defining_class;
-                        }
+                    foreach ($mapped_type->getTemplateTypes() as $mapped_atomic_type) {
+                        $new_bases[] = $mapped_atomic_type->defining_class;
                     }
 
                     if ($new_bases) {
