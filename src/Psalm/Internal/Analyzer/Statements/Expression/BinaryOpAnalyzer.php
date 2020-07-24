@@ -185,7 +185,7 @@ class BinaryOpAnalyzer
                 if ($string_length > 0) {
                     foreach ($stmt_right_type->getAtomicTypes() as $atomic_right_type) {
                         if ($atomic_right_type instanceof Type\Atomic\TLiteralString) {
-                            if (strlen($atomic_right_type->value) !== $string_length) {
+                            if (\strlen($atomic_right_type->value) !== $string_length) {
                                 if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Equal
                                     || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Identical
                                 ) {
