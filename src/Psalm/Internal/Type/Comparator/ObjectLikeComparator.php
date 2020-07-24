@@ -99,8 +99,14 @@ class ObjectLikeComparator
                 continue;
             }
 
+            if (!$codebase->classlikes->classOrInterfaceExists($input_type_part->value)) {
+                $all_types_contain = false;
+
+                continue;
+            }
+
             if (!$codebase->properties->propertyExists(
-                $input_type_part . '::$' . $property_name,
+                $input_type_part->value . '::$' . $property_name,
                 true
             )) {
                 $all_types_contain = false;
