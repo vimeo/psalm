@@ -93,20 +93,6 @@ array_map(
                 error_log('Bad argument');
                 exit(1);
             }
-        } elseif (substr($arg, 0, 2) === '-' && $arg !== '-' && $arg !== '--') {
-            $arg_name = preg_replace('/=.*$/', '', substr($arg, 1));
-
-            if (!in_array($arg_name, $valid_short_options, true)
-                && !in_array($arg_name . ':', $valid_short_options, true)
-            ) {
-                fwrite(
-                    STDERR,
-                    'Unrecognised argument "-' . $arg_name . '"' . PHP_EOL
-                    . 'Type --help to see a list of supported arguments' . PHP_EOL
-                );
-                error_log('Bad argument');
-                exit(1);
-            }
         }
     },
     $args

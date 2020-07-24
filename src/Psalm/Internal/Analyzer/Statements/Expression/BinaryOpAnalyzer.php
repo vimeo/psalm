@@ -157,6 +157,88 @@ class BinaryOpAnalyzer
             $stmt_left_type = $statements_analyzer->node_data->getType($stmt->left);
             $stmt_right_type = $statements_analyzer->node_data->getType($stmt->right);
 
+            if (($stmt instanceof PhpParser\Node\Expr\BinaryOp\Equal
+                    || $stmt instanceof PhpParser\Node\Expr\BinaryOp\NotEqual
+                    || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Identical
+                    || $stmt instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical)
+                && $stmt->left instanceof PhpParser\Node\Expr\FuncCall
+                && $stmt->left->name instanceof PhpParser\Node\Name
+                && $stmt->left->name->parts === ['substr']
+                && isset($stmt->left->args[1])
+                && $stmt_right_type
+                && $stmt_right_type->hasLiteralString()
+            ) {
+                $from_type = $statements_analyzer->node_data->getType($stmt->left->args[1]->value);
+
+                $length_type = isset($stmt->left->args[2])
+                    ? ($statements_analyzer->node_data->getType($stmt->left->args[2]->value) ?: Type::getMixed())
+                    : null;
+
+                $string_length = null;
+
+                if ($from_type && $from_type->isSingleIntLiteral() && $length_type === null) {
+                    $string_length = -$from_type->getSingleIntLiteral()->value;
+                } elseif ($length_type && $length_type->isSingleIntLiteral()) {
+                    $string_length = $length_type->getSingleIntLiteral()->value;
+                }
+
+                if ($string_length > 0) {
+                    foreach ($stmt_right_type->getAtomicTypes() as $atomic_right_type) {
+                        if ($atomic_right_type instanceof Type\Atomic\TLiteralString) {
+                            if (strlen($atomic_right_type->value) !== $string_length) {
+                                if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Equal
+                                    || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Identical
+                                ) {
+                                    if ($atomic_right_type->from_docblock) {
+                                        if (IssueBuffer::accepts(
+                                            new \Psalm\Issue\DocblockTypeContradiction(
+                                                $atomic_right_type . ' string length is not ' . $string_length,
+                                                new CodeLocation($statements_analyzer, $stmt)
+                                            ),
+                                            $statements_analyzer->getSuppressedIssues()
+                                        )) {
+                                            // fall through
+                                        }
+                                    } else {
+                                        if (IssueBuffer::accepts(
+                                            new \Psalm\Issue\TypeDoesNotContainType(
+                                                $atomic_right_type . ' string length is not ' . $string_length,
+                                                new CodeLocation($statements_analyzer, $stmt)
+                                            ),
+                                            $statements_analyzer->getSuppressedIssues()
+                                        )) {
+                                            // fall through
+                                        }
+                                    }
+                                } else {
+                                    if ($atomic_right_type->from_docblock) {
+                                        if (IssueBuffer::accepts(
+                                            new \Psalm\Issue\RedundantConditionGivenDocblockType(
+                                                $atomic_right_type . ' string length is never ' . $string_length,
+                                                new CodeLocation($statements_analyzer, $stmt)
+                                            ),
+                                            $statements_analyzer->getSuppressedIssues()
+                                        )) {
+                                            // fall through
+                                        }
+                                    } else {
+                                        if (IssueBuffer::accepts(
+                                            new \Psalm\Issue\RedundantCondition(
+                                                $atomic_right_type . ' string length is never ' . $string_length,
+                                                new CodeLocation($statements_analyzer, $stmt)
+                                            ),
+                                            $statements_analyzer->getSuppressedIssues()
+                                        )) {
+                                            // fall through
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Equal
                 && $stmt_left_type
                 && $stmt_right_type
