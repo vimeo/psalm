@@ -51,7 +51,7 @@ class Context
     /**
      * Whether or not we're inside an isset call
      *
-     * Inside isssets Psalm is more lenient about certain things
+     * Inside issets Psalm is more lenient about certain things
      *
      * @var bool
      */
