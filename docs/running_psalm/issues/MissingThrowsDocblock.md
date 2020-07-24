@@ -1,6 +1,8 @@
 # MissingThrowsDocblock
 
-Emitted when a function doesn't have a return type defined
+Enabled when the `checkForThrowsDocblock` configuration option is enabled.
+
+Emitted when a function throws (or fails to handle) an exception and does not have a `@throws` annotation.
 
 ```php
 <?php
