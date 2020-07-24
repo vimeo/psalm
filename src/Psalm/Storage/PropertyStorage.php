@@ -77,9 +77,9 @@ class PropertyStorage
     public $allow_private_mutation = false;
 
     /**
-     * @var null|string
+     * @var string
      */
-    public $psalm_internal = null;
+    public $internal = '';
 
     /**
      * @var ?string

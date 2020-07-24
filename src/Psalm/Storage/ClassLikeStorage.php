@@ -88,9 +88,9 @@ class ClassLikeStorage
     public $deprecated = false;
 
     /**
-     * @var null|string
+     * @var string
      */
-    public $psalm_internal = null;
+    public $internal = '';
 
     /**
      * @var null|Type\Atomic\TTemplateParam|Type\Atomic\TNamedObject
