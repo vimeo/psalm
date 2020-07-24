@@ -55,8 +55,9 @@ class MethodCallProhibitionAnalyzer
             if (!NamespaceAnalyzer::isWithin($context->self, $storage->internal)) {
                 if (IssueBuffer::accepts(
                     new InternalMethod(
-                        'The method ' . $codebase_methods->getCasedMethodId($method_id) .
-                        ' is internal to ' . $storage->internal,
+                        'The method ' . $codebase_methods->getCasedMethodId($method_id)
+                            . ' is internal to ' . $storage->internal
+                            . ' but called from ' . $context->self,
                         $code_location,
                         (string) $method_id
                     ),

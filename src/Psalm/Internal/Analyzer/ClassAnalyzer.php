@@ -305,7 +305,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 if (! NamespaceAnalyzer::isWithin($fq_class_name, $parent_class_storage->internal)) {
                     if (IssueBuffer::accepts(
                         new InternalClass(
-                            $parent_fq_class_name . ' is internal to ' . $parent_class_storage->internal,
+                            $parent_fq_class_name . ' is internal to ' . $parent_class_storage->internal
+                                . ' but called from ' . $fq_class_name,
                             $code_location,
                             $parent_fq_class_name
                         ),

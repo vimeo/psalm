@@ -410,10 +410,15 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                 }
 
 
-                if ($context->self && ! NamespaceAnalyzer::isWithin($context->self, $storage->internal)) {
+                if ($context->self
+                    && !$context->collect_initializations
+                    && !$context->collect_mutations
+                    && !NamespaceAnalyzer::isWithin($context->self, $storage->internal)
+                ) {
                     if (IssueBuffer::accepts(
                         new InternalClass(
-                            $fq_class_name . ' is internal to ' . $storage->internal,
+                            $fq_class_name . ' is internal to ' . $storage->internal
+                                . ' but called from ' . $context->self,
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                             $fq_class_name
                         ),

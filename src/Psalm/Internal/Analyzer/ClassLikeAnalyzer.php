@@ -401,23 +401,6 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
             }
         }
 
-        if (!$inferred) {
-            $sourceNamespace = $statements_source->getNamespace() ?: '';
-            if (! NamespaceAnalyzer::isWithin($sourceNamespace, $class_storage->internal)) {
-                if (IssueBuffer::accepts(
-                    new InternalClass(
-                        $class_storage->name . ' is internal to ' . $class_storage->internal,
-                        $code_location,
-                        $class_storage->name
-                    ),
-                    $suppressed_issues
-                )
-                ) {
-                    // fall through
-                }
-            }
-        }
-
         return true;
     }
 

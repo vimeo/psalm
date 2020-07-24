@@ -240,6 +240,23 @@ class InternalAnnotationTest extends TestCase
                         }
                     }',
             ],
+            'constInternalClass' => [
+                '<?php
+                    namespace A {
+                        /**
+                         * @internal
+                         */
+                        class Foo {
+                            const AA = "a";
+                        }
+
+                        class Bat {
+                            public function batBat() : void {
+                                echo \A\Foo::AA;
+                            }
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -434,6 +451,25 @@ class InternalAnnotationTest extends TestCase
                         }
                     }',
                 'error_message' => 'InternalMethod',
+            ],
+            'constInternalClass' => [
+                '<?php
+                    namespace A {
+                        /**
+                         * @internal
+                         */
+                        class Foo {
+                            const AA = "a";
+                        }
+                    }
+                    namespace B {
+                        class Bat {
+                            public function batBat() : void {
+                                echo \A\Foo::AA;
+                            }
+                        }
+                    }',
+                'error_message' => 'InternalClass',
             ],
         ];
     }

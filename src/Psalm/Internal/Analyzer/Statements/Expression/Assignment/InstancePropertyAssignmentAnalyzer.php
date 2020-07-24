@@ -679,7 +679,8 @@ class InstancePropertyAssignmentAnalyzer
                     if ($context->self && ! NamespaceAnalyzer::isWithin($context->self, $property_storage->internal)) {
                         if (IssueBuffer::accepts(
                             new InternalProperty(
-                                $property_id . ' is internal to ' . $property_storage->internal,
+                                $property_id . ' is internal to ' . $property_storage->internal
+                                    . ' but called from ' . $context->self,
                                 new CodeLocation($statements_analyzer->getSource(), $stmt),
                                 $property_id
                             ),

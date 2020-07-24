@@ -3,6 +3,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Fetch;
 
 use PhpParser;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
@@ -12,6 +13,7 @@ use Psalm\Context;
 use Psalm\Issue\CircularReference;
 use Psalm\Issue\DeprecatedClass;
 use Psalm\Issue\DeprecatedConstant;
+use Psalm\Issue\InternalClass;
 use Psalm\Issue\InaccessibleClassConstant;
 use Psalm\Issue\NonStaticSelfCall;
 use Psalm\Issue\ParentNotFound;
@@ -308,6 +310,25 @@ class ClassConstFetchAnalyzer
             }
 
             $class_const_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+
+            if ($context->self
+                && !$context->collect_initializations
+                && !$context->collect_mutations
+                && $class_const_storage->internal
+                && !NamespaceAnalyzer::isWithin($context->self, $class_const_storage->internal)
+            ) {
+                if (IssueBuffer::accepts(
+                    new InternalClass(
+                        $fq_class_name . ' is internal to ' . $class_const_storage->internal
+                            . ' but called from ' . $context->self,
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        $fq_class_name
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            }
 
             if ($class_const_storage->deprecated && $fq_class_name !== $context->self) {
                 if (IssueBuffer::accepts(

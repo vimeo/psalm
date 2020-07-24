@@ -766,7 +766,8 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 if ($context->self && ! NamespaceAnalyzer::isWithin($context->self, $class_storage->internal)) {
                     if (IssueBuffer::accepts(
                         new InternalClass(
-                            $fq_class_name . ' is internal to ' . $class_storage->internal,
+                            $fq_class_name . ' is internal to ' . $class_storage->internal
+                                . ' but called from ' . $context->self,
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                             $fq_class_name
                         ),
