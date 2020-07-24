@@ -1058,6 +1058,30 @@ class AssignmentAnalyzer
             )) {
                 // fall through
             }
+        } elseif ($context->mutation_free
+            && !$context->collect_mutations
+            && !$context->collect_initializations
+            && $stmt->var instanceof PhpParser\Node\Expr\PropertyFetch
+        ) {
+            $lhs_var_id = ExpressionIdentifier::getArrayVarId(
+                $stmt->var->var,
+                $statements_analyzer->getFQCLN(),
+                $statements_analyzer
+            );
+
+            if (isset($context->vars_in_scope[$lhs_var_id])
+                && !$context->vars_in_scope[$lhs_var_id]->allow_mutations
+            ) {
+                if (IssueBuffer::accepts(
+                    new ImpurePropertyAssignment(
+                        'Cannot assign to a property from a mutation-free context',
+                        new CodeLocation($statements_analyzer, $stmt)
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            }
         }
 
         $codebase = $statements_analyzer->getCodebase();
