@@ -789,12 +789,17 @@ class InstancePropertyAssignmentAnalyzer
                 }
 
                 if (!$class_property_type->isMixed()) {
+                    $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+
                     $class_property_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
                         $codebase,
                         clone $class_property_type,
                         $fq_class_name,
                         $lhs_type_part,
-                        $declaring_class_storage->parent_class
+                        $declaring_class_storage->parent_class,
+                        true,
+                        false,
+                        $class_storage->final
                     );
 
                     $class_property_type = \Psalm\Internal\Codebase\Methods::localizeType(
@@ -805,8 +810,6 @@ class InstancePropertyAssignmentAnalyzer
                     );
 
                     if ($lhs_type_part instanceof Type\Atomic\TGenericObject) {
-                        $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
-
                         $class_property_type = InstancePropertyFetchAnalyzer::localizePropertyType(
                             $codebase,
                             $class_property_type,

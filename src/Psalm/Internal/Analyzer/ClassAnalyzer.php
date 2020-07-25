@@ -1044,14 +1044,17 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     $property_type,
                     $fq_class_name,
                     $fq_class_name,
-                    $parent_fq_class_name
+                    $parent_fq_class_name,
+                    true,
+                    false,
+                    $storage->final
                 )
                 : $property_type;
 
             $class_template_params = ClassTemplateParamCollector::collect(
                 $codebase,
                 $property_class_storage,
-                $codebase->classlike_storage_provider->get($fq_class_name),
+                $storage,
                 null,
                 new Type\Atomic\TNamedObject($fq_class_name),
                 '$this'
@@ -1346,7 +1349,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             $method_context->self = $fq_class_name;
 
             $this_atomic_object_type = new Type\Atomic\TNamedObject($fq_class_name);
-            $this_atomic_object_type->was_static = true;
+            $this_atomic_object_type->was_static = !$storage->final;
 
             $method_context->vars_in_scope['$this'] = new Type\Union([$this_atomic_object_type]);
             $method_context->vars_possibly_in_scope['$this'] = true;
