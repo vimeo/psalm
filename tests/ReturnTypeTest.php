@@ -728,7 +728,7 @@ class ReturnTypeTest extends TestCase
                      * @return Closure(int): bool
                      */
                     function reflexive(Closure $op): Closure {
-                        return fn ($x) => $op($x, $x) === true;
+                        return fn ($x) => $op($x, $x);
                     }
 
                     $res = reflexive(fn(int $a, int $b): bool => $a === $b);

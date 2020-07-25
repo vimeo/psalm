@@ -176,6 +176,7 @@
  - [RawObjectIteration](issues/RawObjectIteration.md)
  - [RedundantCondition](issues/RedundantCondition.md)
  - [RedundantConditionGivenDocblockType](issues/RedundantConditionGivenDocblockType.md)
+ - [RedundantIdentityWithTrue](issues/RedundantIdentityWithTrue.md)
  - [ReferenceConstraintViolation](issues/ReferenceConstraintViolation.md)
  - [ReservedWord](issues/ReservedWord.md)
  - [StringIncrement](issues/StringIncrement.md)

@@ -9,6 +9,7 @@ use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\CodeLocation;
 use Psalm\FileSource;
 use Psalm\Issue\DocblockTypeContradiction;
+use Psalm\Issue\RedundantIdentityWithTrue;
 use Psalm\Issue\RedundantCondition;
 use Psalm\Issue\RedundantConditionGivenDocblockType;
 use Psalm\Issue\TypeDoesNotContainNull;
@@ -16,6 +17,7 @@ use Psalm\Issue\TypeDoesNotContainType;
 use Psalm\Issue\UnevaluatedCode;
 use Psalm\IssueBuffer;
 use Psalm\Type;
+use Psalm\Type\Atomic\TBool;
 use function substr;
 use function count;
 use function strtolower;
@@ -618,6 +620,18 @@ class AssertionFinder
                 && ($var_type = $source->node_data->getType($base_conditional))
             ) {
                 if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
+                    $types = $var_type->getAtomicTypes();
+                    if (count($types) === 1 && isset($types['bool'])) {
+                        if (IssueBuffer::accepts(
+                            new RedundantIdentityWithTrue(
+                                'Comparing a boolean with true is redundant',
+                                new CodeLocation($source, $conditional)
+                            ),
+                            $source->getSuppressedIssues()
+                        )) {
+                            // fall through
+                        }
+                    }
                     $true_type = Type::getTrue();
 
                     if (!UnionTypeComparator::canExpressionTypesBeIdentical(
