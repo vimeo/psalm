@@ -161,10 +161,6 @@ class ObjectLikeComparator
             }
         }
 
-        if ($all_types_contain === true) {
-            return true;
-        }
-
-        return false;
+        return $all_types_contain;
     }
 }

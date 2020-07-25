@@ -369,6 +369,17 @@ class BinaryOperationTest extends TestCase
                     }',
                     'error_message' => 'TypeDoesNotContainType',
             ],
+            'redundantIdentityWithTrue' => [
+                '<?php
+                    function returnsABool(): bool {
+                        return rand(1, 2) === 1;
+                    }
+
+                    if (returnsABool() === true) {
+                        echo "hi!";
+                    }',
+                    'error_message' => 'RedundantIdentityWithTrue',
+            ],
         ];
     }
 }

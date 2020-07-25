@@ -340,7 +340,7 @@ class ClassLikes
         ) {
             if ((
                 !isset($this->existing_classes_lc[$fq_class_name_lc])
-                    || $this->existing_classes_lc[$fq_class_name_lc] === true
+                    || $this->existing_classes_lc[$fq_class_name_lc]
                 )
                 && !$this->classlike_storage_provider->has($fq_class_name_lc)
             ) {
@@ -389,7 +389,7 @@ class ClassLikes
         ) {
             if ((
                 !isset($this->existing_classes_lc[$fq_class_name_lc])
-                    || $this->existing_classes_lc[$fq_class_name_lc] === true
+                    || $this->existing_classes_lc[$fq_class_name_lc]
                 )
                 && !$this->classlike_storage_provider->has($fq_class_name_lc)
             ) {
