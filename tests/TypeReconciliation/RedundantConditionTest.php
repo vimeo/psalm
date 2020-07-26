@@ -1341,6 +1341,14 @@ class RedundantConditionTest extends \Psalm\Tests\TestCase
                     if ($a && $a instanceof A) {}',
                 'error_message' => 'RedundantConditionGivenDocblockType',
             ],
+            'classStringNotEmpty' => [
+                '<?php
+                    function foo(object $o) : void {
+                        $oc = get_class($o);
+                        if ($oc) {}
+                    }',
+                'error_message' => 'RedundantCondition',
+            ],
         ];
     }
 }
