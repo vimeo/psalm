@@ -13,12 +13,4 @@ class TNonEmptyString extends TString
     {
         return 'non-empty-string';
     }
-
-    /**
-     * @return false
-     */
-    public function canBeFullyExpressedInPhp()
-    {
-        return false;
-    }
 }

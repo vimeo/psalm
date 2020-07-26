@@ -15,4 +15,12 @@ class TNonEmptyLowercaseString extends TNonEmptyString
     {
         return 'non-empty-lowercase-string';
     }
+
+    /**
+     * @return false
+     */
+    public function canBeFullyExpressedInPhp()
+    {
+        return false;
+    }
 }
