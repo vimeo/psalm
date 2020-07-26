@@ -23,11 +23,13 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TList;
+use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TPositiveInt;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Internal\Type\TypeCombination;
 use function array_diff_key;
@@ -560,12 +562,21 @@ class NonDivArithmeticOpAnalyzer
             }
 
             if ($left_type_part instanceof TInt && $right_type_part instanceof TInt) {
+                $always_positive = !$parent instanceof PhpParser\Node\Expr\BinaryOp\Minus
+                    && ($left_type_part instanceof TPositiveInt
+                        || ($left_type_part instanceof TLiteralInt && $left_type_part->value > 0))
+                    && ($right_type_part instanceof TPositiveInt
+                        || ($right_type_part instanceof TLiteralInt && $right_type_part->value > 0));
+
                 if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Mod) {
-                    $result_type = Type::getInt();
+                    $result_type = $always_positive ? Type::getPositiveInt() : Type::getInt();
                 } elseif (!$result_type) {
-                    $result_type = Type::getInt(true);
+                    $result_type = $always_positive ? Type::getPositiveInt(true) : Type::getInt(true);
                 } else {
-                    $result_type = Type::combineUnionTypes(Type::getInt(true), $result_type);
+                    $result_type = Type::combineUnionTypes(
+                        $always_positive ? Type::getPositiveInt(true) : Type::getInt(true),
+                        $result_type
+                    );
                 }
 
                 $has_valid_right_operand = true;

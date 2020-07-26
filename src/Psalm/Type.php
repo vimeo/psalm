@@ -175,6 +175,20 @@ abstract class Type
     }
 
     /**
+     * @param bool $from_calculation
+     * @param int|null $value
+     *
+     * @return Type\Union
+     */
+    public static function getPositiveInt(bool $from_calculation = false)
+    {
+        $union = new Union([new TInt()]);
+        $union->from_calculation = $from_calculation;
+
+        return $union;
+    }
+
+    /**
      * @return Type\Union
      */
     public static function getNumeric()

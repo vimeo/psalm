@@ -1,17 +1,14 @@
 <?php
 namespace Psalm\Type\Atomic;
 
-/**
- * Represents a non-empty array
- */
-class TNonEmptyString extends TString
+class TPositiveInt extends TInt
 {
     /**
      * @return string
      */
     public function getId(bool $nested = false)
     {
-        return 'non-empty-string';
+        return 'positive-int';
     }
 
     /**
