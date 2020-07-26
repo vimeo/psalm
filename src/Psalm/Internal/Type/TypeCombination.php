@@ -1243,24 +1243,51 @@ class TypeCombination
                 return null;
             }
 
+            $had_zero = isset($combination->ints['int(0)']);
+
             if ($type instanceof TLiteralInt) {
+                if ($type->value === 0) {
+                    $had_zero = true;
+                }
+
                 if ($combination->ints !== null && count($combination->ints) < $literal_limit) {
                     $combination->ints[$type_key] = $type;
                 } else {
+                    $combination->ints[$type_key] = $type;
+
+                    $all_nonnegative = !array_filter(
+                        $combination->ints,
+                        function ($int) {
+                            return $int->value < 0;
+                        }
+                    );
+
                     $combination->ints = null;
-                    $combination->value_types['int'] = new TInt();
+
+                    if (!isset($combination->value_types['int'])) {
+                        $combination->value_types['int'] = $all_nonnegative ? new TPositiveInt() : new TInt();
+                    } elseif ($combination->value_types['int'] instanceof TPositiveInt
+                        && !$all_nonnegative
+                    ) {
+                        $combination->value_types['int'] = new TInt();
+                    }
                 }
             } else {
                 if ($type instanceof TPositiveInt) {
-                    if (($combination->ints
-                            && !array_filter(
-                                $combination->ints,
-                                function ($int) {
-                                    return $int->value < 1;
-                                }
-                            ))
-                        || !isset($combination->value_types['int'])
-                    ) {
+                    if ($combination->ints) {
+                        $all_nonnegative = !array_filter(
+                            $combination->ints,
+                            function ($int) {
+                                return $int->value < 0;
+                            }
+                        );
+
+                        if ($all_nonnegative) {
+                            $combination->value_types['int'] = $type;
+                        } else {
+                            $combination->value_types['int'] = new TInt();
+                        }
+                    } elseif (!isset($combination->value_types['int'])) {
                         $combination->value_types['int'] = $type;
                     }
                 } else {
@@ -1268,6 +1295,13 @@ class TypeCombination
                 }
 
                 $combination->ints = null;
+            }
+
+            if ($had_zero
+                && isset($combination->value_types['int'])
+                && $combination->value_types['int'] instanceof TPositiveInt
+            ) {
+                $combination->ints = ['int(0)' => new TLiteralInt(0)];
             }
 
             return null;

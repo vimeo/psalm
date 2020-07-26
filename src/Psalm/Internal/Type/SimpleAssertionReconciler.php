@@ -309,8 +309,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                 $code_location,
                 $suppressed_issues,
                 $failed_reconciliation,
-                $is_equality,
-                $is_strict_equality
+                $is_equality
             );
         }
 
@@ -464,8 +463,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
         ?CodeLocation $code_location,
         array $suppressed_issues,
         int &$failed_reconciliation,
-        bool $is_equality,
-        ?int $min_count
+        bool $is_equality
     ) : Union {
         $old_var_type_string = $existing_var_type->getId();
 
@@ -474,7 +472,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
         $positive_types = [];
 
         foreach ($existing_var_type->getAtomicTypes() as $atomic_type) {
-            if ($atomic_type instanceof TLiteralInt
+            if ($atomic_type instanceof Type\Atomic\TLiteralInt
                 && !$atomic_type->value < 1
             ) {
                 $did_remove_type = true;

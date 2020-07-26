@@ -710,7 +710,15 @@ class ValueTest extends TestCase
                     function makeNumStringFromFloat(float $v) {
                         return (string) $v;
                     }'
-                ],
+            ],
+            'compareNegatedValue' => [
+                '<?php
+                    $i = rand(-1, 5);
+
+                    if (!($i > 0)) {
+                        echo $i;
+                    }',
+            ],
         ];
     }
 
