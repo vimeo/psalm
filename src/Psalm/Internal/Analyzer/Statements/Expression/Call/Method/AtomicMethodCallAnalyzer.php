@@ -668,6 +668,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                 $codebase,
                 $context,
                 $method_id,
+                $statements_analyzer->getNamespace(),
                 $name_code_location,
                 $statements_analyzer->getSuppressedIssues()
             );

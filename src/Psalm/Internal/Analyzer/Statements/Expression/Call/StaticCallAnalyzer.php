@@ -849,6 +849,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     $codebase,
                     $context,
                     $method_id,
+                    $statements_analyzer->getNamespace(),
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                     $statements_analyzer->getSuppressedIssues()
                 ) === false) {

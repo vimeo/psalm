@@ -21,6 +21,7 @@ class MethodCallProhibitionAnalyzer
         Codebase $codebase,
         Context $context,
         \Psalm\Internal\MethodIdentifier $method_id,
+        ?string $namespace,
         CodeLocation $code_location,
         array $suppressed_issues
     ) {
@@ -48,11 +49,10 @@ class MethodCallProhibitionAnalyzer
             }
         }
 
-        if ($context->self
-            && !$context->collect_initializations
+        if (!$context->collect_initializations
             && !$context->collect_mutations
         ) {
-            if (!NamespaceAnalyzer::isWithin($context->self, $storage->internal)) {
+            if (!NamespaceAnalyzer::isWithin($namespace ?: '', $storage->internal)) {
                 if (IssueBuffer::accepts(
                     new InternalMethod(
                         'The method ' . $codebase_methods->getCasedMethodId($method_id)

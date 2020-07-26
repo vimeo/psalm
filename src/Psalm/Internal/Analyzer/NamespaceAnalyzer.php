@@ -169,22 +169,21 @@ class NamespaceAnalyzer extends SourceAnalyzer implements StatementsSource
     }
 
     /**
-     * @param string $namespace Generally a namespace, but may also be a fully qualified class name (FQCN)_.
-     * @param string $className Generally a FQCN, but may be a FQCN
-     *
      * Returns true if $className is the same as, or starts with $namespace, in a case-insensitive comparison.
      *
      * @return bool
      */
-    public static function isWithin(string $className, string $namespace): bool
+    public static function isWithin(string $calling_namespace, string $namespace): bool
     {
         if ($namespace === '') {
             return true; // required to prevent a warning from strpos with empty needle in PHP < 8
         }
-        $className = strtolower(trim($className, '\\') . '\\');
+
+        $calling_namespace = strtolower(trim($calling_namespace, '\\') . '\\');
         $namespace = strtolower(trim($namespace, '\\') . '\\');
 
-        return $className === $namespace || strpos($className, $namespace) === 0;
+        return $calling_namespace === $namespace
+            || strpos($calling_namespace, $namespace) === 0;
     }
 
     /**
