@@ -1156,6 +1156,18 @@ class AnnotationTest extends TestCase
                      */
                     function bar() : void {}'
             ],
+            'varDocblockAboveCall' => [
+                '<?php
+
+                    function example(string $s): void {
+                        if (preg_match(\'{foo-(\w+)}\', $s, $m)) {
+                          /** @var array{string, string} $m */
+                          takesString($m[1]);
+                        }
+                    }
+
+                    function takesString(string $s): void {}'
+            ],
         ];
     }
 
