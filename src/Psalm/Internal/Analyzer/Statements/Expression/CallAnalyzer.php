@@ -45,7 +45,7 @@ class CallAnalyzer
      */
     public static function collectSpecialInformation(
         FunctionLikeAnalyzer $source,
-        $method_name,
+        string $method_name,
         Context $context
     ) {
         $fq_class_name = (string)$source->getFQCLN();
@@ -167,11 +167,27 @@ class CallAnalyzer
 
             $class_analyzer = $source->getSource();
 
+            $is_final = $method_storage->final;
+
+            if ($method_name !== $declaring_method_id->method_name) {
+                $appearing_method_id = $codebase->methods->getAppearingMethodId($method_id);
+
+                if ($appearing_method_id) {
+                    $appearing_class_storage = $codebase->classlike_storage_provider->get(
+                        $appearing_method_id->fq_class_name
+                    );
+
+                    if (isset($appearing_class_storage->trait_final_map[strtolower($method_name)])) {
+                        $is_final = true;
+                    }
+                }
+            }
+
             if ($class_analyzer instanceof ClassLikeAnalyzer
                 && !$method_storage->is_static
                 && ($context->collect_nonprivate_initializations
                     || $method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
-                    || $method_storage->final)
+                    || $is_final)
             ) {
                 $local_vars_in_scope = [];
                 $local_vars_possibly_in_scope = [];
@@ -191,7 +207,7 @@ class CallAnalyzer
                 $old_calling_method_id = $context->calling_method_id;
 
                 if ($fq_class_name === $source->getFQCLN()) {
-                    $class_analyzer->getMethodMutations(strtolower($method_name), $context);
+                    $class_analyzer->getMethodMutations(strtolower($declaring_method_id->method_name), $context);
                 } else {
                     $declaring_fq_class_name = $declaring_method_id->fq_class_name;
 

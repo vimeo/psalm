@@ -373,6 +373,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
             $method_map = $storage->trait_alias_map ?: [];
             $visibility_map = $storage->trait_visibility_map ?: [];
+            $final_map = $storage->trait_visibility_map ?: [];
 
             foreach ($node->adaptations as $adaptation) {
                 if ($adaptation instanceof PhpParser\Node\Stmt\TraitUseAdaptation\Alias) {
@@ -400,6 +401,14 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                             case 4:
                                 $visibility_map[$new_name] = ClassLikeAnalyzer::VISIBILITY_PRIVATE;
                                 break;
+
+                            case 4:
+                                $visibility_map[$new_name] = ClassLikeAnalyzer::VISIBILITY_PRIVATE;
+                                break;
+
+                            case 32:
+                                $final_map[$new_name] = true;
+                                break;
                         }
                     }
                 }
@@ -407,6 +416,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
             $storage->trait_alias_map = $method_map;
             $storage->trait_visibility_map = $visibility_map;
+            $storage->trait_final_map = $final_map;
 
             foreach ($node->traits as $trait) {
                 $trait_fqcln = ClassLikeAnalyzer::getFQCLNFromNameObject($trait, $this->aliases);
