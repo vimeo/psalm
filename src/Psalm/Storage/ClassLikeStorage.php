@@ -222,6 +222,11 @@ class ClassLikeStorage
     public $trait_alias_map = [];
 
     /**
+     * @var array<lowercase-string, bool>
+     */
+    public $trait_final_map = [];
+
+    /**
      * @var array<string, int>
      */
     public $trait_visibility_map = [];

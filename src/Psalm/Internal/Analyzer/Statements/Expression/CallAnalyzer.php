@@ -207,7 +207,7 @@ class CallAnalyzer
                 $old_calling_method_id = $context->calling_method_id;
 
                 if ($fq_class_name === $source->getFQCLN()) {
-                    $class_analyzer->getMethodMutations(strtolower($declaring_method_id->method_name), $context);
+                    $class_analyzer->getMethodMutations($declaring_method_id->method_name, $context);
                 } else {
                     $declaring_fq_class_name = $declaring_method_id->fq_class_name;
 

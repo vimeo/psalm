@@ -402,10 +402,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                                 $visibility_map[$new_name] = ClassLikeAnalyzer::VISIBILITY_PRIVATE;
                                 break;
 
-                            case 4:
-                                $visibility_map[$new_name] = ClassLikeAnalyzer::VISIBILITY_PRIVATE;
-                                break;
-
                             case 32:
                                 $final_map[$new_name] = true;
                                 break;
