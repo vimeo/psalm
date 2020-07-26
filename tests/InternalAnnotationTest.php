@@ -262,7 +262,6 @@ class InternalAnnotationTest extends TestCase
                     namespace A\B {
                         class Foo {
                             /**
-                             * @internal
                              * @psalm-internal A\B
                              */
                             public static function barBar(): void {
@@ -283,7 +282,6 @@ class InternalAnnotationTest extends TestCase
                     namespace A\B {
                         class Foo {
                             /**
-                             * @internal
                              * @psalm-internal A\B
                              */
                             public static function barBar(): void {
@@ -304,7 +302,6 @@ class InternalAnnotationTest extends TestCase
                     namespace A\B {
                         class Foo {
                             /**
-                             * @internal
                              * @psalm-internal A\B
                              */
                             public static function barBar(): void {
@@ -320,7 +317,6 @@ class InternalAnnotationTest extends TestCase
                 '<?php
                     namespace A\B {
                         /**
-                         * @internal
                          * @psalm-internal A
                          */
                         class Foo {
@@ -341,7 +337,6 @@ class InternalAnnotationTest extends TestCase
                 '<?php
                     namespace A\B {
                         /**
-                         * @internal
                          * @psalm-internal A\B
                          */
                         class Foo {
@@ -366,7 +361,6 @@ class InternalAnnotationTest extends TestCase
                 '<?php
                     namespace A\B {
                         /**
-                         * @internal
                          * @psalm-internal A\B
                          */
                         class Foo {
@@ -390,7 +384,6 @@ class InternalAnnotationTest extends TestCase
                 '<?php
                     namespace A {
                         /**
-                         * @internal
                          * @psalm-internal A
                          */
                         class Foo extends \B\Foo {
@@ -417,7 +410,6 @@ class InternalAnnotationTest extends TestCase
                 '<?php
                     namespace A\B {
                         /**
-                         * @internal
                          * @psalm-internal A\B
                          */
                         class Foo { }
@@ -437,7 +429,6 @@ class InternalAnnotationTest extends TestCase
                         interface Bar {};
 
                         /**
-                         * @internal
                          * @psalm-internal A\B
                          */
                         class Foo { }
@@ -455,7 +446,6 @@ class InternalAnnotationTest extends TestCase
                 '<?php
                     namespace A\B {
                         /**
-                         * @internal
                          * @psalm-internal A\B
                          */
                         class Foo { }
@@ -470,7 +460,6 @@ class InternalAnnotationTest extends TestCase
                     namespace A\B {
                         class Foo {
                             /**
-                             * @internal
                              * @psalm-internal A\B
                              * @var ?int
                              */
@@ -491,7 +480,6 @@ class InternalAnnotationTest extends TestCase
                     namespace A\B {
                         class Foo {
                             /**
-                             * @internal
                              * @psalm-internal A\B
                              * @var ?int
                              */
@@ -511,7 +499,6 @@ class InternalAnnotationTest extends TestCase
                 '<?php
                     namespace A {
                         /**
-                         * @internal
                          * @psalm-internal A
                          */
                         trait T {
@@ -752,7 +739,6 @@ class InternalAnnotationTest extends TestCase
                     namespace A\B {
                         class Foo {
                             /**
-                             * @internal
                              * @psalm-internal A\B
                              */
                             public static function barBar(): void {
@@ -774,7 +760,6 @@ class InternalAnnotationTest extends TestCase
                     namespace A\B {
                         class Foo {
                             /**
-                             * @internal
                              * @psalm-internal A\B\Foo
                              */
                             public static function barBar(): void {
@@ -795,7 +780,6 @@ class InternalAnnotationTest extends TestCase
                 '<?php
                     namespace A\B {
                         /**
-                         * @internal
                          * @psalm-internal A\B
                          */
                         class Foo {
@@ -817,7 +801,6 @@ class InternalAnnotationTest extends TestCase
                 '<?php
                     namespace A\B {
                         /**
-                         * @internal
                          * @psalm-internal A\B
                          */
                         class Foo {
@@ -842,7 +825,6 @@ class InternalAnnotationTest extends TestCase
                 '<?php
                     namespace A\B {
                         /**
-                         * @internal
                          * @psalm-internal A\B
                          */
                         class Foo {
@@ -868,7 +850,6 @@ class InternalAnnotationTest extends TestCase
                 '<?php
                     namespace A\B {
                         /**
-                         * @internal
                          * @psalm-internal A\B
                          */
                         class Foo { }
@@ -887,7 +868,6 @@ class InternalAnnotationTest extends TestCase
                 '<?php
                     namespace A\B {
                         /**
-                         * @internal
                          * @psalm-internal A\B
                          */
                         class Foo { }
@@ -903,7 +883,6 @@ class InternalAnnotationTest extends TestCase
                     namespace A\B {
                         class Foo {
                             /**
-                             * @internal
                              * @psalm-internal A\B
                              * @var ?int
                              */
@@ -925,7 +904,6 @@ class InternalAnnotationTest extends TestCase
                     namespace A\B {
                         class Foo {
                             /**
-                             * @internal
                              * @psalm-internal A\B
                              * @var ?int
                              */
@@ -971,7 +949,6 @@ class InternalAnnotationTest extends TestCase
                 '<?php
                     class Foo {
                         /**
-                         * @internal
                          * @psalm-internal
                          */
                         function Bar(): void {}
@@ -979,46 +956,6 @@ class InternalAnnotationTest extends TestCase
 
                     ',
                 'error_message' => 'psalm-internal annotation used without specifying namespace',
-            ],
-            'psalmInternalClassMissingInternalAnnotation' => [
-                '<?php
-                    namespace A\B {
-                        /**
-                         * @psalm-internal A\B
-                         */
-                        class Foo { }
-                    }
-                    ',
-                'error_message' => 'psalm-internal annotation used without @internal',
-                ],
-            'psalmInternalPropertyMissingInternalAnnotation' => [
-                '<?php
-                    namespace A\B {
-                        class Foo {
-                            /**
-                             * @var int
-                             * @psalm-internal A\B
-                             */
-                             public $foo;
-                        }
-                    }
-                    ',
-                'error_message' => 'psalm-internal annotation used without @internal',
-                ],
-            'psalmInternalFunctionMissingInternalAnnotation' => [
-                '<?php
-                    namespace A\B {
-                        class Foo {
-                            /**
-                             * @psalm-internal A\B
-                             */
-                             public function foo()
-                             {
-                             }
-                        }
-                    }
-                    ',
-                'error_message' => 'psalm-internal annotation used without @internal',
             ],
         ];
     }

@@ -237,10 +237,7 @@ class CommentAnalyzer
             }
 
             $var_comment->psalm_internal = reset($parsed_docblock->tags['psalm-internal']);
-
-            if (!$var_comment->internal) {
-                throw new DocblockParseException('@psalm-internal annotation used without @internal');
-            }
+            $var_comment->internal = true;
         }
     }
 
@@ -627,10 +624,7 @@ class CommentAnalyzer
                 throw new DocblockParseException('@psalm-internal annotation used without specifying namespace');
             }
             $info->psalm_internal = reset($parsed_docblock->tags['psalm-internal']);
-
-            if (! $info->internal) {
-                throw new DocblockParseException('@psalm-internal annotation used without @internal');
-            }
+            $info->internal = true;
         }
 
         if (isset($parsed_docblock->tags['psalm-suppress'])) {
@@ -926,9 +920,7 @@ class CommentAnalyzer
                 throw new DocblockParseException('psalm-internal annotation used without specifying namespace');
             }
 
-            if (! $info->internal) {
-                throw new DocblockParseException('@psalm-internal annotation used without @internal');
-            }
+            $info->internal = true;
         }
 
         if (isset($parsed_docblock->tags['mixin'])) {
