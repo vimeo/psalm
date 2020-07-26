@@ -302,6 +302,18 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
             );
         }
 
+        if ($assertion === 'positive-numeric') {
+            return self::reconcilePositiveNumeric(
+                $existing_var_type,
+                $key,
+                $code_location,
+                $suppressed_issues,
+                $failed_reconciliation,
+                $is_equality,
+                $is_strict_equality
+            );
+        }
+
         if ($assertion === 'float'
             && $existing_var_type->from_calculation
             && $existing_var_type->hasInt()
@@ -440,6 +452,73 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
         }
 
         return $existing_var_type;
+    }
+
+    /**
+     * @param   string[]  $suppressed_issues
+     * @param   0|1|2    $failed_reconciliation
+     */
+    private static function reconcilePositiveNumeric(
+        Union $existing_var_type,
+        ?string $key,
+        ?CodeLocation $code_location,
+        array $suppressed_issues,
+        int &$failed_reconciliation,
+        bool $is_equality,
+        ?int $min_count
+    ) : Union {
+        $old_var_type_string = $existing_var_type->getId();
+
+        $did_remove_type = false;
+
+        $positive_types = [];
+
+        foreach ($existing_var_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TLiteralInt
+                && !$atomic_type->value < 1
+            ) {
+                $did_remove_type = true;
+            } elseif ($atomic_type instanceof Type\Atomic\TPositiveInt) {
+                $positive_types[] = $atomic_type;
+            } elseif (get_class($atomic_type) === TInt::class) {
+                $positive_types[] = new Type\Atomic\TPositiveInt();
+                $did_remove_type = true;
+            } else {
+                // for now allow this check everywhere else
+                if (!$atomic_type instanceof Type\Atomic\TNull
+                    && !$atomic_type instanceof TFalse
+                ) {
+                    $positive_types[] = $atomic_type;
+                }
+
+                $did_remove_type = true;
+            }
+        }
+
+        if (!$is_equality
+            && !$existing_var_type->hasMixed()
+            && (!$did_remove_type || !$positive_types)
+        ) {
+            if ($key && $code_location) {
+                self::triggerIssueForImpossible(
+                    $existing_var_type,
+                    $old_var_type_string,
+                    $key,
+                    'positive-numeric',
+                    !$did_remove_type,
+                    $code_location,
+                    $suppressed_issues
+                );
+            }
+        }
+
+        if ($positive_types) {
+            return new Type\Union($positive_types);
+        }
+
+        $failed_reconciliation = 2;
+
+        return Type::getMixed();
     }
 
     /**

@@ -27,6 +27,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TNumericString;
+use Psalm\Type\Atomic\TPositiveInt;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TSingleLetter;
 use Psalm\Type\Atomic\TString;
@@ -239,6 +240,10 @@ class ScalarTypeComparator
             return true;
         }
 
+        if (get_class($container_type_part) === TInt::class && $input_type_part instanceof TPositiveInt) {
+            return true;
+        }
+
         if (get_class($container_type_part) === TFloat::class && $input_type_part instanceof TLiteralFloat) {
             return true;
         }
@@ -259,6 +264,23 @@ class ScalarTypeComparator
         }
 
         if (get_class($input_type_part) === TInt::class && $container_type_part instanceof TLiteralInt) {
+            if ($atomic_comparison_result) {
+                $atomic_comparison_result->type_coerced = true;
+                $atomic_comparison_result->type_coerced_from_scalar = true;
+            }
+
+            return false;
+        }
+
+        if ($input_type_part instanceof TInt && $container_type_part instanceof TPositiveInt) {
+            if ($input_type_part instanceof TPositiveInt) {
+                return true;
+            }
+
+            if ($input_type_part instanceof TLiteralInt) {
+                return $input_type_part->value > 0;
+            }
+
             if ($atomic_comparison_result) {
                 $atomic_comparison_result->type_coerced = true;
                 $atomic_comparison_result->type_coerced_from_scalar = true;

@@ -245,7 +245,8 @@ class AssertionFinder
         ) {
             $min_count = null;
             $count_equality_position = self::hasNonEmptyCountEqualityCheck($conditional, $min_count);
-            $typed_value_position = self::hasTypedValueComparison($conditional, $source);
+            $min_comparison = null;
+            $positive_number_position = self::hasPositiveNumberCheck($conditional, $min_comparison);
 
             if ($count_equality_position) {
                 if ($count_equality_position === self::ASSIGNMENT_TO_RIGHT) {
@@ -276,22 +277,23 @@ class AssertionFinder
                 return $if_types;
             }
 
-            if ($typed_value_position) {
-                if ($typed_value_position === self::ASSIGNMENT_TO_RIGHT) {
-                    /** @var PhpParser\Node\Expr $conditional->right */
+            if ($positive_number_position) {
+                if ($positive_number_position === self::ASSIGNMENT_TO_RIGHT) {
                     $var_name = ExpressionIdentifier::getArrayVarId(
                         $conditional->left,
                         $this_class_name,
                         $source
                     );
-                } elseif ($typed_value_position === self::ASSIGNMENT_TO_LEFT) {
-                    $var_name = null;
                 } else {
-                    throw new \UnexpectedValueException('$typed_value_position value');
+                    $var_name = ExpressionIdentifier::getArrayVarId(
+                        $conditional->right,
+                        $this_class_name,
+                        $source
+                    );
                 }
 
                 if ($var_name) {
-                    $if_types[$var_name] = [['=isset']];
+                    $if_types[$var_name] = [[($min_comparison === 1 ? '' : '=') . 'positive-numeric']];
                 }
 
                 return $if_types;
@@ -2600,6 +2602,56 @@ class AssertionFinder
 
         if ($right_count
             && $conditional->left instanceof PhpParser\Node\Scalar\LNumber
+            && $operator_less_than_or_equal
+            && $conditional->left->value >= (
+                $conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller ? 0 : 1
+            )
+        ) {
+            $min_count = $conditional->left->value +
+                ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller ? 1 : 0);
+
+            return self::ASSIGNMENT_TO_LEFT;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param   PhpParser\Node\Expr\BinaryOp    $conditional
+     *
+     * @return  false|int
+     */
+    protected static function hasPositiveNumberCheck(
+        PhpParser\Node\Expr\BinaryOp $conditional,
+        ?int &$min_count
+    ) {
+        $operator_greater_than_or_equal =
+            $conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
+            || $conditional instanceof PhpParser\Node\Expr\BinaryOp\Equal
+            || $conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater
+            || $conditional instanceof PhpParser\Node\Expr\BinaryOp\GreaterOrEqual;
+
+        if ($conditional->right instanceof PhpParser\Node\Scalar\LNumber
+            && $operator_greater_than_or_equal
+            && $conditional->right->value >= (
+                $conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater
+                ? 0
+                : 1
+            )
+        ) {
+            $min_count = $conditional->right->value +
+                ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater ? 1 : 0);
+
+            return self::ASSIGNMENT_TO_RIGHT;
+        }
+
+        $operator_less_than_or_equal =
+            $conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
+            || $conditional instanceof PhpParser\Node\Expr\BinaryOp\Equal
+            || $conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller
+            || $conditional instanceof PhpParser\Node\Expr\BinaryOp\SmallerOrEqual;
+
+        if ($conditional->left instanceof PhpParser\Node\Scalar\LNumber
             && $operator_less_than_or_equal
             && $conditional->left->value >= (
                 $conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller ? 0 : 1

@@ -891,6 +891,13 @@ class ValueTest extends TestCase
                     if ("C" === "c") {}',
                 'error_message' => 'TypeDoesNotContainType',
             ],
+            'compareValueTwice' => [
+                '<?php
+                    $i = rand(-1, 5);
+
+                    if ($i > 0 && $i > 0) {}',
+                'error_message' => 'RedundantCondition',
+            ],
             'numericStringCoerceToLiteral' => [
                 '<?php
                     /** @param "0"|"1" $s */

@@ -46,6 +46,7 @@ use Psalm\Type\Atomic\TNonEmptyMixed;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
+use Psalm\Type\Atomic\TPositiveInt;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -1250,8 +1251,23 @@ class TypeCombination
                     $combination->value_types['int'] = new TInt();
                 }
             } else {
+                if ($type instanceof TPositiveInt) {
+                    if (($combination->ints
+                            && !array_filter(
+                                $combination->ints,
+                                function ($int) {
+                                    return $int->value < 1;
+                                }
+                            ))
+                        || !isset($combination->value_types['int'])
+                    ) {
+                        $combination->value_types['int'] = $type;
+                    }
+                } else {
+                    $combination->value_types['int'] = $type;
+                }
+
                 $combination->ints = null;
-                $combination->value_types['int'] = $type;
             }
 
             return null;
