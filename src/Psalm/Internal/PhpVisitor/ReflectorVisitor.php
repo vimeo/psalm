@@ -373,7 +373,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
             $method_map = $storage->trait_alias_map ?: [];
             $visibility_map = $storage->trait_visibility_map ?: [];
-            $final_map = $storage->trait_visibility_map ?: [];
+            $final_map = $storage->trait_final_map ?: [];
 
             foreach ($node->adaptations as $adaptation) {
                 if ($adaptation instanceof PhpParser\Node\Stmt\TraitUseAdaptation\Alias) {
