@@ -12,4 +12,8 @@ function returnsABool(): bool {
 if (returnsABool() === true) {
     echo "hi!";
 }
+
+if (returnsABool() !== false) {
+    echo "hi!";
+}
 ```
