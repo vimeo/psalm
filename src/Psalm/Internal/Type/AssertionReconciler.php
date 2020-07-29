@@ -655,8 +655,8 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
         Type\Union $existing_type,
         Type\Union $new_type,
         array $template_type_map,
-        bool &$has_match,
-        bool &$any_scalar_type_match_found
+        bool &$has_match = false,
+        bool &$any_scalar_type_match_found = false
     ) : Type\Union {
         $matching_atomic_types = [];
 
@@ -760,6 +760,25 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                 ) {
                     $new_type_part->extra_types[$existing_type_part->getKey()] = $existing_type_part;
                     $matching_atomic_types[] = $new_type_part;
+                    $has_local_match = true;
+
+                    continue;
+                }
+
+                if ($has_local_match
+                    && $new_type_part instanceof Type\Atomic\TNamedObject
+                    && $existing_type_part instanceof Type\Atomic\TTemplateParam
+                    && $existing_type_part->as->hasObjectType()
+                ) {
+                    $existing_type_part = clone $existing_type_part;
+                    $existing_type_part->as = self::filterTypeWithAnother(
+                        $codebase,
+                        $existing_type_part->as,
+                        new Type\Union([$new_type_part]),
+                        $template_type_map
+                    );
+
+                    $matching_atomic_types[] = $existing_type_part;
                     $has_local_match = true;
 
                     continue;
