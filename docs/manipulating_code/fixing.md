@@ -222,6 +222,53 @@ class C {
 C::foo("hello");
 ```
 
+### MissingParamType
+
+Running `vendor/bin/psalter --issues=MissingParamType` on
+```php
+<?php
+class A {
+    public $foo;
+    public $bar;
+    
+    public function __construct()
+    {
+        if (rand(0, 1)) {
+            $this->foo = 5;
+        } else {
+            $this->foo = "hello";
+        }
+        
+        $this->bar = "baz";
+    }
+}
+```
+
+gives
+
+```php
+<?php
+class A {
+    /**
+     * @var string|int
+     */
+    public $foo;
+
+    public string $bar;
+    
+    public function __construct()
+    {
+        if (rand(0, 1)) {
+            $this->foo = 5;
+        } else {
+            $this->foo = "hello";
+        }
+        
+        $this->bar = "baz";
+    }
+}
+```
+
 ### MismatchingDocblockParamType
 
 Given
