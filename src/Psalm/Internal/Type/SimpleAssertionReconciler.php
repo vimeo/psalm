@@ -193,7 +193,20 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                 $code_location,
                 $suppressed_issues,
                 $failed_reconciliation,
-                $is_equality
+                $is_equality,
+                false
+            );
+        }
+
+        if ($assertion === 'non-empty-list') {
+            return self::reconcileList(
+                $existing_var_type,
+                $key,
+                $code_location,
+                $suppressed_issues,
+                $failed_reconciliation,
+                $is_equality,
+                true
             );
         }
 
@@ -1534,22 +1547,30 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
         ?CodeLocation $code_location,
         array $suppressed_issues,
         int &$failed_reconciliation,
-        bool $is_equality
+        bool $is_equality,
+        bool $is_non_empty
     ) : Union {
         $old_var_type_string = $existing_var_type->getId();
 
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
         if ($existing_var_type->hasMixed() || $existing_var_type->hasTemplate()) {
-            return Type::getList();
+            return $is_non_empty ? Type::getNonEmptyList() : Type::getList();
         }
 
         $array_types = [];
         $did_remove_type = false;
 
         foreach ($existing_var_atomic_types as $type) {
-            if ($type instanceof TList || ($type instanceof ObjectLike && $type->is_list)) {
-                $array_types[] = $type;
+            if ($type instanceof TList
+                || ($type instanceof ObjectLike && $type->is_list)
+            ) {
+                if ($is_non_empty && $type instanceof TList && !$type instanceof TNonEmptyList) {
+                    $array_types[] = new TNonEmptyList($type->type_param);
+                    $did_remove_type = true;
+                } else {
+                    $array_types[] = $type;
+                }
             } elseif ($type instanceof TArray || $type instanceof ObjectLike) {
                 if ($type instanceof ObjectLike) {
                     $type = $type->getGenericArrayType();

@@ -416,6 +416,16 @@ abstract class Type
     /**
      * @return Type\Union
      */
+    public static function getNonEmptyList()
+    {
+        $type = new Type\Atomic\TNonEmptyList(new Type\Union([new TMixed]));
+
+        return new Union([$type]);
+    }
+
+    /**
+     * @return Type\Union
+     */
     public static function getVoid()
     {
         $type = new TVoid;

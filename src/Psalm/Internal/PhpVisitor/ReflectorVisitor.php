@@ -2955,7 +2955,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         foreach ($namespaced_type->getAtomicTypes() as $namespaced_type_part) {
             if ($namespaced_type_part instanceof Type\Atomic\TAssertionFalsy
                 || ($namespaced_type_part instanceof Type\Atomic\TList
-                    && !$namespaced_type_part instanceof Type\Atomic\TNonEmptyList
                     && $namespaced_type_part->type_param->isMixed())
                 || ($namespaced_type_part instanceof Type\Atomic\TArray
                     && $namespaced_type_part->type_params[0]->isArrayKey()
