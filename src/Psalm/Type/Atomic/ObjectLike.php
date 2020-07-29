@@ -220,6 +220,8 @@ class ObjectLike extends \Psalm\Type\Atomic
 
         $key_type = TypeCombination::combineTypes($key_types);
 
+        $key_type->possibly_undefined = false;
+
         if ($this->previous_key_type) {
             $key_type = Type::combineUnionTypes($this->previous_key_type, $key_type);
         }
