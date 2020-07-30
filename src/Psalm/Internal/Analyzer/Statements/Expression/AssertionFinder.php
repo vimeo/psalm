@@ -284,12 +284,44 @@ class AssertionFinder
                         $this_class_name,
                         $source
                     );
+                    $value_node = $conditional->left;
                 } else {
                     $var_name = ExpressionIdentifier::getArrayVarId(
                         $conditional->right,
                         $this_class_name,
                         $source
                     );
+                    $value_node = $conditional->right;
+                }
+
+                if ($codebase
+                    && $source instanceof StatementsAnalyzer
+                    && ($var_type = $source->node_data->getType($value_node))
+                    && $var_type->isSingle()
+                    && $var_type->hasBool()
+                    && $min_comparison > 1
+                ) {
+                    if ($var_type->from_docblock) {
+                        if (IssueBuffer::accepts(
+                            new DocblockTypeContradiction(
+                                $var_type . ' cannot be greater than ' . $min_comparison,
+                                new CodeLocation($source, $conditional)
+                            ),
+                            $source->getSuppressedIssues()
+                        )) {
+                            // fall through
+                        }
+                    } else {
+                        if (IssueBuffer::accepts(
+                            new TypeDoesNotContainType(
+                                $var_type . ' cannot be greater than ' . $min_comparison,
+                                new CodeLocation($source, $conditional)
+                            ),
+                            $source->getSuppressedIssues()
+                        )) {
+                            // fall through
+                        }
+                    }
                 }
 
                 if ($var_name) {

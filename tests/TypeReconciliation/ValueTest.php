@@ -719,6 +719,11 @@ class ValueTest extends TestCase
                         echo $i;
                     }',
             ],
+            'refinePositiveInt' => [
+                '<?php
+                    $f = rand(0, 1) ? -1 : 1;
+                    if ($f > 0) {}'
+            ],
         ];
     }
 

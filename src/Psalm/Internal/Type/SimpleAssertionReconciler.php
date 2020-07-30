@@ -485,10 +485,12 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
         $positive_types = [];
 
         foreach ($existing_var_type->getAtomicTypes() as $atomic_type) {
-            if ($atomic_type instanceof Type\Atomic\TLiteralInt
-                && !$atomic_type->value < 1
-            ) {
-                $did_remove_type = true;
+            if ($atomic_type instanceof Type\Atomic\TLiteralInt) {
+                if ($atomic_type->value < 1) {
+                    $did_remove_type = true;
+                } else {
+                    $positive_types[] = $atomic_type;
+                }
             } elseif ($atomic_type instanceof Type\Atomic\TPositiveInt) {
                 $positive_types[] = $atomic_type;
             } elseif (get_class($atomic_type) === TInt::class) {

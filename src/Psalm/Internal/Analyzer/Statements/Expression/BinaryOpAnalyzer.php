@@ -7,6 +7,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\ImpureMethodCall;
+use Psalm\Issue\InvalidOperand;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
@@ -156,6 +157,27 @@ class BinaryOpAnalyzer
 
             $stmt_left_type = $statements_analyzer->node_data->getType($stmt->left);
             $stmt_right_type = $statements_analyzer->node_data->getType($stmt->right);
+
+            if (($stmt instanceof PhpParser\Node\Expr\BinaryOp\Greater
+                    || $stmt instanceof PhpParser\Node\Expr\BinaryOp\GreaterOrEqual
+                    || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Smaller
+                    || $stmt instanceof PhpParser\Node\Expr\BinaryOp\SmallerOrEqual)
+                && $statements_analyzer->getCodebase()->config->strict_binary_operands
+                && $stmt_left_type
+                && $stmt_right_type
+                && (($stmt_left_type->isSingle() && $stmt_left_type->hasBool())
+                    || ($stmt_right_type->isSingle() && $stmt_right_type->hasBool()))
+            ) {
+                if (IssueBuffer::accepts(
+                    new InvalidOperand(
+                        'Cannot compare ' . $stmt_left_type->getId() . ' to ' . $stmt_right_type->getId(),
+                        new CodeLocation($statements_analyzer, $stmt)
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            }
 
             if (($stmt instanceof PhpParser\Node\Expr\BinaryOp\Equal
                     || $stmt instanceof PhpParser\Node\Expr\BinaryOp\NotEqual
