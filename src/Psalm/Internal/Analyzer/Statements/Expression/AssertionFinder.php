@@ -622,11 +622,16 @@ class AssertionFinder
                 && ($var_type = $source->node_data->getType($base_conditional))
             ) {
                 if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
-                    $types = $var_type->getAtomicTypes();
-                    if (count($types) === 1 && isset($types['bool'])) {
+                    $config = $source->getCodebase()->config;
+
+                    if ($config->strict_binary_operands
+                        && $var_type->isSingle()
+                        && $var_type->hasBool()
+                        && !$var_type->from_docblock
+                    ) {
                         if (IssueBuffer::accepts(
                             new RedundantIdentityWithTrue(
-                                'Comparing a boolean with true is redundant',
+                                'The "=== true" part of this comparison is redundant',
                                 new CodeLocation($source, $conditional)
                             ),
                             $source->getSuppressedIssues()
@@ -634,6 +639,7 @@ class AssertionFinder
                             // fall through
                         }
                     }
+
                     $true_type = Type::getTrue();
 
                     if (!UnionTypeComparator::canExpressionTypesBeIdentical(

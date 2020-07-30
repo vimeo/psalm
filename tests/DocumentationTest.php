@@ -217,6 +217,9 @@ class DocumentationTest extends TestCase
                 case 'PluginClass':
                     continue 2;
 
+                case 'RedundantIdentityWithTrue':
+                    continue 2;
+
                 case 'InvalidFalsableReturnType':
                     $ignored_issues = ['FalsableReturnStatement'];
                     break;

@@ -1,6 +1,6 @@
 # RedundantIdentityWithTrue
 
-Emitted when comparing a known boolean with true
+Emitted when comparing a known boolean with true and the `strictBinaryOperands` flag is set to true.
 
 ```php
 <?php
