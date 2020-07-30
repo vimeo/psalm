@@ -211,6 +211,29 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                     // Really this should only work on instances we've created with new Foo(),
                     // but that requires more work
                     break;
+
+                case 'fgetcsv':
+                    $string_type = Type::getString();
+                    $string_type->addType(new Type\Atomic\TNull);
+                    $string_type->ignore_nullable_issues = true;
+
+                    $call_map_return_type = new Type\Union([
+                        new Type\Atomic\TNonEmptyList(
+                            $string_type
+                        ),
+                        new Type\Atomic\TFalse,
+                        new Type\Atomic\TNull
+                    ]);
+
+                    if ($codebase->config->ignore_internal_nullable_issues) {
+                        $call_map_return_type->ignore_nullable_issues = true;
+                    }
+
+                    if ($codebase->config->ignore_internal_falsable_issues) {
+                        $call_map_return_type->ignore_falsable_issues = true;
+                    }
+
+                    return $call_map_return_type;
             }
         }
 

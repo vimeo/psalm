@@ -225,6 +225,7 @@ C::foo("hello");
 ### MissingPropertyType
 
 Running `vendor/bin/psalter --issues=MissingPropertyType` on
+
 ```php
 <?php
 class A {
