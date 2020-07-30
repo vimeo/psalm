@@ -80,6 +80,7 @@ $valid_long_options = [
     'config:',
     'debug',
     'debug-by-line',
+    'debug-performance',
     'debug-emitted-issues',
     'diff',
     'diff-methods',
@@ -622,6 +623,10 @@ $start_time = microtime(true);
 
 if (array_key_exists('debug-by-line', $options)) {
     $project_analyzer->debug_lines = true;
+}
+
+if (array_key_exists('debug-performance', $options)) {
+    $project_analyzer->debug_performance = true;
 }
 
 if ($config->find_unused_code) {

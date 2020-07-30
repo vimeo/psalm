@@ -557,7 +557,28 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             ]);
         }
 
+        $time = \microtime(true);
+
+        $project_analyzer = $statements_analyzer->getProjectAnalyzer();
+
         $statements_analyzer->analyze($function_stmts, $context, $global_context, true);
+
+        if (!$context->collect_initializations
+            && !$context->collect_mutations
+            && $project_analyzer->debug_performance
+            && $cased_method_id
+        ) {
+            $traverser = new PhpParser\NodeTraverser;
+
+            $node_counter = new \Psalm\Internal\PhpVisitor\NodeCounterVisitor();
+            $traverser->addVisitor($node_counter);
+            $traverser->traverse($function_stmts);
+
+            if ($node_counter->count > 5) {
+                $time_taken = \microtime(true) - $time;
+                $codebase->analyzer->addFunctionTiming($cased_method_id, $time_taken / $node_counter->count);
+            }
+        }
 
         $this->examineParamTypes($statements_analyzer, $context, $codebase);
 

@@ -633,6 +633,28 @@ class IssueBuffer
                     echo $codebase->analyzer->getNonMixedStats();
                     echo "\n";
                 }
+
+                if ($project_analyzer->debug_performance) {
+                    echo '-----------------' . "\n";
+                    echo 'Slow-to-analyze functions' . "\n";
+                    echo '-----------------' . "\n\n";
+
+                    $function_timings = $codebase->analyzer->getFunctionTimings();
+
+                    \arsort($function_timings);
+
+                    $i = 0;
+
+                    foreach ($function_timings as $function_id => $time) {
+                        if (++$i > 10) {
+                            break;
+                        }
+
+                        echo $function_id . ': ' . \round(1000 * $time, 2) . 'ms per node' . "\n";
+                    }
+
+                    echo "\n";
+                }
             }
         }
 

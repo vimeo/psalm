@@ -151,6 +151,10 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
         Context $global_context = null,
         $root_scope = false
     ) {
+        if (!$stmts) {
+            return;
+        }
+
         // hoist functions to the top
         $this->hoistFunctions($stmts);
 

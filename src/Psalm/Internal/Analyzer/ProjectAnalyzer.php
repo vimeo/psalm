@@ -138,6 +138,11 @@ class ProjectAnalyzer
     /**
      * @var bool
      */
+    public $debug_performance = false;
+
+    /**
+     * @var bool
+     */
     public $show_issues = true;
 
     /** @var int */
