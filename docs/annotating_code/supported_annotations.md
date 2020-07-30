@@ -158,8 +158,6 @@ unrelated to the namespace of the calling code, i.e. not sharing the first eleme
 In contrast for `@psalm-internal`, the docbloc line must specify a namespace. An issue is raised if the calling code
 is not within the given namespace.
 
-As other tools do not support `@psalm-internal`, it may only be used in conjunction with `@internal`.
-
 ```php
 <?php
 namespace A\B {
