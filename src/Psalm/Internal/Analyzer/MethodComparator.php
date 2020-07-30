@@ -910,6 +910,10 @@ class MethodComparator
                     $new_bases = [];
 
                     foreach ($mapped_type->getTemplateTypes() as $mapped_atomic_type) {
+                        if ($mapped_atomic_type->defining_class === $base_class_name) {
+                            continue;
+                        }
+
                         $new_bases[] = $mapped_atomic_type->defining_class;
                     }
 
