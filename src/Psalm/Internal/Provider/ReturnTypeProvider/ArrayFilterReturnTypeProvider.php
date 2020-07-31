@@ -10,11 +10,13 @@ use Psalm\Context;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Issue\InvalidReturnType;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Type;
 use Psalm\Type\Reconciler;
+use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 
 class ArrayFilterReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface
 {
@@ -98,62 +100,58 @@ class ArrayFilterReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
         } elseif (!isset($call_args[2])) {
             $function_call_arg = $call_args[1];
 
-            $second_arg_value = $function_call_arg->value;
-
-            if ($second_arg_value instanceof PhpParser\Node\Scalar\String_
-                && InternalCallMapHandler::inCallMap($second_arg_value->value)
+            if ($function_call_arg->value instanceof PhpParser\Node\Scalar\String_
+                || $function_call_arg->value instanceof PhpParser\Node\Expr\Array_
+                || $function_call_arg->value instanceof PhpParser\Node\Expr\BinaryOp\Concat
             ) {
-                $callables = InternalCallMapHandler::getCallablesFromCallMap($second_arg_value->value);
+                $mapping_function_ids = CallAnalyzer::getFunctionIdsFromCallableArg(
+                    $statements_source,
+                    $function_call_arg->value
+                );
 
-                if ($callables) {
-                    $callable = clone $callables[0];
+                if ($array_arg && $mapping_function_ids) {
+                    $assertions = [];
 
-                    if ($callable->params !== null && $callable->return_type) {
-                        $second_arg_value = new PhpParser\Node\Expr\Closure([
-                            'params' => array_map(
-                                function (\Psalm\Storage\FunctionLikeParameter $param) {
-                                    return new PhpParser\Node\Param(
-                                        new PhpParser\Node\Expr\Variable($param->name)
-                                    );
-                                },
-                                $callable->params
-                            ),
-                            'stmts' => [
-                                new PhpParser\Node\Stmt\Return_(
-                                    new PhpParser\Node\Expr\FuncCall(
-                                        new PhpParser\Node\Name\FullyQualified(
-                                            $second_arg_value->value
-                                        ),
-                                        array_map(
-                                            function (\Psalm\Storage\FunctionLikeParameter $param) {
-                                                return new PhpParser\Node\Arg(
-                                                    new PhpParser\Node\Expr\Variable($param->name)
-                                                );
-                                            },
-                                            $callable->params
-                                        )
-                                    )
-                                ),
-                            ],
-                        ]);
+                    ArrayMapReturnTypeProvider::getReturnTypeFromMappingIds(
+                        $statements_source,
+                        $mapping_function_ids,
+                        $context,
+                        $function_call_arg,
+                        \array_slice($call_args, 0, 1),
+                        $assertions
+                    );
 
-                        $closure_atomic_type = new Type\Atomic\TFn(
-                            'Closure',
-                            $callable->params,
-                            $callable->return_type
+                    $array_var_id = ExpressionIdentifier::getArrayVarId(
+                        $array_arg,
+                        null,
+                        $statements_source
+                    );
+
+                    if (isset($assertions[$array_var_id . '[$__fake_offset_var__]'])) {
+                        $changed_var_ids = [];
+
+                        $assertions = ['$inner_type' => $assertions[$array_var_id . '[$__fake_offset_var__]']];
+
+                        $reconciled_types = Reconciler::reconcileKeyedTypes(
+                            $assertions,
+                            $assertions,
+                            ['$inner_type' => $inner_type],
+                            $changed_var_ids,
+                            ['$inner_type' => true],
+                            $statements_source,
+                            $statements_source->getTemplateTypeMap() ?: [],
+                            false,
+                            new CodeLocation($statements_source, $function_call_arg->value)
                         );
 
-                        $statements_source->node_data->setType(
-                            $second_arg_value,
-                            new Type\Union([$closure_atomic_type])
-                        );
+                        if (isset($reconciled_types['$inner_type'])) {
+                            $inner_type = $reconciled_types['$inner_type'];
+                        }
                     }
                 }
-            }
-
-            if (($second_arg_value instanceof PhpParser\Node\Expr\Closure
-                    || $second_arg_value instanceof PhpParser\Node\Expr\ArrowFunction)
-                && ($second_arg_type = $statements_source->node_data->getType($second_arg_value))
+            } elseif (($function_call_arg->value instanceof PhpParser\Node\Expr\Closure
+                    || $function_call_arg->value instanceof PhpParser\Node\Expr\ArrowFunction)
+                && ($second_arg_type = $statements_source->node_data->getType($function_call_arg->value))
                 && ($closure_types = $second_arg_type->getClosureTypes())
             ) {
                 $closure_atomic_type = \reset($closure_types);
@@ -171,9 +169,9 @@ class ArrayFilterReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
                     return Type::getArray();
                 }
 
-                if (count($second_arg_value->getStmts()) === 1 && count($second_arg_value->params)) {
-                    $first_param = $second_arg_value->params[0];
-                    $stmt = $second_arg_value->getStmts()[0];
+                if (count($function_call_arg->value->getStmts()) === 1 && count($function_call_arg->value->params)) {
+                    $first_param = $function_call_arg->value->params[0];
+                    $stmt = $function_call_arg->value->getStmts()[0];
 
                     if ($first_param->variadic === false
                         && $first_param->var instanceof PhpParser\Node\Expr\Variable

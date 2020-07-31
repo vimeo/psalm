@@ -13,6 +13,7 @@ use Psalm\Internal\Type\ArrayType;
 use Psalm\StatementsSource;
 use Psalm\Type;
 use function strpos;
+use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
 
 class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface
 {
@@ -229,10 +230,14 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
             : Type::getList();
     }
 
+    /**
+     * @param-out array<string, array<array<string>>>|null $assertions
+     */
     private static function executeFakeCall(
         \Psalm\Internal\Analyzer\StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $fake_call,
-        Context $context
+        Context $context,
+        ?array &$assertions = null
     ) : ?Type\Union {
         $old_data_provider = $statements_analyzer->node_data;
 
@@ -274,6 +279,17 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
             throw new \UnexpectedValueException('UnrecognizedCall');
         }
 
+        $codebase = $statements_analyzer->getCodebase();
+
+        if ($assertions !== null) {
+            $assertions = AssertionFinder::scrapeAssertions(
+                $fake_call,
+                null,
+                $statements_analyzer,
+                $codebase
+            );
+        }
+
         $context->inside_call = $was_inside_call;
 
         if (!in_array('PossiblyInvalidMethodCall', $suppressed_issues, true)) {
@@ -294,13 +310,15 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
     /**
      * @param non-empty-array<string> $mapping_function_ids
      * @param array<PhpParser\Node\Arg> $array_args
+     * @param-out array<string, array<array<string>>>|null $assertions
      */
-    private static function getReturnTypeFromMappingIds(
+    public static function getReturnTypeFromMappingIds(
         \Psalm\Internal\Analyzer\StatementsAnalyzer $statements_source,
         array $mapping_function_ids,
         Context $context,
         PhpParser\Node\Arg $function_call_arg,
-        array $array_args
+        array $array_args,
+        ?array &$assertions = null
     ) : Type\Union {
         $mapping_return_type = null;
 
@@ -363,7 +381,8 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
                         $fake_method_return_type = self::executeFakeCall(
                             $statements_source,
                             $fake_method_call,
-                            $context
+                            $context,
+                            $assertions
                         );
 
                         unset($context->vars_in_scope['$__fake_offset_var__']);
@@ -387,7 +406,8 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
                         $fake_method_return_type = self::executeFakeCall(
                             $statements_source,
                             $fake_method_call,
-                            $context
+                            $context,
+                            $assertions
                         );
 
                         unset($context->vars_in_scope['$__fake_offset_var__']);
@@ -409,7 +429,8 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
                     $fake_function_return_type = self::executeFakeCall(
                         $statements_source,
                         $fake_function_call,
-                        $context
+                        $context,
+                        $assertions
                     );
 
                     unset($context->vars_in_scope['$__fake_offset_var__']);
