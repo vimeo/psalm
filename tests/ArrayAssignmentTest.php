@@ -997,10 +997,7 @@ class ArrayAssignmentTest extends TestCase
                     $a = [];
 
                     foreach (["one", "two", "three"] as $key) {
-                      /**
-                       * @psalm-suppress MixedOperand
-                       */
-                      $a[$key] += rand(0, 10);
+                        $a[$key] += rand(0, 10);
                     }
 
                     $a["four"] = true;

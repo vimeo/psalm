@@ -365,7 +365,7 @@ class AssignmentAnalyzer
                             $location,
                             $context->branch_point
                         );
-                    } else {
+                    } elseif (!$context->inside_isset) {
                         $statements_analyzer->registerVariableAssignment(
                             $var_id,
                             $location
