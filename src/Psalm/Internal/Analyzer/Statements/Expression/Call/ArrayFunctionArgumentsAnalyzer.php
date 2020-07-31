@@ -35,6 +35,7 @@ use function explode;
 use function count;
 use function array_filter;
 use function assert;
+use Psalm\Internal\Type\TypeExpander;
 
 /**
  * @internal
@@ -863,6 +864,14 @@ class ArrayFunctionArgumentsAnalyzer
                     $codebase
                 );
             }
+
+            $closure_param_type = TypeExpander::expandUnion(
+                $codebase,
+                $closure_param_type,
+                $context->self,
+                null,
+                $statements_analyzer->getParentFQCLN()
+            );
 
             $union_comparison_results = new \Psalm\Internal\Type\Comparator\TypeComparisonResult();
 
