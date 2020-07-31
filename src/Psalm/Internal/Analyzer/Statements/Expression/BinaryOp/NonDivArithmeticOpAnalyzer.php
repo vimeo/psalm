@@ -56,6 +56,12 @@ class NonDivArithmeticOpAnalyzer
         $right_type = $nodes->getType($right);
         $config = Config::getInstance();
 
+        if ($left_type && $left_type->isEmpty()) {
+            $left_type = $right_type;
+        } elseif ($right_type && $right_type->isEmpty()) {
+            $right_type = $left_type;
+        }
+
         if ($left_type && $right_type) {
             if ($left_type->isNull()) {
                 if ($statements_source && IssueBuffer::accepts(

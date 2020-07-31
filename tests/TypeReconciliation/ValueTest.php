@@ -724,6 +724,14 @@ class ValueTest extends TestCase
                     $f = rand(0, 1) ? -1 : 1;
                     if ($f > 0) {}'
             ],
+            'assignOpThenCheck' => [
+                '<?php
+                    $data = ["e" => 0];
+                    if (rand(0, 1)) {
+                        $data["e"]++;
+                    }
+                    if ($data["e"] > 0) {}'
+            ],
         ];
     }
 

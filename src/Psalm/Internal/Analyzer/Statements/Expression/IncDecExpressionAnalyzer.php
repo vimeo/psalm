@@ -36,7 +36,15 @@ class IncDecExpressionAnalyzer
             $context->inside_assignment = false;
         }
 
-        if ($stmt_var_type = $statements_analyzer->node_data->getType($stmt->var)) {
+        $stmt_var_type = $statements_analyzer->node_data->getType($stmt->var);
+
+        if ($stmt instanceof PostInc || $stmt instanceof PostDec) {
+            $statements_analyzer->node_data->setType($stmt, $stmt_var_type ?: Type::getMixed());
+        }
+
+        if (($stmt_var_type = $statements_analyzer->node_data->getType($stmt->var))
+            && $stmt_var_type->hasString()
+        ) {
             $return_type = null;
 
             $fake_right_expr = new PhpParser\Node\Scalar\LNumber(1, $stmt->getAttributes());
@@ -55,29 +63,8 @@ class IncDecExpressionAnalyzer
             $stmt_type = clone $stmt_var_type;
 
             $statements_analyzer->node_data->setType($stmt, $stmt_type);
-            $stmt_type->from_calculation = true;
-
-            foreach ($stmt_type->getAtomicTypes() as $atomic_type) {
-                if ($atomic_type instanceof Type\Atomic\TLiteralInt) {
-                    $stmt_type->addType(new Type\Atomic\TInt);
-                } elseif ($atomic_type instanceof Type\Atomic\TLiteralFloat) {
-                    $stmt_type->addType(new Type\Atomic\TFloat);
-                }
-            }
 
             $var_id = ExpressionIdentifier::getArrayVarId($stmt->var, null);
-
-            if ($var_id && $context->mutation_free && strpos($var_id, '->')) {
-                if (IssueBuffer::accepts(
-                    new ImpurePropertyAssignment(
-                        'Cannot assign to a property from a mutation-free context',
-                        new CodeLocation($statements_analyzer, $stmt->var)
-                    ),
-                    $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
-            }
 
             $codebase = $statements_analyzer->getCodebase();
 
@@ -108,7 +95,40 @@ class IncDecExpressionAnalyzer
                 );
             }
         } else {
-            $statements_analyzer->node_data->setType($stmt, Type::getMixed());
+            $fake_right_expr = new PhpParser\Node\Scalar\LNumber(1, $stmt->getAttributes());
+
+            $operation = $stmt instanceof PostInc || $stmt instanceof PreInc
+                ? new PhpParser\Node\Expr\BinaryOp\Plus(
+                    $stmt->var,
+                    $fake_right_expr
+                )
+                : new PhpParser\Node\Expr\BinaryOp\Minus(
+                    $stmt->var,
+                    $fake_right_expr
+                );
+
+            $fake_assignment = new PhpParser\Node\Expr\Assign(
+                $stmt->var,
+                $operation,
+                $stmt->getAttributes()
+            );
+
+            $old_node_data = $statements_analyzer->node_data;
+
+            $statements_analyzer->node_data = clone $statements_analyzer->node_data;
+
+            if (ExpressionAnalyzer::analyze($statements_analyzer, $fake_assignment, $context) === false) {
+                return false;
+            }
+
+            if ($stmt instanceof PreInc || $stmt instanceof PreDec) {
+                $old_node_data->setType(
+                    $stmt,
+                    $statements_analyzer->node_data->getType($operation) ?: Type::getMixed()
+                );
+            }
+
+            $statements_analyzer->node_data = $old_node_data;
         }
 
         return true;

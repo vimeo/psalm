@@ -333,7 +333,9 @@ class AssignmentAnalyzer
             return false;
         }
 
-        if (isset($context->protected_var_ids[$var_id])) {
+        if (isset($context->protected_var_ids[$var_id])
+            && $assign_value_type->hasLiteralInt()
+        ) {
             if (IssueBuffer::accepts(
                 new LoopInvalidation(
                     'Variable ' . $var_id . ' has already been assigned in a for/foreach loop',
