@@ -4255,7 +4255,7 @@ return [
 'hash_algos' => ['list<string>'],
 'hash_copy' => ['HashContext', 'context'=>'HashContext|resource'],
 'hash_equals' => ['bool', 'known_string'=>'string', 'user_string'=>'string'],
-'hash_file' => ['string', 'algo'=>'string', 'filename'=>'string', 'raw_output='=>'bool'],
+'hash_file' => ['string|false', 'algo'=>'string', 'filename'=>'string', 'raw_output='=>'bool'],
 'hash_final' => ['string', 'context'=>'HashContext|resource', 'raw_output='=>'bool'],
 'hash_hkdf' => ['string|false', 'algo'=>'string', 'ikm'=>'string', 'length='=>'int', 'info='=>'string', 'salt='=>'string'],
 'hash_hmac' => ['string', 'algo'=>'string', 'data'=>'string', 'key'=>'string', 'raw_output='=>'bool'],
