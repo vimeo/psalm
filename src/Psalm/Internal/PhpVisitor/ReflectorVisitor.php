@@ -1947,14 +1947,14 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
         $storage->required_param_count = $required_param_count;
 
-        if (($stmt instanceof PhpParser\Node\Stmt\Function_
-                || $stmt instanceof PhpParser\Node\Stmt\ClassMethod)
-            && $stmt->stmts
+        if ($stmt instanceof PhpParser\Node\Stmt\Function_
+            || $stmt instanceof PhpParser\Node\Stmt\ClassMethod
         ) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod
                 && $storage instanceof MethodStorage
                 && $class_storage
                 && !$class_storage->mutation_free
+                && $stmt->stmts
                 && count($stmt->stmts) === 1
                 && !count($stmt->params)
                 && $stmt->stmts[0] instanceof PhpParser\Node\Stmt\Return_
@@ -1974,7 +1974,9 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
                     $class_storage->properties[$property_name]->getter_method = strtolower($stmt->name->name);
                 }
-            } elseif (strpos($stmt->name->name, 'assert') === 0) {
+            } elseif (strpos($stmt->name->name, 'assert') === 0
+                && $stmt->stmts
+            ) {
                 $var_assertions = [];
 
                 foreach ($stmt->stmts as $function_stmt) {

@@ -345,13 +345,15 @@ class Reconciler
                         $changed_var_ids,
                         $result_type
                     );
-                } else {
+                } elseif ($key !== '$this') {
                     foreach ($existing_types as $new_key => $_) {
                         if ($new_key === $key) {
                             continue;
                         }
 
-                        if (preg_match('/' . preg_quote($key, '/') . '[\]\[\-]/', $new_key)) {
+                        if (!isset($new_types[$new_key])
+                            && preg_match('/' . preg_quote($key, '/') . '[\]\[\-]/', $new_key)
+                        ) {
                             unset($existing_types[$new_key]);
                         }
                     }

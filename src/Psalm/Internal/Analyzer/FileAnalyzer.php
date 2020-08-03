@@ -288,22 +288,32 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
      */
     private function populateClassLikeAnalyzers(PhpParser\Node\Stmt\ClassLike $stmt)
     {
-        if (!$stmt->name) {
-            return;
-        }
-
-        // this can happen when stubbing
-        if (!$this->codebase->classOrInterfaceExists($stmt->name->name)) {
-            return;
-        }
-
         if ($stmt instanceof PhpParser\Node\Stmt\Class_) {
+            if (!$stmt->name) {
+                return;
+            }
+
+            // this can happen when stubbing
+            if (!$this->codebase->classExists($stmt->name->name)) {
+                return;
+            }
+
+
             $class_analyzer = new ClassAnalyzer($stmt, $this, $stmt->name->name);
 
             $fq_class_name = $class_analyzer->getFQCLN();
 
             $this->class_analyzers_to_analyze[strtolower($fq_class_name)] = $class_analyzer;
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Interface_) {
+            if (!$stmt->name) {
+                return;
+            }
+
+            // this can happen when stubbing
+            if (!$this->codebase->interfaceExists($stmt->name->name)) {
+                return;
+            }
+
             $class_analyzer = new InterfaceAnalyzer($stmt, $this, $stmt->name->name);
 
             $fq_class_name = $class_analyzer->getFQCLN();
