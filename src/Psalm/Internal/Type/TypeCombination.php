@@ -88,6 +88,9 @@ class TypeCombination
     /** @var array<string|int, Union> */
     private $objectlike_entries = [];
 
+    /** @var array<string, bool> */
+    private $objectlike_class_strings = [];
+
     /** @var bool */
     private $objectlike_sealed = true;
 
@@ -390,13 +393,11 @@ class TypeCombination
                     }
 
                     if (is_int($property_name)) {
-                        if (!isset($objectlike_keys['int'])) {
-                            $objectlike_keys['int'] = new TInt;
-                        }
+                        $objectlike_keys[$property_name] = new TLiteralInt($property_name);
+                    } elseif (isset($type->class_strings[$property_name])) {
+                        $objectlike_keys[$property_name] = new TLiteralClassString($property_name);
                     } else {
-                        if (!isset($objectlike_keys['string'])) {
-                            $objectlike_keys['string'] = new TString;
-                        }
+                        $objectlike_keys[$property_name] = new TLiteralString($property_name);
                     }
                 }
 
@@ -955,6 +956,12 @@ class TypeCombination
                         $codebase,
                         $overwrite_empty_array
                     );
+                }
+
+                if (is_string($candidate_property_name)
+                    && isset($type->class_strings[$candidate_property_name])
+                ) {
+                    $combination->objectlike_class_strings[$candidate_property_name] = true;
                 }
 
                 if (!$type->previous_value_type) {
