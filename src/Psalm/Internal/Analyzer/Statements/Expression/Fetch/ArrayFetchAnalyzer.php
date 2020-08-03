@@ -1057,10 +1057,16 @@ class ArrayFetchAnalyzer
                                     $type->count = $property_count;
                                 } else {
                                     $array_type->removeType($type_string);
-                                    $type = new TArray([
-                                        $new_key_type,
-                                        $generic_params,
-                                    ]);
+
+                                    if (!$stmt->dim && $type->is_list) {
+                                        $type = new TList($generic_params);
+                                    } else {
+                                        $type = new TArray([
+                                            $new_key_type,
+                                            $generic_params,
+                                        ]);
+                                    }
+
                                     $array_type->addType($type);
                                 }
 
