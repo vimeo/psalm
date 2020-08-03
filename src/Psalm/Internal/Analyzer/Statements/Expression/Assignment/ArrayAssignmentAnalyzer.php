@@ -180,15 +180,15 @@ class ArrayAssignmentAnalyzer
                        && $child_stmt_dim_type->isSingleStringLiteral())
                 ) {
                     if ($child_stmt->dim instanceof PhpParser\Node\Scalar\String_) {
-                        $dim_value = $child_stmt->dim->value;
+                        $dim_value = new Type\Atomic\TLiteralString($child_stmt->dim->value);
                     } else {
-                        $dim_value = $child_stmt_dim_type->getSingleStringLiteral()->value;
+                        $dim_value = $child_stmt_dim_type->getSingleStringLiteral();
                     }
 
-                    if (preg_match('/^(0|[1-9][0-9]*)$/', $dim_value)) {
-                        $var_id_additions[] = '[' . $dim_value . ']';
+                    if (preg_match('/^(0|[1-9][0-9]*)$/', $dim_value->value)) {
+                        $var_id_additions[] = '[' . $dim_value->value . ']';
                     } else {
-                        $var_id_additions[] = '[\'' . $dim_value . '\']';
+                        $var_id_additions[] = '[\'' . $dim_value->value . '\']';
                     }
                 } elseif ($child_stmt->dim instanceof PhpParser\Node\Scalar\LNumber
                     || (($child_stmt->dim instanceof PhpParser\Node\Expr\ConstFetch
@@ -196,12 +196,12 @@ class ArrayAssignmentAnalyzer
                         && $child_stmt_dim_type->isSingleIntLiteral())
                 ) {
                     if ($child_stmt->dim instanceof PhpParser\Node\Scalar\LNumber) {
-                        $dim_value = $child_stmt->dim->value;
+                        $dim_value = new Type\Atomic\TLiteralInt($child_stmt->dim->value);
                     } else {
-                        $dim_value = $child_stmt_dim_type->getSingleIntLiteral()->value;
+                        $dim_value = $child_stmt_dim_type->getSingleIntLiteral();
                     }
 
-                    $var_id_additions[] = '[' . $dim_value . ']';
+                    $var_id_additions[] = '[' . $dim_value->value . ']';
                 } elseif ($child_stmt->dim instanceof PhpParser\Node\Expr\Variable
                     && is_string($child_stmt->dim->name)
                 ) {
@@ -340,10 +340,10 @@ class ArrayAssignmentAnalyzer
 
             $key_values = [];
 
-            if ($current_dim instanceof PhpParser\Node\Scalar\String_
-                || $current_dim instanceof PhpParser\Node\Scalar\LNumber
-            ) {
-                $key_values[] = $current_dim->value;
+            if ($current_dim instanceof PhpParser\Node\Scalar\String_) {
+                $key_values[] = new Type\Atomic\TLiteralString($current_dim->value);
+            } elseif ($current_dim instanceof PhpParser\Node\Scalar\LNumber) {
+                $key_values[] = new Type\Atomic\TLiteralInt($current_dim->value);
             } elseif ($current_dim
                 && ($current_dim_type = $statements_analyzer->node_data->getType($current_dim))
             ) {
@@ -354,11 +354,11 @@ class ArrayAssignmentAnalyzer
 
                 if (count($string_literals) + count($int_literals) === count($all_atomic_types)) {
                     foreach ($string_literals as $string_literal) {
-                        $key_values[] = $string_literal->value;
+                        $key_values[] = clone $string_literal;
                     }
 
                     foreach ($int_literals as $int_literal) {
-                        $key_values[] = $int_literal->value;
+                        $key_values[] = clone $int_literal;
                     }
                 }
             }
@@ -433,10 +433,10 @@ class ArrayAssignmentAnalyzer
         $root_is_string = $root_type->isString();
         $key_values = [];
 
-        if ($current_dim instanceof PhpParser\Node\Scalar\String_
-            || ($current_dim instanceof PhpParser\Node\Scalar\LNumber && !$root_is_string)
-        ) {
-            $key_values[] = $current_dim->value;
+        if ($current_dim instanceof PhpParser\Node\Scalar\String_) {
+            $key_values[] = new Type\Atomic\TLiteralString($current_dim->value);
+        } elseif ($current_dim instanceof PhpParser\Node\Scalar\LNumber && !$root_is_string) {
+            $key_values[] = new Type\Atomic\TLiteralInt($current_dim->value);
         } elseif ($current_dim
             && ($current_dim_type = $statements_analyzer->node_data->getType($current_dim))
             && !$root_is_string
@@ -448,11 +448,11 @@ class ArrayAssignmentAnalyzer
 
             if (count($string_literals) + count($int_literals) === count($all_atomic_types)) {
                 foreach ($string_literals as $string_literal) {
-                    $key_values[] = $string_literal->value;
+                    $key_values[] = clone $string_literal;
                 }
 
                 foreach ($int_literals as $int_literal) {
-                    $key_values[] = $int_literal->value;
+                    $key_values[] = clone $int_literal;
                 }
             }
         }
@@ -682,7 +682,7 @@ class ArrayAssignmentAnalyzer
     }
 
     /**
-     * @param non-empty-list<int|string> $key_values
+     * @param non-empty-list<Type\Atomic\TLiteralInt|Type\Atomic\TLiteralString> $key_values
      */
     private static function updateTypeWithKeyValues(
         \Psalm\Codebase $codebase,
@@ -696,13 +696,13 @@ class ArrayAssignmentAnalyzer
         foreach ($child_stmt_type->getAtomicTypes() as $type) {
             foreach ($key_values as $key_value) {
                 if ($type instanceof ObjectLike) {
-                    if (isset($type->properties[$key_value])) {
+                    if (isset($type->properties[$key_value->value])) {
                         $has_matching_objectlike_property = true;
 
-                        $type->properties[$key_value] = clone $current_type;
+                        $type->properties[$key_value->value] = clone $current_type;
                     }
                 } elseif ($type instanceof Type\Atomic\TString
-                    && \is_int($key_value)
+                    && $key_value instanceof Type\Atomic\TLiteralInt
                 ) {
                     $has_matching_string = true;
 
@@ -716,7 +716,8 @@ class ArrayAssignmentAnalyzer
                         }
                     }
                 } elseif ($type instanceof TNonEmptyList
-                    && $key_value === 0
+                    && $key_value instanceof Type\Atomic\TLiteralInt
+                    && $key_value->value === 0
                     && count($key_values) === 1
                 ) {
                     $has_matching_objectlike_property = true;
@@ -738,22 +739,20 @@ class ArrayAssignmentAnalyzer
             if (count($key_values) === 1) {
                 $key_value = $key_values[0];
 
-                $object_like = new ObjectLike([$key_value => clone $current_type]);
+                $object_like = new ObjectLike(
+                    [$key_value->value => clone $current_type],
+                    $key_value instanceof Type\Atomic\TLiteralClassString
+                        ? [(string) $key_value->value => true]
+                        : null
+                );
+
                 $object_like->sealed = true;
 
                 $array_assignment_type = new Type\Union([
                     $object_like,
                 ]);
             } else {
-                $array_assignment_literals = [];
-
-                foreach ($key_values as $key_value) {
-                    if (\is_int($key_value)) {
-                        $array_assignment_literals[] = new Type\Atomic\TLiteralInt($key_value);
-                    } else {
-                        $array_assignment_literals[] = new Type\Atomic\TLiteralString($key_value);
-                    }
-                }
+                $array_assignment_literals = $key_values;
 
                 $array_assignment_type = new Type\Union([
                     new Type\Atomic\TNonEmptyArray([
@@ -776,7 +775,7 @@ class ArrayAssignmentAnalyzer
     }
 
     /**
-     * @param list<int|string> $key_values
+     * @param list<Type\Atomic\TLiteralInt|Type\Atomic\TLiteralString> $key_values $key_values
      */
     private static function taintArrayAssignment(
         StatementsAnalyzer $statements_analyzer,
@@ -807,7 +806,7 @@ class ArrayAssignmentAnalyzer
                         $codebase->taint->addPath(
                             $parent_node,
                             $new_parent_node,
-                            'array-assignment-\'' . $key_value . '\''
+                            'array-assignment-\'' . $key_value->value . '\''
                         );
                     }
                 } else {
