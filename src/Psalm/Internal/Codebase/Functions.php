@@ -387,6 +387,9 @@ class Functions
 
             // ftp
             'ftp_close',
+
+            // bcmath
+            'bcscale',
         ];
 
         if (\in_array(strtolower($function_id), $impure_functions, true)) {
