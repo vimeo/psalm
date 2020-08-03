@@ -50,6 +50,8 @@ use function strpos;
 use function strtolower;
 use function substr;
 use Exception;
+use function preg_match;
+use function preg_quote;
 
 class Reconciler
 {

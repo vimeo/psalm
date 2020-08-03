@@ -340,28 +340,28 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'combineObjectTypeWithIntKeyedArray' => [
-                'array<int|string, int|string>',
+                'array<int|string(a), int|string>',
                 [
                     'array{a: int}',
                     'array<int, string>',
                 ],
             ],
             'combineNestedObjectTypeWithObjectLikeIntKeyedArray' => [
-                'array{a: array<int|string, int|string>}',
+                'array{a: array<int|string(a), int|string>}',
                 [
                     'array{a: array{a: int}}',
                     'array{a: array<int, string>}',
                 ],
             ],
             'combineIntKeyedObjectTypeWithNestedIntKeyedArray' => [
-                'array<int, array<int|string, int|string>>',
+                'array<int, array<int|string(a), int|string>>',
                 [
                     'array<int, array{a:int}>',
                     'array<int, array<int, string>>',
                 ],
             ],
             'combineNestedObjectTypeWithNestedIntKeyedArray' => [
-                'array<int|string, array<int|string, int|string>>',
+                'array<int|string(a), array<int|string(a), int|string>>',
                 [
                     'array{a: array{a: int}}',
                     'array<int, array<int, string>>',
@@ -432,7 +432,7 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'objectLikePlusArrayEqualsArray' => [
-                'array<string, int(1)|int(2)|int(3)>',
+                'array<string(a)|string(b)|string(c), int(1)|int(2)|int(3)>',
                 [
                     'array<"a"|"b"|"c", 1|2|3>',
                     'array{a: 1|2, b: 2|3, c: 1|3}',

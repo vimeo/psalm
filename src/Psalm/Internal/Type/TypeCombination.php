@@ -55,6 +55,7 @@ use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Union;
 use function strpos;
 use function substr;
+use function is_string;
 
 /**
  * @internal
