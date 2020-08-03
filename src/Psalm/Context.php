@@ -687,16 +687,10 @@ class Context
             $statements_analyzer
         );
 
-        $vars_to_remove = [];
-
         foreach ($this->vars_in_scope as $var_id => $_) {
             if (preg_match('/' . preg_quote($remove_var_id, '/') . '[\]\[\-]/', $var_id)) {
-                $vars_to_remove[] = $var_id;
+                unset($this->vars_in_scope[$var_id]);
             }
-        }
-
-        foreach ($vars_to_remove as $var_id) {
-            unset($this->vars_in_scope[$var_id]);
         }
     }
 
