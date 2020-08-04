@@ -354,7 +354,7 @@ class TypeAnnotationTest extends TestCase
                     }',
                 'error_message' => 'InvalidReturnStatement',
             ],
-            'classTypeInvalidAlias' => [
+            'classTypeInvalidAliasImport' => [
                 '<?php
                 class Phone {
                     function toArray(): array {
@@ -365,26 +365,44 @@ class TypeAnnotationTest extends TestCase
                 /**
                  * @psalm-import-type PhoneType from Phone
                  */
-                class User {
-                    /** @psalm-return UserType */
-                    function toArray(): array {
-                        return (new Phone)->toArray();
-                    }
-                }',
-                'error_message' => 'UndefinedDocblockClass',
+                class User {}',
+                'error_message' => 'InvalidTypeImport',
             ],
             'classTypeAliasFromInvalidClass' => [
                 '<?php
                 /**
                  * @psalm-import-type PhoneType from Phone
                  */
-                class User {
-                    /** @psalm-return UserType */
-                    function toArray(): array {
-                        return [];
-                    }
-                }',
+                class User {}',
                 'error_message' => 'UndefinedDocblockClass',
+            ],
+            'malformedImportMissingFrom' => [
+                '<?php
+                    /** @psalm-import-type Thing */
+                    class C {}
+                ',
+                'error_message' => 'InvalidTypeImport',
+            ],
+            'malformedImportMissingSourceClass' => [
+                '<?php
+                    /** @psalm-import-type Thing from */
+                    class C {}
+                ',
+                'error_message' => 'InvalidTypeImport',
+            ],
+            'malformedImportMisspelledFrom' => [
+                '<?php
+                    /** @psalm-import-type Thing morf */
+                    class C {}
+                ',
+                'error_message' => 'InvalidTypeImport',
+            ],
+            'malformedImportMissingAlias' => [
+                '<?php
+                    /** @psalm-import-type Thing from Somewhere as */
+                    class C {}
+                ',
+                'error_message' => 'InvalidTypeImport',
             ],
             'noCrashWithPriorReference' => [
                 '<?php
@@ -431,7 +449,7 @@ class TypeAnnotationTest extends TestCase
                             return $_item["something"];
                         }
                     }',
-                'error_message' => 'PossiblyUndefinedArrayOffset'
+                'error_message' => 'PossiblyUndefinedArrayOffset',
             ],
         ];
     }

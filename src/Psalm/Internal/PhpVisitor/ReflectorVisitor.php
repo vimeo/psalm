@@ -23,6 +23,7 @@ use function preg_replace;
 use Psalm\Aliases;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
+use Psalm\CodeLocation\DocblockTypeLocation;
 use Psalm\Config;
 use Psalm\DocComment;
 use Psalm\Exception\DocblockParseException;
@@ -51,6 +52,7 @@ use Psalm\Issue\DuplicateFunction;
 use Psalm\Issue\DuplicateMethod;
 use Psalm\Issue\DuplicateParam;
 use Psalm\Issue\InvalidDocblock;
+use Psalm\Issue\InvalidTypeImport;
 use Psalm\Issue\MissingDocblockType;
 use Psalm\IssueBuffer;
 use Psalm\Storage\ClassLikeStorage;
@@ -1311,29 +1313,71 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     $storage->sealed_methods = true;
                 }
 
-                foreach ($docblock_info->imported_types as $imported_type_data) {
-                    if (count($imported_type_data) > 2 && $imported_type_data[1] === 'from') {
+                foreach ($docblock_info->imported_types as $import_type_entry) {
+                    $imported_type_data = $import_type_entry['parts'];
+                    $location = new DocblockTypeLocation(
+                        $this->file_scanner,
+                        $import_type_entry['start_offset'],
+                        $import_type_entry['end_offset'],
+                        $import_type_entry['line_number']
+                    );
+                    // There are two valid forms:
+                    // @psalm-import Thing from Something
+                    // @psalm-import Thing from Something as Alias
+                    // but there could be leftovers after that
+                    if (count($imported_type_data) < 3) {
+                        $storage->docblock_issues[] = new InvalidTypeImport(
+                            'Invalid import in docblock for ' . implode('.', $this->fq_classlike_names)
+                            . ', expecting "<TypeName> from <ClassName>", got "' . join(' ', $imported_type_data) . '" instead.',
+                            $location
+                        );
+                        continue;
+                    }
+
+                    if ($imported_type_data[1] === 'from' && !empty($imported_type_data[0]) && !empty($imported_type_data[2])) {
                         $type_alias_name = $as_alias_name = $imported_type_data[0];
                         $declaring_classlike_name = $imported_type_data[2];
+                    } else {
+                        $storage->docblock_issues[] = new InvalidTypeImport(
+                            'Invalid import in docblock for ' . implode('.', $this->fq_classlike_names)
+                            . ', expecting "<TypeName> from <ClassName>", got "'
+                            . $imported_type_data[0] . ' ' . $imported_type_data[1] . ' ' . $imported_type_data[2] . '" instead.',
+                            $location
+                        );
+                        continue;
+                    }
 
-                        if (count($imported_type_data) > 4 && $imported_type_data[3] === 'as') {
-                            $as_alias_name = $imported_type_data[4];
+                    if (count($imported_type_data) >= 4 && $imported_type_data[3] === 'as') {
+                        // long form
+                        if (empty($imported_type_data[4])) {
+                            $storage->docblock_issues[] = new InvalidTypeImport(
+                                'Invalid import in docblock for ' . implode('.', $this->fq_classlike_names)
+                                . ', expecting "as <TypeName>", got "'
+                                . $imported_type_data[3] . ' ' . ($imported_type_data[4] ?? ''). '" instead.',
+                                $location
+                            );
+                            continue;
                         }
 
-                        $declaring_fq_classlike_name = Type::getFQCLNFromString(
-                            $declaring_classlike_name,
-                            $this->aliases
-                        );
-
-                        $this->codebase->scanner->queueClassLikeForScanning($declaring_fq_classlike_name);
-                        $this->file_storage->referenced_classlikes[strtolower($declaring_fq_classlike_name)]
-                            = $declaring_fq_classlike_name;
-
-                        $this->type_aliases[$as_alias_name] = new TypeAlias\LinkableTypeAlias(
-                            $declaring_fq_classlike_name,
-                            $type_alias_name
-                        );
+                        $as_alias_name = $imported_type_data[4];
                     }
+
+                    $declaring_fq_classlike_name = Type::getFQCLNFromString(
+                        $declaring_classlike_name,
+                        $this->aliases
+                    );
+
+                    $this->codebase->scanner->queueClassLikeForScanning($declaring_fq_classlike_name);
+                    $this->file_storage->referenced_classlikes[strtolower($declaring_fq_classlike_name)]
+                        = $declaring_fq_classlike_name;
+
+                    $this->type_aliases[$as_alias_name] = new TypeAlias\LinkableTypeAlias(
+                        $declaring_fq_classlike_name,
+                        $type_alias_name,
+                        $import_type_entry['line_number'],
+                        $import_type_entry['start_offset'],
+                        $import_type_entry['end_offset']
+                    );
                 }
 
                 $storage->deprecated = $docblock_info->deprecated;
