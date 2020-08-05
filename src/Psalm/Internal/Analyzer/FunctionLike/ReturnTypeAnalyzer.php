@@ -77,7 +77,9 @@ class ReturnTypeAnalyzer
 
         if ($source instanceof StatementsAnalyzer) {
             $function_like_storage = $function_like_analyzer->getFunctionLikeStorage($source);
-        } elseif ($source instanceof \Psalm\Internal\Analyzer\ClassAnalyzer) {
+        } elseif ($source instanceof \Psalm\Internal\Analyzer\ClassAnalyzer
+            || $source instanceof \Psalm\Internal\Analyzer\TraitAnalyzer
+        ) {
             $function_like_storage = $function_like_analyzer->getFunctionLikeStorage();
         }
 
