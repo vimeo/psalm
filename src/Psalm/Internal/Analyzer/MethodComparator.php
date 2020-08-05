@@ -154,7 +154,9 @@ class MethodComparator
         }
 
         if ($guide_classlike_storage->user_defined
-            && ($guide_classlike_storage->is_interface || $implementer_method_storage->cased_name !== '__construct')
+            && ($guide_classlike_storage->is_interface
+                || $guide_classlike_storage->preserve_constructor_signature
+                || $implementer_method_storage->cased_name !== '__construct')
             && $implementer_method_storage->required_param_count > $guide_method_storage->required_param_count
         ) {
             if (IssueBuffer::accepts(

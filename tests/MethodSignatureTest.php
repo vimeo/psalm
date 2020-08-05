@@ -441,6 +441,8 @@ class MethodSignatureTest extends TestCase
                         public static function foo() {
                             return new static();
                         }
+
+                        final public function __construct() {}
                     }
 
                     class B extends A {
@@ -723,6 +725,8 @@ class MethodSignatureTest extends TestCase
                         public static function foo() {
                             return new static();
                         }
+
+                        final public function __construct() {}
                     }
 
                     class B extends A {
@@ -810,7 +814,22 @@ class MethodSignatureTest extends TestCase
                 [],
                 [],
                 '7.1'
-            ]
+            ],
+            'consistentConstructor' => [
+                '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    class A {
+                        public function getInstance() : self {
+                            return new static();
+                        }
+                    }
+
+                    class AChild extends A {
+                        public function __construct() {}
+                    }'
+            ],
         ];
     }
 
@@ -1338,6 +1357,41 @@ class MethodSignatureTest extends TestCase
                 [],
                 false,
                 '7.3'
+            ],
+            'inconsistentConstructorExplicitParentConstructor' => [
+                '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    class A {
+                        public function getInstance() : self
+                        {
+                            return new static();
+                        }
+
+                        public function __construct() {}
+                    }
+
+                    class BadAChild extends A {
+                        public function __construct(string $s) {}
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+            ],
+            'inconsistentConstructorImplicitParentConstructor' => [
+                '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    class A {
+                        public function getInstance() : self {
+                            return new static();
+                        }
+                    }
+
+                    class BadAChild extends A {
+                        public function __construct(string $s) {}
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
             ],
         ];
     }

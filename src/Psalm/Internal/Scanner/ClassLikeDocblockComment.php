@@ -119,4 +119,9 @@ class ClassLikeDocblockComment
      * @var list<list<string>>
      */
     public $imported_types = [];
+
+    /**
+     * @var bool
+     */
+    public $consistent_constructor = false;
 }

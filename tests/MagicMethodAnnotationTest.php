@@ -608,6 +608,8 @@ class MagicMethodAnnotationTest extends TestCase
                         {
                             return new static();
                         }
+
+                        final public function __construct() {}
                     }
 
                     /**

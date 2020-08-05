@@ -35,7 +35,7 @@ class DocComment
         'mutation-free', 'external-mutation-free', 'immutable', 'readonly',
         'allow-private-mutation', 'readonly-allow-private-mutation',
         'yield', 'trace', 'import-type', 'flow', 'taint-specialize', 'taint-escape',
-        'taint-unescape', 'self-out'
+        'taint-unescape', 'self-out', 'consistent-constructor'
     ];
 
     /**

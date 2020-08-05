@@ -701,6 +701,9 @@ class FunctionTemplateTest extends TestCase
                         return $foo::getAnother();
                     }
 
+                    /**
+                     * @psalm-consistent-constructor
+                     */
                     class Foo {
                         /** @return static */
                         public static function getAnother() {
@@ -794,6 +797,9 @@ class FunctionTemplateTest extends TestCase
             ],
             'noCrashWhenTemplatedClassIsStatic' => [
                 '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     */
                     abstract class Model {
                         /** @return static */
                         public function newInstance() {

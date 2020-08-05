@@ -420,6 +420,11 @@ class ClassLikeStorage
     public $type_aliases = [];
 
     /**
+     * @var bool
+     */
+    public $preserve_constructor_signature = false;
+
+    /**
      * @param string $name
      */
     public function __construct($name)

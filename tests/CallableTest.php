@@ -798,8 +798,11 @@ class CallableTest extends TestCase
                         }
                     }'
             ],
-            'retunClosureReturningStatic' => [
+            'returnClosureReturningStatic' => [
                 '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     */
                     class C {
                         /**
                          * @return Closure():static

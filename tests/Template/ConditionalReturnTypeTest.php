@@ -568,6 +568,7 @@ class ConditionalReturnTypeTest extends TestCase
                     /**
                      * @template E
                      * @implements AInterface<E>
+                     * @psalm-consistent-constructor
                      */
                     class BClass implements AInterface {
                         protected string $type;

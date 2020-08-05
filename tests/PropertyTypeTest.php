@@ -1555,7 +1555,7 @@ class PropertyTypeTest extends TestCase
                          */
                         protected $a;
 
-                        private function __construct()
+                        final private function __construct()
                         {
                             $this->setA();
                         }

@@ -594,6 +594,10 @@ class Populator
             $storage->protected_class_constants
         );
 
+        if ($parent_storage->preserve_constructor_signature) {
+            $storage->preserve_constructor_signature = true;
+        }
+
         if (($parent_storage->namedMixins || $parent_storage->templatedMixins)
             && (!$storage->namedMixins || !$storage->templatedMixins)) {
             $storage->mixin_declaring_fqcln = $parent_storage->mixin_declaring_fqcln;
@@ -1143,7 +1147,9 @@ class Populator
 
         // register where they're declared
         foreach ($parent_storage->inheritable_method_ids as $method_name_lc => $declaring_method_id) {
-            if ($method_name_lc !== '__construct') {
+            if ($method_name_lc !== '__construct'
+                || $parent_storage->preserve_constructor_signature
+            ) {
                 if ($parent_storage->is_trait) {
                     $declaring_class = $declaring_method_id->fq_class_name;
                     $declaring_class_storage = $this->classlike_storage_provider->get($declaring_class);

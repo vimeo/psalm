@@ -203,6 +203,9 @@ class ReturnTypeTest extends TestCase
             ],
             'extendsStaticCallReturnType' => [
                 '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     */
                     abstract class A {
                         /** @return static */
                         public static function load() {
@@ -220,6 +223,9 @@ class ReturnTypeTest extends TestCase
             ],
             'extendsStaticCallArrayReturnType' => [
                 '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     */
                     abstract class A {
                         /** @return array<int,static> */
                         public static function loadMultiple() {

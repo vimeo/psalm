@@ -1325,6 +1325,9 @@ class RedundantConditionTest extends \Psalm\Tests\TestCase
             ],
             'staticClassIsAlwaysNull' => [
                 '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     */
                     class A {
                         /**
                          * @return ?static

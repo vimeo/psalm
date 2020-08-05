@@ -542,6 +542,9 @@ class ClassTest extends TestCase
             ],
             'allowFinalReturnerForStatic' => [
                 '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     */
                     class A {
                         /** @return static */
                         public static function getInstance() {
@@ -820,6 +823,9 @@ class ClassTest extends TestCase
             ],
             'preventFinalOverriding' => [
                 '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     */
                     class A {
                         /** @return static */
                         public static function getInstance() {

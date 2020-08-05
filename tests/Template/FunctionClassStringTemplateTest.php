@@ -41,6 +41,9 @@ class FunctionClassStringTemplateTest extends TestCase
                         }
                     }
 
+                    /**
+                     * @psalm-consistent-constructor
+                     */
                     class Foo {
                         /** @return static */
                         public static function load() {

@@ -18,6 +18,7 @@ use Psalm\Issue\InternalClass;
 use Psalm\Issue\InvalidStringClass;
 use Psalm\Issue\MixedMethodCall;
 use Psalm\Issue\TooManyArguments;
+use Psalm\Issue\UnsafeInstantiation;
 use Psalm\Issue\UndefinedClass;
 use Psalm\IssueBuffer;
 use Psalm\Type;
@@ -382,6 +383,18 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                 $codebase->classlikes->classExists($fq_class_name)
             ) {
                 $storage = $codebase->classlike_storage_provider->get($fq_class_name);
+
+                if ($from_static && !$storage->preserve_constructor_signature) {
+                    if (IssueBuffer::accepts(
+                        new UnsafeInstantiation(
+                            'Cannot instantiate class ' . $fq_class_name . ' with a non-final constructor',
+                            new CodeLocation($statements_analyzer->getSource(), $stmt)
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        return true;
+                    }
+                }
 
                 // if we're not calling this constructor via new static()
                 if ($storage->abstract && !$can_extend) {
