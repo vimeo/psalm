@@ -1510,6 +1510,19 @@ class ArrayFunctionCallTest extends TestCase
                         return array_map([$m, "map"], $strings);
                     }'
             ],
+            'arrayShiftComplexArray' => [
+                '<?php
+                    /**
+                     * @param list<string> $slugParts
+                     */
+                    function foo(array $slugParts) : void {
+                        if (!$slugParts) {
+                            $slugParts = [""];
+                        }
+                        array_shift($slugParts);
+                        if (!empty($slugParts)) {}
+                    }'
+            ],
         ];
     }
 

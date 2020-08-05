@@ -297,7 +297,6 @@ class ObjectLike extends \Psalm\Type\Atomic
 
         if ($this->previous_value_type || $has_defined_keys) {
             $array_type = new TNonEmptyArray([$key_type, $value_type]);
-            $array_type->count = count($this->properties);
         } else {
             $array_type = new TArray([$key_type, $value_type]);
         }
