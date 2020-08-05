@@ -26,12 +26,12 @@ class ArrayType
     }
 
     /**
-     * @return static|null
+     * @return self|null
      */
     public static function infer(Type\Atomic $type): ?self
     {
         if ($type instanceof Type\Atomic\ObjectLike) {
-            return new static(
+            return new self(
                 $type->getGenericKeyType(),
                 $type->getGenericValueType(),
                 $type->is_list
@@ -39,7 +39,7 @@ class ArrayType
         }
 
         if ($type instanceof Type\Atomic\TList) {
-            return new static(
+            return new self(
                 Type::getInt(),
                 $type->type_param,
                 true
@@ -47,7 +47,7 @@ class ArrayType
         }
 
         if ($type instanceof Type\Atomic\TArray) {
-            return new static(
+            return new self(
                 $type->type_params[0],
                 $type->type_params[1],
                 false

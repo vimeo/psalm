@@ -83,6 +83,7 @@ use const SCANDIR_SORT_NONE;
 
 /**
  * @psalm-suppress PropertyNotSetInConstructor
+ * @psalm-consistent-constructor
  */
 class Config
 {

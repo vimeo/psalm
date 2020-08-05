@@ -25,6 +25,9 @@ use function strtolower;
 use const GLOB_NOSORT;
 use const GLOB_ONLYDIR;
 
+/**
+ * @psalm-consistent-constructor
+ */
 class FileFilter
 {
     /**
