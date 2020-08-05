@@ -122,7 +122,18 @@ class OrAnalyzer
         try {
             $negated_left_clauses = Algebra::negateFormula($left_clauses);
         } catch (\Psalm\Exception\ComplicatedExpressionException $e) {
-            return false;
+            try {
+                $negated_left_clauses = Algebra::getFormula(
+                    \spl_object_id($stmt->left),
+                    new PhpParser\Node\Expr\BooleanNot($stmt->left),
+                    $context->self,
+                    $statements_analyzer,
+                    $codebase,
+                    false
+                );
+            } catch (\Psalm\Exception\ComplicatedExpressionException $e) {
+                return false;
+            }
         }
 
         if ($left_context->reconciled_expression_clauses) {

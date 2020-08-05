@@ -1840,7 +1840,6 @@ class ConditionalTest extends \Psalm\Tests\TestCase
             ],
             'avoidOOM' => [
                 '<?php
-                    /** @psalm-suppress MixedInferredReturnType */
                     function gameOver(
                         int $b0,
                         int $b1,
