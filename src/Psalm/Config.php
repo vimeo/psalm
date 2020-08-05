@@ -80,6 +80,7 @@ use function simplexml_import_dom;
 use const LIBXML_NONET;
 use function is_a;
 use const SCANDIR_SORT_NONE;
+use function array_map;
 
 /**
  * @psalm-suppress PropertyNotSetInConstructor
@@ -123,6 +124,15 @@ class Config
         'MixedArgumentTypeCoercion',
         'MixedPropertyTypeCoercion',
         'MixedReturnTypeCoercion',
+    ];
+
+    /**
+     * These are special object classes that allow any and all properties to be get/set on them
+     * @var array<int, class-string>
+     */
+    protected $universal_object_crates = [
+        \stdClass::class,
+        SimpleXMLElement::class,
     ];
 
     /**
@@ -974,6 +984,15 @@ class Config
             /** @var \SimpleXMLElement $mock_class */
             foreach ($config_xml->mockClasses->class as $mock_class) {
                 $config->mock_classes[] = strtolower((string)$mock_class['name']);
+            }
+        }
+
+        if (isset($config_xml->universalObjectCrates) && isset($config_xml->universalObjectCrates->class)) {
+            /** @var \SimpleXMLElement $universal_object_crate */
+            foreach ($config_xml->universalObjectCrates->class as $universal_object_crate) {
+                /** @var class-string $classString */
+                $classString = $universal_object_crate['name'];
+                $config->addUniversalObjectCrate($classString);
             }
         }
 
@@ -2127,5 +2146,21 @@ class Config
             }
         }
         return null;
+    }
+
+    /**
+     * @param class-string $class
+     */
+    public function addUniversalObjectCrate(string $class): void
+    {
+        $this->universal_object_crates[] = $class;
+    }
+
+    /**
+     * @return array<int, lowercase-string>
+     */
+    public function getUniversalObjectCrates(): array
+    {
+        return array_map('strtolower', $this->universal_object_crates);
     }
 }
