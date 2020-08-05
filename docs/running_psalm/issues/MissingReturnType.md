@@ -9,3 +9,13 @@ function foo() {
     return "foo";
 }
 ```
+
+Correct with:
+
+```php
+<?php
+
+function foo() : string {
+    return "foo";
+}
+```
