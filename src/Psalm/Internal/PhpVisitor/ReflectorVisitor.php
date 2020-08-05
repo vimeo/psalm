@@ -1327,10 +1327,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
                 $storage->final = $storage->final || $docblock_info->final;
 
-                if ($docblock_info->mixin) {
+                foreach ($docblock_info->mixins as $key => $mixin) {
                     $mixin_type = TypeParser::parseTokens(
                         TypeTokenizer::getFullyQualifiedTokens(
-                            $docblock_info->mixin,
+                            $mixin,
                             $this->aliases,
                             $this->class_template_types,
                             $this->type_aliases,
@@ -1352,11 +1352,23 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     if ($mixin_type->isSingle()) {
                         $mixin_type = \array_values($mixin_type->getAtomicTypes())[0];
 
+                        if ($mixin_type instanceof Type\Atomic\TNamedObject) {
+                            $storage->namedMixins[] = $mixin_type;
+                        }
+
+                        if ($mixin_type instanceof Type\Atomic\TTemplateParam) {
+                            $storage->templatedMixins[] = $mixin_type;
+                        }
+                    }
+
+                    if ($key === 0) {
+                        $storage->mixin_declaring_fqcln = $storage->name;
+
+                        // backwards compatibility
                         if ($mixin_type instanceof Type\Atomic\TNamedObject
-                            || $mixin_type instanceof Type\Atomic\TTemplateParam
-                        ) {
+                            || $mixin_type instanceof Type\Atomic\TTemplateParam) {
+                            /** @psalm-suppress DeprecatedProperty **/
                             $storage->mixin = $mixin_type;
-                            $storage->mixin_declaring_fqcln = $storage->name;
                         }
                     }
                 }

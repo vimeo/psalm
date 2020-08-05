@@ -594,9 +594,17 @@ class Populator
             $storage->protected_class_constants
         );
 
-        if ($parent_storage->mixin && !$storage->mixin) {
+        if (($parent_storage->namedMixins || $parent_storage->templatedMixins)
+            && (!$storage->namedMixins || !$storage->templatedMixins)) {
             $storage->mixin_declaring_fqcln = $parent_storage->mixin_declaring_fqcln;
-            $storage->mixin = $parent_storage->mixin;
+
+            if (!$storage->namedMixins) {
+                $storage->namedMixins = $parent_storage->namedMixins;
+            }
+
+            if (!$storage->templatedMixins) {
+                $storage->templatedMixins = $parent_storage->templatedMixins;
+            }
         }
 
         foreach ($parent_storage->public_class_constant_nodes as $name => $_) {
