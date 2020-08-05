@@ -315,6 +315,9 @@ Basic configuration:
     --use-ini-defaults
         Use PHP-provided ini defaults for memory and error display
 
+    --memory-limit=LIMIT
+        Use a specific memory limit. Cannot be combined with --use-ini-defaults
+
     --disable-extension=[extension]
         Used to disable certain extensions while Psalm is running.
 
