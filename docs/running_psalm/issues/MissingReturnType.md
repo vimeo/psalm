@@ -15,10 +15,7 @@ Correct with:
 ```php
 <?php
 
-/**
- * @return string 
- */
-function foo() {
+function foo() : string {
     return "foo";
 }
 ```
