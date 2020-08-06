@@ -51,13 +51,13 @@ class A {
 }
 ```
 
-Or you can add a `@psalm-newable` annotation which ensures that any constructor in a child class has the same signature as the parent constructor:
+Or you can add a `@psalm-consistent-constructor` annotation which ensures that any constructor in a child class has the same signature as the parent constructor:
 
 ```php
 <?php
 
 /**
- * @psalm-newable
+ * @psalm-consistent-constructor
  */
 class A {
     public function getInstance() : self

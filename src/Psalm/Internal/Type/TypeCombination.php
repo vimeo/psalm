@@ -1157,7 +1157,7 @@ class TypeCombination
                     } else {
                         if (isset($combination->value_types['string'])
                             && $combination->value_types['string'] instanceof Type\Atomic\TLowercaseString
-                            && strtolower($type->value) === $type->value
+                            && \strtolower($type->value) === $type->value
                         ) {
                             // do nothing
                         } else {
@@ -1191,7 +1191,7 @@ class TypeCombination
                             $has_non_lowercase_string = false;
 
                             foreach ($combination->strings as $string_type) {
-                                if (strtolower($string_type->value) !== $string_type->value) {
+                                if (\strtolower($string_type->value) !== $string_type->value) {
                                     $has_non_lowercase_string = true;
                                     break;
                                 }
