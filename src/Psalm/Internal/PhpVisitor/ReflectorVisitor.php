@@ -1681,9 +1681,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         }
     }
 
-    /**
-     * @psalm-suppress PropertyTypeCoercion due to a Psalm bug
-     */
     private static function registerEmptyConstructor(ClassLikeStorage $class_storage) : void
     {
         $method_name_lc = '__construct';

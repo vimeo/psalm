@@ -482,7 +482,6 @@ class ArrayAssignmentAnalyzer
                     && $child_stmt
                     && $parent_var_id
                     && ($parent_type = $context->vars_in_scope[$parent_var_id] ?? null)
-
                 ) {
                     if ($parent_type->hasList()) {
                         $array_atomic_type = new TNonEmptyList(

@@ -1147,7 +1147,6 @@ class Populator
 
         // register where they're declared
         foreach ($parent_storage->inheritable_method_ids as $method_name_lc => $declaring_method_id) {
-            /** @psalm-suppress PropertyTypeCoercion due to a Psalm bug */
             if ($method_name_lc !== '__construct'
                 || $parent_storage->preserve_constructor_signature
             ) {

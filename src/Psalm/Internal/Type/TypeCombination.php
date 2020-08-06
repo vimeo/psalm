@@ -1155,7 +1155,14 @@ class TypeCombination
                             $combination->class_string_types['object'] = new TObject();
                         }
                     } else {
-                        $combination->value_types['string'] = new TString();
+                        if (isset($combination->value_types['string'])
+                            && $combination->value_types['string'] instanceof Type\Atomic\TLowercaseString
+                            && strtolower($type->value) === $type->value
+                        ) {
+                            // do nothing
+                        } else {
+                            $combination->value_types['string'] = new TString();
+                        }
                     }
                 }
             } else {
@@ -1174,6 +1181,23 @@ class TypeCombination
                             }
 
                             if ($has_non_numeric_string) {
+                                $combination->value_types['string'] = new TString();
+                            } else {
+                                $combination->value_types['string'] = $type;
+                            }
+
+                            $combination->strings = null;
+                        } elseif ($type instanceof Type\Atomic\TLowercaseString) {
+                            $has_non_lowercase_string = false;
+
+                            foreach ($combination->strings as $string_type) {
+                                if (strtolower($string_type->value) !== $string_type->value) {
+                                    $has_non_lowercase_string = true;
+                                    break;
+                                }
+                            }
+
+                            if ($has_non_lowercase_string) {
                                 $combination->value_types['string'] = new TString();
                             } else {
                                 $combination->value_types['string'] = $type;
