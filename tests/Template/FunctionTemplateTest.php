@@ -1222,6 +1222,7 @@ class FunctionTemplateTest extends TestCase
                         string $className,
                         Closure $outmaker
                     ) : object {
+                        /** @psalm-suppress MixedMethodCall */
                         $t = new $className();
                         $outmaker($t);
                         return $t;
@@ -1247,6 +1248,7 @@ class FunctionTemplateTest extends TestCase
                         string $className,
                         callable $outmaker
                     ) : object {
+                        /** @psalm-suppress MixedMethodCall */
                         $t = new $className();
                         $outmaker($t);
                         return $t;
@@ -1827,6 +1829,7 @@ class FunctionTemplateTest extends TestCase
                         string $className,
                         Closure $outmaker
                     ) : object {
+                        /** @psalm-suppress MixedMethodCall */
                         $t = new $className();
                         $outmaker($t);
                         return $t;
@@ -1855,6 +1858,7 @@ class FunctionTemplateTest extends TestCase
                         string $className,
                         callable $outmaker
                     ) : object {
+                        /** @psalm-suppress MixedMethodCall */
                         $t = new $className();
                         $outmaker($t);
                         return $t;

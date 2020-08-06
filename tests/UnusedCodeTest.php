@@ -682,6 +682,9 @@ class UnusedCodeTest extends TestCase
             ],
             'usedThroughNewClassStringOfBase' => [
                 '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     */
                     abstract class FooBase {
                         public final function __construct() {}
 

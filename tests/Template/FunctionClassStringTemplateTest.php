@@ -92,6 +92,7 @@ class FunctionClassStringTemplateTest extends TestCase
                      * @template T as Exception
                      * @param T::class $type
                      * @return T
+                     * @psalm-suppress UnsafeInstantiation
                      */
                     function a(string $type): Exception {
                         return new $type;
@@ -114,6 +115,8 @@ class FunctionClassStringTemplateTest extends TestCase
                      * @param class-string<T> $foo
                      *
                      * @return T
+                     *
+                     * @psalm-suppress MixedMethodCall
                      */
                     function Foo(string $foo) : object {
                       return new $foo;
@@ -123,6 +126,9 @@ class FunctionClassStringTemplateTest extends TestCase
             ],
             'templatedClassStringParamAsClass' => [
                 '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     */
                     abstract class C {
                         public function foo() : void{}
                     }
@@ -160,6 +166,9 @@ class FunctionClassStringTemplateTest extends TestCase
             ],
             'templatedClassStringParamAsObject' => [
                 '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     */
                     abstract class C {
                         public function foo() : void{}
                     }
@@ -170,6 +179,7 @@ class FunctionClassStringTemplateTest extends TestCase
                          * @param class-string<T> $c_class
                          *
                          * @psalm-return T
+                         * @psalm-suppress MixedMethodCall
                          */
                         public static function get(string $c_class) {
                             return new $c_class;
@@ -186,6 +196,9 @@ class FunctionClassStringTemplateTest extends TestCase
             ],
             'templatedClassStringParamMoreSpecific' => [
                 '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     */
                     abstract class C {
                         public function foo() : void{}
                     }
@@ -281,6 +294,7 @@ class FunctionClassStringTemplateTest extends TestCase
                      * @psalm-template T of object
                      * @psalm-param T|class-string<T> $someType
                      * @psalm-return T
+                     * @psalm-suppress MixedMethodCall
                      */
                     function getObject($someType) {
                         if (is_object($someType)) {
@@ -304,6 +318,7 @@ class FunctionClassStringTemplateTest extends TestCase
                      * @psalm-template T of object
                      * @psalm-param T|class-string<T> $someType
                      * @psalm-return T
+                     * @psalm-suppress MixedMethodCall
                      */
                     function getObject($someType) {
                         if (is_object($someType)) {
@@ -333,6 +348,7 @@ class FunctionClassStringTemplateTest extends TestCase
                      * @param-out array<T> $map
                      * @param int $id
                      * @return T
+                     * @psalm-suppress MixedMethodCall
                      */
                     function get(string $className, array &$map, int $id) {
                         if(!array_key_exists($id, $map)) {
@@ -361,6 +377,7 @@ class FunctionClassStringTemplateTest extends TestCase
                      * @template T as object
                      * @param T|class-string<T> $s
                      * @return T
+                     * @psalm-suppress MixedMethodCall
                      */
                     function bar($s) {
                         if (is_object($s)) {
@@ -520,7 +537,14 @@ class FunctionClassStringTemplateTest extends TestCase
             ],
             'templateAsUnionClassStringPassingValidClass' => [
                 '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     */
                     class A {}
+
+                    /**
+                     * @psalm-consistent-constructor
+                     */
                     class B {}
 
                     /**
@@ -618,6 +642,9 @@ class FunctionClassStringTemplateTest extends TestCase
             ],
             'templateFromDifferentClassStrings' => [
                 '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     */
                     class A {}
 
                     class B extends A {}
@@ -739,8 +766,16 @@ class FunctionClassStringTemplateTest extends TestCase
             ],
             'templateAsUnionClassStringPassingInvalidClass' => [
                 '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     */
                     class A {}
+
+                    /**
+                     * @psalm-consistent-constructor
+                     */
                     class B {}
+
                     class C {}
 
                     /**

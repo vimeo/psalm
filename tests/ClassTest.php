@@ -155,6 +155,9 @@ class ClassTest extends TestCase
             ],
             'instantiateClassAndIsA' => [
                 '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     */
                     class Foo {
                         public function bar() : void{}
                     }
@@ -364,6 +367,9 @@ class ClassTest extends TestCase
             ],
             'allowAbstractInstantiationOnPossibleChild' => [
                 '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     */
                     abstract class A {}
 
                     function foo(string $a_class) : void {

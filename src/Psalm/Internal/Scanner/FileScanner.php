@@ -12,6 +12,7 @@ use Psalm\Internal\PhpVisitor\ReflectorVisitor;
 
 /**
  * @internal
+ * @psalm-consistent-constructor
  */
 class FileScanner implements FileSource
 {

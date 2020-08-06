@@ -278,6 +278,9 @@ class ConditionalReturnTypeTest extends TestCase
                             return new Application();
                         }
 
+                        /**
+                         * @psalm-suppress MixedMethodCall
+                         */
                         return new $className();
                     }
 

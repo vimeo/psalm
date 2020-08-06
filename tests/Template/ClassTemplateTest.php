@@ -40,6 +40,7 @@ class ClassTemplateTest extends TestCase
 
                         /**
                          * @return T
+                         * @psalm-suppress MixedMethodCall
                          */
                         public function bar() {
                             $t = $this->T;
@@ -98,6 +99,7 @@ class ClassTemplateTest extends TestCase
 
                         /**
                          * @return T
+                         * @psalm-suppress MixedMethodCall
                          */
                         public function bar() {
                             $t = $this->T;
@@ -169,6 +171,7 @@ class ClassTemplateTest extends TestCase
 
                         /**
                          * @return T
+                         * @psalm-suppress MixedMethodCall
                          */
                         public function bar() {
                             $t = $this->T;
@@ -1239,6 +1242,8 @@ class ClassTemplateTest extends TestCase
                          * @param class-string<Q> $obj2
                          *
                          * @return array<I, V|Q>
+                         *
+                         * @psalm-suppress MixedMethodCall
                          */
                         private function appender(string $obj2): array
                         {

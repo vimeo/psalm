@@ -620,6 +620,9 @@ class ClassStringTest extends TestCase
             ],
             'createNewObjectFromGetClass' => [
                 '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     */
                     class Example {
                         static function staticMethod(): string {
                             return "";
@@ -706,6 +709,9 @@ class ClassStringTest extends TestCase
                         }
                     }
 
+                    /**
+                     * @psalm-consistent-constructor
+                     */
                     class A
                     {
                         use Factory;
@@ -717,6 +723,9 @@ class ClassStringTest extends TestCase
                         }
                     }
 
+                    /**
+                     * @psalm-consistent-constructor
+                     */
                     class B
                     {
                         use Factory;
@@ -730,6 +739,9 @@ class ClassStringTest extends TestCase
             ],
             'staticClassReturn' => [
                 '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     */
                     class A {
                         /** @return static */
                         public static function getInstance() {
@@ -740,6 +752,9 @@ class ClassStringTest extends TestCase
             ],
             'getCalledClassIsStaticClass' => [
                 '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     */
                     class A {
                         /** @return static */
                         public function getStatic() {

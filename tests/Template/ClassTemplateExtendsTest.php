@@ -2201,6 +2201,7 @@ class ClassTemplateExtendsTest extends TestCase
                      * @template T as object
                      * @param class-string<T> $t
                      * @return I<T>
+                     * @psalm-suppress MixedMethodCall
                      */
                     function f(string $t) {
                         return new C(new $t);
@@ -2959,6 +2960,7 @@ class ClassTemplateExtendsTest extends TestCase
                          * @template T2
                          * @param class-string<T2> $t
                          * @return ?T2
+                         * @psalm-suppress MixedMethodCall
                          */
                         public function get($t) {
                             return new $t;
@@ -2970,6 +2972,7 @@ class ClassTemplateExtendsTest extends TestCase
                          * @template T3
                          * @param class-string<T3> $t
                          * @return ?T3
+                         * @psalm-suppress MixedMethodCall
                          */
                         public function get($t) {
                             return new $t;
