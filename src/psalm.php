@@ -12,6 +12,7 @@ require_once('command_functions.php');
 require_once __DIR__ . '/Psalm/Internal/exception_handler.php';
 
 use Psalm\ErrorBaseline;
+use Psalm\Exception\ConfigException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider;
 use Psalm\Config;
@@ -24,6 +25,7 @@ use Psalm\Progress\VoidProgress;
 use function array_slice;
 use function getopt;
 use function implode;
+use function is_scalar;
 use function array_map;
 use function substr;
 use function preg_replace;
@@ -92,6 +94,7 @@ $valid_long_options = [
     'help',
     'ignore-baseline',
     'init',
+    'memory-limit:',
     'monochrome',
     'no-cache',
     'no-reflection-cache',
@@ -189,7 +192,18 @@ array_map(
 if (!array_key_exists('use-ini-defaults', $options)) {
     ini_set('display_errors', 'stderr');
     ini_set('display_startup_errors', '1');
-    ini_set('memory_limit', (string) (8 * 1024 * 1024 * 1024));
+
+    $memoryLimit = (8 * 1024 * 1024 * 1024);
+
+    if (array_key_exists('memory-limit', $options)) {
+        $memoryLimit = $options['memory-limit'];
+
+        if (!is_scalar($memoryLimit)) {
+            throw new ConfigException('Invalid memory limit specified.');
+        }
+    }
+
+    ini_set('memory_limit', (string) $memoryLimit);
 }
 
 if (array_key_exists('help', $options)) {
