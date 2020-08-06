@@ -387,7 +387,8 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                 if ($from_static && !$storage->preserve_constructor_signature) {
                     if (IssueBuffer::accepts(
                         new UnsafeInstantiation(
-                            'Cannot instantiate class ' . $fq_class_name . ' with a non-final constructor',
+                            'Cannot safely instantiate class ' . $fq_class_name . ' with "new static" as '
+                                . ' its constructor might change in child classes',
                             new CodeLocation($statements_analyzer->getSource(), $stmt)
                         ),
                         $statements_analyzer->getSuppressedIssues()
