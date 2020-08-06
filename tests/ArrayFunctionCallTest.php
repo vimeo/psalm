@@ -885,6 +885,32 @@ class ArrayFunctionCallTest extends TestCase
                     '$b' => 'null'
                 ],
             ],
+            'arrayResetNonEmpty' => [
+                '<?php
+                    $a = ["one" => 1, "two" => 3];
+                    $b = reset($a);',
+                'assertions' => [
+                    '$b' => 'int'
+                ],
+            ],
+            'arrayResetEmpty' => [
+                '<?php
+                    $a = [];
+                    $b = reset($a);',
+                'assertions' => [
+                    '$b' => 'false'
+                ],
+            ],
+            'arrayResetMaybeEmpty' => [
+                '<?php
+                    /** @return array<string, int> */
+                    function makeArray(): array { return ["one" => 1, "two" => 3]; }
+                    $a = makeArray();
+                    $b = reset($a);',
+                'assertions' => [
+                    '$b' => 'false|int'
+                ],
+            ],
             'arrayColumnInference' => [
                 '<?php
                     function makeMixedArray(): array { return []; }
