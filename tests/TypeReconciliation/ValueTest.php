@@ -1,10 +1,10 @@
 <?php
-namespace Psalm\Tests;
+namespace Psalm\Tests\TypeReconciliation;
 
-class ValueTest extends TestCase
+class ValueTest extends \Psalm\Tests\TestCase
 {
-    use Traits\InvalidCodeAnalysisTestTrait;
-    use Traits\ValidCodeAnalysisTestTrait;
+    use \Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
+    use \Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
     public function setUp() : void
     {
@@ -13,7 +13,7 @@ class ValueTest extends TestCase
         $this->file_provider = new \Psalm\Tests\Internal\Provider\FakeFileProvider();
 
         $this->project_analyzer = new \Psalm\Internal\Analyzer\ProjectAnalyzer(
-            new TestConfig(),
+            new \Psalm\Tests\TestConfig(),
             new \Psalm\Internal\Provider\Providers(
                 $this->file_provider,
                 new \Psalm\Tests\Internal\Provider\FakeParserCacheProvider()

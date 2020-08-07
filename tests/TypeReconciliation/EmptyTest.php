@@ -1,5 +1,5 @@
 <?php
-namespace Psalm\Tests;
+namespace Psalm\Tests\TypeReconciliation;
 
 class EmptyTest extends \Psalm\Tests\TestCase
 {
