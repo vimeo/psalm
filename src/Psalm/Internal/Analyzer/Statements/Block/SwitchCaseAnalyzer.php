@@ -375,7 +375,7 @@ class SwitchCaseAnalyzer
             }
         }
 
-        if ($case_clauses) {
+        if ($case_clauses && $case_equality_expr) {
             try {
                 $negated_case_clauses = Algebra::negateFormula($case_clauses);
             } catch (\Psalm\Exception\ComplicatedExpressionException $e) {
