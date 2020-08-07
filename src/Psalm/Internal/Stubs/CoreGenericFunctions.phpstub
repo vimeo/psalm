@@ -171,18 +171,6 @@ function array_key_last($arr)
 }
 
 /**
- * @psalm-template TValue
- * @psalm-template TArray array<array-key, TValue>
- *
- * @param TArray $arr
- *
- * @return (TArray is array<empty, empty> ? false : (TArray is non-empty-array ? TValue : TValue|false))
- */
-function reset(array $arr)
-{
-}
-
-/**
  * @psalm-template T
  *
  * @param mixed           $needle
