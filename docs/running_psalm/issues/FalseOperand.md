@@ -10,4 +10,4 @@ echo 5 . false;
 
 ## Why this is bad
 
-`false` doesn’t make sense in these operations
+`false` does not make sense in these operations

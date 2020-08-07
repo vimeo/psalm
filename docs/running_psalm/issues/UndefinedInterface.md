@@ -1,6 +1,6 @@
 # UndefinedInterface
 
-Emitted when referencing an interface that doesn’t exist but does have an identically-named class.
+Emitted when referencing an interface that does not exist but does have an identically-named class.
 
 ```php
 <?php

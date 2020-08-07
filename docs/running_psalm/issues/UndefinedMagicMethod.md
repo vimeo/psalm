@@ -1,6 +1,6 @@
 # UndefinedMagicMethod
 
-Emitted when calling a magic method that doesn’t exist
+Emitted when calling a magic method that does not exist
 
 ```php
 <?php

@@ -50,6 +50,6 @@ Nobody likes to wade through a ton of false-positives – [here’s a guide to a
 
 ## Using Baseline With Taint Analysis
 
-Since taint analysis is performed separtely from other static code analysis, it makes sense to use a separate baseline for it.
+Since taint analysis is performed separately from other static code analysis, it makes sense to use a separate baseline for it.
 
 You can use --use-baseline=PATH option to set a different baseline for taint analysis.

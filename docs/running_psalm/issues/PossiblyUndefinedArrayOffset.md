@@ -16,7 +16,7 @@ echo $arr["b"];
 
 ## How to fix
 
-You can use the null coalesce operator to provide a default value in the event the array offset doesn’t exist:
+You can use the null coalesce operator to provide a default value in the event the array offset does not exist:
 
 ```php
 <?php
