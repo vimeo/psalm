@@ -885,6 +885,158 @@ class ArrayFunctionCallTest extends TestCase
                     '$b' => 'null'
                 ],
             ],
+            'arrayResetNonEmptyArray' => [
+                '<?php
+                    /** @return non-empty-array<string, int> */
+                    function makeArray(): array { return ["one" => 1, "two" => 3]; }
+                    $a = makeArray();
+                    $b = reset($a);',
+                'assertions' => [
+                    '$b' => 'int'
+                ],
+            ],
+            'arrayResetNonEmptyList' => [
+                '<?php
+                    /** @return non-empty-list<int> */
+                    function makeArray(): array { return [1, 3]; }
+                    $a = makeArray();
+                    $b = reset($a);',
+                'assertions' => [
+                    '$b' => 'int'
+                ],
+            ],
+            'arrayResetNonEmptyObjectLike' => [
+                '<?php
+                    $a = ["one" => 1, "two" => 3];
+                    $b = reset($a);',
+                'assertions' => [
+                    '$b' => 'int'
+                ],
+            ],
+            'arrayResetEmptyArray' => [
+                '<?php
+                    $a = [];
+                    $b = reset($a);',
+                'assertions' => [
+                    '$b' => 'false'
+                ],
+            ],
+            'arrayResetEmptyList' => [
+                '<?php
+                    /** @return list<empty> */
+                    function makeArray(): array { return []; }
+                    $a = makeArray();
+                    $b = reset($a);',
+                'assertions' => [
+                    '$b' => 'false'
+                ],
+            ],
+            'arrayResetMaybeEmptyArray' => [
+                '<?php
+                    /** @return array<string, int> */
+                    function makeArray(): array { return ["one" => 1, "two" => 3]; }
+                    $a = makeArray();
+                    $b = reset($a);',
+                'assertions' => [
+                    '$b' => 'false|int'
+                ],
+            ],
+            'arrayResetMaybeEmptyList' => [
+                '<?php
+                    /** @return list<int> */
+                    function makeArray(): array { return []; }
+                    $a = makeArray();
+                    $b = reset($a);',
+                'assertions' => [
+                    '$b' => 'false|int'
+                ],
+            ],
+            'arrayResetMaybeEmptyObjectLike' => [
+                '<?php
+                    /** @return array{foo?: int} */
+                    function makeArray(): array { return []; }
+                    $a = makeArray();
+                    $b = reset($a);',
+                'assertions' => [
+                    '$b' => 'false|int'
+                ],
+            ],
+            'arrayEndNonEmptyArray' => [
+                '<?php
+                    /** @return non-empty-array<string, int> */
+                    function makeArray(): array { return ["one" => 1, "two" => 3]; }
+                    $a = makeArray();
+                    $b = end($a);',
+                'assertions' => [
+                    '$b' => 'int'
+                ],
+            ],
+            'arrayEndNonEmptyList' => [
+                '<?php
+                    /** @return non-empty-list<int> */
+                    function makeArray(): array { return [1, 3]; }
+                    $a = makeArray();
+                    $b = end($a);',
+                'assertions' => [
+                    '$b' => 'int'
+                ],
+            ],
+            'arrayEndNonEmptyObjectLike' => [
+                '<?php
+                    $a = ["one" => 1, "two" => 3];
+                    $b = end($a);',
+                'assertions' => [
+                    '$b' => 'int'
+                ],
+            ],
+            'arrayEndEmptyArray' => [
+                '<?php
+                    $a = [];
+                    $b = end($a);',
+                'assertions' => [
+                    '$b' => 'false'
+                ],
+            ],
+            'arrayEndEmptyList' => [
+                '<?php
+                    /** @return list<empty> */
+                    function makeArray(): array { return []; }
+                    $a = makeArray();
+                    $b = end($a);',
+                'assertions' => [
+                    '$b' => 'false'
+                ],
+            ],
+            'arrayEndMaybeEmptyArray' => [
+                '<?php
+                    /** @return array<string, int> */
+                    function makeArray(): array { return ["one" => 1, "two" => 3]; }
+                    $a = makeArray();
+                    $b = end($a);',
+                'assertions' => [
+                    '$b' => 'false|int'
+                ],
+            ],
+            'arrayEndMaybeEmptyList' => [
+                '<?php
+                    /** @return list<int> */
+                    function makeArray(): array { return []; }
+                    $a = makeArray();
+                    $b = end($a);',
+                'assertions' => [
+                    '$b' => 'false|int'
+                ],
+            ],
+            'arrayEndMaybeEmptyObjectLike' => [
+                '<?php
+                    /** @return array{foo?: int} */
+                    function makeArray(): array { return []; }
+                    $a = makeArray();
+                    $b = end($a);',
+                'assertions' => [
+                    '$b' => 'false|int'
+                ],
+            ],
             'arrayColumnInference' => [
                 '<?php
                     function makeMixedArray(): array { return []; }
