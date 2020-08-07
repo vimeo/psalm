@@ -17,7 +17,7 @@ class GetMemoryLimitInBytesTest extends \Psalm\Tests\TestCase
 
     public function setUp(): void
     {
-        require_once 'src/command_functions.php';
+        require_once __DIR__ . '/../../src/command_functions.php';
         $this->previousLimit = (string)ini_get('memory_limit');
         parent::setUp();
     }
