@@ -52,14 +52,14 @@ class ArrayPointerAdjustmentReturnTypeProvider implements \Psalm\Plugin\Hook\Fun
             $definitely_has_items = $first_arg_array instanceof Type\Atomic\TNonEmptyList;
         } else {
             $value_type = $first_arg_array->getGenericValueType();
-            $definitely_has_items = $value_type instanceof Type\Atomic\TNonEmptyArray;
+            $definitely_has_items = $first_arg_array->getGenericArrayType() instanceof Type\Atomic\TNonEmptyArray;
         }
 
         if ($value_type->isEmpty()) {
             $value_type = Type::getFalse();
         } elseif (($function_id !== 'reset' && $function_id !== 'end') || !$definitely_has_items) {
             $value_type->addType(new Type\Atomic\TFalse);
-            
+
             $codebase = $statements_source->getCodebase();
 
             if ($codebase->config->ignore_internal_falsable_issues) {
