@@ -46,28 +46,25 @@ class ArrayPointerAdjustmentReturnTypeProvider implements \Psalm\Plugin\Hook\Fun
 
         if ($first_arg_array instanceof Type\Atomic\TArray) {
             $value_type = clone $first_arg_array->type_params[1];
-            $isNotEmpty = $first_arg_array instanceof Type\Atomic\TNonEmptyArray;
+            $definitely_has_items = $first_arg_array instanceof Type\Atomic\TNonEmptyArray;
         } elseif ($first_arg_array instanceof Type\Atomic\TList) {
             $value_type = clone $first_arg_array->type_param;
-            $isNotEmpty = $first_arg_array instanceof Type\Atomic\TNonEmptyList;
+            $definitely_has_items = $first_arg_array instanceof Type\Atomic\TNonEmptyList;
         } else {
             $value_type = $first_arg_array->getGenericValueType();
-            $isNotEmpty = $first_arg_array->getGenericArrayType() instanceof Type\Atomic\TNonEmptyArray;
+            $definitely_has_items = $value_type instanceof Type\Atomic\TNonEmptyArray;
         }
 
         if ($value_type->isEmpty()) {
-            $value_type->removeType('empty');
-        }
-
-        if (($function_id !== 'reset' && $function_id !== 'end') || !$isNotEmpty) {
+            $value_type = Type::getFalse();
+        } elseif (($function_id !== 'reset' && $function_id !== 'end') || !$definitely_has_items) {
             $value_type->addType(new Type\Atomic\TFalse);
-        }
+            
+            $codebase = $statements_source->getCodebase();
 
-
-        $codebase = $statements_source->getCodebase();
-
-        if ($codebase->config->ignore_internal_falsable_issues) {
-            $value_type->ignore_falsable_issues = true;
+            if ($codebase->config->ignore_internal_falsable_issues) {
+                $value_type->ignore_falsable_issues = true;
+            }
         }
 
         return $value_type;
