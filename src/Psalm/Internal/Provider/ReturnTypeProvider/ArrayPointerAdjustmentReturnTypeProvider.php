@@ -44,8 +44,6 @@ class ArrayPointerAdjustmentReturnTypeProvider implements \Psalm\Plugin\Hook\Fun
             return Type::getMixed();
         }
 
-        $isNotEmpty = false;
-
         if ($first_arg_array instanceof Type\Atomic\TArray) {
             $value_type = clone $first_arg_array->type_params[1];
             $isNotEmpty = $first_arg_array instanceof Type\Atomic\TNonEmptyArray;
