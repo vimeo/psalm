@@ -36,7 +36,7 @@ class MethodCallPurityAnalyzer
         ) {
             if (IssueBuffer::accepts(
                 new ImpureMethodCall(
-                    'Cannot call an mutation-free method '
+                    'Cannot call a non-mutation-free method '
                         . $cased_method_id . ' from a pure context',
                     new CodeLocation($statements_analyzer, $stmt->name)
                 ),
