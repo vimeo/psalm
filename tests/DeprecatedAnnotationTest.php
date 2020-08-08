@@ -77,6 +77,9 @@ class DeprecatedAnnotationTest extends TestCase
                          */
                         class TheDeprecatedClass {}
 
+                        /**
+                         * @psalm-suppress MissingConstructor
+                         */
                         class A {
                             /**
                              * @psalm-suppress DeprecatedClass
