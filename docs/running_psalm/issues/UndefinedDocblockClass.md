@@ -1,6 +1,6 @@
 # UndefinedDocblockClass
 
-Emitted when referencing a class that doesn’t exist from a docblock
+Emitted when referencing a class that does not exist from a docblock
 
 ```php
 <?php

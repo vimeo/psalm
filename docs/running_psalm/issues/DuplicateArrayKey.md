@@ -27,4 +27,4 @@ $arr = [
 ];
 ```
 
-The first matching `'c'` key was removed to prevent a change in behaviour (any new duplicate keys overwrite the values of prevvious ones).
+The first matching `'c'` key was removed to prevent a change in behaviour (any new duplicate keys overwrite the values of previous ones).

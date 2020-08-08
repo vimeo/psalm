@@ -1,6 +1,6 @@
 # UndefinedPropertyAssignment
 
-Emitted when assigning a property on an object that doesn’t have that property defined
+Emitted when assigning a property on an object that does not have that property defined
 
 ```php
 <?php

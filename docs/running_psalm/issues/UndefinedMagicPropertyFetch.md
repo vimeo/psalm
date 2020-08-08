@@ -1,6 +1,6 @@
 # UndefinedMagicPropertyFetch
 
-Emitted when getting a property on an object that doesn’t have that magic property defined
+Emitted when getting a property on an object that does not have that magic property defined
 
 ```php
 <?php

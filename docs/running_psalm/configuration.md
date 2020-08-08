@@ -114,7 +114,7 @@ The PHPDoc `@method` annotation normally only applies to classes with a `__call`
   usePhpDocPropertiesWithoutMagicCall="[bool]"
 >
 ```
-The PHPDoc `@property`, `@property-read` and `@property-write` annotations normally only apply to classes with `__get`/`__set` methods. Setting this to `true` allows you to use the `@property`, `@property-read` and `@property-write` annotations to override property existance checks and resulting property types. Defaults to `false`.
+The PHPDoc `@property`, `@property-read` and `@property-write` annotations normally only apply to classes with `__get`/`__set` methods. Setting this to `true` allows you to use the `@property`, `@property-read` and `@property-write` annotations to override property existence checks and resulting property types. Defaults to `false`.
 
 #### strictBinaryOperands
 

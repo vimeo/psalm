@@ -73,7 +73,7 @@ echo takesInput($_GET["name"]); // Psalm detects tainted input
 echo takesInput("hello"); // No error
 ```
 
-Here we’re telling Psalm that a function’s taintedness is wholly depenedent on the input to the function.
+Here we’re telling Psalm that a function’s taintedness is wholly dependent on the input to the function.
 
 If you're familiar with [immutability in Psalm](https://psalm.dev/articles/immutability-and-beyond) then this general idea should be familiar, since a pure function is one where the output is wholly dependent on its input. Unsurprisingly, all functions marked `@psalm-pure` _also_ specialize the taintedness of their output based on input:
 

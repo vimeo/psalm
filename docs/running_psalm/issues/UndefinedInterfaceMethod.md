@@ -1,6 +1,6 @@
 # UndefinedInterfaceMethod
 
-Emitted when calling a method that doesn’t exist on an interface
+Emitted when calling a method that does not exist on an interface
 
 ```php
 <?php

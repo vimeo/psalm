@@ -1,6 +1,6 @@
 # MissingDependency
 
-Emitted when referencing a class that doesn’t exist
+Emitted when referencing a class that does not exist
 
 ```php
 <?php

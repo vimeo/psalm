@@ -1,6 +1,6 @@
 # MismatchingDocblockReturnType
 
-Emitted when an `@return` entry in a function’s docblock doesn’t match the function return typehint
+Emitted when an `@return` entry in a function’s docblock does not match the function return typehint
 
 ```php
 <?php

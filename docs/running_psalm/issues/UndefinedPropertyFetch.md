@@ -1,6 +1,6 @@
 # UndefinedPropertyFetch
 
-Emitted when getting a property on an object that doesn’t have that property defined
+Emitted when getting a property on an object that does not have that property defined
 
 ```php
 <?php
