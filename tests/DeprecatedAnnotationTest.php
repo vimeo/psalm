@@ -69,6 +69,22 @@ class DeprecatedAnnotationTest extends TestCase
                         }
                     }'
             ],
+            'suppressDeprecatedClassOnMember' => [
+                    '<?php
+
+                        /**
+                         * @deprecated
+                         */
+                        class TheDeprecatedClass {}
+
+                        class A {
+                            /**
+                             * @psalm-suppress DeprecatedClass
+                             * @var TheDeprecatedClass
+                             */
+                            public $property;
+                        }
+                ']
         ];
     }
 
