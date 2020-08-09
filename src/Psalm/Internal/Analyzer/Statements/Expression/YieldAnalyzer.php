@@ -195,11 +195,7 @@ class YieldAnalyzer
                             if (!$atomic_return_type->type_params[2]->isVoid()) {
                                 $statements_analyzer->node_data->setType(
                                     $stmt,
-                                    Type::combineUnionTypes(
-                                        clone $atomic_return_type->type_params[2],
-                                        $expression_type,
-                                        $codebase
-                                    )
+                                    clone $atomic_return_type->type_params[2]
                                 );
                             }
                         } else {
