@@ -4,6 +4,7 @@ namespace Psalm\Internal\Analyzer;
 use PhpParser;
 use Psalm\Aliases;
 use Psalm\DocComment;
+use Psalm\Exception\DocblockParseException;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\FileManipulation\PropertyDocblockManipulator;
 use Psalm\Internal\Type\UnionTemplateHandler;
@@ -1097,8 +1098,12 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     $stmt = $stmt[0];
                     $docComment = $stmt->getDocComment();
                     if($docComment) {
-                        $docBlock = DocComment::parsePreservingLength($docComment);
-                        $suppressed = $docBlock->tags['psalm-suppress'] ?? [];
+                        try {
+                            $docBlock = DocComment::parsePreservingLength($docComment);
+                            $suppressed = $docBlock->tags['psalm-suppress'] ?? [];
+                        } catch (DocblockParseException $e) {
+                            // do nothing to keep original behavior
+                        }
                     }
                 }
 
