@@ -3,6 +3,7 @@ namespace Psalm\Internal\Analyzer;
 
 use PhpParser;
 use Psalm\Aliases;
+use Psalm\DocComment;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\FileManipulation\PropertyDocblockManipulator;
 use Psalm\Internal\Type\UnionTemplateHandler;
@@ -1089,12 +1090,14 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         && isset($stmt->props[0]->name->name)
                         && $stmt->props[0]->name->name === $property_name;
                 });
+
                 $suppressed = [];
                 if(count($stmt) > 0) {
-                    $statements_analyzer = new StatementsAnalyzer($statements_source, new \Psalm\Internal\Provider\NodeDataProvider());
-                    $statements_analyzer->analyze($stmt, $class_context, null, false);
-                    $docBlock = $statements_analyzer->getParsedDocblock();
-                    if($docBlock) {
+                    /** @var PhpParser\Node\Stmt\Property $stmt */
+                    $stmt = $stmt[0];
+                    $docComment = $stmt->getDocComment();
+                    if($docComment) {
+                        $docBlock = DocComment::parsePreservingLength($docComment);
                         $suppressed = $docBlock->tags['psalm-suppress'] ?? [];
                     }
                 }
