@@ -187,7 +187,7 @@ class TypeChecker extends NodeVisitor
                         $this->code_location,
                         $atomic->value
                     ),
-                    $this->source->getSuppressedIssues()
+                    $this->source->getSuppressedIssues() + $this->suppressed_issues
                 )) {
                     // fall through
                 }
