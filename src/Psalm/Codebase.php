@@ -500,6 +500,7 @@ class Codebase
     {
         return $this->statements_provider->getStatementsForFile(
             $file_path,
+            $this->php_major_version . '.' . $this->php_minor_version,
             $this->progress
         );
     }

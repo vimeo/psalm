@@ -729,7 +729,7 @@ class ClassLikes
             throw new \UnexpectedValueException('Storage should exist for ' . $fq_trait_name);
         }
 
-        $file_statements = $this->statements_provider->getStatementsForFile($storage->location->file_path);
+        $file_statements = $this->statements_provider->getStatementsForFile($storage->location->file_path, '7.4');
 
         $trait_finder = new \Psalm\Internal\PhpVisitor\TraitFinder($fq_trait_name);
 
