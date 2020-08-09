@@ -1095,7 +1095,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 $suppressed = [];
                 if(count($stmt) > 0) {
                     /** @var PhpParser\Node\Stmt\Property $stmt */
-                    $stmt = $stmt[0];
+                    $stmt = array_pop($stmt);
+
                     $docComment = $stmt->getDocComment();
                     if($docComment) {
                         try {
