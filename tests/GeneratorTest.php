@@ -63,6 +63,27 @@ class GeneratorTest extends TestCase
                         yield 1;
                     }',
             ],
+            'generatorSend' => [
+                '<?php
+                    /** @return Generator<int, string, DateTimeInterface, void> */
+                    function g(): Generator {
+                        $date = yield 1 => "string";
+                        $date->format("m");
+                    }
+                    g()->send(new \DateTime("now"));
+                ',
+            ],
+            'generatorSendInvalidArgument' => [
+                '<?php
+                    /** @return Generator<int, string, DateTimeInterface, void> */
+                    function g(): Generator {
+                        yield 1 => "string";
+                    }
+                    g()->send(1);
+                ',
+                'assertions' => [],
+                'error_levels' => ['InvalidArgument'],
+            ],
             'generatorDelegation' => [
                 '<?php
                     /**
