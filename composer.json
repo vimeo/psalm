@@ -43,6 +43,7 @@
         "amphp/amp": "^2.4.2",
         "bamarni/composer-bin-plugin": "^1.2",
         "brianium/paratest": "^4.0.0",
+        "phpdocumentor/reflection-docblock": "^4.3.4 || ^5",
         "phpmyadmin/sql-parser": "5.1.0",
         "phpspec/prophecy": ">=1.9.0",
         "phpunit/phpunit": "^7.5.16 || ^8.5 || ^9.0",
