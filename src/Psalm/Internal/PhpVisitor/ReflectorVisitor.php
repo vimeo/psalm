@@ -1245,12 +1245,17 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                         $pseudo_property_type_tokens = TypeTokenizer::getFullyQualifiedTokens(
                             $property['type'],
                             $this->aliases,
-                            null,
+                            $this->class_template_types,
                             $this->type_aliases
                         );
 
                         try {
-                            $pseudo_property_type = TypeParser::parseTokens($pseudo_property_type_tokens);
+                            $pseudo_property_type = TypeParser::parseTokens(
+                                $pseudo_property_type_tokens,
+                                null,
+                                $this->class_template_types,
+                                $this->type_aliases
+                            );
                             $pseudo_property_type->setFromDocblock();
                             $pseudo_property_type->queueClassLikesForScanning(
                                 $this->codebase,
