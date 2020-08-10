@@ -54,6 +54,7 @@ use function count;
 use function array_search;
 use function array_keys;
 use function array_merge;
+use function array_filter;
 
 /**
  * @internal
@@ -1086,19 +1087,19 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             }
 
             if ($property_type_location && !$fleshed_out_type->isMixed()) {
-                $stmt = array_filter($stmts, function($stmt) use ($property_name) {
+                $stmt = array_filter($stmts, function ($stmt) use ($property_name) {
                     return $stmt instanceof PhpParser\Node\Stmt\Property
                         && isset($stmt->props[0]->name->name)
                         && $stmt->props[0]->name->name === $property_name;
                 });
 
                 $suppressed = [];
-                if(count($stmt) > 0) {
+                if (count($stmt) > 0) {
                     /** @var PhpParser\Node\Stmt\Property $stmt */
                     $stmt = array_pop($stmt);
 
                     $docComment = $stmt->getDocComment();
-                    if($docComment) {
+                    if ($docComment) {
                         try {
                             $docBlock = DocComment::parsePreservingLength($docComment);
                             $suppressed = $docBlock->tags['psalm-suppress'] ?? [];

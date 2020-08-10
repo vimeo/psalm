@@ -24,6 +24,7 @@ use function strtolower;
 use function is_string;
 use function in_array;
 use Psalm\Issue\MissingImmutableAnnotation;
+use function count;
 
 class MethodComparator
 {
