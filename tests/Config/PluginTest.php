@@ -367,6 +367,57 @@ class PluginTest extends \Psalm\Tests\TestCase
     /**
      * @return void
      */
+    public function testFileAnalyzerPlugin()
+    {
+        require_once __DIR__ . '/Plugin/FilePlugin.php';
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <plugins>
+                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\FilePlugin" />
+                    </plugins>
+                </psalm>'
+            )
+        );
+
+        $codebase = $this->project_analyzer->getCodebase();
+        $this->assertEmpty($codebase->config->before_file_checks);
+        $this->assertEmpty($codebase->config->after_file_checks);
+        $codebase->config->initializePlugins($this->project_analyzer);
+        $this->assertCount(1, $codebase->config->before_file_checks);
+        $this->assertCount(1, $codebase->config->after_file_checks);
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+            $a = 0;
+            '
+        );
+
+        $this->analyzeFile($file_path, new Context());
+        $file_storage = $codebase->file_storage_provider->get($file_path);
+        $this->assertEquals(
+            [
+                'before-analysis' => true,
+                'after-analysis' => true,
+            ],
+            $file_storage->custom_metadata
+        );
+    }
+
+    /**
+     * @return void
+     */
     public function testFloatCheckerPlugin()
     {
         $this->expectExceptionMessage('NoFloatAssignment');

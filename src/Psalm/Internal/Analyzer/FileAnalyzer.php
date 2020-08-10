@@ -166,8 +166,8 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
         } catch (PhpParser\Error $e) {
             return;
         }
-        foreach ($codebase->config->before_analyze_file as $plugin_class) {
-            $plugin_class::beforeAnalyzeFile($this);
+        foreach ($codebase->config->before_file_checks as $plugin_class) {
+            $plugin_class::beforeAnalyzeFile($this, $this->context, $file_storage, $codebase);
         }
 
         if ($codebase->alter_code) {
@@ -238,6 +238,10 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
                     }
                 }
             }
+        }
+
+        foreach ($codebase->config->after_file_checks as $plugin_class) {
+            $plugin_class::afterAnalyzeFile($this, $this->context, $file_storage, $codebase);
         }
     }
 

@@ -515,10 +515,16 @@ class Config
     public $after_analysis = [];
 
     /**
-     * Static methods to be called after codebase has been populated
-     * @var class-string<Hook\BeforeAnalyzeFileInterface>[]
+     * Static methods to be called after a file has been analyzed
+     * @var class-string<Hook\AfterFileAnalysisInterface>[]
      */
-    public $before_analyze_file = [];
+    public $after_file_checks = [];
+
+    /**
+     * Static methods to be called before a file is analyzed
+     * @var class-string<Hook\BeforeFileAnalysisInterface>[]
+     */
+    public $before_file_checks = [];
 
     /**
      * Static methods to be called after functionlike checks have completed
