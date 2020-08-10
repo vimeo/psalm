@@ -489,12 +489,6 @@ class InstancePropertyFetchAnalyzer
             $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
             $property_id = $fq_class_name . '::$' . $prop_name;
 
-            $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
-                $property_id,
-                true,
-                $statements_analyzer
-            );
-
             $naive_property_exists = $codebase->properties->propertyExists(
                 $property_id,
                 true,
@@ -543,6 +537,12 @@ class InstancePropertyFetchAnalyzer
                 }
             }
 
+            $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
+                $property_id,
+                true,
+                $statements_analyzer
+            );
+
             if ((!$naive_property_exists
                     || ($stmt_var_id !== '$this'
                         && $fq_class_name !== $context->self
@@ -573,8 +573,6 @@ class InstancePropertyFetchAnalyzer
                 if (isset($class_storage->pseudo_property_get_types['$' . $prop_name])) {
                     $stmt_type = clone $class_storage->pseudo_property_get_types['$' . $prop_name];
 
-                    $statements_analyzer->node_data->setType($stmt, $stmt_type);
-
                     if ($class_storage->template_types) {
                         if (!$lhs_type_part instanceof TGenericObject) {
                             $type_params = [];
@@ -598,6 +596,7 @@ class InstancePropertyFetchAnalyzer
                         );
                     }
 
+                    $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
                     self::processTaints(
                         $statements_analyzer,
@@ -709,6 +708,29 @@ class InstancePropertyFetchAnalyzer
                 ) {
                     $stmt_type = clone $class_storage->pseudo_property_get_types['$' . $prop_name];
 
+                    if ($class_storage->template_types) {
+                        if (!$lhs_type_part instanceof TGenericObject) {
+                            $type_params = [];
+
+                            foreach ($class_storage->template_types as $type_map) {
+                                $type_params[] = clone array_values($type_map)[0][0];
+                            }
+
+                            $lhs_type_part = new TGenericObject($lhs_type_part->value, $type_params);
+                        }
+
+                        $stmt_type = self::localizePropertyType(
+                            $codebase,
+                            $stmt_type,
+                            $lhs_type_part,
+                            $class_storage,
+                            $declaring_property_class
+                                ? $codebase->classlike_storage_provider->get(
+                                $declaring_property_class
+                            ) : $class_storage
+                        );
+                    }
+
                     $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
                     self::processTaints(
@@ -801,6 +823,12 @@ class InstancePropertyFetchAnalyzer
                     return false;
                 }
             }
+
+            $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
+                $property_id,
+                true,
+                $statements_analyzer
+            );
 
             if ($declaring_property_class === null) {
                 continue;
