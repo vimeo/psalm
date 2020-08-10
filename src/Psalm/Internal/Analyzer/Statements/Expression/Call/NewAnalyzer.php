@@ -170,7 +170,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                                     if (IssueBuffer::accepts(
                                         new UnsafeInstantiation(
                                             'Cannot safely instantiate class ' . $lhs_type_part->as_type->value
-                                                . ' with "new $class_name" as '
+                                                . ' with "new $class_name" as'
                                                 . ' its constructor might change in child classes',
                                             new CodeLocation($statements_analyzer->getSource(), $stmt)
                                         ),
@@ -220,7 +220,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                                         if (IssueBuffer::accepts(
                                             new UnsafeInstantiation(
                                                 'Cannot safely instantiate class ' . $lhs_type_part->as_type->value
-                                                    . ' with "new $class_name" as '
+                                                    . ' with "new $class_name" as'
                                                     . ' its constructor might change in child classes',
                                                 new CodeLocation($statements_analyzer->getSource(), $stmt)
                                             ),
@@ -443,7 +443,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                 if ($from_static && !$storage->preserve_constructor_signature) {
                     if (IssueBuffer::accepts(
                         new UnsafeInstantiation(
-                            'Cannot safely instantiate class ' . $fq_class_name . ' with "new static" as '
+                            'Cannot safely instantiate class ' . $fq_class_name . ' with "new static" as'
                                 . ' its constructor might change in child classes',
                             new CodeLocation($statements_analyzer->getSource(), $stmt)
                         ),

@@ -1098,7 +1098,7 @@ class MethodSignatureTest extends TestCase
                     class Bar implements Foo {
                         public function __construct(bool $foo) {}
                     }',
-                'error_message' => 'MethodSignatureMismatch',
+                'error_message' => 'ConstructorSignatureMismatch',
             ],
             'enforceParameterInheritanceWithInheritDoc' => [
                 '<?php
@@ -1373,7 +1373,7 @@ class MethodSignatureTest extends TestCase
                 false,
                 '7.3'
             ],
-            'inconsistentConstructorExplicitParentConstructor' => [
+            'inconsistentConstructorExplicitParentConstructorArgCount' => [
                 '<?php
                     /**
                      * @psalm-consistent-constructor
@@ -1390,7 +1390,26 @@ class MethodSignatureTest extends TestCase
                     class BadAChild extends A {
                         public function __construct(string $s) {}
                     }',
-                'error_message' => 'MethodSignatureMismatch',
+                'error_message' => 'ConstructorSignatureMismatch',
+            ],
+            'inconsistentConstructorExplicitParentConstructorType' => [
+                '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    class A {
+                        public function getInstance() : self
+                        {
+                            return new static(5);
+                        }
+
+                        public function __construct(int $s) {}
+                    }
+
+                    class BadAChild extends A {
+                        public function __construct(string $s) {}
+                    }',
+                'error_message' => 'ConstructorSignatureMismatch',
             ],
             'inconsistentConstructorImplicitParentConstructor' => [
                 '<?php
@@ -1406,7 +1425,7 @@ class MethodSignatureTest extends TestCase
                     class BadAChild extends A {
                         public function __construct(string $s) {}
                     }',
-                'error_message' => 'MethodSignatureMismatch',
+                'error_message' => 'ConstructorSignatureMismatch',
             ],
         ];
     }
