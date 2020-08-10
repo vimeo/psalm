@@ -1332,7 +1332,10 @@ class FunctionTemplateTest extends TestCase
                      */
                     function foo(Closure $fn, $arg): void {
                         $a = partial($fn, $arg);
-                    }'
+                    }',
+                [],
+                [],
+                '7.4'
             ],
         ];
     }

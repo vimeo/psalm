@@ -11,6 +11,7 @@ use Psalm\Issue\ImplementedReturnTypeMismatch;
 use Psalm\Issue\MethodSignatureMismatch;
 use Psalm\Issue\MoreSpecificImplementedParamType;
 use Psalm\Issue\LessSpecificImplementedReturnType;
+use Psalm\Issue\ParamNameMismatch;
 use Psalm\Issue\OverriddenMethodAccess;
 use Psalm\Issue\TraitMethodSignatureMismatch;
 use Psalm\IssueBuffer;
@@ -341,6 +342,32 @@ class MethodComparator
 
                         return;
                     }
+                }
+            }
+
+            if ($guide_param->name !== $implementer_param->name
+                && $guide_method_storage->allow_named_param_calls
+                && count($implementer_method_storage->params) > 1
+                && $guide_classlike_storage->user_defined
+                && $implementer_classlike_storage->user_defined
+            ) {
+                $config = \Psalm\Config::getInstance();
+
+                if (IssueBuffer::accepts(
+                    new ParamNameMismatch(
+                        'Argument ' . ($i + 1) . ' of ' . $cased_implementer_method_id . ' has wrong name $'
+                            . $implementer_param->name . ', expecting $'
+                            . $guide_param->name . ' as defined by '
+                            . $cased_guide_method_id,
+                        $implementer_param->location
+                            && $config->isInProjectDirs(
+                                $implementer_param->location->file_path
+                            )
+                            ? $implementer_param->location
+                            : $code_location
+                    )
+                )) {
+                    // fall through
                 }
             }
 

@@ -459,4 +459,9 @@ class StatementsProvider
 
         return $stmts;
     }
+
+    public static function clearLexer() : void
+    {
+        self::$lexer = null;
+    }
 }

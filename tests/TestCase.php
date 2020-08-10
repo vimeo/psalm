@@ -62,6 +62,8 @@ class TestCase extends BaseTestCase
 
         FileAnalyzer::clearCache();
 
+        \Psalm\Internal\Provider\StatementsProvider::clearLexer();
+
         $this->file_provider = new \Psalm\Tests\Internal\Provider\FakeFileProvider();
 
         $config = $this->makeConfig();
@@ -75,6 +77,8 @@ class TestCase extends BaseTestCase
             $config,
             $providers
         );
+
+
 
         $this->project_analyzer->setPhpVersion('7.3');
     }

@@ -2739,7 +2739,10 @@ class ClassTemplateTest extends TestCase
                      * @return T
                      */
                     function unwrap(array $containers) {
-                        return array_map(fn($container) => $container->get(), $containers)[0];
+                        return array_map(
+                            fn($container) => $container->get(),
+                            $containers
+                        )[0];
                     }
 
                     /**
@@ -2750,7 +2753,10 @@ class ClassTemplateTest extends TestCase
 
                         if (is_string($ret)) {}
                         if (is_int($ret)) {}
-                    }'
+                    }',
+                [],
+                [],
+                '7.4'
             ],
             'templateWithLateResolvedType' => [
                 '<?php

@@ -1,0 +1,87 @@
+# ParamNameMismatch
+
+Emitted when method overrides a parent method but renames a param.
+
+```php
+<?php
+
+class A {
+    public function foo(string $str, bool $b = false) : void {}
+}
+
+class AChild extends A {
+    public function foo(string $string, bool $b = false) : void {}
+}
+```
+
+## Why is this bad?
+
+PHP 8 introduces [named parameters](https://wiki.php.net/rfc/named_params) which allow developers to call methods with explicitly-named parameters;
+
+```php
+<?php
+
+function callFoo(A $a) {
+    $a->foo(str: "hello");
+}
+```
+
+In the first example passing `new AChild()` to `callFoo()` results in a fatal error, as AChild's definition of the method `foo()` doesn't have a parameter named `$str`.
+
+## How to fix
+
+You can change the child method param name to match:
+
+```php
+<?php
+
+class A {
+    public function foo(string $str, bool $b = false) : void {}
+}
+
+class AChild extends A {
+    public function foo(string $str, bool $b = false) : void {}
+}
+```
+
+## Workarounds
+
+### @no-named-params
+
+Alternatively you can ignore this issue by adding a `@no-named-params` annotation to the parent method:
+
+```php
+<?php
+
+class A {
+    /** @no-named-params */
+    public function foo(string $str, bool $b = false) : void {}
+}
+
+class AChild extends A {
+    public function foo(string $string, bool $b = false) : void {}
+}
+```
+
+Any method with this annotation will be prevented (by Psalm) from being called with named parameters, so the original issue does not matter.
+
+### Config allowInternalNamedParamCalls="false"
+
+You can also set a config flag that tells Psalm to prohibit any named parameter calls on `@internal` classes or methods.
+
+With that config value, this is now allowed:
+
+```php
+<?php
+
+/**
+ * @internal
+ */
+class A {
+    public function foo(string $str, bool $b = false) : void {}
+}
+
+class AChild extends A {
+    public function foo(string $string, bool $b = false) : void {}
+}
+```

@@ -199,6 +199,11 @@ abstract class FunctionLikeStorage
      */
     public $return_source_params = [];
 
+    /**
+     * @var bool
+     */
+    public $allow_named_param_calls = true;
+
     public function __toString()
     {
         return $this->getSignature(false);

@@ -521,6 +521,11 @@ class Config
     public $before_analyze_file = [];
 
     /**
+     * @var bool
+     */
+    public $allow_internal_named_param_calls = true;
+
+    /**
      * Static methods to be called after functionlike checks have completed
      *
      * @var class-string<Hook\AfterFunctionLikeAnalysisInterface>[]
@@ -818,6 +823,7 @@ class Config
             'sealAllMethods' => 'seal_all_methods',
             'runTaintAnalysis' => 'run_taint_analysis',
             'usePhpStormMetaPath' => 'use_phpstorm_meta_path',
+            'allowInternalNamedParamCalls' => 'allow_internal_named_param_calls',
         ];
 
         foreach ($booleanAttributes as $xmlName => $internalName) {
