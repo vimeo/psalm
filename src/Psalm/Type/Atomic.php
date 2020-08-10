@@ -623,7 +623,7 @@ abstract class Atomic implements TypeNode
     public function replaceTemplateTypesWithStandins(
         TemplateResult $template_result,
         Codebase $codebase = null,
-        ?StatementsAnalyzer $statements_analyer = null,
+        ?StatementsAnalyzer $statements_analyzer = null,
         Type\Atomic $input_type = null,
         ?int $input_arg_offset = null,
         ?string $calling_class = null,

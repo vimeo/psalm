@@ -44,9 +44,9 @@ class LongProgress extends Progress
         $this->write('Altering files...' . "\n");
     }
 
-    public function alterFileDone(string $file_path) : void
+    public function alterFileDone(string $file_name) : void
     {
-        $this->write('Altered ' . $file_path . "\n");
+        $this->write('Altered ' . $file_name . "\n");
     }
 
     public function start(int $number_of_tasks): void

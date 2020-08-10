@@ -11,7 +11,7 @@ class TCallableArray extends TNonEmptyArray
      */
     public $value = 'callable-array';
 
-    public function getKey(bool $show_extra = true)
+    public function getKey(bool $include_extra = true)
     {
         return 'array';
     }

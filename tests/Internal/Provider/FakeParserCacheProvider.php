@@ -12,21 +12,21 @@ class FakeParserCacheProvider extends \Psalm\Internal\Provider\ParserCacheProvid
         return null;
     }
 
-    public function loadExistingStatementsFromCache($file_cache_key)
+    public function loadExistingStatementsFromCache($file_path)
     {
         return null;
     }
 
-    public function saveStatementsToCache($file_cache_key, $file_content_hash, array $stmts, $touch_only)
+    public function saveStatementsToCache($file_path, $file_content_hash, array $stmts, $touch_only)
     {
     }
 
-    public function loadExistingFileContentsFromCache($file_cache_key)
+    public function loadExistingFileContentsFromCache($file_path)
     {
         return null;
     }
 
-    public function cacheFileContents($file_cache_key, $file_contents)
+    public function cacheFileContents($file_path, $file_contents)
     {
     }
 }

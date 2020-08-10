@@ -34,9 +34,9 @@ class PsalmRestarter extends \Composer\XdebugHandler\XdebugHandler
     }
 
     /**
-     * @param mixed $loaded
+     * @param mixed $isLoaded
      */
-    protected function requiresRestart($loaded)
+    protected function requiresRestart($isLoaded)
     {
         $this->required = (bool) array_filter(
             $this->disabledExtensions,
@@ -50,7 +50,7 @@ class PsalmRestarter extends \Composer\XdebugHandler\XdebugHandler
             }
         );
 
-        return $loaded || $this->required;
+        return $isLoaded || $this->required;
     }
 
     /**
