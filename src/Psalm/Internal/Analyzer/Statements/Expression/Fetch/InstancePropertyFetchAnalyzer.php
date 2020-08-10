@@ -726,8 +726,8 @@ class InstancePropertyFetchAnalyzer
                             $class_storage,
                             $declaring_property_class
                                 ? $codebase->classlike_storage_provider->get(
-                                $declaring_property_class
-                            ) : $class_storage
+                                    $declaring_property_class
+                                ) : $class_storage
                         );
                     }
 
