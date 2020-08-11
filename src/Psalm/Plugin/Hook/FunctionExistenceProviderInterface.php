@@ -12,8 +12,8 @@ interface FunctionExistenceProviderInterface
 
     /**
      * Use this hook for informing whether or not a global function exists. If you know the function does
-     * not exist, return false. If you aren't sure if it exists or not, return null and the default analysis will continue
-     * to determine if the function actually exists.
+     * not exist, return false. If you aren't sure if it exists or not, return null and the default analysis
+     * will continue to determine if the function actually exists.
      *
      * @return ?bool
      */
