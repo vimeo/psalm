@@ -13,6 +13,10 @@ spl_autoload_register(function (string $className) {
         InstalledVersions::class, // composer v2
         // it's unclear why Psalm tries to autoload parent
         'parent',
+        'PHPUnit\Framework\ArrayAccess',
+        'PHPUnit\Framework\Countable',
+        'PHPUnit\Framework\DOMDocument',
+        'PHPUnit\Framework\DOMElement',
     ];
 
     if (in_array($className, $knownBadClasses)) {
