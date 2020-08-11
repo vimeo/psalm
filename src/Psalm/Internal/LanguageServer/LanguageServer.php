@@ -542,6 +542,11 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
             $filepath = str_replace('/', '\\', $filepath);
         }
 
+        $realpath = \realpath($filepath);
+        if ($realpath !== false) {
+            return $realpath;
+        }
+
         return $filepath;
     }
 }
