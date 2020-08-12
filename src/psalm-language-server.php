@@ -233,7 +233,7 @@ if (isset($options['tcp'])) {
     }
 }
 
-$find_dead_code = isset($options['find-dead-code']);
+$find_unused_code = isset($options['find-dead-code']) ? 'auto' : null;
 
 $config = \Psalm\initialiseConfig($path_to_config, $current_dir, \Psalm\Report::TYPE_CONSOLE, $first_autoloader);
 $config->setIncludeCollector($include_collector);
@@ -267,6 +267,14 @@ $project_analyzer = new ProjectAnalyzer(
     $providers
 );
 
+if ($config->find_unused_variables) {
+    $project_analyzer->getCodebase()->reportUnusedVariables();
+}
+
+if ($config->find_unused_code) {
+    $find_unused_code = 'auto';
+}
+
 if (isset($options['disable-on-change'])) {
     $project_analyzer->onchange_line_limit = (int) $options['disable-on-change'];
 }
@@ -277,8 +285,8 @@ $project_analyzer->provide_completion = !isset($options['enable-autocomplete'])
 
 $config->visitComposerAutoloadFiles($project_analyzer);
 
-if ($find_dead_code) {
-    $project_analyzer->getCodebase()->reportUnusedCode();
+if ($find_unused_code) {
+    $project_analyzer->getCodebase()->reportUnusedCode($find_unused_code);
 }
 
 if (isset($options['use-extended-diagnostic-codes'])) {
