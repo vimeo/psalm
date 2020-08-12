@@ -2248,6 +2248,24 @@ class AssertionFinder
 
         if ($if_true_assertions) {
             foreach ($if_true_assertions as $assertion) {
+                $assertion = clone $assertion;
+
+                foreach ($assertion->rule as $i => $and_rules) {
+                    foreach ($and_rules as $j => $rule) {
+                        if (strpos($rule, 'scalar-class-constant(') === 0) {
+                            $codebase = $source->getCodebase();
+
+                            $assertion->rule[$i][$j] = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                                $codebase,
+                                Type::parseString(substr($rule, 22, -1)),
+                                null,
+                                null,
+                                null
+                            )->getId();
+                        }
+                    }
+                }
+
                 if (is_int($assertion->var_id) && isset($expr->args[$assertion->var_id])) {
                     if ($assertion->var_id === 0) {
                         $var_name = $first_var_name;
@@ -2296,6 +2314,24 @@ class AssertionFinder
             $negated_prefix = !$negate ? '!' : '';
 
             foreach ($if_false_assertions as $assertion) {
+                $assertion = clone $assertion;
+
+                foreach ($assertion->rule as $i => $and_rules) {
+                    foreach ($and_rules as $j => $rule) {
+                        if (strpos($rule, 'scalar-class-constant(') === 0) {
+                            $codebase = $source->getCodebase();
+
+                            $assertion->rule[$i][$j] = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                                $codebase,
+                                Type::parseString(substr($rule, 22, -1)),
+                                null,
+                                null,
+                                null
+                            )->getId();
+                        }
+                    }
+                }
+
                 if (is_int($assertion->var_id) && isset($expr->args[$assertion->var_id])) {
                     if ($assertion->var_id === 0) {
                         $var_name = $first_var_name;

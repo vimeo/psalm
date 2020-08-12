@@ -2422,7 +2422,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 $assertion_type_parts = $this->getAssertionParts(
                     $storage,
                     $assertion['type'],
-                    $stmt
+                    $stmt,
+                    $class_storage && !$class_storage->is_trait ? $class_storage->name : null
                 );
 
                 if (!$assertion_type_parts) {
@@ -2453,7 +2454,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 $assertion_type_parts = $this->getAssertionParts(
                     $storage,
                     $assertion['type'],
-                    $stmt
+                    $stmt,
+                    $class_storage && !$class_storage->is_trait ? $class_storage->name : null
                 );
 
                 if (!$assertion_type_parts) {
@@ -2484,7 +2486,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 $assertion_type_parts = $this->getAssertionParts(
                     $storage,
                     $assertion['type'],
-                    $stmt
+                    $stmt,
+                    $class_storage && !$class_storage->is_trait ? $class_storage->name : null
                 );
 
                 if (!$assertion_type_parts) {
@@ -2971,7 +2974,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
     private function getAssertionParts(
         FunctionLikeStorage $storage,
         string $assertion_type,
-        PhpParser\Node\FunctionLike $stmt
+        PhpParser\Node\FunctionLike $stmt,
+        ?string $self_fqcln
     ) : ?array {
         $prefix = '';
 
@@ -3001,7 +3005,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     $this->aliases,
                     $this->function_template_types + $class_template_types,
                     $this->type_aliases,
-                    null,
+                    $self_fqcln,
                     null,
                     true
                 )
