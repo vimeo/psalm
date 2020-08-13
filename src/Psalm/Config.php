@@ -1924,9 +1924,6 @@ class Config
             throw new LogicException("IncludeCollector should be set at this point");
         }
 
-        $this->collectPredefinedConstants();
-        $this->collectPredefinedFunctions();
-
         $vendor_autoload_files_path
             = $this->base_dir . DIRECTORY_SEPARATOR . 'vendor'
                 . DIRECTORY_SEPARATOR . 'composer' . DIRECTORY_SEPARATOR . 'autoload_files.php';
@@ -1945,6 +1942,8 @@ class Config
 
         $codebase = $project_analyzer->getCodebase();
 
+        $this->collectPredefinedFunctions();
+
         if ($this->autoloader) {
             // somee classes that we think are missing may not actually be missing
             // as they might be autoloadable once we require the autoloader below
@@ -1958,6 +1957,8 @@ class Config
                 }
             );
         }
+
+        $this->collectPredefinedConstants();
 
         $autoload_included_files = $this->include_collector->getFilteredIncludedFiles();
 

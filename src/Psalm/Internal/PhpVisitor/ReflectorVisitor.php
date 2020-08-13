@@ -860,7 +860,9 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                         $this->file_storage->declaring_constants[$const_name] = $this->file_path;
                     }
 
-                    if ($this->codebase->register_stub_files || $this->codebase->register_autoload_files) {
+                    if (($this->codebase->register_stub_files || $this->codebase->register_autoload_files)
+                        && !\defined($const_name)
+                    ) {
                         $this->codebase->addGlobalConstantType($const_name, $const_type);
                     }
                 }
