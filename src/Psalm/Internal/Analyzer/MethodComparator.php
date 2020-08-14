@@ -1,9 +1,11 @@
 <?php
 namespace Psalm\Internal\Analyzer;
 
+use PhpParser\Node\Stmt\ClassMethod;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\PhpVisitor\ParamReplacementVisitor;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\ImplementedParamTypeMismatch;
@@ -42,6 +44,7 @@ class MethodComparator
      */
     public static function compare(
         Codebase $codebase,
+        ?ClassMethod $stmt,
         ClassLikeStorage $implementer_classlike_storage,
         ClassLikeStorage $guide_classlike_storage,
         MethodStorage $implementer_method_storage,
@@ -50,8 +53,8 @@ class MethodComparator
         int $implementer_visibility,
         CodeLocation $code_location,
         array $suppressed_issues,
-        $prevent_abstract_override = true,
-        $prevent_method_signature_mismatch = true
+        bool $prevent_abstract_override = true,
+        bool $prevent_method_signature_mismatch = true
     ) {
         $implementer_declaring_method_id = $codebase->methods->getDeclaringMethodId(
             new MethodIdentifier(
@@ -140,6 +143,7 @@ class MethodComparator
 
             self::compareMethodParams(
                 $codebase,
+                $stmt,
                 $implementer_classlike_storage,
                 $guide_classlike_storage,
                 $implementer_called_class_name,
@@ -289,6 +293,7 @@ class MethodComparator
      */
     private static function compareMethodParams(
         Codebase $codebase,
+        ?ClassMethod $stmt,
         ClassLikeStorage $implementer_classlike_storage,
         ClassLikeStorage $guide_classlike_storage,
         string $implementer_called_class_name,
@@ -387,6 +392,7 @@ class MethodComparator
                 && count($implementer_method_storage->params) > 1
                 && $guide_classlike_storage->user_defined
                 && $implementer_classlike_storage->user_defined
+                && $implementer_classlike_storage->location
             ) {
                 $config = \Psalm\Config::getInstance();
 
@@ -395,21 +401,43 @@ class MethodComparator
                         && !$config->isInProjectDirs($guide_classlike_storage->location->file_path)
                     )
                 ) {
-                    if (IssueBuffer::accepts(
-                        new ParamNameMismatch(
-                            'Argument ' . ($i + 1) . ' of ' . $cased_implementer_method_id . ' has wrong name $'
-                                . $implementer_param->name . ', expecting $'
-                                . $guide_param->name . ' as defined by '
-                                . $cased_guide_method_id,
-                            $implementer_param->location
-                                && $config->isInProjectDirs(
-                                    $implementer_param->location->file_path
-                                )
-                                ? $implementer_param->location
-                                : $code_location
-                        )
-                    )) {
-                        // fall through
+                    if ($codebase->alter_code) {
+                        $project_analyzer = \Psalm\Internal\Analyzer\ProjectAnalyzer::getInstance();
+
+                        if ($stmt && isset($project_analyzer->getIssuesToFix()['ParamNameMismatch'])) {
+                            $param_replacer = new ParamReplacementVisitor(
+                                $implementer_param->name,
+                                $guide_param->name
+                            );
+
+                            $traverser = new \PhpParser\NodeTraverser();
+                            $traverser->addVisitor($param_replacer);
+                            $traverser->traverse([$stmt]);
+
+                            if ($replacements = $param_replacer->getReplacements()) {
+                                \Psalm\Internal\FileManipulation\FileManipulationBuffer::add(
+                                    $implementer_classlike_storage->location->file_path,
+                                    $replacements
+                                );
+                            }
+                        }
+                    } else {
+                        if (IssueBuffer::accepts(
+                            new ParamNameMismatch(
+                                'Argument ' . ($i + 1) . ' of ' . $cased_implementer_method_id . ' has wrong name $'
+                                    . $implementer_param->name . ', expecting $'
+                                    . $guide_param->name . ' as defined by '
+                                    . $cased_guide_method_id,
+                                $implementer_param->location
+                                    && $config->isInProjectDirs(
+                                        $implementer_param->location->file_path
+                                    )
+                                    ? $implementer_param->location
+                                    : $code_location
+                            )
+                        )) {
+                            // fall through
+                        }
                     }
                 }
             }

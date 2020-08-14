@@ -298,6 +298,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     if (!isset($appearing_class_storage->class_implements[strtolower($overridden_fq_class_name)])) {
                         MethodComparator::compare(
                             $codebase,
+                            \count($overridden_method_ids) === 1 ? $this->function : null,
                             $declaring_class_storage,
                             $parent_storage,
                             $storage,

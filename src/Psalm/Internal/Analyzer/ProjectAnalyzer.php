@@ -23,6 +23,7 @@ use Psalm\Issue\MissingClosureReturnType;
 use Psalm\Issue\MissingParamType;
 use Psalm\Issue\MissingPropertyType;
 use Psalm\Issue\MissingReturnType;
+use Psalm\Issue\ParamNameMismatch;
 use Psalm\Issue\PossiblyUndefinedGlobalVariable;
 use Psalm\Issue\PossiblyUndefinedVariable;
 use Psalm\Issue\PossiblyUnusedMethod;
@@ -217,6 +218,7 @@ class ProjectAnalyzer
         MissingParamType::class,
         MissingPropertyType::class,
         MissingReturnType::class,
+        ParamNameMismatch::class,
         PossiblyUndefinedGlobalVariable::class,
         PossiblyUndefinedVariable::class,
         PossiblyUnusedMethod::class,
