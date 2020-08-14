@@ -65,6 +65,43 @@ class ParamReplacementVisitor extends PhpParser\NodeVisitorAbstract implements P
 
                 $this->new_new_name_used = true;
             }
+        } elseif ($node instanceof PhpParser\Node\Stmt\ClassMethod
+            && ($docblock = $node->getDocComment())
+        ) {
+            $parsed_docblock = \Psalm\Internal\Scanner\DocblockParser::parse($docblock->getText());
+
+            $replaced = false;
+
+            foreach ($parsed_docblock->tags as $tag_name => $tags) {
+                foreach ($tags as $i => $tag) {
+                    if ($tag_name === 'param'
+                        || $tag_name === 'psalm-param'
+                        || $tag_name === 'phpstan-param'
+                        || $tag_name === 'phan-param'
+                    ) {
+                        $parts = \Psalm\Internal\Analyzer\CommentAnalyzer::splitDocLine($tag);
+
+                        if (($parts[1] ?? '') === '$' . $this->old_name) {
+                            $parsed_docblock->tags[$tag_name][$i] = \str_replace(
+                                '$' . $this->old_name,
+                                '$' . $this->new_name,
+                                $tag
+                            );
+                            $replaced = true;
+                        }
+                    }
+                }
+            }
+
+            if ($replaced) {
+                $this->replacements[] = new FileManipulation(
+                    $docblock->getStartFilePos(),
+                    $docblock->getEndFilePos() + 1,
+                    \rtrim($parsed_docblock->render($parsed_docblock->first_line_padding)),
+                    false,
+                    false
+                );
+            }
         }
     }
 

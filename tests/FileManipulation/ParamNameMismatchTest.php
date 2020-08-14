@@ -92,6 +92,39 @@ class ParamNameMismatchTest extends FileManipulationTest
                 ['ParamNameMismatch'],
                 true,
             ],
+            'fixMismatchingParamNameWithDocblockType74' => [
+                '<?php
+                    class A {
+                        /**
+                         * @param string $str
+                         */
+                        public function foo($str, bool $b = false) : void {}
+                    }
+
+                    class AChild extends A {
+                        /**
+                         * @param string $string
+                         */
+                        public function foo($string, bool $b = false) : void {}
+                    }',
+                '<?php
+                    class A {
+                        /**
+                         * @param string $str
+                         */
+                        public function foo($str, bool $b = false) : void {}
+                    }
+
+                    class AChild extends A {
+                        /**
+                         * @param string $str
+                         */
+                        public function foo($str, bool $b = false) : void {}
+                    }',
+                '7.1',
+                ['ParamNameMismatch'],
+                true,
+            ],
         ];
     }
 }

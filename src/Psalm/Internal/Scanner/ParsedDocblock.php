@@ -10,6 +10,9 @@ class ParsedDocblock
     /** @var string */
     public $description;
 
+    /** @var string */
+    public $first_line_padding;
+
     /** @var array<string, array<int, string>> */
     public $tags = [];
 
@@ -22,10 +25,11 @@ class ParsedDocblock
     private static $shouldAddNewLineBetweenAnnotations = true;
 
     /** @param array<string, array<int, string>> $tags */
-    public function __construct(string $description, array $tags)
+    public function __construct(string $description, array $tags, string $first_line_padding = '')
     {
         $this->description = $description;
         $this->tags = $tags;
+        $this->first_line_padding = $first_line_padding;
     }
 
     public function render(string $left_padding) : string

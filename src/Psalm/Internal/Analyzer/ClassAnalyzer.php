@@ -1841,7 +1841,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
                     MethodComparator::compare(
                         $codebase,
-                        $stmt,
+                        null,
                         $class_storage,
                         $declaring_storage,
                         $implementer_method_storage,

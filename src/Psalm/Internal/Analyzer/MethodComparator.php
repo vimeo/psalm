@@ -387,15 +387,20 @@ class MethodComparator
                 }
             }
 
+            $config = \Psalm\Config::getInstance();
+
             if ($guide_param->name !== $implementer_param->name
                 && $guide_method_storage->allow_named_arg_calls
                 && count($implementer_method_storage->params) > 1
                 && $guide_classlike_storage->user_defined
                 && $implementer_classlike_storage->user_defined
-                && $implementer_classlike_storage->location
+                && $implementer_param->location
+                && $guide_method_storage->cased_name
+                && substr($guide_method_storage->cased_name, 0, 2) !== '__'
+                && $config->isInProjectDirs(
+                    $implementer_param->location->file_path
+                )
             ) {
-                $config = \Psalm\Config::getInstance();
-
                 if ($config->allow_named_arg_calls
                     || ($guide_classlike_storage->location
                         && !$config->isInProjectDirs($guide_classlike_storage->location->file_path)
@@ -416,7 +421,7 @@ class MethodComparator
 
                             if ($replacements = $param_replacer->getReplacements()) {
                                 \Psalm\Internal\FileManipulation\FileManipulationBuffer::add(
-                                    $implementer_classlike_storage->location->file_path,
+                                    $implementer_param->location->file_path,
                                     $replacements
                                 );
                             }
@@ -429,11 +434,6 @@ class MethodComparator
                                     . $guide_param->name . ' as defined by '
                                     . $cased_guide_method_id,
                                 $implementer_param->location
-                                    && $config->isInProjectDirs(
-                                        $implementer_param->location->file_path
-                                    )
-                                    ? $implementer_param->location
-                                    : $code_location
                             )
                         )) {
                             // fall through
