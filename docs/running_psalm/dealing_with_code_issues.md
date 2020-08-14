@@ -52,7 +52,7 @@ Some issue types allow the use of `referencedMethod`, `referencedClass` or `refe
   </PropertyNotSetInConstructor>
   <UndefinedGlobalVariable>
     <errorLevel type="suppress">
-      <referencedVariable name="fooBar" /> <!-- if your variable is "$fooBar" -->
+      <referencedVariable name="$fooBar" /> <!-- if your variable is "$fooBar" -->
     </errorLevel>
 </UndefinedGlobalVariable>
 </issueHandlers>
