@@ -2286,11 +2286,11 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         }
 
         if (($storage->internal || ($class_storage && $class_storage->internal))
-            && !$this->config->allow_internal_named_param_calls
+            && !$this->config->allow_internal_named_arg_calls
         ) {
-            $storage->allow_named_param_calls = false;
-        } elseif ($docblock_info->no_named_params) {
-            $storage->allow_named_param_calls = false;
+            $storage->allow_named_arg_calls = false;
+        } elseif ($docblock_info->no_named_args) {
+            $storage->allow_named_arg_calls = false;
         }
 
         if ($docblock_info->variadic) {

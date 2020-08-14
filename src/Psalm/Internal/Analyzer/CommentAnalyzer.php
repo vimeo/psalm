@@ -756,8 +756,8 @@ class CommentAnalyzer
             $info->external_mutation_free = true;
         }
 
-        if (isset($parsed_docblock->tags['no-named-params'])) {
-            $info->no_named_params = true;
+        if (isset($parsed_docblock->tags['no-named-arguments'])) {
+            $info->no_named_args = true;
         }
 
         $info->ignore_nullable_return = isset($parsed_docblock->tags['psalm-ignore-nullable-return']);

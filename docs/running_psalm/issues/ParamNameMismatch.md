@@ -46,9 +46,9 @@ class AChild extends A {
 
 ## Workarounds
 
-### @no-named-params
+### @no-named-arguments
 
-Alternatively you can ignore this issue by adding a `@no-named-params` annotation to the parent method:
+Alternatively you can ignore this issue by adding a `@no-named-arguments` annotation to the parent method:
 
 ```php
 <?php
@@ -65,13 +65,13 @@ class AChild extends A {
 
 Any method with this annotation will be prevented (by Psalm) from being called with named parameters, so the original issue does not matter.
 
-### Config allowNamedParamCalls="false"
+### Config allowNamedArgumentCalls="false"
 
 This prevents any use of named params in your codebase. Ideal for self-contained projects, but less ideal for libraries.
 
 It means the original code above will not emit any errors as long as the class `A` is defined in a directory that Psalm can scan.
 
-### Config allowInternalNamedParamCalls="false"
+### Config allowInternalNamedArgumentCalls="false"
 
 For library authors Psalm supports a more nuanced flag that tells Psalm to prohibit any named parameter calls on `@internal` classes or methods.
 

@@ -202,7 +202,7 @@ abstract class FunctionLikeStorage
     /**
      * @var bool
      */
-    public $allow_named_param_calls = true;
+    public $allow_named_arg_calls = true;
 
     public function __toString()
     {

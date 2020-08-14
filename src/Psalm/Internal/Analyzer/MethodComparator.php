@@ -383,14 +383,14 @@ class MethodComparator
             }
 
             if ($guide_param->name !== $implementer_param->name
-                && $guide_method_storage->allow_named_param_calls
+                && $guide_method_storage->allow_named_arg_calls
                 && count($implementer_method_storage->params) > 1
                 && $guide_classlike_storage->user_defined
                 && $implementer_classlike_storage->user_defined
             ) {
                 $config = \Psalm\Config::getInstance();
 
-                if ($config->allow_named_param_calls
+                if ($config->allow_named_arg_calls
                     || ($guide_classlike_storage->location
                         && !$config->isInProjectDirs($guide_classlike_storage->location->file_path)
                     )

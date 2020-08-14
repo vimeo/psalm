@@ -192,5 +192,5 @@ class FunctionDocblockComment
     /**
      * @var bool
      */
-    public $no_named_params = false;
+    public $no_named_args = false;
 }

@@ -73,8 +73,8 @@
         <xs:attribute name="sealAllMethods" type="xs:boolean" default="false" />
         <xs:attribute name="runTaintAnalysis" type="xs:boolean" default="false" />
         <xs:attribute name="usePhpStormMetaPath" type="xs:boolean" default="true" />
-        <xs:attribute name="allowInternalNamedParamCalls" type="xs:boolean" default="true" />
-        <xs:attribute name="allowNamedParamCalls" type="xs:boolean" default="true" />
+        <xs:attribute name="allowInternalNamedArgumentCalls" type="xs:boolean" default="true" />
+        <xs:attribute name="allowNamedArgumentCalls" type="xs:boolean" default="true" />
     </xs:complexType>
 
     <xs:complexType name="ProjectFilesType">
