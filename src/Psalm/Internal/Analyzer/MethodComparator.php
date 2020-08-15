@@ -398,17 +398,16 @@ class MethodComparator
                 && $implementer_param->location
                 && $guide_method_storage->cased_name
                 && substr($guide_method_storage->cased_name, 0, 2) !== '__'
+                && $config->isInProjectDirs(
+                    $implementer_param->location->file_path
+                )
             ) {
                 if ($config->allow_named_arg_calls
                     || ($guide_classlike_storage->location
                         && !$config->isInProjectDirs($guide_classlike_storage->location->file_path)
                     )
                 ) {
-                    if ($codebase->alter_code
-                        && $config->isInProjectDirs(
-                            $implementer_param->location->file_path
-                        )
-                    ) {
+                    if ($codebase->alter_code) {
                         $project_analyzer = \Psalm\Internal\Analyzer\ProjectAnalyzer::getInstance();
 
                         if ($stmt && isset($project_analyzer->getIssuesToFix()['ParamNameMismatch'])) {
@@ -435,11 +434,7 @@ class MethodComparator
                                     . $implementer_param->name . ', expecting $'
                                     . $guide_param->name . ' as defined by '
                                     . $cased_guide_method_id,
-                                $config->isInProjectDirs(
-                                    $implementer_param->location->file_path
-                                )
-                                ? $implementer_param->location
-                                : $code_location
+                                $implementer_param->location
                             )
                         )) {
                             // fall through
