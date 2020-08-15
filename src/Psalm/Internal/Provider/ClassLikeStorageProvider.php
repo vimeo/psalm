@@ -156,6 +156,7 @@ class ClassLikeStorageProvider
     public static function deleteAll()
     {
         self::$storage = [];
+        self::$new_storage = [];
     }
 
     /**
