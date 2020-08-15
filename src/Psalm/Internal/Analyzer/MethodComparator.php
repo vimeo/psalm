@@ -435,12 +435,11 @@ class MethodComparator
                                     . $implementer_param->name . ', expecting $'
                                     . $guide_param->name . ' as defined by '
                                     . $cased_guide_method_id,
-                                $implementer_param->location
-                                    && $config->isInProjectDirs(
-                                        $implementer_param->location->file_path
-                                    )
-                                    ? $implementer_param->location
-                                    : $code_location
+                                $config->isInProjectDirs(
+                                    $implementer_param->location->file_path
+                                )
+                                ? $implementer_param->location
+                                : $code_location
                             )
                         )) {
                             // fall through
