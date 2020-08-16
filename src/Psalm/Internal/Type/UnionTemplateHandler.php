@@ -704,11 +704,23 @@ class UnionTemplateHandler
                 }
 
                 if (isset($template_result->lower_bounds[$param_name_key][$atomic_type->defining_class][0])) {
-                    $intersection_type = \Psalm\Type::intersectUnionTypes(
+                    $intersection_type = null;
+
+                    if (!UnionTypeComparator::isContainedBy(
+                        $codebase,
                         $template_result->lower_bounds[$param_name_key][$atomic_type->defining_class][0],
+                        $generic_param
+                    ) || !UnionTypeComparator::isContainedBy(
+                        $codebase,
                         $generic_param,
-                        $codebase
-                    );
+                        $template_result->lower_bounds[$param_name_key][$atomic_type->defining_class][0]
+                    )) {
+                        $intersection_type = \Psalm\Type::intersectUnionTypes(
+                            $template_result->lower_bounds[$param_name_key][$atomic_type->defining_class][0],
+                            $generic_param,
+                            $codebase
+                        );
+                    }
 
                     if ($intersection_type) {
                         $template_result->lower_bounds[$param_name_key][$atomic_type->defining_class][0]
