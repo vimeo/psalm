@@ -704,8 +704,6 @@ class UnionTemplateHandler
                 }
 
                 if (isset($template_result->lower_bounds[$param_name_key][$atomic_type->defining_class][0])) {
-                    $intersection_type = null;
-
                     if (!UnionTypeComparator::isContainedBy(
                         $codebase,
                         $template_result->lower_bounds[$param_name_key][$atomic_type->defining_class][0],
