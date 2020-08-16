@@ -239,7 +239,7 @@ class ObjectComparator
                     $input_type_is_interface = $codebase->interfaceExists($intersection_input_type_lower);
                     $container_type_is_interface = $codebase->interfaceExists($intersection_container_type_lower);
 
-                    if ($allow_interface_equality && $input_type_is_interface && $container_type_is_interface) {
+                    if ($allow_interface_equality && $container_type_is_interface) {
                         continue 2;
                     }
 
