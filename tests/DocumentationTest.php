@@ -25,6 +25,8 @@ use function array_shift;
 use DOMDocument;
 use DOMXPath;
 use DOMAttr;
+use function array_filter;
+use function var_export;
 
 class DocumentationTest extends TestCase
 {
@@ -264,5 +266,31 @@ class DocumentationTest extends TestCase
         }
 
         return $invalid_code_data;
+    }
+
+    public function testShortcodesAreUnique(): void
+    {
+        $all_issues = \Psalm\Config\IssueHandler::getAllIssueTypes();
+        $all_shortcodes = [];
+
+        foreach ($all_issues as $issue_type) {
+            $issue_class = '\\Psalm\\Issue\\' . $issue_type;
+            /** @var int $shortcode */
+            $shortcode = $issue_class::SHORTCODE;
+            $all_shortcodes[$shortcode][] = $issue_type;
+        }
+
+        $duplicate_shortcodes = array_filter(
+            $all_shortcodes,
+            function ($issues) {
+                return count($issues) > 1;
+            }
+        );
+
+        $this->assertEquals(
+            [],
+            $duplicate_shortcodes,
+            "Duplicate shortcodes found: \n" . var_export($duplicate_shortcodes, true)
+        );
     }
 }
