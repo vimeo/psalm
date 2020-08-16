@@ -80,7 +80,7 @@ class TestCase extends BaseTestCase
 
 
 
-        $this->project_analyzer->setPhpVersion('7.3');
+        $this->project_analyzer->setPhpVersion('7.4');
     }
 
     public function tearDown() : void

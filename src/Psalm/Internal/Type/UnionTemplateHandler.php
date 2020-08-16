@@ -720,6 +720,8 @@ class UnionTemplateHandler
                             $generic_param,
                             $codebase
                         );
+                    } else {
+                        $intersection_type = $generic_param;
                     }
 
                     if ($intersection_type) {

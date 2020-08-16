@@ -1505,6 +1505,25 @@ class ArrayFunctionCallTest extends TestCase
                     '$array' => 'list<int>',
                 ],
             ],
+            'closureParamConstraintsMet' => [
+                '<?php
+                    class A {}
+                    class B {}
+
+                    $test = [new A(), new B()];
+
+                    usort(
+                        $test,
+                        /**
+                         * @param A|B $a
+                         * @param A|B $b
+                         */
+                        function($a, $b): int
+                        {
+                            return $a === $b ? 1 : -1;
+                        }
+                    );'
+            ],
             'specialCaseArrayFilterOnSingleEntry' => [
                 '<?php
                     /** @psalm-return list<int> */
@@ -1861,6 +1880,18 @@ class ArrayFunctionCallTest extends TestCase
                     $list = [3, 2, 5, 9];
                     usort($list, fn(int $a, string $b): int => (int) ($a > $b));',
                 'error_message' => 'InvalidScalarArgument'
+            ],
+            'usortInvalidComparison' => [
+                '<?php
+                    $arr = [["one"], ["two"], ["three"]];
+
+                    usort(
+                        $arr,
+                        function (string $a, string $b): int {
+                            return strcmp($a, $b);
+                        }
+                    );',
+                'error_message' => 'InvalidArgument',
             ],
         ];
     }

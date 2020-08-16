@@ -1596,18 +1596,6 @@ class FunctionCallTest extends TestCase
                     function sort() : void {}',
                 'error_message' => 'DuplicateFunction',
             ],
-            'usortInvalidComparison' => [
-                '<?php
-                    $arr = [["one"], ["two"], ["three"]];
-
-                    usort(
-                        $arr,
-                        function (string $a, string $b): int {
-                            return strcmp($a, $b);
-                        }
-                    );',
-                'error_message' => 'InvalidArgument',
-            ],
             'functionCallOnMixed' => [
                 '<?php
                     /**
