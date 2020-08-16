@@ -609,23 +609,38 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 }
             }
 
-            $classlike_storage->type_aliases = \array_map(
+            $converted_aliases = \array_map(
                 function (TypeAlias\InlineTypeAlias $t) {
-                    $union = TypeParser::parseTokens(
-                        $t->replacement_tokens,
-                        null,
-                        [],
-                        $this->type_aliases
-                    );
+                    try {
+                        $union = TypeParser::parseTokens(
+                            $t->replacement_tokens,
+                            null,
+                            [],
+                            $this->type_aliases
+                        );
 
-                    $union->setFromDocblock();
+                        $union->setFromDocblock();
 
-                    return new TypeAlias\ClassTypeAlias(
-                        \array_values($union->getAtomicTypes())
-                    );
+                        return new TypeAlias\ClassTypeAlias(
+                            \array_values($union->getAtomicTypes())
+                        );
+                    } catch (\Exception $e) {
+                        return null;
+                    }
                 },
                 $this->classlike_type_aliases
             );
+
+            foreach ($converted_aliases as $key => $type) {
+                if (!$type) {
+                    $classlike_storage->docblock_issues[] = new InvalidDocblock(
+                        '@psalm-type ' . $key . ' contains invalid references',
+                        new CodeLocation($this->file_scanner, $node, null, true)
+                    );
+                }
+            }
+
+            $classlike_storage->type_aliases = \array_filter($converted_aliases);
 
             $this->classlike_type_aliases = [];
 

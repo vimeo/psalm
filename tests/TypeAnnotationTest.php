@@ -386,6 +386,17 @@ class TypeAnnotationTest extends TestCase
                 }',
                 'error_message' => 'UndefinedDocblockClass',
             ],
+            'noCrashWithPriorReference' => [
+                '<?php
+                    /**
+                     * @psalm-type _C=array{c:_CC}
+                     * @psalm-type _CC=float
+                     */
+                    class A {
+
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
         ];
     }
 }
