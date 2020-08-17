@@ -3,9 +3,12 @@ namespace Psalm\Internal\Analyzer;
 
 use PhpParser;
 use Psalm\Codebase;
+use Psalm\CodeLocation\DocblockTypeLocation;
 use Psalm\Context;
 use Psalm\Exception\UnpreparedAnalysisException;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
+use Psalm\Internal\Type\TypeAlias\LinkableTypeAlias;
+use Psalm\Issue\InvalidTypeImport;
 use Psalm\Issue\UncaughtThrowInGlobalScope;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
@@ -235,6 +238,47 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
                         )
                     )) {
                         // fall through
+                    }
+                }
+            }
+        }
+
+        // validate type imports
+        if ($file_storage->type_aliases) {
+            foreach ($file_storage->type_aliases as $alias) {
+                if ($alias instanceof LinkableTypeAlias) {
+                    $location = new DocblockTypeLocation(
+                        $this->getSource(),
+                        $alias->start_offset,
+                        $alias->end_offset,
+                        $alias->line_number
+                    );
+                    $fq_source_classlike = $alias->declaring_fq_classlike_name;
+                    if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
+                        $this->getSource(),
+                        $fq_source_classlike,
+                        $location,
+                        null,
+                        null,
+                        $this->suppressed_issues,
+                        true,
+                        false,
+                        true,
+                        true
+                    ) === false) {
+                        continue;
+                    };
+
+                    $referenced_class_storage = $codebase->classlike_storage_provider->get($fq_source_classlike);
+                    if (!isset($referenced_class_storage->type_aliases[$alias->alias_name])) {
+                        IssueBuffer::accepts(
+                            new InvalidTypeImport(
+                                'Type alias ' . $alias->alias_name
+                                . ' imported from ' . $fq_source_classlike
+                                . ' is not defined on the source class',
+                                $location
+                            )
+                        );
                     }
                 }
             }

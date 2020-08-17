@@ -990,9 +990,13 @@ class CommentAnalyzer
         }
 
         if (isset($parsed_docblock->tags['psalm-import-type'])) {
-            foreach ($parsed_docblock->tags['psalm-import-type'] as $imported_type_entry) {
-                /** @psalm-suppress InvalidPropertyAssignmentValue */
-                $info->imported_types[] = preg_split('/[\s]+/', $imported_type_entry);
+            foreach ($parsed_docblock->tags['psalm-import-type'] as $offset => $imported_type_entry) {
+                $info->imported_types[] = [
+                    'line_number' => $comment->getLine() + substr_count($comment->getText(), "\n", 0, $offset),
+                    'start_offset' => $comment->getFilePos() + $offset,
+                    'end_offset' => $comment->getFilePos() + $offset + strlen($imported_type_entry),
+                    'parts' => self::splitDocLine($imported_type_entry) ?: []
+                ];
             }
         }
 
@@ -1236,7 +1240,7 @@ class CommentAnalyzer
      *
      * @throws DocblockParseException if an invalid string is found
      *
-     * @return array<string>
+     * @return list<string>
      */
     public static function splitDocLine($return_block)
     {
@@ -1347,7 +1351,6 @@ class CommentAnalyzer
                 $remaining = trim(preg_replace('@^[ \t]*\* *@m', ' ', substr($return_block, $i + 1)));
 
                 if ($remaining) {
-                    /** @var array<string> */
                     return array_merge([rtrim($type)], preg_split('/[ \s]+/', $remaining));
                 }
 
