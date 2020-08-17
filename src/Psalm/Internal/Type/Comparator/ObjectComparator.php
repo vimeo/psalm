@@ -124,7 +124,7 @@ class ObjectComparator
                 );
             }
 
-            foreach ($intersection_input_types as $intersection_input_type) {
+            foreach ($intersection_input_types as $intersection_input_key => $intersection_input_type) {
                 $input_was_static = false;
 
                 if ($intersection_input_type instanceof TIterable) {
@@ -239,7 +239,10 @@ class ObjectComparator
                     $input_type_is_interface = $codebase->interfaceExists($intersection_input_type_lower);
                     $container_type_is_interface = $codebase->interfaceExists($intersection_container_type_lower);
 
-                    if ($allow_interface_equality && $container_type_is_interface) {
+                    if ($allow_interface_equality
+                        && $container_type_is_interface
+                        && ($input_type_is_interface || !isset($intersection_container_types[$intersection_input_key]))
+                    ) {
                         continue 2;
                     }
 
