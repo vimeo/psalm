@@ -17,6 +17,7 @@ use function implode;
 use function in_array;
 use function interface_exists;
 use function is_string;
+use function join;
 use PhpParser;
 use function preg_match;
 use function preg_replace;
@@ -1328,20 +1329,27 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     if (count($imported_type_data) < 3) {
                         $storage->docblock_issues[] = new InvalidTypeImport(
                             'Invalid import in docblock for ' . implode('.', $this->fq_classlike_names)
-                            . ', expecting "<TypeName> from <ClassName>", got "' . join(' ', $imported_type_data) . '" instead.',
+                            . ', expecting "<TypeName> from <ClassName>",'
+                            . ' got "' . join(' ', $imported_type_data) . '" instead.',
                             $location
                         );
                         continue;
                     }
 
-                    if ($imported_type_data[1] === 'from' && !empty($imported_type_data[0]) && !empty($imported_type_data[2])) {
+                    if ($imported_type_data[1] === 'from'
+                        && !empty($imported_type_data[0])
+                        && !empty($imported_type_data[2])
+                    ) {
                         $type_alias_name = $as_alias_name = $imported_type_data[0];
                         $declaring_classlike_name = $imported_type_data[2];
                     } else {
                         $storage->docblock_issues[] = new InvalidTypeImport(
                             'Invalid import in docblock for ' . implode('.', $this->fq_classlike_names)
                             . ', expecting "<TypeName> from <ClassName>", got "'
-                            . $imported_type_data[0] . ' ' . $imported_type_data[1] . ' ' . $imported_type_data[2] . '" instead.',
+                            . join(
+                                ' ',
+                                [$imported_type_data[0], $imported_type_data[1], $imported_type_data[2]]
+                            ) . '" instead.',
                             $location
                         );
                         continue;
@@ -1353,7 +1361,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                             $storage->docblock_issues[] = new InvalidTypeImport(
                                 'Invalid import in docblock for ' . implode('.', $this->fq_classlike_names)
                                 . ', expecting "as <TypeName>", got "'
-                                . $imported_type_data[3] . ' ' . ($imported_type_data[4] ?? ''). '" instead.',
+                                . $imported_type_data[3] . ' ' . ($imported_type_data[4] ?? '') . '" instead.',
                                 $location
                             );
                             continue;

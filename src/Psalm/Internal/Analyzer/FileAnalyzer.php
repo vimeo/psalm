@@ -255,9 +255,10 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
                         $alias->end_offset,
                         $alias->line_number
                     );
+                    $fq_source_classlike = $alias->declaring_fq_classlike_name;
                     if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                         $this->getSource(),
-                        $alias->declaring_fq_classlike_name,
+                        $fq_source_classlike,
                         $location,
                         null,
                         null,
@@ -270,12 +271,12 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
                         continue;
                     };
 
-                    $referenced_class_storage = $codebase->classlike_storage_provider->get($alias->declaring_fq_classlike_name);
+                    $referenced_class_storage = $codebase->classlike_storage_provider->get($fq_source_classlike);
                     if (!isset($referenced_class_storage->type_aliases[$alias->alias_name])) {
                         IssueBuffer::accepts(
                             new InvalidTypeImport(
                                 'Type alias ' . $alias->alias_name
-                                . ' imported from ' . $alias->declaring_fq_classlike_name
+                                . ' imported from ' . $fq_source_classlike
                                 . ' is not defined on the source class',
                                 $location
                             )
