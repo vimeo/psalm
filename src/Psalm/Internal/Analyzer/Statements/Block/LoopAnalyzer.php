@@ -364,13 +364,18 @@ class LoopAnalyzer
                 }
 
                 foreach ($asserted_var_ids as $var_id) {
-                    if (!isset($inner_context->vars_in_scope[$var_id])
-                        || $inner_context->vars_in_scope[$var_id]->getId()
-                            !== $pre_loop_context->vars_in_scope[$var_id]->getId()
-                        || $inner_context->vars_in_scope[$var_id]->from_docblock
-                            !== $pre_loop_context->vars_in_scope[$var_id]->from_docblock
+                    if ((!isset($inner_context->vars_in_scope[$var_id])
+                            || $inner_context->vars_in_scope[$var_id]->getId()
+                                !== $pre_loop_context->vars_in_scope[$var_id]->getId()
+                            || $inner_context->vars_in_scope[$var_id]->from_docblock
+                                !== $pre_loop_context->vars_in_scope[$var_id]->from_docblock
+                        )
                     ) {
-                        $inner_context->vars_in_scope[$var_id] = clone $pre_loop_context->vars_in_scope[$var_id];
+                        if (isset($pre_loop_context->vars_in_scope[$var_id])) {
+                            $inner_context->vars_in_scope[$var_id] = clone $pre_loop_context->vars_in_scope[$var_id];
+                        } else {
+                            unset($inner_context->vars_in_scope[$var_id]);
+                        }
                     }
                 }
 
