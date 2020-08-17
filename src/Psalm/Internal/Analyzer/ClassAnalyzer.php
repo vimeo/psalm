@@ -13,7 +13,6 @@ use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
-use Psalm\Internal\Type\TypeAlias\LinkableTypeAlias;
 use Psalm\Issue\DeprecatedClass;
 use Psalm\Issue\DeprecatedInterface;
 use Psalm\Issue\DeprecatedTrait;
