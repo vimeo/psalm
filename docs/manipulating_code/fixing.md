@@ -243,7 +243,7 @@ class A {
 
         $this->bar = "baz";
     }
-    
+
     public function setBaz() {
         $this->baz = [1, 2, 3];
     }
@@ -578,4 +578,40 @@ function foo() : string {
 }
 
 $a = foo();
+```
+
+### ParamNameMismatch
+
+This aligns child class param names with their parent.
+
+Running `vendor/bin/psalter --issues=ParamNameMismatch` on
+
+```php
+<?php
+
+class A {
+    public function foo(string $str, bool $b = false) : void {}
+}
+
+class AChild extends A {
+    public function foo(string $string, bool $b = false) : void {
+        echo $string;
+    }
+}
+```
+
+gives
+
+```php
+<?php
+
+class A {
+    public function foo(string $str, bool $b = false) : void {}
+}
+
+class AChild extends A {
+    public function foo(string $str, bool $b = false) : void {
+        echo $str;
+    }
+}
 ```
