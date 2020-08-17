@@ -44,6 +44,8 @@ class AChild extends A {
 }
 ```
 
+This fix [can be applied automatically by Psalter](https://psalm.dev/docs/manipulating_code/fixing/#paramnamemismatch).
+
 ## Workarounds
 
 ### @no-named-arguments
