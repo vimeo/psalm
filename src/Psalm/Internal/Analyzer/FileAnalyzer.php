@@ -3,14 +3,12 @@ namespace Psalm\Internal\Analyzer;
 
 use PhpParser;
 use Psalm\Codebase;
-use Psalm\CodeLocation;
 use Psalm\CodeLocation\DocblockTypeLocation;
 use Psalm\Context;
 use Psalm\Exception\UnpreparedAnalysisException;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\Type\TypeAlias\LinkableTypeAlias;
 use Psalm\Issue\InvalidTypeImport;
-use Psalm\Issue\MissingDocblockType;
 use Psalm\Issue\UncaughtThrowInGlobalScope;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
