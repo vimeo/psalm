@@ -354,6 +354,7 @@ class Functions
             'mt_rand', 'rand', 'random_int', 'random_bytes',
             'wincache_ucache_delete', 'wincache_ucache_set', 'wincache_ucache_inc',
             'class_alias',
+            'class_exists', // impure by virtue of triggering autoloader
 
             // php environment
             'ini_set', 'sleep', 'usleep', 'register_shutdown_function',
