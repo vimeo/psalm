@@ -866,6 +866,7 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
      * @link http://php.net/manual/en/arrayiterator.current.php
      *
      * @return TValue The current array entry.
+     * @psalm-mutation-free
      *
      * @since 5.0.0
      */

@@ -354,6 +354,35 @@ class ArrayAccessTest extends TestCase
     public function providerValidCodeParse()
     {
         return [
+            'arrayIteratorRememberCurrentType' => [
+                '<?php
+                    function makeArray(): array { return [1, 2, 3, "1", "2", "3"]; }
+                    function takesString(string $str): void { }
+
+                    $arr = makeArray();
+
+                    for ($arrIt = new ArrayIterator($arr); $arrIt->valid(); $arrIt->next()) {
+                        if (is_string($arrIt->current())) {
+                            takesString($arrIt->current());
+                        }
+                    }',
+            ],
+            'arrayIteratorForgetCurrentType' => [
+                '<?php
+                    function makeArray(): array { return [1, 2, 3, "1", "2", "3"]; }
+                    function takesString(string $str): void { }
+
+                    $arr = makeArray();
+                    $arrIt = new ArrayIterator($arr);
+                    $a = "";
+                    if ($arrIt->valid() && is_string($arrIt->current())) {
+                        $arrIt->next();
+                        $a = $arrIt->current();
+                    }',
+                'assertions' => [
+                    '$a' => 'mixed',
+                ],
+            ],
             'instanceOfStringOffset' => [
                 '<?php
                     class A {
