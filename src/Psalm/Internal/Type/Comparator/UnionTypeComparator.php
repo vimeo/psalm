@@ -428,8 +428,7 @@ class UnionTypeComparator
                     $type2_part,
                     true,
                     false,
-                    $first_comparison_result,
-                    true
+                    $first_comparison_result
                 )
                     && !$first_comparison_result->to_string_cast
                 ) || (AtomicTypeComparator::isContainedBy(
@@ -438,8 +437,7 @@ class UnionTypeComparator
                     $type1_part,
                     true,
                     false,
-                    $second_comparison_result,
-                    true
+                    $second_comparison_result
                 )
                     && !$second_comparison_result->to_string_cast
                 ) || ($first_comparison_result->type_coerced
