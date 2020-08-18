@@ -376,6 +376,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                     $mixin_class_storage = $codebase->classlike_storage_provider->get($mixin->value);
 
                     $fq_class_name = $mixin_class_storage->name;
+                    $mixin_class_storage->mixin_declaring_fqcln = $class_storage->mixin_declaring_fqcln;
                     $class_storage = $mixin_class_storage;
                     $naive_method_exists = true;
                     $method_id = $new_method_id;
