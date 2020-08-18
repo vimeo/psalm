@@ -5,7 +5,7 @@ use PhpParser;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\TypeAnalyzer;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\CodeLocation;
 use Psalm\Context;
@@ -45,7 +45,7 @@ class CallAnalyzer
      */
     public static function collectSpecialInformation(
         FunctionLikeAnalyzer $source,
-        $method_name,
+        string $method_name,
         Context $context
     ) {
         $fq_class_name = (string)$source->getFQCLN();
@@ -167,11 +167,27 @@ class CallAnalyzer
 
             $class_analyzer = $source->getSource();
 
+            $is_final = $method_storage->final;
+
+            if ($method_name !== $declaring_method_id->method_name) {
+                $appearing_method_id = $codebase->methods->getAppearingMethodId($method_id);
+
+                if ($appearing_method_id) {
+                    $appearing_class_storage = $codebase->classlike_storage_provider->get(
+                        $appearing_method_id->fq_class_name
+                    );
+
+                    if (isset($appearing_class_storage->trait_final_map[strtolower($method_name)])) {
+                        $is_final = true;
+                    }
+                }
+            }
+
             if ($class_analyzer instanceof ClassLikeAnalyzer
                 && !$method_storage->is_static
                 && ($context->collect_nonprivate_initializations
                     || $method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
-                    || $method_storage->final)
+                    || $is_final)
             ) {
                 $local_vars_in_scope = [];
                 $local_vars_possibly_in_scope = [];
@@ -191,7 +207,7 @@ class CallAnalyzer
                 $old_calling_method_id = $context->calling_method_id;
 
                 if ($fq_class_name === $source->getFQCLN()) {
-                    $class_analyzer->getMethodMutations(strtolower($method_name), $context);
+                    $class_analyzer->getMethodMutations($declaring_method_id->method_name, $context);
                 } else {
                     $declaring_fq_class_name = $declaring_method_id->fq_class_name;
 
@@ -712,6 +728,26 @@ class CallAnalyzer
                 );
 
                 $type_assertions = array_merge($type_assertions, $assert_type_assertions);
+            } elseif ($arg_value && $assertion->rule === [['falsy']]) {
+                $assert_clauses = \Psalm\Type\Algebra::negateFormula(
+                    \Psalm\Type\Algebra::getFormula(
+                        \spl_object_id($arg_value),
+                        $arg_value,
+                        $context->self,
+                        $statements_analyzer,
+                        $statements_analyzer->getCodebase()
+                    )
+                );
+
+                $simplified_clauses = \Psalm\Type\Algebra::simplifyCNF(
+                    array_merge($context->clauses, $assert_clauses)
+                );
+
+                $assert_type_assertions = \Psalm\Type\Algebra::getTruthsFromFormula(
+                    $simplified_clauses
+                );
+
+                $type_assertions = array_merge($type_assertions, $assert_type_assertions);
             }
         }
 
@@ -809,14 +845,14 @@ class CallAnalyzer
                     if (isset($template_result->upper_bounds[$template_name][$defining_id])) {
                         $upper_bound_type = $template_result->upper_bounds[$template_name][$defining_id][0];
 
-                        $union_comparison_result = new \Psalm\Internal\Analyzer\TypeComparisonResult();
+                        $union_comparison_result = new \Psalm\Internal\Type\Comparator\TypeComparisonResult();
 
                         if (count($template_result->lower_bounds_unintersectable_types) > 1) {
                             $upper_bound_type = $template_result->lower_bounds_unintersectable_types[0];
                             $lower_bound_type = $template_result->lower_bounds_unintersectable_types[1];
                         }
 
-                        if (!TypeAnalyzer::isContainedBy(
+                        if (!UnionTypeComparator::isContainedBy(
                             $statements_analyzer->getCodebase(),
                             $upper_bound_type,
                             $lower_bound_type,

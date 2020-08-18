@@ -2,7 +2,6 @@
 declare(strict_types=1);
 namespace Psalm\Internal\PhpVisitor;
 
-use function array_map;
 use PhpParser\Node;
 use PhpParser\NodeVisitorAbstract;
 
@@ -19,8 +18,10 @@ class TypeMappingVisitor extends NodeVisitorAbstract
         $this->real_type_provider = $real_type_provider;
     }
 
-    public function enterNode(Node $origNode)
+    public function enterNode(Node $node)
     {
+        $origNode = $node;
+
         /** @psalm-suppress ArgumentTypeCoercion */
         $node_type = $this->fake_type_provider->getType($origNode);
 

@@ -40,6 +40,7 @@ class ClassTemplateTest extends TestCase
 
                         /**
                          * @return T
+                         * @psalm-suppress MixedMethodCall
                          */
                         public function bar() {
                             $t = $this->T;
@@ -98,6 +99,7 @@ class ClassTemplateTest extends TestCase
 
                         /**
                          * @return T
+                         * @psalm-suppress MixedMethodCall
                          */
                         public function bar() {
                             $t = $this->T;
@@ -169,6 +171,7 @@ class ClassTemplateTest extends TestCase
 
                         /**
                          * @return T
+                         * @psalm-suppress MixedMethodCall
                          */
                         public function bar() {
                             $t = $this->T;
@@ -315,6 +318,7 @@ class ClassTemplateTest extends TestCase
                     /**
                      * @template TKey as array-key
                      * @template TValue
+                     * @psalm-consistent-constructor
                      */
                     class ArrayCollection {
                         /** @var array<TKey,TValue> */
@@ -505,7 +509,7 @@ class ClassTemplateTest extends TestCase
                 '<?php
                     namespace Bar;
 
-                    /** @template T */
+                    /** @template T as object */
                     class Foo
                     {
                         /**
@@ -632,6 +636,53 @@ class ClassTemplateTest extends TestCase
                     function handleCollectionOfFoo(Collection $c) : void {
                         if ($c->getType() === FooChild::class) {}
                     }',
+            ],
+            'getMagicPropertyOnClass' => [
+                '<?php
+                   class A {}
+
+                   /**
+                    * @template T as A
+                    * @property ?T $x
+                    */
+                   class B {
+                       /** @var ?T */
+                       public $y;
+
+                       public function __get() {}
+                   }
+
+                   $b = new B();
+                   $b_x = $b->x;
+                   $b_y = $b->y;
+                ',
+                'assertions' => [
+                    '$b_x' => 'A|null',
+                    '$b_y' => 'A|null',
+                ],
+            ],
+            'getMagicPropertyOnThis' => [
+                '<?php
+                   abstract class A {}
+
+                   class X extends A {}
+
+                   /**
+                    * @template T as A
+                    * @property ?T $x
+                    */
+                   class B {
+                       /** @var ?T */
+                       public $y;
+
+                       public function __get() {}
+
+                       public function test(): void {
+                           if ($this->x instanceof X) {}
+                           if ($this->y instanceof X) {}
+                       }
+                   }
+                ',
             ],
             'getEquateClass' => [
                 '<?php
@@ -1238,6 +1289,8 @@ class ClassTemplateTest extends TestCase
                          * @param class-string<Q> $obj2
                          *
                          * @return array<I, V|Q>
+                         *
+                         * @psalm-suppress MixedMethodCall
                          */
                         private function appender(string $obj2): array
                         {
@@ -1771,6 +1824,7 @@ class ClassTemplateTest extends TestCase
                 '<?php
                     /**
                      * @template T
+                     * @psalm-consistent-constructor
                      */
                     class Foo {
                         /** @var T */
@@ -2098,6 +2152,7 @@ class ClassTemplateTest extends TestCase
                 '<?php
                     /**
                      * @template T
+                     * @psalm-consistent-constructor
                      */
                     class ArrayCollection {
                         /** @var list<T> */
@@ -2169,6 +2224,9 @@ class ClassTemplateTest extends TestCase
             ],
             'mapStaticClassTemplatedFromClassString' => [
                 '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     */
                     class Base {
                         /** @return static */
                         public static function factory(): self {
@@ -2279,7 +2337,7 @@ class ClassTemplateTest extends TestCase
                 '<?php
                     class TEM {
                         /**
-                         * @template Entity
+                         * @template Entity as object
                          * @psalm-param class-string<Entity> $type
                          * @psalm-return EQB<Entity>
                          */
@@ -2292,7 +2350,7 @@ class ClassTemplateTest extends TestCase
                     }
 
                     /**
-                     * @template Entity
+                     * @template Entity as object
                      */
                     class EQB {
                         /**
@@ -2728,7 +2786,10 @@ class ClassTemplateTest extends TestCase
                      * @return T
                      */
                     function unwrap(array $containers) {
-                        return array_map(fn($container) => $container->get(), $containers)[0];
+                        return array_map(
+                            fn($container) => $container->get(),
+                            $containers
+                        )[0];
                     }
 
                     /**
@@ -2739,7 +2800,10 @@ class ClassTemplateTest extends TestCase
 
                         if (is_string($ret)) {}
                         if (is_int($ret)) {}
-                    }'
+                    }',
+                [],
+                [],
+                '7.4'
             ],
             'templateWithLateResolvedType' => [
                 '<?php
@@ -2835,6 +2899,30 @@ class ClassTemplateTest extends TestCase
                             }
 
                             throw new \LogicException("bad");
+                        }
+                    }'
+            ],
+            'narrowTemplateTypeWithInstanceof' => [
+                '<?php
+                    class Foo {}
+                    class Bar {}
+
+                    /** @template FooOrBarOrNull of Foo|Bar|null */
+                    class Resolved
+                    {
+                        /**
+                         * @var FooOrBarOrNull
+                         */
+                        private $entity = null;
+
+                        /**
+                         * @psalm-param FooOrBarOrNull $qux
+                         */
+                        public function __contruct(?object $qux)
+                        {
+                            if ($qux instanceof Foo) {
+                                $this->entity = $qux;
+                            }
                         }
                     }'
             ],

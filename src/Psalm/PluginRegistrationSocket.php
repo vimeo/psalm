@@ -38,6 +38,10 @@ class PluginRegistrationSocket implements RegistrationInterface
             throw new \InvalidArgumentException('Plugins must be loaded before registration');
         }
 
+        if (is_subclass_of($handler, Hook\AfterFileAnalysisInterface::class)) {
+            $this->config->after_file_checks[$handler] = $handler;
+        }
+
         if (is_subclass_of($handler, Hook\AfterMethodCallAnalysisInterface::class)) {
             $this->config->after_method_checks[$handler] = $handler;
         }
@@ -72,6 +76,10 @@ class PluginRegistrationSocket implements RegistrationInterface
 
         if (is_subclass_of($handler, Hook\AfterCodebasePopulatedInterface::class)) {
             $this->config->after_codebase_populated[$handler] = $handler;
+        }
+
+        if (is_subclass_of($handler, Hook\BeforeFileAnalysisInterface::class)) {
+            $this->config->before_file_checks[$handler] = $handler;
         }
 
         if (is_subclass_of($handler, Hook\PropertyExistenceProviderInterface::class)) {

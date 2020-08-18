@@ -3,7 +3,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\BinaryOp;
 
 use PhpParser;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\TypeAnalyzer;
+use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
@@ -207,8 +207,8 @@ class ConcatAnalyzer
             $has_valid_left_operand = false;
             $has_valid_right_operand = false;
 
-            $left_comparison_result = new \Psalm\Internal\Analyzer\TypeComparisonResult();
-            $right_comparison_result = new \Psalm\Internal\Analyzer\TypeComparisonResult();
+            $left_comparison_result = new \Psalm\Internal\Type\Comparator\TypeComparisonResult();
+            $right_comparison_result = new \Psalm\Internal\Type\Comparator\TypeComparisonResult();
 
             foreach ($left_type->getAtomicTypes() as $left_type_part) {
                 if ($left_type_part instanceof Type\Atomic\TTemplateParam) {
@@ -229,7 +229,7 @@ class ConcatAnalyzer
                     continue;
                 }
 
-                $left_type_part_match = TypeAnalyzer::isAtomicContainedBy(
+                $left_type_part_match = AtomicTypeComparator::isContainedBy(
                     $codebase,
                     $left_type_part,
                     new Type\Atomic\TString,
@@ -316,7 +316,7 @@ class ConcatAnalyzer
                     continue;
                 }
 
-                $right_type_part_match = TypeAnalyzer::isAtomicContainedBy(
+                $right_type_part_match = AtomicTypeComparator::isContainedBy(
                     $codebase,
                     $right_type_part,
                     new Type\Atomic\TString,

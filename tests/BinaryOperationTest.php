@@ -84,6 +84,32 @@ class BinaryOperationTest extends TestCase
     }
 
     /**
+     * @return void
+     */
+    public function testStrictTrueEquivalence()
+    {
+        $config = \Psalm\Config::getInstance();
+        $config->strict_binary_operands = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                function returnsABool(): bool {
+                    return rand(1, 2) === 1;
+                }
+
+                if (returnsABool() === true) {
+                    echo "hi!";
+                }'
+        );
+
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectExceptionMessage('RedundantIdentityWithTrue');
+
+        $this->analyzeFile('somefile.php', new \Psalm\Context());
+    }
+
+    /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
     public function providerValidCodeParse()
@@ -357,6 +383,17 @@ class BinaryOperationTest extends TestCase
                 '<?php
                     $a = ~true;',
                 'error_message' => 'InvalidOperand',
+            ],
+            'substrImpossible' => [
+                '<?php
+                    class HelloWorld
+                    {
+                        public function sayHello(string $s): void
+                        {
+                            if (substr($s, 0, 6) === "abc") {}
+                        }
+                    }',
+                    'error_message' => 'TypeDoesNotContainType',
             ],
         ];
     }

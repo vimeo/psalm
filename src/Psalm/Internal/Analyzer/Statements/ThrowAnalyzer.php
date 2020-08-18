@@ -3,7 +3,7 @@ namespace Psalm\Internal\Analyzer\Statements;
 
 use PhpParser;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\TypeAnalyzer;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\InvalidThrow;
@@ -42,7 +42,7 @@ class ThrowAnalyzer
             foreach ($throw_type->getAtomicTypes() as $throw_type_part) {
                 $throw_type_candidate = new Union([$throw_type_part]);
 
-                if (!TypeAnalyzer::isContainedBy($codebase, $throw_type_candidate, $exception_type)) {
+                if (!UnionTypeComparator::isContainedBy($codebase, $throw_type_candidate, $exception_type)) {
                     if (IssueBuffer::accepts(
                         new InvalidThrow(
                             'Cannot throw ' . $throw_type_part

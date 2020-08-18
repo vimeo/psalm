@@ -36,8 +36,14 @@ class ClassLikeDocblockComment
 
     /**
      * @var null|string
+     * @deprecated
      */
     public $mixin = null;
+
+    /**
+     * @var string[]
+     */
+    public $mixins = [];
 
     /**
      * @var array<int, array{string, ?string, ?string, bool, int}>
@@ -110,7 +116,12 @@ class ClassLikeDocblockComment
     public $suppressed_issues = [];
 
     /**
-     * @var list<list<string>>
+     * @var list<array{line_number:int,start_offset:int,end_offset:int,parts:list<string>}>
      */
     public $imported_types = [];
+
+    /**
+     * @var bool
+     */
+    public $consistent_constructor = false;
 }

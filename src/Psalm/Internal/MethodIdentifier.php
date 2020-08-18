@@ -40,7 +40,7 @@ class MethodIdentifier
         // remove trailing backslash if it exists
         $method_id = \preg_replace('/^\\\\/', '', $method_id);
         $method_id_parts = \explode('::', $method_id);
-        return new static($method_id_parts[0], \strtolower($method_id_parts[1]));
+        return new self($method_id_parts[0], \strtolower($method_id_parts[1]));
     }
 
     /** @return non-empty-string */

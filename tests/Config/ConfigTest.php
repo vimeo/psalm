@@ -425,6 +425,11 @@ class ConfigTest extends \Psalm\Tests\TestCase
                                 <referencedProperty name="Psalm\Bodger::$find3" />
                             </errorLevel>
                         </UndefinedPropertyFetch>
+                        <UndefinedGlobalVariable>
+                            <errorLevel type="suppress">
+                                <referencedVariable name="a" />
+                            </errorLevel>
+                        </UndefinedGlobalVariable>
                     </issueHandlers>
                 </psalm>'
             )
@@ -554,6 +559,21 @@ class ConfigTest extends \Psalm\Tests\TestCase
             $config->getReportingLevelForMethod(
                 'UndefinedFunction',
                 'foobar'
+            )
+        );
+
+        $this->assertSame(
+            'suppress',
+            $config->getReportingLevelForVariable(
+                'UndefinedGlobalVariable',
+                'a'
+            )
+        );
+
+        $this->assertNull(
+            $config->getReportingLevelForVariable(
+                'UndefinedGlobalVariable',
+                'b'
             )
         );
     }
@@ -1411,5 +1431,20 @@ class ConfigTest extends \Psalm\Tests\TestCase
 
         $cfg = Config::loadFromXML($root, "<?xml version=\"1.0\"?><psalm phpVersion='8.0'></psalm>");
         $this->assertSame('8.0', $cfg->getPhpVersion());
+    }
+
+    /** @return void */
+    public function testSetsUsePhpStormMetaPath()
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm usePhpStormMetaPath="false">
+                </psalm>'
+            )
+        );
+
+        $this->assertFalse($this->project_analyzer->getConfig()->use_phpstorm_meta_path);
     }
 }

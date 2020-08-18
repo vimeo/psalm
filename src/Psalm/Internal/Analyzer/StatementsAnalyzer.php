@@ -9,6 +9,7 @@ use Psalm\Internal\Analyzer\Statements\Block\IfAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\SwitchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\TryAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\WhileAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ClassConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
@@ -26,6 +27,7 @@ use Psalm\Exception\DocblockParseException;
 use Psalm\FileManipulation;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Issue\InvalidDocblock;
+use Psalm\Issue\MissingDocblockType;
 use Psalm\Issue\Trace;
 use Psalm\Issue\UndefinedTrace;
 use Psalm\Issue\UnevaluatedCode;
@@ -149,6 +151,10 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
         Context $global_context = null,
         $root_scope = false
     ) {
+        if (!$stmts) {
+            return;
+        }
+
         // hoist functions to the top
         $this->hoistFunctions($stmts);
 
@@ -379,6 +385,61 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                     $statements_analyzer->addSuppressedIssues($new_issues);
                 }
             }
+
+            if (isset($statements_analyzer->parsed_docblock->combined_tags['var'])
+                && !($stmt instanceof PhpParser\Node\Stmt\Expression
+                    && $stmt->expr instanceof PhpParser\Node\Expr\Assign)
+                && !$stmt instanceof PhpParser\Node\Stmt\Foreach_
+                && !$stmt instanceof PhpParser\Node\Stmt\Return_
+            ) {
+                $file_path = $statements_analyzer->getRootFilePath();
+
+                $file_storage_provider = $codebase->file_storage_provider;
+
+                $file_storage = $file_storage_provider->get($file_path);
+
+                $template_type_map = $statements_analyzer->getTemplateTypeMap();
+
+                $var_comments = [];
+
+                try {
+                    $var_comments = CommentAnalyzer::arrayToDocblocks(
+                        $docblock,
+                        $statements_analyzer->parsed_docblock,
+                        $statements_analyzer->getSource(),
+                        $statements_analyzer->getAliases(),
+                        $template_type_map,
+                        $file_storage->type_aliases
+                    );
+                } catch (\Psalm\Exception\IncorrectDocblockException $e) {
+                    if (IssueBuffer::accepts(
+                        new MissingDocblockType(
+                            (string)$e->getMessage(),
+                            new CodeLocation($statements_analyzer->getSource(), $stmt)
+                        )
+                    )) {
+                        // fall through
+                    }
+                } catch (\Psalm\Exception\DocblockParseException $e) {
+                    if (IssueBuffer::accepts(
+                        new InvalidDocblock(
+                            (string)$e->getMessage(),
+                            new CodeLocation($statements_analyzer->getSource(), $stmt)
+                        )
+                    )) {
+                        // fall through
+                    }
+                }
+
+                foreach ($var_comments as $var_comment) {
+                    AssignmentAnalyzer::assignTypeFromVarDocblock(
+                        $statements_analyzer,
+                        $stmt,
+                        $var_comment,
+                        $context
+                    );
+                }
+            }
         } else {
             $statements_analyzer->parsed_docblock = null;
         }
@@ -462,7 +523,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                 // of an issue
             }
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Nop) {
-            Statements\NopAnalyzer::analyze($statements_analyzer, $stmt, $context);
+            // do nothing
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Goto_) {
             // do nothing
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Label) {

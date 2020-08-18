@@ -3,14 +3,12 @@
 namespace Psalm\Internal\Scanner;
 
 use const PREG_OFFSET_CAPTURE;
-use function array_filter;
 use function explode;
 use function implode;
 use function min;
 use function preg_match;
 use function preg_replace;
 use function rtrim;
-use function str_repeat;
 use function str_replace;
 use function strlen;
 use function strpos;
@@ -33,6 +31,8 @@ class DocblockParser
 
         $special = [];
 
+        $first_line_padding = null;
+
         $last = false;
         foreach ($lines as $k => $line) {
             if (preg_match('/^[ \t]*\*?\s*@\w/i', $line)) {
@@ -53,6 +53,14 @@ class DocblockParser
             $original_line_length = strlen($line);
 
             $line = str_replace("\r", '', $line);
+
+            if ($first_line_padding === null) {
+                $asterisk_pos = strpos($line, '*');
+
+                if ($asterisk_pos) {
+                    $first_line_padding = substr($line, 0, $asterisk_pos - 1);
+                }
+            }
 
             if (preg_match('/^[ \t]*\*?\s*@([\w\-:]+)[\t ]*(.*)$/sm', $line, $matches, PREG_OFFSET_CAPTURE)) {
                 /** @var array<int, array{string, int}> $matches */
@@ -109,7 +117,7 @@ class DocblockParser
         // is one.
         $docblock = preg_replace('/^\s*\n/', '', $docblock);
 
-        $parsed = new ParsedDocblock($docblock, $special);
+        $parsed = new ParsedDocblock($docblock, $special, $first_line_padding ?: '');
 
         self::resolveTags($parsed);
 

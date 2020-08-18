@@ -8,12 +8,10 @@ use function Amp\call;
 use Amp\Promise;
 use Amp\Success;
 use function array_combine;
-use function array_filter;
 use function array_keys;
 use function array_map;
 use function array_shift;
 use function array_unshift;
-use function array_values;
 use function explode;
 use function implode;
 use LanguageServerProtocol\ClientCapabilities;
@@ -542,6 +540,11 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
                 $filepath = substr($filepath, 1);
             }
             $filepath = str_replace('/', '\\', $filepath);
+        }
+
+        $realpath = \realpath($filepath);
+        if ($realpath !== false) {
+            return $realpath;
         }
 
         return $filepath;

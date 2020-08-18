@@ -5,7 +5,7 @@ use function is_array;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\TypeAnalyzer;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Clause;
 use Psalm\Type;
 use Psalm\Type\Algebra;
@@ -80,7 +80,7 @@ class ReconcilerTest extends \Psalm\Tests\TestCase
     public function testTypeIsContainedBy($input, $container)
     {
         $this->assertTrue(
-            TypeAnalyzer::isContainedBy(
+            UnionTypeComparator::isContainedBy(
                 $this->project_analyzer->getCodebase(),
                 Type::parseString($input),
                 Type::parseString($container)

@@ -30,7 +30,7 @@ class A {}
 function takesClassName(string $s) : void {}
 ```
 
-`takesClassName("A");` would trigger a `TypeCoercion` issue (or a `PossiblyInvalidArgument` issue if [`allowCoercionFromStringToClassConst`](../running_psalm/configuration.md#coding-style) was set to `false` in your config), whereas `takesClassName(A::class)` is fine.
+`takesClassName("A");` would trigger a `TypeCoercion` issue, whereas `takesClassName(A::class)` is fine.
 
 You can also parameterize `class-string` with an object name e.g. [`class-string<Foo>`](value_types.md#regular-class-constants). This tells Psalm that any matching type must either be a class string of `Foo` or one of its descendants.
 

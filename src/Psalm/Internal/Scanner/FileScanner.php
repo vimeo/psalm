@@ -12,6 +12,7 @@ use Psalm\Internal\PhpVisitor\ReflectorVisitor;
 
 /**
  * @internal
+ * @psalm-consistent-constructor
  */
 class FileScanner implements FileSource
 {
@@ -66,6 +67,7 @@ class FileScanner implements FileSource
 
         $stmts = $codebase->statements_provider->getStatementsForFile(
             $file_storage->file_path,
+            $codebase->php_major_version . '.' . $codebase->php_minor_version,
             $progress
         );
 

@@ -88,19 +88,25 @@ class ClassLikeStorage
     public $deprecated = false;
 
     /**
-     * @var bool
+     * @var string
      */
-    public $internal = false;
-
-    /**
-     * @var null|string
-     */
-    public $psalm_internal = null;
+    public $internal = '';
 
     /**
      * @var null|Type\Atomic\TTemplateParam|Type\Atomic\TNamedObject
+     * @deprecated
      */
     public $mixin = null;
+
+    /**
+     * @var Type\Atomic\TTemplateParam[]
+     */
+    public $templatedMixins = [];
+
+    /**
+     * @var Type\Atomic\TNamedObject[]
+     */
+    public $namedMixins = [];
 
     /**
      * @var ?string
@@ -225,6 +231,11 @@ class ClassLikeStorage
      * @var array<lowercase-string, lowercase-string>
      */
     public $trait_alias_map = [];
+
+    /**
+     * @var array<lowercase-string, bool>
+     */
+    public $trait_final_map = [];
 
     /**
      * @var array<string, int>
@@ -407,6 +418,11 @@ class ClassLikeStorage
      * @var array<string, \Psalm\Internal\Type\TypeAlias\ClassTypeAlias>
      */
     public $type_aliases = [];
+
+    /**
+     * @var bool
+     */
+    public $preserve_constructor_signature = false;
 
     /**
      * @param string $name

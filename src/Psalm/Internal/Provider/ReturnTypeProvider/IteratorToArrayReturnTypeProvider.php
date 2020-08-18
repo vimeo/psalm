@@ -6,7 +6,7 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
-use Psalm\Internal\Analyzer\TypeAnalyzer;
+use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\StatementsSource;
 use Psalm\Type;
@@ -44,7 +44,7 @@ class IteratorToArrayReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionRe
 
             foreach ($first_arg_type->getAtomicTypes() as $call_arg_atomic_type) {
                 if ($call_arg_atomic_type instanceof Type\Atomic\TNamedObject
-                    && TypeAnalyzer::isAtomicContainedBy(
+                    && AtomicTypeComparator::isContainedBy(
                         $codebase,
                         $call_arg_atomic_type,
                         new Type\Atomic\TIterable([Type::getMixed(), Type::getMixed()])

@@ -3,9 +3,7 @@
 namespace Psalm\Internal\Stubs\Generator;
 
 use PhpParser;
-use Psalm\Internal\Provider;
 use Psalm\Internal\Scanner\ParsedDocblock;
-use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 
 class StubsGenerator

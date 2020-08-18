@@ -13,9 +13,9 @@ use PhpParser\NodeVisitorAbstract;
  */
 class CloningVisitor extends NodeVisitorAbstract
 {
-    public function enterNode(Node $origNode)
+    public function enterNode(Node $node)
     {
-        $node = clone $origNode;
+        $node = clone $node;
         if ($cs = $node->getComments()) {
             $node->setAttribute(
                 'comments',

@@ -67,14 +67,9 @@ abstract class FunctionLikeStorage
     public $deprecated;
 
     /**
-     * @var ?bool
+     * @var string
      */
-    public $internal;
-
-    /**
-     * @var null|string
-     */
-    public $psalm_internal;
+    public $internal = '';
 
     /**
      * @var bool
@@ -203,6 +198,11 @@ abstract class FunctionLikeStorage
      * @var array<int, string>
      */
     public $return_source_params = [];
+
+    /**
+     * @var bool
+     */
+    public $allow_named_arg_calls = true;
 
     public function __toString()
     {

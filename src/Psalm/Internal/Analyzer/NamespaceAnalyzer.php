@@ -169,31 +169,28 @@ class NamespaceAnalyzer extends SourceAnalyzer implements StatementsSource
     }
 
     /**
-     * @param string $namespace Generally a namespace, but may also be a fully qualified class name (FQCN)_.
-     * @param string $className Generally a FQCN, but may be a FQCN
-     *
      * Returns true if $className is the same as, or starts with $namespace, in a case-insensitive comparison.
      *
      * @return bool
      */
-    public static function isWithin(string $className, string $namespace): bool
+    public static function isWithin(string $calling_namespace, string $namespace): bool
     {
-        $className = strtolower(trim($className, '\\') . '\\');
+        if ($namespace === '') {
+            return true; // required to prevent a warning from strpos with empty needle in PHP < 8
+        }
+
+        $calling_namespace = strtolower(trim($calling_namespace, '\\') . '\\');
         $namespace = strtolower(trim($namespace, '\\') . '\\');
 
-        return $className === $namespace || strpos($className, $namespace) === 0;
-    }
-
-    public static function nameSpaceRootsMatch(string $fqcnA, string $fqcnB): bool
-    {
-        return strtolower(self::getNameSpaceRoot($fqcnA)) === strtolower(self::getNameSpaceRoot($fqcnB));
+        return $calling_namespace === $namespace
+            || strpos($calling_namespace, $namespace) === 0;
     }
 
     /**
      * @param string $fullyQualifiedClassName, e.g. '\Psalm\Internal\Analyzer\NamespaceAnalyzer'
      * @return string , e.g. 'Psalm'
      */
-    private static function getNameSpaceRoot(string $fullyQualifiedClassName): string
+    public static function getNameSpaceRoot(string $fullyQualifiedClassName): string
     {
         return preg_replace('/^([^\\\]+).*/', '$1', $fullyQualifiedClassName);
     }

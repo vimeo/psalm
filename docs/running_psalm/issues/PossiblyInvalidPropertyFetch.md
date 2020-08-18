@@ -1,6 +1,6 @@
 # PossiblyInvalidPropertyFetch
 
-Emitted when trying to fetch a property on a value that may not be an object or may be an object that doesn’t have the desired property.
+Emitted when trying to fetch a property on a value that may not be an object or may be an object that does not have the desired property.
 
 ```php
 <?php

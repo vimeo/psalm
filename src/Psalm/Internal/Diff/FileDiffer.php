@@ -298,7 +298,6 @@ class FileDiffer
                 }
             }
 
-            /** @psalm-suppress LoopInvalidation */
             $i = $k - 1;
         }
 

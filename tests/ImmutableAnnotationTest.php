@@ -197,6 +197,33 @@ class ImmutableAnnotationTest extends TestCase
                         }
                     }'
             ],
+            'allowPropertyAssignmentInMagicUnserialize' => [
+                '<?php
+                    /**
+                     * @psalm-immutable
+                     */
+                    class Foo {
+                        /** @var string */
+                        private $data;
+
+                        public function __construct() {
+                            $this->data = "Foo";
+                        }
+
+                        public function __serialize(): array {
+                            return ["data" => $this->data];
+                        }
+
+                        /** @param array{data: string} $data */
+                        public function __unserialize(array $data): void {
+                            $this->data = $data["data"];
+                        }
+
+                        public function getData(): string {
+                            return $this->data;
+                        }
+                    }'
+            ],
             'allowMethodOverriding' => [
                 '<?php
                     class A {
@@ -668,6 +695,58 @@ class ImmutableAnnotationTest extends TestCase
                         public function __construct(array $items)
                         {
                             $this->items = $items;
+                        }
+                    }',
+                'error_message' => 'ImpurePropertyAssignment',
+            ],
+            'mutationInPropertyAssignment' => [
+                '<?php
+                    class D {
+                        private string $s;
+
+                        public function __construct(string $s) {
+                            $this->s = $s;
+                        }
+
+                        /**
+                         * @psalm-mutation-free
+                         */
+                        public function getShort() : string {
+                            return substr($this->s, 0, 5);
+                        }
+
+                        /**
+                         * @psalm-mutation-free
+                         */
+                        public function getShortMutating() : string {
+                            $this->s = "hello";
+                            return substr($this->s, 0, 5);
+                        }
+                    }',
+                'error_message' => 'ImpurePropertyAssignment',
+            ],
+            'mutationInPropertyConcat' => [
+                '<?php
+                    class D {
+                        private string $s;
+
+                        public function __construct(string $s) {
+                            $this->s = $s;
+                        }
+
+                        /**
+                         * @psalm-mutation-free
+                         */
+                        public function getShort() : string {
+                            return substr($this->s, 0, 5);
+                        }
+
+                        /**
+                         * @psalm-mutation-free
+                         */
+                        public function getShortMutating() : string {
+                            $this->s .= "hello";
+                            return substr($this->s, 0, 5);
                         }
                     }',
                 'error_message' => 'ImpurePropertyAssignment',

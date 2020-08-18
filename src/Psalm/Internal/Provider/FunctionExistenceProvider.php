@@ -1,12 +1,10 @@
 <?php
 namespace Psalm\Internal\Provider;
 
-use const PHP_VERSION;
 use PhpParser;
 use Psalm\Plugin\Hook\FunctionExistenceProviderInterface;
 use Psalm\StatementsSource;
 use function strtolower;
-use function version_compare;
 
 class FunctionExistenceProvider
 {

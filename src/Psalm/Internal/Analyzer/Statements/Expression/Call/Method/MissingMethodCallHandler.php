@@ -188,6 +188,17 @@ class MissingMethodCallHandler
                     ) ?: Type::getMixed();
                 }
 
+                $return_type_candidate = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                    $codebase,
+                    $return_type_candidate,
+                    $fq_class_name,
+                    $fq_class_name,
+                    $class_storage->parent_class,
+                    true,
+                    false,
+                    $class_storage->final
+                );
+
                 if (!$result->return_type) {
                     $result->return_type = $return_type_candidate;
                 } else {

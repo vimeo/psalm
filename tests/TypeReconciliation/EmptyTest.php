@@ -1,5 +1,5 @@
 <?php
-namespace Psalm\Tests;
+namespace Psalm\Tests\TypeReconciliation;
 
 class EmptyTest extends \Psalm\Tests\TestCase
 {
@@ -254,6 +254,7 @@ class EmptyTest extends \Psalm\Tests\TestCase
 
                         while (!empty($needle)) {
                             $key = key($needle);
+                            if ($key === null) continue;
                             $val = $needle[$key];
                             unset($needle[$key]);
 

@@ -231,7 +231,19 @@ class WhileTest extends \Psalm\Tests\TestCase
                         }
                     }',
             ],
-            'additionSubtractionOps' => [
+            'additionSubtractionAssignment' => [
+                '<?php
+                    $a = 0;
+
+                    while (rand(0, 1)) {
+                        if (rand(0, 1)) {
+                            $a = $a + 1;
+                        } elseif ($a) {
+                            $a = $a - 1;
+                        }
+                    }'
+            ],
+            'additionSubtractionInc' => [
                 '<?php
                     $a = 0;
 
@@ -422,6 +434,33 @@ class WhileTest extends \Psalm\Tests\TestCase
                         while (preg_match($reg, $content, $parse, PREG_OFFSET_CAPTURE, $offset)) {
                             $str .= "hello";
                             unset($parse);
+                        }
+                    }'
+            ],
+            'assignToObjectLikeListPreserveListness' => [
+                '<?php
+                    /**
+                     * @return non-empty-list<string>
+                     */
+                    function foo(string $key): array {
+                        $elements = [$key];
+
+                        while (rand(0, 1)) {
+                            $elements[] = $key;
+                        }
+
+                        return $elements;
+                    }',
+            ],
+            'reconcilePositiveInt' => [
+                '<?php
+                    $counter = 0;
+
+                    while (rand(0, 1)) {
+                        if ($counter > 0) {
+                            $counter = $counter - 1;
+                        } else {
+                            $counter = $counter + 1;
                         }
                     }'
             ],

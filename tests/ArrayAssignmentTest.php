@@ -997,10 +997,7 @@ class ArrayAssignmentTest extends TestCase
                     $a = [];
 
                     foreach (["one", "two", "three"] as $key) {
-                      /**
-                       * @psalm-suppress MixedOperand
-                       */
-                      $a[$key] += rand(0, 10);
+                        $a[$key] += rand(0, 10);
                     }
 
                     $a["four"] = true;
@@ -1468,6 +1465,34 @@ class ArrayAssignmentTest extends TestCase
                 [
                     '$a' => 'array{c: RuntimeException, e: RuntimeException}',
                 ]
+            ],
+            'mergeArrayKeysProperly' => [
+                '<?php
+                    interface EntityInterface {}
+
+                    class SomeEntity implements EntityInterface {}
+
+                    /**
+                     * @param array<class-string<EntityInterface>, bool> $arr
+                     * @return array<class-string<EntityInterface>, bool>
+                     */
+                    function createForEntity(array $arr)
+                    {
+                        $arr[SomeEntity::class] = true;
+
+                        return $arr;
+                    }'
+            ],
+            'lowercaseStringMergeWithLiteral' => [
+                '<?php
+                    /**
+                     * @param array<lowercase-string, bool> $foo
+                     * @return array<lowercase-string, bool>
+                     */
+                    function foo(array $foo) : array {
+                        $foo["hello"] = true;
+                        return $foo;
+                    }'
             ],
         ];
     }

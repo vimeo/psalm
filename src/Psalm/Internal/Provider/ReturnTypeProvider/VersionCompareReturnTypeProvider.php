@@ -5,7 +5,7 @@ use function count;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\Internal\Analyzer\TypeAnalyzer;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\StatementsSource;
 use Psalm\Type;
 
@@ -54,7 +54,7 @@ class VersionCompareReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionRet
 
                     $codebase = $statements_source->getCodebase();
 
-                    if (TypeAnalyzer::isContainedBy(
+                    if (UnionTypeComparator::isContainedBy(
                         $codebase,
                         $operator_type,
                         $acceptable_operator_type

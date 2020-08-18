@@ -20,7 +20,11 @@ class ClassStringMapTest extends TestCase
                 '<?php
                     namespace Bar;
 
+                    /**
+                     * @psalm-consistent-constructor
+                     */
                     class Foo {}
+
                     class A {
                         /** @var class-string-map<T as Foo, T> */
                         public static array $map = [];
@@ -44,7 +48,11 @@ class ClassStringMapTest extends TestCase
                 '<?php
                     namespace Bar;
 
+                    /**
+                     * @psalm-consistent-constructor
+                     */
                     class Foo {}
+
                     class A {
                         /** @var class-string-map<T as Foo, T> */
                         public static array $map = [];
@@ -77,7 +85,6 @@ class ClassStringMapTest extends TestCase
                 '<?php
                     namespace Bar;
 
-                    class Foo {}
                     class A {
                         /** @var class-string-map<T, T> */
                         public static array $map = [];
@@ -96,7 +103,6 @@ class ClassStringMapTest extends TestCase
                 '<?php
                     namespace Bar;
 
-                    class Foo {}
                     class A {
                         /** @var class-string-map<T, T> */
                         public static array $map = [];

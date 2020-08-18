@@ -39,6 +39,8 @@ class TypeExpander
 
         $new_return_type_parts = [];
 
+        $has_array_output = false;
+
         foreach ($return_type->getAtomicTypes() as $return_type_part) {
             $parts = self::expandAtomic(
                 $codebase,
@@ -53,12 +55,20 @@ class TypeExpander
 
             if (is_array($parts)) {
                 $new_return_type_parts = array_merge($new_return_type_parts, $parts);
+                $has_array_output = true;
             } else {
                 $new_return_type_parts[] = $parts;
             }
         }
 
-        $fleshed_out_type = new Type\Union($new_return_type_parts);
+        if ($has_array_output) {
+            $fleshed_out_type = TypeCombination::combineTypes(
+                $new_return_type_parts,
+                $codebase
+            );
+        } else {
+            $fleshed_out_type = new Type\Union($new_return_type_parts);
+        }
 
         $fleshed_out_type->from_docblock = $return_type->from_docblock;
         $fleshed_out_type->ignore_nullable_issues = $return_type->ignore_nullable_issues;

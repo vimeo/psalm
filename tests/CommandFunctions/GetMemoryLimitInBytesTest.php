@@ -1,10 +1,13 @@
 <?php
-namespace Psalm\Tests\Functions;
+namespace Psalm\Tests\CommandFunctions;
 
-use function getMemoryLimitInBytes;
 use function ini_set;
 use function ini_get;
+use function Psalm\getMemoryLimitInBytes;
 
+/**
+ * testcase for src/command_functions.php
+ */
 class GetMemoryLimitInBytesTest extends \Psalm\Tests\TestCase
 {
     /**
@@ -14,7 +17,7 @@ class GetMemoryLimitInBytesTest extends \Psalm\Tests\TestCase
 
     public function setUp(): void
     {
-        require_once 'src/command_functions.php';
+        require_once __DIR__ . '/../../src/command_functions.php';
         $this->previousLimit = (string)ini_get('memory_limit');
         parent::setUp();
     }

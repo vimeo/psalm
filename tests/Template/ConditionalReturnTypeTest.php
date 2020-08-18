@@ -278,6 +278,9 @@ class ConditionalReturnTypeTest extends TestCase
                             return new Application();
                         }
 
+                        /**
+                         * @psalm-suppress MixedMethodCall
+                         */
                         return new $className();
                     }
 
@@ -568,6 +571,7 @@ class ConditionalReturnTypeTest extends TestCase
                     /**
                      * @template E
                      * @implements AInterface<E>
+                     * @psalm-consistent-constructor
                      */
                     class BClass implements AInterface {
                         protected string $type;
@@ -601,6 +605,21 @@ class ConditionalReturnTypeTest extends TestCase
                             throw new RuntimeException("Example");
                         }
                         return $i;
+                    }'
+            ],
+            'identicalToTrue' => [
+                '<?php
+                    class A{
+                        /**
+                         * @psalm-return ($id_only is true ? int[] : string[])
+                         */
+                        public function get_liste_tdm_by_cod_s(bool $id_only = false): array {
+                            if ($id_only === true) {
+                                return [0];
+                            }
+
+                            return [""];
+                        }
                     }'
             ],
         ];

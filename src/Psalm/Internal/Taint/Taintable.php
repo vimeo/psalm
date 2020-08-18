@@ -5,6 +5,9 @@ namespace Psalm\Internal\Taint;
 use Psalm\CodeLocation;
 use function strtolower;
 
+/**
+ * @psalm-consistent-constructor
+ */
 abstract class Taintable
 {
     /** @var string */

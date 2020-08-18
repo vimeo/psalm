@@ -55,6 +55,11 @@
                 <referencedMethod name="PhpParser\Comment::getLine" />
             </errorLevel>
         </DeprecatedMethod>
+        <DeprecatedClass>
+            <errorLevel type="suppress">
+                <referencedClass name="PackageVersions\Versions"/>
+            </errorLevel>
+        </DeprecatedClass>
 
         <UnusedParam>
             <errorLevel type="suppress">

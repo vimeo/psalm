@@ -17,7 +17,7 @@ namespace A {
 }
 namespace B {
     class Bat {
-        public function batBat() {
+        public function batBat(): void {
             \A\Foo::barBar();
         }
     }

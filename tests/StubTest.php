@@ -509,6 +509,7 @@ class StubTest extends TestCase
                 dirname(__DIR__),
                 '<?xml version="1.0"?>
                 <psalm
+                    errorLevel="1"
                     autoloader="tests/fixtures/stubs/polyfill.php"
                 >
                     <projectFiles>
@@ -533,6 +534,37 @@ class StubTest extends TestCase
     /**
      * @return void
      */
+    public function testConditionalConstantDefined()
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                    autoloader="tests/fixtures/stubs/conditional_constant_define_inferred.php"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                </psalm>'
+            )
+        );
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                echo CODE_DIR;'
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
+     * @return void
+     */
     public function testClassAlias()
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -540,6 +572,7 @@ class StubTest extends TestCase
                 dirname(__DIR__),
                 '<?xml version="1.0"?>
                 <psalm
+                    errorLevel="1"
                     autoloader="tests/fixtures/stubs/class_alias.php"
                 >
                     <projectFiles>

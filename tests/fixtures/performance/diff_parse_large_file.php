@@ -12,7 +12,7 @@ require dirname(__DIR__, 3) . '/vendor/autoload.php';
 $a = file_get_contents(__DIR__ . '/a.test');
 $b = file_get_contents(__DIR__ . '/b.test');
 
-$a_stmts = Psalm\Internal\Provider\StatementsProvider::parseStatements($a);
+$a_stmts = Psalm\Internal\Provider\StatementsProvider::parseStatements($a, '7.4');
 
 $time = microtime(true);
 
@@ -31,7 +31,7 @@ $dlt2 = microtime(true);
 
 echo 'Partial parsing: cloning: ' . number_format($dlt2 - $dlt, 4) . "\n";
 
-Psalm\Internal\Provider\StatementsProvider::parseStatements($b, null, $a, $a_stmts_copy, $file_changes);
+Psalm\Internal\Provider\StatementsProvider::parseStatements($b, '7.4', null, $a, $a_stmts_copy, $file_changes);
 
 $diff_1 = microtime(true) - $time;
 
@@ -39,7 +39,7 @@ echo 'Partial parsing: ' . number_format($diff_1, 4) . "\n";
 
 $time = microtime(true);
 
-Psalm\Internal\Provider\StatementsProvider::parseStatements($b);
+Psalm\Internal\Provider\StatementsProvider::parseStatements($b, '7.4');
 
 $diff_2 = microtime(true) - $time;
 

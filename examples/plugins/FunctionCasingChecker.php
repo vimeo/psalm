@@ -53,6 +53,10 @@ class FunctionCasingChecker implements AfterFunctionCallAnalysisInterface, After
                 return;
             }
 
+            if ($function_storage->cased_name === '__callStatic') {
+                return;
+            }
+
             if ($function_storage->cased_name !== (string)$expr->name) {
                 if (\Psalm\IssueBuffer::accepts(
                     new IncorrectFunctionCasing(

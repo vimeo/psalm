@@ -13,7 +13,6 @@ use const PHP_EOL;
 use PhpParser;
 use function preg_match;
 use function preg_replace;
-use Psalm\Aliases;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Exception\UnpopulatedClasslikeException;
@@ -40,7 +39,6 @@ use function strlen;
 use function strrpos;
 use function strtolower;
 use function substr;
-use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 
 /**
  * @internal
@@ -342,7 +340,7 @@ class ClassLikes
         ) {
             if ((
                 !isset($this->existing_classes_lc[$fq_class_name_lc])
-                    || $this->existing_classes_lc[$fq_class_name_lc] === true
+                    || $this->existing_classes_lc[$fq_class_name_lc]
                 )
                 && !$this->classlike_storage_provider->has($fq_class_name_lc)
             ) {
@@ -391,7 +389,7 @@ class ClassLikes
         ) {
             if ((
                 !isset($this->existing_classes_lc[$fq_class_name_lc])
-                    || $this->existing_classes_lc[$fq_class_name_lc] === true
+                    || $this->existing_classes_lc[$fq_class_name_lc]
                 )
                 && !$this->classlike_storage_provider->has($fq_class_name_lc)
             ) {
@@ -685,10 +683,6 @@ class ClassLikes
             return true;
         }
 
-        if (isset($this->classlike_aliases[strtolower($fq_interface_name)])) {
-            return true;
-        }
-
         return isset($this->existing_interfaces[$fq_interface_name]);
     }
 
@@ -735,7 +729,7 @@ class ClassLikes
             throw new \UnexpectedValueException('Storage should exist for ' . $fq_trait_name);
         }
 
-        $file_statements = $this->statements_provider->getStatementsForFile($storage->location->file_path);
+        $file_statements = $this->statements_provider->getStatementsForFile($storage->location->file_path, '7.4');
 
         $trait_finder = new \Psalm\Internal\PhpVisitor\TraitFinder($fq_trait_name);
 
@@ -1170,7 +1164,7 @@ class ClassLikes
                 unset($uses_flipped[$old_fq_class_name]);
                 $old_class_name_parts = explode('\\', $old_fq_class_name);
                 $old_class_name = end($old_class_name_parts);
-                if (strtolower($old_class_name) === strtolower($alias)) {
+                if ($old_class_name === strtolower($alias)) {
                     $new_class_name_parts = explode('\\', $new_fq_class_name);
                     $new_class_name = end($new_class_name_parts);
                     $uses_flipped[strtolower($new_fq_class_name)] = $new_class_name;
@@ -1327,7 +1321,7 @@ class ClassLikes
                     unset($uses_flipped[$old_fq_class_name]);
                     $old_class_name_parts = explode('\\', $old_fq_class_name);
                     $old_class_name = end($old_class_name_parts);
-                    if (strtolower($old_class_name) === strtolower($alias)) {
+                    if ($old_class_name === strtolower($alias)) {
                         $new_class_name_parts = explode('\\', $new_fq_class_name);
                         $new_class_name = end($new_class_name_parts);
                         $uses_flipped[strtolower($new_fq_class_name)] = $new_class_name;

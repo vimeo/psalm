@@ -5,12 +5,7 @@ use const DIRECTORY_SEPARATOR;
 use function file_exists;
 use function file_get_contents;
 use function file_put_contents;
-use function is_array;
-use function is_readable;
-use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Config;
-use function serialize;
-use function unserialize;
 
 /**
  * Used to determine which files reference other files, necessary for using the --diff

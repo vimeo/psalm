@@ -6,9 +6,10 @@ use function count;
 use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
-use Psalm\Internal\Analyzer\TypeAnalyzer;
+use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Issue\DocblockTypeContradiction;
 use Psalm\Issue\TypeDoesNotContainType;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -209,7 +210,7 @@ class NegatedAssertionReconciler extends Reconciler
                         continue;
                     }
 
-                    if (TypeAnalyzer::isAtomicContainedBy(
+                    if (AtomicTypeComparator::isContainedBy(
                         $codebase,
                         $existing_var_type_part,
                         $new_type_part,
@@ -217,7 +218,7 @@ class NegatedAssertionReconciler extends Reconciler
                         false
                     )) {
                         $existing_var_type->removeType($part_name);
-                    } elseif (TypeAnalyzer::isAtomicContainedBy(
+                    } elseif (AtomicTypeComparator::isContainedBy(
                         $codebase,
                         $new_type_part,
                         $existing_var_type_part,
@@ -239,7 +240,7 @@ class NegatedAssertionReconciler extends Reconciler
 
             if ($key
                 && $code_location
-                && !TypeAnalyzer::canExpressionTypesBeIdentical(
+                && !UnionTypeComparator::canExpressionTypesBeIdentical(
                     $statements_analyzer->getCodebase(),
                     $existing_var_type,
                     $assertion
@@ -384,7 +385,7 @@ class NegatedAssertionReconciler extends Reconciler
                 && ($key !== '$this'
                     || !($statements_analyzer->getSource()->getSource() instanceof TraitAnalyzer))
             ) {
-                if (!TypeAnalyzer::canExpressionTypesBeIdentical(
+                if (!UnionTypeComparator::canExpressionTypesBeIdentical(
                     $statements_analyzer->getCodebase(),
                     $existing_var_type,
                     $scalar_var_type

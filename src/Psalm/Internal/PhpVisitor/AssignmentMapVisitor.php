@@ -2,7 +2,6 @@
 namespace Psalm\Internal\PhpVisitor;
 
 use PhpParser;
-use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 
 /**

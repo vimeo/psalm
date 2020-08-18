@@ -65,6 +65,19 @@ class SwitchCaseAnalyzer
 
         $old_node_data = $statements_analyzer->node_data;
 
+        $fake_switch_condition = false;
+
+        if ($switch_var_id && substr($switch_var_id, 0, 15) === '$__tmp_switch__') {
+            $switch_condition = new PhpParser\Node\Expr\Variable(
+                substr($switch_var_id, 1),
+                $stmt->cond->getAttributes()
+            );
+
+            $fake_switch_condition = true;
+        } else {
+            $switch_condition = $stmt->cond;
+        }
+
         if ($case->cond) {
             $was_inside_conditional = $case_context->inside_conditional;
             $case_context->inside_conditional = true;
@@ -92,7 +105,14 @@ class SwitchCaseAnalyzer
             );
 
             /** @var PhpParser\Node\Expr */
-            $switch_condition = $traverser->traverse([$stmt->cond])[0];
+            $switch_condition = $traverser->traverse([$switch_condition])[0];
+
+            if ($fake_switch_condition) {
+                $statements_analyzer->node_data->setType(
+                    $switch_condition,
+                    $case_context->vars_in_scope[$switch_var_id] ?? Type::getMixed()
+                );
+            }
 
             if ($switch_condition instanceof PhpParser\Node\Expr\Variable
                 && is_string($switch_condition->name)
@@ -129,6 +149,13 @@ class SwitchCaseAnalyzer
 
                 if ($type_statements && count($type_statements) === 1) {
                     $switch_condition = $type_statements[0];
+
+                    if ($fake_switch_condition) {
+                        $statements_analyzer->node_data->setType(
+                            $switch_condition,
+                            $case_context->vars_in_scope[$switch_var_id] ?? Type::getMixed()
+                        );
+                    }
                 }
             }
 
@@ -228,13 +255,13 @@ class SwitchCaseAnalyzer
         }
 
         if ($case_equality_expr
-            && $stmt->cond instanceof PhpParser\Node\Expr\Variable
-            && is_string($stmt->cond->name)
-            && isset($context->vars_in_scope['$' . $stmt->cond->name])
+            && $switch_condition instanceof PhpParser\Node\Expr\Variable
+            && is_string($switch_condition->name)
+            && isset($context->vars_in_scope['$' . $switch_condition->name])
         ) {
             $new_case_equality_expr = self::simplifyCaseEqualityExpression(
                 $case_equality_expr,
-                $stmt->cond
+                $switch_condition
             );
 
             if ($new_case_equality_expr) {
@@ -348,10 +375,28 @@ class SwitchCaseAnalyzer
             }
         }
 
-        if ($case_clauses) {
+        if ($case_clauses && $case_equality_expr) {
+            try {
+                $negated_case_clauses = Algebra::negateFormula($case_clauses);
+            } catch (\Psalm\Exception\ComplicatedExpressionException $e) {
+                try {
+                    $negated_case_clauses = Algebra::getFormula(
+                        \spl_object_id($case_equality_expr),
+                        new PhpParser\Node\Expr\BooleanNot($case_equality_expr),
+                        $context->self,
+                        $statements_analyzer,
+                        $codebase,
+                        false,
+                        false
+                    );
+                } catch (\Psalm\Exception\ComplicatedExpressionException $e) {
+                    $negated_case_clauses = [];
+                }
+            }
+
             $switch_scope->negated_clauses = array_merge(
                 $switch_scope->negated_clauses,
-                Algebra::negateFormula($case_clauses)
+                $negated_case_clauses
             );
         }
 

@@ -11,12 +11,12 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\InstancePropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\TypeAnalyzer;
-use Psalm\Internal\FileManipulation\FileManipulationBuffer;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\DeprecatedProperty;
 use Psalm\Issue\ImplicitToStringCast;
+use Psalm\Issue\ImpurePropertyAssignment;
 use Psalm\Issue\InaccessibleProperty;
 use Psalm\Issue\InternalProperty;
 use Psalm\Issue\InvalidPropertyAssignment;
@@ -45,7 +45,6 @@ use Psalm\Type\Atomic\TObject;
 use function count;
 use function in_array;
 use function strtolower;
-use function explode;
 use Psalm\Internal\Taint\TaintNode;
 
 /**
@@ -677,33 +676,17 @@ class InstancePropertyAssignmentAnalyzer
                         }
                     }
 
-                    if ($property_storage->psalm_internal && $context->self) {
-                        if (! NamespaceAnalyzer::isWithin($context->self, $property_storage->psalm_internal)) {
-                            if (IssueBuffer::accepts(
-                                new InternalProperty(
-                                    $property_id . ' is marked internal to ' . $property_storage->psalm_internal,
-                                    new CodeLocation($statements_analyzer->getSource(), $stmt),
-                                    $property_id
-                                ),
-                                $statements_analyzer->getSuppressedIssues()
-                            )) {
-                                // fall through
-                            }
-                        }
-                    }
-
-                    if ($property_storage->internal && $context->self) {
-                        if (! NamespaceAnalyzer::nameSpaceRootsMatch($context->self, $declaring_property_class)) {
-                            if (IssueBuffer::accepts(
-                                new InternalProperty(
-                                    $property_id . ' is marked internal',
-                                    new CodeLocation($statements_analyzer->getSource(), $stmt),
-                                    $property_id
-                                ),
-                                $statements_analyzer->getSuppressedIssues()
-                            )) {
-                                // fall through
-                            }
+                    if ($context->self && ! NamespaceAnalyzer::isWithin($context->self, $property_storage->internal)) {
+                        if (IssueBuffer::accepts(
+                            new InternalProperty(
+                                $property_id . ' is internal to ' . $property_storage->internal
+                                    . ' but called from ' . $context->self,
+                                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                                $property_id
+                            ),
+                            $statements_analyzer->getSuppressedIssues()
+                        )) {
+                            // fall through
                         }
                     }
 
@@ -727,6 +710,7 @@ class InstancePropertyAssignmentAnalyzer
                                     || $codebase->classExtends($context->self, $appearing_property_class))
                                 && (\strpos($context->calling_method_id, '::__construct')
                                     || \strpos($context->calling_method_id, '::unserialize')
+                                    || \strpos($context->calling_method_id, '::__unserialize')
                                     || $property_storage->allow_private_mutation
                                     || $property_var_pure_compatible);
 
@@ -749,6 +733,27 @@ class InstancePropertyAssignmentAnalyzer
                                 $visitor->traverse($assignment_value_type);
                             }
                         }
+                    } elseif ($context->mutation_free
+                        && !$context->collect_mutations
+                        && !$context->collect_initializations
+                        && isset($context->vars_in_scope[$lhs_var_id])
+                        && !$context->vars_in_scope[$lhs_var_id]->allow_mutations
+                    ) {
+                        if (IssueBuffer::accepts(
+                            new ImpurePropertyAssignment(
+                                'Cannot assign to a property from a mutation-free context',
+                                new CodeLocation($statements_analyzer, $stmt)
+                            ),
+                            $statements_analyzer->getSuppressedIssues()
+                        )) {
+                            // fall through
+                        }
+                    }
+
+                    if ($property_storage->getter_method) {
+                        $getter_id = $lhs_var_id . '->' . $property_storage->getter_method . '()';
+
+                        unset($context->vars_in_scope[$getter_id]);
                     }
                 }
 
@@ -784,12 +789,17 @@ class InstancePropertyAssignmentAnalyzer
                 }
 
                 if (!$class_property_type->isMixed()) {
+                    $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+
                     $class_property_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
                         $codebase,
                         clone $class_property_type,
                         $fq_class_name,
                         $lhs_type_part,
-                        $declaring_class_storage->parent_class
+                        $declaring_class_storage->parent_class,
+                        true,
+                        false,
+                        $class_storage->final
                     );
 
                     $class_property_type = \Psalm\Internal\Codebase\Methods::localizeType(
@@ -800,8 +810,6 @@ class InstancePropertyAssignmentAnalyzer
                     );
 
                     if ($lhs_type_part instanceof Type\Atomic\TGenericObject) {
-                        $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
-
                         $class_property_type = InstancePropertyFetchAnalyzer::localizePropertyType(
                             $codebase,
                             $class_property_type,
@@ -907,9 +915,9 @@ class InstancePropertyAssignmentAnalyzer
                 continue;
             }
 
-            $union_comparison_results = new \Psalm\Internal\Analyzer\TypeComparisonResult();
+            $union_comparison_results = new \Psalm\Internal\Type\Comparator\TypeComparisonResult();
 
-            $type_match_found = TypeAnalyzer::isContainedBy(
+            $type_match_found = UnionTypeComparator::isContainedBy(
                 $codebase,
                 $assignment_value_type,
                 $class_property_type,
@@ -978,7 +986,7 @@ class InstancePropertyAssignmentAnalyzer
             }
 
             if (!$type_match_found && !$union_comparison_results->type_coerced) {
-                if (TypeAnalyzer::canBeContainedBy(
+                if (UnionTypeComparator::canBeContainedBy(
                     $codebase,
                     $assignment_value_type,
                     $class_property_type,

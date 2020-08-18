@@ -6,7 +6,7 @@ The entry point for all analysis is [`ProjectAnalyzer`](https://github.com/vimeo
 
 ## Scanning
 
-For any file or set of files, Psalm needs to determine all the possible dependencies and get their function signatures and constants, so that the analysis phase can be done multithreaded.
+For any file or set of files, Psalm needs to determine all the possible dependencies and get their function signatures and constants, so that the analysis phase can be done multi-threaded.
 
 Scanning happens in `Psalm\Internal\Codebase\Scanner`.
 

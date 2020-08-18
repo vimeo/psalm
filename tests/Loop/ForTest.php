@@ -125,6 +125,15 @@ class ForTest extends \Psalm\Tests\TestCase
                         }
                     }'
             ],
+            'noException' => [
+                '<?php
+                    /**
+                     * @param list<int> $arr
+                     */
+                    function cartesianProduct(array $arr) : void {
+                        for ($i = 20; $arr[$i] === 5 && $i > 0; $i--) {}
+                    }'
+            ],
         ];
     }
 

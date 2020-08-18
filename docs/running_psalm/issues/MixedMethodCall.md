@@ -20,7 +20,7 @@ callFoo(
 
 ## Why this is bad
 
-If Psalm doesn’t know what `array_pop($arr)` is, it can't verify whether `array_pop($arr)->foo()` will work or not.
+If Psalm does not know what `array_pop($arr)` is, it can't verify whether `array_pop($arr)->foo()` will work or not.
 
 ## How to fix
 

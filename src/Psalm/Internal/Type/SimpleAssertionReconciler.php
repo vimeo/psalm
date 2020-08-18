@@ -7,7 +7,7 @@ use function get_class;
 use function is_string;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
-use Psalm\Internal\Analyzer\TypeAnalyzer;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\ParadoxicalCondition;
 use Psalm\Issue\RedundantCondition;
 use Psalm\Issue\TypeDoesNotContainType;
@@ -193,7 +193,20 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                 $code_location,
                 $suppressed_issues,
                 $failed_reconciliation,
-                $is_equality
+                $is_equality,
+                false
+            );
+        }
+
+        if ($assertion === 'non-empty-list') {
+            return self::reconcileList(
+                $existing_var_type,
+                $key,
+                $code_location,
+                $suppressed_issues,
+                $failed_reconciliation,
+                $is_equality,
+                true
             );
         }
 
@@ -299,6 +312,17 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                 $failed_reconciliation,
                 $is_equality,
                 $is_strict_equality
+            );
+        }
+
+        if ($assertion === 'positive-numeric') {
+            return self::reconcilePositiveNumeric(
+                $existing_var_type,
+                $key,
+                $code_location,
+                $suppressed_issues,
+                $failed_reconciliation,
+                $is_equality
             );
         }
 
@@ -440,6 +464,74 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
         }
 
         return $existing_var_type;
+    }
+
+    /**
+     * @param   string[]  $suppressed_issues
+     * @param   0|1|2    $failed_reconciliation
+     */
+    private static function reconcilePositiveNumeric(
+        Union $existing_var_type,
+        ?string $key,
+        ?CodeLocation $code_location,
+        array $suppressed_issues,
+        int &$failed_reconciliation,
+        bool $is_equality
+    ) : Union {
+        $old_var_type_string = $existing_var_type->getId();
+
+        $did_remove_type = false;
+
+        $positive_types = [];
+
+        foreach ($existing_var_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof Type\Atomic\TLiteralInt) {
+                if ($atomic_type->value < 1) {
+                    $did_remove_type = true;
+                } else {
+                    $positive_types[] = $atomic_type;
+                }
+            } elseif ($atomic_type instanceof Type\Atomic\TPositiveInt) {
+                $positive_types[] = $atomic_type;
+            } elseif (get_class($atomic_type) === TInt::class) {
+                $positive_types[] = new Type\Atomic\TPositiveInt();
+                $did_remove_type = true;
+            } else {
+                // for now allow this check everywhere else
+                if (!$atomic_type instanceof Type\Atomic\TNull
+                    && !$atomic_type instanceof TFalse
+                ) {
+                    $positive_types[] = $atomic_type;
+                }
+
+                $did_remove_type = true;
+            }
+        }
+
+        if (!$is_equality
+            && !$existing_var_type->hasMixed()
+            && (!$did_remove_type || !$positive_types)
+        ) {
+            if ($key && $code_location) {
+                self::triggerIssueForImpossible(
+                    $existing_var_type,
+                    $old_var_type_string,
+                    $key,
+                    'positive-numeric',
+                    !$did_remove_type,
+                    $code_location,
+                    $suppressed_issues
+                );
+            }
+        }
+
+        if ($positive_types) {
+            return new Type\Union($positive_types);
+        }
+
+        $failed_reconciliation = 2;
+
+        return Type::getEmpty();
     }
 
     /**
@@ -1254,7 +1346,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                             $const_type_atomic = $const_type_atomic->getGenericArrayType();
                         }
 
-                        if (TypeAnalyzer::isContainedBy(
+                        if (UnionTypeComparator::isContainedBy(
                             $codebase,
                             $const_type_atomic->type_params[0],
                             $existing_var_type
@@ -1457,22 +1549,30 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
         ?CodeLocation $code_location,
         array $suppressed_issues,
         int &$failed_reconciliation,
-        bool $is_equality
+        bool $is_equality,
+        bool $is_non_empty
     ) : Union {
         $old_var_type_string = $existing_var_type->getId();
 
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
         if ($existing_var_type->hasMixed() || $existing_var_type->hasTemplate()) {
-            return Type::getList();
+            return $is_non_empty ? Type::getNonEmptyList() : Type::getList();
         }
 
         $array_types = [];
         $did_remove_type = false;
 
         foreach ($existing_var_atomic_types as $type) {
-            if ($type instanceof TList || ($type instanceof ObjectLike && $type->is_list)) {
-                $array_types[] = $type;
+            if ($type instanceof TList
+                || ($type instanceof ObjectLike && $type->is_list)
+            ) {
+                if ($is_non_empty && $type instanceof TList && !$type instanceof TNonEmptyList) {
+                    $array_types[] = new TNonEmptyList($type->type_param);
+                    $did_remove_type = true;
+                } else {
+                    $array_types[] = $type;
+                }
             } elseif ($type instanceof TArray || $type instanceof ObjectLike) {
                 if ($type instanceof ObjectLike) {
                     $type = $type->getGenericArrayType();

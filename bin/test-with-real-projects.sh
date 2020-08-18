@@ -34,7 +34,7 @@ psl)
 	git clone git@github.com:azjezz/psl.git
 	cd psl
 	composer install --ignore-platform-reqs
-	~/project/psalm --monochrome
+	#~/project/psalm --monochrome
 	;;
 
 laravel)

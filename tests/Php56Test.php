@@ -87,10 +87,8 @@ class Php56Test extends TestCase
             ],
             'arrayPushArgumentUnpackingWithGoodArg' => [
                 '<?php
-                    $a = [];
+                    $a = ["foo"];
                     $b = ["foo", "bar"];
-
-                    $a[] = "foo";
 
                     array_push($a, ...$b);',
                 'assertions' => [

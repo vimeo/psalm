@@ -132,12 +132,13 @@ function array_flip(array $arr)
 
 /**
  * @psalm-template TKey as array-key
+ * @psalm-template TArray as array<TKey, mixed>
  *
- * @param array<TKey, mixed> $arr
+ * @param TArray $arr
  *
- * @return TKey|null
- * @psalm-ignore-nullable-return
+ * @return (TArray is array<empty, empty> ? null : TKey|null)
  * @psalm-pure
+ * @psalm-ignore-nullable-return
  */
 function key($arr)
 {
@@ -145,11 +146,11 @@ function key($arr)
 
 /**
  * @psalm-template TKey as array-key
+ * @psalm-template TArray as array<TKey, mixed>
  *
- * @param array<TKey, mixed> $arr
+ * @param TArray $arr
  *
- * @return TKey|null
- * @psalm-ignore-nullable-return
+ * @return (TArray is array<empty, empty> ? null : (TArray is non-empty-array ? TKey : TKey|null))
  * @psalm-pure
  */
 function array_key_first($arr)
@@ -158,11 +159,11 @@ function array_key_first($arr)
 
 /**
  * @psalm-template TKey as array-key
+ * @psalm-template TArray as array<TKey, mixed>
  *
- * @param array<TKey, mixed> $arr
+ * @param TArray $arr
  *
- * @return TKey|null
- * @psalm-ignore-nullable-return
+ * @return (TArray is array<empty, empty> ? null : (TArray is non-empty-array ? TKey : TKey|null))
  * @psalm-pure
  */
 function array_key_last($arr)
@@ -668,3 +669,21 @@ function realpath(string $path) {}
  * @return ($right_operand is "0" ? null : numeric-string)
  */
 function bcdiv(string $left_operand, string $right_operand, int $scale = 0): ?string {}
+
+/**
+ * @psalm-pure
+ *
+ * @param scalar|object $var
+ * @return string The string value of var.
+ *
+ * @psalm-flow ($var) -> return
+ */
+function strval ($var): string {}
+
+/**
+ * @return ($input is non-empty-string ? non-empty-list<string> : non-empty-list<string>|array{null})
+ * @psalm-pure
+ */
+function str_getcsv(string $input, string $delimiter = ',', string $enclosure = '"', string $escape = '\\\\')
+{
+}

@@ -9,7 +9,8 @@ use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAss
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\StaticPropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\TypeAnalyzer;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Scanner\VarDocblockComment;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Exception\DocblockParseException;
@@ -129,98 +130,15 @@ class AssignmentAnalyzer
                     $removed_taints = $var_comment->removed_taints;
                 }
 
-                if (!$var_comment->type) {
-                    continue;
-                }
-
-                try {
-                    $var_comment_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
-                        $codebase,
-                        $var_comment->type,
-                        $context->self,
-                        $context->self,
-                        $statements_analyzer->getParentFQCLN()
-                    );
-
-                    $var_comment_type->setFromDocblock();
-
-                    $var_comment_type->check(
-                        $statements_analyzer,
-                        new CodeLocation($statements_analyzer->getSource(), $assign_var),
-                        $statements_analyzer->getSuppressedIssues(),
-                        [],
-                        false,
-                        false,
-                        false,
-                        $context->calling_method_id
-                    );
-
-                    $type_location = null;
-
-                    if ($var_comment->type_start
-                        && $var_comment->type_end
-                        && $var_comment->line_number
-                    ) {
-                        $type_location = new CodeLocation\DocblockTypeLocation(
-                            $statements_analyzer,
-                            $var_comment->type_start,
-                            $var_comment->type_end,
-                            $var_comment->line_number
-                        );
-
-                        if ($codebase->alter_code) {
-                            $codebase->classlikes->handleDocblockTypeInMigration(
-                                $codebase,
-                                $statements_analyzer,
-                                $var_comment_type,
-                                $type_location,
-                                $context->calling_method_id
-                            );
-                        }
-                    }
-
-                    if (!$var_comment->var_id || $var_comment->var_id === $var_id) {
-                        $comment_type = $var_comment_type;
-                        $comment_type_location = $type_location;
-                        continue;
-                    }
-
-                    if ($codebase->find_unused_variables
-                        && $type_location
-                        && isset($context->vars_in_scope[$var_comment->var_id])
-                        && $context->vars_in_scope[$var_comment->var_id]->getId() === $var_comment_type->getId()
-                        && !$var_comment_type->isMixed()
-                    ) {
-                        $project_analyzer = $statements_analyzer->getProjectAnalyzer();
-
-                        if ($codebase->alter_code
-                            && isset($project_analyzer->getIssuesToFix()['UnnecessaryVarAnnotation'])
-                        ) {
-                            FileManipulationBuffer::addVarAnnotationToRemove($type_location);
-                        } elseif (IssueBuffer::accepts(
-                            new UnnecessaryVarAnnotation(
-                                'The @var ' . $var_comment_type . ' annotation for '
-                                    . $var_comment->var_id . ' is unnecessary',
-                                $type_location
-                            ),
-                            $statements_analyzer->getSuppressedIssues(),
-                            true
-                        )) {
-                            // fall through
-                        }
-                    }
-
-                    $context->vars_in_scope[$var_comment->var_id] = $var_comment_type;
-                } catch (\UnexpectedValueException $e) {
-                    if (IssueBuffer::accepts(
-                        new InvalidDocblock(
-                            (string)$e->getMessage(),
-                            new CodeLocation($statements_analyzer->getSource(), $assign_var)
-                        )
-                    )) {
-                        // fall through
-                    }
-                }
+                self::assignTypeFromVarDocblock(
+                    $statements_analyzer,
+                    $assign_var,
+                    $var_comment,
+                    $context,
+                    $var_id,
+                    $comment_type,
+                    $comment_type_location
+                );
             }
         }
 
@@ -284,6 +202,7 @@ class AssignmentAnalyzer
             }
 
             $assign_value_type = $comment_type;
+            $assign_value_type->parent_nodes = $temp_assign_value_type->parent_nodes ?? [];
         } elseif (!$assign_value_type) {
             $assign_value_type = $assign_value
                 ? ($statements_analyzer->node_data->getType($assign_value) ?: Type::getMixed())
@@ -380,7 +299,7 @@ class AssignmentAnalyzer
                 && isset($context->byref_constraints[$var_id])
                 && ($outer_constraint_type = $context->byref_constraints[$var_id]->type)
             ) {
-                if (!TypeAnalyzer::isContainedBy(
+                if (!UnionTypeComparator::isContainedBy(
                     $codebase,
                     $assign_value_type,
                     $outer_constraint_type,
@@ -414,7 +333,9 @@ class AssignmentAnalyzer
             return false;
         }
 
-        if (isset($context->protected_var_ids[$var_id])) {
+        if (isset($context->protected_var_ids[$var_id])
+            && $assign_value_type->hasLiteralInt()
+        ) {
             if (IssueBuffer::accepts(
                 new LoopInvalidation(
                     'Variable ' . $var_id . ' has already been assigned in a for/foreach loop',
@@ -444,7 +365,7 @@ class AssignmentAnalyzer
                             $location,
                             $context->branch_point
                         );
-                    } else {
+                    } elseif (!$context->inside_isset) {
                         $statements_analyzer->registerVariableAssignment(
                             $var_id,
                             $location
@@ -976,6 +897,114 @@ class AssignmentAnalyzer
         return $assign_value_type;
     }
 
+    public static function assignTypeFromVarDocblock(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node $stmt,
+        VarDocblockComment $var_comment,
+        Context $context,
+        ?string $var_id = null,
+        ?Type\Union &$comment_type = null,
+        ?CodeLocation\DocblockTypeLocation &$comment_type_location = null
+    ) : void {
+        if (!$var_comment->type) {
+            return;
+        }
+
+        $codebase = $statements_analyzer->getCodebase();
+
+        try {
+            $var_comment_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                $codebase,
+                $var_comment->type,
+                $context->self,
+                $context->self,
+                $statements_analyzer->getParentFQCLN()
+            );
+
+            $var_comment_type->setFromDocblock();
+
+            $var_comment_type->check(
+                $statements_analyzer,
+                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                $statements_analyzer->getSuppressedIssues(),
+                [],
+                false,
+                false,
+                false,
+                $context->calling_method_id
+            );
+
+            $type_location = null;
+
+            if ($var_comment->type_start
+                && $var_comment->type_end
+                && $var_comment->line_number
+            ) {
+                $type_location = new CodeLocation\DocblockTypeLocation(
+                    $statements_analyzer,
+                    $var_comment->type_start,
+                    $var_comment->type_end,
+                    $var_comment->line_number
+                );
+
+                if ($codebase->alter_code) {
+                    $codebase->classlikes->handleDocblockTypeInMigration(
+                        $codebase,
+                        $statements_analyzer,
+                        $var_comment_type,
+                        $type_location,
+                        $context->calling_method_id
+                    );
+                }
+            }
+
+            if (!$var_comment->var_id || $var_comment->var_id === $var_id) {
+                $comment_type = $var_comment_type;
+                $comment_type_location = $type_location;
+                return;
+            }
+
+            if ($codebase->find_unused_variables
+                && $type_location
+                && isset($context->vars_in_scope[$var_comment->var_id])
+                && $context->vars_in_scope[$var_comment->var_id]->getId() === $var_comment_type->getId()
+                && !$var_comment_type->isMixed()
+            ) {
+                $project_analyzer = $statements_analyzer->getProjectAnalyzer();
+
+                if ($codebase->alter_code
+                    && isset($project_analyzer->getIssuesToFix()['UnnecessaryVarAnnotation'])
+                ) {
+                    FileManipulationBuffer::addVarAnnotationToRemove($type_location);
+                } elseif (IssueBuffer::accepts(
+                    new UnnecessaryVarAnnotation(
+                        'The @var ' . $var_comment_type . ' annotation for '
+                            . $var_comment->var_id . ' is unnecessary',
+                        $type_location
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                    true
+                )) {
+                    // fall through
+                }
+            }
+
+            $parent_nodes = $context->vars_in_scope[$var_comment->var_id]->parent_nodes ?? [];
+            $var_comment_type->parent_nodes = $parent_nodes;
+
+            $context->vars_in_scope[$var_comment->var_id] = $var_comment_type;
+        } catch (\UnexpectedValueException $e) {
+            if (IssueBuffer::accepts(
+                new InvalidDocblock(
+                    (string)$e->getMessage(),
+                    new CodeLocation($statements_analyzer->getSource(), $stmt)
+                )
+            )) {
+                // fall through
+            }
+        }
+    }
+
     /**
      * @param   StatementsAnalyzer               $statements_analyzer
      * @param   PhpParser\Node\Expr\AssignOp    $stmt
@@ -1053,6 +1082,30 @@ class AssignmentAnalyzer
                 $statements_analyzer->getSuppressedIssues()
             )) {
                 // fall through
+            }
+        } elseif ($context->mutation_free
+            && !$context->collect_mutations
+            && !$context->collect_initializations
+            && $stmt->var instanceof PhpParser\Node\Expr\PropertyFetch
+        ) {
+            $lhs_var_id = ExpressionIdentifier::getArrayVarId(
+                $stmt->var->var,
+                $statements_analyzer->getFQCLN(),
+                $statements_analyzer
+            );
+
+            if (isset($context->vars_in_scope[$lhs_var_id])
+                && !$context->vars_in_scope[$lhs_var_id]->allow_mutations
+            ) {
+                if (IssueBuffer::accepts(
+                    new ImpurePropertyAssignment(
+                        'Cannot assign to a property from a mutation-free context',
+                        new CodeLocation($statements_analyzer, $stmt)
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
             }
         }
 

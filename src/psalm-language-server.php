@@ -1,9 +1,37 @@
 <?php
-require_once('command_functions.php');
+
+namespace Psalm;
 
 use Psalm\Config;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\IncludeCollector;
+use function gc_disable;
+use function error_reporting;
+use function array_slice;
+use function array_search;
+use function array_map;
+use function substr;
+use function preg_replace;
+use function in_array;
+use function fwrite;
+use const STDERR;
+use const PHP_EOL;
+use function error_log;
+use function getopt;
+use function implode;
+use function array_key_exists;
+use function ini_set;
+use function is_array;
+use function getcwd;
+use const DIRECTORY_SEPARATOR;
+use function is_string;
+use function realpath;
+use function setlocale;
+use const LC_CTYPE;
+use function chdir;
+use function strtolower;
+
+require_once('command_functions.php');
 
 gc_disable();
 
@@ -60,20 +88,6 @@ array_map(
                 fwrite(
                     STDERR,
                     'Unrecognised argument "--' . $arg_name . '"' . PHP_EOL
-                    . 'Type --help to see a list of supported arguments' . PHP_EOL
-                );
-                error_log('Bad argument');
-                exit(1);
-            }
-        } elseif (substr($arg, 0, 2) === '-' && $arg !== '-' && $arg !== '--') {
-            $arg_name = preg_replace('/=.*$/', '', substr($arg, 1));
-
-            if (!in_array($arg_name, $valid_short_options, true)
-                && !in_array($arg_name . ':', $valid_short_options, true)
-            ) {
-                fwrite(
-                    STDERR,
-                    'Unrecognised argument "-' . $arg_name . '"' . PHP_EOL
                     . 'Type --help to see a list of supported arguments' . PHP_EOL
                 );
                 error_log('Bad argument');
@@ -190,14 +204,14 @@ if (isset($options['r']) && is_string($options['r'])) {
     $current_dir = $root_path . DIRECTORY_SEPARATOR;
 }
 
-$vendor_dir = getVendorDir($current_dir);
+$vendor_dir = \Psalm\getVendorDir($current_dir);
 
 require_once __DIR__ . '/Psalm/Internal/IncludeCollector.php';
 $include_collector = new IncludeCollector();
 
 $first_autoloader = $include_collector->runAndCollect(
     function () use ($current_dir, $options, $vendor_dir) {
-        return requireAutoloaders($current_dir, isset($options['r']), $vendor_dir);
+        return \Psalm\requireAutoloaders($current_dir, isset($options['r']), $vendor_dir);
     }
 );
 
@@ -210,7 +224,7 @@ $ini_handler->check();
 
 setlocale(LC_CTYPE, 'C');
 
-$path_to_config = get_path_to_config($options);
+$path_to_config = \Psalm\get_path_to_config($options);
 
 if (isset($options['tcp'])) {
     if (!is_string($options['tcp'])) {
@@ -219,9 +233,9 @@ if (isset($options['tcp'])) {
     }
 }
 
-$find_dead_code = isset($options['find-dead-code']);
+$find_unused_code = isset($options['find-dead-code']) ? 'auto' : null;
 
-$config = initialiseConfig($path_to_config, $current_dir, \Psalm\Report::TYPE_CONSOLE, $first_autoloader);
+$config = \Psalm\initialiseConfig($path_to_config, $current_dir, \Psalm\Report::TYPE_CONSOLE, $first_autoloader);
 $config->setIncludeCollector($include_collector);
 
 if ($config->resolve_from_config_file) {
@@ -239,19 +253,27 @@ if (isset($options['clear-cache'])) {
     exit;
 }
 
-$providers = new Psalm\Internal\Provider\Providers(
-    new Psalm\Internal\Provider\FileProvider,
-    new Psalm\Internal\Provider\ParserCacheProvider($config),
-    new Psalm\Internal\Provider\FileStorageCacheProvider($config),
-    new Psalm\Internal\Provider\ClassLikeStorageCacheProvider($config),
-    new Psalm\Internal\Provider\FileReferenceCacheProvider($config),
-    new Psalm\Internal\Provider\ProjectCacheProvider($current_dir . DIRECTORY_SEPARATOR . 'composer.lock')
+$providers = new \Psalm\Internal\Provider\Providers(
+    new \Psalm\Internal\Provider\FileProvider,
+    new \Psalm\Internal\Provider\ParserCacheProvider($config),
+    new \Psalm\Internal\Provider\FileStorageCacheProvider($config),
+    new \Psalm\Internal\Provider\ClassLikeStorageCacheProvider($config),
+    new \Psalm\Internal\Provider\FileReferenceCacheProvider($config),
+    new \Psalm\Internal\Provider\ProjectCacheProvider($current_dir . DIRECTORY_SEPARATOR . 'composer.lock')
 );
 
 $project_analyzer = new ProjectAnalyzer(
     $config,
     $providers
 );
+
+if ($config->find_unused_variables) {
+    $project_analyzer->getCodebase()->reportUnusedVariables();
+}
+
+if ($config->find_unused_code) {
+    $find_unused_code = 'auto';
+}
 
 if (isset($options['disable-on-change'])) {
     $project_analyzer->onchange_line_limit = (int) $options['disable-on-change'];
@@ -263,8 +285,8 @@ $project_analyzer->provide_completion = !isset($options['enable-autocomplete'])
 
 $config->visitComposerAutoloadFiles($project_analyzer);
 
-if ($find_dead_code) {
-    $project_analyzer->getCodebase()->reportUnusedCode();
+if ($find_unused_code) {
+    $project_analyzer->getCodebase()->reportUnusedCode($find_unused_code);
 }
 
 if (isset($options['use-extended-diagnostic-codes'])) {

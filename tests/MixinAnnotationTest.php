@@ -259,6 +259,7 @@ class MixinAnnotationTest extends TestCase
                     /**
                      * @template T as object
                      * @mixin Mixin<T>
+                     * @psalm-consistent-constructor
                      */
                     abstract class Foo {
                         /** @var Mixin<T> */
@@ -399,6 +400,170 @@ class MixinAnnotationTest extends TestCase
                     function foo(Builder $b) : Model {
                         return $b->active();
                     }'
+            ],
+            'multipleMixins' => [
+                '<?php
+                    class MixinA {
+                        function a(): string { return "foo"; }
+                    }
+
+                    class MixinB {
+                        function b(): int { return 0; }
+                    }
+
+                    /**
+                     * @mixin MixinA
+                     * @mixin MixinB
+                     */
+                    class Test {}
+
+                    $test = new Test();
+
+                    $a = $test->a();
+                    $b = $test->b();',
+                'assertions' => [
+                    '$a' => 'string',
+                    '$b' => 'int',
+                ],
+            ],
+            'inheritMultipleTemplatedMixinsWithStatic' => [
+                '<?php
+                    /**
+                     * @template T
+                     */
+                    class Mixin {
+                        /**
+                         * @psalm-var T
+                         */
+                        private $var;
+
+                        /**
+                         * @psalm-param T $var
+                         */
+                        public function __construct ($var) {
+                            $this->var = $var;
+                        }
+
+                        /**
+                         * @psalm-return T
+                         */
+                        public function type() {
+                            return $this->var;
+                        }
+                    }
+
+                    /**
+                     * @template T
+                     */
+                    class OtherMixin {
+                        /**
+                         * @psalm-var T
+                         */
+                        private $var;
+
+                        /**
+                         * @psalm-param T $var
+                         */
+                        public function __construct ($var) {
+                            $this->var = $var;
+                        }
+
+                        /**
+                         * @psalm-return T
+                         */
+                        public function other() {
+                            return $this->var;
+                        }
+                    }
+
+                    /**
+                     * @template T as object
+                     * @template T2 as string
+                     * @mixin Mixin<T>
+                     * @mixin OtherMixin<T2>
+                     * @psalm-consistent-constructor
+                     */
+                    abstract class Foo {
+                        /** @var Mixin<T> */
+                        public object $obj;
+
+                        /** @var OtherMixin<T2> */
+                        public object $otherObj;
+
+                        public function __call(string $name, array $args) {
+                            if ($name === "test") {
+                                return $this->obj->$name(...$args);
+                            }
+
+                            return $this->otherObj->$name(...$args);
+                        }
+
+                        public function __callStatic(string $name, array $args) {
+                            if ($name === "test") {
+                                return (new static)->obj->$name(...$args);
+                            }
+
+                            return (new static)->otherObj->$name(...$args);
+                        }
+                    }
+
+                    /**
+                     * @extends Foo<static, string>
+                     */
+                    abstract class FooChild extends Foo{}
+
+                    /**
+                     * @psalm-suppress MissingConstructor
+                     */
+                    final class FooGrandChild extends FooChild {}
+
+                    function test() : FooGrandChild {
+                        return FooGrandChild::type();
+                    }
+
+                    function testStatic() : FooGrandChild {
+                        return (new FooGrandChild)->type();
+                    }
+
+                    function other() : string {
+                        return FooGrandChild::other();
+                    }
+
+                    function otherStatic() : string {
+                        return (new FooGrandChild)->other();
+                    }'
+            ],
+            'multipleMixinsWithSameMethod' => [
+                '<?php
+
+                    class Mix1
+                    {
+                        public function foo(): string
+                        {
+                            return "";
+                        }
+                    }
+
+                    class Mix2
+                    {
+                        public function foo(): string
+                        {
+                            return "";
+                        }
+                    }
+
+                    /**
+                     * @mixin Mix1
+                     * @mixin Mix2
+                     */
+                    class Bar
+                    {
+                    
+                    }
+
+                    $bar = new Bar();
+
+                    $bar->foo();'
             ],
         ];
     }

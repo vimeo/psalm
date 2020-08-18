@@ -8,7 +8,7 @@ use function file_exists;
 use PhpParser;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
-use Psalm\Internal\Analyzer\TypeAnalyzer;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
 use Psalm\Type\Atomic\TCallable;
@@ -171,9 +171,9 @@ class InternalCallMapHandler
                     }
                 }
 
-                $arg_result = new \Psalm\Internal\Analyzer\TypeComparisonResult();
+                $arg_result = new \Psalm\Internal\Type\Comparator\TypeComparisonResult();
 
-                if (TypeAnalyzer::isContainedBy(
+                if (UnionTypeComparator::isContainedBy(
                     $codebase,
                     $arg_type,
                     $param_type,

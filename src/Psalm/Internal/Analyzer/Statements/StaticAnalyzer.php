@@ -7,7 +7,7 @@ use Psalm\Context;
 use Psalm\Exception\DocblockParseException;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\TypeAnalyzer;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\IssueBuffer;
 use Psalm\Type;
@@ -155,7 +155,7 @@ class StaticAnalyzer
 
                 if ($comment_type
                     && ($var_default_type = $statements_analyzer->node_data->getType($var->default))
-                    && !TypeAnalyzer::isContainedBy(
+                    && !UnionTypeComparator::isContainedBy(
                         $codebase,
                         $var_default_type,
                         $comment_type

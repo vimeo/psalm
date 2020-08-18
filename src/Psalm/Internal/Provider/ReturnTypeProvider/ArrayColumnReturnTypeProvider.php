@@ -1,11 +1,9 @@
 <?php
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
-use function assert;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\Internal\Codebase\CallMap;
 use Psalm\StatementsSource;
 use Psalm\Type;
 
@@ -31,6 +29,7 @@ class ArrayColumnReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
         }
 
         $row_shape = null;
+        $input_array_not_empty = false;
 
         // calculate row shape
         if (($first_arg_type = $statements_source->node_data->getType($call_args[0]->value))
@@ -54,6 +53,10 @@ class ArrayColumnReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
                     $row_shape = $row_type->getAtomicTypes()['array'];
                 }
             }
+
+            $input_array_not_empty = $input_array instanceof Type\Atomic\TNonEmptyList ||
+                $input_array instanceof Type\Atomic\TNonEmptyArray ||
+                $input_array instanceof Type\Atomic\ObjectLike;
         }
 
         $value_column_name = null;
@@ -83,9 +86,13 @@ class ArrayColumnReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
 
         $result_key_type = Type::getArrayKey();
         $result_element_type = null;
+        $have_at_least_one_res = false;
         // calculate results
         if ($row_shape instanceof Type\Atomic\ObjectLike) {
             if ((null !== $value_column_name) && isset($row_shape->properties[$value_column_name])) {
+                if ($input_array_not_empty) {
+                    $have_at_least_one_res = true;
+                }
                 $result_element_type = $row_shape->properties[$value_column_name];
             } else {
                 $result_element_type = Type::getMixed();
@@ -96,10 +103,16 @@ class ArrayColumnReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
             }
         }
 
-        return new Type\Union([
-            isset($call_args[2]) && (string) $third_arg_type !== 'null'
-                ? new Type\Atomic\TArray([$result_key_type, $result_element_type ?? Type::getMixed()])
-                : new Type\Atomic\TList($result_element_type ?? Type::getMixed())
-        ]);
+        if (isset($call_args[2]) && (string)$third_arg_type !== 'null') {
+            $type = $have_at_least_one_res ?
+                new Type\Atomic\TNonEmptyArray([$result_key_type, $result_element_type ?? Type::getMixed()])
+                : new Type\Atomic\TArray([$result_key_type, $result_element_type ?? Type::getMixed()]);
+        } else {
+            $type = $have_at_least_one_res ?
+                new Type\Atomic\TNonEmptyList($result_element_type ?? Type::getMixed())
+                : new Type\Atomic\TList($result_element_type ?? Type::getMixed());
+        }
+
+        return new Type\Union([$type]);
     }
 }

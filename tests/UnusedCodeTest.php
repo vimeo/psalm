@@ -682,6 +682,9 @@ class UnusedCodeTest extends TestCase
             ],
             'usedThroughNewClassStringOfBase' => [
                 '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     */
                     abstract class FooBase {
                         public final function __construct() {}
 
@@ -719,22 +722,13 @@ class UnusedCodeTest extends TestCase
                     $methodRef = "\A::b";
                     $methodRef();',
             ],
-            'doArrayIncrement' => [
+            'arrayPushFunctionCall' => [
                 '<?php
-                    /**
-                     * @param list<int> $keys
-                     * @param int $key
-                     */
-                    function error2(array $keys, int $key): int
-                    {
-                        if ($key === 1) {}
+                    $a = [];
 
-                        do {
-                            $nextKey = $keys[++$key] ?? null;
-                        } while ($nextKey === null);
+                    array_push($a, strlen("hello"));
 
-                        return $nextKey;
-                    }'
+                    echo $a[0];'
             ],
         ];
     }
@@ -872,9 +866,9 @@ class UnusedCodeTest extends TestCase
                     strlen("goodbye");',
                 'error_message' => 'UnusedFunctionCall',
             ],
-            'unusedMethodCall' => [
+            'unusedMethodCallSimple' => [
                 '<?php
-                    class A {
+                    final class A {
                         private string $foo;
 
                         public function __construct(string $foo) {

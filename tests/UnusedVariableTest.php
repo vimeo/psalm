@@ -881,6 +881,7 @@ class UnusedVariableTest extends TestCase
                     function bar(string $type) : ArrayObject {
                         $data = [["foo"], ["bar"]];
 
+                        /** @psalm-suppress UnsafeInstantiation */
                         return new $type($data[0]);
                     }',
             ],
@@ -1459,6 +1460,23 @@ class UnusedVariableTest extends TestCase
 
                     function nextNumber(int $i): int {
                         return $i + 1;
+                    }'
+            ],
+            'doArrayIncrement' => [
+                '<?php
+                    /**
+                     * @param list<int> $keys
+                     * @param int $key
+                     */
+                    function error2(array $keys, int $key): int
+                    {
+                        if ($key === 1) {}
+
+                        do {
+                            $nextKey = $keys[++$key] ?? null;
+                        } while ($nextKey === null);
+
+                        return $nextKey;
                     }'
             ],
         ];

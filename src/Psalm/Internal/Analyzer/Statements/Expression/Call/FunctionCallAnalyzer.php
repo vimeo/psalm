@@ -9,7 +9,8 @@ use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\TypeAnalyzer;
+use Psalm\Internal\Type\Comparator\CallableTypeComparator;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\CodeLocation;
 use Psalm\Context;
@@ -622,7 +623,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     $potential_method_id = null;
 
                     if ($var_type_part instanceof Type\Atomic\ObjectLike) {
-                        $potential_method_id = TypeAnalyzer::getCallableMethodIdFromObjectLike(
+                        $potential_method_id = CallableTypeComparator::getCallableMethodIdFromObjectLike(
                             $var_type_part,
                             $codebase,
                             $context->calling_method_id,
@@ -1346,6 +1347,8 @@ class FunctionCallAnalyzer extends CallAnalyzer
                                     $class_type->defining_class
                                 );
                             }
+                        } else {
+                            $class_string_types[] = new Type\Atomic\TClassString();
                         }
                     }
 
@@ -1555,7 +1558,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
             $first_arg_type = $statements_analyzer->node_data->getType($first_arg->value);
 
             if ($first_arg_type
-                && TypeAnalyzer::isContainedBy(
+                && UnionTypeComparator::isContainedBy(
                     $codebase,
                     $first_arg_type,
                     new Type\Union([new Type\Atomic\TLowercaseString()])

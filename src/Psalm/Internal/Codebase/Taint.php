@@ -3,10 +3,6 @@
 namespace Psalm\Internal\Codebase;
 
 use Psalm\CodeLocation;
-use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Provider\ClassLikeStorageProvider;
-use Psalm\Internal\Provider\FileReferenceProvider;
-use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Internal\Taint\Path;
 use Psalm\Internal\Taint\Sink;
 use Psalm\Internal\Taint\Source;
@@ -15,15 +11,11 @@ use Psalm\Internal\Taint\Taintable;
 use Psalm\IssueBuffer;
 use Psalm\Issue\TaintedInput;
 use function array_merge;
-use function array_merge_recursive;
-use function strtolower;
-use UnexpectedValueException;
 use function count;
 use function implode;
 use function substr;
 use function strlen;
 use function array_intersect;
-use function strpos;
 use function array_reverse;
 
 class Taint

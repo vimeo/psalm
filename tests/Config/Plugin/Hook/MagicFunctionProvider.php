@@ -27,7 +27,7 @@ class MagicFunctionProvider implements
      * @return ?bool
      */
     public static function doesFunctionExist(
-        StatementsSource $source,
+        StatementsSource $statements_source,
         string $function_id,
         CodeLocation $code_location = null
     ) {
@@ -55,7 +55,7 @@ class MagicFunctionProvider implements
      * @return ?Type\Union
      */
     public static function getFunctionReturnType(
-        StatementsSource $source,
+        StatementsSource $statements_source,
         string $function_id,
         array $call_args,
         Context $context,

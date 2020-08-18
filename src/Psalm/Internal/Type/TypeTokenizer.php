@@ -46,6 +46,7 @@ class TypeTokenizer
         'html-escaped-string' => true,
         'lowercase-string' => true,
         'non-empty-lowercase-string' => true,
+        'positive-int' => true,
         'boolean' => true,
         'integer' => true,
         'double' => true,

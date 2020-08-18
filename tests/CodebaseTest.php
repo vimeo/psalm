@@ -155,7 +155,6 @@ class CodebaseTest extends TestCase
                 Codebase $codebase,
                 array &$file_replacements = []
             ) {
-                /** @var ClassLikeStorage $storage */
                 if ($storage->name === 'C') {
                     $storage->custom_metadata['a'] = 'b';
                     $storage->methods['m']->custom_metadata['c'] = 'd';

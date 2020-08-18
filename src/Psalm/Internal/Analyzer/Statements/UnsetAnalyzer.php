@@ -71,6 +71,11 @@ class UnsetAnalyzer
                                     }
                                 }
                             } else {
+                                foreach ($atomic_root_type->properties as $key => $type) {
+                                    $atomic_root_type->properties[$key] = clone $type;
+                                    $atomic_root_type->properties[$key]->possibly_undefined = true;
+                                }
+
                                 $atomic_root_type->sealed = false;
 
                                 $root_type->addType(

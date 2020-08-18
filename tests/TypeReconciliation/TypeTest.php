@@ -926,6 +926,9 @@ class TypeTest extends \Psalm\Tests\TestCase
             ],
             'intersectionTypeAfterInstanceof' => [
                 '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     */
                     abstract class A {
                       /** @var string|null */
                       public $foo;
@@ -941,6 +944,9 @@ class TypeTest extends \Psalm\Tests\TestCase
             ],
             'intersectionTypeInsideInstanceof' => [
                 '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     */
                     abstract class A {
                       /** @var string|null */
                       public $foo;
@@ -1418,6 +1424,9 @@ class TypeTest extends \Psalm\Tests\TestCase
             ],
             'intersectionTypeClassCheckAfterInstanceof' => [
                 '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     */
                     abstract class A {
                       /** @var string|null */
                       public $foo;
@@ -1435,11 +1444,14 @@ class TypeTest extends \Psalm\Tests\TestCase
                     class C extends A {}
 
                     function takesB(B $i): void {}',
-                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:32 - Argument 1 of takesB expects B,'
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:32 - Argument 1 of takesB expects B,'
                     . ' parent type A&static provided',
             ],
             'intersectionTypeInterfaceCheckAfterInstanceof' => [
                 '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     */
                     abstract class A {
                       /** @var string|null */
                       public $foo;
@@ -1454,7 +1466,7 @@ class TypeTest extends \Psalm\Tests\TestCase
                     interface I {}
 
                     function takesI(I $i): void {}',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:32 - Argument 1 of takesI expects I, A&static provided',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:32 - Argument 1 of takesI expects I, A&static provided',
             ],
         ];
     }

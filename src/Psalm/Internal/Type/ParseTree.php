@@ -1,14 +1,6 @@
 <?php
 namespace Psalm\Internal\Type;
 
-use function array_pop;
-use function count;
-use function in_array;
-use function preg_match;
-use Psalm\Exception\TypeParseTreeException;
-use function strlen;
-use function strtolower;
-
 /**
  * @internal
  */

@@ -794,6 +794,25 @@ class IncludeTest extends TestCase
                 ],
                 'error_message' => 'InvalidReturnType',
             ],
+            'invalidTraitFunctionMissingNestedUse' => [
+                'files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        trait A {
+                            use C;
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                        require("A.php");
+
+                        class B {
+                            use A;
+                        }',
+                ],
+                'files_to_check' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php',
+                    getcwd() . DIRECTORY_SEPARATOR . 'B.php',
+                ],
+                'error_message' => 'UndefinedTrait - A.php:3:33',
+            ],
             'SKIPPED-noHoistConstants' => [
                 'files' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php

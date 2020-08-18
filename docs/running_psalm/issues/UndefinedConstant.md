@@ -1,6 +1,6 @@
 # UndefinedConstant
 
-Emitted when referencing a constant that doesn’t exist
+Emitted when referencing a constant that does not exist
 
 ```php
 <?php

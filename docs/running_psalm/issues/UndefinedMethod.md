@@ -1,6 +1,6 @@
 # UndefinedMethod
 
-Emitted when calling a method that doesn’t exist
+Emitted when calling a method that does not exist
 
 ```php
 <?php

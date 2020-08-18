@@ -2,6 +2,7 @@
 namespace Psalm;
 
 use Composer\Semver\Semver;
+use Psalm\Issue\VariableIssue;
 use Webmozart\PathUtil\Path;
 use function array_merge;
 use function array_pop;
@@ -82,6 +83,7 @@ use const SCANDIR_SORT_NONE;
 
 /**
  * @psalm-suppress PropertyNotSetInConstructor
+ * @psalm-consistent-constructor
  */
 class Config
 {
@@ -405,6 +407,9 @@ class Config
      */
     public $run_taint_analysis = false;
 
+    /** @var bool */
+    public $use_phpstorm_meta_path = true;
+
     /**
      * Whether to resolve file and directory paths from the location of the config file,
      * instead of the current working directory.
@@ -510,10 +515,26 @@ class Config
     public $after_analysis = [];
 
     /**
-     * Static methods to be called after codebase has been populated
-     * @var class-string<Hook\BeforeAnalyzeFileInterface>[]
+     * Static methods to be called after a file has been analyzed
+     * @var class-string<Hook\AfterFileAnalysisInterface>[]
      */
-    public $before_analyze_file = [];
+    public $after_file_checks = [];
+
+    /**
+     * Static methods to be called before a file is analyzed
+     * @var class-string<Hook\BeforeFileAnalysisInterface>[]
+     */
+    public $before_file_checks = [];
+
+    /**
+     * @var bool
+     */
+    public $allow_internal_named_arg_calls = true;
+
+    /**
+     * @var bool
+     */
+    public $allow_named_arg_calls = true;
 
     /**
      * Static methods to be called after functionlike checks have completed
@@ -812,6 +833,9 @@ class Config
             'skipChecksOnUnresolvableIncludes' => 'skip_checks_on_unresolvable_includes',
             'sealAllMethods' => 'seal_all_methods',
             'runTaintAnalysis' => 'run_taint_analysis',
+            'usePhpStormMetaPath' => 'use_phpstorm_meta_path',
+            'allowInternalNamedArgumentsCalls' => 'allow_internal_named_arg_calls',
+            'allowNamedArgumentCalls' => 'allow_named_arg_calls',
         ];
 
         foreach ($booleanAttributes as $xmlName => $internalName) {
@@ -1416,6 +1440,8 @@ class Config
             $reporting_level = $this->getReportingLevelForProperty($issue_type, $e->property_id);
         } elseif ($e instanceof ArgumentIssue && $e->function_id) {
             $reporting_level = $this->getReportingLevelForArgument($issue_type, $e->function_id);
+        } elseif ($e instanceof VariableIssue) {
+            $reporting_level = $this->getReportingLevelForVariable($issue_type, $e->var_name);
         }
 
         if ($reporting_level === null) {
@@ -1629,6 +1655,19 @@ class Config
     }
 
     /**
+     * @param   string $issue_type
+     * @param   string $var_name
+     *
+     * @return  string|null
+     */
+    public function getReportingLevelForVariable(string $issue_type, string $var_name)
+    {
+        if (isset($this->issue_handlers[$issue_type])) {
+            return $this->issue_handlers[$issue_type]->getReportingLevelForVariable($var_name);
+        }
+    }
+
+    /**
      * @return array<string>
      */
     public function getProjectDirectories()
@@ -1766,14 +1805,16 @@ class Config
 
         $phpstorm_meta_path = $this->base_dir . DIRECTORY_SEPARATOR . '.phpstorm.meta.php';
 
-        if (is_file($phpstorm_meta_path)) {
-            $stub_files[] = $phpstorm_meta_path;
-        } elseif (is_dir($phpstorm_meta_path)) {
-            $phpstorm_meta_path = realpath($phpstorm_meta_path);
+        if ($this->use_phpstorm_meta_path) {
+            if (is_file($phpstorm_meta_path)) {
+                $stub_files[] = $phpstorm_meta_path;
+            } elseif (is_dir($phpstorm_meta_path)) {
+                $phpstorm_meta_path = realpath($phpstorm_meta_path);
 
-            foreach (glob($phpstorm_meta_path . '/*.meta.php', GLOB_NOSORT) as $glob) {
-                if (is_file($glob) && realpath(dirname($glob)) === $phpstorm_meta_path) {
-                    $stub_files[] = $glob;
+                foreach (glob($phpstorm_meta_path . '/*.meta.php', GLOB_NOSORT) as $glob) {
+                    if (is_file($glob) && realpath(dirname($glob)) === $phpstorm_meta_path) {
+                        $stub_files[] = $glob;
+                    }
                 }
             }
         }
@@ -1883,9 +1924,6 @@ class Config
             throw new LogicException("IncludeCollector should be set at this point");
         }
 
-        $this->collectPredefinedConstants();
-        $this->collectPredefinedFunctions();
-
         $vendor_autoload_files_path
             = $this->base_dir . DIRECTORY_SEPARATOR . 'vendor'
                 . DIRECTORY_SEPARATOR . 'composer' . DIRECTORY_SEPARATOR . 'autoload_files.php';
@@ -1904,6 +1942,8 @@ class Config
 
         $codebase = $project_analyzer->getCodebase();
 
+        $this->collectPredefinedFunctions();
+
         if ($this->autoloader) {
             // somee classes that we think are missing may not actually be missing
             // as they might be autoloadable once we require the autoloader below
@@ -1917,6 +1957,8 @@ class Config
                 }
             );
         }
+
+        $this->collectPredefinedConstants();
 
         $autoload_included_files = $this->include_collector->getFilteredIncludedFiles();
 

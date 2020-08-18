@@ -70,6 +70,28 @@ class AssertAnnotationTest extends TestCase
                         return $s;
                     }',
             ],
+            'dropInReplacementForAntiAssert' => [
+                '<?php
+                    /**
+                     * @param mixed $foo
+                     * @psalm-assert falsy $foo
+                     */
+                    function abort_if($foo): void
+                    {
+                        if ($foo) {
+                            throw new \RuntimeException();
+                        }
+                    }
+
+                    /**
+                     * @param string|null $foo
+                     */
+                    function removeNullable($foo): string
+                    {
+                        abort_if(is_null($foo));
+                        return $foo;
+                    }'
+            ],
             'sortOfReplacementForAssert' => [
                 '<?php
                     namespace Bar;
@@ -1063,9 +1085,36 @@ class AssertAnnotationTest extends TestCase
                      *
                      * @psalm-return non-empty-list<mixed>
                      */
-                    function consume($value): array {
+                    function consume1($value): array {
                         isNonEmptyList($value);
                         return $value;
+                    }
+
+                    /**
+                     * @psalm-param list<string> $values
+                     */
+                    function consume2(array $values): void {
+                        isNonEmptyList($values);
+                        foreach ($values as $str) {}
+                        echo $str;
+                    }'
+            ],
+            'nonEmptyListOfStrings' => [
+                '<?php
+                    /**
+                     * @psalm-assert non-empty-list<string> $array
+                     *
+                     * @param mixed  $array
+                     */
+                    function isNonEmptyListOfStrings($array): void {}
+
+                    /**
+                     * @psalm-param list<string> $values
+                     */
+                    function consume2(array $values): void {
+                        isNonEmptyListOfStrings($values);
+                        foreach ($values as $str) {}
+                        echo $str;
                     }'
             ],
             'assertResource' => [
@@ -1161,6 +1210,59 @@ class AssertAnnotationTest extends TestCase
                         $keys = array_keys($a);
                         allString($keys);
                     }',
+            ],
+            'multipleAssertIfTrue' => [
+                '<?php
+                    /**
+                     * @param mixed $a
+                     * @param mixed $b
+                     * @psalm-assert-if-true string $a
+                     * @psalm-assert-if-true string $b
+                     */
+                    function assertAandBAreStrings($a, $b): bool {
+                        if (!is_string($a)) { return false;}
+                        if (!is_string($b)) { return false;}
+
+                        return true;
+                    }
+
+                    /**
+                     * @param mixed $a
+                     * @param mixed $b
+                     */
+                    function test($a, $b): string {
+                        if (!assertAandBAreStrings($a, $b)) {
+                            throw new \Exception();
+                        }
+
+                        return substr($a, 0, 1) . substr($b, 0, 1);
+                    }'
+            ],
+            'convertConstStringType' => [
+                '<?php
+                    class A {
+                        const T1  = 1;
+                        const T2 = 2;
+
+                        /**
+                         * @param self::T* $t
+                         */
+                        public static function bar(int $t):void {}
+
+                        /**
+                         * @psalm-assert-if-true self::T* $t
+                         */
+                        public static function isValid(int $t): bool {
+                            return in_array($t, [self::T1, self::T2], true);
+                        }
+                    }
+
+
+                    function takesA(int $a) : void {
+                        if (A::isValid($a)) {
+                            A::bar($a);
+                        }
+                    }'
             ],
         ];
     }

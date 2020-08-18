@@ -82,11 +82,9 @@ class StatementsProvider
     }
 
     /**
-     * @param string    $file_path
-     *
      * @return list<\PhpParser\Node\Stmt>
      */
-    public function getStatementsForFile($file_path, Progress $progress = null)
+    public function getStatementsForFile(string $file_path, string $php_version, Progress $progress = null)
     {
         if ($progress === null) {
             $progress = new VoidProgress();
@@ -106,7 +104,7 @@ class StatementsProvider
         ) {
             $progress->debug('Parsing ' . $file_path . "\n");
 
-            $stmts = self::parseStatements($file_contents, $file_path);
+            $stmts = self::parseStatements($file_contents, $php_version, $file_path);
 
             return $stmts ?: [];
         }
@@ -167,6 +165,7 @@ class StatementsProvider
 
             $stmts = self::parseStatements(
                 $file_contents,
+                $php_version,
                 $file_path,
                 $existing_file_contents,
                 $existing_statements_copy,
@@ -367,6 +366,7 @@ class StatementsProvider
      */
     public static function parseStatements(
         $file_contents,
+        string $php_version,
         $file_path = null,
         string $existing_file_contents = null,
         array $existing_statements = null,
@@ -377,7 +377,10 @@ class StatementsProvider
         ];
 
         if (!self::$lexer) {
-            self::$lexer = new PhpParser\Lexer\Emulative(['usedAttributes' => $attributes]);
+            self::$lexer = new PhpParser\Lexer\Emulative([
+                'usedAttributes' => $attributes,
+                'phpVersion' => $php_version,
+            ]);
         }
 
         if (!self::$parser) {
@@ -455,5 +458,10 @@ class StatementsProvider
         $resolving_traverser->traverse($stmts);
 
         return $stmts;
+    }
+
+    public static function clearLexer() : void
+    {
+        self::$lexer = null;
     }
 }

@@ -1,4 +1,7 @@
 <?php
+
+namespace Psalm;
+
 require_once('command_functions.php');
 
 use Psalm\DocComment;
@@ -8,6 +11,44 @@ use Psalm\Internal\IncludeCollector;
 use Psalm\IssueBuffer;
 use Psalm\Progress\DebugProgress;
 use Psalm\Progress\DefaultProgress;
+use function error_reporting;
+use function ini_set;
+use function gc_collect_cycles;
+use function gc_disable;
+use function array_slice;
+use function getopt;
+use function implode;
+use function array_map;
+use function substr;
+use function preg_replace;
+use function in_array;
+use function fwrite;
+use const STDERR;
+use const PHP_EOL;
+use function array_key_exists;
+use function is_array;
+use function getcwd;
+use const DIRECTORY_SEPARATOR;
+use function is_string;
+use function realpath;
+use function chdir;
+use function explode;
+use function file_exists;
+use function file_get_contents;
+use function preg_split;
+use function array_shift;
+use function array_filter;
+use function trim;
+use function strpos;
+use function strtolower;
+use function is_dir;
+use function pathinfo;
+use const PATHINFO_EXTENSION;
+use function filter_var;
+use const FILTER_VALIDATE_BOOLEAN;
+use const FILTER_NULL_ON_FAILURE;
+use function microtime;
+use function count;
 
 // show all errors
 error_reporting(-1);
@@ -61,17 +102,6 @@ array_map(
                 fwrite(
                     STDERR,
                     'Unrecognised argument "--' . $arg_name . '"' . PHP_EOL
-                    . 'Type --help to see a list of supported arguments'. PHP_EOL
-                );
-                exit(1);
-            }
-        } elseif (substr($arg, 0, 2) === '-' && $arg !== '-' && $arg !== '--') {
-            $arg_name = preg_replace('/=.*$/', '', substr($arg, 1));
-
-            if (!in_array($arg_name, $valid_short_options) && !in_array($arg_name . ':', $valid_short_options)) {
-                fwrite(
-                    STDERR,
-                    'Unrecognised argument "-' . $arg_name . '"' . PHP_EOL
                     . 'Type --help to see a list of supported arguments'. PHP_EOL
                 );
                 exit(1);
@@ -184,7 +214,7 @@ if (isset($options['r']) && is_string($options['r'])) {
     $current_dir = $root_path . DIRECTORY_SEPARATOR;
 }
 
-$vendor_dir = getVendorDir($current_dir);
+$vendor_dir = \Psalm\getVendorDir($current_dir);
 
 require_once __DIR__ . '/Psalm/Internal/IncludeCollector.php';
 $include_collector = new IncludeCollector();
@@ -213,17 +243,17 @@ if ($config->resolve_from_config_file) {
 $threads = isset($options['threads']) ? (int)$options['threads'] : 1;
 
 if (isset($options['no-cache'])) {
-    $providers = new Psalm\Internal\Provider\Providers(
-        new Psalm\Internal\Provider\FileProvider()
+    $providers = new \Psalm\Internal\Provider\Providers(
+        new \Psalm\Internal\Provider\FileProvider()
     );
 } else {
-    $providers = new Psalm\Internal\Provider\Providers(
-        new Psalm\Internal\Provider\FileProvider(),
-        new Psalm\Internal\Provider\ParserCacheProvider($config, false),
-        new Psalm\Internal\Provider\FileStorageCacheProvider($config),
-        new Psalm\Internal\Provider\ClassLikeStorageCacheProvider($config),
+    $providers = new \Psalm\Internal\Provider\Providers(
+        new \Psalm\Internal\Provider\FileProvider(),
+        new \Psalm\Internal\Provider\ParserCacheProvider($config, false),
+        new \Psalm\Internal\Provider\FileStorageCacheProvider($config),
+        new \Psalm\Internal\Provider\ClassLikeStorageCacheProvider($config),
         null,
-        new Psalm\Internal\Provider\ProjectCacheProvider($current_dir . DIRECTORY_SEPARATOR . 'composer.lock')
+        new \Psalm\Internal\Provider\ProjectCacheProvider($current_dir . DIRECTORY_SEPARATOR . 'composer.lock')
     );
 }
 
@@ -393,7 +423,7 @@ if (isset($options['add-newline-between-docblock-annotations'])) {
         die('--add-newline-between-docblock-annotations expects a boolean value [true|false|1|0]' . PHP_EOL);
     }
 
-    Psalm\Internal\Scanner\ParsedDocblock::addNewLineBetweenAnnotations($doc_block_add_new_line_before_return);
+    \Psalm\Internal\Scanner\ParsedDocblock::addNewLineBetweenAnnotations($doc_block_add_new_line_before_return);
 }
 
 $plugins = [];

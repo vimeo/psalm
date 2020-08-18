@@ -15,7 +15,6 @@ use Psalm\Storage\FunctionStorage;
 use function strpos;
 use function strtolower;
 use function substr;
-use Closure;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Internal\MethodIdentifier;
 
@@ -299,11 +298,12 @@ class Functions
     ) : bool {
         $impure_functions = [
             // file io
-            'chdir', 'chgrp', 'chmod', 'chown', 'chroot', 'closedir', 'copy', 'file_put_contents',
+            'chdir', 'chgrp', 'chmod', 'chown', 'chroot', 'copy', 'file_put_contents',
+            'opendir', 'readdir', 'closedir', 'rewinddir', 'scandir',
             'fopen', 'fread', 'fwrite', 'fclose', 'touch', 'fpassthru', 'fputs', 'fscanf', 'fseek',
             'ftruncate', 'fprintf', 'symlink', 'mkdir', 'unlink', 'rename', 'rmdir', 'popen', 'pclose',
             'fgetcsv', 'fputcsv', 'umask', 'finfo_close', 'readline_add_history', 'stream_set_timeout',
-            'fflush', 'move_uploaded_file',
+            'fgets', 'fflush', 'move_uploaded_file',
 
             // stream/socket io
             'stream_context_set_option', 'socket_write', 'stream_set_blocking', 'socket_close',
@@ -354,6 +354,7 @@ class Functions
             'mt_rand', 'rand', 'random_int', 'random_bytes',
             'wincache_ucache_delete', 'wincache_ucache_set', 'wincache_ucache_inc',
             'class_alias',
+            'class_exists', // impure by virtue of triggering autoloader
 
             // php environment
             'ini_set', 'sleep', 'usleep', 'register_shutdown_function',
@@ -387,6 +388,9 @@ class Functions
 
             // ftp
             'ftp_close',
+
+            // bcmath
+            'bcscale',
         ];
 
         if (\in_array(strtolower($function_id), $impure_functions, true)) {
@@ -448,7 +452,7 @@ class Functions
         foreach ($function_callable->params as $i => $param) {
             if ($param->type && $param->type->hasCallableType() && isset($args[$i])) {
                 foreach ($param->type->getAtomicTypes() as $possible_callable) {
-                    $possible_callable = \Psalm\Internal\Analyzer\TypeAnalyzer::getCallableFromAtomic(
+                    $possible_callable = \Psalm\Internal\Type\Comparator\CallableTypeComparator::getCallableFromAtomic(
                         $codebase,
                         $possible_callable
                     );

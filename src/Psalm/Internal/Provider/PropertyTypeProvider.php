@@ -1,14 +1,12 @@
 <?php
 namespace Psalm\Internal\Provider;
 
-use const PHP_VERSION;
 use PhpParser;
 use Psalm\Context;
 use Psalm\Plugin\Hook\PropertyTypeProviderInterface;
 use Psalm\StatementsSource;
 use Psalm\Type;
 use function strtolower;
-use function version_compare;
 
 class PropertyTypeProvider
 {

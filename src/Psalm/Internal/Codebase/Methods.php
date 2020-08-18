@@ -6,11 +6,10 @@ use function assert;
 use function count;
 use function explode;
 use PhpParser;
-use function preg_replace;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\Internal\Analyzer\TypeAnalyzer;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
@@ -770,13 +769,13 @@ class Methods
                 if ($candidate_type
                     && $source_analyzer
                 ) {
-                    $old_contained_by_new = TypeAnalyzer::isContainedBy(
+                    $old_contained_by_new = UnionTypeComparator::isContainedBy(
                         $source_analyzer->getCodebase(),
                         $candidate_type,
                         $overridden_return_type
                     );
 
-                    $new_contained_by_old = TypeAnalyzer::isContainedBy(
+                    $new_contained_by_old = UnionTypeComparator::isContainedBy(
                         $source_analyzer->getCodebase(),
                         $overridden_return_type,
                         $candidate_type

@@ -17,7 +17,7 @@ class TNonEmptyLowercaseString extends TNonEmptyString
     }
 
     /**
-     * @return bool
+     * @return false
      */
     public function canBeFullyExpressedInPhp()
     {

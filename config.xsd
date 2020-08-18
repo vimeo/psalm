@@ -32,7 +32,6 @@
         <xs:attribute name="serializer" type="xs:string" />
 
         <xs:attribute name="addParamDefaultToDocblockType" type="xs:boolean" default="false" />
-        <xs:attribute name="allowCoercionFromStringToClassConst" type="xs:boolean" default="false" />
         <xs:attribute name="allowFileIncludes" type="xs:boolean" default="true" />
         <xs:attribute name="allowPhpStormGenerics" type="xs:boolean" default="false" />
         <xs:attribute name="allowStringToStandInForClass" type="xs:boolean" default="false" />
@@ -73,6 +72,9 @@
         <xs:attribute name="skipChecksOnUnresolvableIncludes" type="xs:boolean" default="true" />
         <xs:attribute name="sealAllMethods" type="xs:boolean" default="false" />
         <xs:attribute name="runTaintAnalysis" type="xs:boolean" default="false" />
+        <xs:attribute name="usePhpStormMetaPath" type="xs:boolean" default="true" />
+        <xs:attribute name="allowInternalNamedArgumentCalls" type="xs:boolean" default="true" />
+        <xs:attribute name="allowNamedArgumentCalls" type="xs:boolean" default="true" />
     </xs:complexType>
 
     <xs:complexType name="ProjectFilesType">
@@ -173,6 +175,7 @@
             <xs:element name="CircularReference" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ContinueOutsideLoop" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ConflictingReferenceConstraint" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="ConstructorSignatureMismatch" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="DeprecatedClass" type="ClassIssueHandlerType" minOccurs="0" />
             <xs:element name="DeprecatedConstant" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="DeprecatedFunction" type="FunctionIssueHandlerType" minOccurs="0" />
@@ -242,6 +245,7 @@
             <xs:element name="InvalidTemplateParam" type="FunctionIssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidThrow" type="ClassIssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidToString" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="InvalidTypeImport" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="LessSpecificImplementedReturnType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="LessSpecificReturnStatement" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="LessSpecificReturnType" type="IssueHandlerType" minOccurs="0" />
@@ -299,6 +303,7 @@
             <xs:element name="NullReference" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="OverriddenMethodAccess" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="OverriddenPropertyAccess" type="PropertyIssueHandlerType" minOccurs="0" />
+            <xs:element name="ParamNameMismatch" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ParadoxicalCondition" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ParentNotFound" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossibleRawObjectIteration" type="IssueHandlerType" minOccurs="0" />
@@ -335,7 +340,7 @@
             <xs:element name="PossiblyUndefinedIntArrayOffset" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyUndefinedStringArrayOffset" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyUndefinedMethod" type="MethodIssueHandlerType" minOccurs="0" />
-            <xs:element name="PossiblyUndefinedGlobalVariable" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="PossiblyUndefinedGlobalVariable" type="VariableIssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyUndefinedVariable" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyUnusedMethod" type="MethodIssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyUnusedParam" type="IssueHandlerType" minOccurs="0" />
@@ -345,6 +350,7 @@
             <xs:element name="RawObjectIteration" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="RedundantCondition" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="RedundantConditionGivenDocblockType" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="RedundantIdentityWithTrue" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ReferenceConstraintViolation" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ReservedWord" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="StringIncrement" type="IssueHandlerType" minOccurs="0" />
@@ -374,7 +380,7 @@
             <xs:element name="UndefinedThisPropertyFetch" type="PropertyIssueHandlerType" minOccurs="0" />
             <xs:element name="UndefinedTrace" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UndefinedTrait" type="IssueHandlerType" minOccurs="0" />
-            <xs:element name="UndefinedGlobalVariable" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="UndefinedGlobalVariable" type="VariableIssueHandlerType" minOccurs="0" />
             <xs:element name="UndefinedVariable" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnimplementedAbstractMethod" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnimplementedInterfaceMethod" type="IssueHandlerType" minOccurs="0" />
@@ -384,6 +390,7 @@
             <xs:element name="UnresolvableInclude" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnevaluatedCode" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnnecessaryVarAnnotation" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="UnsafeInstantiation" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnusedClosureParam" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnusedFunctionCall" type="FunctionIssueHandlerType" minOccurs="0" />
             <xs:element name="UnusedMethodCall" type="MethodIssueHandlerType" minOccurs="0" />
@@ -511,6 +518,24 @@
                         <xs:element name="directory" minOccurs="0" maxOccurs="unbounded" type="NameAttributeType" />
                         <xs:element name="file" minOccurs="0" maxOccurs="unbounded" type="NameAttributeType" />
                         <xs:element name="referencedProperty" minOccurs="0" maxOccurs="unbounded" type="NameAttributeType" />
+                    </xs:choice>
+
+                    <xs:attribute name="type" type="xs:string" use="required" />
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+
+        <xs:attribute name="errorLevel" type="xs:string" />
+    </xs:complexType>
+
+    <xs:complexType name="VariableIssueHandlerType">
+        <xs:sequence>
+            <xs:element name="errorLevel" minOccurs="0" maxOccurs="unbounded">
+                <xs:complexType>
+                    <xs:choice maxOccurs="unbounded">
+                        <xs:element name="directory" minOccurs="0" maxOccurs="unbounded" type="NameAttributeType" />
+                        <xs:element name="file" minOccurs="0" maxOccurs="unbounded" type="NameAttributeType" />
+                        <xs:element name="referencedVariable" minOccurs="0" maxOccurs="unbounded" type="NameAttributeType" />
                     </xs:choice>
 
                     <xs:attribute name="type" type="xs:string" use="required" />

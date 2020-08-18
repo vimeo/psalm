@@ -54,6 +54,7 @@ use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TNumericString;
 use Psalm\Type\Atomic\TObject;
+use Psalm\Type\Atomic\TPositiveInt;
 use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TScalarClassConstant;
@@ -195,6 +196,9 @@ abstract class Atomic implements TypeNode
             case 'resource (closed)':
             case 'closed-resource':
                 return new Type\Atomic\TClosedResource();
+
+            case 'positive-int':
+                return new TPositiveInt();
 
             case 'numeric':
                 return $php_version !== null ? new TNamedObject($value) : new TNumeric();
@@ -540,17 +544,6 @@ abstract class Atomic implements TypeNode
         }
     }
 
-    /**
-     * @param  Atomic $other
-     *
-     * @return bool
-     */
-    public function shallowEquals(Atomic $other)
-    {
-        return $this->getKey() === $other->getKey()
-            && !($other instanceof ObjectLike && $this instanceof ObjectLike);
-    }
-
     public function __toString()
     {
         return '';
@@ -630,7 +623,7 @@ abstract class Atomic implements TypeNode
     public function replaceTemplateTypesWithStandins(
         TemplateResult $template_result,
         Codebase $codebase = null,
-        ?StatementsAnalyzer $statements_analyer = null,
+        ?StatementsAnalyzer $statements_analyzer = null,
         Type\Atomic $input_type = null,
         ?int $input_arg_offset = null,
         ?string $calling_class = null,

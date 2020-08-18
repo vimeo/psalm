@@ -1,14 +1,12 @@
 <?php
 namespace Psalm\Internal\Provider;
 
-use const PHP_VERSION;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Plugin\Hook\MethodParamsProviderInterface;
 use Psalm\StatementsSource;
 use function strtolower;
-use function version_compare;
 
 class MethodParamsProvider
 {

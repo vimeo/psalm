@@ -798,8 +798,11 @@ class CallableTest extends TestCase
                         }
                     }'
             ],
-            'retunClosureReturningStatic' => [
+            'returnClosureReturningStatic' => [
                 '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     */
                     class C {
                         /**
                          * @return Closure():static
@@ -827,6 +830,15 @@ class CallableTest extends TestCase
                     $callback();
 
                     if ($isCalled === true) {}'
+            ],
+            'notCallableListNoUndefinedClass' => [
+                '<?php
+                    /**
+                     * @param array|callable $arg
+                     */
+                    function foo($arg): void {}
+
+                    foo(["a", "b"]);'
             ],
         ];
     }

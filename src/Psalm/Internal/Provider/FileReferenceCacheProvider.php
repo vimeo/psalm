@@ -7,7 +7,6 @@ use function file_get_contents;
 use function file_put_contents;
 use function is_array;
 use function is_readable;
-use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Config;
 use function serialize;
 use function unserialize;
@@ -509,7 +508,7 @@ class FileReferenceCacheProvider
     /**
      * @return void
      */
-    public function setCachedMethodParamUses(array $references)
+    public function setCachedMethodParamUses(array $uses)
     {
         $cache_directory = $this->config->getCacheDirectory();
 
@@ -519,7 +518,7 @@ class FileReferenceCacheProvider
 
         $cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::METHOD_PARAM_USE_CACHE_NAME;
 
-        file_put_contents($cache_location, serialize($references));
+        file_put_contents($cache_location, serialize($uses));
     }
 
     /**

@@ -21,6 +21,7 @@ class MethodCallProhibitionAnalyzer
         Codebase $codebase,
         Context $context,
         \Psalm\Internal\MethodIdentifier $method_id,
+        ?string $namespace,
         CodeLocation $code_location,
         array $suppressed_issues
     ) {
@@ -48,16 +49,15 @@ class MethodCallProhibitionAnalyzer
             }
         }
 
-        if ($storage->psalm_internal
-            && $context->self
-            && !$context->collect_initializations
+        if (!$context->collect_initializations
             && !$context->collect_mutations
         ) {
-            if (!NamespaceAnalyzer::isWithin($context->self, $storage->psalm_internal)) {
+            if (!NamespaceAnalyzer::isWithin($namespace ?: '', $storage->internal)) {
                 if (IssueBuffer::accepts(
                     new InternalMethod(
-                        'The method ' . $codebase_methods->getCasedMethodId($method_id) .
-                        ' has been marked as internal to ' . $storage->psalm_internal,
+                        'The method ' . $codebase_methods->getCasedMethodId($method_id)
+                            . ' is internal to ' . $storage->internal
+                            . ' but called from ' . $context->self,
                         $code_location,
                         (string) $method_id
                     ),
@@ -67,28 +67,6 @@ class MethodCallProhibitionAnalyzer
                 }
             }
         }
-
-        if ($storage->internal
-            && $context->self
-            && !$context->collect_initializations
-            && !$context->collect_mutations
-        ) {
-            $declaring_class = $method_id->fq_class_name;
-            if (! NamespaceAnalyzer::nameSpaceRootsMatch($context->self, $declaring_class)) {
-                if (IssueBuffer::accepts(
-                    new InternalMethod(
-                        'The method ' . $codebase_methods->getCasedMethodId($method_id) .
-                            ' has been marked as internal',
-                        $code_location,
-                        (string) $method_id
-                    ),
-                    $suppressed_issues
-                )) {
-                    // fall through
-                }
-            }
-        }
-
         return null;
     }
 }

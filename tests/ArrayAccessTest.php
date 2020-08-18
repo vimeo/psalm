@@ -709,7 +709,7 @@ class ArrayAccessTest extends TestCase
                          * @param array<scalar|array> $array
                          * @psalm-suppress MixedTypeCoercion
                          */
-                        public function __construct(array $array)
+                        final public function __construct(array $array)
                         {
                             foreach ($array as $key => $value) {
                                 if (is_array($value)) {

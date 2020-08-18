@@ -1156,6 +1156,18 @@ class AnnotationTest extends TestCase
                      */
                     function bar() : void {}'
             ],
+            'varDocblockAboveCall' => [
+                '<?php
+
+                    function example(string $s): void {
+                        if (preg_match(\'{foo-(\w+)}\', $s, $m)) {
+                          /** @var array{string, string} $m */
+                          takesString($m[1]);
+                        }
+                    }
+
+                    function takesString(string $s): void {}'
+            ],
         ];
     }
 
@@ -1684,6 +1696,19 @@ class AnnotationTest extends TestCase
                      */
                     function bar(array $arr): void {}',
                 'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:21 - Found duplicated @return or prefixed @return tag in docblock for bar',
+            ],
+            'missingClassForObjectLike' => [
+                '<?php
+                    interface I {
+                        /** @return object{id: int, a: int} */
+                        public function run();
+                    }
+
+                    class C implements I {
+                        /** @return X */
+                        public function run() {}
+                    }',
+                'error_message' => 'ImplementedReturnTypeMismatch'
             ],
         ];
     }

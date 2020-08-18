@@ -6,7 +6,7 @@ Any tainted value matching the given [taint type](index.md#taint-types) will be 
 
 ### Example
 
-Here the `PDOWrapper` class has an `exec` method that should not recieve tainted SQL, so we can prevent its insertion:
+Here the `PDOWrapper` class has an `exec` method that should not receive tainted SQL, so we can prevent its insertion:
 
 ```php
 <?php

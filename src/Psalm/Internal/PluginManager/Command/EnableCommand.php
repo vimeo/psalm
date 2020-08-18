@@ -47,20 +47,20 @@ class EnableCommand extends Command
     /**
      * @return int
      */
-    protected function execute(InputInterface $i, OutputInterface $o)
+    protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $io = new SymfonyStyle($i, $o);
+        $io = new SymfonyStyle($input, $output);
 
         $current_dir = (string) getcwd() . DIRECTORY_SEPARATOR;
 
-        $config_file_path = $i->getOption('config');
+        $config_file_path = $input->getOption('config');
         if ($config_file_path !== null && !is_string($config_file_path)) {
             throw new \UnexpectedValueException('Config file path should be a string');
         }
 
         $plugin_list = ($this->plugin_list_factory)($current_dir, $config_file_path);
 
-        $plugin_name = $i->getArgument('pluginName');
+        $plugin_name = $input->getArgument('pluginName');
 
         assert(is_string($plugin_name));
 

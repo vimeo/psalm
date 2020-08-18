@@ -701,6 +701,9 @@ class FunctionTemplateTest extends TestCase
                         return $foo::getAnother();
                     }
 
+                    /**
+                     * @psalm-consistent-constructor
+                     */
                     class Foo {
                         /** @return static */
                         public static function getAnother() {
@@ -794,6 +797,9 @@ class FunctionTemplateTest extends TestCase
             ],
             'noCrashWhenTemplatedClassIsStatic' => [
                 '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     */
                     abstract class Model {
                         /** @return static */
                         public function newInstance() {
@@ -1216,6 +1222,7 @@ class FunctionTemplateTest extends TestCase
                         string $className,
                         Closure $outmaker
                     ) : object {
+                        /** @psalm-suppress MixedMethodCall */
                         $t = new $className();
                         $outmaker($t);
                         return $t;
@@ -1241,6 +1248,7 @@ class FunctionTemplateTest extends TestCase
                         string $className,
                         callable $outmaker
                     ) : object {
+                        /** @psalm-suppress MixedMethodCall */
                         $t = new $className();
                         $outmaker($t);
                         return $t;
@@ -1324,7 +1332,10 @@ class FunctionTemplateTest extends TestCase
                      */
                     function foo(Closure $fn, $arg): void {
                         $a = partial($fn, $arg);
-                    }'
+                    }',
+                [],
+                [],
+                '7.4'
             ],
         ];
     }
@@ -1821,6 +1832,7 @@ class FunctionTemplateTest extends TestCase
                         string $className,
                         Closure $outmaker
                     ) : object {
+                        /** @psalm-suppress MixedMethodCall */
                         $t = new $className();
                         $outmaker($t);
                         return $t;
@@ -1849,6 +1861,7 @@ class FunctionTemplateTest extends TestCase
                         string $className,
                         callable $outmaker
                     ) : object {
+                        /** @psalm-suppress MixedMethodCall */
                         $t = new $className();
                         $outmaker($t);
                         return $t;

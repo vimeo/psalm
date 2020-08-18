@@ -256,6 +256,17 @@ class Algebra
                     false
                 );
             }
+
+            return self::negateFormula(
+                self::getFormula(
+                    $object_id,
+                    $conditional->expr,
+                    $this_class_name,
+                    $source,
+                    $codebase,
+                    !$inside_negation
+                )
+            );
         }
 
         if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
