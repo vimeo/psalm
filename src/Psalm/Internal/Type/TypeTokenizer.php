@@ -361,8 +361,7 @@ class TypeTokenizer
 
             if ($string_type_token[0][0] === '"'
                 || $string_type_token[0][0] === '\''
-                || $string_type_token[0] === '0'
-                || preg_match('/[1-9]/', $string_type_token[0][0])
+                || preg_match('/[0-9]/', $string_type_token[0][0])
             ) {
                 continue;
             }
