@@ -82,8 +82,12 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                         // @todo maybe we can do better here
                         $class_storage = $codebase->classlike_storage_provider->get($context->self);
                         $fq_class_name = $class_storage->name;
-                        $can_extend = true;
-                        $from_static = true;
+
+                        if (!$class_storage->final) {
+                            $can_extend = true;
+                            $from_static = true;
+                        }
+
                         break;
                 }
             }
