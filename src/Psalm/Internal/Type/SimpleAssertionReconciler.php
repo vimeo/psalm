@@ -531,7 +531,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
 
         $failed_reconciliation = 2;
 
-        return Type::getMixed();
+        return Type::getEmpty();
     }
 
     /**
