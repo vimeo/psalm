@@ -873,7 +873,7 @@ class FunctionCallTest extends TestCase
                 '<?php
                     $h = hash_init("sha256");',
                 [
-                    '$h' => 'HashContext',
+                    '$h' => 'HashContext|false',
                 ],
                 [],
                 '7.2',
@@ -882,7 +882,7 @@ class FunctionCallTest extends TestCase
                 '<?php
                     $h = hash_init("sha256");',
                 [
-                    '$h' => 'HashContext',
+                    '$h' => 'HashContext|false',
                 ],
                 [],
                 '7.3',
