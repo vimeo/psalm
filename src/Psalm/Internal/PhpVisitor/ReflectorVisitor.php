@@ -169,7 +169,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
     public function enterNode(PhpParser\Node $node)
     {
         foreach ($node->getComments() as $comment) {
-            if ($comment instanceof PhpParser\Comment\Doc) {
+            if ($comment instanceof PhpParser\Comment\Doc && !$node instanceof PhpParser\Node\Stmt\ClassLike) {
                 $self_fqcln = $node instanceof PhpParser\Node\Stmt\ClassLike
                     && $node->name !== null
                     ? ($this->aliases->namespace ? $this->aliases->namespace . '\\' : '') . $node->name->name
@@ -189,12 +189,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     }
 
                     $this->type_aliases += $type_aliases;
-
-                    if ($type_aliases
-                        && $node instanceof PhpParser\Node\Stmt\ClassLike
-                    ) {
-                        $this->classlike_type_aliases = $type_aliases;
-                    }
                 } catch (DocblockParseException $e) {
                     $this->file_storage->docblock_issues[] = new InvalidDocblock(
                         (string)$e->getMessage(),
@@ -1474,6 +1468,42 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 $storage->override_method_visibility = $docblock_info->override_method_visibility;
 
                 $storage->suppressed_issues = $docblock_info->suppressed_issues;
+            }
+        }
+
+        foreach ($node->getComments() as $comment) {
+            if (!$comment instanceof PhpParser\Comment\Doc) {
+                continue;
+            }
+
+            try {
+                $type_aliases = CommentAnalyzer::getTypeAliasesFromComment(
+                    $comment,
+                    $this->aliases,
+                    $this->type_aliases,
+                    $fq_classlike_name
+                );
+
+                foreach ($type_aliases as $type_alias) {
+                    // finds issues, if there are any
+                    TypeParser::parseTokens($type_alias->replacement_tokens);
+                }
+
+                $this->type_aliases += $type_aliases;
+
+                if ($type_aliases) {
+                    $this->classlike_type_aliases = $type_aliases;
+                }
+            } catch (DocblockParseException $e) {
+                $storage->docblock_issues[] = new InvalidDocblock(
+                    (string)$e->getMessage(),
+                    new CodeLocation($this->file_scanner, $node, null, true)
+                );
+            } catch (TypeParseTreeException $e) {
+                $storage->docblock_issues[] = new InvalidDocblock(
+                    (string)$e->getMessage(),
+                    new CodeLocation($this->file_scanner, $node, null, true)
+                );
             }
         }
 

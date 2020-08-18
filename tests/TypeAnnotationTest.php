@@ -14,6 +14,8 @@ class TypeAnnotationTest extends TestCase
         return [
             'typeAliasBeforeClass' => [
                 '<?php
+                    namespace Barrr;
+
                     /**
                      * @psalm-type CoolType = A|B|null
                      */
@@ -41,6 +43,8 @@ class TypeAnnotationTest extends TestCase
             ],
             'typeAliasBeforeFunction' => [
                 '<?php
+                    namespace Barrr;
+
                     /**
                      * @psalm-type A_OR_B = A|B
                      * @psalm-type CoolType = A_OR_B|null
@@ -68,6 +72,8 @@ class TypeAnnotationTest extends TestCase
             ],
             'typeAliasInSeparateBlockBeforeFunction' => [
                 '<?php
+                    namespace Barrr;
+
                     /**
                      * @psalm-type CoolType = A|B|null
                      */
@@ -125,6 +131,8 @@ class TypeAnnotationTest extends TestCase
             ],
             'typeAliasUsedTwice' => [
                 '<?php
+                    namespace Baz;
+
                     /** @psalm-type TA = array<int, string> */
 
                     class Bar {
@@ -155,8 +163,10 @@ class TypeAnnotationTest extends TestCase
                         return $r;
                     }',
             ],
-            'classTypeAlias' => [
+            'classTypeAliasSimple' => [
                 '<?php
+                    namespace Bar;
+
                     /** @psalm-type PhoneType = array{phone: string} */
                     class Phone {
                         /** @psalm-return PhoneType */
@@ -191,6 +201,8 @@ class TypeAnnotationTest extends TestCase
             ],
             'classTypeAliasImportWithAlias' => [
                 '<?php
+                    namespace Bar;
+
                     /** @psalm-type PhoneType = array{phone: string} */
                     class Phone {
                         /** @psalm-return PhoneType */
@@ -211,6 +223,8 @@ class TypeAnnotationTest extends TestCase
             ],
             'classTypeAliasDirectUsage' => [
                 '<?php
+                    namespace Bar;
+
                     /** @psalm-type PhoneType = array{phone: string} */
                     class Phone {
                         /** @psalm-return PhoneType */
@@ -255,6 +269,8 @@ class TypeAnnotationTest extends TestCase
             ],
             'importTypeForParam' => [
                 '<?php
+                    namespace Bar;
+
                     /**
                      * @psalm-type Type = self::NULL|self::BOOL|self::INT|self::STRING
                      */
@@ -300,6 +316,8 @@ class TypeAnnotationTest extends TestCase
         return [
             'invalidTypeAlias' => [
                 '<?php
+                    namespace Barrr;
+
                     /**
                      * @psalm-type CoolType = A|B>
                      */
@@ -309,6 +327,8 @@ class TypeAnnotationTest extends TestCase
             ],
             'typeAliasInObjectLike' => [
                 '<?php
+                    namespace Barrr;
+
                     /**
                      * @psalm-type aType null|"a"|"b"|"c"|"d"
                      */
@@ -321,6 +341,8 @@ class TypeAnnotationTest extends TestCase
             ],
             'classTypeAliasInvalidReturn' => [
                 '<?php
+                    namespace Barrr;
+
                     /** @psalm-type PhoneType = array{phone: string} */
                     class Phone {
                         /** @psalm-return PhoneType */
@@ -356,28 +378,34 @@ class TypeAnnotationTest extends TestCase
             ],
             'classTypeInvalidAliasImport' => [
                 '<?php
-                class Phone {
-                    function toArray(): array {
-                        return ["name" => "Matt"];
-                    }
-                }
+                    namespace Barrr;
 
-                /**
-                 * @psalm-import-type PhoneType from Phone
-                 */
-                class User {}',
+                    class Phone {
+                        function toArray(): array {
+                            return ["name" => "Matt"];
+                        }
+                    }
+
+                    /**
+                     * @psalm-import-type PhoneType from Phone
+                     */
+                    class User {}',
                 'error_message' => 'InvalidTypeImport',
             ],
             'classTypeAliasFromInvalidClass' => [
                 '<?php
-                /**
-                 * @psalm-import-type PhoneType from Phone
-                 */
-                class User {}',
+                    namespace Barrr;
+
+                    /**
+                     * @psalm-import-type PhoneType from Phone
+                     */
+                    class User {}',
                 'error_message' => 'UndefinedDocblockClass',
             ],
             'malformedImportMissingFrom' => [
                 '<?php
+                    namespace Barrr;
+
                     /** @psalm-import-type Thing */
                     class C {}
                 ',
@@ -385,6 +413,8 @@ class TypeAnnotationTest extends TestCase
             ],
             'malformedImportMissingSourceClass' => [
                 '<?php
+                    namespace Barrr;
+
                     /** @psalm-import-type Thing from */
                     class C {}
                 ',
@@ -392,6 +422,8 @@ class TypeAnnotationTest extends TestCase
             ],
             'malformedImportMisspelledFrom' => [
                 '<?php
+                    namespace Barrr;
+
                     /** @psalm-import-type Thing morf */
                     class C {}
                 ',
@@ -399,6 +431,8 @@ class TypeAnnotationTest extends TestCase
             ],
             'malformedImportMissingAlias' => [
                 '<?php
+                    namespace Barrr;
+
                     /** @psalm-import-type Thing from Somewhere as */
                     class C {}
                 ',
@@ -406,14 +440,19 @@ class TypeAnnotationTest extends TestCase
             ],
             'noCrashWithPriorReference' => [
                 '<?php
+                    namespace Barrr;
+
                     /**
                      * @psalm-type _C=array{c:_CC}
                      * @psalm-type _CC=float
                      */
                     class A {
-
+                        /**
+                         * @param _C $arr
+                         */
+                        public function foo(array $arr) : void {}
                     }',
-                'error_message' => 'InvalidDocblock',
+                'error_message' => 'UndefinedDocblockClass',
             ],
             'mergeImportedTypes' => [
                 '<?php
