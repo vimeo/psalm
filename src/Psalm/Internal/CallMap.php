@@ -9811,6 +9811,7 @@ return [
 'pg_escape_literal\'1' => ['string', 'data'=>'string'],
 'pg_escape_string' => ['string', 'connection'=>'resource', 'data'=>'string'],
 'pg_escape_string\'1' => ['string', 'data'=>'string'],
+'pg_exec' => ['resource|false', 'connection'=>'resource', 'query'=>'string'],
 'pg_execute' => ['resource|false', 'connection'=>'resource', 'stmtname'=>'string', 'params'=>'array'],
 'pg_execute\'1' => ['resource|false', 'stmtname'=>'string', 'params'=>'array'],
 'pg_fetch_all' => ['array|false', 'result'=>'resource', 'result_type='=>'int'],
