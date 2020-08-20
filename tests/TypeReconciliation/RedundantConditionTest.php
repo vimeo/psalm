@@ -800,6 +800,16 @@ class RedundantConditionTest extends \Psalm\Tests\TestCase
                         }
                     }'
             ],
+            'noFalsePositivesWithBooleanOperator' => [
+                '<?php
+                    $result = true;
+                    $result &= false;
+
+                    if ($result) {
+                    }',
+                'assertions' => [],
+                'error_levels' => [''],
+            ],
         ];
     }
 
