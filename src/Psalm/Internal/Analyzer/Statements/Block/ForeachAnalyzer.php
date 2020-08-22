@@ -60,6 +60,8 @@ class ForeachAnalyzer
         $doc_comment = $stmt->getDocComment();
 
         $codebase = $statements_analyzer->getCodebase();
+        $file_path = $statements_analyzer->getRootFilePath();
+        $type_aliases = $codebase->file_storage_provider->get($file_path)->type_aliases;
 
         if ($doc_comment) {
             try {
@@ -67,7 +69,8 @@ class ForeachAnalyzer
                     $doc_comment,
                     $statements_analyzer->getSource(),
                     $statements_analyzer->getSource()->getAliases(),
-                    $statements_analyzer->getTemplateTypeMap() ?: []
+                    $statements_analyzer->getTemplateTypeMap() ?: [],
+                    $type_aliases
                 );
             } catch (DocblockParseException $e) {
                 if (IssueBuffer::accepts(
