@@ -247,6 +247,14 @@ When `true`, Psalm will attempt to find all unused variables, the equivalent of 
 ```
 When `true`, Psalm will attempt to find all unused code (including unused variables), the equivalent of running with `--find-unused-code`. Defaults to `false`.
 
+#### findUnusedPsalmSuppress
+```xml
+<psalm
+  findUnusedPsalmSuppress="[bool]"
+>
+```
+When `true`, Psalm will report all `@psalm-suppress` annotations that aren't used, the equivalent of running with `--find-unused-psalm-suppress`. Defaults to `false`.
+
 #### loadXdebugStub
 ```xml
 <psalm

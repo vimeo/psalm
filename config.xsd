@@ -41,6 +41,7 @@
         <xs:attribute name="ensureArrayStringOffsetsExist" type="xs:boolean" default="false" />
         <xs:attribute name="findUnusedCode" type="xs:boolean" default="false" />
         <xs:attribute name="findUnusedVariablesAndParams" type="xs:boolean" default="false" />
+        <xs:attribute name="findUnusedPsalmSuppress" type="xs:boolean" default="false" />
         <xs:attribute name="forbidEcho" type="xs:boolean" default="false" />
         <xs:attribute name="hideExternalErrors" type="xs:boolean" default="false" />
         <xs:attribute name="hoistConstants" type="xs:boolean" default="false" />

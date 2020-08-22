@@ -405,6 +405,11 @@ class Config
     /**
      * @var bool
      */
+    public $find_unused_psalm_suppress = false;
+
+    /**
+     * @var bool
+     */
     public $run_taint_analysis = false;
 
     /** @var bool */
@@ -836,6 +841,7 @@ class Config
             'usePhpStormMetaPath' => 'use_phpstorm_meta_path',
             'allowInternalNamedArgumentsCalls' => 'allow_internal_named_arg_calls',
             'allowNamedArgumentCalls' => 'allow_named_arg_calls',
+            'findUnusedPsalmSuppress' => 'find_unused_psalm_suppress',
         ];
 
         foreach ($booleanAttributes as $xmlName => $internalName) {

@@ -667,7 +667,7 @@ if ($config->run_taint_analysis || (isset($options['track-tainted-input'])
     $project_analyzer->trackTaintedInputs();
 }
 
-if (isset($options['find-unused-psalm-suppress'])) {
+if ($config->find_unused_psalm_suppress || isset($options['find-unused-psalm-suppress'])) {
     $project_analyzer->trackUnusedSuppressions();
 }
 
