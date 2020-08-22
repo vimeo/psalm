@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Tests;
 
+use const DIRECTORY_SEPARATOR;
+
 class ClosureTest extends TestCase
 {
     use Traits\InvalidCodeAnalysisTestTrait;
