@@ -14,6 +14,7 @@ use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\IncludeCollector;
+use Psalm\Internal\RuntimeCaches;
 use Psalm\Plugin\Hook\AfterCodebasePopulatedInterface;
 use Psalm\Tests\Internal\Provider;
 use Psalm\Tests\Progress\EchoProgress;
@@ -47,7 +48,7 @@ class ProjectCheckerTest extends TestCase
      */
     public function setUp() : void
     {
-        FileAnalyzer::clearCache();
+        RuntimeCaches::clearAll();
         $this->file_provider = new Provider\FakeFileProvider();
     }
 

@@ -4,6 +4,7 @@ namespace Psalm\Tests;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
+use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\Internal\Provider;
 
 class UnusedCodeTest extends TestCase
@@ -16,7 +17,7 @@ class UnusedCodeTest extends TestCase
      */
     public function setUp() : void
     {
-        FileAnalyzer::clearCache();
+        RuntimeCaches::clearAll();
 
         $this->file_provider = new Provider\FakeFileProvider();
 

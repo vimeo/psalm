@@ -14,6 +14,7 @@ use function preg_match;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
+use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\Internal\Provider;
 use Psalm\Tests\TestConfig;
 use function realpath;
@@ -49,7 +50,7 @@ class ConfigTest extends \Psalm\Tests\TestCase
      */
     public function setUp() : void
     {
-        FileAnalyzer::clearCache();
+        RuntimeCaches::clearAll();
         $this->file_provider = new Provider\FakeFileProvider();
     }
 

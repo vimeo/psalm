@@ -6,6 +6,7 @@ use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\Providers;
+use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\Internal\Provider;
 use Psalm\Tests\TestConfig;
 
@@ -17,8 +18,6 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
     public function setUp() : void
     {
         parent::setUp();
-
-        FileAnalyzer::clearCache();
 
         $this->file_provider = new \Psalm\Tests\Internal\Provider\FakeFileProvider();
 
@@ -303,7 +302,7 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
 
         $this->assertSame('B\AClass', $symbol_at_position[0]);
     }
-  
+
     /**
      * @return void
      */
@@ -336,7 +335,7 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
 
         $this->assertSame('B\AClass', $symbol_at_position[0]);
     }
-  
+
     /**
      * @return void
      */

@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Tests\TypeReconciliation;
 
+use Psalm\Internal\RuntimeCaches;
+
 class ValueTest extends \Psalm\Tests\TestCase
 {
     use \Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
@@ -8,7 +10,7 @@ class ValueTest extends \Psalm\Tests\TestCase
 
     public function setUp() : void
     {
-        \Psalm\Internal\Analyzer\FileAnalyzer::clearCache();
+        RuntimeCaches::clearAll();
 
         $this->file_provider = new \Psalm\Tests\Internal\Provider\FakeFileProvider();
 

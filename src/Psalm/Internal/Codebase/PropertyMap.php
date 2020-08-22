@@ -25,7 +25,7 @@ class PropertyMap
         }
 
         /** @var array<string, array<string, string>> */
-        $property_map = require_once(__DIR__ . '/../PropertyMap.php');
+        $property_map = require(__DIR__ . '/../PropertyMap.php');
 
         self::$property_map = [];
 

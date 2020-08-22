@@ -12,6 +12,7 @@ use Psalm\Config;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\Providers;
+use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\Internal\Provider;
 use RuntimeException;
 
@@ -60,9 +61,7 @@ class TestCase extends BaseTestCase
     {
         parent::setUp();
 
-        FileAnalyzer::clearCache();
-
-        \Psalm\Internal\Provider\StatementsProvider::clearLexer();
+        RuntimeCaches::clearAll();
 
         $this->file_provider = new \Psalm\Tests\Internal\Provider\FakeFileProvider();
 
@@ -85,7 +84,7 @@ class TestCase extends BaseTestCase
 
     public function tearDown() : void
     {
-        FileAnalyzer::clearCache();
+        RuntimeCaches::clearAll();
     }
 
     /**

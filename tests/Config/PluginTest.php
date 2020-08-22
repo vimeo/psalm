@@ -17,6 +17,7 @@ use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\IncludeCollector;
+use Psalm\Internal\RuntimeCaches;
 use Psalm\Plugin\Hook\AfterCodebasePopulatedInterface;
 use Psalm\PluginRegistrationSocket;
 use Psalm\Tests\Internal\Provider;
@@ -54,7 +55,7 @@ class PluginTest extends \Psalm\Tests\TestCase
      */
     public function setUp() : void
     {
-        FileAnalyzer::clearCache();
+        RuntimeCaches::clearAll();
         $this->file_provider = new Provider\FakeFileProvider();
     }
 

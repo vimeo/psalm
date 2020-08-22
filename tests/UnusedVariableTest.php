@@ -5,6 +5,7 @@ use function preg_quote;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
+use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\Internal\Provider;
 use function strpos;
 
@@ -18,7 +19,7 @@ class UnusedVariableTest extends TestCase
      */
     public function setUp() : void
     {
-        FileAnalyzer::clearCache();
+        RuntimeCaches::clearAll();
 
         $this->file_provider = new Provider\FakeFileProvider();
 

@@ -9,7 +9,7 @@
          beStrictAboutTodoAnnotatedTests="true"
          colors="true"
          verbose="true"
-         executionOrder="default"
+         executionOrder="random"
 >
     <testsuites>
         <testsuite name="psalm">

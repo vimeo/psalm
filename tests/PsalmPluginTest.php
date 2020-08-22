@@ -9,6 +9,7 @@ use Psalm\Internal\PluginManager\Command\EnableCommand;
 use Psalm\Internal\PluginManager\Command\ShowCommand;
 use Psalm\Internal\PluginManager\PluginList;
 use Psalm\Internal\PluginManager\PluginListFactory;
+use Psalm\Internal\RuntimeCaches;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Tester\CommandTester;
@@ -26,6 +27,7 @@ class PsalmPluginTest extends TestCase
 
     public function setUp() : void
     {
+        RuntimeCaches::clearAll();
         $this->plugin_list = $this->prophesize(PluginList::class);
         $this->plugin_list_factory = $this->prophesize(PluginListFactory::class);
         $this->plugin_list_factory->__invoke(Argument::any(), Argument::any())->willReturn($this->plugin_list->reveal());

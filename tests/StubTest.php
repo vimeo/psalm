@@ -12,6 +12,7 @@ use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\IncludeCollector;
+use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\Internal\Provider;
 
 class StubTest extends TestCase
@@ -40,7 +41,7 @@ class StubTest extends TestCase
      */
     public function setUp() : void
     {
-        FileAnalyzer::clearCache();
+        RuntimeCaches::clearAll();
         $this->file_provider = new Provider\FakeFileProvider();
     }
 
@@ -501,6 +502,7 @@ class StubTest extends TestCase
 
     /**
      * @return void
+     * @runInSeparateProcess
      */
     public function testPolyfilledFunction()
     {
@@ -533,6 +535,7 @@ class StubTest extends TestCase
 
     /**
      * @return void
+     * @runInSeparateProcess
      */
     public function testConditionalConstantDefined()
     {
@@ -564,6 +567,7 @@ class StubTest extends TestCase
 
     /**
      * @return void
+     * @runInSeparateProcess
      */
     public function testClassAlias()
     {
