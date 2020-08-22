@@ -5147,7 +5147,7 @@ class ClassTemplateExtendsTest extends TestCase
                     function bar(Child $c) : void {
                         ord($c->example("boris"));
                     }',
-                'error_message' => 'MixedArgument - src/somefile.php:31:29 - Argument 1 of ord cannot be mixed, expecting string',
+                'error_message' => 'MixedArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:31:29 - Argument 1 of ord cannot be mixed, expecting string',
             ],
             'preventWiderParentType' => [
                 '<?php

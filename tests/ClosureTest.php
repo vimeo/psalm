@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Tests;
 
+use const DIRECTORY_SEPARATOR;
+
 class ClosureTest extends TestCase
 {
     use Traits\InvalidCodeAnalysisTestTrait;
@@ -794,7 +796,7 @@ class ClosureTest extends TestCase
 
                     takesA($getAButReallyB());
                     takesB($getAButReallyB());',
-                'error_message' => 'ArgumentTypeCoercion - src/somefile.php:13:28 - Argument 1 of takesB expects B, parent type A provided',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:28 - Argument 1 of takesB expects B, parent type A provided',
             ],
             'closureByRefUseToMixed' => [
                 '<?php

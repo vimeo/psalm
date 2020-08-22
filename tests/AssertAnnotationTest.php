@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Tests;
 
+use const DIRECTORY_SEPARATOR;
+
 class AssertAnnotationTest extends TestCase
 {
     use Traits\ValidCodeAnalysisTestTrait;
@@ -1455,7 +1457,7 @@ class AssertAnnotationTest extends TestCase
 
                         if ($bar) {}
                     }',
-                'error_message' => 'RedundantCondition - src/somefile.php:19:29',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:19:29',
             ],
             'assertOneOfStrings' => [
                 '<?php
