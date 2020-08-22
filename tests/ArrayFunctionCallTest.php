@@ -1873,7 +1873,7 @@ class ArrayFunctionCallTest extends TestCase
                     function ints(array $ints) : void {}
                     $brr = array_filter([2,3,0,4,5]);
                     ints($brr);',
-                'error_message' => 'ArgumentTypeCoercion - src/somefile.php:5:26 - Argument 1 of ints expects list<int>, parent type array<int, int(2)|int(3)|int(4)|int(5)> provided',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:26 - Argument 1 of ints expects list<int>, parent type array<int, int(2)|int(3)|int(4)|int(5)> provided',
             ],
             'usortOneParamInvalid' => [
                 '<?php

@@ -1162,7 +1162,7 @@ class SwitchTypeTest extends TestCase
                                 echo "goodbye";
                         }
                     }',
-                'error_message' => 'RedundantCondition - src/somefile.php:10',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:10',
                 'error_levels' => ['ParadoxicalCondition'],
             ],
             'repeatedCaseValue' => [
