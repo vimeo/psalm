@@ -44,6 +44,8 @@ use function substr;
 use function unserialize;
 use function usleep;
 use function version_compare;
+use function array_map;
+use function in_array;
 
 /**
  * Adapted with relatively few changes from
@@ -112,6 +114,13 @@ class Pool
             echo
                 'The pcntl & posix extensions must be loaded in order for Psalm to be able to use multiple processes.'
                 . PHP_EOL;
+            exit(1);
+        }
+
+        $disabled_functions = array_map('trim', explode(',', ini_get('disable_functions')));
+        if (in_array('pcntl_fork', $disabled_functions)) {
+            echo "pcntl_fork() is disabled by php configuration (disable_functions directive).\n"
+                . "Please enable it or run Psalm single-threaded with --threads=1 cli switch.\n";
             exit(1);
         }
 

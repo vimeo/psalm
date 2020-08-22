@@ -86,6 +86,8 @@ use function substr_count;
 use function array_map;
 use function end;
 use Psalm\Internal\Codebase\Taint;
+use function ini_get;
+use function in_array;
 
 /**
  * @internal
@@ -454,13 +456,27 @@ class ProjectAnalyzer
                 exit(1);
             }
             fwrite(STDOUT, "Server listening on $address\n");
+
+            $fork_available = true;
             if (!extension_loaded('pcntl')) {
                 fwrite(STDERR, "PCNTL is not available. Only a single connection will be accepted\n");
+                $fork_available = false;
             }
+
+            $disabled_functions = array_map('trim', explode(',', ini_get('disable_functions')));
+            if (in_array('pcntl_fork', $disabled_functions)) {
+                fwrite(
+                    STDERR,
+                    "pcntl_fork() is disabled by php configuration (disable_functions directive)."
+                    . " Only a single connection will be accepted\n"
+                );
+                $fork_available = false;
+            }
+
             while ($socket = stream_socket_accept($tcpServer, -1)) {
                 fwrite(STDOUT, "Connection accepted\n");
                 stream_set_blocking($socket, false);
-                if (extension_loaded('pcntl')) {
+                if ($fork_available) {
                     // If PCNTL is available, fork a child process for the connection
                     // An exit notification will only terminate the child process
                     $pid = pcntl_fork();
