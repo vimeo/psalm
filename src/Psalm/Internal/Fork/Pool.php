@@ -115,6 +115,13 @@ class Pool
             exit(1);
         }
 
+        $disabled_functions = array_map('trim', explode(',', ini_get('disable_functions')));
+        if (in_array('pcntl_fork', $disabled_functions)) {
+            echo "pcntl_fork() is disabled by php configuration (disable_functions directive).\n"
+                . "Please enable it or run Psalm single-threaded with --threads=1 cli switch.\n";
+            exit(1);
+        }
+
         if (ini_get('pcre.jit') === '1'
             && \PHP_OS === 'Darwin'
             && version_compare(PHP_VERSION, '7.3.0') >= 0
