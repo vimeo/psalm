@@ -86,6 +86,8 @@ use function substr_count;
 use function array_map;
 use function end;
 use Psalm\Internal\Codebase\Taint;
+use function ini_get;
+use function in_array;
 
 /**
  * @internal

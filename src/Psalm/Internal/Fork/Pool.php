@@ -44,6 +44,8 @@ use function substr;
 use function unserialize;
 use function usleep;
 use function version_compare;
+use function array_map;
+use function in_array;
 
 /**
  * Adapted with relatively few changes from
