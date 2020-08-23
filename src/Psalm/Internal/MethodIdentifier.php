@@ -20,7 +20,10 @@ class MethodIdentifier
     /**
      * Takes any valid reference to a method id and converts
      * it into a MethodIdentifier
+     *
      * @param string|MethodIdentifier $method_id
+     *
+     * @psalm-pure
      */
     public static function wrap($method_id): self
     {
