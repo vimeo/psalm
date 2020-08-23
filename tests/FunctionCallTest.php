@@ -1191,7 +1191,10 @@ class FunctionCallTest extends TestCase
                             fn (array $matches) => $matches[4],
                             $ids
                         );
-                    };'
+                    };',
+                    'assertions' => [],
+                    'error_levels' => [],
+                    '7.4'
             ],
             'compactDefinedVariable' => [
                 '<?php

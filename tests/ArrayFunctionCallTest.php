@@ -1295,6 +1295,9 @@ class ArrayFunctionCallTest extends TestCase
                             $dateTimes
                         );
                     }',
+                'assertions' => [],
+                'error_levels' => [],
+                '7.4',
             ],
             'arrayPad' => [
                 '<?php
@@ -1576,6 +1579,8 @@ class ArrayFunctionCallTest extends TestCase
                     '$a' => 'array<int, B>',
                     '$b' => 'array<int, B>',
                 ],
+                'error_levels' => [],
+                '7.4',
             ],
             'arrayMergeTwoExplicitLists' => [
                 '<?php
@@ -1614,7 +1619,10 @@ class ArrayFunctionCallTest extends TestCase
                     $as = ["key"];
                     $bs = ["value"];
 
-                    return array_map(fn ($a, $b) => [$a => $b], $as, $bs);'
+                    return array_map(fn ($a, $b) => [$a => $b], $as, $bs);',
+                'assertions' => [],
+                'error_levels' => [],
+                '7.4',
             ],
             'allowUnpackWithArrayKey' => [
                 '<?php
@@ -1879,7 +1887,10 @@ class ArrayFunctionCallTest extends TestCase
                 '<?php
                     $list = [3, 2, 5, 9];
                     usort($list, fn(int $a, string $b): int => (int) ($a > $b));',
-                'error_message' => 'InvalidScalarArgument'
+                'error_message' => 'InvalidScalarArgument',
+                2 => [],
+                3 => false,
+                4 => '7.4',
             ],
             'usortInvalidComparison' => [
                 '<?php

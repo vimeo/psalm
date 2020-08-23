@@ -253,7 +253,10 @@ class BinaryOperationTest extends TestCase
                     function foo(?string $s): string {
                         $s ??= "Hello";
                         return $s;
-                    }'
+                    }',
+                'assertions' => [],
+                'error_levels' => [],
+                '7.4',
             ],
             'nullCoalescingArrayAssignment' => [
                 '<?php
@@ -266,7 +269,10 @@ class BinaryOperationTest extends TestCase
                         foreach ($arr as $a) {
                             $b[0] ??= $a;
                         }
-                    }'
+                    }',
+                'assertions' => [],
+                'error_levels' => [],
+                '7.4',
             ],
             'addArrays' => [
                 '<?php

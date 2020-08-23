@@ -56,6 +56,9 @@ class CallableTest extends TestCase
                         fn(string $a) => $a . "blah",
                         $bar
                     );',
+                'assertions' => [],
+                'error_levels' => [],
+                '7.4',
             ],
             'varReturnType' => [
                 '<?php
@@ -76,6 +79,8 @@ class CallableTest extends TestCase
                 'assertions' => [
                     '$a' => 'int',
                 ],
+                'error_levels' => [],
+                '7.4',
             ],
             'varCallableParamReturnType' => [
                 '<?php
@@ -111,6 +116,9 @@ class CallableTest extends TestCase
                     function foo() {
                         return fn(string $a): string => $a . "blah";
                     }',
+                'assertions' => [],
+                'error_levels' => [],
+                '7.4',
             ],
             'callable' => [
                 '<?php
