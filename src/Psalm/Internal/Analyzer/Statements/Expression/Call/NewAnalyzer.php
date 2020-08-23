@@ -546,15 +546,15 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                         return false;
                     }
 
-                    if ($context->pure) {
-                        $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
+                    $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
-                        if ($declaring_method_id) {
-                            $method_storage = $codebase->methods->getStorage($declaring_method_id);
+                    if ($declaring_method_id) {
+                        $method_storage = $codebase->methods->getStorage($declaring_method_id);
 
-                            $project_analyzer = $statements_analyzer->getProjectAnalyzer();
+                        $project_analyzer = $statements_analyzer->getProjectAnalyzer();
 
-                            if (!$method_storage->external_mutation_free && !$context->inside_throw) {
+                        if (!$method_storage->external_mutation_free && !$context->inside_throw) {
+                            if ($context->pure) {
                                 if (IssueBuffer::accepts(
                                     new ImpureMethodCall(
                                         'Cannot call an impure constructor from a pure context',
@@ -577,8 +577,6 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                     $generic_param_types = null;
 
                     if ($storage->template_types) {
-                        $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
-
                         $declaring_fq_class_name = $declaring_method_id
                             ? $declaring_method_id->fq_class_name
                             : $fq_class_name;
