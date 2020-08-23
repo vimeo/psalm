@@ -379,7 +379,7 @@ class FunctionDocblockManipulator
 
         $old_psalm_return_type = null;
         if (isset($parsed_docblock->tags['psalm-return'])) {
-            $old_psalm_return_type = array_shift($parsed_docblock->tags['psalm-return']);
+            $old_psalm_return_type = reset($parsed_docblock->tags['psalm-return']);
         }
 
         if ($this->new_psalm_return_type
