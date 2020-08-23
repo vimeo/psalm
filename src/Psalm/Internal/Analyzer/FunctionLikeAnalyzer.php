@@ -96,6 +96,16 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     protected static $no_effects_hashes = [];
 
     /**
+     * @var bool
+     */
+    public $inferred_impure = false;
+
+    /**
+     * @var bool
+     */
+    public $inferred_has_mutation = false;
+
+    /**
      * @var FunctionLikeStorage
      */
     protected $storage;
@@ -568,6 +578,20 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         $project_analyzer = $statements_analyzer->getProjectAnalyzer();
 
         $statements_analyzer->analyze($function_stmts, $context, $global_context, true);
+
+        if ($codebase->alter_code
+            && isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
+            && !$this->inferred_impure
+        ) {
+            $manipulator = FunctionDocblockManipulator::getForFunction(
+                $project_analyzer,
+                $this->source->getFilePath(),
+                $this->getId(),
+                $this->function
+            );
+
+            $manipulator->makePure();
+        }
 
         if (!$context->collect_initializations
             && !$context->collect_mutations

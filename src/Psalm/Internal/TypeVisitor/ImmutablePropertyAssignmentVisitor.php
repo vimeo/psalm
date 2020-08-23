@@ -17,6 +17,9 @@ class ImmutablePropertyAssignmentVisitor extends NodeVisitor
     private $statements_analyzer;
     private $stmt;
 
+    /** @var bool */
+    public $has_mutation = false;
+
     public function __construct(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\PropertyFetch $stmt
@@ -53,6 +56,8 @@ class ImmutablePropertyAssignmentVisitor extends NodeVisitor
                 )) {
                     // fall through
                 }
+
+                $this->has_mutation = true;
             }
         }
 

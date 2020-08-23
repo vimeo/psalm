@@ -113,19 +113,24 @@ class EchoAnalyzer
             }
         }
 
-        if (!$context->collect_initializations
-            && !$context->collect_mutations
-            && ($context->mutation_free
-                || $context->external_mutation_free)
-        ) {
-            if (IssueBuffer::accepts(
-                new ImpureFunctionCall(
-                    'Cannot call echo from a mutation-free context',
-                    new CodeLocation($statements_analyzer, $stmt)
-                ),
-                $statements_analyzer->getSuppressedIssues()
-            )) {
-                // fall through
+        $project_analyzer = $statements_analyzer->getProjectAnalyzer();
+
+        if (!$context->collect_initializations && !$context->collect_mutations) {
+            if ($context->mutation_free || $context->external_mutation_free) {
+                if (IssueBuffer::accepts(
+                    new ImpureFunctionCall(
+                        'Cannot call echo from a mutation-free context',
+                        new CodeLocation($statements_analyzer, $stmt)
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            } elseif ($codebase->alter_code
+                && isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
+                && $statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+            ) {
+                $statements_analyzer->getSource()->inferred_impure = true;
             }
         }
 

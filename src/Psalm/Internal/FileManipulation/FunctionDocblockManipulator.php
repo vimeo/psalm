@@ -91,6 +91,9 @@ class FunctionDocblockManipulator
     /** @var array<string, array{int, int}> */
     private $param_typehint_offsets = [];
 
+    /** @var bool */
+    private $is_pure = false;
+
     /**
      * @param  string $file_path
      * @param  string $function_id
@@ -359,6 +362,11 @@ class FunctionDocblockManipulator
             $old_phpdoc_return_type = array_shift($parsed_docblock->tags['return']);
         }
 
+        if ($this->is_pure) {
+            $modified_docblock = true;
+            $parsed_docblock->tags['psalm-pure'] = [''];
+        }
+
         if ($this->new_phpdoc_return_type
             && $this->new_phpdoc_return_type !== $old_phpdoc_return_type
         ) {
@@ -437,6 +445,7 @@ class FunctionDocblockManipulator
             if (!$manipulator->new_php_return_type
                 || !$manipulator->return_type_is_php_compatible
                 || $manipulator->docblock_start !== $manipulator->docblock_end
+                || $manipulator->is_pure
             ) {
                 $file_manipulations[$manipulator->docblock_start] = new FileManipulation(
                     $manipulator->docblock_start,
@@ -481,6 +490,11 @@ class FunctionDocblockManipulator
         }
 
         return $file_manipulations;
+    }
+
+    public function makePure() : void
+    {
+        $this->is_pure = true;
     }
 
     /**

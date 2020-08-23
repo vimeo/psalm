@@ -141,6 +141,7 @@ abstract class SourceAnalyzer implements StatementsSource
     }
 
     /**
+     * @psalm-mutation-free
      * @return StatementsSource
      */
     public function getSource()

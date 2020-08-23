@@ -210,6 +210,8 @@ class ConcatAnalyzer
             $left_comparison_result = new \Psalm\Internal\Type\Comparator\TypeComparisonResult();
             $right_comparison_result = new \Psalm\Internal\Type\Comparator\TypeComparisonResult();
 
+            $project_analyzer = $statements_analyzer->getProjectAnalyzer();
+
             foreach ($left_type->getAtomicTypes() as $left_type_part) {
                 if ($left_type_part instanceof Type\Atomic\TTemplateParam) {
                     if (IssueBuffer::accepts(
@@ -291,6 +293,12 @@ class ConcatAnalyzer
                                 )) {
                                     // fall through
                                 }
+                            } elseif ($codebase->alter_code
+                                && isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
+                                && $statements_analyzer->getSource()
+                                    instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                            ) {
+                                $statements_analyzer->getSource()->inferred_impure = true;
                             }
                         }
                     }
@@ -378,6 +386,12 @@ class ConcatAnalyzer
                                 )) {
                                     // fall through
                                 }
+                            } elseif ($codebase->alter_code
+                                && isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
+                                && $statements_analyzer->getSource()
+                                    instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                            ) {
+                                $statements_analyzer->getSource()->inferred_impure = true;
                             }
                         }
                     }

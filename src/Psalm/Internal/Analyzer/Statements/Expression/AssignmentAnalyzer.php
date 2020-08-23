@@ -209,6 +209,8 @@ class AssignmentAnalyzer
                 : Type::getMixed();
         }
 
+        $project_analyzer = $statements_analyzer->getProjectAnalyzer();
+
         if ($array_var_id && isset($context->vars_in_scope[$array_var_id])) {
             if ($context->vars_in_scope[$array_var_id]->by_ref) {
                 if ($context->mutation_free) {
@@ -220,6 +222,11 @@ class AssignmentAnalyzer
                     )) {
                         // fall through
                     }
+                } elseif ($codebase->alter_code
+                    && isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
+                    && $statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                ) {
+                    $statements_analyzer->getSource()->inferred_impure = true;
                 }
 
                 $assign_value_type->by_ref = true;
@@ -789,19 +796,25 @@ class AssignmentAnalyzer
             $property_var_pure_compatible = $statements_analyzer->node_data->isPureCompatible($assign_var->var);
 
             // prevents writing to any properties in a mutation-free context
-            if (($context->mutation_free || $context->external_mutation_free)
-                && !$property_var_pure_compatible
+            if (!$property_var_pure_compatible
                 && !$context->collect_mutations
                 && !$context->collect_initializations
             ) {
-                if (IssueBuffer::accepts(
-                    new ImpurePropertyAssignment(
-                        'Cannot assign to a property from a mutation-free context',
-                        new CodeLocation($statements_analyzer, $assign_var)
-                    ),
-                    $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
+                if ($context->mutation_free || $context->external_mutation_free) {
+                    if (IssueBuffer::accepts(
+                        new ImpurePropertyAssignment(
+                            'Cannot assign to a property from a mutation-free context',
+                            new CodeLocation($statements_analyzer, $assign_var)
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                } elseif ($codebase->alter_code
+                    && isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
+                    && $statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                ) {
+                    $statements_analyzer->getSource()->inferred_impure = true;
                 }
             }
         } elseif ($assign_var instanceof PhpParser\Node\Expr\StaticPropertyFetch &&
@@ -964,14 +977,14 @@ class AssignmentAnalyzer
                 return;
             }
 
+            $project_analyzer = $statements_analyzer->getProjectAnalyzer();
+
             if ($codebase->find_unused_variables
                 && $type_location
                 && isset($context->vars_in_scope[$var_comment->var_id])
                 && $context->vars_in_scope[$var_comment->var_id]->getId() === $var_comment_type->getId()
                 && !$var_comment_type->isMixed()
             ) {
-                $project_analyzer = $statements_analyzer->getProjectAnalyzer();
-
                 if ($codebase->alter_code
                     && isset($project_analyzer->getIssuesToFix()['UnnecessaryVarAnnotation'])
                 ) {
@@ -1068,23 +1081,32 @@ class AssignmentAnalyzer
             return false;
         }
 
+        $project_analyzer = $statements_analyzer->getProjectAnalyzer();
+
+        $codebase = $statements_analyzer->getCodebase();
+
         if ($array_var_id
-            && $context->mutation_free
             && $stmt->var instanceof PhpParser\Node\Expr\PropertyFetch
             && ($stmt_var_var_type = $statements_analyzer->node_data->getType($stmt->var->var))
             && !$stmt_var_var_type->reference_free
         ) {
-            if (IssueBuffer::accepts(
-                new ImpurePropertyAssignment(
-                    'Cannot assign to a property from a mutation-free context',
-                    new CodeLocation($statements_analyzer, $stmt->var)
-                ),
-                $statements_analyzer->getSuppressedIssues()
-            )) {
-                // fall through
+            if ($context->mutation_free) {
+                if (IssueBuffer::accepts(
+                    new ImpurePropertyAssignment(
+                        'Cannot assign to a property from a mutation-free context',
+                        new CodeLocation($statements_analyzer, $stmt->var)
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            } elseif ($codebase->alter_code
+                && isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
+                && $statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+            ) {
+                $statements_analyzer->getSource()->inferred_impure = true;
             }
-        } elseif ($context->mutation_free
-            && !$context->collect_mutations
+        } elseif (!$context->collect_mutations
             && !$context->collect_initializations
             && $stmt->var instanceof PhpParser\Node\Expr\PropertyFetch
         ) {
@@ -1094,18 +1116,25 @@ class AssignmentAnalyzer
                 $statements_analyzer
             );
 
-            if (isset($context->vars_in_scope[$lhs_var_id])
-                && !$context->vars_in_scope[$lhs_var_id]->allow_mutations
-            ) {
-                if (IssueBuffer::accepts(
-                    new ImpurePropertyAssignment(
-                        'Cannot assign to a property from a mutation-free context',
-                        new CodeLocation($statements_analyzer, $stmt)
-                    ),
-                    $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
+            if ($context->mutation_free) {
+                if (isset($context->vars_in_scope[$lhs_var_id])
+                    && !$context->vars_in_scope[$lhs_var_id]->allow_mutations
+                ) {
+                    if (IssueBuffer::accepts(
+                        new ImpurePropertyAssignment(
+                            'Cannot assign to a property from a mutation-free context',
+                            new CodeLocation($statements_analyzer, $stmt)
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
                 }
+            } elseif ($codebase->alter_code
+                && isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
+                && $statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+            ) {
+                $statements_analyzer->getSource()->inferred_impure = true;
             }
         }
 

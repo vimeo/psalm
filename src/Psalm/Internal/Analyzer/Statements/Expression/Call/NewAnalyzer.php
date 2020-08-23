@@ -552,6 +552,8 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                         if ($declaring_method_id) {
                             $method_storage = $codebase->methods->getStorage($declaring_method_id);
 
+                            $project_analyzer = $statements_analyzer->getProjectAnalyzer();
+
                             if (!$method_storage->external_mutation_free && !$context->inside_throw) {
                                 if (IssueBuffer::accepts(
                                     new ImpureMethodCall(
@@ -562,6 +564,12 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                                 )) {
                                     // fall through
                                 }
+                            } elseif ($codebase->alter_code
+                                && isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
+                                && $statements_analyzer->getSource()
+                                    instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                            ) {
+                                $statements_analyzer->getSource()->inferred_impure = true;
                             }
                         }
                     }

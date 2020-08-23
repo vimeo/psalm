@@ -1245,6 +1245,8 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     && !$function_storage->pure)
                 || ($callmap_function_pure === false)
             ) {
+                $project_analyzer = $statements_analyzer->getProjectAnalyzer();
+
                 if ($context->mutation_free || $context->external_mutation_free) {
                     if (IssueBuffer::accepts(
                         new ImpureFunctionCall(
@@ -1255,6 +1257,12 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     )) {
                         // fall through
                     }
+                } elseif ($codebase->alter_code
+                    && isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
+                    && $statements_analyzer->getSource()
+                        instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                ) {
+                    $statements_analyzer->getSource()->inferred_impure = true;
                 }
 
                 if (!$config->remember_property_assignments_after_call) {

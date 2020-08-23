@@ -1119,6 +1119,8 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         return true;
                     }
 
+                    $project_analyzer = $statements_analyzer->getProjectAnalyzer();
+
                     if (!$context->inside_throw) {
                         if ($context->pure && !$method_storage->pure) {
                             if (IssueBuffer::accepts(
@@ -1140,6 +1142,17 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             )) {
                                 // fall through
                             }
+                        } elseif ($codebase->alter_code
+                            && isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
+                            && $statements_analyzer->getSource()
+                                instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                            && !$method_storage->pure
+                        ) {
+                            if (!$method_storage->mutation_free) {
+                                $statements_analyzer->getSource()->inferred_has_mutation = true;
+                            }
+
+                            $statements_analyzer->getSource()->inferred_impure = true;
                         }
                     }
 

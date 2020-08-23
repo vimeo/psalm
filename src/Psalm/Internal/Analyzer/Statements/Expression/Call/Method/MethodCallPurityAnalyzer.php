@@ -112,6 +112,22 @@ class MethodCallPurityAnalyzer
             }
         }
 
+        $project_analyzer = $statements_analyzer->getProjectAnalyzer();
+
+        if ($codebase->alter_code
+            && isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
+            && $statements_analyzer->getSource()
+                instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+            && !$method_storage->mutation_free
+            && !$method_pure_compatible
+        ) {
+            if (!$method_storage->mutation_free) {
+                $statements_analyzer->getSource()->inferred_has_mutation = true;
+            }
+
+            $statements_analyzer->getSource()->inferred_impure = true;
+        }
+
         if (!$config->remember_property_assignments_after_call
             && !$method_storage->mutation_free
             && !$method_pure_compatible

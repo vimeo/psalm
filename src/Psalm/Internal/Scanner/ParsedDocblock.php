@@ -62,7 +62,7 @@ class ParsedDocblock
                 }
 
                 foreach ($lines as $line) {
-                    $doc_comment_text .= $left_padding . ' * @' . $type . ' ' . $line . "\n";
+                    $doc_comment_text .= $left_padding . ' * @' . $type . ($line !== '' ? ' ' . $line : '') . "\n";
                 }
 
                 $last_type = $type;

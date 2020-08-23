@@ -230,6 +230,8 @@ class InstancePropertyAssignmentAnalyzer
 
             $lhs_atomic_types = $lhs_type->getAtomicTypes();
 
+            $project_analyzer = $statements_analyzer->getProjectAnalyzer();
+
             while ($lhs_atomic_types) {
                 $lhs_type_part = \array_pop($lhs_atomic_types);
 
@@ -724,29 +726,48 @@ class InstancePropertyAssignmentAnalyzer
                                 )) {
                                     // fall through
                                 }
-                            } elseif ($declaring_class_storage->mutation_free) {
+                            } elseif ($declaring_class_storage->mutation_free
+                                || $codebase->alter_code
+                            ) {
                                 $visitor = new \Psalm\Internal\TypeVisitor\ImmutablePropertyAssignmentVisitor(
                                     $statements_analyzer,
                                     $stmt
                                 );
 
                                 $visitor->traverse($assignment_value_type);
+
+                                if ($codebase->alter_code
+                                    && !$declaring_class_storage->mutation_free
+                                    && isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
+                                    && $statements_analyzer->getSource()
+                                        instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                                    && $visitor->has_mutation
+                                ) {
+                                    $statements_analyzer->getSource()->inferred_impure = true;
+                                }
                             }
                         }
-                    } elseif ($context->mutation_free
-                        && !$context->collect_mutations
+                    } elseif (!$context->collect_mutations
                         && !$context->collect_initializations
                         && isset($context->vars_in_scope[$lhs_var_id])
                         && !$context->vars_in_scope[$lhs_var_id]->allow_mutations
                     ) {
-                        if (IssueBuffer::accepts(
-                            new ImpurePropertyAssignment(
-                                'Cannot assign to a property from a mutation-free context',
-                                new CodeLocation($statements_analyzer, $stmt)
-                            ),
-                            $statements_analyzer->getSuppressedIssues()
-                        )) {
-                            // fall through
+                        if ($context->mutation_free) {
+                            if (IssueBuffer::accepts(
+                                new ImpurePropertyAssignment(
+                                    'Cannot assign to a property from a mutation-free context',
+                                    new CodeLocation($statements_analyzer, $stmt)
+                                ),
+                                $statements_analyzer->getSuppressedIssues()
+                            )) {
+                                // fall through
+                            }
+                        } elseif ($codebase->alter_code
+                            && isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
+                            && $statements_analyzer->getSource()
+                                instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                        ) {
+                            $statements_analyzer->getSource()->inferred_impure = true;
                         }
                     }
 
