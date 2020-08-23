@@ -322,9 +322,11 @@ class Bat
         $this->project_analyzer->progress = new EchoProgress();
 
         ob_start();
+        // checkPaths expects absolute paths,
+        // otherwise it's unable to match them against configured folders
         $this->project_analyzer->checkPaths([
-            'tests/fixtures/DummyProject/Bar.php',
-            'tests/fixtures/DummyProject/SomeTrait.php'
+            getcwd() . '/tests/fixtures/DummyProject/Bar.php',
+            getcwd() . '/tests/fixtures/DummyProject/SomeTrait.php'
         ]);
         $output = ob_get_clean();
 
@@ -360,9 +362,11 @@ class Bat
         $this->project_analyzer->progress = new EchoProgress();
 
         ob_start();
+        // checkPaths expects absolute paths,
+        // otherwise it's unable to match them against configured folders
         $this->project_analyzer->checkPaths([
-            'tests/fixtures/DummyProject/Bar.php',
-            'tests/fixtures/DummyProject/SomeTrait.php'
+            getcwd() . '/tests/fixtures/DummyProject/Bar.php',
+            getcwd() . '/tests/fixtures/DummyProject/SomeTrait.php'
         ]);
         $output = ob_get_clean();
 

@@ -1095,5 +1095,6 @@ class FileReferenceProvider
         self::$file_maps = [];
         self::$method_param_uses = [];
         self::$classlike_files = [];
+        self::$mixed_counts = [];
     }
 }
