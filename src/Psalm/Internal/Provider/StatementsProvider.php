@@ -464,4 +464,9 @@ class StatementsProvider
     {
         self::$lexer = null;
     }
+
+    public static function clearParser(): void
+    {
+        self::$parser = null;
+    }
 }

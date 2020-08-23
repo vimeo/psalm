@@ -19,5 +19,6 @@ abstract class RuntimeCaches
         \Psalm\Internal\Provider\ClassLikeStorageProvider::deleteAll();
         \Psalm\Internal\Provider\FileStorageProvider::deleteAll();
         \Psalm\Internal\Provider\StatementsProvider::clearLexer();
+        \Psalm\Internal\Provider\StatementsProvider::clearParser();
     }
 }
