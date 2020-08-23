@@ -59,7 +59,8 @@ use function array_values;
  *      possible_method_param_types: array<string, array<int, \Psalm\Type\Union>>,
  *      taint_data: ?\Psalm\Internal\Codebase\Taint,
  *      unused_suppressions: array<string, array<int, int>>,
- *      used_suppressions: array<string, array<int, bool>>
+ *      used_suppressions: array<string, array<int, bool>>,
+ *      manipulators: array<string, array<int, FunctionDocblockManipulator>>,
  * }
  */
 
@@ -466,6 +467,7 @@ class Analyzer
                         'taint_data' => $codebase->taint,
                         'unused_suppressions' => $codebase->track_unused_suppressions ? IssueBuffer::getUnusedSuppressions() : [],
                         'used_suppressions' => $codebase->track_unused_suppressions ? IssueBuffer::getUsedSuppressions() : [],
+                        'manipulators' => FunctionDocblockManipulator::getManipulators(),
                     ];
                     // @codingStandardsIgnoreEnd
                 },
@@ -529,6 +531,8 @@ class Analyzer
                 $codebase->file_reference_provider->addClassPropertyLocations(
                     $pool_data['class_property_locations']
                 );
+
+                FunctionDocblockManipulator::addManipulators($pool_data['manipulators']);
 
                 $this->analyzed_methods = array_merge($pool_data['analyzed_methods'], $this->analyzed_methods);
 

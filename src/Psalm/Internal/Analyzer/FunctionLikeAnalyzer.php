@@ -589,7 +589,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $manipulator = FunctionDocblockManipulator::getForFunction(
                 $project_analyzer,
                 $this->source->getFilePath(),
-                $this->getId(),
                 $this->function
             );
 
@@ -1501,7 +1500,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         $manipulator = FunctionDocblockManipulator::getForFunction(
             $project_analyzer,
             $this->source->getFilePath(),
-            $this->getId(),
             $this->function
         );
 
