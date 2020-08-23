@@ -40,6 +40,27 @@ class PureAnnotationAdditionTest extends FileManipulationTest
                 ['MissingPureAnnotation'],
                 true,
             ],
+            'dontAddPureAnnotationToMutationFreeMethod' => [
+                '<?php
+                    class A {
+                        public string $foo = "hello";
+
+                        public function getFoo() : string {
+                            return $this->foo;
+                        }
+                    }',
+                '<?php
+                    class A {
+                        public string $foo = "hello";
+
+                        public function getFoo() : string {
+                            return $this->foo;
+                        }
+                    }',
+                '7.4',
+                ['MissingPureAnnotation'],
+                true,
+            ],
         ];
     }
 }

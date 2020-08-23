@@ -13,6 +13,7 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\DeprecatedProperty;
+use Psalm\Issue\ImpurePropertyFetch;
 use Psalm\Issue\InvalidPropertyFetch;
 use Psalm\Issue\InternalProperty;
 use Psalm\Issue\MissingPropertyType;
@@ -179,12 +180,14 @@ class InstancePropertyFetchAnalyzer
 
                         $property_id = $lhs_type_part->value . '::$' . $stmt->name->name;
 
+                        $class_storage = $codebase->classlike_storage_provider->get($lhs_type_part->value);
+
                         self::processTaints(
                             $statements_analyzer,
                             $stmt,
                             $stmt_type,
                             $property_id,
-                            $codebase->classlike_storage_provider->get($lhs_type_part->value),
+                            $class_storage,
                             $in_assignment
                         );
 
@@ -207,6 +210,32 @@ class InstancePropertyFetchAnalyzer
                                 $stmt->name,
                                 $property_id
                             );
+                        }
+
+                        if (!$context->collect_mutations
+                            && !$context->collect_initializations
+                            && !($class_storage->external_mutation_free
+                                && $stmt_type->allow_mutations)
+                        ) {
+                            $project_analyzer = $statements_analyzer->getProjectAnalyzer();
+
+                            if ($context->pure) {
+                                if (IssueBuffer::accepts(
+                                    new ImpurePropertyFetch(
+                                        'Cannot access a property on a mutable object from a pure context',
+                                        new CodeLocation($statements_analyzer, $stmt)
+                                    ),
+                                    $statements_analyzer->getSuppressedIssues()
+                                )) {
+                                    // fall through
+                                }
+                            } elseif ($codebase->alter_code
+                                && isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
+                                && $statements_analyzer->getSource()
+                                    instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                            ) {
+                                $statements_analyzer->getSource()->inferred_impure = true;
+                            }
                         }
                     }
                 }
@@ -953,6 +982,32 @@ class InstancePropertyFetchAnalyzer
                         $class_storage,
                         $declaring_class_storage
                     );
+                }
+            }
+
+            if (!$context->collect_mutations
+                && !$context->collect_initializations
+                && !($class_storage->external_mutation_free
+                    && $class_property_type->allow_mutations)
+            ) {
+                $project_analyzer = $statements_analyzer->getProjectAnalyzer();
+
+                if ($context->pure) {
+                    if (IssueBuffer::accepts(
+                        new ImpurePropertyFetch(
+                            'Cannot access a property on a mutable object from a pure context',
+                            new CodeLocation($statements_analyzer, $stmt)
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                } elseif ($codebase->alter_code
+                    && isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
+                    && $statements_analyzer->getSource()
+                        instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                ) {
+                    $statements_analyzer->getSource()->inferred_impure = true;
                 }
             }
 

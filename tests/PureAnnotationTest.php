@@ -18,17 +18,11 @@ class PureAnnotationTest extends TestCase
                 '<?php
                     namespace Bar;
 
-                    class A {
-                        public int $a = 5;
-                    }
-
                     /** @psalm-pure */
-                    function filterOdd(int $i, A $a) : ?int {
-                        if ($i % 2 === 0 || $a->a === 2) {
+                    function filterOdd(int $i) : ?int {
+                        if ($i % 2 === 0) {
                             return $i;
                         }
-
-                        $a = new A();
 
                         return null;
                     }',
@@ -345,6 +339,28 @@ class PureAnnotationTest extends TestCase
                         }
                     }'
             ],
+            'allowPropertyAccessOnImmutableClass' => [
+                '<?php
+                    namespace Bar;
+
+                    /** @psalm-immutable */
+                    class A {
+                        public int $a;
+
+                        public function __construct(int $a) {
+                            $this->a = $a;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function filterOdd(A $a) : bool {
+                        if ($a->a % 2 === 0) {
+                            return true;
+                        }
+
+                        return false;
+                    }',
+            ],
         ];
     }
 
@@ -364,7 +380,7 @@ class PureAnnotationTest extends TestCase
 
                     /** @psalm-pure */
                     function filterOdd(int $i, A $a) : ?int {
-                        $a->a++;
+                        $a->a = $i;
 
                         if ($i % 2 === 0 || $a->a === 2) {
                             return $i;
@@ -597,6 +613,40 @@ class PureAnnotationTest extends TestCase
                         return count($countable);
                     }',
                 'error_message' => 'ImpureFunctionCall',
+            ],
+            'propertyFetchIsNotPure' => [
+                '<?php
+                    class A {
+                        public string $foo = "hello";
+
+                        /** @psalm-pure */
+                        public function getFoo() : string {
+                            return $this->foo;
+                        }
+                    }',
+                'error_message' => 'ImpurePropertyFetch',
+            ],
+            'preventPropertyAccessOnMutableClass' => [
+                '<?php
+                    namespace Bar;
+
+                    class A {
+                        public int $a;
+
+                        public function __construct(int $a) {
+                            $this->a = $a;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function filterOdd(A $a) : bool {
+                        if ($a->a % 2 === 0) {
+                            return true;
+                        }
+
+                        return false;
+                    }',
+                'error_message' => 'ImpurePropertyFetch',
             ],
         ];
     }
