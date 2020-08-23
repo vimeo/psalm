@@ -18,6 +18,7 @@ use Psalm\Internal\RuntimeCaches;
 use Psalm\Plugin\Hook\AfterCodebasePopulatedInterface;
 use Psalm\Tests\Internal\Provider;
 use Psalm\Tests\Progress\EchoProgress;
+use function realpath;
 
 class ProjectCheckerTest extends TestCase
 {
@@ -325,8 +326,8 @@ class Bat
         // checkPaths expects absolute paths,
         // otherwise it's unable to match them against configured folders
         $this->project_analyzer->checkPaths([
-            getcwd() . '/tests/fixtures/DummyProject/Bar.php',
-            getcwd() . '/tests/fixtures/DummyProject/SomeTrait.php'
+            realpath(getcwd() . '/tests/fixtures/DummyProject/Bar.php'),
+            realpath(getcwd() . '/tests/fixtures/DummyProject/SomeTrait.php'),
         ]);
         $output = ob_get_clean();
 
@@ -365,8 +366,8 @@ class Bat
         // checkPaths expects absolute paths,
         // otherwise it's unable to match them against configured folders
         $this->project_analyzer->checkPaths([
-            getcwd() . '/tests/fixtures/DummyProject/Bar.php',
-            getcwd() . '/tests/fixtures/DummyProject/SomeTrait.php'
+            realpath(getcwd() . '/tests/fixtures/DummyProject/Bar.php'),
+            realpath(getcwd() . '/tests/fixtures/DummyProject/SomeTrait.php'),
         ]);
         $output = ob_get_clean();
 
