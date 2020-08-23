@@ -23,7 +23,10 @@ class ComposerLock
 
     /**
      * @param mixed $package
+     *
      * @psalm-assert-if-true array $package
+     *
+     * @psalm-pure
      */
     public function isPlugin($package): bool
     {
