@@ -55,7 +55,7 @@ jobs:
             at: /home/docker/project/
       - run:
           name: PHPUnit test
-          command: php vendor/bin/phpunit --log-junit build/phpunit/phpunit.xml
+          command: php vendor/bin/paratest --runner=WrapperRunner --log-junit build/phpunit/phpunit.xml
       - store_test_results:
           path: build/
       - store_artifacts:
