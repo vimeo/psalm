@@ -614,7 +614,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 && !$inferred_return_type->isVoid()
                 && !$inferred_return_type->isFalse()
                 && !$inferred_return_type->isTrue()
-                && !$inferred_return_type->getId() !== 'array<empty, empty>'
+                && $inferred_return_type->getId() !== 'array<empty, empty>'
             ) {
                 $manipulator->makePure();
             }

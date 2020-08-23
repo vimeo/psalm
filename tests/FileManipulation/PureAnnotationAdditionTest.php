@@ -101,6 +101,21 @@ class PureAnnotationAdditionTest extends FileManipulationTest
                 ['MissingPureAnnotation'],
                 true,
             ],
+            'dontAddPureAnnotationToFunctionWithImpureClosure' => [
+                '<?php
+                    /** @param list<string> $arr */
+                    function foo(array $arr): array {
+                        return array_map($arr, function ($s) { echo $s; return $s;});
+                    }',
+                '<?php
+                    /** @param list<string> $arr */
+                    function foo(array $arr): array {
+                        return array_map($arr, function ($s) { echo $s; return $s;});
+                    }',
+                '7.4',
+                ['MissingPureAnnotation'],
+                true,
+            ],
         ];
     }
 }

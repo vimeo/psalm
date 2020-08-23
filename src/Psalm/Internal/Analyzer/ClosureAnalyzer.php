@@ -175,6 +175,12 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
 
         $closure_analyzer->analyze($use_context, $statements_analyzer->node_data, $context, false, $byref_uses);
 
+        if ($closure_analyzer->inferred_impure
+            && $statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+        ) {
+            $statements_analyzer->getSource()->inferred_impure = true;
+        }
+
         if (!$statements_analyzer->node_data->getType($stmt)) {
             $statements_analyzer->node_data->setType($stmt, Type::getClosure());
         }
