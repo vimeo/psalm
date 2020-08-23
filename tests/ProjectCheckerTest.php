@@ -14,9 +14,11 @@ use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\IncludeCollector;
+use Psalm\Internal\RuntimeCaches;
 use Psalm\Plugin\Hook\AfterCodebasePopulatedInterface;
 use Psalm\Tests\Internal\Provider;
 use Psalm\Tests\Progress\EchoProgress;
+use function realpath;
 
 class ProjectCheckerTest extends TestCase
 {
@@ -47,7 +49,7 @@ class ProjectCheckerTest extends TestCase
      */
     public function setUp() : void
     {
-        FileAnalyzer::clearCache();
+        RuntimeCaches::clearAll();
         $this->file_provider = new Provider\FakeFileProvider();
     }
 
@@ -321,9 +323,11 @@ class Bat
         $this->project_analyzer->progress = new EchoProgress();
 
         ob_start();
+        // checkPaths expects absolute paths,
+        // otherwise it's unable to match them against configured folders
         $this->project_analyzer->checkPaths([
-            'tests/fixtures/DummyProject/Bar.php',
-            'tests/fixtures/DummyProject/SomeTrait.php'
+            realpath(getcwd() . '/tests/fixtures/DummyProject/Bar.php'),
+            realpath(getcwd() . '/tests/fixtures/DummyProject/SomeTrait.php'),
         ]);
         $output = ob_get_clean();
 
@@ -359,9 +363,11 @@ class Bat
         $this->project_analyzer->progress = new EchoProgress();
 
         ob_start();
+        // checkPaths expects absolute paths,
+        // otherwise it's unable to match them against configured folders
         $this->project_analyzer->checkPaths([
-            'tests/fixtures/DummyProject/Bar.php',
-            'tests/fixtures/DummyProject/SomeTrait.php'
+            realpath(getcwd() . '/tests/fixtures/DummyProject/Bar.php'),
+            realpath(getcwd() . '/tests/fixtures/DummyProject/SomeTrait.php'),
         ]);
         $output = ob_get_clean();
 

@@ -6,6 +6,7 @@ use Psalm\Config;
 use Psalm\Internal\PluginManager\ComposerLock;
 use Psalm\Internal\PluginManager\ConfigFile;
 use Psalm\Internal\PluginManager\PluginList;
+use Psalm\Internal\RuntimeCaches;
 
 /** @group PluginManager */
 class PluginListTest extends \Psalm\Tests\TestCase
@@ -21,6 +22,8 @@ class PluginListTest extends \Psalm\Tests\TestCase
 
     public function setUp() : void
     {
+        RuntimeCaches::clearAll();
+
         $this->config = $this->prophesize(Config::class);
         $this->config->getPluginClasses()->willReturn([]);
 

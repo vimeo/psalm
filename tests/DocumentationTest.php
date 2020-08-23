@@ -25,6 +25,8 @@ use function array_shift;
 use DOMDocument;
 use DOMXPath;
 use DOMAttr;
+use Psalm\Internal\RuntimeCaches;
+
 use function array_filter;
 use function var_export;
 
@@ -80,8 +82,7 @@ class DocumentationTest extends TestCase
      */
     public function setUp() : void
     {
-        FileAnalyzer::clearCache();
-        \Psalm\Internal\FileManipulation\FunctionDocblockManipulator::clearCache();
+        RuntimeCaches::clearAll();
 
         $this->file_provider = new Provider\FakeFileProvider();
 

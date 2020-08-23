@@ -58,6 +58,9 @@ class ClosureTest extends TestCase
                         fn(string $a) => $a . "blah",
                         $bar
                     );',
+                'assertions' => [],
+                'error_levels' => [],
+                '7.4'
             ],
             'varReturnType' => [
                 '<?php
@@ -78,6 +81,8 @@ class ClosureTest extends TestCase
                 'assertions' => [
                     '$a' => 'int',
                 ],
+                'error_levels' => [],
+                '7.4'
             ],
             'correctParamType' => [
                 '<?php
@@ -167,6 +172,9 @@ class ClosureTest extends TestCase
                     function foo(Closure $f, Closure $g) : Closure {
                         return fn(int $x):int => $f($g($x));
                     }',
+                'assertions' => [],
+                'error_levels' => [],
+                '7.4'
             ],
             'returnsTypedClosureWithClasses' => [
                 '<?php

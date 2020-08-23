@@ -3,6 +3,7 @@ namespace Psalm\Tests\FileManipulation;
 
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
+use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\Internal\Provider;
 use Psalm\Tests\TestConfig;
 use function strpos;
@@ -14,9 +15,7 @@ abstract class FileManipulationTest extends \Psalm\Tests\TestCase
 
     public function setUp() : void
     {
-        FileAnalyzer::clearCache();
-        \Psalm\Internal\FileManipulation\FunctionDocblockManipulator::clearCache();
-        \Psalm\Internal\FileManipulation\PropertyDocblockManipulator::clearCache();
+        RuntimeCaches::clearAll();
 
         $this->file_provider = new Provider\FakeFileProvider();
     }

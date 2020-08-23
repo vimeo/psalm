@@ -88,4 +88,9 @@ class ParsedDocblock
     {
         static::$shouldAddNewLineBetweenAnnotations = $should;
     }
+
+    public static function resetNewlineBetweenAnnotations(): void
+    {
+        static::$shouldAddNewLineBetweenAnnotations = true;
+    }
 }

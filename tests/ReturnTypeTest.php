@@ -744,6 +744,8 @@ class ReturnTypeTest extends TestCase
                 'assertions' => [
                     '$res' => 'Closure(int):bool',
                 ],
+                'error_levels' => [],
+                '7.4'
             ],
             'infersClosureReturnTypesWithPartialTypehinting' => [
                 '<?php

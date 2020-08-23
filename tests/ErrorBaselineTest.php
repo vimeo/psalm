@@ -7,6 +7,7 @@ use Prophecy\Prophecy\ObjectProphecy;
 use Psalm\ErrorBaseline;
 use Psalm\Exception\ConfigException;
 use Psalm\Internal\Provider\FileProvider;
+use Psalm\Internal\RuntimeCaches;
 
 class ErrorBaselineTest extends TestCase
 {
@@ -18,6 +19,7 @@ class ErrorBaselineTest extends TestCase
      */
     public function setUp() : void
     {
+        RuntimeCaches::clearAll();
         $this->fileProvider = $this->prophesize(FileProvider::class);
     }
 

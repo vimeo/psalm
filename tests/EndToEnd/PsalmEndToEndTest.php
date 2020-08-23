@@ -20,6 +20,7 @@ use function unlink;
 use function file_get_contents;
 use function file_put_contents;
 use function preg_replace;
+use const PHP_VERSION_ID;
 
 /**
  * Tests some of the most important use cases of the psalm and psalter commands, by launching a new
@@ -120,7 +121,9 @@ class PsalmEndToEndTest extends TestCase
 
     public function testPsalmDiff(): void
     {
-        $this->markTestSkipped('Only works on 7.4');
+        if (PHP_VERSION_ID < 70400) {
+            $this->markTestSkipped('Only works on 7.4+');
+        }
 
         copy(__DIR__ . '/../fixtures/DummyProjectWithErrors/diff_composer.lock', self::$tmpDir . '/composer.lock');
 

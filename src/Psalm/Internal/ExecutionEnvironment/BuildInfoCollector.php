@@ -73,7 +73,7 @@ class BuildInfoCollector
             $this->readEnv['TRAVIS'] = $this->env['TRAVIS'];
             $this->readEnv['TRAVIS_JOB_ID'] = $this->env['TRAVIS_JOB_ID'];
             $this->readEnv['CI_NAME'] = $this->env['CI_NAME'];
-            $this->readEnv['TRAVIS_TAG'] = $this->env['TRAVIS_TAG'];
+            $this->readEnv['TRAVIS_TAG'] = $this->env['TRAVIS_TAG'] ?? '';
 
             $repo_slug = (string) $this->env['TRAVIS_REPO_SLUG'];
 

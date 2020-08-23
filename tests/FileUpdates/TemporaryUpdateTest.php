@@ -23,8 +23,6 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
     {
         parent::setUp();
 
-        FileAnalyzer::clearCache();
-
         $this->file_provider = new \Psalm\Tests\Internal\Provider\FakeFileProvider();
 
         $config = new TestConfig();

@@ -37,6 +37,7 @@ class VariadicTest extends TestCase
     /**
      * @throws \Psalm\Exception\ConfigException
      * @return void
+     * @runInSeparateProcess
      */
     public function testVariadicFunctionFromAutoloadFile()
     {

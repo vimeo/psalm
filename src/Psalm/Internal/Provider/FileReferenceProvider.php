@@ -1089,10 +1089,12 @@ class FileReferenceProvider
         self::$references_to_mixed_member_names = [];
         self::$class_method_locations = [];
         self::$class_property_locations = [];
+        self::$class_locations = [];
         self::$analyzed_methods = [];
         self::$issues = [];
         self::$file_maps = [];
         self::$method_param_uses = [];
         self::$classlike_files = [];
+        self::$mixed_counts = [];
     }
 }

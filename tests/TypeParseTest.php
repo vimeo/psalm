@@ -3,6 +3,8 @@ namespace Psalm\Tests;
 
 use function function_exists;
 use function print_r;
+
+use Psalm\Internal\RuntimeCaches;
 use Psalm\Type;
 use function stripos;
 
@@ -13,6 +15,7 @@ class TypeParseTest extends TestCase
      */
     public function setUp() : void
     {
+        RuntimeCaches::clearAll();
         $this->file_provider = new \Psalm\Tests\Internal\Provider\FakeFileProvider();
 
         $config = new TestConfig();
