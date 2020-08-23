@@ -20,5 +20,6 @@ abstract class RuntimeCaches
         \Psalm\Internal\Provider\FileStorageProvider::deleteAll();
         \Psalm\Internal\Provider\StatementsProvider::clearLexer();
         \Psalm\Internal\Provider\StatementsProvider::clearParser();
+        \Psalm\Internal\Scanner\ParsedDocblock::resetNewlineBetweenAnnotations();
     }
 }
