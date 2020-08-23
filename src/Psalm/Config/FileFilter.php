@@ -343,9 +343,11 @@ class FileFilter
     }
 
     /**
-     * @param  string $str
+     * @param string $str
      *
      * @return string
+     *
+     * @psalm-pure
      */
     protected static function slashify($str)
     {

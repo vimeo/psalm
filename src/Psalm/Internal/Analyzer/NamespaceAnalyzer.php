@@ -172,6 +172,8 @@ class NamespaceAnalyzer extends SourceAnalyzer implements StatementsSource
      * Returns true if $className is the same as, or starts with $namespace, in a case-insensitive comparison.
      *
      * @return bool
+     *
+     * @psalm-pure
      */
     public static function isWithin(string $calling_namespace, string $namespace): bool
     {
@@ -188,7 +190,10 @@ class NamespaceAnalyzer extends SourceAnalyzer implements StatementsSource
 
     /**
      * @param string $fullyQualifiedClassName, e.g. '\Psalm\Internal\Analyzer\NamespaceAnalyzer'
+     *
      * @return string , e.g. 'Psalm'
+     *
+     * @psalm-pure
      */
     public static function getNameSpaceRoot(string $fullyQualifiedClassName): string
     {

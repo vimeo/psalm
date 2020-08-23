@@ -1563,6 +1563,8 @@ class ProjectAnalyzer
 
     /**
      * @return array<string>
+     *
+     * @psalm-pure
      */
     public static function getSupportedIssuesToFix(): array
     {

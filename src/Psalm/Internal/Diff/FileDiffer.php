@@ -21,10 +21,12 @@ use function substr;
 class FileDiffer
 {
     /**
-     * @param  array<int, string>    $a
-     * @param  array<int, string>    $b
+     * @param array<int, string>    $a
+     * @param array<int, string>    $b
      *
      * @return array{0:array<int, array<int, int>>, 1: int, 2: int}
+     *
+     * @psalm-pure
      */
     private static function calculateTrace(
         array $a,

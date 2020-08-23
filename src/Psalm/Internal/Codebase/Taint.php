@@ -297,7 +297,11 @@ class Taint
         return $new_sources;
     }
 
-    /** @param array<string> $previous_path_types */
+    /**
+     * @param array<string> $previous_path_types
+     *
+     * @psalm-pure
+     */
     private static function shouldIgnoreFetch(
         string $path_type,
         string $expression_type,

@@ -127,6 +127,8 @@ class Shepherd implements \Psalm\Plugin\Hook\AfterAnalysisInterface
 
     /**
      * @param resource $ch
+     *
+     * @psalm-pure
      */
     public static function getCurlErrorMessage($ch) : string
     {

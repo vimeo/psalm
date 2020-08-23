@@ -103,7 +103,9 @@ abstract class Type
     }
 
     /**
-     * @param  array<string, string> $aliased_classes
+     * @param array<string, string> $aliased_classes
+     *
+     * @psalm-pure
      */
     public static function getStringFromFQCLN(
         string $value,

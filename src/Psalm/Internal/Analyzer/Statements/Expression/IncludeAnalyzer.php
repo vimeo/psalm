@@ -387,6 +387,9 @@ class IncludeAnalyzer
         return null;
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function normalizeFilePath(string $path_to_file) : string
     {
         // replace all \ with / for normalization

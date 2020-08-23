@@ -24,9 +24,11 @@ use function substr;
 class Algebra
 {
     /**
-     * @param  array<string, non-empty-list<non-empty-list<string>>>  $all_types
+     * @param array<string, non-empty-list<non-empty-list<string>>>  $all_types
      *
      * @return array<string, non-empty-list<non-empty-list<string>>>
+     *
+     * @psalm-pure
      */
     public static function negateTypes(array $all_types)
     {
@@ -66,9 +68,11 @@ class Algebra
     }
 
     /**
-     * @param  string $type
+     * @param string $type
      *
-     * @return  string
+     * @return string
+     *
+     * @psalm-pure
      */
     private static function negateType($type)
     {

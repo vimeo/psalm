@@ -27,6 +27,9 @@ class MethodIdentifier
         return \is_string($method_id) ? static::fromMethodIdReference($method_id) : $method_id;
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function isValidMethodIdReference(string $method_id): bool
     {
         return \strpos($method_id, '::') !== false;

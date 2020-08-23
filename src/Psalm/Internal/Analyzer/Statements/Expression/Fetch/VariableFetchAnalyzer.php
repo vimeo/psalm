@@ -391,6 +391,9 @@ class VariableFetchAnalyzer
         }
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function isSuperGlobal(string $var_id) : bool
     {
         return in_array(

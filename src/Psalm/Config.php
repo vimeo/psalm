@@ -1468,9 +1468,11 @@ class Config
     }
 
     /**
-     * @param  string $issue_type
+     * @param string $issue_type
      *
      * @return string|null
+     *
+     * @psalm-pure
      */
     public static function getParentIssueType($issue_type)
     {

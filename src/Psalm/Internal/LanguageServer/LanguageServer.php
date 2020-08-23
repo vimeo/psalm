@@ -498,6 +498,8 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
      * @param string $filepath
      *
      * @return string
+     *
+     * @psalm-pure
      */
     public static function pathToUri(string $filepath): string
     {

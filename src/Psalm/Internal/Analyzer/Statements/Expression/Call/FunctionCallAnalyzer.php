@@ -1139,6 +1139,9 @@ class FunctionCallAnalyzer extends CallAnalyzer
         }
     }
 
+    /**
+     * @psalm-pure
+     */
     private static function simpleExclusion(string $pattern, string $escape_char) : bool
     {
         $str_length = \strlen($pattern);

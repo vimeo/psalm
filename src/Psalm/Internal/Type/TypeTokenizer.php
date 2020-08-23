@@ -280,10 +280,12 @@ class TypeTokenizer
     }
 
     /**
-     * @param  string $type_string
-     * @param  array{int,int}|null   $php_version
+     * @param string $type_string
+     * @param array{int,int}|null   $php_version
      *
      * @return string
+     *
+     * @psalm-pure
      */
     public static function fixScalarTerms(
         string $type_string,

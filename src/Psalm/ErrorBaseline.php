@@ -30,6 +30,8 @@ class ErrorBaseline
      * @param array<string,array<string,array{o:int, s:array<int, string>}>> $existingIssues
      *
      * @return int
+     *
+     * @psalm-pure
      */
     public static function countTotalIssues(array $existingIssues)
     {
