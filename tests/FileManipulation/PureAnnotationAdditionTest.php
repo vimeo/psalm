@@ -116,6 +116,33 @@ class PureAnnotationAdditionTest extends FileManipulationTest
                 ['MissingPureAnnotation'],
                 true,
             ],
+            'dontAddWhenReferencingThis' => [
+                '<?php
+                    class A {
+                        public int $a = 5;
+
+                        /**
+                         * @psalm-pure
+                         */
+                        public function foo() : self {
+                            return $this;
+                        }
+                    }',
+                '<?php
+                    class A {
+                        public int $a = 5;
+
+                        /**
+                         * @psalm-pure
+                         */
+                        public function foo() : self {
+                            return $this;
+                        }
+                    }',
+                '7.4',
+                ['MissingPureAnnotation'],
+                true,
+            ],
         ];
     }
 }
