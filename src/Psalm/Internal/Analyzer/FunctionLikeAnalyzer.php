@@ -593,7 +593,31 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $this->function
             );
 
-            $manipulator->makePure();
+            $yield_types = [];
+
+            $inferred_return_types = ReturnTypeCollector::getReturnTypes(
+                $codebase,
+                $type_provider,
+                $function_stmts,
+                $yield_types,
+                true
+            );
+
+            $inferred_return_type = $inferred_return_types
+                ? \Psalm\Type::combineUnionTypeArray(
+                    $inferred_return_types,
+                    $codebase
+                )
+                : null;
+
+            if ($inferred_return_type
+                && !$inferred_return_type->isVoid()
+                && !$inferred_return_type->isFalse()
+                && !$inferred_return_type->isTrue()
+                && !$inferred_return_type->getId() !== 'array<empty, empty>'
+            ) {
+                $manipulator->makePure();
+            }
         }
 
         if (!$context->collect_initializations
