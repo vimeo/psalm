@@ -583,8 +583,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             && isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
             && !$this->inferred_impure
             && ($this->function instanceof Function_
-                || ($this->function instanceof ClassMethod
-                    && $this->function->isStatic()))
+                || $this->function instanceof ClassMethod)
         ) {
             $manipulator = FunctionDocblockManipulator::getForFunction(
                 $project_analyzer,
@@ -612,6 +611,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             if ($inferred_return_type
                 && !$inferred_return_type->isVoid()
                 && !$inferred_return_type->isFalse()
+                && !$inferred_return_type->isNull()
+                && !$inferred_return_type->isSingleIntLiteral()
+                && !$inferred_return_type->isSingleStringLiteral()
                 && !$inferred_return_type->isTrue()
                 && $inferred_return_type->getId() !== 'array<empty, empty>'
             ) {

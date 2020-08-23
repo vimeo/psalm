@@ -9,6 +9,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Taint\Source;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Issue\ImpureVariable;
 use Psalm\Issue\InvalidScope;
 use Psalm\Issue\PossiblyUndefinedGlobalVariable;
 use Psalm\Issue\PossiblyUndefinedVariable;
@@ -149,7 +150,45 @@ class VariableFetchAnalyzer
             return true;
         }
 
+        if ($stmt->name === 'this') {
+            if ($context->pure) {
+                if (IssueBuffer::accepts(
+                    new ImpureVariable(
+                        'Cannot reference $this in a pure context',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt)
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            } elseif ($codebase->alter_code
+                && isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
+                && $statements_analyzer->getSource()
+                    instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+            ) {
+                $statements_analyzer->getSource()->inferred_impure = true;
+            }
+        }
+
         if (!is_string($stmt->name)) {
+            if ($context->pure) {
+                if (IssueBuffer::accepts(
+                    new ImpureVariable(
+                        'Cannot reference an unknown variable in a pure context',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt)
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            } elseif ($codebase->alter_code
+                && isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
+                && $statements_analyzer->getSource()
+                    instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+            ) {
+                $statements_analyzer->getSource()->inferred_impure = true;
+            }
+
             return ExpressionAnalyzer::analyze($statements_analyzer, $stmt->name, $context);
         }
 
