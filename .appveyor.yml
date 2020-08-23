@@ -55,7 +55,7 @@ install:
 ## Run the actual test
 test_script:
     - cd c:\projects\php-project-workspace
-    - vendor/bin/paratest --runner=WrapperRunner --log-junit build/phpunit/phpunit.xml
+    - vendor/bin/paratest --log-junit build/phpunit/phpunit.xml
     - php ./psalm --shepherd
 
 on_finish:
