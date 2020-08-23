@@ -21,10 +21,10 @@ cache:
   - '%LOCALAPPDATA%\Composer\files'
   - '%LOCALAPPDATA%\Composer\vcs'
   # Cache chocolatey packages
-  - C:\ProgramData\chocolatey\bin # -> .appveyor.yml
-  - C:\ProgramData\chocolatey\lib #-> .appveyor.yml
+  - C:\ProgramData\chocolatey\bin
+  - C:\ProgramData\chocolatey\lib
   # Cache php install
-  - c:\tools\php #-> .appveyor.yml
+  - c:\tools\php
 
 ## Install PHP and composer, and run the appropriate composer command
 install:
