@@ -1226,7 +1226,8 @@ class FunctionCallAnalyzer extends CallAnalyzer
             && ($context->mutation_free
                 || $context->external_mutation_free
                 || $codebase->find_unused_variables
-                || !$config->remember_property_assignments_after_call)
+                || !$config->remember_property_assignments_after_call
+                || $codebase->alter_code)
         ) {
             $must_use = true;
 

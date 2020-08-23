@@ -582,6 +582,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         if ($codebase->alter_code
             && isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
             && !$this->inferred_impure
+            && ($this->function instanceof Function_
+                || ($this->function instanceof ClassMethod
+                    && $this->function->isStatic()))
         ) {
             $manipulator = FunctionDocblockManipulator::getForFunction(
                 $project_analyzer,

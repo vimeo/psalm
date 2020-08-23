@@ -25,6 +25,27 @@ class PureAnnotationAdditionTest extends FileManipulationTest
                 ['MissingPureAnnotation'],
                 true,
             ],
+            'addPureAnnotationToFunctionWithExistingDocblock' => [
+                '<?php
+                    /**
+                     * @return string
+                     */
+                    function foo(string $s) {
+                        return $s;
+                    }',
+                '<?php
+                    /**
+                     * @return string
+                     *
+                     * @psalm-pure
+                     */
+                    function foo(string $s) {
+                        return $s;
+                    }',
+                '7.4',
+                ['MissingPureAnnotation'],
+                true,
+            ],
             'dontAddPureAnnotationToImpureFunction' => [
                 '<?php
                     function foo(string $s): string {
@@ -56,6 +77,25 @@ class PureAnnotationAdditionTest extends FileManipulationTest
                         public function getFoo() : string {
                             return $this->foo;
                         }
+                    }',
+                '7.4',
+                ['MissingPureAnnotation'],
+                true,
+            ],
+            'dontAddPureAnnotationToFunctionWithImpureCall' => [
+                '<?php
+                    function foo(string $s): string {
+                        if (file_exists($s)) {
+                            return "";
+                        }
+                        return $s;
+                    }',
+                '<?php
+                    function foo(string $s): string {
+                        if (file_exists($s)) {
+                            return "";
+                        }
+                        return $s;
                     }',
                 '7.4',
                 ['MissingPureAnnotation'],

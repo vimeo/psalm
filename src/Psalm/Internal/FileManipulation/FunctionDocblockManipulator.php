@@ -359,7 +359,7 @@ class FunctionDocblockManipulator
 
         $old_phpdoc_return_type = null;
         if (isset($parsed_docblock->tags['return'])) {
-            $old_phpdoc_return_type = array_shift($parsed_docblock->tags['return']);
+            $old_phpdoc_return_type = reset($parsed_docblock->tags['return']);
         }
 
         if ($this->is_pure) {
