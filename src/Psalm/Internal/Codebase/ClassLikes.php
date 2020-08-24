@@ -19,6 +19,7 @@ use Psalm\Exception\UnpopulatedClasslikeException;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
+use Psalm\Internal\FileManipulation\ClassDocblockManipulator;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\StatementsProvider;
@@ -784,6 +785,9 @@ class ClassLikes
 
         $progress->debug('Checking class references' . PHP_EOL);
 
+        $project_analyzer = \Psalm\Internal\Analyzer\ProjectAnalyzer::getInstance();
+        $codebase = $project_analyzer->getCodebase();
+
         foreach ($this->existing_classlikes_lc as $fq_class_name_lc => $_) {
             try {
                 $classlike_storage = $this->classlike_storage_provider->get($fq_class_name_lc);
@@ -814,8 +818,59 @@ class ClassLikes
                 }
 
                 $this->findPossibleMethodParamTypes($classlike_storage);
+
+                if ($codebase->alter_code
+                    && isset($project_analyzer->getIssuesToFix()['MissingImmutableAnnotation'])
+                    && !isset($codebase->analyzer->mutable_classes[$fq_class_name_lc])
+                    && !$classlike_storage->external_mutation_free
+                    && $classlike_storage->properties
+                    && isset($classlike_storage->methods['__construct'])
+                ) {
+                    $stmts = $codebase->getStatementsForFile(
+                        $classlike_storage->location->file_path
+                    );
+
+                    foreach ($stmts as $stmt) {
+                        if ($stmt instanceof PhpParser\Node\Stmt\Namespace_) {
+                            foreach ($stmt->stmts as $namespace_stmt) {
+                                if ($namespace_stmt instanceof PhpParser\Node\Stmt\Class_
+                                    && \strtolower((string) $stmt->name . '\\' . (string) $namespace_stmt->name)
+                                        === $fq_class_name_lc
+                                ) {
+                                    self::makeImmutable(
+                                        $namespace_stmt,
+                                        $project_analyzer,
+                                        $classlike_storage->location->file_path
+                                    );
+                                }
+                            }
+                        } elseif ($stmt instanceof PhpParser\Node\Stmt\Class_
+                            && \strtolower((string) $stmt->name) === $fq_class_name_lc
+                        ) {
+                            self::makeImmutable(
+                                $stmt,
+                                $project_analyzer,
+                                $classlike_storage->location->file_path
+                            );
+                        }
+                    }
+                }
             }
         }
+    }
+
+    public function makeImmutable(
+        PhpParser\Node\Stmt\Class_ $class_stmt,
+        \Psalm\Internal\Analyzer\ProjectAnalyzer $project_analyzer,
+        string $file_path
+    ) : void {
+        $manipulator = ClassDocblockManipulator::getForClass(
+            $project_analyzer,
+            $file_path,
+            $class_stmt
+        );
+
+        $manipulator->makeImmutable();
     }
 
     /**

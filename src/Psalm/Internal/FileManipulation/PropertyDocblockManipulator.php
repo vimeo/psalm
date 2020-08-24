@@ -18,15 +18,10 @@ use function substr;
  */
 class PropertyDocblockManipulator
 {
-    /** @var array<string, array<string, self>> */
-    private static $manipulators = [];
-
     /**
-     * Manipulators ordered by line number
-     *
      * @var array<string, array<int, self>>
      */
-    private static $ordered_manipulators = [];
+    private static $manipulators = [];
 
     /** @var Property */
     private $stmt;
@@ -70,16 +65,14 @@ class PropertyDocblockManipulator
     public static function getForProperty(
         ProjectAnalyzer $project_analyzer,
         string $file_path,
-        string $property_id,
         Property $stmt
     ) : self {
-        if (isset(self::$manipulators[$file_path][$property_id])) {
-            return self::$manipulators[$file_path][$property_id];
+        if (isset(self::$manipulators[$file_path][$stmt->getLine()])) {
+            return self::$manipulators[$file_path][$stmt->getLine()];
         }
 
         $manipulator
-            = self::$manipulators[$file_path][$property_id]
-            = self::$ordered_manipulators[$file_path][$stmt->getLine()]
+            = self::$manipulators[$file_path][$stmt->getLine()]
             = new self($project_analyzer, $stmt, $file_path);
 
         return $manipulator;
@@ -227,7 +220,7 @@ class PropertyDocblockManipulator
 
         $file_manipulations = [];
 
-        foreach (self::$ordered_manipulators[$file_path] as $manipulator) {
+        foreach (self::$manipulators[$file_path] as $manipulator) {
             if ($manipulator->new_php_type) {
                 if ($manipulator->typehint_start && $manipulator->typehint_end) {
                     $file_manipulations[$manipulator->typehint_start] = new FileManipulation(
@@ -277,6 +270,5 @@ class PropertyDocblockManipulator
     public static function clearCache()
     {
         self::$manipulators = [];
-        self::$ordered_manipulators = [];
     }
 }

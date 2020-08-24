@@ -12,6 +12,7 @@ abstract class RuntimeCaches
         \Psalm\Internal\Type\TypeTokenizer::clearCache();
         \Psalm\Internal\Provider\FileReferenceProvider::clearCache();
         \Psalm\Internal\FileManipulation\FileManipulationBuffer::clearCache();
+        \Psalm\Internal\FileManipulation\ClassDocblockManipulator::clearCache();
         \Psalm\Internal\FileManipulation\FunctionDocblockManipulator::clearCache();
         \Psalm\Internal\FileManipulation\PropertyDocblockManipulator::clearCache();
         \Psalm\Internal\Analyzer\FileAnalyzer::clearCache();

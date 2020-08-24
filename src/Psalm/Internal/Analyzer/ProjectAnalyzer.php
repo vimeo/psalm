@@ -1360,6 +1360,7 @@ class ProjectAnalyzer
     {
         $supported_issues_to_fix = static::getSupportedIssuesToFix();
 
+        $supported_issues_to_fix[] = 'MissingImmutableAnnotation';
         $supported_issues_to_fix[] = 'MissingPureAnnotation';
 
         $unsupportedIssues = array_diff(array_keys($issues), $supported_issues_to_fix);

@@ -115,7 +115,8 @@ class MethodCallPurityAnalyzer
         $project_analyzer = $statements_analyzer->getProjectAnalyzer();
 
         if ($codebase->alter_code
-            && isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
+            && (isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
+                || isset($project_analyzer->getIssuesToFix()['MissingImmutableAnnotation']))
             && $statements_analyzer->getSource()
                 instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
             && !$method_storage->mutation_free

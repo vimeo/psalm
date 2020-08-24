@@ -1143,7 +1143,8 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                                 // fall through
                             }
                         } elseif ($codebase->alter_code
-                            && isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
+                            && (isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
+                                || isset($project_analyzer->getIssuesToFix()['MissingImmutableAnnotation']))
                             && $statements_analyzer->getSource()
                                 instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
                             && !$method_storage->pure

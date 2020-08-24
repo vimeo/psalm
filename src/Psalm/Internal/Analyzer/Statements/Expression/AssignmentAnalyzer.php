@@ -223,10 +223,12 @@ class AssignmentAnalyzer
                         // fall through
                     }
                 } elseif ($codebase->alter_code
-                    && isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
+                    && (isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
+                        || isset($project_analyzer->getIssuesToFix()['MissingImmutableAnnotation']))
                     && $statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
                 ) {
                     $statements_analyzer->getSource()->inferred_impure = true;
+                    $statements_analyzer->getSource()->inferred_has_mutation = true;
                 }
 
                 $assign_value_type->by_ref = true;
@@ -811,9 +813,16 @@ class AssignmentAnalyzer
                         // fall through
                     }
                 } elseif ($codebase->alter_code
-                    && isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
+                    && (isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
+                        || isset($project_analyzer->getIssuesToFix()['MissingImmutableAnnotation']))
                     && $statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
                 ) {
+                    if (!$assign_var->var instanceof PhpParser\Node\Expr\Variable
+                        || $assign_var->var->name !== 'this'
+                    ) {
+                        $statements_analyzer->getSource()->inferred_has_mutation = true;
+                    }
+
                     $statements_analyzer->getSource()->inferred_impure = true;
                 }
             }
@@ -1101,9 +1110,11 @@ class AssignmentAnalyzer
                     // fall through
                 }
             } elseif ($codebase->alter_code
-                && isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
+                && (isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
+                    || isset($project_analyzer->getIssuesToFix()['MissingImmutableAnnotation']))
                 && $statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
             ) {
+                $statements_analyzer->getSource()->inferred_has_mutation = true;
                 $statements_analyzer->getSource()->inferred_impure = true;
             }
         } elseif (!$context->collect_mutations
@@ -1131,9 +1142,11 @@ class AssignmentAnalyzer
                     }
                 }
             } elseif ($codebase->alter_code
-                && isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
+                && (isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
+                    || isset($project_analyzer->getIssuesToFix()['MissingImmutableAnnotation']))
                 && $statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
             ) {
+                $statements_analyzer->getSource()->inferred_has_mutation = true;
                 $statements_analyzer->getSource()->inferred_impure = true;
             }
         }

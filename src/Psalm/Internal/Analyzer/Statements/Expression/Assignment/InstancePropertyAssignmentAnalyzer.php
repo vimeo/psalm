@@ -692,31 +692,32 @@ class InstancePropertyAssignmentAnalyzer
                         }
                     }
 
-                    // prevents writing to readonly properties
-                    if ($property_storage->readonly) {
-                        $appearing_property_class = $codebase->properties->getAppearingClassForProperty(
-                            $property_id,
-                            true
-                        );
+                    $appearing_property_class = $codebase->properties->getAppearingClassForProperty(
+                        $property_id,
+                        true
+                    );
 
-                        $stmt_var_type = $statements_analyzer->node_data->getType($stmt->var);
+                    $stmt_var_type = $statements_analyzer->node_data->getType($stmt->var);
 
-                        $property_var_pure_compatible = $stmt_var_type
-                            && $stmt_var_type->reference_free
-                            && $stmt_var_type->allow_mutations;
+                    $property_var_pure_compatible = $stmt_var_type
+                        && $stmt_var_type->reference_free
+                        && $stmt_var_type->allow_mutations;
 
-                        if ($appearing_property_class) {
-                            $can_set_property = $context->self
-                                && $context->calling_method_id
-                                && ($appearing_property_class === $context->self
-                                    || $codebase->classExtends($context->self, $appearing_property_class))
-                                && (\strpos($context->calling_method_id, '::__construct')
-                                    || \strpos($context->calling_method_id, '::unserialize')
-                                    || \strpos($context->calling_method_id, '::__unserialize')
-                                    || $property_storage->allow_private_mutation
-                                    || $property_var_pure_compatible);
+                    if ($appearing_property_class
+                        && ($property_storage->readonly || $codebase->alter_code)
+                    ) {
+                        $can_set_readonly_property = $context->self
+                            && $context->calling_method_id
+                            && ($appearing_property_class === $context->self
+                                || $codebase->classExtends($context->self, $appearing_property_class))
+                            && (\strpos($context->calling_method_id, '::__construct')
+                                || \strpos($context->calling_method_id, '::unserialize')
+                                || \strpos($context->calling_method_id, '::__unserialize')
+                                || $property_storage->allow_private_mutation
+                                || $property_var_pure_compatible);
 
-                            if (!$can_set_property) {
+                        if (!$can_set_readonly_property) {
+                            if ($property_storage->readonly) {
                                 if (IssueBuffer::accepts(
                                     new InaccessibleProperty(
                                         $property_id . ' is marked readonly',
@@ -726,28 +727,39 @@ class InstancePropertyAssignmentAnalyzer
                                 )) {
                                     // fall through
                                 }
-                            } elseif ($declaring_class_storage->mutation_free
-                                || $codebase->alter_code
+                            } elseif (!$declaring_class_storage->mutation_free
+                                && isset($project_analyzer->getIssuesToFix()['MissingImmutableAnnotation'])
+                                && $statements_analyzer->getSource()
+                                    instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
                             ) {
-                                $visitor = new \Psalm\Internal\TypeVisitor\ImmutablePropertyAssignmentVisitor(
-                                    $statements_analyzer,
-                                    $stmt
-                                );
+                                $codebase->analyzer->addMutableClass($declaring_property_class);
+                            }
+                        } elseif ($declaring_class_storage->mutation_free
+                            || $codebase->alter_code
+                        ) {
+                            $visitor = new \Psalm\Internal\TypeVisitor\ImmutablePropertyAssignmentVisitor(
+                                $statements_analyzer,
+                                $stmt
+                            );
 
-                                $visitor->traverse($assignment_value_type);
+                            $visitor->traverse($assignment_value_type);
 
-                                if ($codebase->alter_code
-                                    && !$declaring_class_storage->mutation_free
-                                    && isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
-                                    && $statements_analyzer->getSource()
-                                        instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
-                                    && $visitor->has_mutation
-                                ) {
-                                    $statements_analyzer->getSource()->inferred_impure = true;
-                                }
+                            if ($codebase->alter_code
+                                && !$declaring_class_storage->mutation_free
+                                && (isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
+                                    || isset($project_analyzer->getIssuesToFix()['MissingImmutableAnnotation']))
+                                && $statements_analyzer->getSource()
+                                    instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                                && $visitor->has_mutation
+                            ) {
+                                $statements_analyzer->getSource()->inferred_has_mutation = true;
+                                $statements_analyzer->getSource()->inferred_impure = true;
                             }
                         }
-                    } elseif (!$context->collect_mutations
+                    }
+
+                    if (!$property_storage->readonly
+                        && !$context->collect_mutations
                         && !$context->collect_initializations
                         && isset($context->vars_in_scope[$lhs_var_id])
                         && !$context->vars_in_scope[$lhs_var_id]->allow_mutations
