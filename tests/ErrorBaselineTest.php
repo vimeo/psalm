@@ -1,16 +1,20 @@
 <?php
 namespace Psalm\Tests;
 
-use const LIBXML_NOBLANKS;
 use Prophecy\Argument;
+use Prophecy\PhpUnit\ProphecyTrait;
 use Prophecy\Prophecy\ObjectProphecy;
 use Psalm\ErrorBaseline;
 use Psalm\Exception\ConfigException;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\RuntimeCaches;
 
+use const LIBXML_NOBLANKS;
+
 class ErrorBaselineTest extends TestCase
 {
+    use ProphecyTrait;
+
     /** @var ObjectProphecy */
     private $fileProvider;
 

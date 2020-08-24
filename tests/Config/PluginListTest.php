@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Tests\Config;
 
+use Prophecy\PhpUnit\ProphecyTrait;
 use Prophecy\Prophecy\ObjectProphecy;
 use Psalm\Config;
 use Psalm\Internal\PluginManager\ComposerLock;
@@ -11,6 +12,8 @@ use Psalm\Internal\RuntimeCaches;
 /** @group PluginManager */
 class PluginListTest extends \Psalm\Tests\TestCase
 {
+    use ProphecyTrait;
+
     /** @var ObjectProphecy<ConfigFile> */
     private $config_file;
 
