@@ -118,27 +118,25 @@ class PureAnnotationAdditionTest extends FileManipulationTest
             ],
             'dontAddWhenReferencingThis' => [
                 '<?php
-                    class A {
+                    abstract class A {
                         public int $a = 5;
 
-                        /**
-                         * @psalm-pure
-                         */
                         public function foo() : self {
                             return $this;
                         }
-                    }',
+                    }
+
+                    class B extends A {}',
                 '<?php
-                    class A {
+                    abstract class A {
                         public int $a = 5;
 
-                        /**
-                         * @psalm-pure
-                         */
                         public function foo() : self {
                             return $this;
                         }
-                    }',
+                    }
+
+                    class B extends A {}',
                 '7.4',
                 ['MissingPureAnnotation'],
                 true,

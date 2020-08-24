@@ -105,6 +105,24 @@ class VariableFetchAnalyzer
                 );
             }
 
+            if ($context->pure) {
+                if (IssueBuffer::accepts(
+                    new ImpureVariable(
+                        'Cannot reference $this in a pure context',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt)
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            } elseif ($codebase->alter_code
+                && isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
+                && $statements_analyzer->getSource()
+                    instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+            ) {
+                $statements_analyzer->getSource()->inferred_impure = true;
+            }
+
             return true;
         }
 
@@ -148,26 +166,6 @@ class VariableFetchAnalyzer
             $context->vars_possibly_in_scope[$var_name] = true;
 
             return true;
-        }
-
-        if ($stmt->name === 'this') {
-            if ($context->pure) {
-                if (IssueBuffer::accepts(
-                    new ImpureVariable(
-                        'Cannot reference $this in a pure context',
-                        new CodeLocation($statements_analyzer->getSource(), $stmt)
-                    ),
-                    $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
-            } elseif ($codebase->alter_code
-                && isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
-                && $statements_analyzer->getSource()
-                    instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
-            ) {
-                $statements_analyzer->getSource()->inferred_impure = true;
-            }
         }
 
         if (!is_string($stmt->name)) {
