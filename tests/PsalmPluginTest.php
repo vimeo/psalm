@@ -1,8 +1,8 @@
 <?php
 namespace Psalm\Tests;
 
-use function preg_quote;
 use Prophecy\Argument;
+use Prophecy\PhpUnit\ProphecyTrait;
 use Prophecy\Prophecy\ObjectProphecy;
 use Psalm\Internal\PluginManager\Command\DisableCommand;
 use Psalm\Internal\PluginManager\Command\EnableCommand;
@@ -14,11 +14,16 @@ use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Tester\CommandTester;
 
+use function preg_quote;
+
 /** @group PluginManager */
 class PsalmPluginTest extends TestCase
 {
+    use ProphecyTrait;
+
     /** @var ObjectProphecy */
     private $plugin_list;
+
     /** @var ObjectProphecy */
     private $plugin_list_factory;
 
