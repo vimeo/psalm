@@ -1,6 +1,9 @@
 <?php
 namespace Psalm\Internal\Fork;
 
+/**
+ * @psalm-immutable
+ */
 class ForkProcessDoneMessage implements ForkMessage
 {
     /** @var mixed */

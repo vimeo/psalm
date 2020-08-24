@@ -68,6 +68,8 @@ class FileDiffer
      * @param array<int, string> $b
      *
      * @return DiffElem[]
+     *
+     * @psalm-pure
      */
     private static function extractDiff(array $trace, int $x, int $y, array $a, array $b) : array
     {
@@ -115,6 +117,8 @@ class FileDiffer
 
     /**
      * @return array<int, array{0: int, 1: int, 2: int, 3: int, 4: int, 5: string}>
+     *
+     * @psalm-pure
      */
     public static function getDiff(string $a_code, string $b_code)
     {
@@ -263,6 +267,8 @@ class FileDiffer
      * @param DiffElem[] $diff
      *
      * @return DiffElem[]
+     *
+     * @psalm-pure
      */
     private static function coalesceReplacements(array $diff)
     {

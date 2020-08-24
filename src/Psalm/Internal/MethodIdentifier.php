@@ -2,6 +2,9 @@
 
 namespace Psalm\Internal;
 
+/**
+ * @psalm-immutable
+ */
 class MethodIdentifier
 {
     public $fq_class_name;

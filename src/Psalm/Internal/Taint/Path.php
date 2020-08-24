@@ -2,6 +2,9 @@
 
 namespace Psalm\Internal\Taint;
 
+/**
+ * @psalm-immutable
+ */
 class Path
 {
     public $type;

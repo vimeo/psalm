@@ -4,6 +4,8 @@ namespace Psalm\Internal\Diff;
 
 /**
  * @internal
+ *
+ * @psalm-immutable
  */
 class DiffElem
 {

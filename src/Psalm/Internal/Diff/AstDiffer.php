@@ -79,6 +79,8 @@ class AstDiffer
      * @param array<int, bool> $bc
      *
      * @return DiffElem[]
+     *
+     * @psalm-pure
      */
     protected static function extractDiff(array $trace, $x, $y, array $a, array $b, array $bc) : array
     {
