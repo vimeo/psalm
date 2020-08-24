@@ -85,10 +85,6 @@
         {
             "type": "path",
             "url": "examples/plugins/composer-based/echo-checker"
-        },
-        {
-            "type": "vcs",
-            "url": "https://github.com/weirdan/prophecy-shim"
         }
     ],
     "minimum-stability": "dev",
