@@ -451,7 +451,6 @@ class ImmutableAnnotationTest extends TestCase
                         }
 
                         /**
-                         * @psalm-pure
                          * @return mixed
                          * @psalm-return T
                          */

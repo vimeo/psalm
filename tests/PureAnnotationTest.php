@@ -646,8 +646,8 @@ class PureAnnotationTest extends TestCase
                         public string $foo = "hello";
 
                         /** @psalm-pure */
-                        public function getFoo() : string {
-                            return $this->foo;
+                        public static function getFoo(A $a) : string {
+                            return $a->foo;
                         }
                     }',
                 'error_message' => 'ImpurePropertyFetch',

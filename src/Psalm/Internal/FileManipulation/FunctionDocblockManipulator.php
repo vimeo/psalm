@@ -22,6 +22,7 @@ use function strpos;
 use function strrpos;
 use function substr;
 use function reset;
+use function array_merge;
 
 /**
  * @internal
