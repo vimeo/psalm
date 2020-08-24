@@ -141,6 +141,75 @@ class PureAnnotationAdditionTest extends FileManipulationTest
                 ['MissingPureAnnotation'],
                 true,
             ],
+            'dontAddInChildMethod' => [
+                '<?php
+                    class A {
+                        public int $a = 5;
+
+                        public function foo(string $s) : string {
+                            return $string . $this->a;
+                        }
+                    }
+
+                    class B extends A {
+                        public function foo(string $s) : string {
+                            return $string;
+                        }
+                    }',
+                '<?php
+                    class A {
+                        public int $a = 5;
+
+                        public function foo(string $s) : string {
+                            return $string . $this->a;
+                        }
+                    }
+
+                    class B extends A {
+                        public function foo(string $s) : string {
+                            return $string;
+                        }
+                    }',
+                '7.4',
+                ['MissingPureAnnotation'],
+                true,
+            ],
+            'doAddInOtherMethod' => [
+                '<?php
+                    class A {
+                        public int $a = 5;
+
+                        public function foo(string $s) : string {
+                            return $string . $this->a;
+                        }
+                    }
+
+                    class B extends A {
+                        public function bar(string $s) : string {
+                            return $string;
+                        }
+                    }',
+                '<?php
+                    class A {
+                        public int $a = 5;
+
+                        public function foo(string $s) : string {
+                            return $string . $this->a;
+                        }
+                    }
+
+                    class B extends A {
+                        /**
+                         * @psalm-pure
+                         */
+                        public function bar(string $s) : string {
+                            return $string;
+                        }
+                    }',
+                '7.4',
+                ['MissingPureAnnotation'],
+                true,
+            ],
         ];
     }
 }

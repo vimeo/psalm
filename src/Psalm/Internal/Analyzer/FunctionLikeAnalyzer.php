@@ -585,6 +585,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             && ($this->function instanceof Function_
                 || $this->function instanceof ClassMethod)
             && $storage->params
+            && !$overridden_method_ids
         ) {
             $manipulator = FunctionDocblockManipulator::getForFunction(
                 $project_analyzer,
