@@ -502,6 +502,30 @@ class ForeachAnalyzer
                     $value_type,
                     Type::getMixed()
                 );
+
+                if (!$context->pure) {
+                    $project_analyzer = $statements_analyzer->getProjectAnalyzer();
+
+                    if ($codebase->alter_code
+                        && (isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
+                            || isset($project_analyzer->getIssuesToFix()['MissingImmutableAnnotation']))
+                        && $statements_analyzer->getSource()
+                            instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                    ) {
+                        $statements_analyzer->getSource()->inferred_has_mutation = true;
+                        $statements_analyzer->getSource()->inferred_impure = true;
+                    }
+                } else {
+                    if (IssueBuffer::accepts(
+                        new ImpureMethodCall(
+                            'Cannot call a possibly-mutating iterator from a pure context',
+                            new CodeLocation($statements_analyzer, $stmt)
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                }
             } elseif ($iterator_atomic_type instanceof Type\Atomic\TIterable) {
                 if ($iterator_atomic_type->extra_types) {
                     $iterator_atomic_type_copy = clone $iterator_atomic_type;
@@ -621,6 +645,30 @@ class ForeachAnalyzer
                     );
                 } else {
                     $raw_object_types[] = $iterator_atomic_type->value;
+                }
+
+                if (!$context->pure) {
+                    $project_analyzer = $statements_analyzer->getProjectAnalyzer();
+
+                    if ($codebase->alter_code
+                        && (isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
+                            || isset($project_analyzer->getIssuesToFix()['MissingImmutableAnnotation']))
+                        && $statements_analyzer->getSource()
+                            instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                    ) {
+                        $statements_analyzer->getSource()->inferred_has_mutation = true;
+                        $statements_analyzer->getSource()->inferred_impure = true;
+                    }
+                } else {
+                    if (IssueBuffer::accepts(
+                        new ImpureMethodCall(
+                            'Cannot call a possibly-mutating iterator from a pure context',
+                            new CodeLocation($statements_analyzer, $stmt)
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
                 }
             }
         }
