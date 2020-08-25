@@ -4388,6 +4388,86 @@ class ClassTemplateExtendsTest extends TestCase
                         abstract public function foo($param): void;
                     }'
             ],
+            'extendAndImplementedTemplatedProperty' => [
+                '<?php
+                    interface Mock {}
+                    abstract class A {}
+                    class B extends A {}
+                    class BMock extends B {}
+
+                    /** @template T of A */
+                    abstract class ATestCase {
+                        /** @var T */
+                        protected Mock $foo;
+
+                        /** @param T $foo */
+                        public function __construct(A $foo) {
+                            $this->foo = $foo;
+                        }
+                    }
+
+                    /** @extends ATestCase<B> */
+                    class BTestCase extends ATestCase {
+                        public function getFoo(): B {
+                            return $this->foo;
+                        }
+                    }
+
+                    new BTestCase(new BMock());'
+            ],
+            'extendAndImplementedTemplatedIntersectionProperty' => [
+                '<?php
+                    interface Mock {
+                        function foo():void;
+                    }
+                    abstract class A {}
+                    class B extends A {}
+
+                    /** @template T of A */
+                    abstract class ATestCase {
+                        /** @var T&Mock */
+                        protected Mock $obj;
+
+                        /** @param T&Mock $obj */
+                        public function __construct(Mock $obj) {
+                            $this->obj = $obj;
+                        }
+                    }
+
+                    /** @extends ATestCase<B> */
+                    class BTestCase extends ATestCase {
+                        public function getFoo(): void {
+                            $this->obj->foo();
+                        }
+                    }'
+            ],
+            'extendAndImplementedTemplatedIntersectionReceives' => [
+                '<?php
+                    interface Mock {
+                        function foo():void;
+                    }
+                    abstract class A {}
+                    class B extends A {}
+                    class BMock extends B implements Mock {
+                        public function foo(): void {}
+                    }
+
+                    /** @template T of A */
+                    abstract class ATestCase {
+                        /** @var T&Mock */
+                        protected Mock $obj;
+
+                        /** @param T&Mock $obj */
+                        public function __construct(Mock $obj) {
+                            $this->obj = $obj;
+                        }
+                    }
+
+                    /** @extends ATestCase<B> */
+                    class BTestCase extends ATestCase {}
+
+                    new BTestCase(new BMock());'
+            ],
         ];
     }
 

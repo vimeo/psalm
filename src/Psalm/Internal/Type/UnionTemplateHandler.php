@@ -108,8 +108,7 @@ class UnionTemplateHandler
         }
 
         if ($atomic_type instanceof Atomic\TTemplateParam
-            && ($param_name_key = strpos($key, '&') ? $key : $atomic_type->param_name)
-            && isset($template_result->template_types[$param_name_key][$atomic_type->defining_class])
+            && isset($template_result->template_types[$atomic_type->param_name][$atomic_type->defining_class])
         ) {
             $a = self::handleTemplateParamStandin(
                 $atomic_type,
@@ -489,6 +488,38 @@ class UnionTemplateHandler
             $param_name_key = $key;
         }
 
+        $extra_types = [];
+
+        if ($atomic_type->extra_types) {
+            foreach ($atomic_type->extra_types as $extra_type) {
+                $extra_type = self::replaceTemplateTypesWithStandins(
+                    new \Psalm\Type\Union([$extra_type]),
+                    $template_result,
+                    $codebase,
+                    $statements_analyzer,
+                    $input_type,
+                    $input_arg_offset,
+                    $calling_class,
+                    $calling_function,
+                    $replace,
+                    $add_upper_bound,
+                    $depth + 1
+                );
+
+                if ($extra_type->isSingle()) {
+                    $extra_type = array_values($extra_type->getAtomicTypes())[0];
+
+                    if ($extra_type instanceof Atomic\TNamedObject
+                        || $extra_type instanceof Atomic\TTemplateParam
+                        || $extra_type instanceof Atomic\TIterable
+                        || $extra_type instanceof Atomic\TObjectWithProperties
+                    ) {
+                        $extra_types[] = $extra_type;
+                    }
+                }
+            }
+        }
+
         if ($replace) {
             $atomic_types = [];
 
@@ -673,6 +704,10 @@ class UnionTemplateHandler
                     $depth,
                     $input_arg_offset
                 ];
+            }
+
+            foreach ($atomic_types as $atomic_type) {
+                $atomic_type->extra_types = $extra_types;
             }
 
             return $atomic_types;
