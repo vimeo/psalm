@@ -809,7 +809,7 @@ class FunctionClassStringTemplateTest extends TestCase
                         /** @psalm-trace $i */
                         $i = createInitializer($className, $realInstance);
                     }',
-                'error_message' => 'Trace - src/somefile.php:16:25 - $i: Closure(object):void'
+                'error_message' => 'Closure(object):void'
             ],
         ];
     }
