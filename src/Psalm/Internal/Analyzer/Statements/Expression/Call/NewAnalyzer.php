@@ -595,7 +595,11 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                                     $template_result->upper_bounds
                                 );
                             } else {
-                                $generic_param_type = array_values($base_type)[0][0];
+                                if ($fq_class_name === 'SplObjectStorage') {
+                                    $generic_param_type = Type::getEmpty();
+                                } else {
+                                    $generic_param_type = array_values($base_type)[0][0];
+                                }
                             }
 
                             $generic_param_type->had_template = true;

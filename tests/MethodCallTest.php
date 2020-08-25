@@ -910,6 +910,13 @@ class MethodCallTest extends TestCase
                         echo strlen($a->getValue());
                     }',
             ],
+            'newSplObjectStorageDefaultEmpty' => [
+                '<?php
+                    $a = new SplObjectStorage();',
+                [
+                    '$a' => 'SplObjectStorage<empty, empty>',
+                ]
+            ],
         ];
     }
 
