@@ -16,6 +16,7 @@ use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Exception\DocblockParseException;
+use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidIterator;
 use Psalm\Issue\NullIterator;
@@ -563,6 +564,30 @@ class ForeachAnalyzer
                 }
 
                 $has_valid_iterator = true;
+
+                if (!$context->pure) {
+                    $project_analyzer = $statements_analyzer->getProjectAnalyzer();
+
+                    if ($codebase->alter_code
+                        && (isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
+                            || isset($project_analyzer->getIssuesToFix()['MissingImmutableAnnotation']))
+                        && $statements_analyzer->getSource()
+                            instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                    ) {
+                        $statements_analyzer->getSource()->inferred_has_mutation = true;
+                        $statements_analyzer->getSource()->inferred_impure = true;
+                    }
+                } else {
+                    if (IssueBuffer::accepts(
+                        new ImpureMethodCall(
+                            'Cannot call a possibly-mutating Traversable::getIterator from a pure context',
+                            new CodeLocation($statements_analyzer, $stmt)
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                }
             } elseif ($iterator_atomic_type instanceof Type\Atomic\TNamedObject) {
                 if ($iterator_atomic_type->value !== 'Traversable' &&
                     $iterator_atomic_type->value !== $statements_analyzer->getClassName()
