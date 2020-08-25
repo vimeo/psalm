@@ -255,7 +255,7 @@ class ReturnAnalyzer
                         return null;
                     }
 
-                    if ($stmt_type->isMixed()) {
+                    if ($stmt_type->hasMixed()) {
                         if ($local_return_type->isVoid() || $local_return_type->isNever()) {
                             if (IssueBuffer::accepts(
                                 new InvalidReturnStatement(
@@ -276,17 +276,29 @@ class ReturnAnalyzer
                             $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
                         }
 
+                        if ($stmt_type->isMixed()) {
+                            if (IssueBuffer::accepts(
+                                new MixedReturnStatement(
+                                    'Could not infer a return type',
+                                    new CodeLocation($source, $stmt->expr)
+                                ),
+                                $statements_analyzer->getSuppressedIssues()
+                            )) {
+                                // fall through
+                            }
+
+                            return null;
+                        }
+
                         if (IssueBuffer::accepts(
                             new MixedReturnStatement(
-                                'Could not infer a return type',
+                                'Possibly-mixed return value',
                                 new CodeLocation($source, $stmt->expr)
                             ),
                             $statements_analyzer->getSuppressedIssues()
                         )) {
-                            return false;
+                            // fall through
                         }
-
-                        return null;
                     }
 
                     if ($local_return_type->isMixed()) {

@@ -1717,6 +1717,9 @@ class ArrayAssignmentTest extends TestCase
                             $cache[$locale] = 5;
                         }
 
+                        /**
+                         * @psalm-suppress MixedReturnStatement
+                         */
                         return $cache[$locale];
                     }',
                 'error_message' => 'InvalidReturnStatement',
@@ -1733,6 +1736,7 @@ class ArrayAssignmentTest extends TestCase
 
                         /**
                          * @psalm-suppress MixedArrayAccess
+                         * @psalm-suppress MixedReturnStatement
                          */
                         return $cache[$locale][$locale];
                     }',

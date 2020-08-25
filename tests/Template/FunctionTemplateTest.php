@@ -1337,6 +1337,52 @@ class FunctionTemplateTest extends TestCase
                 [],
                 '7.4'
             ],
+            'mixedDoesntSwallowNull' => [
+                '<?php
+                    /**
+                     * @template E
+                     * @param E $e
+                     * @param mixed $d
+                     * @return ?E
+                     * @psalm-suppress MixedInferredReturnType
+                     */
+                    function reduce_values($e, $d) {
+                        if (rand(0, 1)) {
+                            $c = $e;
+                        } elseif (rand(0, 1)) {
+                            /** @psalm-suppress MixedAssignment */
+                            $c = $d;
+                        } else {
+                            $c = null;
+                        }
+
+                        /** @psalm-suppress MixedReturnStatement */
+                        return $c;
+                    }'
+            ],
+            'mixedDoesntSwallowNullProgressive' => [
+                '<?php
+                    /**
+                     * @template E
+                     * @param E $e
+                     * @param mixed $d
+                     * @return ?E
+                     * @psalm-suppress MixedInferredReturnType
+                     */
+                    function reduce_values($e, $d)
+                    {
+                        if (rand(0, 1)) {
+                            $d = $e;
+                        }
+
+                        if (rand(0, 1)) {
+                            /** @psalm-suppress MixedReturnStatement */
+                            return $d;
+                        }
+
+                        return null;
+                    }'
+            ],
         ];
     }
 

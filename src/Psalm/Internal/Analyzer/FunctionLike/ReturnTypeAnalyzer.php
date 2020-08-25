@@ -238,15 +238,12 @@ class ReturnTypeAnalyzer
             }
         }
 
-        $inferred_return_type = TypeAnalyzer::simplifyUnionType(
+        $inferred_return_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
             $codebase,
-            \Psalm\Internal\Type\TypeExpander::expandUnion(
-                $codebase,
-                $inferred_return_type,
-                $source->getFQCLN(),
-                $source->getFQCLN(),
-                $source->getParentFQCLN()
-            )
+            $inferred_return_type,
+            $source->getFQCLN(),
+            $source->getFQCLN(),
+            $source->getParentFQCLN()
         );
 
         // hack until we have proper yield type collection
@@ -552,8 +549,9 @@ class ReturnTypeAnalyzer
 
                     return null;
                 }
-            } elseif ((!$inferred_return_type->isNullable() && $declared_return_type->isNullable())
-                || (!$inferred_return_type->isFalsable() && $declared_return_type->isFalsable())
+            } elseif (!$inferred_return_type->hasMixed()
+                && ((!$inferred_return_type->isNullable() && $declared_return_type->isNullable())
+                    || (!$inferred_return_type->isFalsable() && $declared_return_type->isFalsable()))
             ) {
                 if ($function instanceof Function_
                     || $function instanceof Closure
