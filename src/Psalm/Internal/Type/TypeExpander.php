@@ -414,6 +414,21 @@ class TypeExpander
             );
         }
 
+        if ($return_type instanceof Type\Atomic\TObjectWithProperties) {
+            foreach ($return_type->properties as &$property_type) {
+                $property_type = self::expandUnion(
+                    $codebase,
+                    $property_type,
+                    $self_class,
+                    $static_class_type,
+                    $parent_class,
+                    $evaluate_class_constants,
+                    $evaluate_conditional_types,
+                    $final
+                );
+            }
+        }
+
         if ($return_type instanceof Type\Atomic\TCallable
             || $return_type instanceof Type\Atomic\TFn
         ) {
