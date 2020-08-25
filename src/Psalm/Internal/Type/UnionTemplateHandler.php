@@ -514,7 +514,7 @@ class UnionTemplateHandler
                         || $extra_type instanceof Atomic\TIterable
                         || $extra_type instanceof Atomic\TObjectWithProperties
                     ) {
-                        $extra_types[] = $extra_type;
+                        $extra_types[$extra_type->getKey()] = $extra_type;
                     }
                 }
             }
@@ -707,7 +707,13 @@ class UnionTemplateHandler
             }
 
             foreach ($atomic_types as $atomic_type) {
-                $atomic_type->extra_types = $extra_types;
+                if ($atomic_type instanceof Atomic\TNamedObject
+                    || $atomic_type instanceof Atomic\TTemplateParam
+                    || $atomic_type instanceof Atomic\TIterable
+                    || $atomic_type instanceof Atomic\TObjectWithProperties
+                ) {
+                    $atomic_type->extra_types = $extra_types;
+                }
             }
 
             return $atomic_types;
