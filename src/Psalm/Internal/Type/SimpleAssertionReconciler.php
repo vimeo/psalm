@@ -1549,10 +1549,14 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                 $key_type->removeType($key);
                 $key_type->addType(new Type\Atomic\TArrayKey());
             } elseif (!$cat instanceof TString && !$cat instanceof TInt) {
-                // this should ideally prompt some sort of error
                 $key_type->removeType($key);
                 $key_type->addType(new Type\Atomic\TArrayKey());
             }
+        }
+
+        if (!$key_type->getAtomicTypes()) {
+            // this should ideally prompt some sort of error
+            $key_type->addType(new Type\Atomic\TArrayKey());
         }
     }
 
