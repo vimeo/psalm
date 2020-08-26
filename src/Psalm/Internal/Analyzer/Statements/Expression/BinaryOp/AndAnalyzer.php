@@ -91,7 +91,7 @@ class AndAnalyzer
                 array_filter(
                     $context_clauses,
                     function ($c) use ($reconciled_expression_clauses) {
-                        return !\in_array($c->getHash(), $reconciled_expression_clauses);
+                        return !\in_array($c->hash, $reconciled_expression_clauses);
                     }
                 )
             );
@@ -202,7 +202,7 @@ class AndAnalyzer
                 $if_context->reconciled_expression_clauses,
                 array_map(
                     function ($c) {
-                        return $c->getHash();
+                        return $c->hash;
                     },
                     $partitioned_clauses[1]
                 )

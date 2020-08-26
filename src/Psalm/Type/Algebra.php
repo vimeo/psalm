@@ -74,7 +74,7 @@ class Algebra
      *
      * @psalm-pure
      */
-    private static function negateType($type)
+    public static function negateType($type)
     {
         if ($type === 'mixed') {
             return $type;
@@ -407,9 +407,11 @@ class Algebra
      *     ($a) && ($a || $b) => $a
      *     (!$a) && (!$b) && ($a || $b || $c) => $c
      *
-     * @param  array<int, Clause>  $clauses
+     * @param array<int, Clause>  $clauses
      *
      * @return list<Clause>
+     *
+     * @psalm-pure
      */
     public static function simplifyCNF(array $clauses)
     {
@@ -417,11 +419,8 @@ class Algebra
 
         // avoid strict duplicates
         foreach ($clauses as $clause) {
-            $unique_clause = clone $clause;
-            foreach ($unique_clause->possibilities as $var_id => $possibilities) {
-                $unique_clause->possibilities[$var_id] = array_values(array_unique($possibilities));
-            }
-            $cloned_clauses[$clause->getHash()] = $unique_clause;
+            $unique_clause = $clause->makeUnique();
+            $cloned_clauses[$unique_clause->hash] = $unique_clause;
         }
 
         // remove impossible types
@@ -438,7 +437,7 @@ class Algebra
             $only_type = array_pop(array_values($clause_a->possibilities)[0]);
             $negated_clause_type = self::negateType($only_type);
 
-            foreach ($cloned_clauses as $clause_b) {
+            foreach ($cloned_clauses as $clause_hash => $clause_b) {
                 if ($clause_a === $clause_b || !$clause_b->reconcilable || $clause_b->wedge) {
                     continue;
                 }
@@ -461,10 +460,12 @@ class Algebra
                     );
 
                     if (!$clause_var_possibilities) {
-                        unset($clause_b->possibilities[$clause_var]);
-                        $clause_b->impossibilities = null;
+                        $cloned_clauses[$clause_hash] = $clause_b->removePossibilities($clause_var);
                     } else {
-                        $clause_b->possibilities[$clause_var] = $clause_var_possibilities;
+                        $cloned_clauses[$clause_hash] = $clause_b->addPossibilities(
+                            $clause_var,
+                            $clause_var_possibilities
+                        );
                     }
                 }
             }
@@ -474,7 +475,7 @@ class Algebra
 
         // avoid strict duplicates
         foreach ($cloned_clauses as $clause) {
-            $deduped_clauses[$clause->getHash()] = clone $clause;
+            $deduped_clauses[$clause->hash] = clone $clause;
         }
 
         $deduped_clauses = array_filter(
@@ -596,9 +597,11 @@ class Algebra
     }
 
     /**
-     * @param  non-empty-array<int, Clause>  $clauses
+     * @param non-empty-array<int, Clause>  $clauses
      *
      * @return array<int, Clause>
+     *
+     * @psalm-pure
      */
     public static function groupImpossibilities(array $clauses)
     {
@@ -684,10 +687,12 @@ class Algebra
     }
 
     /**
-     * @param  array<int, Clause>  $left_clauses
-     * @param  array<int, Clause>  $right_clauses
+     * @param array<int, Clause>  $left_clauses
+     * @param array<int, Clause>  $right_clauses
      *
      * @return array<int, Clause>
+     *
+     * @psalm-pure
      */
     public static function combineOredClauses(array $left_clauses, array $right_clauses)
     {
@@ -803,9 +808,11 @@ class Algebra
      *   (!$a || !$c || !$e) &&
      *   (!$a || !$c || !$f)
      *
-     * @param  array<int, Clause>  $clauses
+     * @param array<int, Clause>  $clauses
      *
      * @return non-empty-list<Clause>
+     *
+     * @psalm-pure
      */
     public static function negateFormula(array $clauses)
     {
@@ -813,11 +820,15 @@ class Algebra
             return [new Clause([], true)];
         }
 
+        $clauses_with_impossibilities = [];
+
         foreach ($clauses as $clause) {
-            self::calculateNegation($clause);
+            $clauses_with_impossibilities[] = $clause->calculateNegation();
         }
 
-        $impossible_clauses = self::groupImpossibilities($clauses);
+        unset($clauses);
+
+        $impossible_clauses = self::groupImpossibilities($clauses_with_impossibilities);
 
         if (!$impossible_clauses) {
             return [new Clause([], true)];
@@ -830,39 +841,5 @@ class Algebra
         }
 
         return $negated;
-    }
-
-    /**
-     * @param  Clause $clause
-     *
-     * @return void
-     */
-    public static function calculateNegation(Clause $clause)
-    {
-        if ($clause->impossibilities !== null) {
-            return;
-        }
-
-        $impossibilities = [];
-
-        foreach ($clause->possibilities as $var_id => $possibility) {
-            $impossibility = [];
-
-            foreach ($possibility as $type) {
-                if (($type[0] !== '=' && $type[0] !== '~'
-                        && (!isset($type[1]) || ($type[1] !== '=' && $type[1] !== '~')))
-                    || strpos($type, '(')
-                    || strpos($type, 'getclass-')
-                ) {
-                    $impossibility[] = self::negateType($type);
-                }
-            }
-
-            if ($impossibility) {
-                $impossibilities[$var_id] = $impossibility;
-            }
-        }
-
-        $clause->impossibilities = $impossibilities;
     }
 }

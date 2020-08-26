@@ -713,6 +713,7 @@ class InstancePropertyAssignmentAnalyzer
                             && (\strpos($context->calling_method_id, '::__construct')
                                 || \strpos($context->calling_method_id, '::unserialize')
                                 || \strpos($context->calling_method_id, '::__unserialize')
+                                || \strpos($context->calling_method_id, '::__clone')
                                 || $property_storage->allow_private_mutation
                                 || $property_var_pure_compatible);
 

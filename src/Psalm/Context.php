@@ -525,10 +525,12 @@ class Context
     }
 
     /**
-     * @param  Clause[]             $clauses
-     * @param  array<string, bool>  $changed_var_ids
+     * @param Clause[]             $clauses
+     * @param array<string, bool>  $changed_var_ids
      *
      * @return array{0: list<Clause>, list<Clause>}
+     *
+     * @psalm-pure
      */
     public static function removeReconciledClauses(array $clauses, array $changed_var_ids)
     {
@@ -573,7 +575,7 @@ class Context
         $clauses_to_keep = [];
 
         foreach ($clauses as $clause) {
-            \Psalm\Type\Algebra::calculateNegation($clause);
+            $clause = $clause->calculateNegation();
 
             $quoted_remove_var_id = preg_quote($remove_var_id, '/');
 

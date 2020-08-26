@@ -169,6 +169,9 @@ class ComposerLockTest extends TestCase
         );
     }
 
+    /**
+     * @psalm-pure
+     */
     private function pluginEntry(string $package_name, string $package_class): array
     {
         return [
@@ -182,7 +185,11 @@ class ComposerLockTest extends TestCase
         ];
     }
 
-    /** @param mixed $data */
+    /**
+     * @param mixed $data
+     *
+     * @psalm-pure
+     */
     private function jsonFile($data): string
     {
         return 'data:application/json,' . json_encode($data);

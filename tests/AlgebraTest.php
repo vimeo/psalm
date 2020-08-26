@@ -47,7 +47,7 @@ class AlgebraTest extends TestCase
         $negated_formula = Algebra::negateFormula($formula);
 
         $this->assertCount(1, $negated_formula);
-        $this->assertSame(['$a' => ['falsy'], '$b' => ['falsy']], $negated_formula[0]->possibilities);
+        $this->assertSame(['$b' => ['falsy'], '$a' => ['falsy']], $negated_formula[0]->possibilities);
 
         $formula = [
             new Clause(['$a' => ['int', 'string'], '$b' => ['!falsy']]),
@@ -152,7 +152,7 @@ class AlgebraTest extends TestCase
 
     public function testGroupImpossibilities() : void
     {
-        $clause1 = new \Psalm\Internal\Clause(
+        $clause1 = (new \Psalm\Internal\Clause(
             [
                 '$a' => ['=array']
             ],
@@ -161,11 +161,9 @@ class AlgebraTest extends TestCase
             true,
             [],
             5377
-        );
+        ))->calculateNegation();
 
-        $clause1->impossibilities = [];
-
-        $clause2 = new \Psalm\Internal\Clause(
+        $clause2 = (new \Psalm\Internal\Clause(
             [
                 '$b' => ['isset']
             ],
@@ -174,11 +172,7 @@ class AlgebraTest extends TestCase
             true,
             [],
             5377
-        );
-
-        $clause2->impossibilities = [
-            '$b' => ['!isset']
-        ];
+        ))->calculateNegation();
 
         $result_clauses = Algebra::groupImpossibilities([$clause1, $clause2]);
 

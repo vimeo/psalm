@@ -136,6 +136,8 @@ class StubTest extends TestCase
      * @param string $file
      *
      * @return string
+     *
+     * @psalm-pure
      */
     private function getOperatingSystemStyledPath(string $file): string
     {

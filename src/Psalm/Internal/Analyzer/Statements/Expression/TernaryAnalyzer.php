@@ -108,7 +108,7 @@ class TernaryAnalyzer
                 array_filter(
                     $ternary_clauses,
                     function ($c) use ($reconciled_expression_clauses) {
-                        return !\in_array($c->getHash(), $reconciled_expression_clauses);
+                        return !\in_array($c->hash, $reconciled_expression_clauses);
                     }
                 )
             );

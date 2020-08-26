@@ -217,6 +217,8 @@ class ConfigFileTest extends \Psalm\Tests\TestCase
      * @param string $contents
      *
      * @return bool
+     *
+     * @psalm-pure
      */
     protected static function compareContentWithTemplateAndTrailingLineEnding($expected_template, $contents)
     {

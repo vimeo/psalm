@@ -170,7 +170,7 @@ class IfAnalyzer
                 array_filter(
                     $if_context->clauses,
                     function ($c) use ($reconciled_expression_clauses) {
-                        return !in_array($c->getHash(), $reconciled_expression_clauses);
+                        return !in_array($c->hash, $reconciled_expression_clauses);
                     }
                 )
             );
@@ -1154,7 +1154,7 @@ class IfAnalyzer
                 array_filter(
                     $elseif_context_clauses,
                     function ($c) use ($reconciled_expression_clauses) {
-                        return !in_array($c->getHash(), $reconciled_expression_clauses);
+                        return !in_array($c->hash, $reconciled_expression_clauses);
                     }
                 )
             );

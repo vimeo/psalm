@@ -691,6 +691,8 @@ column_to: 8
 
     /**
      * Needed when running on Windows
+     *
+     * @psalm-pure
      */
     private function toUnixLineEndings(string $output): string
     {
