@@ -41,6 +41,7 @@ class TypeTokenizer
         'class-string' => true,
         'callable-string' => true,
         'callable-array' => true,
+        'pure-callable' => true,
         'trait-string' => true,
         'mysql-escaped-string' => true,
         'html-escaped-string' => true,

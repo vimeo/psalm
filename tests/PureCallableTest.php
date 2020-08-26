@@ -191,6 +191,17 @@ class PureCallableTest extends TestCase
                      */
                     function f(callable $p): void {}',
             ],
+            'varCallableInNamespace' => [
+                '<?php
+                    namespace Foo;
+
+                    /**
+                     * @param pure-callable $c
+                     */
+                    function bar(callable $c) : callable {
+                        return $c;
+                    }',
+            ],
         ];
     }
 
