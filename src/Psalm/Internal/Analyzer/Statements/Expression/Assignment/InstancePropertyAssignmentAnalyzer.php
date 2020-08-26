@@ -692,72 +692,15 @@ class InstancePropertyAssignmentAnalyzer
                         }
                     }
 
-                    $appearing_property_class = $codebase->properties->getAppearingClassForProperty(
+                    self::trackPropertyImpurity(
+                        $statements_analyzer,
+                        $stmt,
                         $property_id,
-                        true
+                        $property_storage,
+                        $declaring_class_storage,
+                        $assignment_value_type,
+                        $context
                     );
-
-                    $stmt_var_type = $statements_analyzer->node_data->getType($stmt->var);
-
-                    $property_var_pure_compatible = $stmt_var_type
-                        && $stmt_var_type->reference_free
-                        && $stmt_var_type->allow_mutations;
-
-                    if ($appearing_property_class
-                        && ($property_storage->readonly || $codebase->alter_code)
-                    ) {
-                        $can_set_readonly_property = $context->self
-                            && $context->calling_method_id
-                            && ($appearing_property_class === $context->self
-                                || $codebase->classExtends($context->self, $appearing_property_class))
-                            && (\strpos($context->calling_method_id, '::__construct')
-                                || \strpos($context->calling_method_id, '::unserialize')
-                                || \strpos($context->calling_method_id, '::__unserialize')
-                                || \strpos($context->calling_method_id, '::__clone')
-                                || $property_storage->allow_private_mutation
-                                || $property_var_pure_compatible);
-
-                        if (!$can_set_readonly_property) {
-                            if ($property_storage->readonly) {
-                                if (IssueBuffer::accepts(
-                                    new InaccessibleProperty(
-                                        $property_id . ' is marked readonly',
-                                        new CodeLocation($statements_analyzer->getSource(), $stmt)
-                                    ),
-                                    $statements_analyzer->getSuppressedIssues()
-                                )) {
-                                    // fall through
-                                }
-                            } elseif (!$declaring_class_storage->mutation_free
-                                && isset($project_analyzer->getIssuesToFix()['MissingImmutableAnnotation'])
-                                && $statements_analyzer->getSource()
-                                    instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
-                            ) {
-                                $codebase->analyzer->addMutableClass($declaring_property_class);
-                            }
-                        } elseif ($declaring_class_storage->mutation_free
-                            || $codebase->alter_code
-                        ) {
-                            $visitor = new \Psalm\Internal\TypeVisitor\ImmutablePropertyAssignmentVisitor(
-                                $statements_analyzer,
-                                $stmt
-                            );
-
-                            $visitor->traverse($assignment_value_type);
-
-                            if ($codebase->alter_code
-                                && !$declaring_class_storage->mutation_free
-                                && (isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
-                                    || isset($project_analyzer->getIssuesToFix()['MissingImmutableAnnotation']))
-                                && $statements_analyzer->getSource()
-                                    instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
-                                && $visitor->has_mutation
-                            ) {
-                                $statements_analyzer->getSource()->inferred_has_mutation = true;
-                                $statements_analyzer->getSource()->inferred_impure = true;
-                            }
-                        }
-                    }
 
                     if (!$property_storage->readonly
                         && !$context->collect_mutations
@@ -1121,6 +1064,86 @@ class InstancePropertyAssignmentAnalyzer
         }
 
         return null;
+    }
+
+    public static function trackPropertyImpurity(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\PropertyFetch $stmt,
+        string $property_id,
+        \Psalm\Storage\PropertyStorage $property_storage,
+        \Psalm\Storage\ClassLikeStorage $declaring_class_storage,
+        ?Type\Union $assignment_value_type,
+        Context $context
+    ): void {
+        $codebase = $statements_analyzer->getCodebase();
+
+        $stmt_var_type = $statements_analyzer->node_data->getType($stmt->var);
+
+        $property_var_pure_compatible = $stmt_var_type
+            && $stmt_var_type->reference_free
+            && $stmt_var_type->allow_mutations;
+
+        $appearing_property_class = $codebase->properties->getAppearingClassForProperty(
+            $property_id,
+            true
+        );
+
+        $project_analyzer = $statements_analyzer->getProjectAnalyzer();
+
+        if ($appearing_property_class && ($property_storage->readonly || $codebase->alter_code)) {
+            $can_set_readonly_property = $context->self
+                && $context->calling_method_id
+                && ($appearing_property_class === $context->self
+                    || $codebase->classExtends($context->self, $appearing_property_class))
+                && (\strpos($context->calling_method_id, '::__construct')
+                    || \strpos($context->calling_method_id, '::unserialize')
+                    || \strpos($context->calling_method_id, '::__unserialize')
+                    || \strpos($context->calling_method_id, '::__clone')
+                    || $property_storage->allow_private_mutation
+                    || $property_var_pure_compatible);
+
+            if (!$can_set_readonly_property) {
+                if ($property_storage->readonly) {
+                    if (IssueBuffer::accepts(
+                        new InaccessibleProperty(
+                            $property_id . ' is marked readonly',
+                            new CodeLocation($statements_analyzer->getSource(), $stmt)
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                } elseif (!$declaring_class_storage->mutation_free
+                    && isset($project_analyzer->getIssuesToFix()['MissingImmutableAnnotation'])
+                    && $statements_analyzer->getSource()
+                        instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                ) {
+                    $codebase->analyzer->addMutableClass($declaring_class_storage->name);
+                }
+            } elseif ($assignment_value_type
+                && ($declaring_class_storage->mutation_free
+                    || $codebase->alter_code)
+            ) {
+                $visitor = new \Psalm\Internal\TypeVisitor\ImmutablePropertyAssignmentVisitor(
+                    $statements_analyzer,
+                    $stmt
+                );
+
+                $visitor->traverse($assignment_value_type);
+
+                if ($codebase->alter_code
+                    && !$declaring_class_storage->mutation_free
+                    && (isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
+                        || isset($project_analyzer->getIssuesToFix()['MissingImmutableAnnotation']))
+                    && $statements_analyzer->getSource()
+                        instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                    && $visitor->has_mutation
+                ) {
+                    $statements_analyzer->getSource()->inferred_has_mutation = true;
+                    $statements_analyzer->getSource()->inferred_impure = true;
+                }
+            }
+        }
     }
 
     public static function analyzeStatement(

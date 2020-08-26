@@ -771,6 +771,24 @@ class ImmutableAnnotationTest extends TestCase
                     }',
                 'error_message' => 'ImpurePropertyAssignment',
             ],
+            'preventUnset' => [
+                '<?php
+                    /**
+                     * @psalm-immutable
+                     */
+                    class A {
+                        /** @var string */
+                        public $b;
+
+                        public function __construct(string $b) {
+                            $this->b = $b;
+                        }
+                    }
+
+                    $a = new A("hello");
+                    unset($a->b);',
+                'error_message' => 'InaccessibleProperty',
+            ],
         ];
     }
 }

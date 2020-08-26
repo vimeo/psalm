@@ -8,11 +8,13 @@ use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
+use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\DeprecatedProperty;
+use Psalm\Issue\ImpurePropertyAssignment;
 use Psalm\Issue\ImpurePropertyFetch;
 use Psalm\Issue\InvalidPropertyFetch;
 use Psalm\Issue\InternalProperty;
@@ -801,7 +803,8 @@ class InstancePropertyFetchAnalyzer
                             )) {
                                 // fall through
                             }
-                        } elseif ($codebase->alter_code
+                        } elseif ($context->inside_isset
+                            && $codebase->alter_code
                             && isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
                             && $statements_analyzer->getSource()
                                 instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
@@ -936,6 +939,18 @@ class InstancePropertyFetchAnalyzer
                     )) {
                         // fall through
                     }
+                }
+
+                if ($context->inside_unset) {
+                    InstancePropertyAssignmentAnalyzer::trackPropertyImpurity(
+                        $statements_analyzer,
+                        $stmt,
+                        $property_id,
+                        $property_storage,
+                        $declaring_class_storage,
+                        null,
+                        $context
+                    );
                 }
             }
 
