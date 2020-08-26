@@ -23,8 +23,6 @@ class AstDiffer
      * @param array<int, PhpParser\Node\Stmt> $b
      *
      * @return array{0:array<int, array<int, int>>, 1: int, 2: int, 3: array<int, bool>}
-     *
-     * @psalm-pure
      */
     protected static function calculateTrace(
         \Closure $is_equal,

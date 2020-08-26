@@ -164,6 +164,11 @@ abstract class Atomic implements TypeNode
 
             case 'callable':
                 return new TCallable();
+            case 'pure-callable':
+                $type = new TCallable();
+                $type->is_pure = true;
+
+                return $type;
 
             case 'array':
             case 'associative-array':

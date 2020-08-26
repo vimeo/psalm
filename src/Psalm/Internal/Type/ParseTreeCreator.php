@@ -745,7 +745,7 @@ class ParseTreeCreator
                 break;
 
             case '(':
-                if (in_array(strtolower($type_token[0]), ['closure', 'callable', '\closure'], true)) {
+                if (in_array(strtolower($type_token[0]), ['closure', 'callable', '\closure', 'pure-callable'], true)) {
                     $new_leaf = new ParseTree\CallableTree(
                         $type_token[0],
                         $new_parent
@@ -760,7 +760,7 @@ class ParseTreeCreator
                     );
                 } else {
                     throw new TypeParseTreeException(
-                        'Bracket must be preceded by “Closure”, “callable” or a valid @method name'
+                        'Bracket must be preceded by “Closure”, “callable”, "pure-callable" or a valid @method name'
                     );
                 }
 

@@ -567,6 +567,18 @@ class FunctionCallAnalyzer extends CallAnalyzer
 
             foreach ($stmt_name_type->getAtomicTypes() as $var_type_part) {
                 if ($var_type_part instanceof Type\Atomic\TFn || $var_type_part instanceof Type\Atomic\TCallable) {
+                    if (!$var_type_part->is_pure && $context->pure) {
+                        if (IssueBuffer::accepts(
+                            new ImpureFunctionCall(
+                                'Cannot call an impure function from a mutation-free context',
+                                new CodeLocation($statements_analyzer->getSource(), $stmt)
+                            ),
+                            $statements_analyzer->getSuppressedIssues()
+                        )) {
+                            // fall through
+                        }
+                    }
+
                     $function_params = $var_type_part->params;
 
                     if (($stmt_type = $statements_analyzer->node_data->getType($real_stmt))
