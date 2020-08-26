@@ -1499,9 +1499,9 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                 $did_remove_type = true;
             } elseif ($type instanceof Atomic\TIterable) {
                 $clone_type = clone $type;
-                if ($clone_type->type_params[0]->isMixed()) {
-                    $clone_type->type_params[0] = Type::getArrayKey();
-                }
+
+                self::refineArrayKey($clone_type->type_params[0]);
+
                 $array_types[] = new TArray($clone_type->type_params);
 
                 $did_remove_type = true;
@@ -1537,6 +1537,23 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
         return $existing_var_type->from_docblock
             ? Type::getMixed()
             : Type::getEmpty();
+    }
+
+    private static function refineArrayKey(Union $key_type) : void
+    {
+        foreach ($key_type->getAtomicTypes() as $key => $cat) {
+            if ($cat instanceof TTemplateParam) {
+                self::refineArrayKey($cat->as);
+                $key_type->bustCache();
+            } elseif ($cat instanceof TScalar || $cat instanceof TMixed) {
+                $key_type->removeType($key);
+                $key_type->addType(new Type\Atomic\TArrayKey());
+            } elseif (!$cat instanceof TString && !$cat instanceof TInt) {
+                // this should ideally prompt some sort of error
+                $key_type->removeType($key);
+                $key_type->addType(new Type\Atomic\TArrayKey());
+            }
+        }
     }
 
     /**
