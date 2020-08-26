@@ -1147,7 +1147,7 @@ class AssertionFinder
     ) {
         $if_types = [];
 
-        $null_position = self::hasNullVariable($conditional, $sourcec);
+        $null_position = self::hasNullVariable($conditional, $source);
         $false_position = self::hasFalseVariable($conditional);
         $true_position = self::hasTrueVariable($conditional);
         $empty_array_position = self::hasEmptyArrayVariable($conditional);
