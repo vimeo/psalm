@@ -2,6 +2,7 @@
 namespace Psalm\Internal\Type;
 
 use Psalm\Codebase;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TNamedObject;
@@ -33,7 +34,8 @@ class TypeExpander
         ?string $parent_class,
         bool $evaluate_class_constants = true,
         bool $evaluate_conditional_types = false,
-        bool $final = false
+        bool $final = false,
+        ?StatementsAnalyzer $statements_analyzer = null
     ) {
         $return_type = clone $return_type;
 
@@ -50,7 +52,8 @@ class TypeExpander
                 $parent_class,
                 $evaluate_class_constants,
                 $evaluate_conditional_types,
-                $final
+                $final,
+                $statements_analyzer
             );
 
             if (is_array($parts)) {
@@ -97,7 +100,8 @@ class TypeExpander
         ?string $parent_class,
         bool $evaluate_class_constants = true,
         bool $evaluate_conditional_types = false,
-        bool $final = false
+        bool $final = false,
+        ?StatementsAnalyzer $statements_analyzer = null
     ) {
         if ($return_type instanceof TNamedObject
             || $return_type instanceof TTemplateParam
@@ -256,7 +260,8 @@ class TypeExpander
                         $class_constant = $codebase->classlikes->getConstantForClass(
                             $return_type->fq_classlike_name,
                             $matching_constant,
-                            \ReflectionProperty::IS_PRIVATE
+                            \ReflectionProperty::IS_PRIVATE,
+                            $statements_analyzer
                         );
                     } catch (\Psalm\Exception\CircularReferenceException $e) {
                         $class_constant = null;

@@ -1106,7 +1106,11 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     $param_type,
                     $context->self,
                     $context->self,
-                    $this->getParentFQCLN()
+                    $this->getParentFQCLN(),
+                    true,
+                    false,
+                    false,
+                    $statements_analyzer
                 );
 
                 if ($function_param->type_location) {

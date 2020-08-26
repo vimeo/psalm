@@ -978,7 +978,20 @@ class ConstantTest extends TestCase
                     '$dir===' => 'non-empty-string',
                     '$file===' => 'non-empty-string',
                 ]
-            ]
+            ],
+            'classConstInitializedFromGlobalConstUsedAsParam' => [
+                '<?php
+                    const FOO = 3;
+                    class Bar
+                    {
+                        public const BAZ = FOO;
+                    }
+                    /** @param Bar::BAZ $p */
+                    function f(int $p): int {
+                        return $p;
+                    }
+                ',
+            ],
         ];
     }
 
