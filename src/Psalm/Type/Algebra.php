@@ -778,7 +778,8 @@ class Algebra
                     }
                 }
 
-                $creating_conditional_id = $right_clause->creating_conditional_id === $left_clause->creating_conditional_id
+                $creating_conditional_id =
+                    $right_clause->creating_conditional_id === $left_clause->creating_conditional_id
                     ? $right_clause->creating_conditional_id
                     : $conditional_object_id;
 
