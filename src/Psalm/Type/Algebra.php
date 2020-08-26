@@ -471,41 +471,32 @@ class Algebra
                         )
                     );
 
+                    unset($cloned_clauses[$clause_hash]);
+
                     if (!$clause_var_possibilities) {
-                        $cloned_clauses[$clause_hash] = $clause_b->removePossibilities($clause_var);
+                        $updated_clause = $clause_b->removePossibilities($clause_var);
+
+                        if ($updated_clause) {
+                            $cloned_clauses[$updated_clause->hash] = $updated_clause;
+                        }
                     } else {
-                        $cloned_clauses[$clause_hash] = $clause_b->addPossibilities(
+                        $updated_clause = $clause_b->addPossibilities(
                             $clause_var,
                             $clause_var_possibilities
                         );
+
+                        $cloned_clauses[$updated_clause->hash] = $updated_clause;
                     }
                 }
             }
         }
 
-        $deduped_clauses = [];
-
-        // avoid strict duplicates
-        foreach ($cloned_clauses as $clause) {
-            $deduped_clauses[$clause->hash] = clone $clause;
-        }
-
-        $deduped_clauses = array_filter(
-            $deduped_clauses,
-            /**
-             * @return bool
-             */
-            function (Clause $clause) {
-                return count($clause->possibilities) || $clause->wedge;
-            }
-        );
-
         $simplified_clauses = [];
 
-        foreach ($deduped_clauses as $clause_a) {
+        foreach ($cloned_clauses as $clause_a) {
             $is_redundant = false;
 
-            foreach ($deduped_clauses as $clause_b) {
+            foreach ($cloned_clauses as $clause_b) {
                 if ($clause_a === $clause_b
                     || !$clause_b->reconcilable
                     || $clause_b->wedge

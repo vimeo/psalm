@@ -192,10 +192,14 @@ class Clause
         );
     }
 
-    public function removePossibilities(string $var_id) : self
+    public function removePossibilities(string $var_id) : ?self
     {
         $possibilities = $this->possibilities;
         unset($possibilities[$var_id]);
+
+        if (!$possibilities) {
+            return null;
+        }
 
         return new self(
             $possibilities,
