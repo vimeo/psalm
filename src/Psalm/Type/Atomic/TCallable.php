@@ -26,6 +26,10 @@ class TCallable extends \Psalm\Type\Atomic
         $php_major_version,
         $php_minor_version
     ) {
+        if ($this->is_pure) {
+            return 'pure-callable';
+        }
+
         return 'callable';
     }
 

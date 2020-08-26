@@ -675,12 +675,13 @@ class TypeParser
                 },
                 $parse_tree->children
             );
+            $pure = strpos($parse_tree->value, 'pure-') === 0;
 
             if (in_array(strtolower($parse_tree->value), ['closure', '\closure'], true)) {
-                return new TFn('Closure', $params);
+                return new TFn('Closure', $params, null, $pure);
             }
 
-            return new TCallable($parse_tree->value, $params);
+            return new TCallable($parse_tree->value, $params, null, $pure);
         }
 
         if ($parse_tree instanceof ParseTree\EncapsulationTree) {

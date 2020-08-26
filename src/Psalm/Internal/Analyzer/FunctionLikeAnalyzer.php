@@ -367,6 +367,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
             if ($storage instanceof FunctionStorage) {
                 $closure_type->byref_uses = $storage->byref_uses;
+                $closure_type->is_pure = $storage->pure;
             }
 
             $type_provider->setType(

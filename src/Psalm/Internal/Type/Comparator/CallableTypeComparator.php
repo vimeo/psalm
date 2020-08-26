@@ -30,6 +30,14 @@ class CallableTypeComparator
         Type\Atomic $container_type_part,
         ?TypeComparisonResult $atomic_comparison_result
     ) : bool {
+        if ($container_type_part->is_pure && !$input_type_part->is_pure) {
+            if ($atomic_comparison_result) {
+                $atomic_comparison_result->scalar_type_match_found = true;
+            }
+
+            return false;
+        }
+
         if ($container_type_part->params !== null && $input_type_part->params === null) {
             if ($atomic_comparison_result) {
                 $atomic_comparison_result->type_coerced = true;
@@ -291,7 +299,8 @@ class CallableTypeComparator
                     return new TCallable(
                         'callable',
                         $method_storage->params,
-                        $converted_return_type
+                        $converted_return_type,
+                        $method_storage->pure
                     );
                 } catch (\UnexpectedValueException $e) {
                     // do nothing
@@ -306,13 +315,24 @@ class CallableTypeComparator
             );
 
             if ($codebase->methods->methodExists($invoke_id)) {
+                $method_storage = $codebase->methods->getStorage($invoke_id);
+                $method_fqcln = $invoke_id->fq_class_name;
+                $converted_return_type = null;
+                if ($method_storage->return_type) {
+                    $converted_return_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                        $codebase,
+                        $method_storage->return_type,
+                        $method_fqcln,
+                        $method_fqcln,
+                        null
+                    );
+                }
+
                 return new TCallable(
                     'callable',
-                    $codebase->methods->getMethodParams($invoke_id),
-                    $codebase->methods->getMethodReturnType(
-                        $invoke_id,
-                        $input_type_part->value
-                    )
+                    $method_storage->params,
+                    $converted_return_type,
+                    $method_storage->pure
                 );
             }
         }
