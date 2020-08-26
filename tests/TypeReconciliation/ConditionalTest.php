@@ -2171,6 +2171,10 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                         }
                     }'
             ],
+            'manyNestedWedgeAssertions' => [
+                '<?php
+                    if (rand(0, 1) && rand(0, 1)) {}'
+            ],
             'assertionAfterAssertionInsideBooleanNot' => [
                 '<?php
                     class A {}

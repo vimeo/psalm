@@ -805,8 +805,11 @@ class FunctionCallAnalyzer extends CallAnalyzer
         PhpParser\Node\Arg $first_arg,
         Context $context
     ) : void {
+        $first_arg_value_id = \spl_object_id($first_arg->value);
+
         $assert_clauses = \Psalm\Type\Algebra::getFormula(
-            \spl_object_id($first_arg->value),
+            $first_arg_value_id,
+            $first_arg_value_id,
             $first_arg->value,
             $context->self,
             $statements_analyzer,

@@ -58,6 +58,8 @@ class AlgebraAnalyzer
             $hash = $formula2_clause->hash;
 
             if (!$formula2_clause->generated
+                && !$formula2_clause->wedge
+                && $formula2_clause->reconcilable
                 && (isset($formula1_hashes[$hash]) || isset($formula2_hashes[$hash]))
                 && !array_intersect_key($new_assigned_var_ids, $formula2_clause->possibilities)
             ) {

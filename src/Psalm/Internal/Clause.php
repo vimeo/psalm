@@ -11,7 +11,6 @@ use function json_encode;
 use function ksort;
 use function md5;
 use function sort;
-use function mt_rand;
 use function array_unique;
 use function strpos;
 
@@ -22,7 +21,10 @@ use function strpos;
  */
 class Clause
 {
-    /** @var ?int */
+    /** @var int */
+    public $creating_conditional_id;
+
+    /** @var int */
     public $creating_object_id;
 
     /**
@@ -70,7 +72,7 @@ class Clause
     /** @var array<string, bool> */
     public $redefined_vars = [];
 
-    /** @var string */
+    /** @var string|int */
     public $hash;
 
     /**
@@ -82,27 +84,28 @@ class Clause
      */
     public function __construct(
         array $possibilities,
+        int $creating_conditional_id,
+        int $creating_object_id,
         $wedge = false,
         $reconcilable = true,
         $generated = false,
-        array $redefined_vars = [],
-        ?int $creating_object_id = null
+        array $redefined_vars = []
     ) {
         $this->possibilities = $possibilities;
         $this->wedge = $wedge;
         $this->reconcilable = $reconcilable;
         $this->generated = $generated;
         $this->redefined_vars = $redefined_vars;
+        $this->creating_conditional_id = $creating_conditional_id;
         $this->creating_object_id = $creating_object_id;
 
         if ($wedge || !$reconcilable) {
-            /** @psalm-suppress ImpureFunctionCall as this has to be globally unique */
-            $this->hash = (string) mt_rand(0, 1000000);
+            $this->hash = ($wedge ? 'w' : '') . $creating_object_id;
         } else {
             ksort($possibilities);
 
-            foreach ($possibilities as &$possible_types) {
-                sort($possible_types);
+            foreach ($possibilities as $i => $_) {
+                sort($possibilities[$i]);
             }
 
             $this->hash = md5((string) json_encode($possibilities));
@@ -180,11 +183,12 @@ class Clause
 
         return new self(
             $possibilities,
+            $this->creating_conditional_id,
+            $this->creating_object_id,
             $this->wedge,
             $this->reconcilable,
             $this->generated,
-            $this->redefined_vars,
-            $this->creating_object_id
+            $this->redefined_vars
         );
     }
 
@@ -195,11 +199,12 @@ class Clause
 
         return new self(
             $possibilities,
+            $this->creating_conditional_id,
+            $this->creating_object_id,
             $this->wedge,
             $this->reconcilable,
             $this->generated,
-            $this->redefined_vars,
-            $this->creating_object_id
+            $this->redefined_vars
         );
     }
 
@@ -213,11 +218,12 @@ class Clause
 
         return new self(
             $possibilities,
+            $this->creating_conditional_id,
+            $this->creating_object_id,
             $this->wedge,
             $this->reconcilable,
             $this->generated,
-            $this->redefined_vars,
-            $this->creating_object_id
+            $this->redefined_vars
         );
     }
 

@@ -283,8 +283,10 @@ class SwitchCaseAnalyzer
         $case_clauses = [];
 
         if ($case_equality_expr) {
+            $case_equality_expr_id = \spl_object_id($case_equality_expr);
             $case_clauses = Algebra::getFormula(
-                \spl_object_id($case_equality_expr),
+                $case_equality_expr_id,
+                $case_equality_expr_id,
                 $case_equality_expr,
                 $context->self,
                 $statements_analyzer,
@@ -379,9 +381,12 @@ class SwitchCaseAnalyzer
             try {
                 $negated_case_clauses = Algebra::negateFormula($case_clauses);
             } catch (\Psalm\Exception\ComplicatedExpressionException $e) {
+                $case_equality_expr_id = \spl_object_id($case_equality_expr);
+
                 try {
                     $negated_case_clauses = Algebra::getFormula(
-                        \spl_object_id($case_equality_expr),
+                        $case_equality_expr_id,
+                        $case_equality_expr_id,
                         new PhpParser\Node\Expr\BooleanNot($case_equality_expr),
                         $context->self,
                         $statements_analyzer,

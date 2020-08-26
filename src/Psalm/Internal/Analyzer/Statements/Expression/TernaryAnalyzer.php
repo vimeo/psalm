@@ -53,8 +53,11 @@ class TernaryAnalyzer
 
         $codebase = $statements_analyzer->getCodebase();
 
+        $cond_id = \spl_object_id($stmt->cond);
+
         $if_clauses = \Psalm\Type\Algebra::getFormula(
-            \spl_object_id($stmt->cond),
+            $cond_id,
+            $cond_id,
             $stmt->cond,
             $context->self,
             $statements_analyzer,
@@ -80,7 +83,7 @@ class TernaryAnalyzer
                 /**
                  * @return \Psalm\Internal\Clause
                  */
-                function (\Psalm\Internal\Clause $c) use ($mixed_var_ids) {
+                function (\Psalm\Internal\Clause $c) use ($mixed_var_ids, $cond_id) {
                     $keys = array_keys($c->possibilities);
 
                     $mixed_var_ids = \array_diff($mixed_var_ids, $keys);
@@ -88,7 +91,7 @@ class TernaryAnalyzer
                     foreach ($keys as $key) {
                         foreach ($mixed_var_ids as $mixed_var_id) {
                             if (preg_match('/^' . preg_quote($mixed_var_id, '/') . '(\[|-)/', $key)) {
-                                return new \Psalm\Internal\Clause([], true);
+                                return new \Psalm\Internal\Clause([], $cond_id, $cond_id, true);
                             }
                         }
                     }
@@ -128,7 +131,7 @@ class TernaryAnalyzer
 
         $reconcilable_if_types = Algebra::getTruthsFromFormula(
             $ternary_clauses,
-            \spl_object_id($stmt->cond),
+            $cond_id,
             $cond_referenced_var_ids,
             $active_if_types
         );

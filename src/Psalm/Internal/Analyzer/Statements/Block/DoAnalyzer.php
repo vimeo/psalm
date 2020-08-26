@@ -52,8 +52,11 @@ class DoAnalyzer
             }
         }
 
+        $cond_id = \spl_object_id($stmt->cond);
+
         $while_clauses = Algebra::getFormula(
-            \spl_object_id($stmt->cond),
+            $cond_id,
+            $cond_id,
             $stmt->cond,
             $context->self,
             $statements_analyzer,
@@ -83,7 +86,7 @@ class DoAnalyzer
         );
 
         if (!$while_clauses) {
-            $while_clauses = [new Clause([], true)];
+            $while_clauses = [new Clause([], $cond_id, $cond_id, true)];
         }
 
         LoopAnalyzer::analyze(

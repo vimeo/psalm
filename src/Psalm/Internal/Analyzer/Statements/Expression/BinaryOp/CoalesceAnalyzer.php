@@ -34,8 +34,11 @@ class CoalesceAnalyzer
 
         $codebase = $statements_analyzer->getCodebase();
 
+        $stmt_id = \spl_object_id($stmt);
+
         $if_clauses = Algebra::getFormula(
-            \spl_object_id($stmt),
+            $stmt_id,
+            $stmt_id,
             $stmt,
             $context->self,
             $statements_analyzer,
@@ -61,7 +64,7 @@ class CoalesceAnalyzer
                 /**
                  * @return \Psalm\Internal\Clause
                  */
-                function (\Psalm\Internal\Clause $c) use ($mixed_var_ids) {
+                function (\Psalm\Internal\Clause $c) use ($mixed_var_ids, $stmt_id) {
                     $keys = array_keys($c->possibilities);
 
                     $mixed_var_ids = \array_diff($mixed_var_ids, $keys);
@@ -69,7 +72,7 @@ class CoalesceAnalyzer
                     foreach ($keys as $key) {
                         foreach ($mixed_var_ids as $mixed_var_id) {
                             if (preg_match('/^' . preg_quote($mixed_var_id, '/') . '(\[|-)/', $key)) {
-                                return new \Psalm\Internal\Clause([], true);
+                                return new \Psalm\Internal\Clause([], $stmt_id, $stmt_id, true);
                             }
                         }
                     }

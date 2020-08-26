@@ -158,7 +158,7 @@ class Context
     /**
      * A list of hashed clauses that have already been factored in
      *
-     * @var list<string>
+     * @var list<string|int>
      */
     public $reconciled_expression_clauses = [];
 

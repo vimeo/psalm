@@ -70,8 +70,11 @@ class LoopAnalyzer
 
         if ($pre_conditions) {
             foreach ($pre_conditions as $i => $pre_condition) {
+                $pre_condition_id = \spl_object_id($pre_condition);
+
                 $pre_condition_clauses[$i] = Algebra::getFormula(
-                    \spl_object_id($pre_condition),
+                    $pre_condition_id,
+                    $pre_condition_id,
                     $pre_condition,
                     $loop_scope->loop_context->self,
                     $statements_analyzer,

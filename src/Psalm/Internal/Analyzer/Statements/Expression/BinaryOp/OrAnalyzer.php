@@ -111,8 +111,11 @@ class OrAnalyzer
             $left_referenced_var_ids = array_diff_key($left_referenced_var_ids, $left_assigned_var_ids);
         }
 
+        $left_cond_id = \spl_object_id($stmt->left);
+
         $left_clauses = Algebra::getFormula(
-            \spl_object_id($stmt->left),
+            $left_cond_id,
+            $left_cond_id,
             $stmt->left,
             $context->self,
             $statements_analyzer,
@@ -124,7 +127,8 @@ class OrAnalyzer
         } catch (\Psalm\Exception\ComplicatedExpressionException $e) {
             try {
                 $negated_left_clauses = Algebra::getFormula(
-                    \spl_object_id($stmt->left),
+                    $left_cond_id,
+                    $left_cond_id,
                     new PhpParser\Node\Expr\BooleanNot($stmt->left),
                     $context->self,
                     $statements_analyzer,
@@ -167,7 +171,7 @@ class OrAnalyzer
 
         $negated_type_assertions = Algebra::getTruthsFromFormula(
             $clauses_for_right_analysis,
-            \spl_object_id($stmt->left),
+            $left_cond_id,
             $left_referenced_var_ids,
             $active_negated_type_assertions
         );

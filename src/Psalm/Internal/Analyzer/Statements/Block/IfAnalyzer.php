@@ -107,8 +107,11 @@ class IfAnalyzer
             }
         }
 
+        $cond_object_id = \spl_object_id($stmt->cond);
+
         $if_clauses = Algebra::getFormula(
-            \spl_object_id($stmt->cond),
+            $cond_object_id,
+            $cond_object_id,
             $stmt->cond,
             $context->self,
             $statements_analyzer,
@@ -124,7 +127,7 @@ class IfAnalyzer
                 /**
                  * @return Clause
                  */
-                function (Clause $c) use ($mixed_var_ids) {
+                function (Clause $c) use ($mixed_var_ids, $cond_object_id) {
                     $keys = array_keys($c->possibilities);
 
                     $mixed_var_ids = \array_diff($mixed_var_ids, $keys);
@@ -132,7 +135,7 @@ class IfAnalyzer
                     foreach ($keys as $key) {
                         foreach ($mixed_var_ids as $mixed_var_id) {
                             if (preg_match('/^' . preg_quote($mixed_var_id, '/') . '(\[|-)/', $key)) {
-                                return new Clause([], true);
+                                return new Clause([], $cond_object_id, $cond_object_id, true);
                             }
                         }
                     }
@@ -1086,8 +1089,11 @@ class IfAnalyzer
             }
         }
 
+        $elseif_cond_id = \spl_object_id($elseif->cond);
+
         $elseif_clauses = Algebra::getFormula(
-            \spl_object_id($elseif->cond),
+            $elseif_cond_id,
+            $elseif_cond_id,
             $elseif->cond,
             $else_context->self,
             $statements_analyzer,
@@ -1098,7 +1104,7 @@ class IfAnalyzer
             /**
              * @return Clause
              */
-            function (Clause $c) use ($mixed_var_ids) {
+            function (Clause $c) use ($mixed_var_ids, $elseif_cond_id) {
                 $keys = array_keys($c->possibilities);
 
                 $mixed_var_ids = \array_diff($mixed_var_ids, $keys);
@@ -1106,7 +1112,7 @@ class IfAnalyzer
                 foreach ($keys as $key) {
                     foreach ($mixed_var_ids as $mixed_var_id) {
                         if (preg_match('/^' . preg_quote($mixed_var_id, '/') . '(\[|-)/', $key)) {
-                            return new Clause([], true);
+                            return new Clause([], $elseif_cond_id, $elseif_cond_id, true);
                         }
                     }
                 }
@@ -1120,13 +1126,13 @@ class IfAnalyzer
             /**
              * @return Clause
              */
-            function (Clause $c) use ($cond_assigned_var_ids) {
+            function (Clause $c) use ($cond_assigned_var_ids, $elseif_cond_id) {
                 $keys = array_keys($c->possibilities);
 
                 foreach ($keys as $key) {
                     foreach ($cond_assigned_var_ids as $conditional_assigned_var_id => $_) {
                         if (preg_match('/^' . preg_quote($conditional_assigned_var_id, '/') . '(\[|-|$)/', $key)) {
-                            return new Clause([], true);
+                            return new Clause([], $elseif_cond_id, $elseif_cond_id, true);
                         }
                     }
                 }
@@ -1403,7 +1409,8 @@ class IfAnalyzer
             if ($reasonable_clause_count && $reasonable_clause_count < 20000 && $elseif_clauses) {
                 $if_scope->reasonable_clauses = Algebra::combineOredClauses(
                     $if_scope->reasonable_clauses,
-                    $elseif_clauses
+                    $elseif_clauses,
+                    \spl_object_id($elseif->cond)
                 );
             } else {
                 $if_scope->reasonable_clauses = [];
