@@ -511,7 +511,7 @@ class AssertionFinder
     ) {
         $if_types = [];
 
-        $null_position = self::hasNullVariable($conditional);
+        $null_position = self::hasNullVariable($conditional, $source);
         $false_position = self::hasFalseVariable($conditional);
         $true_position = self::hasTrueVariable($conditional);
         $empty_array_position = self::hasEmptyArrayVariable($conditional);
@@ -1147,7 +1147,7 @@ class AssertionFinder
     ) {
         $if_types = [];
 
-        $null_position = self::hasNullVariable($conditional);
+        $null_position = self::hasNullVariable($conditional, $sourcec);
         $false_position = self::hasFalseVariable($conditional);
         $true_position = self::hasTrueVariable($conditional);
         $empty_array_position = self::hasEmptyArrayVariable($conditional);
@@ -2439,8 +2439,10 @@ class AssertionFinder
      *
      * @return  int|null
      */
-    protected static function hasNullVariable(PhpParser\Node\Expr\BinaryOp $conditional)
-    {
+    protected static function hasNullVariable(
+        PhpParser\Node\Expr\BinaryOp $conditional,
+        FileSource $source
+    ) {
         if ($conditional->right instanceof PhpParser\Node\Expr\ConstFetch
             && strtolower($conditional->right->name->parts[0]) === 'null'
         ) {
@@ -2451,6 +2453,13 @@ class AssertionFinder
             && strtolower($conditional->left->name->parts[0]) === 'null'
         ) {
             return self::ASSIGNMENT_TO_LEFT;
+        }
+
+        if ($source instanceof StatementsAnalyzer
+            && ($right_type = $source->node_data->getType($conditional->right))
+            && $right_type->isNull()
+        ) {
+            return self::ASSIGNMENT_TO_RIGHT;
         }
 
         return null;
