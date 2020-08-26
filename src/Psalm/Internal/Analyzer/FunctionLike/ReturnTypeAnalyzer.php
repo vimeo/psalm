@@ -672,7 +672,8 @@ class ReturnTypeAnalyzer
         ProjectAnalyzer $project_analyzer,
         FunctionLikeAnalyzer $function_like_analyzer,
         FunctionLikeStorage $storage,
-        Context $context
+        Context $context,
+        StatementsAnalyzer $statements_analyzer
     ) {
         $codebase = $project_analyzer->getCodebase();
 
@@ -713,7 +714,11 @@ class ReturnTypeAnalyzer
                 $storage->return_type,
                 $classlike_storage ? $classlike_storage->name : null,
                 $classlike_storage ? $classlike_storage->name : null,
-                $parent_class
+                $parent_class,
+                true,
+                false,
+                false,
+                $statements_analyzer
             );
 
             $fleshed_out_return_type->check(
@@ -732,7 +737,11 @@ class ReturnTypeAnalyzer
             $storage->signature_return_type,
             $classlike_storage ? $classlike_storage->name : null,
             $classlike_storage ? $classlike_storage->name : null,
-            $parent_class
+            $parent_class,
+            true,
+            false,
+            false,
+            $statements_analyzer
         );
 
         if ($fleshed_out_signature_type->check(
@@ -756,7 +765,9 @@ class ReturnTypeAnalyzer
             $classlike_storage ? $classlike_storage->name : null,
             $parent_class,
             true,
-            true
+            true,
+            false,
+            $statements_analyzer
         );
 
         if ($fleshed_out_return_type->check(

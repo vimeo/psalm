@@ -539,7 +539,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $project_analyzer,
             $this,
             $storage,
-            $context
+            $context,
+            $statements_analyzer
         ) === false) {
             $check_stmts = false;
         }

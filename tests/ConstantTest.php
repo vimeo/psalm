@@ -992,6 +992,19 @@ class ConstantTest extends TestCase
                     }
                 ',
             ],
+            'classConstInitializedFromGlobalConstUsedAsReturnType' => [
+                '<?php
+                    const FOO = 3;
+                    class BAR
+                    {
+                        const BAZ = FOO;
+                        /** @return BAR::BAZ */
+                        public function b(): int {
+                            return 3;
+                        }
+                    }
+                ',
+            ],
         ];
     }
 
