@@ -31,6 +31,7 @@ Atomic types are the basic building block of all type information used in Psalm.
 - [list & non-empty-list](array_types.md#lists)
 - [list\<string\>](array_types.md#lists)
 - [array{foo: int, bar: string}](array_types.md#object-like-arrays)
+- [callable-array](array_types.md#callable-array)
 
 ## [Callable types](callable_types.md)
 
