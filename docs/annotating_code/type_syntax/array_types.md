@@ -118,3 +118,14 @@ Optional keys can be denoted by a trailing `?`, e.g.:
 ```php
 /** @return array{optional?: string, bar: int} */
 ```
+
+## Callable arrays
+
+a array holding a callable, like phps native `call_user_func()` and friends supports it:
+
+```php
+<?php
+
+$callable = ['myClass', 'aMethod'];
+$callable = [$object, 'aMethod'];
+```
