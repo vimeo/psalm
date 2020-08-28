@@ -295,7 +295,6 @@ class BinaryOpAnalyzer
         Type\Union $stmt_right_type
     ) : void {
         $codebase = $statements_analyzer->getCodebase();
-        $project_analyzer = $statements_analyzer->getProjectAnalyzer();
 
         if ($stmt_left_type->hasString() && $stmt_right_type->hasObjectType()) {
             foreach ($stmt_right_type->getAtomicTypes() as $atomic_type) {
@@ -312,11 +311,9 @@ class BinaryOpAnalyzer
                     }
 
                     if (!$storage->mutation_free) {
-                        if ($codebase->alter_code
-                            && (isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
-                                || isset($project_analyzer->getIssuesToFix()['MissingImmutableAnnotation']))
-                            && $statements_analyzer->getSource()
+                        if ($statements_analyzer->getSource()
                                 instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                            && $statements_analyzer->getSource()->track_mutations
                         ) {
                             $statements_analyzer->getSource()->inferred_has_mutation = true;
                             $statements_analyzer->getSource()->inferred_impure = true;
@@ -350,11 +347,8 @@ class BinaryOpAnalyzer
                     }
 
                     if (!$storage->mutation_free) {
-                        if ($codebase->alter_code
-                            && (isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
-                                || isset($project_analyzer->getIssuesToFix()['MissingImmutableAnnotation']))
-                            && $statements_analyzer->getSource()
-                                instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                        if ($statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                            && $statements_analyzer->getSource()->track_mutations
                         ) {
                             $statements_analyzer->getSource()->inferred_has_mutation = true;
                             $statements_analyzer->getSource()->inferred_impure = true;

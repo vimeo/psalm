@@ -10,6 +10,7 @@ use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Internal\Provider\FunctionExistenceProvider;
 use Psalm\Internal\Provider\FunctionParamsProvider;
 use Psalm\Internal\Provider\FunctionReturnTypeProvider;
+use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\StatementsSource;
 use Psalm\Storage\FunctionStorage;
 use function strpos;
@@ -450,15 +451,19 @@ class Functions
             || (isset($args[0]) && !$args[0]->value instanceof \PhpParser\Node\Expr\Closure);
 
         foreach ($function_callable->params as $i => $param) {
-            if ($param->type && $param->type->hasCallableType() && isset($args[$i])) {
-                foreach ($param->type->getAtomicTypes() as $possible_callable) {
-                    $possible_callable = \Psalm\Internal\Type\Comparator\CallableTypeComparator::getCallableFromAtomic(
-                        $codebase,
-                        $possible_callable
-                    );
+            if ($type_provider && $param->type && $param->type->hasCallableType() && isset($args[$i])) {
+                $arg_type = $type_provider->getType($args[$i]->value);
 
-                    if ($possible_callable && !$possible_callable->is_pure) {
-                        return false;
+                if ($arg_type) {
+                    foreach ($arg_type->getAtomicTypes() as $possible_callable) {
+                        $possible_callable = CallableTypeComparator::getCallableFromAtomic(
+                            $codebase,
+                            $possible_callable
+                        );
+
+                        if ($possible_callable && !$possible_callable->is_pure) {
+                            return false;
+                        }
                     }
                 }
             }

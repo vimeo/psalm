@@ -709,6 +709,9 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
         return false;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getFileAnalyzer() : FileAnalyzer
     {
         return $this;

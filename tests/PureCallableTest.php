@@ -202,29 +202,15 @@ class PureCallableTest extends TestCase
                         return $c;
                     }',
             ],
-        ];
-    }
-
-    /**
-     * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
-     */
-    public function providerInvalidCodeParse()
-    {
-        return [
-            'InvalidScalarArgument' => [
+            'pureCallableArgument' => [
                 '<?php
                     /**
-                     * @psalm-template T
-                     *
-                     * @psalm-param array<int, T> $values
-                     * @psalm-param (pure-callable(T): numeric) $num_func
-                     *
-                     * @psalm-return null|T
+                     * @psalm-param array<int, int> $values
+                     * @psalm-param pure-callable(int):int $num_func
                      *
                      * @psalm-pure
                      */
-                    function max_by(array $values, callable $num_func)
-                    {
+                    function max_by(array $values, callable $num_func) : ?int {
                         $max = null;
                         $max_num = null;
                         foreach ($values as $value) {
@@ -238,15 +224,64 @@ class PureCallableTest extends TestCase
                         return $max;
                     }
 
-                    $c = max_by([1, 2, 3], static function(int $a): int {
+                    $c = max_by([1, 2, 3], function(int $a): int {
+                        return $a + 5;
+                    });
+
+                    echo $c;',
+            ],
+        ];
+    }
+
+    /**
+     * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
+     */
+    public function providerInvalidCodeParse()
+    {
+        return [
+            'impureCallableArgument' => [
+                '<?php
+                    /**
+                     * @psalm-param array<int, int> $values
+                     * @psalm-param pure-callable(int):int $num_func
+                     *
+                     * @psalm-pure
+                     */
+                    function max_by(array $values, callable $num_func) : ?int {
+                        $max = null;
+                        $max_num = null;
+                        foreach ($values as $value) {
+                            $value_num = $num_func($value);
+                            if (null === $max_num || $value_num >= $max_num) {
+                                $max = $value;
+                                $max_num = $value_num;
+                            }
+                        }
+
+                        return $max;
+                    }
+
+                    $c = max_by([1, 2, 3], function(int $a): int {
                         return $a + mt_rand(0, $a);
                     });
 
-                    echo $c;
-                ',
-                'error_message' => 'InvalidScalarArgument',
-                'error_levels' => [],
-            ]
+                    echo $c;',
+                'error_message' => 'InvalidArgument',
+            ],
+            'impureCallableReturn' => [
+                '<?php
+                    /**
+                     * @psalm-pure
+                     * @return pure-callable():int
+                     */
+                    function foo(): callable {
+                        return function() {
+                            echo "bar";
+                            return 1;
+                        };
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
         ];
     }
 }

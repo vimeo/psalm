@@ -98,6 +98,11 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     /**
      * @var bool
      */
+    public $track_mutations = false;
+
+    /**
+     * @var bool
+     */
     public $inferred_impure = false;
 
     /**
@@ -578,6 +583,17 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
         $project_analyzer = $statements_analyzer->getProjectAnalyzer();
 
+        if ($codebase->alter_code
+            && (isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
+                || isset($project_analyzer->getIssuesToFix()['MissingImmutableAnnotation']))
+        ) {
+            $this->track_mutations = true;
+        } elseif ($this->function instanceof Closure
+            || $this->function instanceof ArrowFunction
+        ) {
+            $this->track_mutations = true;
+        }
+
         $statements_analyzer->analyze($function_stmts, $context, $global_context, true);
 
         if ($codebase->alter_code
@@ -717,22 +733,25 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     $closure_return_type = $closure_yield_type;
                 }
 
-                if (($storage->return_type === $storage->signature_return_type)
-                    && (!$storage->return_type
-                        || $storage->return_type->hasMixed()
-                        || UnionTypeComparator::isContainedBy(
-                            $codebase,
-                            $closure_return_type,
-                            $storage->return_type
-                        ))
-                ) {
-                    if ($function_type = $statements_analyzer->node_data->getType($this->function)) {
-                        /**
-                         * @var Type\Atomic\TFn
-                         */
-                        $closure_atomic = \array_values($function_type->getAtomicTypes())[0];
+                if ($function_type = $statements_analyzer->node_data->getType($this->function)) {
+                    /**
+                     * @var Type\Atomic\TFn
+                     */
+                    $closure_atomic = \array_values($function_type->getAtomicTypes())[0];
+
+                    if (($storage->return_type === $storage->signature_return_type)
+                        && (!$storage->return_type
+                            || $storage->return_type->hasMixed()
+                            || UnionTypeComparator::isContainedBy(
+                                $codebase,
+                                $closure_return_type,
+                                $storage->return_type
+                            ))
+                    ) {
                         $closure_atomic->return_type = $closure_return_type;
                     }
+
+                    $closure_atomic->is_pure = !$this->inferred_impure;
                 }
             }
         }

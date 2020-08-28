@@ -219,7 +219,7 @@ class InstancePropertyFetchAnalyzer
                             && !($class_storage->external_mutation_free
                                 && $stmt_type->allow_mutations)
                         ) {
-                            $project_analyzer = $statements_analyzer->getProjectAnalyzer();
+                            $statements_analyzer->getProjectAnalyzer();
 
                             if ($context->pure) {
                                 if (IssueBuffer::accepts(
@@ -231,10 +231,9 @@ class InstancePropertyFetchAnalyzer
                                 )) {
                                     // fall through
                                 }
-                            } elseif ($codebase->alter_code
-                                && isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
-                                && $statements_analyzer->getSource()
+                            } elseif ($statements_analyzer->getSource()
                                     instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                                && $statements_analyzer->getSource()->track_mutations
                             ) {
                                 $statements_analyzer->getSource()->inferred_impure = true;
                             }
@@ -791,7 +790,7 @@ class InstancePropertyFetchAnalyzer
                     $property_id = $context->self . '::$' . $prop_name;
                 } else {
                     if ($context->inside_isset || $context->collect_initializations) {
-                        $project_analyzer = $statements_analyzer->getProjectAnalyzer();
+                        $statements_analyzer->getProjectAnalyzer();
 
                         if ($context->pure) {
                             if (IssueBuffer::accepts(
@@ -804,10 +803,9 @@ class InstancePropertyFetchAnalyzer
                                 // fall through
                             }
                         } elseif ($context->inside_isset
-                            && $codebase->alter_code
-                            && isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
                             && $statements_analyzer->getSource()
                                 instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                            && $statements_analyzer->getSource()->track_mutations
                         ) {
                             $statements_analyzer->getSource()->inferred_impure = true;
                         }
@@ -1025,7 +1023,7 @@ class InstancePropertyFetchAnalyzer
                 && !($class_storage->external_mutation_free
                     && $class_property_type->allow_mutations)
             ) {
-                $project_analyzer = $statements_analyzer->getProjectAnalyzer();
+                $statements_analyzer->getProjectAnalyzer();
 
                 if ($context->pure) {
                     if (IssueBuffer::accepts(
@@ -1037,10 +1035,8 @@ class InstancePropertyFetchAnalyzer
                     )) {
                         // fall through
                     }
-                } elseif ($codebase->alter_code
-                    && isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
-                    && $statements_analyzer->getSource()
-                        instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                } elseif ($statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                    && $statements_analyzer->getSource()->track_mutations
                 ) {
                     $statements_analyzer->getSource()->inferred_impure = true;
                 }

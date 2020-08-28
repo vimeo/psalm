@@ -160,7 +160,7 @@ class PureAnnotationTest extends TestCase
                         }
                     }',
             ],
-            'sortFunction' => [
+            'sortFunctionPure' => [
                 '<?php
                     /**
                      * @psalm-pure

@@ -1245,7 +1245,8 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 || $context->external_mutation_free
                 || $codebase->find_unused_variables
                 || !$config->remember_property_assignments_after_call
-                || $codebase->alter_code)
+                || ($statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                    && $statements_analyzer->getSource()->track_mutations))
         ) {
             $must_use = true;
 
@@ -1264,7 +1265,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     && !$function_storage->pure)
                 || ($callmap_function_pure === false)
             ) {
-                $project_analyzer = $statements_analyzer->getProjectAnalyzer();
+                $statements_analyzer->getProjectAnalyzer();
 
                 if ($context->mutation_free || $context->external_mutation_free) {
                     if (IssueBuffer::accepts(
@@ -1276,11 +1277,8 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     )) {
                         // fall through
                     }
-                } elseif ($codebase->alter_code
-                    && (isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
-                        || isset($project_analyzer->getIssuesToFix()['MissingImmutableAnnotation']))
-                    && $statements_analyzer->getSource()
-                        instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                } elseif ($statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                    && $statements_analyzer->getSource()->track_mutations
                 ) {
                     $statements_analyzer->getSource()->inferred_has_mutation = true;
                     $statements_analyzer->getSource()->inferred_impure = true;

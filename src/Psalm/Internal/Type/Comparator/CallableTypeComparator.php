@@ -9,6 +9,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic\ObjectLike;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TFn;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
@@ -32,7 +33,7 @@ class CallableTypeComparator
     ) : bool {
         if ($container_type_part->is_pure && !$input_type_part->is_pure) {
             if ($atomic_comparison_result) {
-                $atomic_comparison_result->scalar_type_match_found = true;
+                $atomic_comparison_result->type_coerced = $input_type_part->is_pure === null;
             }
 
             return false;
@@ -216,14 +217,18 @@ class CallableTypeComparator
     }
 
     /**
-     * @return ?TCallable
+     * @return TCallable|TFn|null
      */
     public static function getCallableFromAtomic(
         Codebase $codebase,
         Type\Atomic $input_type_part,
         ?TCallable $container_type_part = null,
         ?StatementsAnalyzer $statements_analyzer = null
-    ) : ?TCallable {
+    ) {
+        if ($input_type_part instanceof TCallable || $input_type_part instanceof TFn) {
+            return $input_type_part;
+        }
+
         if ($input_type_part instanceof TLiteralString && $input_type_part->value) {
             try {
                 $function_storage = $codebase->functions->getStorage(

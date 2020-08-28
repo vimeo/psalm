@@ -681,7 +681,7 @@ class TypeParser
                 return new TFn('Closure', $params, null, $pure);
             }
 
-            return new TCallable($parse_tree->value, $params, null, $pure);
+            return new TCallable('callable', $params, null, $pure);
         }
 
         if ($parse_tree instanceof ParseTree\EncapsulationTree) {

@@ -209,8 +209,6 @@ class AssignmentAnalyzer
                 : Type::getMixed();
         }
 
-        $project_analyzer = $statements_analyzer->getProjectAnalyzer();
-
         if ($array_var_id && isset($context->vars_in_scope[$array_var_id])) {
             if ($context->vars_in_scope[$array_var_id]->by_ref) {
                 if ($context->mutation_free) {
@@ -222,10 +220,8 @@ class AssignmentAnalyzer
                     )) {
                         // fall through
                     }
-                } elseif ($codebase->alter_code
-                    && (isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
-                        || isset($project_analyzer->getIssuesToFix()['MissingImmutableAnnotation']))
-                    && $statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                } elseif ($statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                    && $statements_analyzer->getSource()->track_mutations
                 ) {
                     $statements_analyzer->getSource()->inferred_impure = true;
                     $statements_analyzer->getSource()->inferred_has_mutation = true;
@@ -812,10 +808,8 @@ class AssignmentAnalyzer
                     )) {
                         // fall through
                     }
-                } elseif ($codebase->alter_code
-                    && (isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
-                        || isset($project_analyzer->getIssuesToFix()['MissingImmutableAnnotation']))
-                    && $statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                } elseif ($statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                    && $statements_analyzer->getSource()->track_mutations
                 ) {
                     if (!$assign_var->var instanceof PhpParser\Node\Expr\Variable
                         || $assign_var->var->name !== 'this'
@@ -1090,10 +1084,6 @@ class AssignmentAnalyzer
             return false;
         }
 
-        $project_analyzer = $statements_analyzer->getProjectAnalyzer();
-
-        $codebase = $statements_analyzer->getCodebase();
-
         if ($array_var_id
             && $stmt->var instanceof PhpParser\Node\Expr\PropertyFetch
             && ($stmt_var_var_type = $statements_analyzer->node_data->getType($stmt->var->var))
@@ -1109,10 +1099,8 @@ class AssignmentAnalyzer
                 )) {
                     // fall through
                 }
-            } elseif ($codebase->alter_code
-                && (isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
-                    || isset($project_analyzer->getIssuesToFix()['MissingImmutableAnnotation']))
-                && $statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+            } elseif ($statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                && $statements_analyzer->getSource()->track_mutations
             ) {
                 $statements_analyzer->getSource()->inferred_has_mutation = true;
                 $statements_analyzer->getSource()->inferred_impure = true;
@@ -1141,10 +1129,8 @@ class AssignmentAnalyzer
                         // fall through
                     }
                 }
-            } elseif ($codebase->alter_code
-                && (isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
-                    || isset($project_analyzer->getIssuesToFix()['MissingImmutableAnnotation']))
-                && $statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+            } elseif ($statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                && $statements_analyzer->getSource()->track_mutations
             ) {
                 $statements_analyzer->getSource()->inferred_has_mutation = true;
                 $statements_analyzer->getSource()->inferred_impure = true;

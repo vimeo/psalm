@@ -176,8 +176,6 @@ class StaticPropertyFetchAnalyzer
             );
         }
 
-        $project_analyzer = $statements_analyzer->getProjectAnalyzer();
-
         if ($context->mutation_free) {
             if (IssueBuffer::accepts(
                 new \Psalm\Issue\ImpureStaticProperty(
@@ -188,11 +186,9 @@ class StaticPropertyFetchAnalyzer
             )) {
                 // fall through
             }
-        } elseif ($codebase->alter_code
-            && (isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
-                || isset($project_analyzer->getIssuesToFix()['MissingImmutableAnnotation']))
-            && $statements_analyzer->getSource()
+        } elseif ($statements_analyzer->getSource()
                 instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+            && $statements_analyzer->getSource()->track_mutations
         ) {
             $statements_analyzer->getSource()->inferred_has_mutation = true;
             $statements_analyzer->getSource()->inferred_impure = true;

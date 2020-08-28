@@ -115,10 +115,8 @@ class VariableFetchAnalyzer
                 )) {
                     // fall through
                 }
-            } elseif ($codebase->alter_code
-                && isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
-                && $statements_analyzer->getSource()
-                    instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+            } elseif ($statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                && $statements_analyzer->getSource()->track_mutations
             ) {
                 $statements_analyzer->getSource()->inferred_impure = true;
             }
@@ -179,10 +177,8 @@ class VariableFetchAnalyzer
                 )) {
                     // fall through
                 }
-            } elseif ($codebase->alter_code
-                && isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
-                && $statements_analyzer->getSource()
-                    instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+            } elseif ($statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                && $statements_analyzer->getSource()->track_mutations
             ) {
                 $statements_analyzer->getSource()->inferred_impure = true;
             }

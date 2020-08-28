@@ -28,7 +28,7 @@ trait CallableTrait
     public $return_type;
 
     /**
-     * @var bool
+     * @var ?bool
      */
     public $is_pure;
 
@@ -134,7 +134,7 @@ trait CallableTrait
                 . $param_string . $return_type_string;
         }
 
-        return 'callable' . $param_string . $return_type_string;
+        return ($this->is_pure ? 'pure-' : '') . 'callable' . $param_string . $return_type_string;
     }
 
     /**
@@ -187,7 +187,7 @@ trait CallableTrait
                 . $this->return_type->getId() . ($return_type_multiple ? ')' : '');
         }
 
-        return $this->value . $param_string . $return_type_string;
+        return ($this->is_pure ? 'pure-' : '') . $this->value . $param_string . $return_type_string;
     }
 
     public function __toString()

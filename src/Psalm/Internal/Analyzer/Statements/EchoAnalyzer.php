@@ -113,8 +113,6 @@ class EchoAnalyzer
             }
         }
 
-        $project_analyzer = $statements_analyzer->getProjectAnalyzer();
-
         if (!$context->collect_initializations && !$context->collect_mutations) {
             if ($context->mutation_free || $context->external_mutation_free) {
                 if (IssueBuffer::accepts(
@@ -126,10 +124,8 @@ class EchoAnalyzer
                 )) {
                     // fall through
                 }
-            } elseif ($codebase->alter_code
-                && (isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
-                    || isset($project_analyzer->getIssuesToFix()['MissingImmutableAnnotation']))
-                && $statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+            } elseif ($statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                && $statements_analyzer->getSource()->track_mutations
             ) {
                 $statements_analyzer->getSource()->inferred_has_mutation = true;
                 $statements_analyzer->getSource()->inferred_impure = true;

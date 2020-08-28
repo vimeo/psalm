@@ -230,8 +230,6 @@ class InstancePropertyAssignmentAnalyzer
 
             $lhs_atomic_types = $lhs_type->getAtomicTypes();
 
-            $project_analyzer = $statements_analyzer->getProjectAnalyzer();
-
             while ($lhs_atomic_types) {
                 $lhs_type_part = \array_pop($lhs_atomic_types);
 
@@ -718,10 +716,9 @@ class InstancePropertyAssignmentAnalyzer
                             )) {
                                 // fall through
                             }
-                        } elseif ($codebase->alter_code
-                            && isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
-                            && $statements_analyzer->getSource()
+                        } elseif ($statements_analyzer->getSource()
                                 instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                            && $statements_analyzer->getSource()->track_mutations
                         ) {
                             $statements_analyzer->getSource()->inferred_impure = true;
                         }
@@ -1131,12 +1128,10 @@ class InstancePropertyAssignmentAnalyzer
 
                 $visitor->traverse($assignment_value_type);
 
-                if ($codebase->alter_code
-                    && !$declaring_class_storage->mutation_free
-                    && (isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
-                        || isset($project_analyzer->getIssuesToFix()['MissingImmutableAnnotation']))
+                if (!$declaring_class_storage->mutation_free
                     && $statements_analyzer->getSource()
                         instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                    && $statements_analyzer->getSource()->track_mutations
                     && $visitor->has_mutation
                 ) {
                     $statements_analyzer->getSource()->inferred_has_mutation = true;
