@@ -992,8 +992,10 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                     $can_be_equal = false;
                     $did_remove_type = false;
 
-                    foreach ($existing_var_atomic_types as $atomic_key => $_) {
-                        if ($atomic_key !== $assertion) {
+                    foreach ($existing_var_atomic_types as $atomic_key => $atomic_type) {
+                        if ($atomic_key !== $assertion
+                            && !($atomic_type instanceof Type\Atomic\TPositiveInt && $value > 0)
+                        ) {
                             $existing_var_type->removeType($atomic_key);
                             $did_remove_type = true;
                         } else {
