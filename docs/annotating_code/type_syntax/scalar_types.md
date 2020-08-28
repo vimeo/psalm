@@ -18,7 +18,7 @@ The type `scalar` is the supertype of all scalar types.
 
 `numeric` is a supertype of `int` or `float` and [`numeric-string`](#numeric-string).
 
-### class-string
+### class-string, interface-string
 
 Psalm supports a special meta-type for `MyClass::class` constants, `class-string`, which can be used everywhere `string` can.
 
@@ -49,3 +49,11 @@ Psalm also supports a `trait-string` annotation denote a trait that exists.
 ### numeric-string
 
 `numeric-string` denotes a string value that has passed an `is_numeric` check.
+
+### lowercase-string, non-empty-string, non-empty-lowercase-string
+
+an empty string, lowercased or both at once.
+
+### html-escaped-string
+
+A string which can safely be used in a html context
