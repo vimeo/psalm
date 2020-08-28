@@ -747,7 +747,8 @@ class ParseTreeCreator
             case '(':
                 if (in_array(
                     $type_token[0],
-                    ['callable', 'pure-callable', 'Closure', '\Closure', 'pure-Closure'], true
+                    ['callable', 'pure-callable', 'Closure', '\Closure', 'pure-Closure'],
+                    true
                 )) {
                     $new_leaf = new ParseTree\CallableTree(
                         $type_token[0],
