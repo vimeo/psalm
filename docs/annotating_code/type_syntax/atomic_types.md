@@ -5,6 +5,7 @@ Atomic types are the basic building block of all type information used in Psalm.
 ## [Scalar types](scalar_types.md)
 
 - [int](scalar_types.md)
+- [positive-int](scalar_types.md#positive-int)
 - [float](scalar_types.md)
 - [string](scalar_types.md)
 - [class-string and class-string&lt;Foo&gt;](scalar_types.md#class-string)
