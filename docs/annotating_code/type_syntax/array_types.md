@@ -129,3 +129,7 @@ a array holding a callable, like phps native `call_user_func()` and friends supp
 $callable = ['myClass', 'aMethod'];
 $callable = [$object, 'aMethod'];
 ```
+
+## non-empty-array
+
+a array which is not allowed to be empty
