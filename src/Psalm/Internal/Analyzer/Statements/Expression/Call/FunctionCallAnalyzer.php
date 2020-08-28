@@ -1265,8 +1265,6 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     && !$function_storage->pure)
                 || ($callmap_function_pure === false)
             ) {
-                $statements_analyzer->getProjectAnalyzer();
-
                 if ($context->mutation_free || $context->external_mutation_free) {
                     if (IssueBuffer::accepts(
                         new ImpureFunctionCall(

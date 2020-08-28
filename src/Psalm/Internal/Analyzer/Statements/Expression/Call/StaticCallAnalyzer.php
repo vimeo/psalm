@@ -1119,8 +1119,6 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         return true;
                     }
 
-                    $statements_analyzer->getProjectAnalyzer();
-
                     if (!$context->inside_throw) {
                         if ($context->pure && !$method_storage->pure) {
                             if (IssueBuffer::accepts(

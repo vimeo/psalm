@@ -504,8 +504,6 @@ class ForeachAnalyzer
                 );
 
                 if (!$context->pure) {
-                    $statements_analyzer->getProjectAnalyzer();
-
                     if ($statements_analyzer->getSource()
                             instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
                         && $statements_analyzer->getSource()->track_mutations

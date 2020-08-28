@@ -551,8 +551,6 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                     if ($declaring_method_id) {
                         $method_storage = $codebase->methods->getStorage($declaring_method_id);
 
-                        $statements_analyzer->getProjectAnalyzer();
-
                         if (!$method_storage->external_mutation_free && !$context->inside_throw) {
                             if ($context->pure) {
                                 if (IssueBuffer::accepts(

@@ -717,6 +717,9 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
         return $this;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getProjectAnalyzer() : ProjectAnalyzer
     {
         return $this->project_analyzer;

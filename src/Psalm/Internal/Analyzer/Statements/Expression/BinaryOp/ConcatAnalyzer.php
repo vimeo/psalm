@@ -210,8 +210,6 @@ class ConcatAnalyzer
             $left_comparison_result = new \Psalm\Internal\Type\Comparator\TypeComparisonResult();
             $right_comparison_result = new \Psalm\Internal\Type\Comparator\TypeComparisonResult();
 
-            $statements_analyzer->getProjectAnalyzer();
-
             foreach ($left_type->getAtomicTypes() as $left_type_part) {
                 if ($left_type_part instanceof Type\Atomic\TTemplateParam) {
                     if (IssueBuffer::accepts(
