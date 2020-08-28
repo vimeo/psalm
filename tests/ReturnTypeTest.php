@@ -1241,10 +1241,7 @@ class ReturnTypeTest extends TestCase
                     return function($iter) use ($predicate): int {
                         return 1;
                     };
-                }
-
-                $res = map(function(int $i): string { return (string) $i; })([1,2,3]);
-                ',
+                }',
                 'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:28 - The inferred type \'pure-Closure(iterable<mixed, T:fn-map as mixed>):int(1)\' does not match the declared return type \'callable(iterable<mixed, T:fn-map as mixed>):iterable<mixed, U:fn-map as mixed>\' for map',
             ],
             'cannotInferReturnClosureWithDifferentTypes' => [
@@ -1256,11 +1253,8 @@ class ReturnTypeTest extends TestCase
                  */
                 function map(): callable {
                     return function(B $v): void {};
-                }
-
-                $res = map(function(int $i): string { return (string) $i; })([1,2,3]);
-                ',
-                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:28 - The inferred type \'Closure(B):void\' does not match the declared return type \'callable(A):void\' for map',
+                }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:28 - The inferred type \'impure-Closure(B):void\' does not match the declared return type \'callable(A):void\' for map',
             ],
             'compareObjectLikeToAlwaysFilledArray' => [
                 '<?php
