@@ -675,7 +675,7 @@ class TypeParser
                 },
                 $parse_tree->children
             );
-            $pure = strpos($parse_tree->value, 'pure-') === 0;
+            $pure = strpos($parse_tree->value, 'pure-') === 0 ? true : null;
 
             if (in_array(strtolower($parse_tree->value), ['closure', '\closure'], true)) {
                 return new TFn('Closure', $params, null, $pure);

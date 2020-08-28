@@ -43,7 +43,7 @@ trait CallableTrait
         $value = 'callable',
         array $params = null,
         Union $return_type = null,
-        bool $is_pure = false
+        ?bool $is_pure = null
     ) {
         $this->value = $value;
         $this->params = $params;
@@ -187,7 +187,8 @@ trait CallableTrait
                 . $this->return_type->getId() . ($return_type_multiple ? ')' : '');
         }
 
-        return ($this->is_pure ? 'pure-' : '') . $this->value . $param_string . $return_type_string;
+        return ($this->is_pure ? 'pure-' : ($this->is_pure === null ? '' : 'impure-'))
+            . $this->value . $param_string . $return_type_string;
     }
 
     public function __toString()
