@@ -10,6 +10,10 @@ The type `scalar` is the supertype of all scalar types.
 
 `array-key` is the supertype (but not a union) of `int` and `string`.
 
+### positive-int
+
+`positive-int` allows only positive integers
+
 ### numeric
 
 `numeric` is a supertype of `int` or `float` and [`numeric-string`](#numeric-string).
