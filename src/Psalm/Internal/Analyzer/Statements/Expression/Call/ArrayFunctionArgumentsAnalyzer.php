@@ -888,7 +888,7 @@ class ArrayFunctionArgumentsAnalyzer
                 if ($union_comparison_results->type_coerced_from_mixed) {
                     if (IssueBuffer::accepts(
                         new MixedArgumentTypeCoercion(
-                            'First parameter of closure passed to function ' . $method_id . ' expects ' .
+                            'Parameter ' . ($i + 1) . ' of closure passed to function ' . $method_id . ' expects ' .
                                 $closure_param_type->getId() . ', parent type ' . $input_type->getId() . ' provided',
                             new CodeLocation($statements_analyzer->getSource(), $closure_arg),
                             $method_id
@@ -900,7 +900,7 @@ class ArrayFunctionArgumentsAnalyzer
                 } else {
                     if (IssueBuffer::accepts(
                         new ArgumentTypeCoercion(
-                            'First parameter of closure passed to function ' . $method_id . ' expects ' .
+                            'Parameter ' . ($i + 1) . ' of closure passed to function ' . $method_id . ' expects ' .
                                 $closure_param_type->getId() . ', parent type ' . $input_type->getId() . ' provided',
                             new CodeLocation($statements_analyzer->getSource(), $closure_arg),
                             $method_id
@@ -922,7 +922,7 @@ class ArrayFunctionArgumentsAnalyzer
                 if ($union_comparison_results->scalar_type_match_found) {
                     if (IssueBuffer::accepts(
                         new InvalidScalarArgument(
-                            'First parameter of closure passed to function ' . $method_id . ' expects ' .
+                            'Parameter ' . ($i + 1) . ' of closure passed to function ' . $method_id . ' expects ' .
                                 $closure_param_type->getId() . ', ' . $input_type->getId() . ' provided',
                             new CodeLocation($statements_analyzer->getSource(), $closure_arg),
                             $method_id
@@ -934,7 +934,7 @@ class ArrayFunctionArgumentsAnalyzer
                 } elseif ($types_can_be_identical) {
                     if (IssueBuffer::accepts(
                         new PossiblyInvalidArgument(
-                            'First parameter of closure passed to function ' . $method_id . ' expects '
+                            'Parameter ' . ($i + 1) . ' of closure passed to function ' . $method_id . ' expects '
                                 . $closure_param_type->getId() . ', possibly different type '
                                 . $input_type->getId() . ' provided',
                             new CodeLocation($statements_analyzer->getSource(), $closure_arg),
@@ -946,7 +946,7 @@ class ArrayFunctionArgumentsAnalyzer
                     }
                 } elseif (IssueBuffer::accepts(
                     new InvalidArgument(
-                        'First parameter of closure passed to function ' . $method_id . ' expects ' .
+                        'Parameter ' . ($i + 1) . ' of closure passed to function ' . $method_id . ' expects ' .
                             $closure_param_type->getId() . ', ' . $input_type->getId() . ' provided',
                         new CodeLocation($statements_analyzer->getSource(), $closure_arg),
                         $method_id
