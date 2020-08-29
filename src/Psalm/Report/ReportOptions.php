@@ -39,4 +39,9 @@ class ReportOptions
      * @var bool
      */
     public $show_suggestions = true;
+
+    /**
+     * @var bool Modify console output to let php storm navigate to issue
+     */
+    public $php_storm = false;
 }

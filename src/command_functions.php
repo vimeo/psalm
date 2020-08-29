@@ -395,6 +395,9 @@ Output:
     --stats
         Shows a breakdown of Psalm's ability to infer types in the codebase
 
+    --php-storm
+        Shows file links in IDE-compatible way, ability to open the source code directly from the console output
+
 Reports:
     --report=PATH
         The path where to output report file. The output format is based on the file extension.
