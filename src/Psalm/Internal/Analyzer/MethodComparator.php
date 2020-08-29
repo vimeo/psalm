@@ -435,7 +435,8 @@ class MethodComparator
                                     . $guide_param->name . ' as defined by '
                                     . $cased_guide_method_id,
                                 $implementer_param->location
-                            )
+                            ),
+                            $suppressed_issues
                         )) {
                             // fall through
                         }
