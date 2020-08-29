@@ -1108,7 +1108,9 @@ class CommentAnalyzer
                                 'Badly-formatted @method string ' . $method_entry . ' - ' . $e
                             );
                         }
-                        $docblock_lines[] = '@param \\' . $param_type . ' '
+
+                        $param_type_string = $param_type->toNamespacedString('\\', [], null, false);
+                        $docblock_lines[] = '@param ' . $param_type_string . ' '
                             . ($method_tree_child->variadic ? '...' : '')
                             . $method_tree_child->name;
                     }
