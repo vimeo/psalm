@@ -17,13 +17,13 @@ use Psalm\Type\Union;
 class ThrowAnalyzer
 {
     /**
-     * @return  false|null
+     * @param PhpParser\Node\Stmt\Throw_|PhpParser\Node\Expr\Throw_ $stmt
      */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
-        PhpParser\Node\Stmt\Throw_ $stmt,
+        PhpParser\Node $stmt,
         Context $context
-    ) {
+    ) : bool {
         $context->inside_throw = true;
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
             return false;
@@ -65,5 +65,11 @@ class ThrowAnalyzer
                 }
             }
         }
+
+        if ($stmt instanceof PhpParser\Node\Expr\Throw_) {
+            $statements_analyzer->node_data->setType($stmt, \Psalm\Type::getEmpty());
+        }
+
+        return true;
     }
 }
