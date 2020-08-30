@@ -865,6 +865,8 @@ class ReturnTypeTest extends TestCase
             ],
             'returnStaticThis' => [
                 '<?php
+                    namespace Foo;
+
                     class A {
                         public function getThis() : static {
                             return $this;
@@ -876,6 +878,19 @@ class ReturnTypeTest extends TestCase
                     }
 
                     (new B)->getThis()->foo();',
+            ],
+            'returnMixed' => [
+                '<?php
+                    namespace Foo;
+
+                    class A {
+                        public function getThis() : mixed {
+                            return $this;
+                        }
+                    }',
+                [],
+                [],
+                '8.0'
             ],
         ];
     }

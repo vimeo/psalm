@@ -224,7 +224,11 @@ abstract class Atomic implements TypeNode
                 return $php_version !== null ? new TNamedObject($value) : new TNull();
 
             case 'mixed':
-                return $php_version !== null ? new TNamedObject($value) : new TMixed();
+                if ($php_version === null || $php_version[0] >= 8) {
+                    return new TMixed();
+                }
+
+                return new TNamedObject($value);
 
             case 'callable-object':
                 return new TCallableObject();
