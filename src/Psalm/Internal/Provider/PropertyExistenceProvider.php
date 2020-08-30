@@ -40,7 +40,6 @@ class PropertyExistenceProvider
         $callable = \Closure::fromCallable([$class, 'doesPropertyExist']);
 
         foreach ($class::getClassLikeNames() as $fq_classlike_name) {
-            /** @psalm-suppress MixedTypeCoercion */
             $this->registerClosure($fq_classlike_name, $callable);
         }
     }

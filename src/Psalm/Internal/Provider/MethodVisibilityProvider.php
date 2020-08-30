@@ -39,7 +39,6 @@ class MethodVisibilityProvider
         $callable = \Closure::fromCallable([$class, 'isMethodVisible']);
 
         foreach ($class::getClassLikeNames() as $fq_classlike_name) {
-            /** @psalm-suppress MixedTypeCoercion */
             $this->registerClosure($fq_classlike_name, $callable);
         }
     }

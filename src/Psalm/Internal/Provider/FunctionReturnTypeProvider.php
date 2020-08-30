@@ -67,7 +67,6 @@ class FunctionReturnTypeProvider
         $callable = \Closure::fromCallable([$class, 'getFunctionReturnType']);
 
         foreach ($class::getFunctionIds() as $function_id) {
-            /** @psalm-suppress MixedTypeCoercion */
             $this->registerClosure($function_id, $callable);
         }
     }

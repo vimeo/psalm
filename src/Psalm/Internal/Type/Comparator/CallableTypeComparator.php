@@ -395,6 +395,10 @@ class CallableTypeComparator
             foreach ($lhs->getAtomicTypes() as $lhs_atomic_type) {
                 if ($lhs_atomic_type instanceof TNamedObject) {
                     $class_name = $lhs_atomic_type->value;
+                } elseif ($lhs_atomic_type instanceof Type\Atomic\TClassString
+                    && $lhs_atomic_type->as
+                ) {
+                    $class_name = $lhs_atomic_type->as;
                 }
             }
         }

@@ -40,7 +40,6 @@ class PropertyVisibilityProvider
         $callable = \Closure::fromCallable([$class, 'isPropertyVisible']);
 
         foreach ($class::getClassLikeNames() as $fq_classlike_name) {
-            /** @psalm-suppress MixedTypeCoercion */
             $this->registerClosure($fq_classlike_name, $callable);
         }
     }

@@ -358,7 +358,7 @@ abstract class Type
      */
     public static function getClosure()
     {
-        $type = new TNamedObject('Closure');
+        $type = new Type\Atomic\TFn('Closure');
 
         return new Union([$type]);
     }

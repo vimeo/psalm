@@ -42,7 +42,6 @@ class MethodParamsProvider
         $callable = \Closure::fromCallable([$class, 'getMethodParams']);
 
         foreach ($class::getClassLikeNames() as $fq_classlike_name) {
-            /** @psalm-suppress MixedTypeCoercion */
             $this->registerClosure($fq_classlike_name, $callable);
         }
     }

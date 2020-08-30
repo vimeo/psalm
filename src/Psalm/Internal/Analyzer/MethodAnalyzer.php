@@ -87,7 +87,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
     ) {
         $codebase_methods = $codebase->methods;
 
-        if ($method_id->fq_class_name === 'closure'
+        if ($method_id->fq_class_name === 'Closure'
             && $method_id->method_name === 'fromcallable'
         ) {
             return true;

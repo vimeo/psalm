@@ -17,13 +17,13 @@ class MethodReturnTypeProvider
      *   array<\Closure(
      *     StatementsSource,
      *     string,
-     *     string,
+     *     lowercase-string,
      *     array<PhpParser\Node\Arg>,
      *     Context,
      *     CodeLocation,
      *     ?array<Type\Union>=,
      *     ?string=,
-     *     ?string=
+     *     ?lowercase-string=
      *   ) : ?Type\Union>
      * >
      */
@@ -36,6 +36,7 @@ class MethodReturnTypeProvider
         $this->registerClass(ReturnTypeProvider\DomNodeAppendChild::class);
         $this->registerClass(ReturnTypeProvider\SimpleXmlElementAsXml::class);
         $this->registerClass(ReturnTypeProvider\PdoStatementReturnTypeProvider::class);
+        $this->registerClass(ReturnTypeProvider\ClosureFromCallableReturnTypeProvider::class);
     }
 
     /**
@@ -48,7 +49,6 @@ class MethodReturnTypeProvider
         $callable = \Closure::fromCallable([$class, 'getMethodReturnType']);
 
         foreach ($class::getClassLikeNames() as $fq_classlike_name) {
-            /** @psalm-suppress MixedTypeCoercion */
             $this->registerClosure($fq_classlike_name, $callable);
         }
     }
@@ -57,13 +57,13 @@ class MethodReturnTypeProvider
      * @param  \Closure(
      *     StatementsSource,
      *     string,
-     *     string,
+     *     lowercase-string,
      *     array<PhpParser\Node\Arg>,
      *     Context,
      *     CodeLocation,
      *     ?array<Type\Union>=,
      *     ?string=,
-     *     ?string=
+     *     ?lowercase-string=
      *   ) : ?Type\Union $c
      *
      * @return void

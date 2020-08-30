@@ -39,7 +39,6 @@ class PropertyTypeProvider
         $callable = \Closure::fromCallable([$class, 'getPropertyType']);
 
         foreach ($class::getClassLikeNames() as $fq_classlike_name) {
-            /** @psalm-suppress MixedTypeCoercion */
             $this->registerClosure($fq_classlike_name, $callable);
         }
     }
