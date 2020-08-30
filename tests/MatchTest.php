@@ -43,6 +43,19 @@ class MatchTest extends TestCase
                 [],
                 '8.0'
             ],
+            'allMatchedNoRedundantCondition' => [
+                '<?php
+                    function foo() : string {
+                        $a = rand(0, 1) ? "a" : "b";
+                        return match ($a) {
+                            "a" => "hello",
+                            "b" => "goodbye",
+                        };
+                    }',
+                [],
+                [],
+                '8.0'
+            ],
         ];
     }
 
@@ -79,6 +92,36 @@ class MatchTest extends TestCase
                         C::class => 5,
                     };',
                 'error_message' => 'UndefinedClass',
+                [],
+                false,
+                '8.0'
+            ],
+            'allMatchedDefaultImpossible' => [
+                '<?php
+                    function foo() : string {
+                        $a = rand(0, 1) ? "a" : "b";
+                        return match ($a) {
+                            "a" => "hello",
+                            "b" => "goodbye",
+                            default => "impossible",
+                        };
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                [],
+                false,
+                '8.0'
+            ],
+            'allMatchedAnotherImpossible' => [
+                '<?php
+                    function foo() : string {
+                        $a = rand(0, 1) ? "a" : "b";
+                        return match ($a) {
+                            "a" => "hello",
+                            "b" => "goodbye",
+                            "c" => "impossible",
+                        };
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
                 [],
                 false,
                 '8.0'
