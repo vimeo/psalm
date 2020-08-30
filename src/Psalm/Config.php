@@ -608,6 +608,16 @@ class Config
      */
     public $debug_emitted_issues = false;
 
+    /**
+     * @var self::REPORT_*
+     */
+    private $default_severity = self::REPORT_ERROR;
+
+    /**
+     * @var bool
+     */
+    private $report_lower_levels_as_info = true;
+
     protected function __construct()
     {
         self::$instance = $this;
@@ -842,6 +852,7 @@ class Config
             'allowInternalNamedArgumentsCalls' => 'allow_internal_named_arg_calls',
             'allowNamedArgumentCalls' => 'allow_named_arg_calls',
             'findUnusedPsalmSuppress' => 'find_unused_psalm_suppress',
+            'reportLowerLevelsAsInfo' => 'report_lower_levels_as_info',
         ];
 
         foreach ($booleanAttributes as $xmlName => $internalName) {
@@ -894,6 +905,24 @@ class Config
             $config->use_igbinary = $attribute_text === 'igbinary';
         } elseif ($igbinary_version = phpversion('igbinary')) {
             $config->use_igbinary = version_compare($igbinary_version, '2.0.5') >= 0;
+        }
+
+        if (isset($config_xml['defaultSeverity'])) {
+            switch($config_xml['defaultSeverity']){
+                case self::REPORT_ERROR:
+                    $config->default_severity = self::REPORT_ERROR;
+                    break;
+                case self::REPORT_SUPPRESS:
+                    $config->default_severity = self::REPORT_SUPPRESS;
+                    break;
+                case self::REPORT_INFO:
+                    $config->default_severity = self::REPORT_INFO;
+                    break;
+                default:
+                    throw new Exception\ConfigException(
+                        'Invalid default severity ' . $config_xml['defaultSeverity']
+                    );
+            }
         }
 
 
@@ -1597,10 +1626,10 @@ class Config
         $issue_level = $issue_class::ERROR_LEVEL;
 
         if ($issue_level > 0 && $issue_level < $this->level) {
-            return self::REPORT_INFO;
+            return $this->report_lower_levels_as_info ? self::REPORT_INFO : self::REPORT_SUPPRESS;
         }
 
-        return self::REPORT_ERROR;
+        return $this->default_severity;
     }
 
     /**
