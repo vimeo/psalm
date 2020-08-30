@@ -7,6 +7,12 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Context;
 use Psalm\Type;
 use function strtolower;
+use function substr;
+use function array_reverse;
+use function array_shift;
+use function in_array;
+use function count;
+use function array_map;
 
 class MatchAnalyzer
 {
