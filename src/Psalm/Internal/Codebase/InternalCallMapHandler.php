@@ -157,11 +157,11 @@ class InternalCallMapHandler
                     if ($arg_type->hasArray()) {
                         /**
                          * @psalm-suppress PossiblyUndefinedStringArrayOffset
-                         * @var Type\Atomic\TArray|Type\Atomic\ObjectLike|Type\Atomic\TList
+                         * @var Type\Atomic\TArray|Type\Atomic\TKeyedArray|Type\Atomic\TList
                          */
                         $array_atomic_type = $arg_type->getAtomicTypes()['array'];
 
-                        if ($array_atomic_type instanceof Type\Atomic\ObjectLike) {
+                        if ($array_atomic_type instanceof Type\Atomic\TKeyedArray) {
                             $arg_type = $array_atomic_type->getGenericValueType();
                         } elseif ($array_atomic_type instanceof Type\Atomic\TList) {
                             $arg_type = $array_atomic_type->type_param;
@@ -334,7 +334,6 @@ class InternalCallMapHandler
      *
      * @return array<string, array<int|string, string>>
      * @psalm-suppress MixedInferredReturnType as the use of require buggers things up
-     * @psalm-suppress MixedTypeCoercion
      * @psalm-suppress MixedReturnStatement
      * @psalm-suppress MixedReturnTypeCoercion
      */

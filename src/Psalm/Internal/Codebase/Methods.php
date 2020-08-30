@@ -532,7 +532,7 @@ class Methods
                 );
             }
 
-            if ($atomic_type instanceof Type\Atomic\ObjectLike) {
+            if ($atomic_type instanceof Type\Atomic\TKeyedArray) {
                 foreach ($atomic_type->properties as &$property_type) {
                     $property_type = self::localizeType(
                         $codebase,

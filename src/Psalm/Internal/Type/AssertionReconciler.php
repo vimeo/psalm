@@ -450,11 +450,11 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
             }
         }
 
-        if ($new_type_part instanceof Type\Atomic\ObjectLike) {
+        if ($new_type_part instanceof Type\Atomic\TKeyedArray) {
             $acceptable_atomic_types = [];
 
             foreach ($existing_var_type->getAtomicTypes() as $existing_var_type_part) {
-                if ($existing_var_type_part instanceof Type\Atomic\ObjectLike) {
+                if ($existing_var_type_part instanceof Type\Atomic\TKeyedArray) {
                     if (!array_intersect_key(
                         $existing_var_type_part->properties,
                         $new_type_part->properties
@@ -716,7 +716,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                     $matching_atomic_types[] = $existing_type_part;
                 }
 
-                if ($new_type_part instanceof Type\Atomic\ObjectLike
+                if ($new_type_part instanceof Type\Atomic\TKeyedArray
                     && $existing_type_part instanceof Type\Atomic\TList
                 ) {
                     $new_type_key = $new_type_part->getGenericKeyType();
@@ -734,7 +734,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                             $any_scalar_type_match_found
                         );
 
-                        $hybrid_type_part = new Type\Atomic\ObjectLike($new_type_part->properties);
+                        $hybrid_type_part = new Type\Atomic\TKeyedArray($new_type_part->properties);
                         $hybrid_type_part->previous_key_type = Type::getInt();
                         $hybrid_type_part->previous_value_type = $new_type_value;
                         $hybrid_type_part->is_list = true;

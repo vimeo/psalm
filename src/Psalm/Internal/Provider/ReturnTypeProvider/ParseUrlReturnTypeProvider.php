@@ -138,7 +138,7 @@ class ParseUrlReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
         }
 
         $return_type = new Type\Union([
-            new Type\Atomic\ObjectLike($component_types),
+            new Type\Atomic\TKeyedArray($component_types),
             new Type\Atomic\TFalse(),
         ]);
 

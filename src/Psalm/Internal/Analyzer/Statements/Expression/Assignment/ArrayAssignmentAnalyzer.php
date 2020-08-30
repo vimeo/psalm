@@ -11,7 +11,7 @@ use Psalm\Context;
 use Psalm\IssueBuffer;
 use Psalm\Issue\InvalidArrayAssignment;
 use Psalm\Type;
-use Psalm\Type\Atomic\ObjectLike;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TNonEmptyArray;
@@ -563,7 +563,7 @@ class ArrayAssignmentAnalyzer
                         || $atomic_root_types['array'] instanceof TNonEmptyList
                     ) {
                         $array_atomic_type->count = $atomic_root_types['array']->count;
-                    } elseif ($atomic_root_types['array'] instanceof ObjectLike
+                    } elseif ($atomic_root_types['array'] instanceof TKeyedArray
                         && $atomic_root_types['array']->sealed
                     ) {
                         $array_atomic_type->count = count($atomic_root_types['array']->properties);
@@ -694,7 +694,7 @@ class ArrayAssignmentAnalyzer
 
         foreach ($child_stmt_type->getAtomicTypes() as $type) {
             foreach ($key_values as $key_value) {
-                if ($type instanceof ObjectLike) {
+                if ($type instanceof TKeyedArray) {
                     if (isset($type->properties[$key_value->value])) {
                         $has_matching_objectlike_property = true;
 
@@ -738,7 +738,7 @@ class ArrayAssignmentAnalyzer
             if (count($key_values) === 1) {
                 $key_value = $key_values[0];
 
-                $object_like = new ObjectLike(
+                $object_like = new TKeyedArray(
                     [$key_value->value => clone $current_type],
                     $key_value instanceof Type\Atomic\TLiteralClassString
                         ? [(string) $key_value->value => true]

@@ -853,7 +853,7 @@ class ReturnTypeTest extends TestCase
                         }
                     }'
             ],
-            'compareObjectLikeToPotentiallyUnfilledArray' => [
+            'compareTKeyedArrayToPotentiallyUnfilledArray' => [
                 '<?php
                     /**
                      * @param array<"from"|"to", bool> $a
@@ -997,7 +997,7 @@ class ReturnTypeTest extends TestCase
                     }',
                 'error_message' => 'InvalidReturnStatement',
             ],
-            'complainAboutObjectLikeWhenArrayIsFound' => [
+            'complainAboutTKeyedArrayWhenArrayIsFound' => [
                 '<?php
                     /** @return array{a:string,b:string,c:string} */
                     function foo(): array {
@@ -1256,7 +1256,7 @@ class ReturnTypeTest extends TestCase
                 }',
                 'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:28 - The inferred type \'impure-Closure(B):void\' does not match the declared return type \'callable(A):void\' for map',
             ],
-            'compareObjectLikeToAlwaysFilledArray' => [
+            'compareTKeyedArrayToAlwaysFilledArray' => [
                 '<?php
                     /**
                      * @param array<"from"|"to", bool> $a

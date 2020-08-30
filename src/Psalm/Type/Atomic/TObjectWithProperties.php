@@ -253,7 +253,7 @@ class TObjectWithProperties extends TObject
         foreach ($this->properties as $offset => $property) {
             $input_type_param = null;
 
-            if ($input_type instanceof Atomic\ObjectLike
+            if ($input_type instanceof Atomic\TKeyedArray
                 && isset($input_type->properties[$offset])
             ) {
                 $input_type_param = $input_type->properties[$offset];

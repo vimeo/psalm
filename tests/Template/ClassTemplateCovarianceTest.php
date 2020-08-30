@@ -505,7 +505,7 @@ class ClassTemplateCovarianceTest extends TestCase
                 [],
                 '7.4',
             ],
-            'extendsObjectLikeWithCovariant' => [
+            'extendsTKeyedArrayWithCovariant' => [
                 '<?php
                     /**
                      * @template-covariant T1

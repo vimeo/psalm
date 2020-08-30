@@ -130,7 +130,7 @@ class IssetTest extends \Psalm\Tests\TestCase
                         unset($foo, $bar);
                     }',
             ],
-            'issetObjectLike' => [
+            'issetTKeyedArray' => [
                 '<?php
                     $arr = [
                         "profile" => [
@@ -698,7 +698,7 @@ class IssetTest extends \Psalm\Tests\TestCase
                     class B extends P {}
                     class C extends P {}'
             ],
-            'issetCreateObjectLikeWithType' => [
+            'issetCreateTKeyedArrayWithType' => [
                 '<?php
                     function foo(array $options): void {
                         if (isset($options["a"])) {
@@ -992,7 +992,7 @@ class IssetTest extends \Psalm\Tests\TestCase
                     }',
                 'error_message' => 'NullArrayAccess',
             ],
-            'issetAdditionalVarWithSealedObjectLike' => [
+            'issetAdditionalVarWithSealedTKeyedArray' => [
                 '<?php
                     class Example {
                         const FOO = "foo";

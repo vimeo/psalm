@@ -667,7 +667,7 @@ class CallAnalyzer
                             }
 
                             if ($replacement_atomic_type instanceof Type\Atomic\TArray
-                                || $replacement_atomic_type instanceof Type\Atomic\ObjectLike
+                                || $replacement_atomic_type instanceof Type\Atomic\TKeyedArray
                             ) {
                                 $ored_type_assertions[] = $prefix . 'array';
                             } elseif ($replacement_atomic_type instanceof Type\Atomic\TNamedObject) {

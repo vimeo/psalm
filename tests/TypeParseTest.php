@@ -259,7 +259,7 @@ class TypeParseTest extends TestCase
     /**
      * @return void
      */
-    public function testIntersectionOfObjectLike()
+    public function testIntersectionOfTKeyedArray()
     {
         $this->assertSame('array{a: int, b: int}', (string) Type::parseString('array{a: int}&array{b: int}'));
     }
@@ -267,7 +267,7 @@ class TypeParseTest extends TestCase
     /**
      * @return void
      */
-    public function testIntersectionOfObjectLikeWithMergedProperties()
+    public function testIntersectionOfTKeyedArrayWithMergedProperties()
     {
         $this->assertSame('array{a: int}', (string) Type::parseString('array{a: int}&array{a: mixed}'));
     }
@@ -275,7 +275,7 @@ class TypeParseTest extends TestCase
     /**
      * @return void
      */
-    public function testIntersectionOfObjectLikeWithPossiblyUndefinedMergedProperties()
+    public function testIntersectionOfTKeyedArrayWithPossiblyUndefinedMergedProperties()
     {
         $this->assertSame('array{a: int}', (string) Type::parseString('array{a: int}&array{a?: int}'));
     }
@@ -283,7 +283,7 @@ class TypeParseTest extends TestCase
     /**
      * @return void
      */
-    public function testIntersectionOfObjectLikeWithConflictingProperties()
+    public function testIntersectionOfTKeyedArrayWithConflictingProperties()
     {
         $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
         Type::parseString('array{a: string}&array{a: int}');
@@ -292,7 +292,7 @@ class TypeParseTest extends TestCase
     /**
      * @return void
      */
-    public function testUnionOfIntersectionOfObjectLike()
+    public function testUnionOfIntersectionOfTKeyedArray()
     {
         $this->assertSame('array{a: int|string, b?: int}', (string) Type::parseString('array{a: int}|array{a: string}&array{b: int}'));
         $this->assertSame('array{a: int|string, b?: int}', (string) Type::parseString('array{b: int}&array{a: string}|array{a: int}'));
@@ -301,7 +301,7 @@ class TypeParseTest extends TestCase
     /**
      * @return void
      */
-    public function testIntersectionOfUnionOfObjectLike()
+    public function testIntersectionOfUnionOfTKeyedArray()
     {
         $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
         Type::parseString('array{a: int}&array{a: string}|array{b: int}');
@@ -310,13 +310,13 @@ class TypeParseTest extends TestCase
     /**
      * @return void
      */
-    public function testIntersectionOfObjectLikeAndObject()
+    public function testIntersectionOfTKeyedArrayAndObject()
     {
         $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
         Type::parseString('array{a: int}&T1');
     }
 
-    public function testIterableContainingObjectLike() : void
+    public function testIterableContainingTKeyedArray() : void
     {
         $this->assertSame('iterable<string, array{int}>', Type::parseString('iterable<string, array{int}>')->getId());
     }
@@ -356,7 +356,7 @@ class TypeParseTest extends TestCase
     /**
      * @return void
      */
-    public function testPhpDocObjectLikeArray()
+    public function testPhpDocTKeyedArray()
     {
         $this->assertSame(
             'array<array-key, array{b: bool, d: string}>',
@@ -433,7 +433,7 @@ class TypeParseTest extends TestCase
     /**
      * @return void
      */
-    public function testObjectLikeWithSimpleArgs()
+    public function testTKeyedArrayWithSimpleArgs()
     {
         $this->assertSame('array{a: int, b: string}', (string) Type:: parseString('array{a: int, b: string}'));
     }
@@ -441,7 +441,7 @@ class TypeParseTest extends TestCase
     /**
      * @return void
      */
-    public function testObjectLikeWithSpace()
+    public function testTKeyedArrayWithSpace()
     {
         $this->assertSame('array{\'a \': int, \'b  \': string}', (string) Type:: parseString('array{\'a \': int, \'b  \': string}'));
     }
@@ -449,7 +449,7 @@ class TypeParseTest extends TestCase
     /**
      * @return void
      */
-    public function testObjectLikeWithQuotedKeys()
+    public function testTKeyedArrayWithQuotedKeys()
     {
         $this->assertSame('array{\'\\"\': int, \'\\\'\': string}', (string) Type:: parseString('array{\'"\': int, \'\\\'\': string}'));
         $this->assertSame('array{\'\\"\': int, \'\\\'\': string}', (string) Type:: parseString('array{"\\"": int, "\\\'": string}'));
@@ -458,7 +458,7 @@ class TypeParseTest extends TestCase
     /**
      * @return void
      */
-    public function testObjectLikeWithClassConstantKey()
+    public function testTKeyedArrayWithClassConstantKey()
     {
         $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
         Type::parseString('array{self::FOO: string}');
@@ -467,7 +467,7 @@ class TypeParseTest extends TestCase
     /**
      * @return void
      */
-    public function testObjectLikeWithQuotedClassConstantKey()
+    public function testTKeyedArrayWithQuotedClassConstantKey()
     {
         $this->assertSame('array{\'self::FOO\': string}', (string) Type:: parseString('array{"self::FOO": string}'));
     }
@@ -475,7 +475,7 @@ class TypeParseTest extends TestCase
     /**
      * @return void
      */
-    public function testObjectLikeWithoutClosingBracket()
+    public function testTKeyedArrayWithoutClosingBracket()
     {
         $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
         Type::parseString('array{a: int, b: string');
@@ -484,7 +484,7 @@ class TypeParseTest extends TestCase
     /**
      * @return void
      */
-    public function testObjectLikeArrayInType()
+    public function testTKeyedArrayInType()
     {
         $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
         Type::parseString('array{a:[]}');
@@ -509,7 +509,7 @@ class TypeParseTest extends TestCase
     /**
      * @return void
      */
-    public function testObjectLikeWithUnionArgs()
+    public function testTKeyedArrayWithUnionArgs()
     {
         $this->assertSame(
             'array{a: int|string, b: string}',
@@ -520,7 +520,7 @@ class TypeParseTest extends TestCase
     /**
      * @return void
      */
-    public function testObjectLikeWithGenericArgs()
+    public function testTKeyedArrayWithGenericArgs()
     {
         $this->assertSame(
             'array{a: array<int, int|string>, b: string}',
@@ -531,7 +531,7 @@ class TypeParseTest extends TestCase
     /**
      * @return void
      */
-    public function testObjectLikeWithIntKeysAndUnionArgs()
+    public function testTKeyedArrayWithIntKeysAndUnionArgs()
     {
         $this->assertSame(
             'array{null|stdClass}',
@@ -542,7 +542,7 @@ class TypeParseTest extends TestCase
     /**
      * @return void
      */
-    public function testObjectLikeWithIntKeysAndGenericArgs()
+    public function testTKeyedArrayWithIntKeysAndGenericArgs()
     {
         $this->assertSame(
             'array{array<array-key, mixed>}',
@@ -558,7 +558,7 @@ class TypeParseTest extends TestCase
     /**
      * @return void
      */
-    public function testObjectLikeOptional()
+    public function testTKeyedArrayOptional()
     {
         $this->assertSame(
             'array{a: int, b?: int}',
@@ -719,7 +719,7 @@ class TypeParseTest extends TestCase
     /**
      * @return void
      */
-    public function testConditionalTypeWithObjectLikeArray()
+    public function testConditionalTypeWithTKeyedArray()
     {
         $this->assertSame(
             '(T is array{a: string} ? string : int)',

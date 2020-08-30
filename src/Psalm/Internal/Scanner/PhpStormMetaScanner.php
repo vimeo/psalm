@@ -221,11 +221,11 @@ class PhpStormMetaScanner
                         ) {
                             /**
                              * @psalm-suppress PossiblyUndefinedStringArrayOffset
-                             * @var Type\Atomic\TArray|Type\Atomic\ObjectLike|Type\Atomic\TList
+                             * @var Type\Atomic\TArray|Type\Atomic\TKeyedArray|Type\Atomic\TList
                              */
                             $array_atomic_type = $call_arg_type->getAtomicTypes()['array'];
 
-                            if ($array_atomic_type instanceof Type\Atomic\ObjectLike) {
+                            if ($array_atomic_type instanceof Type\Atomic\TKeyedArray) {
                                 return $array_atomic_type->getGenericValueType();
                             }
 
@@ -370,11 +370,11 @@ class PhpStormMetaScanner
                         ) {
                             /**
                              * @psalm-suppress PossiblyUndefinedStringArrayOffset
-                             * @var Type\Atomic\TArray|Type\Atomic\ObjectLike|Type\Atomic\TList
+                             * @var Type\Atomic\TArray|Type\Atomic\TKeyedArray|Type\Atomic\TList
                              */
                             $array_atomic_type = $call_arg_type->getAtomicTypes()['array'];
 
-                            if ($array_atomic_type instanceof Type\Atomic\ObjectLike) {
+                            if ($array_atomic_type instanceof Type\Atomic\TKeyedArray) {
                                 return $array_atomic_type->getGenericValueType();
                             }
 

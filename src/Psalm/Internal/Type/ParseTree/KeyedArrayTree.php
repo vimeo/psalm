@@ -4,12 +4,17 @@ namespace Psalm\Internal\Type\ParseTree;
 /**
  * @internal
  */
-class ObjectLikePropertyTree extends \Psalm\Internal\Type\ParseTree
+class KeyedArrayTree extends \Psalm\Internal\Type\ParseTree
 {
     /**
      * @var string
      */
     public $value;
+
+    /**
+     * @var bool
+     */
+    public $terminated = false;
 
     /**
      * @param string $value

@@ -4,7 +4,7 @@ namespace Psalm\Type\Atomic;
 /**
  * Represents a non-empty array
  */
-class TCallableObjectLikeArray extends ObjectLike
+class TCallableKeyedArray extends TKeyedArray
 {
     const KEY = 'callable-array';
 

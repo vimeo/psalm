@@ -18,7 +18,7 @@ use Psalm\Issue\StringIncrement;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Type;
-use Psalm\Type\Atomic\ObjectLike;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
@@ -410,20 +410,20 @@ class NonDivArithmeticOpAnalyzer
 
         if ($left_type_part instanceof TArray
             || $right_type_part instanceof TArray
-            || $left_type_part instanceof ObjectLike
-            || $right_type_part instanceof ObjectLike
+            || $left_type_part instanceof TKeyedArray
+            || $right_type_part instanceof TKeyedArray
             || $left_type_part instanceof TList
             || $right_type_part instanceof TList
         ) {
             if ((!$right_type_part instanceof TArray
-                    && !$right_type_part instanceof ObjectLike
+                    && !$right_type_part instanceof TKeyedArray
                     && !$right_type_part instanceof TList)
                 || (!$left_type_part instanceof TArray
-                    && !$left_type_part instanceof ObjectLike
+                    && !$left_type_part instanceof TKeyedArray
                     && !$left_type_part instanceof TList)
             ) {
                 if (!$left_type_part instanceof TArray
-                    && !$left_type_part instanceof ObjectLike
+                    && !$left_type_part instanceof TKeyedArray
                     && !$left_type_part instanceof TList
                 ) {
                     $invalid_left_messages[] = 'Cannot add an array to a non-array ' . $left_type_part;
@@ -432,12 +432,12 @@ class NonDivArithmeticOpAnalyzer
                 }
 
                 if ($left_type_part instanceof TArray
-                    || $left_type_part instanceof ObjectLike
+                    || $left_type_part instanceof TKeyedArray
                     || $left_type_part instanceof TList
                 ) {
                     $has_valid_left_operand = true;
                 } elseif ($right_type_part instanceof TArray
-                    || $right_type_part instanceof ObjectLike
+                    || $right_type_part instanceof TKeyedArray
                     || $right_type_part instanceof TList
                 ) {
                     $has_valid_right_operand = true;
@@ -451,8 +451,8 @@ class NonDivArithmeticOpAnalyzer
             $has_valid_right_operand = true;
             $has_valid_left_operand = true;
 
-            if ($left_type_part instanceof ObjectLike
-                && $right_type_part instanceof ObjectLike
+            if ($left_type_part instanceof TKeyedArray
+                && $right_type_part instanceof TKeyedArray
             ) {
                 $definitely_existing_mixed_right_properties = array_diff_key(
                     $right_type_part->properties,
@@ -481,7 +481,7 @@ class NonDivArithmeticOpAnalyzer
                     }
                 }
 
-                $result_type_member = new Type\Union([new ObjectLike($properties)]);
+                $result_type_member = new Type\Union([new TKeyedArray($properties)]);
             } else {
                 $result_type_member = TypeCombination::combineTypes(
                     [$left_type_part, $right_type_part],

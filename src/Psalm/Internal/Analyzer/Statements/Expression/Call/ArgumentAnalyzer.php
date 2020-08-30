@@ -222,9 +222,9 @@ class ArgumentAnalyzer
                 foreach ($arg_type->getAtomicTypes() as $arg_atomic_type) {
                     if ($arg_atomic_type instanceof Type\Atomic\TArray
                         || $arg_atomic_type instanceof Type\Atomic\TList
-                        || $arg_atomic_type instanceof Type\Atomic\ObjectLike
+                        || $arg_atomic_type instanceof Type\Atomic\TKeyedArray
                     ) {
-                        if ($arg_atomic_type instanceof Type\Atomic\ObjectLike) {
+                        if ($arg_atomic_type instanceof Type\Atomic\TKeyedArray) {
                             $arg_type_param = $arg_atomic_type->getGenericValueType();
                         } elseif ($arg_atomic_type instanceof Type\Atomic\TList) {
                             $arg_type_param = $arg_atomic_type->type_param;
@@ -368,11 +368,11 @@ class ArgumentAnalyzer
             if ($arg_type->hasArray()) {
                 /**
                  * @psalm-suppress PossiblyUndefinedStringArrayOffset
-                 * @var Type\Atomic\TArray|Type\Atomic\TList|Type\Atomic\ObjectLike
+                 * @var Type\Atomic\TArray|Type\Atomic\TList|Type\Atomic\TKeyedArray
                  */
                 $unpacked_atomic_array = $arg_type->getAtomicTypes()['array'];
 
-                if ($unpacked_atomic_array instanceof Type\Atomic\ObjectLike) {
+                if ($unpacked_atomic_array instanceof Type\Atomic\TKeyedArray) {
                     if ($unpacked_atomic_array->is_list
                         && isset($unpacked_atomic_array->properties[$argument_offset])
                     ) {
@@ -430,7 +430,7 @@ class ArgumentAnalyzer
     }
 
     /**
-     * @param Type\Atomic\ObjectLike|Type\Atomic\TArray|Type\Atomic\TList $unpacked_atomic_array
+     * @param Type\Atomic\TKeyedArray|Type\Atomic\TArray|Type\Atomic\TList $unpacked_atomic_array
      * @return  null|false
      */
     public static function verifyType(
@@ -660,8 +660,8 @@ class ArgumentAnalyzer
             $potential_method_ids = [];
 
             foreach ($input_type->getAtomicTypes() as $input_type_part) {
-                if ($input_type_part instanceof Type\Atomic\ObjectLike) {
-                    $potential_method_id = CallableTypeComparator::getCallableMethodIdFromObjectLike(
+                if ($input_type_part instanceof Type\Atomic\TKeyedArray) {
+                    $potential_method_id = CallableTypeComparator::getCallableMethodIdFromTKeyedArray(
                         $input_type_part,
                         $codebase,
                         $context->calling_method_id,
@@ -856,7 +856,7 @@ class ArgumentAnalyzer
                             $row_type = $param_array_type->type_param;
                         } elseif ($param_array_type instanceof TArray) {
                             $row_type = $param_array_type->type_params[1];
-                        } elseif ($param_array_type instanceof Type\Atomic\ObjectLike) {
+                        } elseif ($param_array_type instanceof Type\Atomic\TKeyedArray) {
                             $row_type = $param_array_type->getGenericArrayType()->type_params[1];
                         }
 
@@ -1044,7 +1044,7 @@ class ArgumentAnalyzer
     }
 
     /**
-     * @param Type\Atomic\ObjectLike|Type\Atomic\TArray|Type\Atomic\TList $unpacked_atomic_array
+     * @param Type\Atomic\TKeyedArray|Type\Atomic\TArray|Type\Atomic\TList $unpacked_atomic_array
      */
     private static function coerceValueAfterGatekeeperArgument(
         StatementsAnalyzer $statements_analyzer,
@@ -1143,7 +1143,7 @@ class ArgumentAnalyzer
                     $unpacked_atomic_array->type_params[1] = $input_type;
 
                     $context->vars_in_scope[$var_id] = new Type\Union([$unpacked_atomic_array]);
-                } elseif ($unpacked_atomic_array instanceof Type\Atomic\ObjectLike
+                } elseif ($unpacked_atomic_array instanceof Type\Atomic\TKeyedArray
                     && $unpacked_atomic_array->is_list
                 ) {
                     $unpacked_atomic_array = $unpacked_atomic_array->getList();

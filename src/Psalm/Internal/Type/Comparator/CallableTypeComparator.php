@@ -6,7 +6,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Codebase;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Type;
-use Psalm\Type\Atomic\ObjectLike;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TFn;
@@ -175,8 +175,8 @@ class CallableTypeComparator
 
                 return false;
             }
-        } elseif ($input_type_part instanceof ObjectLike) {
-            $method_id = self::getCallableMethodIdFromObjectLike($input_type_part);
+        } elseif ($input_type_part instanceof TKeyedArray) {
+            $method_id = self::getCallableMethodIdFromTKeyedArray($input_type_part);
 
             if ($method_id === 'not-callable') {
                 return false;
@@ -282,8 +282,8 @@ class CallableTypeComparator
                     return $matching_callable;
                 }
             }
-        } elseif ($input_type_part instanceof ObjectLike) {
-            $method_id = self::getCallableMethodIdFromObjectLike($input_type_part);
+        } elseif ($input_type_part instanceof TKeyedArray) {
+            $method_id = self::getCallableMethodIdFromTKeyedArray($input_type_part);
             if ($method_id && $method_id !== 'not-callable') {
                 try {
                     $method_storage = $codebase->methods->getStorage($method_id);
@@ -346,8 +346,8 @@ class CallableTypeComparator
     }
 
     /** @return null|'not-callable'|\Psalm\Internal\MethodIdentifier */
-    public static function getCallableMethodIdFromObjectLike(
-        ObjectLike $input_type_part,
+    public static function getCallableMethodIdFromTKeyedArray(
+        TKeyedArray $input_type_part,
         Codebase $codebase = null,
         string $calling_method_id = null,
         string $file_name = null

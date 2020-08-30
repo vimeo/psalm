@@ -73,9 +73,9 @@ class WhileAnalyzer
 
             foreach ($stmt_cond_type->getAtomicTypes() as $iterator_type) {
                 if ($iterator_type instanceof Type\Atomic\TArray
-                    || $iterator_type instanceof Type\Atomic\ObjectLike
+                    || $iterator_type instanceof Type\Atomic\TKeyedArray
                 ) {
-                    if ($iterator_type instanceof Type\Atomic\ObjectLike) {
+                    if ($iterator_type instanceof Type\Atomic\TKeyedArray) {
                         if (!$iterator_type->sealed) {
                             $always_enters_loop = false;
                         }

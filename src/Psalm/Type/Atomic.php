@@ -25,7 +25,7 @@ use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Storage\FileStorage;
 use Psalm\Type;
-use Psalm\Type\Atomic\ObjectLike;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TAssertionFalsy;
@@ -34,7 +34,7 @@ use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableArray;
 use Psalm\Type\Atomic\TCallableList;
 use Psalm\Type\Atomic\TCallableObject;
-use Psalm\Type\Atomic\TCallableObjectLikeArray;
+use Psalm\Type\Atomic\TCallableKeyedArray;
 use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TEmpty;
@@ -338,7 +338,7 @@ abstract class Atomic implements TypeNode
             || $this instanceof TCallableString
             || $this instanceof TCallableArray
             || $this instanceof TCallableList
-            || $this instanceof TCallableObjectLikeArray;
+            || $this instanceof TCallableKeyedArray;
     }
 
     /**
@@ -349,7 +349,7 @@ abstract class Atomic implements TypeNode
         return $this instanceof TIterable
             || $this->hasTraversableInterface($codebase)
             || $this instanceof TArray
-            || $this instanceof ObjectLike
+            || $this instanceof TKeyedArray
             || $this instanceof TList;
     }
 
@@ -360,7 +360,7 @@ abstract class Atomic implements TypeNode
     {
         return $this->hasCountableInterface($codebase)
             || $this instanceof TArray
-            || $this instanceof ObjectLike
+            || $this instanceof TKeyedArray
             || $this instanceof TList;
     }
 
@@ -426,7 +426,7 @@ abstract class Atomic implements TypeNode
     public function isArrayAccessibleWithStringKey(Codebase $codebase)
     {
         return $this instanceof TArray
-            || $this instanceof ObjectLike
+            || $this instanceof TKeyedArray
             || $this instanceof TList
             || $this instanceof Atomic\TClassStringMap
             || $this->hasArrayAccessInterface($codebase)
@@ -526,7 +526,7 @@ abstract class Atomic implements TypeNode
             }
         }
 
-        if ($this instanceof Type\Atomic\ObjectLike) {
+        if ($this instanceof Type\Atomic\TKeyedArray) {
             foreach ($this->properties as $property_type) {
                 $property_type->replaceClassLike($old, $new);
             }

@@ -23,7 +23,7 @@ use Psalm\Issue\TooManyArguments;
 use Psalm\Issue\ArgumentTypeCoercion;
 use Psalm\IssueBuffer;
 use Psalm\Type;
-use Psalm\Type\Atomic\ObjectLike;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TList;
@@ -71,7 +71,7 @@ class ArrayFunctionArgumentsAnalyzer
 
             /**
              * @psalm-suppress PossiblyUndefinedStringArrayOffset
-             * @var ObjectLike|TArray|TList|null
+             * @var TKeyedArray|TArray|TList|null
              */
             $array_arg_type = ($arg_value_type = $statements_analyzer->node_data->getType($arg->value))
                     && ($types = $arg_value_type->getAtomicTypes())
@@ -79,7 +79,7 @@ class ArrayFunctionArgumentsAnalyzer
                 ? $types['array']
                 : null;
 
-            if ($array_arg_type instanceof ObjectLike) {
+            if ($array_arg_type instanceof TKeyedArray) {
                 $array_arg_type = $array_arg_type->getGenericArrayType();
             }
 
@@ -206,13 +206,13 @@ class ArrayFunctionArgumentsAnalyzer
         ) {
             /**
              * @psalm-suppress PossiblyUndefinedStringArrayOffset
-             * @var TArray|ObjectLike|TList
+             * @var TArray|TKeyedArray|TList
              */
             $array_type = $array_arg_type->getAtomicTypes()['array'];
 
             $objectlike_list = null;
 
-            if ($array_type instanceof ObjectLike) {
+            if ($array_type instanceof TKeyedArray) {
                 if ($array_type->is_list) {
                     $objectlike_list = clone $array_type;
                 }
@@ -254,7 +254,7 @@ class ArrayFunctionArgumentsAnalyzer
                     $arg_value_type = clone $arg_value_type;
 
                     foreach ($arg_value_type->getAtomicTypes() as $arg_value_atomic_type) {
-                        if ($arg_value_atomic_type instanceof ObjectLike) {
+                        if ($arg_value_atomic_type instanceof TKeyedArray) {
                             $was_list = $arg_value_atomic_type->is_list;
 
                             $arg_value_atomic_type = $arg_value_atomic_type->getGenericArrayType();
@@ -406,11 +406,11 @@ class ArrayFunctionArgumentsAnalyzer
         ) {
             /**
              * @psalm-suppress PossiblyUndefinedStringArrayOffset
-             * @var TArray|ObjectLike|TList
+             * @var TArray|TKeyedArray|TList
              */
             $array_type = $array_arg_type->getAtomicTypes()['array'];
 
-            if ($array_type instanceof ObjectLike) {
+            if ($array_type instanceof TKeyedArray) {
                 if ($array_type->is_list) {
                     $array_type = new TNonEmptyList($array_type->getGenericValueType());
                 } else {
@@ -431,11 +431,11 @@ class ArrayFunctionArgumentsAnalyzer
 
             /**
              * @psalm-suppress PossiblyUndefinedStringArrayOffset
-             * @var TArray|ObjectLike|TList
+             * @var TArray|TKeyedArray|TList
              */
             $replacement_array_type = $replacement_arg_type->getAtomicTypes()['array'];
 
-            if ($replacement_array_type instanceof ObjectLike) {
+            if ($replacement_array_type instanceof TKeyedArray) {
                 $was_list = $replacement_array_type->is_list;
 
                 $replacement_array_type = $replacement_array_type->getGenericArrayType();
@@ -499,7 +499,7 @@ class ArrayFunctionArgumentsAnalyzer
                 $array_atomic_types = $array_type->getAtomicTypes();
 
                 foreach ($array_atomic_types as $array_atomic_type) {
-                    if ($array_atomic_type instanceof ObjectLike) {
+                    if ($array_atomic_type instanceof TKeyedArray) {
                         if ($is_array_shift && $array_atomic_type->is_list) {
                             $array_atomic_type = clone $array_atomic_type;
 
@@ -518,7 +518,7 @@ class ArrayFunctionArgumentsAnalyzer
                             }
                         }
 
-                        if ($array_atomic_type instanceof ObjectLike) {
+                        if ($array_atomic_type instanceof TKeyedArray) {
                             $array_atomic_type = $array_atomic_type->getGenericArrayType();
                         }
                     }

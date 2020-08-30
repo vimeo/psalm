@@ -36,7 +36,7 @@ class ArrayRandReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTy
             && $first_arg_type->hasType('array')
             && ($array_atomic_type = $first_arg_type->getAtomicTypes()['array'])
             && ($array_atomic_type instanceof Type\Atomic\TArray
-                || $array_atomic_type instanceof Type\Atomic\ObjectLike
+                || $array_atomic_type instanceof Type\Atomic\TKeyedArray
                 || $array_atomic_type instanceof Type\Atomic\TList)
         ? $array_atomic_type
         : null;

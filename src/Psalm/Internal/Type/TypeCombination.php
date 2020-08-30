@@ -13,7 +13,7 @@ use function is_int;
 use Psalm\Codebase;
 use Psalm\Type;
 use Psalm\Type\Atomic;
-use Psalm\Type\Atomic\ObjectLike;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
@@ -21,7 +21,7 @@ use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableArray;
 use Psalm\Type\Atomic\TCallableObject;
-use Psalm\Type\Atomic\TCallableObjectLikeArray;
+use Psalm\Type\Atomic\TCallableKeyedArray;
 use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TEmpty;
@@ -335,9 +335,9 @@ class TypeCombination
 
                 if ($combination->objectlike_entries) {
                     if ($combination->all_arrays_callable) {
-                        $objectlike = new TCallableObjectLikeArray($combination->objectlike_entries);
+                        $objectlike = new TCallableKeyedArray($combination->objectlike_entries);
                     } else {
-                        $objectlike = new ObjectLike($combination->objectlike_entries);
+                        $objectlike = new TKeyedArray($combination->objectlike_entries);
                     }
 
                     if ($combination->objectlike_sealed && !$combination->array_type_params) {
@@ -454,7 +454,7 @@ class TypeCombination
                     if ($combination->objectlike_entries
                         && $combination->objectlike_sealed
                     ) {
-                        $array_type = new ObjectLike([$generic_type_params[1]]);
+                        $array_type = new TKeyedArray([$generic_type_params[1]]);
                         $array_type->previous_key_type = Type::getInt();
                         $array_type->previous_value_type = $combination->array_type_params[1];
                         $array_type->is_list = true;
@@ -918,8 +918,8 @@ class TypeCombination
             return null;
         }
 
-        if ($type instanceof ObjectLike) {
-            if ($type instanceof TCallableObjectLikeArray && isset($combination->value_types['callable'])) {
+        if ($type instanceof TKeyedArray) {
+            if ($type instanceof TCallableKeyedArray && isset($combination->value_types['callable'])) {
                 return;
             }
 
@@ -997,7 +997,7 @@ class TypeCombination
                 $combination->all_arrays_lists = true;
             }
 
-            if ($type instanceof TCallableObjectLikeArray) {
+            if ($type instanceof TCallableKeyedArray) {
                 if ($combination->all_arrays_callable !== false) {
                     $combination->all_arrays_callable = true;
                 }

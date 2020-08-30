@@ -69,7 +69,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
             switch ($call_map_key) {
                 case 'hrtime':
                     return new Type\Union([
-                        new Type\Atomic\ObjectLike([
+                        new Type\Atomic\TKeyedArray([
                             Type::getInt(),
                             Type::getInt()
                         ])
@@ -106,7 +106,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                             if (isset($atomic_types['array'])) {
                                 if ($atomic_types['array'] instanceof Type\Atomic\TCallableArray
                                     || $atomic_types['array'] instanceof Type\Atomic\TCallableList
-                                    || $atomic_types['array'] instanceof Type\Atomic\TCallableObjectLikeArray
+                                    || $atomic_types['array'] instanceof Type\Atomic\TCallableKeyedArray
                                 ) {
                                     return Type::getInt(false, 2);
                                 }
@@ -127,7 +127,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                                     ]);
                                 }
 
-                                if ($atomic_types['array'] instanceof Type\Atomic\ObjectLike
+                                if ($atomic_types['array'] instanceof Type\Atomic\TKeyedArray
                                     && $atomic_types['array']->sealed
                                 ) {
                                     return new Type\Union([
@@ -150,7 +150,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
 
                         if ((string) $first_arg_type === 'false') {
                             return new Type\Union([
-                                new Type\Atomic\ObjectLike([
+                                new Type\Atomic\TKeyedArray([
                                     Type::getInt(),
                                     Type::getInt()
                                 ])
@@ -158,7 +158,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                         }
 
                         return new Type\Union([
-                            new Type\Atomic\ObjectLike([
+                            new Type\Atomic\TKeyedArray([
                                 Type::getInt(),
                                 Type::getInt()
                             ]),
@@ -179,7 +179,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                             if ($first_arg_type->hasArray()) {
                                 /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
                                 $array_type = $first_arg_type->getAtomicTypes()['array'];
-                                if ($array_type instanceof Type\Atomic\ObjectLike) {
+                                if ($array_type instanceof Type\Atomic\TKeyedArray) {
                                     return $array_type->getGenericValueType();
                                 }
 

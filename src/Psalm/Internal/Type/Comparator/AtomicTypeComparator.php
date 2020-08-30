@@ -4,7 +4,7 @@ namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
 use Psalm\Type;
-use Psalm\Type\Atomic\ObjectLike;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
@@ -130,7 +130,7 @@ class AtomicTypeComparator
             );
         }
 
-        if ($input_type_part instanceof Type\Atomic\TCallableObjectLikeArray
+        if ($input_type_part instanceof Type\Atomic\TCallableKeyedArray
             && $container_type_part instanceof TArray
         ) {
             return ArrayTypeComparator::isContainedBy(
@@ -219,12 +219,12 @@ class AtomicTypeComparator
             return true;
         }
 
-        if (($container_type_part instanceof ObjectLike
-                && $input_type_part instanceof ObjectLike)
+        if (($container_type_part instanceof TKeyedArray
+                && $input_type_part instanceof TKeyedArray)
             || ($container_type_part instanceof TObjectWithProperties
                 && $input_type_part instanceof TObjectWithProperties)
         ) {
-            return ObjectLikeComparator::isContainedBy(
+            return KeyedArrayComparator::isContainedBy(
                 $codebase,
                 $input_type_part,
                 $container_type_part,
@@ -235,11 +235,11 @@ class AtomicTypeComparator
 
         if (($input_type_part instanceof TArray
                 || $input_type_part instanceof TList
-                || $input_type_part instanceof ObjectLike
+                || $input_type_part instanceof TKeyedArray
                 || $input_type_part instanceof TClassStringMap)
             && ($container_type_part instanceof TArray
                 || $container_type_part instanceof TList
-                || $container_type_part instanceof ObjectLike
+                || $container_type_part instanceof TKeyedArray
                 || $container_type_part instanceof TClassStringMap)
         ) {
             return ArrayTypeComparator::isContainedBy(
@@ -327,7 +327,7 @@ class AtomicTypeComparator
                     if ($allow_interface_equality
                         || ($input_type_part instanceof TArray
                             && !$input_type_part->type_params[1]->isEmpty())
-                        || $input_type_part instanceof ObjectLike
+                        || $input_type_part instanceof TKeyedArray
                     ) {
                         return true;
                     }
@@ -427,10 +427,10 @@ class AtomicTypeComparator
 
         if ($container_type_part instanceof TIterable) {
             if ($input_type_part instanceof TArray
-                || $input_type_part instanceof ObjectLike
+                || $input_type_part instanceof TKeyedArray
                 || $input_type_part instanceof TList
             ) {
-                if ($input_type_part instanceof ObjectLike) {
+                if ($input_type_part instanceof TKeyedArray) {
                     $input_type_part = $input_type_part->getGenericArrayType();
                 } elseif ($input_type_part instanceof TList) {
                     $input_type_part = new TArray([Type::getInt(), $input_type_part->type_param]);
@@ -534,7 +534,7 @@ class AtomicTypeComparator
                 $input_type_part instanceof TLiteralString
                 || $input_type_part instanceof TCallableString
                 || $input_type_part instanceof TArray
-                || $input_type_part instanceof ObjectLike
+                || $input_type_part instanceof TKeyedArray
                 || $input_type_part instanceof TList
                 || (
                     $input_type_part instanceof TNamedObject &&
@@ -557,7 +557,7 @@ class AtomicTypeComparator
             if ($container_type_part instanceof TObjectWithProperties
                 && $input_type_part->value !== 'stdClass'
             ) {
-                return ObjectLikeComparator::isContainedByObjectWithProperties(
+                return KeyedArrayComparator::isContainedByObjectWithProperties(
                     $codebase,
                     $input_type_part,
                     $container_type_part,

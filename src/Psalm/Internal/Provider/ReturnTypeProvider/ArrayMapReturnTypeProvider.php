@@ -60,7 +60,7 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
             }
 
             if ($array_arg_types) {
-                return new Type\Union([new Type\Atomic\ObjectLike($array_arg_types)]);
+                return new Type\Union([new Type\Atomic\TKeyedArray($array_arg_types)]);
             }
 
             return Type::getArray();
@@ -167,8 +167,8 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
         }
 
         if ($mapping_return_type && $generic_key_type) {
-            if ($array_arg_atomic_type instanceof Type\Atomic\ObjectLike && count($call_args) === 2) {
-                $atomic_type = new Type\Atomic\ObjectLike(
+            if ($array_arg_atomic_type instanceof Type\Atomic\TKeyedArray && count($call_args) === 2) {
+                $atomic_type = new Type\Atomic\TKeyedArray(
                     array_map(
                         /**
                         * @return Type\Union

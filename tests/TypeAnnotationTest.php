@@ -356,7 +356,7 @@ class TypeAnnotationTest extends TestCase
                     class A {}',
                 'error_message' => 'InvalidDocblock',
             ],
-            'typeAliasInObjectLike' => [
+            'typeAliasInTKeyedArray' => [
                 '<?php
                     namespace Barrr;
 

@@ -351,10 +351,10 @@ class TypeExpander
 
                 if ($class_constant_type) {
                     foreach ($class_constant_type->getAtomicTypes() as $const_type_atomic) {
-                        if ($const_type_atomic instanceof Type\Atomic\ObjectLike
+                        if ($const_type_atomic instanceof Type\Atomic\TKeyedArray
                             || $const_type_atomic instanceof Type\Atomic\TArray
                         ) {
-                            if ($const_type_atomic instanceof Type\Atomic\ObjectLike) {
+                            if ($const_type_atomic instanceof Type\Atomic\TKeyedArray) {
                                 $const_type_atomic = $const_type_atomic->getGenericArrayType();
                             }
 
@@ -388,7 +388,7 @@ class TypeExpander
                     $final
                 );
             }
-        } elseif ($return_type instanceof Type\Atomic\ObjectLike) {
+        } elseif ($return_type instanceof Type\Atomic\TKeyedArray) {
             foreach ($return_type->properties as &$property_type) {
                 $property_type = self::expandUnion(
                     $codebase,

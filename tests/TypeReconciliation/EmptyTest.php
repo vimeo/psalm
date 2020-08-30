@@ -158,7 +158,7 @@ class EmptyTest extends \Psalm\Tests\TestCase
                 'assertions' => [],
                 'error_levels' => ['MixedAssignment', 'MixedArgument'],
             ],
-            'emptyObjectLike' => [
+            'emptyTKeyedArray' => [
                 '<?php
                     $arr = [
                         "profile" => [
@@ -317,7 +317,7 @@ class EmptyTest extends \Psalm\Tests\TestCase
                         if (empty($a) && empty($b)) {}
                     }',
             ],
-            'doubleEmptyCheckOnObjectLike' => [
+            'doubleEmptyCheckOnTKeyedArray' => [
                 '<?php
                     /**
                      * @param array{a: array, b: array} $arr
@@ -326,7 +326,7 @@ class EmptyTest extends \Psalm\Tests\TestCase
                         if (empty($arr["a"]) && empty($arr["b"])) {}
                     }',
             ],
-            'doubleEmptyCheckOnObjectLikeVariableOffsets' => [
+            'doubleEmptyCheckOnTKeyedArrayVariableOffsets' => [
                 '<?php
                     function foo(int $i, int $j) : void {
                         $arr = [];

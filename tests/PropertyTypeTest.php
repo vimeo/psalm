@@ -1374,7 +1374,7 @@ class PropertyTypeTest extends TestCase
                 [],
                 ['PropertyNotSetInConstructor'],
             ],
-            'setObjectLikePropertyType' => [
+            'setTKeyedArrayPropertyType' => [
                 '<?php
                     class Foo {
                         /**

@@ -256,7 +256,6 @@
             <xs:element name="MethodSignatureMustOmitReturnType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MismatchingDocblockParamType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MismatchingDocblockReturnType" type="IssueHandlerType" minOccurs="0" />
-            <xs:element name="MisplacedRequiredParam" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingClosureParamType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingClosureReturnType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingConstructor" type="IssueHandlerType" minOccurs="0" />
@@ -287,7 +286,6 @@
             <xs:element name="MixedReturnStatement" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MixedReturnTypeCoercion" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MixedStringOffsetAssignment" type="IssueHandlerType" minOccurs="0" />
-            <xs:element name="MixedTypeCoercion" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MoreSpecificImplementedParamType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MoreSpecificReturnType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MutableDependency" type="PropertyIssueHandlerType" minOccurs="0" />
@@ -363,7 +361,6 @@
             <xs:element name="TooManyTemplateParams" type="FunctionIssueHandlerType" minOccurs="0" />
             <xs:element name="Trace" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TraitMethodSignatureMismatch" type="IssueHandlerType" minOccurs="0" />
-            <xs:element name="TypeCoercion" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TypeDoesNotContainNull" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TypeDoesNotContainType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UncaughtThrowInGlobalScope" type="IssueHandlerType" minOccurs="0" />

@@ -260,7 +260,7 @@ class ArrayAssignmentTest extends TestCase
                     '$foo' => 'array{bar: array{a: string}, baz: array{int}}',
                 ],
             ],
-            'implicitObjectLikeCreation' => [
+            'implicitTKeyedArrayCreation' => [
                 '<?php
                     $foo = [
                         "bar" => 1,
@@ -303,7 +303,7 @@ class ArrayAssignmentTest extends TestCase
                     '$foo' => 'array{a: string, b: array{c: array{d: string}}}',
                 ],
             ],
-            'nestedObjectLikeAssignment' => [
+            'nestedTKeyedArrayAssignment' => [
                 '<?php
                     $foo = [];
                     $foo["a"]["b"] = "hello";
@@ -312,7 +312,7 @@ class ArrayAssignmentTest extends TestCase
                     '$foo' => 'array{a: array{b: string, c: int}}',
                 ],
             ],
-            'conditionalObjectLikeAssignment' => [
+            'conditionalTKeyedArrayAssignment' => [
                 '<?php
                     $foo = ["a" => "hello"];
                     if (rand(0, 10) === 5) {
@@ -439,7 +439,7 @@ class ArrayAssignmentTest extends TestCase
                     '$foo' => 'array{a: int, b: array{int, int}}',
                 ],
             ],
-            'nestedObjectLikeArrayAddition' => [
+            'nestedTKeyedArrayAddition' => [
                 '<?php
                     $foo = [];
                     $foo["root"]["a"] = 1;
@@ -551,7 +551,7 @@ class ArrayAssignmentTest extends TestCase
                     '$e' => 'array{0: array{5: int, c: int}}',
                 ],
             ],
-            'updateStringIntKeyWithObjectLikeRootAndNumberOffset' => [
+            'updateStringIntKeyWithTKeyedArrayRootAndNumberOffset' => [
                 '<?php
                     $string = "c";
                     $int = 5;
@@ -564,7 +564,7 @@ class ArrayAssignmentTest extends TestCase
                     '$a' => 'array{root: array{0: int, a: int}}',
                 ],
             ],
-            'updateStringIntKeyWithObjectLikeRoot' => [
+            'updateStringIntKeyWithTKeyedArrayRoot' => [
                 '<?php
                     $string = "c";
                     $int = 5;
@@ -614,14 +614,16 @@ class ArrayAssignmentTest extends TestCase
                     /** @return array */
                     function generic_array() { return []; }
 
+                    /** @psalm-suppress MixedArgumentTypeCoercion */
                     expect_int_array(generic_array());
 
                     function expect_int(int $arg): void {}
+
                     /** @return mixed */
                     function return_mixed() { return 2; }
+
+                    /** @psalm-suppress MixedArgument */
                     expect_int(return_mixed());',
-                'assertions' => [],
-                'error_levels' => ['MixedTypeCoercion', 'MixedArgument'],
             ],
             'suppressMixedObjectOffset' => [
                 '<?php
@@ -639,7 +641,7 @@ class ArrayAssignmentTest extends TestCase
                 'assertions' => [],
                 'error_levels' => ['MixedAssignment', 'MixedPropertyFetch', 'MixedArrayOffset', 'MixedArgument'],
             ],
-            'changeObjectLikeType' => [
+            'changeTKeyedArrayType' => [
                 '<?php
                     $a = ["b" => "c"];
                     $a["d"] = ["e" => "f"];
@@ -652,7 +654,7 @@ class ArrayAssignmentTest extends TestCase
                     '$a' => 'array{b: int, d: array{e: int}}',
                 ],
             ],
-            'changeObjectLikeTypeInIf' => [
+            'changeTKeyedArrayTypeInIf' => [
                 '<?php
                     $a = [];
 
@@ -918,7 +920,7 @@ class ArrayAssignmentTest extends TestCase
                         return $ret["a"];
                     }',
                 'assertions' => [],
-                'error_levels' => ['MixedMethodCall', 'MixedArrayOffset', 'MixedTypeCoercion'],
+                'error_levels' => ['MixedMethodCall', 'MixedArrayOffset'],
             ],
             'mixedAccessNestedKeys' => [
                 '<?php
@@ -989,7 +991,7 @@ class ArrayAssignmentTest extends TestCase
                 'assertions' => [],
                 'error_levels' => [
                     'MixedArrayAccess', 'MixedAssignment', 'MixedArrayOffset',
-                    'MixedArgument', 'MixedTypeCoercion',
+                    'MixedArgument',
                 ],
             ],
             'accessArrayAfterSuppressingBugs' => [
@@ -1208,7 +1210,7 @@ class ArrayAssignmentTest extends TestCase
                     '$b' => 'array{int, int, int, int}',
                 ],
             ],
-            'listMergedWithObjectLikeList' => [
+            'listMergedWithTKeyedArrayList' => [
                 '<?php
                     /** @param list<int> $arr */
                     function takesAnotherList(array $arr) : void {}
@@ -1222,7 +1224,7 @@ class ArrayAssignmentTest extends TestCase
                         takesAnotherList($arr);
                     }',
             ],
-            'listMergedWithObjectLikeListAfterAssertion' => [
+            'listMergedWithTKeyedArrayListAfterAssertion' => [
                 '<?php
                     /** @param list<int> $arr */
                     function takesAnotherList(array $arr) : void {}
@@ -1307,7 +1309,7 @@ class ArrayAssignmentTest extends TestCase
                         }
                     }',
             ],
-            'propertyAssignmentToObjectLikeIntKeys' => [
+            'propertyAssignmentToTKeyedArrayIntKeys' => [
                 '<?php
                     class Bar {
                         /** @var array{0: string, 1:string} */
@@ -1318,7 +1320,7 @@ class ArrayAssignmentTest extends TestCase
                         }
                     }'
             ],
-            'propertyAssignmentToObjectLikeStringKeys' => [
+            'propertyAssignmentToTKeyedArrayStringKeys' => [
                 '<?php
                     class Bar {
                         /** @var array{a: string, b:string} */

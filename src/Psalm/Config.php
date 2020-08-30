@@ -119,7 +119,6 @@ class Config
         'MixedPropertyAssignment',
         'MixedReturnStatement',
         'MixedStringOffsetAssignment',
-        'MixedTypeCoercion',
         'MixedArgumentTypeCoercion',
         'MixedPropertyTypeCoercion',
         'MixedReturnTypeCoercion',
@@ -1198,7 +1197,6 @@ class Config
      *
      * @return void
      * @psalm-suppress MixedAssignment
-     * @psalm-suppress MixedTypeCoercion
      */
     public function initializePlugins(ProjectAnalyzer $project_analyzer)
     {
@@ -1557,21 +1555,6 @@ class Config
 
         if ($issue_type === 'UndefinedDocblockClass') {
             return 'UndefinedClass';
-        }
-
-        if ($issue_type === 'MixedArgumentTypeCoercion'
-            || $issue_type === 'MixedPropertyTypeCoercion'
-            || $issue_type === 'MixedReturnTypeCoercion'
-            || $issue_type === 'MixedArrayTypeCoercion'
-        ) {
-            return 'MixedTypeCoercion';
-        }
-
-        if ($issue_type === 'ArgumentTypeCoercion'
-            || $issue_type === 'PropertyTypeCoercion'
-            || $issue_type === 'ReturnTypeCoercion'
-        ) {
-            return 'TypeCoercion';
         }
 
         return null;

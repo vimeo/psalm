@@ -107,9 +107,9 @@ class ClassStringTest extends TestCase
 
                     class A {}
 
+                    /** @psalm-suppress ArgumentTypeCoercion */
                     takesClassConstants("A");',
                 'annotations' => [],
-                'error_levels' => ['TypeCoercion'],
             ],
             'returnClassConstant' => [
                 '<?php
@@ -801,9 +801,9 @@ class ClassStringTest extends TestCase
                      * @param array<class-string> $arr
                      */
                     function takesClassConstants(array $arr) : void {}
+                    /** @psalm-suppress ArgumentTypeCoercion */
                     takesClassConstants(["A", "B"]);',
                 'error_message' => 'UndefinedClass',
-                'error_levels' => ['TypeCoercion'],
             ],
             'singleClassConstantWithInvalidDocblock' => [
                 '<?php

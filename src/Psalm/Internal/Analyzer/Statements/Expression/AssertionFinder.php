@@ -2107,9 +2107,9 @@ class AssertionFinder
             ) {
                 foreach ($second_arg_type->getAtomicTypes() as $atomic_type) {
                     if ($atomic_type instanceof Type\Atomic\TArray
-                        || $atomic_type instanceof Type\Atomic\ObjectLike
+                        || $atomic_type instanceof Type\Atomic\TKeyedArray
                     ) {
-                        if ($atomic_type instanceof Type\Atomic\ObjectLike) {
+                        if ($atomic_type instanceof Type\Atomic\TKeyedArray) {
                             $atomic_type = $atomic_type->getGenericArrayType();
                         }
 

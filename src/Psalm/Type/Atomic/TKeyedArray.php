@@ -22,7 +22,7 @@ use Psalm\Type\Union;
 /**
  * Represents an array where we know its key values
  */
-class ObjectLike extends \Psalm\Type\Atomic
+class TKeyedArray extends \Psalm\Type\Atomic
 {
     /**
      * @var non-empty-array<string|int, Union>
@@ -337,7 +337,7 @@ class ObjectLike extends \Psalm\Type\Atomic
         foreach ($this->properties as $offset => $property) {
             $input_type_param = null;
 
-            if ($input_type instanceof Atomic\ObjectLike
+            if ($input_type instanceof Atomic\TKeyedArray
                 && isset($input_type->properties[$offset])
             ) {
                 $input_type_param = $input_type->properties[$offset];

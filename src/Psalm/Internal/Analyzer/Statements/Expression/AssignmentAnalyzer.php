@@ -454,7 +454,7 @@ class AssignmentAnalyzer
                 $has_null = false;
 
                 foreach ($assign_value_type->getAtomicTypes() as $assign_value_atomic_type) {
-                    if ($assign_value_atomic_type instanceof Type\Atomic\ObjectLike
+                    if ($assign_value_atomic_type instanceof Type\Atomic\TKeyedArray
                         && !$assign_var_item->key
                     ) {
                         // if object-like has int offsets
@@ -527,7 +527,7 @@ class AssignmentAnalyzer
                             // do nothing
                         }
                     } elseif (!$assign_value_atomic_type instanceof Type\Atomic\TArray
-                        && !$assign_value_atomic_type instanceof Type\Atomic\ObjectLike
+                        && !$assign_value_atomic_type instanceof Type\Atomic\TKeyedArray
                         && !$assign_value_atomic_type instanceof Type\Atomic\TList
                         && !$assign_value_type->hasArrayAccessInterface($codebase)
                     ) {
@@ -567,7 +567,7 @@ class AssignmentAnalyzer
                     if ($var instanceof PhpParser\Node\Expr\List_
                         || $var instanceof PhpParser\Node\Expr\Array_
                     ) {
-                        if ($assign_value_atomic_type instanceof Type\Atomic\ObjectLike) {
+                        if ($assign_value_atomic_type instanceof Type\Atomic\TKeyedArray) {
                             $assign_value_atomic_type = $assign_value_atomic_type->getGenericArrayType();
                         }
 
@@ -632,7 +632,7 @@ class AssignmentAnalyzer
                             $new_assign_type = clone $assign_value_atomic_type->type_param;
 
                             $can_be_empty = !$assign_value_atomic_type instanceof Type\Atomic\TNonEmptyList;
-                        } elseif ($assign_value_atomic_type instanceof Type\Atomic\ObjectLike) {
+                        } elseif ($assign_value_atomic_type instanceof Type\Atomic\TKeyedArray) {
                             if ($assign_var_item->key
                                 && ($assign_var_item->key instanceof PhpParser\Node\Scalar\String_
                                     || $assign_var_item->key instanceof PhpParser\Node\Scalar\LNumber)

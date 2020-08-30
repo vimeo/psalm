@@ -1892,7 +1892,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 }
 
                 if (isset($this->config->getPredefinedFunctions()[$function_id])) {
-                    /** @psalm-suppress TypeCoercion */
+                    /** @psalm-suppress ArgumentTypeCoercion */
                     $reflection_function = new \ReflectionFunction($function_id);
 
                     if ($reflection_function->getFileName() !== $this->file_path) {
@@ -3411,11 +3411,11 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             if (!$docblock_param_variadic && $storage_param->is_variadic && $new_param_type->hasArray()) {
                 /**
                  * @psalm-suppress PossiblyUndefinedStringArrayOffset
-                 * @var Type\Atomic\TArray|Type\Atomic\ObjectLike|Type\Atomic\TList
+                 * @var Type\Atomic\TArray|Type\Atomic\TKeyedArray|Type\Atomic\TList
                  */
                 $array_type = $new_param_type->getAtomicTypes()['array'];
 
-                if ($array_type instanceof Type\Atomic\ObjectLike) {
+                if ($array_type instanceof Type\Atomic\TKeyedArray) {
                     $new_param_type = $array_type->getGenericValueType();
                 } elseif ($array_type instanceof Type\Atomic\TList) {
                     $new_param_type = $array_type->type_param;

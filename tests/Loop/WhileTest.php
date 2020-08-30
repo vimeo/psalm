@@ -437,7 +437,7 @@ class WhileTest extends \Psalm\Tests\TestCase
                         }
                     }'
             ],
-            'assignToObjectLikeListPreserveListness' => [
+            'assignToTKeyedArrayListPreserveListness' => [
                 '<?php
                     /**
                      * @return non-empty-list<string>

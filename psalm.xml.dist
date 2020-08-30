@@ -85,22 +85,6 @@
             </errorLevel>
         </UnusedClass>
 
-        <UnusedProperty>
-            <errorLevel type="info">
-                <file name="src/Psalm/Internal/FileManipulation/FunctionDocblockManipulator.php"/>
-            </errorLevel>
-        </UnusedProperty>
-
-        <PossiblyUnusedProperty>
-            <errorLevel type="info">
-                <file name="src/Psalm/Internal/LanguageServer/LanguageClient.php"/>
-                <file name="src/Psalm/Storage/FunctionLikeStorage.php"/>
-                <file name="src/Psalm/Type/Atomic/TCallableArray.php"/>
-                <file name="src/Psalm/Type/Atomic/TNonEmptyArray.php"/>
-                <file name="src/Psalm/Storage/PropertyStorage.php"/>
-            </errorLevel>
-        </PossiblyUnusedProperty>
-
         <MissingConstructor>
             <errorLevel type="suppress">
                 <directory name="tests"/>

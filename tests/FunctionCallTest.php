@@ -257,7 +257,7 @@ class FunctionCallTest extends TestCase
 
                     a(["a" => "hello"]);',
             ],
-            'objectLikeKeyChecksAgainstObjectLike' => [
+            'objectLikeKeyChecksAgainstTKeyedArray' => [
                 '<?php
                     /**
                      * @param array{a: string} $b
@@ -1493,7 +1493,7 @@ class FunctionCallTest extends TestCase
                     a(["a" => "hello"]);',
                 'error_message' => 'InvalidScalarArgument',
             ],
-            'objectLikeKeyChecksAgainstDifferentObjectLike' => [
+            'objectLikeKeyChecksAgainstDifferentTKeyedArray' => [
                 '<?php
                     /**
                      * @param array{a: int} $b

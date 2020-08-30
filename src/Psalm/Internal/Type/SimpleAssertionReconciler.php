@@ -15,7 +15,7 @@ use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
-use Psalm\Type\Atomic\ObjectLike;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
@@ -23,7 +23,7 @@ use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableArray;
 use Psalm\Type\Atomic\TCallableList;
-use Psalm\Type\Atomic\TCallableObjectLikeArray;
+use Psalm\Type\Atomic\TCallableKeyedArray;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TFalse;
@@ -452,7 +452,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                     $did_remove_type = true;
                     $existing_var_type->addType($non_empty_list);
                 }
-            } elseif ($array_atomic_type instanceof Type\Atomic\ObjectLike) {
+            } elseif ($array_atomic_type instanceof Type\Atomic\TKeyedArray) {
                 foreach ($array_atomic_type->properties as $property_type) {
                     if ($property_type->possibly_undefined) {
                         $did_remove_type = true;
@@ -1392,10 +1392,10 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
 
             if ($class_constant_type) {
                 foreach ($class_constant_type->getAtomicTypes() as $const_type_atomic) {
-                    if ($const_type_atomic instanceof Type\Atomic\ObjectLike
+                    if ($const_type_atomic instanceof Type\Atomic\TKeyedArray
                         || $const_type_atomic instanceof Type\Atomic\TArray
                     ) {
-                        if ($const_type_atomic instanceof Type\Atomic\ObjectLike) {
+                        if ($const_type_atomic instanceof Type\Atomic\TKeyedArray) {
                             $const_type_atomic = $const_type_atomic->getGenericArrayType();
                         }
 
@@ -1425,7 +1425,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
         string $assertion
     ) : Union {
         foreach ($existing_var_type->getAtomicTypes() as $atomic_type) {
-            if ($atomic_type instanceof Type\Atomic\ObjectLike) {
+            if ($atomic_type instanceof Type\Atomic\TKeyedArray) {
                 $is_class_string = false;
 
                 if (strpos($assertion, '::class')) {
@@ -1541,10 +1541,10 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
         $did_remove_type = false;
 
         foreach ($existing_var_atomic_types as $type) {
-            if ($type instanceof TArray || $type instanceof ObjectLike || $type instanceof TList) {
+            if ($type instanceof TArray || $type instanceof TKeyedArray || $type instanceof TList) {
                 $array_types[] = $type;
             } elseif ($type instanceof TCallable) {
-                $array_types[] = new TCallableObjectLikeArray([
+                $array_types[] = new TCallableKeyedArray([
                     new Union([new TClassString, new TObject]),
                     Type::getString()
                 ]);
@@ -1639,7 +1639,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
 
         foreach ($existing_var_atomic_types as $type) {
             if ($type instanceof TList
-                || ($type instanceof ObjectLike && $type->is_list)
+                || ($type instanceof TKeyedArray && $type->is_list)
             ) {
                 if ($is_non_empty && $type instanceof TList && !$type instanceof TNonEmptyList) {
                     $array_types[] = new TNonEmptyList($type->type_param);
@@ -1647,8 +1647,8 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                 } else {
                     $array_types[] = $type;
                 }
-            } elseif ($type instanceof TArray || $type instanceof ObjectLike) {
-                if ($type instanceof ObjectLike) {
+            } elseif ($type instanceof TArray || $type instanceof TKeyedArray) {
+                if ($type instanceof TKeyedArray) {
                     $type = $type->getGenericArrayType();
                 }
 
@@ -1664,7 +1664,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
 
                 $did_remove_type = true;
             } elseif ($type instanceof TCallable) {
-                $array_types[] = new TCallableObjectLikeArray([
+                $array_types[] = new TCallableKeyedArray([
                     new Union([new TClassString, new TObject]),
                     Type::getString()
                 ]);
@@ -1885,9 +1885,9 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                 $type = new TCallableList($type->type_param);
                 $callable_types[] = $type;
                 $did_remove_type = true;
-            } elseif ($type instanceof ObjectLike) {
+            } elseif ($type instanceof TKeyedArray) {
                 $type = clone $type;
-                $type = new TCallableObjectLikeArray($type->properties);
+                $type = new TCallableKeyedArray($type->properties);
                 $callable_types[] = $type;
                 $did_remove_type = true;
             } elseif ($type instanceof TTemplateParam) {
@@ -2163,7 +2163,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
 
             if ($array_atomic_type instanceof Type\Atomic\TNonEmptyArray
                 || $array_atomic_type instanceof Type\Atomic\TNonEmptyList
-                || ($array_atomic_type instanceof Type\Atomic\ObjectLike
+                || ($array_atomic_type instanceof Type\Atomic\TKeyedArray
                     && array_filter(
                         $array_atomic_type->properties,
                         function (Type\Union $t) {

@@ -71,13 +71,13 @@ class FilterVarReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTy
                 && $filter_type
             ) {
                 foreach ($third_arg_type->getAtomicTypes() as $atomic_type) {
-                    if ($atomic_type instanceof Type\Atomic\ObjectLike) {
+                    if ($atomic_type instanceof Type\Atomic\TKeyedArray) {
                         $has_object_like = true;
 
                         if (isset($atomic_type->properties['options'])
                             && $atomic_type->properties['options']->hasArray()
                             && ($options_array = $atomic_type->properties['options']->getAtomicTypes()['array'])
-                            && $options_array instanceof Type\Atomic\ObjectLike
+                            && $options_array instanceof Type\Atomic\TKeyedArray
                             && isset($options_array->properties['default'])
                         ) {
                             $filter_type = Type::combineUnionTypes(

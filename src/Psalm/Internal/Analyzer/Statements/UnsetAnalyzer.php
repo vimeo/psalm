@@ -43,7 +43,7 @@ class UnsetAnalyzer
                     $root_type = clone $context->vars_in_scope[$root_var_id];
 
                     foreach ($root_type->getAtomicTypes() as $atomic_root_type) {
-                        if ($atomic_root_type instanceof Type\Atomic\ObjectLike) {
+                        if ($atomic_root_type instanceof Type\Atomic\TKeyedArray) {
                             if ($var->dim instanceof PhpParser\Node\Scalar\String_
                                 || $var->dim instanceof PhpParser\Node\Scalar\LNumber
                             ) {

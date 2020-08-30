@@ -74,7 +74,7 @@ class ArrayAnalyzer
                 }
 
                 foreach ($unpacked_array_type->getAtomicTypes() as $unpacked_atomic_type) {
-                    if ($unpacked_atomic_type instanceof Type\Atomic\ObjectLike) {
+                    if ($unpacked_atomic_type instanceof Type\Atomic\TKeyedArray) {
                         $unpacked_array_offset = 0;
                         foreach ($unpacked_atomic_type->properties as $key => $property_value) {
                             if (\is_string($key)) {
@@ -308,7 +308,7 @@ class ArrayAnalyzer
             && $can_create_objectlike
             && $property_types
         ) {
-            $object_like = new Type\Atomic\ObjectLike($property_types, $class_strings);
+            $object_like = new Type\Atomic\TKeyedArray($property_types, $class_strings);
             $object_like->sealed = true;
             $object_like->is_list = $all_list;
 
