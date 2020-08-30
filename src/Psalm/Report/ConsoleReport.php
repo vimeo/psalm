@@ -35,7 +35,7 @@ class ConsoleReport extends Report
 
         $issue_reference = ' (see ' . $issue_data->link . ')';
 
-        if ($this->php_storm) {
+        if ($this->php_storm_format) {
             $issue_string .= ': ' . $issue_data->type
                 . "\nat " . $issue_data->file_name . ':' . $issue_data->line_from . ':' . $issue_data->column_from
                 . "\n" . $issue_data->message . $issue_reference . "\n";

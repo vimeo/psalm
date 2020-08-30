@@ -395,7 +395,7 @@ Output:
     --stats
         Shows a breakdown of Psalm's ability to infer types in the codebase
 
-    --php-storm
+    --php-storm-format
         Shows file links in IDE-compatible way, ability to open the source code directly from the console output
 
 Reports:

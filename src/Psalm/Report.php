@@ -55,7 +55,7 @@ abstract class Report
     protected $pretty;
 
     /** @var bool */
-    protected $php_storm;
+    protected $php_storm_format;
 
     /** @var int */
     protected $mixed_expression_count;
@@ -93,7 +93,7 @@ abstract class Report
         $this->show_snippet = $report_options->show_snippet;
         $this->show_info = $report_options->show_info;
         $this->pretty = $report_options->pretty;
-        $this->php_storm = $report_options->php_storm;
+        $this->php_storm_format = $report_options->php_storm_format;
 
         $this->mixed_expression_count = $mixed_expression_count;
         $this->total_expression_count = $total_expression_count;
