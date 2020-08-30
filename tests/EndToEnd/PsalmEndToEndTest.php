@@ -81,7 +81,7 @@ class PsalmEndToEndTest extends TestCase
 
     public function testVersion(): void
     {
-        $this->assertStringStartsWith('Psalm 3', $this->runPsalm(['--version'], self::$tmpDir, false, false)['STDOUT']);
+        $this->assertStringStartsWith('Psalm 4', $this->runPsalm(['--version'], self::$tmpDir, false, false)['STDOUT']);
     }
 
     public function testInit(): void
