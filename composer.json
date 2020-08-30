@@ -47,7 +47,7 @@
         "phpmyadmin/sql-parser": "5.1.0",
         "phpspec/prophecy": ">=1.9.0",
         "phpunit/phpunit": "^9.0",
-        "psalm/plugin-phpunit": "^0.11",
+        "psalm/plugin-phpunit": "^0.12",
         "weirdan/prophecy-shim": "^1.0 || ^2.0",
         "slevomat/coding-standard": "^5.0",
         "squizlabs/php_codesniffer": "^3.5",
@@ -62,7 +62,8 @@
     },
     "extra": {
         "branch-alias": {
-            "dev-master": "3.x-dev",
+            "dev-master": "4.x-dev",
+            "dev-3.x": "3.x-dev",
             "dev-2.x": "2.x-dev",
             "dev-1.x": "1.x-dev"
         }
