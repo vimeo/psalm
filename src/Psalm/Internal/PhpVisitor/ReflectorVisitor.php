@@ -3244,16 +3244,22 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $this->codebase->scanner->queueClassLikeForScanning($type_string);
             $this->file_storage->referenced_classlikes[strtolower($type_string)] = $type_string;
         } else {
+            $lower_hint = strtolower($hint->parts[0]);
+
             if ($this->classlike_storages
-                && strtolower($hint->parts[0]) === 'self'
+                && ($lower_hint === 'self' || $lower_hint === 'static')
                 && !end($this->classlike_storages)->is_trait
             ) {
                 $type_string = $this->fq_classlike_names[count($this->fq_classlike_names) - 1];
+
+                if ($lower_hint === 'static') {
+                    $type_string .= '&static';
+                }
             } else {
                 $type_string = ClassLikeAnalyzer::getFQCLNFromNameObject($hint, $this->aliases);
             }
 
-            if (!in_array(strtolower($type_string), ['self', 'static', 'parent'], true)) {
+            if (!in_array($lower_hint, ['self', 'static', 'parent'], true)) {
                 $this->codebase->scanner->queueClassLikeForScanning($type_string);
                 $this->file_storage->referenced_classlikes[strtolower($type_string)] = $type_string;
             }
