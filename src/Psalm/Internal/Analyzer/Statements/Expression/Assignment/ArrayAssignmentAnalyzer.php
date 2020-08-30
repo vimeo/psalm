@@ -716,7 +716,7 @@ class ArrayAssignmentAnalyzer
                     }
                 } elseif ($type instanceof TNonEmptyList
                     && $key_value instanceof Type\Atomic\TLiteralInt
-                    && $key_value->value === 0
+                    && ($key_value->value === $key_value->value || $key_value->value < $type->count)
                     && count($key_values) === 1
                 ) {
                     $has_matching_objectlike_property = true;

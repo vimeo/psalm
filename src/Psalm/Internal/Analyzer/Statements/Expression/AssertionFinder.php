@@ -341,6 +341,9 @@ class AssertionFinder
             $count_equality_position = self::hasNonEmptyCountEqualityCheck($conditional, $min_count);
             $typed_value_position = self::hasTypedValueComparison($conditional, $source);
 
+            $max_count = null;
+            $count_inequality_position = self::hasLessThanCountEqualityCheck($conditional, $max_count);
+
             if ($count_equality_position) {
                 if ($count_equality_position === self::ASSIGNMENT_TO_LEFT) {
                     $count_expr = $conditional->right;
@@ -360,6 +363,31 @@ class AssertionFinder
                         $if_types[$var_name] = [['=has-at-least-' . $min_count]];
                     } else {
                         $if_types[$var_name] = [['=non-empty-countable']];
+                    }
+                }
+
+                return $if_types;
+            }
+
+            if ($count_inequality_position) {
+                if ($count_inequality_position === self::ASSIGNMENT_TO_RIGHT) {
+                    $count_expr = $conditional->left;
+                } else {
+                    throw new \UnexpectedValueException('$count_inequality_position value');
+                }
+
+                /** @var PhpParser\Node\Expr\FuncCall $count_expr */
+                $var_name = ExpressionIdentifier::getArrayVarId(
+                    $count_expr->args[0]->value,
+                    $this_class_name,
+                    $source
+                );
+
+                if ($var_name) {
+                    if ($max_count) {
+                        $if_types[$var_name] = [['!has-at-least-' . ($max_count + 1)]];
+                    } else {
+                        $if_types[$var_name] = [['!non-empty-countable']];
                     }
                 }
 
@@ -1152,6 +1180,8 @@ class AssertionFinder
         $true_position = self::hasTrueVariable($conditional);
         $empty_array_position = self::hasEmptyArrayVariable($conditional);
         $gettype_position = self::hasGetTypeCheck($conditional);
+        $count = null;
+        $count_inequality_position = self::hasNotCountEqualityCheck($conditional, $count);
 
         if ($null_position !== null) {
             if ($null_position === self::ASSIGNMENT_TO_RIGHT) {
@@ -1426,6 +1456,33 @@ class AssertionFinder
                             }
                         }
                     }
+                }
+            }
+
+            return $if_types;
+        }
+
+        if ($count_inequality_position) {
+            if ($count_inequality_position === self::ASSIGNMENT_TO_RIGHT) {
+                $count_expr = $conditional->left;
+            } elseif ($count_inequality_position === self::ASSIGNMENT_TO_LEFT) {
+                $count_expr = $conditional->right;
+            } else {
+                throw new \UnexpectedValueException('$count_equality_position value');
+            }
+
+            /** @var PhpParser\Node\Expr\FuncCall $count_expr */
+            $var_name = ExpressionIdentifier::getArrayVarId(
+                $count_expr->args[0]->value,
+                $this_class_name,
+                $source
+            );
+
+            if ($var_name) {
+                if ($count) {
+                    $if_types[$var_name] = [['!has-exactly-' . $count]];
+                } else {
+                    $if_types[$var_name] = [['non-empty-countable']];
                 }
             }
 
@@ -2692,6 +2749,96 @@ class AssertionFinder
         ) {
             $min_count = $conditional->left->value +
                 ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller ? 1 : 0);
+
+            return self::ASSIGNMENT_TO_LEFT;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param   PhpParser\Node\Expr\BinaryOp    $conditional
+     *
+     * @return  false|int
+     */
+    protected static function hasLessThanCountEqualityCheck(
+        PhpParser\Node\Expr\BinaryOp $conditional,
+        ?int &$max_count
+    ) {
+        $left_count = $conditional->left instanceof PhpParser\Node\Expr\FuncCall
+            && $conditional->left->name instanceof PhpParser\Node\Name
+            && strtolower($conditional->left->name->parts[0]) === 'count'
+            && $conditional->left->args;
+
+        $operator_greater_than_or_equal =
+            $conditional instanceof PhpParser\Node\Expr\BinaryOp\SmallerOrEqual
+            || $conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller;
+
+        if ($left_count
+            && $conditional->right instanceof PhpParser\Node\Scalar\LNumber
+            && $operator_greater_than_or_equal
+            && $conditional->right->value >= (
+                $conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller ? 0 : 1
+            )
+        ) {
+            $max_count = $conditional->right->value -
+                ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller ? 0 : 1);
+
+            return self::ASSIGNMENT_TO_RIGHT;
+        }
+
+        $right_count = $conditional->right instanceof PhpParser\Node\Expr\FuncCall
+            && $conditional->right->name instanceof PhpParser\Node\Name
+            && strtolower($conditional->right->name->parts[0]) === 'count'
+            && $conditional->right->args;
+
+        $operator_less_than_or_equal =
+            $conditional instanceof PhpParser\Node\Expr\BinaryOp\GreaterOrEqual
+            || $conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater;
+
+        if ($right_count
+            && $conditional->left instanceof PhpParser\Node\Scalar\LNumber
+            && $operator_less_than_or_equal
+            && $conditional->left->value >= (
+                $conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater ? 0 : 1
+            )
+        ) {
+            $max_count = $conditional->left->value -
+                ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater ? 0 : 1);
+
+            return self::ASSIGNMENT_TO_LEFT;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param  PhpParser\Node\Expr\BinaryOp\NotIdentical|PhpParser\Node\Expr\BinaryOp\NotEqual $conditional
+     *
+     * @return  false|int
+     */
+    protected static function hasNotCountEqualityCheck(
+        PhpParser\Node\Expr\BinaryOp $conditional,
+        ?int &$count
+    ) {
+        $left_count = $conditional->left instanceof PhpParser\Node\Expr\FuncCall
+            && $conditional->left->name instanceof PhpParser\Node\Name
+            && strtolower($conditional->left->name->parts[0]) === 'count'
+            && $conditional->left->args;
+
+        if ($left_count && $conditional->right instanceof PhpParser\Node\Scalar\LNumber) {
+            $count = $conditional->right->value;
+
+            return self::ASSIGNMENT_TO_RIGHT;
+        }
+
+        $right_count = $conditional->right instanceof PhpParser\Node\Expr\FuncCall
+            && $conditional->right->name instanceof PhpParser\Node\Name
+            && strtolower($conditional->right->name->parts[0]) === 'count'
+            && $conditional->right->args;
+
+        if ($right_count && $conditional->left instanceof PhpParser\Node\Scalar\LNumber) {
+            $count = $conditional->left->value;
 
             return self::ASSIGNMENT_TO_LEFT;
         }

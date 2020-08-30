@@ -336,6 +336,7 @@ class InternalCallMapHandler
      * @psalm-suppress MixedInferredReturnType as the use of require buggers things up
      * @psalm-suppress MixedTypeCoercion
      * @psalm-suppress MixedReturnStatement
+     * @psalm-suppress MixedReturnTypeCoercion
      */
     public static function getCallMap()
     {

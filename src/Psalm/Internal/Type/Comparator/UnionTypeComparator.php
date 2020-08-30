@@ -419,29 +419,10 @@ class UnionTypeComparator
 
         foreach ($type1->getAtomicTypes() as $type1_part) {
             foreach ($type2->getAtomicTypes() as $type2_part) {
-                $first_comparison_result = new TypeComparisonResult();
-                $second_comparison_result = new TypeComparisonResult();
-
-                $either_contains = (AtomicTypeComparator::isContainedBy(
+                $either_contains = AtomicTypeComparator::canBeIdentical(
                     $codebase,
                     $type1_part,
-                    $type2_part,
-                    true,
-                    false,
-                    $first_comparison_result
-                )
-                    && !$first_comparison_result->to_string_cast
-                ) || (AtomicTypeComparator::isContainedBy(
-                    $codebase,
-                    $type2_part,
-                    $type1_part,
-                    true,
-                    false,
-                    $second_comparison_result
-                )
-                    && !$second_comparison_result->to_string_cast
-                ) || ($first_comparison_result->type_coerced
-                    && $second_comparison_result->type_coerced
+                    $type2_part
                 );
 
                 if ($either_contains) {

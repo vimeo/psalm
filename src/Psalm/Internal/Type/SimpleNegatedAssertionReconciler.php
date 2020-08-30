@@ -199,6 +199,10 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             );
         }
 
+        if (substr($assertion, 0, 12) === 'has-exactly-') {
+            return $existing_var_type;
+        }
+
         return null;
     }
 
@@ -321,12 +325,14 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             } elseif ($array_atomic_type->getId() !== 'array<empty, empty>') {
                 $did_remove_type = true;
 
-                $existing_var_type->addType(new TArray(
-                    [
-                        new Type\Union([new TEmpty]),
-                        new Type\Union([new TEmpty]),
-                    ]
-                ));
+                if (!$min_count) {
+                    $existing_var_type->addType(new TArray(
+                        [
+                            new Type\Union([new TEmpty]),
+                            new Type\Union([new TEmpty]),
+                        ]
+                    ));
+                }
             } elseif ($array_atomic_type instanceof Type\Atomic\ObjectLike) {
                 $did_remove_type = true;
 

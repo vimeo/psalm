@@ -1225,8 +1225,7 @@ class Config
                         'Loading plugin ' . $plugin_class_name . ' via require'. PHP_EOL
                     );
 
-                    /** @psalm-suppress UnresolvableInclude */
-                    require_once($plugin_class_path);
+                    self::requirePath($plugin_class_path);
                 } else {
                     if (!class_exists($plugin_class_name, true)) {
                         throw new \UnexpectedValueException($plugin_class_name . ' is not a known class');
@@ -1254,8 +1253,7 @@ class Config
                 FileScanner::class
             );
 
-            /** @psalm-suppress UnresolvableInclude */
-            require_once($path);
+            self::requirePath($path);
 
             $this->filetype_scanners[$extension] = $fq_class_name;
         }
@@ -1267,8 +1265,7 @@ class Config
                 FileAnalyzer::class
             );
 
-            /** @psalm-suppress UnresolvableInclude */
-            require_once($path);
+            self::requirePath($path);
 
             $this->filetype_analyzers[$extension] = $fq_class_name;
         }
@@ -1281,6 +1278,12 @@ class Config
                 throw new ConfigException('Failed to load plugin ' . $path, 0, $e);
             }
         }
+    }
+
+    private static function requirePath(string $path) : void
+    {
+        /** @psalm-suppress UnresolvableInclude */
+        require_once($path);
     }
 
     /**

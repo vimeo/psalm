@@ -619,4 +619,73 @@ class AtomicTypeComparator
 
         return $input_type_part->getKey() === $container_type_part->getKey();
     }
+
+    /**
+     * Does the input param atomic type match the given param atomic type
+     */
+    public static function canBeIdentical(
+        Codebase $codebase,
+        Type\Atomic $type1_part,
+        Type\Atomic $type2_part
+    ) : bool {
+        if ((get_class($type1_part) === TList::class
+                && $type2_part instanceof Type\Atomic\TNonEmptyList)
+            || (get_class($type2_part) === TList::class
+                && $type1_part instanceof Type\Atomic\TNonEmptyList)
+        ) {
+            return UnionTypeComparator::canExpressionTypesBeIdentical(
+                $codebase,
+                $type1_part->type_param,
+                $type2_part->type_param
+            );
+        }
+
+        if ((get_class($type1_part) === TArray::class
+                && $type2_part instanceof Type\Atomic\TNonEmptyArray)
+            || (get_class($type2_part) === TArray::class
+                && $type1_part instanceof Type\Atomic\TNonEmptyArray)
+        ) {
+            return UnionTypeComparator::canExpressionTypesBeIdentical(
+                $codebase,
+                $type1_part->type_params[0],
+                $type2_part->type_params[0]
+            )
+            && UnionTypeComparator::canExpressionTypesBeIdentical(
+                $codebase,
+                $type1_part->type_params[1],
+                $type2_part->type_params[1]
+            );
+        }
+
+        $first_comparison_result = new TypeComparisonResult();
+        $second_comparison_result = new TypeComparisonResult();
+
+        $either_contains = (AtomicTypeComparator::isContainedBy(
+            $codebase,
+            $type1_part,
+            $type2_part,
+            true,
+            false,
+            $first_comparison_result
+        )
+            && !$first_comparison_result->to_string_cast
+        ) || (AtomicTypeComparator::isContainedBy(
+            $codebase,
+            $type2_part,
+            $type1_part,
+            true,
+            false,
+            $second_comparison_result
+        )
+            && !$second_comparison_result->to_string_cast
+        ) || ($first_comparison_result->type_coerced
+            && $second_comparison_result->type_coerced
+        );
+
+        if ($either_contains) {
+            return true;
+        }
+
+        return false;
+    }
 }

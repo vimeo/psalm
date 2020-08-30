@@ -104,6 +104,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
             if ($assertion === 'array-key-exists'
                 || $assertion === 'non-empty-countable'
                 || strpos($assertion, 'has-at-least-') === 0
+                || strpos($assertion, 'has-exactly-') === 0
             ) {
                 return Type::getMixed();
             }
