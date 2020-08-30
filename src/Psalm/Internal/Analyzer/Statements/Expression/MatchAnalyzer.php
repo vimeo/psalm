@@ -39,8 +39,6 @@ class MatchAnalyzer
 
         $match_condition = $stmt->cond;
 
-        $fake_match_condition = false;
-
         if (!$switch_var_id
             && ($stmt->cond instanceof PhpParser\Node\Expr\FuncCall
                 || $stmt->cond instanceof PhpParser\Node\Expr\MethodCall
@@ -53,14 +51,10 @@ class MatchAnalyzer
 
             $context->vars_in_scope[$switch_var_id] = $condition_type;
 
-            if ($switch_var_id && substr($switch_var_id, 0, 15) === '$__tmp_switch__') {
-                $match_condition = new PhpParser\Node\Expr\Variable(
-                    substr($switch_var_id, 1),
-                    $stmt->cond->getAttributes()
-                );
-
-                $fake_match_condition = true;
-            }
+            $match_condition = new PhpParser\Node\Expr\Variable(
+                substr($switch_var_id, 1),
+                $stmt->cond->getAttributes()
+            );
         }
 
         $arms = $stmt->arms;
@@ -81,7 +75,7 @@ class MatchAnalyzer
 
         $statements_analyzer->node_data = clone $statements_analyzer->node_data;
 
-        if ($last_arm->conds === null) {
+        if (!$last_arm->conds) {
             $ternary = $last_arm->body;
         } else {
             $ternary = new PhpParser\Node\Expr\Ternary(
@@ -132,9 +126,9 @@ class MatchAnalyzer
             $statements_analyzer->removeSuppressedIssues(['RedundantConditionGivenDocblockType']);
         }
 
-        if ($stmt_expr_type = $statements_analyzer->node_data->getType($ternary)) {
-            $old_node_data->setType($stmt, $stmt_expr_type ?: Type::getMixed());
-        }
+        $stmt_expr_type = $statements_analyzer->node_data->getType($ternary);
+
+        $old_node_data->setType($stmt, $stmt_expr_type ?: Type::getMixed());
 
         $statements_analyzer->node_data = $old_node_data;
 
