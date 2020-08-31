@@ -6,6 +6,7 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\InstancePropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\CodeLocation;
@@ -42,7 +43,7 @@ use function array_filter;
 /**
  * @internal
  */
-class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer
+class StaticCallAnalyzer extends CallAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
@@ -445,8 +446,26 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         ? new CodeLocation($source, $stmt->name)
                         : null,
                     $statements_analyzer,
-                    $statements_analyzer->getFilePath()
+                    $statements_analyzer->getFilePath(),
+                    false
                 );
+
+                $fake_method_exists = false;
+
+                if (!$naive_method_exists
+                    && $codebase->methods->existence_provider->has($fq_class_name)
+                ) {
+                    $method_exists = $codebase->methods->existence_provider->doesMethodExist(
+                        $fq_class_name,
+                        $method_id->method_name,
+                        $source,
+                        null
+                    );
+
+                    if ($method_exists) {
+                        $fake_method_exists = true;
+                    }
+                }
 
                 if (!$naive_method_exists
                     && $class_storage->mixin_declaring_fqcln
@@ -565,6 +584,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         $context,
                         $statements_analyzer->getSource()
                     )
+                    || $fake_method_exists
                     || (isset($class_storage->pseudo_static_methods[$method_name_lc])
                         && ($config->use_phpdoc_method_without_magic_or_parent || $class_storage->parent_class))
                 ) {
@@ -584,6 +604,35 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             : null,
                         $statements_analyzer->getFilePath()
                     )) {
+                        if ($codebase->methods->return_type_provider->has($fq_class_name)) {
+                            $return_type_candidate = $codebase->methods->return_type_provider->getReturnType(
+                                $statements_analyzer,
+                                $method_id->fq_class_name,
+                                $method_id->method_name,
+                                $stmt->args,
+                                $context,
+                                new CodeLocation($statements_analyzer->getSource(), $stmt->name),
+                                null,
+                                null,
+                                strtolower($stmt->name->name)
+                            );
+
+                            if ($return_type_candidate) {
+                                CallAnalyzer::checkMethodArgs(
+                                    $method_id,
+                                    $stmt->args,
+                                    null,
+                                    $context,
+                                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                                    $statements_analyzer
+                                );
+
+                                $statements_analyzer->node_data->setType($stmt, $return_type_candidate);
+
+                                return true;
+                            }
+                        }
+
                         if (isset($class_storage->pseudo_static_methods[$method_name_lc])) {
                             $pseudo_method_storage = $class_storage->pseudo_static_methods[$method_name_lc];
 

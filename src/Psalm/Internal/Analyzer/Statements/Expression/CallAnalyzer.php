@@ -241,7 +241,7 @@ class CallAnalyzer
      * @param  CodeLocation                     $code_location
      * @param  StatementsAnalyzer               $statements_analyzer
      */
-    protected static function checkMethodArgs(
+    public static function checkMethodArgs(
         ?\Psalm\Internal\MethodIdentifier $method_id,
         array $args,
         ?TemplateResult $class_template_result,

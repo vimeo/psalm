@@ -672,14 +672,23 @@ class PluginTest extends \Psalm\Tests\TestCase
                 class Foo2 implements I {
                     public function id(): int { return 1; }
                 }
-                class Foo {}
+
+                /**
+                 * @method static int magicMethod(string $s)  this method return type gets overridden
+                 */
+                class Foo {
+                    public function __call(string $method_name, array $args) {}
+                    public static function __callStatic(string $method_name, array $args) {}
+                }
 
                 function i(I $i): void {}
 
                 $foo = new Foo();
 
                 echo $foo->magicMethod("hello");
+                echo strlen($foo->magicMethod("hello"));
                 echo $foo::magicMethod("hello");
+                echo strlen($foo::magicMethod("hello"));
 
                 $foo2 = $foo->magicMethod2("test");
                 $foo2->id();
@@ -846,10 +855,12 @@ class PluginTest extends \Psalm\Tests\TestCase
             '<?php
                 namespace Ns;
 
-                class Foo {}
+                class Foo {
+                    public function __call(string $method_name, array $args) {}
+                }
 
                 $foo = new Foo();
-                echo $foo->magicMethod(5);'
+                echo strlen($foo->magicMethod(5));'
         );
 
         $this->analyzeFile($file_path, new Context());
