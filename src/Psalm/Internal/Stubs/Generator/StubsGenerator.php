@@ -256,7 +256,9 @@ class StubsGenerator
                     : null,
                 $param->signature_type
                     ? self::getParserTypeFromPsalmType($param->signature_type)
-                    : null
+                    : null,
+                $param->by_ref,
+                $param->is_variadic
             );
         }
 
