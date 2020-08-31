@@ -18,8 +18,8 @@ class PropertyVisibilityProvider
      *     string,
      *     string,
      *     bool,
-     *     ?Context=,
-     *     ?CodeLocation=
+     *     Context,
+     *     CodeLocation
      *   ) : ?bool>
      * >
      */
@@ -51,8 +51,8 @@ class PropertyVisibilityProvider
      *     string,
      *     string,
      *     bool,
-     *     ?Context=,
-     *     ?CodeLocation=
+     *     Context,
+     *     CodeLocation
      *   ) : ?bool $c
      *
      * @return void
@@ -77,8 +77,8 @@ class PropertyVisibilityProvider
         string $fq_classlike_name,
         string $property_name,
         bool $read_mode,
-        Context $context = null,
-        CodeLocation $code_location = null
+        Context $context,
+        CodeLocation $code_location
     ) {
         foreach (self::$handlers[strtolower($fq_classlike_name)] as $property_handler) {
             $property_visible = $property_handler(
