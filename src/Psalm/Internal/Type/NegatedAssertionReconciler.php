@@ -315,8 +315,6 @@ class NegatedAssertionReconciler extends Reconciler
 
         if ($scalar_type === 'int') {
             if ($existing_var_type->hasInt()) {
-                $scalar_value = substr($assertion, $bracket_pos + 1, -1);
-
                 if ($existing_int_types = $existing_var_type->getLiteralInts()) {
                     if (!$existing_var_type->hasPositiveInt()) {
                         $did_match_literal_type = true;
