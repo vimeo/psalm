@@ -90,12 +90,13 @@ class Methods
         ?string $calling_method_id = null,
         CodeLocation $code_location = null,
         StatementsSource $source = null,
-        string $source_file_path = null
+        string $source_file_path = null,
+        bool $use_method_existence_provider = true
     ) : bool {
         $fq_class_name = $method_id->fq_class_name;
         $method_name = $method_id->method_name;
 
-        if ($this->existence_provider->has($fq_class_name)) {
+        if ($use_method_existence_provider && $this->existence_provider->has($fq_class_name)) {
             $method_exists = $this->existence_provider->doesMethodExist(
                 $fq_class_name,
                 $method_name,
