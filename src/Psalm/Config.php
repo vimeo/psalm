@@ -64,6 +64,8 @@ use function rmdir;
 use function scandir;
 use function sha1;
 use SimpleXMLElement;
+use XdgBaseDir\Xdg;
+
 use function strpos;
 use function strrpos;
 use function strtolower;
@@ -876,6 +878,8 @@ class Config
 
         if (isset($config_xml['cacheDirectory'])) {
             $config->cache_directory = (string)$config_xml['cacheDirectory'];
+        } elseif ($user_cache_dir = (new Xdg())->getHomeCacheDir()) {
+            $config->cache_directory = $user_cache_dir . '/psalm';
         } else {
             $config->cache_directory = sys_get_temp_dir() . '/psalm';
         }
