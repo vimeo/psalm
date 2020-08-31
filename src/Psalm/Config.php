@@ -901,6 +901,24 @@ class Config
             $config->use_igbinary = version_compare($igbinary_version, '2.0.5') >= 0;
         }
 
+        if (isset($config_xml['defaultSeverity'])) {
+            switch ($config_xml['defaultSeverity']) {
+                case self::REPORT_ERROR:
+                    $config->default_severity = self::REPORT_ERROR;
+                    break;
+                case self::REPORT_SUPPRESS:
+                    $config->default_severity = self::REPORT_SUPPRESS;
+                    break;
+                case self::REPORT_INFO:
+                    $config->default_severity = self::REPORT_INFO;
+                    break;
+                default:
+                    throw new Exception\ConfigException(
+                        'Invalid default severity ' . $config_xml['defaultSeverity']
+                    );
+            }
+        }
+
 
         if (isset($config_xml['findUnusedCode'])) {
             $attribute_text = (string) $config_xml['findUnusedCode'];
@@ -1592,7 +1610,7 @@ class Config
             return $this->report_info ? self::REPORT_INFO : self::REPORT_SUPPRESS;
         }
 
-        return self::REPORT_ERROR;
+        return $this->default_severity;
     }
 
     /**
