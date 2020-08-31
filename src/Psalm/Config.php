@@ -907,7 +907,7 @@ class Config
         }
 
         if (isset($config_xml['defaultSeverity'])) {
-            switch ($config_xml['defaultSeverity']) {
+            switch($config_xml['defaultSeverity']){
                 case self::REPORT_ERROR:
                     $config->default_severity = self::REPORT_ERROR;
                     break;
