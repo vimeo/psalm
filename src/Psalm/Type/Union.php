@@ -860,6 +860,14 @@ class Union implements TypeNode
     /**
      * @return bool
      */
+    public function hasPositiveInt()
+    {
+        return isset($this->types['int']) && $this->types['int'] instanceof Type\Atomic\TPositiveInt;
+    }
+
+    /**
+     * @return bool
+     */
     public function hasArrayKey()
     {
         return isset($this->types['array-key']);
