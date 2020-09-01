@@ -39,5 +39,4 @@ class ReportOptions
      * @var bool
      */
     public $show_suggestions = true;
-
 }

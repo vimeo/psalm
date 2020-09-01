@@ -1231,7 +1231,10 @@ class ProjectAnalyzer
         );
 
         if ($this->stdout_report_options
-            && in_array($this->stdout_report_options->format, [\Psalm\Report::TYPE_CONSOLE, \Psalm\Report::TYPE_PHP_STORM])
+            && in_array(
+                $this->stdout_report_options->format,
+                [\Psalm\Report::TYPE_CONSOLE, \Psalm\Report::TYPE_PHP_STORM]
+            )
             && $this->codebase->collect_references
         ) {
             fwrite(
