@@ -268,13 +268,14 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                 $stmt->args,
                 $stmt->getAttributes()
             );
-            $ret_value = FunctionCallAnalyzer::analyze(
+
+            FunctionCallAnalyzer::analyze(
                 $statements_analyzer,
                 $fake_function_call,
                 $context
             );
 
-            $function_return = $statements_analyzer->node_data->getType($fake_function_call);
+            $function_return = $statements_analyzer->node_data->getType($fake_function_call) ?: Type::getMixed();
             $statements_analyzer->node_data = $old_node_data;
 
             if (!$result->return_type) {
