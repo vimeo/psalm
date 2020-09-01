@@ -126,6 +126,21 @@ class MatchTest extends TestCase
                 false,
                 '8.0'
             ],
+            'notAllEnumsMet' => [
+                '<?php
+                    /**
+                     * @param "foo"|"bar" $foo
+                     */
+                    function foo(string $foo): string {
+                        return match ($foo) {
+                            "foo" => "foo",
+                        };
+                    }',
+                'error_message' => 'ParadoxicalCondition',
+                [],
+                false,
+                '8.0',
+            ],
         ];
     }
 }

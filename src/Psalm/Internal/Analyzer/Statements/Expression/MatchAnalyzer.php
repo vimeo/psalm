@@ -4,6 +4,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression;
 use PhpParser;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Issue\UnhandledMatchCondition;
 use Psalm\Context;
 use Psalm\Type;
 use function strtolower;
@@ -130,6 +131,69 @@ class MatchAnalyzer
 
         if (!in_array('RedundantConditionGivenDocblockType', $suppressed_issues, true)) {
             $statements_analyzer->removeSuppressedIssues(['RedundantConditionGivenDocblockType']);
+        }
+
+        if ($switch_var_id) {
+            $codebase = $statements_analyzer->getCodebase();
+
+            $all_conds = $last_arm->conds ?: [];
+
+            foreach ($arms as $arm) {
+                $all_conds = array_merge($arm->conds, $all_conds);
+            }
+
+            $all_match_condition = self::convertCondsToConditional(
+                $all_conds,
+                $match_condition,
+                $match_condition->getAttributes()
+            );
+
+            $clauses = \Psalm\Type\Algebra::getFormula(
+                \spl_object_id($all_match_condition),
+                \spl_object_id($all_match_condition),
+                $all_match_condition,
+                $context->self,
+                $statements_analyzer,
+                $codebase,
+                false,
+                false
+            );
+
+            $reconcilable_types = \Psalm\Type\Algebra::getTruthsFromFormula(
+                \Psalm\Type\Algebra::negateFormula($clauses)
+            );
+
+            // if the if has an || in the conditional, we cannot easily reason about it
+            if ($reconcilable_types) {
+                $changed_var_ids = [];
+
+                $vars_in_scope_reconciled = \Psalm\Type\Reconciler::reconcileKeyedTypes(
+                    $reconcilable_types,
+                    [],
+                    $context->vars_in_scope,
+                    $changed_var_ids,
+                    [],
+                    $statements_analyzer,
+                    [],
+                    $context->inside_loop,
+                    null
+                );
+
+                if (isset($vars_in_scope_reconciled[$switch_var_id])) {
+                    if ($vars_in_scope_reconciled[$switch_var_id]->hasLiteralValue()) {
+                        if (\Psalm\IssueBuffer::accepts(
+                            new UnhandledMatchCondition(
+                                'This match expression is not exhaustive - consider values '
+                                    . $vars_in_scope_reconciled[$switch_var_id]->getId(),
+                                new \Psalm\CodeLocation($statements_analyzer->getSource(), $match_condition)
+                            ),
+                            $statements_analyzer->getSuppressedIssues()
+                        )) {
+                            return false;
+                        }
+                    }
+                }
+            }
         }
 
         $stmt_expr_type = $statements_analyzer->node_data->getType($ternary);

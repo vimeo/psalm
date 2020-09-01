@@ -94,7 +94,7 @@ class DocumentationTest extends TestCase
             )
         );
 
-        $this->project_analyzer->setPhpVersion('7.3');
+        $this->project_analyzer->setPhpVersion('8.0');
     }
 
     public function testAllIssuesCoveredInConfigSchema(): void
