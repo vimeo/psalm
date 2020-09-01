@@ -193,7 +193,7 @@ class MatchAnalyzer
                             ),
                             $statements_analyzer->getSuppressedIssues()
                         )) {
-                            return false;
+                            // continue
                         }
                     }
                 }
