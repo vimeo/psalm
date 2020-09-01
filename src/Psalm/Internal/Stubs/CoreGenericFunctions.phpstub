@@ -493,29 +493,23 @@ function strpos($haystack, $needle, int $offset = 0) : int {}
 /**
  * @psalm-pure
  *
- * @param string $str
- *
  * @psalm-flow ($str) -> return
  */
-function trim($str, string $character_mask = " \t\n\r\0\x0B") : string {}
+function trim(string $str, string $character_mask = " \t\n\r\0\x0B") : string {}
 
 /**
  * @psalm-pure
  *
- * @param string $str
- *
  * @psalm-flow ($str) -> return
  */
-function ltrim($str, string $character_mask = " \t\n\r\0\x0B") : string {}
+function ltrim(string $str, string $character_mask = " \t\n\r\0\x0B") : string {}
 
 /**
  * @psalm-pure
  *
- * @param string $str
- *
  * @psalm-flow ($str) -> return
  */
-function rtrim($str, string $character_mask = " \t\n\r\0\x0B") : string {}
+function rtrim(string $str, string $character_mask = " \t\n\r\0\x0B") : string {}
 
 /**
  * @psalm-pure
