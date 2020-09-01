@@ -680,7 +680,7 @@ function bcdiv(string $left_operand, string $right_operand, int $scale = 0): ?st
 /**
  * @psalm-pure
  *
- * @param scalar|object $var
+ * @param scalar|null|object $var
  * @return string The string value of var.
  *
  * @psalm-flow ($var) -> return
