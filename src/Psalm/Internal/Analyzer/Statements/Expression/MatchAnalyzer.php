@@ -133,17 +133,21 @@ class MatchAnalyzer
             $statements_analyzer->removeSuppressedIssues(['RedundantConditionGivenDocblockType']);
         }
 
-        if ($switch_var_id) {
+        if ($switch_var_id && $last_arm->conds) {
             $codebase = $statements_analyzer->getCodebase();
 
-            $all_conds = $last_arm->conds ?: [];
+            $all_conds = $last_arm->conds;
 
             foreach ($arms as $arm) {
+                if (!$arm->conds) {
+                    throw new \UnexpectedValueException('bad');
+                }
+
                 $all_conds = array_merge($arm->conds, $all_conds);
             }
 
             $all_match_condition = self::convertCondsToConditional(
-                $all_conds,
+                array_values($all_conds),
                 $match_condition,
                 $match_condition->getAttributes()
             );

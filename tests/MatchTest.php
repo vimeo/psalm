@@ -136,7 +136,7 @@ class MatchTest extends TestCase
                             "foo" => "foo",
                         };
                     }',
-                'error_message' => 'ParadoxicalCondition',
+                'error_message' => 'UnhandledMatchCondition',
                 [],
                 false,
                 '8.0',
