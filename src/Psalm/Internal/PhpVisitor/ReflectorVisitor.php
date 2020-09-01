@@ -451,6 +451,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             || $node instanceof PhpParser\Node\Stmt\Foreach_
             || $node instanceof PhpParser\Node\Stmt\While_
             || $node instanceof PhpParser\Node\Stmt\Do_
+            || $node instanceof PhpParser\Node\Stmt\Echo_
         ) {
             if ($doc_comment = $node->getDocComment()) {
                 $var_comments = [];

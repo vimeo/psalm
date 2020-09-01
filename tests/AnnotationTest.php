@@ -1168,6 +1168,11 @@ class AnnotationTest extends TestCase
 
                     function takesString(string $s): void {}'
             ],
+            'noCrashWithoutAssignment' => [
+                '<?php
+                    /** @var DateTime $obj */
+                    echo $obj->format("Y");'
+            ],
         ];
     }
 
