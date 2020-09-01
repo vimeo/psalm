@@ -484,30 +484,38 @@ function strtoupper(string $str) : string {}
 /**
  * @psalm-pure
  *
+ * @param string $haystack
+ *
  * @psalm-return positive-int|0|false
  */
-function strpos(string $haystack, $needle, int $offset = 0) : int {}
+function strpos($haystack, $needle, int $offset = 0) : int {}
 
 /**
  * @psalm-pure
  *
+ * @param string $str
+ *
  * @psalm-flow ($str) -> return
  */
-function trim(string $str, string $character_mask = " \t\n\r\0\x0B") : string {}
+function trim($str, string $character_mask = " \t\n\r\0\x0B") : string {}
 
 /**
  * @psalm-pure
  *
+ * @param string $str
+ *
  * @psalm-flow ($str) -> return
  */
-function ltrim(string $str, string $character_mask = " \t\n\r\0\x0B") : string {}
+function ltrim($str, string $character_mask = " \t\n\r\0\x0B") : string {}
 
 /**
  * @psalm-pure
  *
+ * @param string $str
+ *
  * @psalm-flow ($str) -> return
  */
-function rtrim(string $str, string $character_mask = " \t\n\r\0\x0B") : string {}
+function rtrim($str, string $character_mask = " \t\n\r\0\x0B") : string {}
 
 /**
  * @psalm-pure
