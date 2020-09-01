@@ -484,6 +484,13 @@ function strtoupper(string $str) : string {}
 /**
  * @psalm-pure
  *
+ * @psalm-return positive-int|0|false
+ */
+function strpos(string $haystack, $needle, int $offset = 0) : int {}
+
+/**
+ * @psalm-pure
+ *
  * @psalm-flow ($str) -> return
  */
 function trim(string $str, string $character_mask = " \t\n\r\0\x0B") : string {}
