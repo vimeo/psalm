@@ -314,6 +314,16 @@ When `true`, Psalm will treat all classes as if they had sealed methods, meaning
 
 When `true`, Psalm will run [Taint Analysis](../security_analysis/index.md) on your codebase. This config is the same as if you were running Psalm with `--taint-analysis`.
 
+#### reportInfo
+
+```xml
+<psalm
+  reportInfo="[bool]"
+>
+```
+
+When `false`, Psalm will not consider issue at lower level than `errorLevel` as `info` (they will be suppressed instead). This can be a big improvement in analysis time for big projects. However, this config will prevent Psalm to count or suggest fixes for suppressed issue
+
 ### Running Psalm
 
 #### autoloader
