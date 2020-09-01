@@ -412,7 +412,7 @@ class SimpleTypeInferer
                 && $can_create_objectlike
                 && $property_types
             ) {
-                $objectlike = new Type\Atomic\ObjectLike($property_types, $class_strings);
+                $objectlike = new Type\Atomic\TKeyedArray($property_types, $class_strings);
                 $objectlike->sealed = true;
                 $objectlike->is_list = $is_list;
                 return new Type\Union([$objectlike]);
@@ -518,7 +518,7 @@ class SimpleTypeInferer
                     }
 
                     foreach ($array_type->getAtomicTypes() as $array_atomic_type) {
-                        if ($array_atomic_type instanceof Type\Atomic\ObjectLike) {
+                        if ($array_atomic_type instanceof Type\Atomic\TKeyedArray) {
                             if (isset($array_atomic_type->properties[$dim_value])) {
                                 return clone $array_atomic_type->properties[$dim_value];
                             }

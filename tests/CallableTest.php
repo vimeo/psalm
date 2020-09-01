@@ -1181,7 +1181,28 @@ class CallableTest extends TestCase
                 ',
                 'error_message' => 'ImpureFunctionCall',
                 'error_levels' => [],
-            ]
+            ],
+            'constructCallableFromClassStringArray' => [
+                '<?php
+                    interface Foo {
+                        public function bar() : int;
+                    }
+
+                    /**
+                     * @param callable():string $c
+                     */
+                    function takesCallableReturningString(callable $c) : void {
+                        $c();
+                    }
+
+                    /**
+                     * @param class-string<Foo> $c
+                     */
+                    function foo(string $c) : void {
+                        takesCallableReturningString([$c, "bar"]);
+                    }',
+                'error_message' => 'InvalidScalarArgument',
+            ],
         ];
     }
 }

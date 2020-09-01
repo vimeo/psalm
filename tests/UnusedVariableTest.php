@@ -536,7 +536,6 @@ class UnusedVariableTest extends TestCase
                     'MixedAssignment',
                     'MixedMethodCall',
                     'MixedArrayOffset',
-                    'MixedTypeCoercion',
                 ],
             ],
             'globalVariableUsage' => [

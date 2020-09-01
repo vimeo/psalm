@@ -154,7 +154,7 @@ class ClassLikes
 
         foreach ($predefined_classes as $predefined_class) {
             $predefined_class = preg_replace('/^\\\/', '', $predefined_class);
-            /** @psalm-suppress TypeCoercion */
+            /** @psalm-suppress ArgumentTypeCoercion */
             $reflection_class = new \ReflectionClass($predefined_class);
 
             if (!$reflection_class->isUserDefined()) {
@@ -170,7 +170,7 @@ class ClassLikes
 
         foreach ($predefined_interfaces as $predefined_interface) {
             $predefined_interface = preg_replace('/^\\\/', '', $predefined_interface);
-            /** @psalm-suppress TypeCoercion */
+            /** @psalm-suppress ArgumentTypeCoercion */
             $reflection_class = new \ReflectionClass($predefined_interface);
 
             if (!$reflection_class->isUserDefined()) {
@@ -1774,7 +1774,7 @@ class ClassLikes
                 $properties[$key_value] = $value_type;
             }
 
-            $objectlike = new Type\Atomic\ObjectLike($properties);
+            $objectlike = new Type\Atomic\TKeyedArray($properties);
 
             $objectlike->is_list = $is_list;
             $objectlike->sealed = true;
@@ -1813,7 +1813,7 @@ class ClassLikes
                 $visited_constant_ids + [$c_id => true]
             );
 
-            if ($var_type instanceof Type\Atomic\ObjectLike
+            if ($var_type instanceof Type\Atomic\TKeyedArray
                 && ($offset_type instanceof Type\Atomic\TLiteralInt
                     || $offset_type instanceof Type\Atomic\TLiteralString)
             ) {

@@ -77,6 +77,7 @@
         <xs:attribute name="usePhpStormMetaPath" type="xs:boolean" default="true" />
         <xs:attribute name="allowInternalNamedArgumentCalls" type="xs:boolean" default="true" />
         <xs:attribute name="allowNamedArgumentCalls" type="xs:boolean" default="true" />
+        <xs:attribute name="reportInfo" type="xs:boolean" default="true" />
     </xs:complexType>
 
     <xs:complexType name="ProjectFilesType">
@@ -256,7 +257,6 @@
             <xs:element name="MethodSignatureMustOmitReturnType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MismatchingDocblockParamType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MismatchingDocblockReturnType" type="IssueHandlerType" minOccurs="0" />
-            <xs:element name="MisplacedRequiredParam" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingClosureParamType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingClosureReturnType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingConstructor" type="IssueHandlerType" minOccurs="0" />
@@ -265,7 +265,7 @@
             <xs:element name="MissingFile" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingImmutableAnnotation" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingParamType" type="IssueHandlerType" minOccurs="0" />
-            <xs:element name="MissingPropertyType" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="MissingPropertyType" type="PropertyIssueHandlerType" minOccurs="0" />
             <xs:element name="MissingReturnType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingTemplateParam" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingThrowsDocblock" type="IssueHandlerType" minOccurs="0" />
@@ -287,7 +287,6 @@
             <xs:element name="MixedReturnStatement" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MixedReturnTypeCoercion" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MixedStringOffsetAssignment" type="IssueHandlerType" minOccurs="0" />
-            <xs:element name="MixedTypeCoercion" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MoreSpecificImplementedParamType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MoreSpecificReturnType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MutableDependency" type="PropertyIssueHandlerType" minOccurs="0" />
@@ -363,7 +362,6 @@
             <xs:element name="TooManyTemplateParams" type="FunctionIssueHandlerType" minOccurs="0" />
             <xs:element name="Trace" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TraitMethodSignatureMismatch" type="IssueHandlerType" minOccurs="0" />
-            <xs:element name="TypeCoercion" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TypeDoesNotContainNull" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TypeDoesNotContainType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UncaughtThrowInGlobalScope" type="IssueHandlerType" minOccurs="0" />
@@ -386,6 +384,7 @@
             <xs:element name="UndefinedTrait" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UndefinedVariable" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnevaluatedCode" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="UnhandledMatchCondition" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnimplementedAbstractMethod" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnimplementedInterfaceMethod" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UninitializedProperty" type="PropertyIssueHandlerType" minOccurs="0" />

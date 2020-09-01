@@ -34,7 +34,6 @@ class FunctionExistenceProvider
         $callable = \Closure::fromCallable([$class, 'doesFunctionExist']);
 
         foreach ($class::getFunctionIds() as $function_id) {
-            /** @psalm-suppress MixedTypeCoercion */
             $this->registerClosure($function_id, $callable);
         }
     }

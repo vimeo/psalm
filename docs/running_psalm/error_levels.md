@@ -116,7 +116,6 @@ These issues are treated as errors at level 2 and below.
  - [InvalidDocblockParamName](issues/InvalidDocblockParamName.md)
  - [InvalidFalsableReturnType](issues/InvalidFalsableReturnType.md)
  - [InvalidStringClass](issues/InvalidStringClass.md)
- - [MisplacedRequiredParam](issues/MisplacedRequiredParam.md)
  - [MissingClosureParamType](issues/MissingClosureParamType.md)
  - [MissingClosureReturnType](issues/MissingClosureReturnType.md)
  - [MissingConstructor](issues/MissingConstructor.md)
@@ -170,7 +169,6 @@ These issues are treated as errors at level 3 and below.
  - [PossiblyUndefinedMethod](issues/PossiblyUndefinedMethod.md)
  - [PossiblyUndefinedVariable](issues/PossiblyUndefinedVariable.md)
  - [PropertyTypeCoercion](issues/PropertyTypeCoercion.md)
- - [TypeCoercion](issues/TypeCoercion.md)
 
 ## Errors ignored at level 5 and higher
 

@@ -425,10 +425,10 @@ class ForeachAnalyzer
             }
 
             if ($iterator_atomic_type instanceof Type\Atomic\TArray
-                || $iterator_atomic_type instanceof Type\Atomic\ObjectLike
+                || $iterator_atomic_type instanceof Type\Atomic\TKeyedArray
                 || $iterator_atomic_type instanceof Type\Atomic\TList
             ) {
-                if ($iterator_atomic_type instanceof Type\Atomic\ObjectLike) {
+                if ($iterator_atomic_type instanceof Type\Atomic\TKeyedArray) {
                     if (!$iterator_atomic_type->sealed) {
                         $always_non_empty_array = false;
                     }
@@ -835,9 +835,9 @@ class ForeachAnalyzer
                             $value_type_part = null;
 
                             if ($array_atomic_type instanceof Type\Atomic\TArray
-                                || $array_atomic_type instanceof Type\Atomic\ObjectLike
+                                || $array_atomic_type instanceof Type\Atomic\TKeyedArray
                             ) {
-                                if ($array_atomic_type instanceof Type\Atomic\ObjectLike) {
+                                if ($array_atomic_type instanceof Type\Atomic\TKeyedArray) {
                                     $array_atomic_type = $array_atomic_type->getGenericArrayType();
                                 }
 

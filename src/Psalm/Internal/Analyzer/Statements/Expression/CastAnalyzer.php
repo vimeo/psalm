@@ -12,7 +12,7 @@ use Psalm\Issue\PossiblyInvalidCast;
 use Psalm\Issue\UnrecognizedExpression;
 use Psalm\IssueBuffer;
 use Psalm\Type;
-use Psalm\Type\Atomic\ObjectLike;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TFloat;
@@ -130,12 +130,12 @@ class CastAnalyzer
 
                 foreach ($stmt_expr_type->getAtomicTypes() as $type) {
                     if ($type instanceof Scalar) {
-                        $permissible_atomic_types[] = new ObjectLike([new Type\Union([$type])]);
+                        $permissible_atomic_types[] = new TKeyedArray([new Type\Union([$type])]);
                     } elseif ($type instanceof TNull) {
                         $permissible_atomic_types[] = new TArray([Type::getEmpty(), Type::getEmpty()]);
                     } elseif ($type instanceof TArray
                         || $type instanceof TList
-                        || $type instanceof ObjectLike
+                        || $type instanceof TKeyedArray
                     ) {
                         $permissible_atomic_types[] = clone $type;
                     } else {

@@ -49,7 +49,7 @@ class ArrayMergeReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnT
             foreach ($call_arg_type->getAtomicTypes() as $type_part) {
                 if ($call_arg->unpack) {
                     if (!$type_part instanceof Type\Atomic\TArray) {
-                        if ($type_part instanceof Type\Atomic\ObjectLike) {
+                        if ($type_part instanceof Type\Atomic\TKeyedArray) {
                             $type_part_value_type = $type_part->getGenericValueType();
                         } elseif ($type_part instanceof Type\Atomic\TList) {
                             $type_part_value_type = $type_part->type_param;
@@ -79,7 +79,7 @@ class ArrayMergeReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnT
                             continue;
                         }
 
-                        if ($unpacked_type_part instanceof Type\Atomic\ObjectLike) {
+                        if ($unpacked_type_part instanceof Type\Atomic\TKeyedArray) {
                             if ($generic_properties !== null) {
                                 foreach ($unpacked_type_part->properties as $key => $type) {
                                     if (!\is_string($key)) {
@@ -168,7 +168,7 @@ class ArrayMergeReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnT
         }
 
         if ($generic_properties) {
-            $objectlike = new Type\Atomic\ObjectLike($generic_properties);
+            $objectlike = new Type\Atomic\TKeyedArray($generic_properties);
 
             if ($all_nonempty_lists) {
                 $objectlike->is_list = true;

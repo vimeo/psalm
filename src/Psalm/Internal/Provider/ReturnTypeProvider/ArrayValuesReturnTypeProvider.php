@@ -35,7 +35,7 @@ class ArrayValuesReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
             && $first_arg_type->hasType('array')
             && ($array_atomic_type = $first_arg_type->getAtomicTypes()['array'])
             && ($array_atomic_type instanceof Type\Atomic\TArray
-                || $array_atomic_type instanceof Type\Atomic\ObjectLike
+                || $array_atomic_type instanceof Type\Atomic\TKeyedArray
                 || $array_atomic_type instanceof Type\Atomic\TList)
         ? $array_atomic_type
         : null;
@@ -44,7 +44,7 @@ class ArrayValuesReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
             return Type::getArray();
         }
 
-        if ($first_arg_array instanceof Type\Atomic\ObjectLike) {
+        if ($first_arg_array instanceof Type\Atomic\TKeyedArray) {
             $first_arg_array = $first_arg_array->getGenericArrayType();
         }
 

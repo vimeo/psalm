@@ -257,7 +257,7 @@ class FunctionCallTest extends TestCase
 
                     a(["a" => "hello"]);',
             ],
-            'objectLikeKeyChecksAgainstObjectLike' => [
+            'objectLikeKeyChecksAgainstTKeyedArray' => [
                 '<?php
                     /**
                      * @param array{a: string} $b
@@ -1315,6 +1315,13 @@ class FunctionCallTest extends TestCase
                     }
                     print_r(array_map("strval", $headers));'
             ],
+            'allowListEqualToRange' => [
+                '<?php
+                    /** @param array<int, int> $two */
+                    function collectCommit(array $one, array $two) : void {
+                        if ($one && array_values($one) === array_values($two)) {}
+                    }'
+            ],
         ];
     }
 
@@ -1486,7 +1493,7 @@ class FunctionCallTest extends TestCase
                     a(["a" => "hello"]);',
                 'error_message' => 'InvalidScalarArgument',
             ],
-            'objectLikeKeyChecksAgainstDifferentObjectLike' => [
+            'objectLikeKeyChecksAgainstDifferentTKeyedArray' => [
                 '<?php
                     /**
                      * @param array{a: int} $b

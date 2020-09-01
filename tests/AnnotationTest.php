@@ -1051,7 +1051,7 @@ class AnnotationTest extends TestCase
                         return json_decode($json, true);
                     }'
             ],
-            'allowDocblockDefinedObjectLikeArrayIntoNonEmpty' => [
+            'allowDocblockDefinedTKeyedArrayIntoNonEmpty' => [
                 '<?php
                     /** @param non-empty-array $_bar */
                     function foo(array $_bar) : void { }
@@ -1167,6 +1167,11 @@ class AnnotationTest extends TestCase
                     }
 
                     function takesString(string $s): void {}'
+            ],
+            'noCrashWithoutAssignment' => [
+                '<?php
+                    /** @var DateTime $obj */
+                    echo $obj->format("Y");'
             ],
         ];
     }
@@ -1413,7 +1418,7 @@ class AnnotationTest extends TestCase
                     ',
                 'error_message' => 'UndefinedDocblockClass',
             ],
-            'preventBadObjectLikeFormat' => [
+            'preventBadTKeyedArrayFormat' => [
                 '<?php
                     /**
                      * @param array{} $arr
@@ -1482,7 +1487,7 @@ class AnnotationTest extends TestCase
                     class A {}',
                 'error_message' => 'InvalidDocblock',
             ],
-            'typeAliasInObjectLike' => [
+            'typeAliasInTKeyedArray' => [
                 '<?php
                     /**
                      * @psalm-type aType null|"a"|"b"|"c"|"d"
@@ -1502,7 +1507,7 @@ class AnnotationTest extends TestCase
                     }',
                 'error_message' => 'InvalidDocblock',
             ],
-            'noCrashOnHalfDoneObjectLikeArrayPropertyType' => [
+            'noCrashOnHalfDoneTKeyedArrayPropertyType' => [
                 '<?php
                     class A {
                         /** @var array{ */
@@ -1697,7 +1702,7 @@ class AnnotationTest extends TestCase
                     function bar(array $arr): void {}',
                 'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:21 - Found duplicated @return or prefixed @return tag in docblock for bar',
             ],
-            'missingClassForObjectLike' => [
+            'missingClassForTKeyedArray' => [
                 '<?php
                     interface I {
                         /** @return object{id: int, a: int} */

@@ -373,6 +373,14 @@ class ExpressionAnalyzer
             return Expression\YieldFromAnalyzer::analyze($statements_analyzer, $stmt, $context);
         }
 
+        if ($stmt instanceof PhpParser\Node\Expr\Match_) {
+            return Expression\MatchAnalyzer::analyze($statements_analyzer, $stmt, $context);
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\Throw_) {
+            return ThrowAnalyzer::analyze($statements_analyzer, $stmt, $context);
+        }
+
         if ($stmt instanceof PhpParser\Node\Expr\Error) {
             // do nothing
             return true;

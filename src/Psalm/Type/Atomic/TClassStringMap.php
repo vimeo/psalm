@@ -163,7 +163,7 @@ class TClassStringMap extends \Psalm\Type\Atomic
                     isset($input_type->type_params[$offset])
             ) {
                 $input_type_param = clone $input_type->type_params[$offset];
-            } elseif ($input_type instanceof Atomic\ObjectLike) {
+            } elseif ($input_type instanceof Atomic\TKeyedArray) {
                 if ($offset === 0) {
                     $input_type_param = $input_type->getGenericKeyType();
                 } else {

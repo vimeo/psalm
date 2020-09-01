@@ -94,7 +94,7 @@ class DocumentationTest extends TestCase
             )
         );
 
-        $this->project_analyzer->setPhpVersion('7.3');
+        $this->project_analyzer->setPhpVersion('8.0');
     }
 
     public function testAllIssuesCoveredInConfigSchema(): void
@@ -138,12 +138,6 @@ class DocumentationTest extends TestCase
         $code_blocks['UnrecognizedStatement'] = true;
         $code_blocks['PluginIssue'] = true;
         $code_blocks['TaintedInput'] = true;
-
-        // these are deprecated
-        $code_blocks['TypeCoercion'] = true;
-        $code_blocks['MixedTypeCoercion'] = true;
-        $code_blocks['MixedTypeCoercion'] = true;
-        $code_blocks['MisplacedRequiredParam'] = true;
 
         $documented_issues = array_keys($code_blocks);
         sort($documented_issues);

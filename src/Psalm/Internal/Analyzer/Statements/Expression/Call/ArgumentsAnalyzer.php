@@ -26,7 +26,7 @@ use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type;
-use Psalm\Type\Atomic\ObjectLike;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TList;
 use function strtolower;
@@ -251,22 +251,25 @@ class ArgumentsAnalyzer
                                         );
                                     }
 
-                                    if ($param_storage->type !== $param_storage->signature_type) {
-                                        continue;
-                                    }
+                                    if (!$param_storage->type_inferred) {
+                                        if ($param_storage->type !== $param_storage->signature_type) {
+                                            continue;
+                                        }
 
-                                    $type_match_found = UnionTypeComparator::isContainedBy(
-                                        $codebase,
-                                        $replaced_type_part->params[$closure_param_offset]->type,
-                                        $param_storage->type
-                                    );
+                                        $type_match_found = UnionTypeComparator::isContainedBy(
+                                            $codebase,
+                                            $replaced_type_part->params[$closure_param_offset]->type,
+                                            $param_storage->type
+                                        );
 
-                                    if (!$type_match_found) {
-                                        continue;
+                                        if (!$type_match_found) {
+                                            continue;
+                                        }
                                     }
                                 }
 
                                 $param_storage->type = $replaced_type_part->params[$closure_param_offset]->type;
+                                $param_storage->type_inferred = true;
 
                                 if ($method_id === 'array_map' || $method_id === 'array_filter') {
                                     ArrayFetchAnalyzer::taintArrayFetch(
@@ -318,12 +321,14 @@ class ArgumentsAnalyzer
                     []
                 );
 
+                $existing_type = $statements_analyzer->node_data->getType($arg->value);
+
                 \Psalm\Internal\Type\UnionTemplateHandler::replaceTemplateTypesWithStandins(
                     $generic_param_type,
                     $replace_template_result,
                     $codebase,
                     $statements_analyzer,
-                    $statements_analyzer->node_data->getType($arg->value),
+                    $existing_type,
                     $argument_offset,
                     'fn-' . ($context->calling_method_id ?: $context->calling_function_id)
                 );
@@ -1044,11 +1049,11 @@ class ArgumentsAnalyzer
             ) {
                 /**
                  * @psalm-suppress PossiblyUndefinedStringArrayOffset
-                 * @var TArray|TList|ObjectLike
+                 * @var TArray|TList|TKeyedArray
                  */
                 $array_type = $arg_value_type->getAtomicTypes()['array'];
 
-                if ($array_type instanceof ObjectLike) {
+                if ($array_type instanceof TKeyedArray) {
                     $array_type = $array_type->getGenericArrayType();
                 }
 

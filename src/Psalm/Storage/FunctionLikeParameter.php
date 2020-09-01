@@ -84,6 +84,11 @@ class FunctionLikeParameter
     public $assert_untainted = false;
 
     /**
+     * @var bool
+     */
+    public $type_inferred = false;
+
+    /**
      * @param string        $name
      * @param bool       $by_ref
      * @param Type\Union|null    $type

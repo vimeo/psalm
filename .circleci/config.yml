@@ -1,15 +1,15 @@
 # Use the latest 2.1 version of CircleCI pipeline processing engine, see https://circleci.com/docs/2.0/configuration-reference/
 version: 2.1
 executors:
-  php-72:
+  php-73:
     docker:
-      - image: thecodingmachine/php:7.2-v2-cli
+      - image: thecodingmachine/php:7.3-v2-cli
   php-74:
     docker:
       - image: thecodingmachine/php:7.4-v3-cli
 jobs:
   install-and-self-analyse:
-    executor: php-72
+    executor: php-73
     steps:
       - checkout
       - run: date "+%F" > /tmp/cachekey; cat composer.json >> /tmp/cachekey
@@ -41,7 +41,7 @@ jobs:
           paths:
             - .
   "Code Style Analysis":
-    executor: php-72
+    executor: php-73
     steps:
       - attach_workspace:
           at: /home/docker/project/
@@ -49,7 +49,7 @@ jobs:
           name: Code Style Analysis with PHPCS
           command: vendor/bin/phpcs
   test:
-    executor: php-72
+    executor: php-73
     steps:
       - attach_workspace:
             at: /home/docker/project/
@@ -65,7 +65,7 @@ jobs:
           paths:
             - .
   phar-build:
-    executor: php-72
+    executor: php-73
     steps:
       - attach_workspace:
           at: /home/docker/project/

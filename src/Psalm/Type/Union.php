@@ -860,6 +860,14 @@ class Union implements TypeNode
     /**
      * @return bool
      */
+    public function hasPositiveInt()
+    {
+        return isset($this->types['int']) && $this->types['int'] instanceof Type\Atomic\TPositiveInt;
+    }
+
+    /**
+     * @return bool
+     */
     public function hasArrayKey()
     {
         return isset($this->types['array-key']);
@@ -1341,7 +1349,7 @@ class Union implements TypeNode
                         $array_template_type = array_values($array_template_type->types)[0];
                         $offset_template_type = array_values($offset_template_type->types)[0];
 
-                        if ($array_template_type instanceof Type\Atomic\ObjectLike
+                        if ($array_template_type instanceof Type\Atomic\TKeyedArray
                             && ($offset_template_type instanceof Type\Atomic\TLiteralString
                                 || $offset_template_type instanceof Type\Atomic\TLiteralInt)
                             && isset($array_template_type->properties[$offset_template_type->value])

@@ -16,7 +16,7 @@ interface FunctionParamsProviderInterface
     /**
      * @param  array<PhpParser\Node\Arg>    $call_args
      *
-     * @return ?array<\Psalm\Storage\FunctionLikeParameter>
+     * @return ?array<int, \Psalm\Storage\FunctionLikeParameter>
      */
     public static function getFunctionParams(
         StatementsSource $statements_source,

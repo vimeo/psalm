@@ -19,8 +19,7 @@ class FunctionClassStringTemplateTest extends TestCase
                 '<?php
                     /**
                      * @template T
-                     * @param class-string $class
-                     * @template-typeof T $class
+                     * @param class-string<T> $class
                      */
                     function foo(string $class, array $args) : void {
                         $class::bar($args);
@@ -157,7 +156,7 @@ class FunctionClassStringTemplateTest extends TestCase
                     }
 
                     /**
-                     * @psalm-suppress TypeCoercion
+                     * @psalm-suppress ArgumentTypeCoercion
                      */
                     function bat(string $c_class) : void {
                         $c = E::get($c_class);
@@ -187,7 +186,7 @@ class FunctionClassStringTemplateTest extends TestCase
                     }
 
                     /**
-                     * @psalm-suppress TypeCoercion
+                     * @psalm-suppress ArgumentTypeCoercion
                      */
                     function bat(string $c_class) : void {
                         $c = E::get($c_class);

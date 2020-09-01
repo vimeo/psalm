@@ -90,12 +90,13 @@ class Methods
         ?string $calling_method_id = null,
         CodeLocation $code_location = null,
         StatementsSource $source = null,
-        string $source_file_path = null
+        string $source_file_path = null,
+        bool $use_method_existence_provider = true
     ) : bool {
         $fq_class_name = $method_id->fq_class_name;
         $method_name = $method_id->method_name;
 
-        if ($this->existence_provider->has($fq_class_name)) {
+        if ($use_method_existence_provider && $this->existence_provider->has($fq_class_name)) {
             $method_exists = $this->existence_provider->doesMethodExist(
                 $fq_class_name,
                 $method_name,
@@ -532,7 +533,7 @@ class Methods
                 );
             }
 
-            if ($atomic_type instanceof Type\Atomic\ObjectLike) {
+            if ($atomic_type instanceof Type\Atomic\TKeyedArray) {
                 foreach ($atomic_type->properties as &$property_type) {
                     $property_type = self::localizeType(
                         $codebase,
@@ -623,14 +624,13 @@ class Methods
     }
 
     /**
-     * @param  string $self_class
      * @param  array<int, PhpParser\Node\Arg>|null $args
      *
      * @return Type\Union|null
      */
     public function getMethodReturnType(
         MethodIdentifier $method_id,
-        &$self_class,
+        ?string &$self_class,
         \Psalm\Internal\Analyzer\SourceAnalyzer $source_analyzer = null,
         array $args = null
     ) {

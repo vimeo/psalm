@@ -241,7 +241,7 @@ class CallAnalyzer
      * @param  CodeLocation                     $code_location
      * @param  StatementsAnalyzer               $statements_analyzer
      */
-    protected static function checkMethodArgs(
+    public static function checkMethodArgs(
         ?\Psalm\Internal\MethodIdentifier $method_id,
         array $args,
         ?TemplateResult $class_template_result,
@@ -667,7 +667,7 @@ class CallAnalyzer
                             }
 
                             if ($replacement_atomic_type instanceof Type\Atomic\TArray
-                                || $replacement_atomic_type instanceof Type\Atomic\ObjectLike
+                                || $replacement_atomic_type instanceof Type\Atomic\TKeyedArray
                             ) {
                                 $ored_type_assertions[] = $prefix . 'array';
                             } elseif ($replacement_atomic_type instanceof Type\Atomic\TNamedObject) {

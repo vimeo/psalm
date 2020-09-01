@@ -1025,11 +1025,12 @@ class MethodCallTest extends TestCase
                          * @return ?NullableClass
                          */
                         public function returns_nullable_class() {
+                            /** @psalm-suppress ArgumentTypeCoercion */
                             return self::mock("NullableClass");
                         }
                     }',
                 'error_message' => 'LessSpecificReturnStatement',
-                'error_levels' => ['MixedInferredReturnType', 'MixedReturnStatement', 'TypeCoercion', 'MixedMethodCall'],
+                'error_levels' => ['MixedInferredReturnType', 'MixedReturnStatement', 'MixedMethodCall'],
             ],
             'undefinedVariableStaticCall' => [
                 '<?php

@@ -254,8 +254,26 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                 && !$context->collect_mutations
                 ? $statements_analyzer
                 : null,
-            $statements_analyzer->getFilePath()
+            $statements_analyzer->getFilePath(),
+            false
         );
+
+        $fake_method_exists = false;
+
+        if (!$naive_method_exists
+            && $codebase->methods->existence_provider->has($fq_class_name)
+        ) {
+            $method_exists = $codebase->methods->existence_provider->doesMethodExist(
+                $fq_class_name,
+                $method_id->method_name,
+                $source,
+                null
+            );
+
+            if ($method_exists) {
+                $fake_method_exists = true;
+            }
+        }
 
         if (!$naive_method_exists
             && $class_storage->templatedMixins
@@ -384,7 +402,9 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
             }
         }
 
-        if (!$naive_method_exists
+        if (($fake_method_exists
+                && $codebase->methods->methodExists(new MethodIdentifier($fq_class_name, '__call')))
+            || !$naive_method_exists
             || !MethodAnalyzer::isMethodVisible(
                 $method_id,
                 $context,

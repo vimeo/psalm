@@ -853,7 +853,7 @@ class ReturnTypeTest extends TestCase
                         }
                     }'
             ],
-            'compareObjectLikeToPotentiallyUnfilledArray' => [
+            'compareTKeyedArrayToPotentiallyUnfilledArray' => [
                 '<?php
                     /**
                      * @param array<"from"|"to", bool> $a
@@ -862,6 +862,35 @@ class ReturnTypeTest extends TestCase
                     function foo(array $a) : array {
                         return $a;
                     }',
+            ],
+            'returnStaticThis' => [
+                '<?php
+                    namespace Foo;
+
+                    class A {
+                        public function getThis() : static {
+                            return $this;
+                        }
+                    }
+
+                    class B extends A {
+                        public function foo() : void {}
+                    }
+
+                    (new B)->getThis()->foo();',
+            ],
+            'returnMixed' => [
+                '<?php
+                    namespace Foo;
+
+                    class A {
+                        public function getThis() : mixed {
+                            return $this;
+                        }
+                    }',
+                [],
+                [],
+                '8.0'
             ],
         ];
     }
@@ -997,7 +1026,7 @@ class ReturnTypeTest extends TestCase
                     }',
                 'error_message' => 'InvalidReturnStatement',
             ],
-            'complainAboutObjectLikeWhenArrayIsFound' => [
+            'complainAboutTKeyedArrayWhenArrayIsFound' => [
                 '<?php
                     /** @return array{a:string,b:string,c:string} */
                     function foo(): array {
@@ -1256,7 +1285,7 @@ class ReturnTypeTest extends TestCase
                 }',
                 'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:28 - The inferred type \'impure-Closure(B):void\' does not match the declared return type \'callable(A):void\' for map',
             ],
-            'compareObjectLikeToAlwaysFilledArray' => [
+            'compareTKeyedArrayToAlwaysFilledArray' => [
                 '<?php
                     /**
                      * @param array<"from"|"to", bool> $a

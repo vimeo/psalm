@@ -169,7 +169,7 @@ class UnionTemplateHandler
                         $array_template_type = array_values($array_template_type->getAtomicTypes())[0];
                         $offset_template_type = array_values($offset_template_type->getAtomicTypes())[0];
 
-                        if ($array_template_type instanceof Atomic\ObjectLike
+                        if ($array_template_type instanceof Atomic\TKeyedArray
                             && ($offset_template_type instanceof Atomic\TLiteralString
                                 || $offset_template_type instanceof Atomic\TLiteralInt)
                             && isset($array_template_type->properties[$offset_template_type->value])
@@ -209,11 +209,11 @@ class UnionTemplateHandler
                     if ($template_type->isSingle()) {
                         $template_type = array_values($template_type->getAtomicTypes())[0];
 
-                        if ($template_type instanceof Atomic\ObjectLike
+                        if ($template_type instanceof Atomic\TKeyedArray
                             || $template_type instanceof Atomic\TArray
                             || $template_type instanceof Atomic\TList
                         ) {
-                            if ($template_type instanceof Atomic\ObjectLike) {
+                            if ($template_type instanceof Atomic\TKeyedArray) {
                                 $key_type = $template_type->getGenericKeyType();
                             } elseif ($template_type instanceof Atomic\TList) {
                                 $key_type = \Psalm\Type::getInt();
@@ -329,7 +329,7 @@ class UnionTemplateHandler
             }
 
             if (($atomic_input_type instanceof Atomic\TArray
-                    || $atomic_input_type instanceof Atomic\ObjectLike
+                    || $atomic_input_type instanceof Atomic\TKeyedArray
                     || $atomic_input_type instanceof Atomic\TList)
                 && $key === 'iterable'
             ) {
@@ -569,11 +569,11 @@ class UnionTemplateHandler
                             $keyed_template = array_values($keyed_template->getAtomicTypes())[0];
                         }
 
-                        if ($keyed_template instanceof Atomic\ObjectLike
+                        if ($keyed_template instanceof Atomic\TKeyedArray
                             || $keyed_template instanceof Atomic\TArray
                             || $keyed_template instanceof Atomic\TList
                         ) {
-                            if ($keyed_template instanceof Atomic\ObjectLike) {
+                            if ($keyed_template instanceof Atomic\TKeyedArray) {
                                 $key_type = $keyed_template->getGenericKeyType();
                             } elseif ($keyed_template instanceof Atomic\TList) {
                                 $key_type = \Psalm\Type::getInt();

@@ -484,6 +484,13 @@ function strtoupper(string $str) : string {}
 /**
  * @psalm-pure
  *
+ * @psalm-return positive-int|0|false
+ */
+function strpos(string $haystack, $needle, int $offset = 0) : int {}
+
+/**
+ * @psalm-pure
+ *
  * @psalm-flow ($str) -> return
  */
 function trim(string $str, string $character_mask = " \t\n\r\0\x0B") : string {}
@@ -673,7 +680,7 @@ function bcdiv(string $left_operand, string $right_operand, int $scale = 0): ?st
 /**
  * @psalm-pure
  *
- * @param scalar|object $var
+ * @param scalar|null|object $var
  * @return string The string value of var.
  *
  * @psalm-flow ($var) -> return

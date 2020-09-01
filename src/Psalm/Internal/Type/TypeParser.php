@@ -17,7 +17,7 @@ use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type\Atomic;
-use Psalm\Type\Atomic\ObjectLike;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TCallable;
@@ -413,18 +413,18 @@ class TypeParser
                 $parse_tree->children
             );
 
-            $onlyObjectLike = true;
+            $onlyTKeyedArray = true;
             foreach ($intersection_types as $intersection_type) {
-                if (!$intersection_type instanceof ObjectLike) {
-                    $onlyObjectLike = false;
+                if (!$intersection_type instanceof TKeyedArray) {
+                    $onlyTKeyedArray = false;
                     break;
                 }
             }
 
-            if ($onlyObjectLike) {
+            if ($onlyTKeyedArray) {
                 /** @var non-empty-array<string|int, Union> */
                 $properties = [];
-                /** @var ObjectLike $intersection_type */
+                /** @var TKeyedArray $intersection_type */
                 foreach ($intersection_types as $intersection_type) {
                     foreach ($intersection_type->properties as $property => $property_type) {
                         if (!array_key_exists($property, $properties)) {
@@ -447,7 +447,7 @@ class TypeParser
                         $properties[$property] = $intersection_type;
                     }
                 }
-                return new ObjectLike($properties);
+                return new TKeyedArray($properties);
             }
 
             $keyed_intersection_types = [];
@@ -516,7 +516,7 @@ class TypeParser
             return $first_type;
         }
 
-        if ($parse_tree instanceof ParseTree\ObjectLikeTree) {
+        if ($parse_tree instanceof ParseTree\KeyedArrayTree) {
             $properties = [];
 
             $type = $parse_tree->value;
@@ -524,7 +524,7 @@ class TypeParser
             $is_tuple = true;
 
             foreach ($parse_tree->children as $i => $property_branch) {
-                if (!$property_branch instanceof ParseTree\ObjectLikePropertyTree) {
+                if (!$property_branch instanceof ParseTree\KeyedArrayPropertyTree) {
                     $property_type = self::getTypeFromTree(
                         $property_branch,
                         $codebase,
@@ -571,7 +571,7 @@ class TypeParser
             }
 
             if (!$properties) {
-                throw new TypeParseTreeException('No properties supplied for ObjectLike');
+                throw new TypeParseTreeException('No properties supplied for TKeyedArray');
             }
 
             if ($type === 'object') {
@@ -579,10 +579,10 @@ class TypeParser
             }
 
             if ($type === 'callable-array') {
-                return new Atomic\TCallableObjectLikeArray($properties);
+                return new Atomic\TCallableKeyedArray($properties);
             }
 
-            $object_like = new ObjectLike($properties);
+            $object_like = new TKeyedArray($properties);
 
             if ($is_tuple) {
                 $object_like->sealed = true;

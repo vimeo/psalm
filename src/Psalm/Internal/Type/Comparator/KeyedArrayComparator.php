@@ -4,7 +4,7 @@ namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
 use Psalm\Type;
-use Psalm\Type\Atomic\ObjectLike;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TNamedObject;
 use function is_string;
@@ -12,11 +12,11 @@ use function is_string;
 /**
  * @internal
  */
-class ObjectLikeComparator
+class KeyedArrayComparator
 {
     /**
-     * @param ObjectLike|TObjectWithProperties $input_type_part
-     * @param ObjectLike|TObjectWithProperties $container_type_part
+     * @param TKeyedArray|TObjectWithProperties $input_type_part
+     * @param TKeyedArray|TObjectWithProperties $container_type_part
      */
     public static function isContainedBy(
         Codebase $codebase,

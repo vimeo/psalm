@@ -29,9 +29,8 @@ class FunctionTemplateAssertTest extends TestCase
 
                     /**
                      * @param mixed $value
-                     * @param class-string $type
+                     * @param class-string<T> $type
                      * @template T
-                     * @template-typeof T $type
                      * @psalm-assert T $value
                      */
                     function assertInstanceOf($value, string $type): void {
@@ -165,9 +164,8 @@ class FunctionTemplateAssertTest extends TestCase
 
                     /**
                      * @param mixed $value
-                     * @param class-string $type
+                     * @param class-string<T> $type
                      * @template T
-                     * @template-typeof T $type
                      * @psalm-assert T $value
                      */
                     function assertInstanceOf($value, string $type): void {
@@ -202,12 +200,11 @@ class FunctionTemplateAssertTest extends TestCase
                     class A {}
 
                     /**
-                     * @param class-string $expected
+                     * @param class-string<T> $expected
                      * @param mixed  $actual
                      * @param string $message
                      *
                      * @template T
-                     * @template-typeof T $expected
                      * @psalm-assert T $actual
                      */
                     function assertInstanceOf($expected, $actual) : void {
@@ -732,12 +729,11 @@ class FunctionTemplateAssertTest extends TestCase
                     class A {}
 
                     /**
-                     * @param class-string $expected
+                     * @param class-string<T> $expected
                      * @param mixed  $actual
                      * @param string $message
                      *
                      * @template T
-                     * @template-typeof T $expected
                      * @psalm-assert T $actual
                      */
                     function assertInstanceOf($expected, $actual) : void {

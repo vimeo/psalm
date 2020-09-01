@@ -451,6 +451,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             || $node instanceof PhpParser\Node\Stmt\Foreach_
             || $node instanceof PhpParser\Node\Stmt\While_
             || $node instanceof PhpParser\Node\Stmt\Do_
+            || $node instanceof PhpParser\Node\Stmt\Echo_
         ) {
             if ($doc_comment = $node->getDocComment()) {
                 $var_comments = [];
@@ -1892,7 +1893,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 }
 
                 if (isset($this->config->getPredefinedFunctions()[$function_id])) {
-                    /** @psalm-suppress TypeCoercion */
+                    /** @psalm-suppress ArgumentTypeCoercion */
                     $reflection_function = new \ReflectionFunction($function_id);
 
                     if ($reflection_function->getFileName() !== $this->file_path) {
@@ -2259,38 +2260,9 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         $parser_return_type = $stmt->getReturnType();
 
         if ($parser_return_type) {
-            $suffix = '';
-
             $original_type = $parser_return_type;
 
-            if ($parser_return_type instanceof PhpParser\Node\NullableType) {
-                $suffix = '|null';
-                $parser_return_type = $parser_return_type->type;
-            }
-
-            if ($parser_return_type instanceof PhpParser\Node\Identifier) {
-                $return_type_string = $parser_return_type->name . $suffix;
-            } elseif ($parser_return_type instanceof PhpParser\Node\UnionType) {
-                // for now unsupported
-                $return_type_string = 'mixed';
-            } else {
-                $return_type_fq_classlike_name = ClassLikeAnalyzer::getFQCLNFromNameObject(
-                    $parser_return_type,
-                    $this->aliases
-                );
-
-                if ($class_storage && !$class_storage->is_trait && $return_type_fq_classlike_name === 'self') {
-                    $return_type_fq_classlike_name = $class_storage->name;
-                }
-
-                $return_type_string = $return_type_fq_classlike_name . $suffix;
-            }
-
-            $storage->return_type = Type::parseString(
-                $return_type_string,
-                [$this->php_major_version, $this->php_minor_version]
-            );
-            $storage->return_type->queueClassLikesForScanning($this->codebase, $this->file_storage);
+            $storage->return_type = $this->getTypeFromTypeHint($parser_return_type);
 
             $storage->return_type_location = new CodeLocation(
                 $this->file_scanner,
@@ -3178,48 +3150,13 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
         $param_typehint = $param->type;
 
-        if ($param_typehint instanceof PhpParser\Node\NullableType) {
-            $is_nullable = true;
-            $param_typehint = $param_typehint->type;
-        }
-
         if ($param_typehint) {
-            if ($param_typehint instanceof PhpParser\Node\Identifier) {
-                $param_type_string = $param_typehint->name;
-            } elseif ($param_typehint instanceof PhpParser\Node\Name\FullyQualified) {
-                $param_type_string = (string)$param_typehint;
+            $param_type = $this->getTypeFromTypeHint($param_typehint);
 
-                $this->codebase->scanner->queueClassLikeForScanning($param_type_string);
-                $this->file_storage->referenced_classlikes[strtolower($param_type_string)] = $param_type_string;
-            } elseif ($param_typehint instanceof PhpParser\Node\UnionType) {
-                // not yet supported
-                $param_type_string = 'mixed';
+            if ($is_nullable) {
+                $param_type->addType(new Type\Atomic\TNull);
             } else {
-                if ($this->classlike_storages
-                    && strtolower($param_typehint->parts[0]) === 'self'
-                    && !end($this->classlike_storages)->is_trait
-                ) {
-                    $param_type_string = $this->fq_classlike_names[count($this->fq_classlike_names) - 1];
-                } else {
-                    $param_type_string = ClassLikeAnalyzer::getFQCLNFromNameObject($param_typehint, $this->aliases);
-                }
-
-                if (!in_array(strtolower($param_type_string), ['self', 'static', 'parent'], true)) {
-                    $this->codebase->scanner->queueClassLikeForScanning($param_type_string);
-                    $this->file_storage->referenced_classlikes[strtolower($param_type_string)] = $param_type_string;
-                }
-            }
-
-            if ($param_type_string) {
-                $param_type = Type::parseString(
-                    $param_type_string,
-                    [$this->php_major_version, $this->php_minor_version],
-                    []
-                );
-
-                if ($is_nullable) {
-                    $param_type->addType(new Type\Atomic\TNull);
-                }
+                $is_nullable = $param_type->isNullable();
             }
         }
 
@@ -3266,6 +3203,80 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 )
                 : null
         );
+    }
+
+    /**
+     * @param PhpParser\Node\Identifier|PhpParser\Node\Name|PhpParser\Node\NullableType|PhpParser\Node\UnionType $hint
+     */
+    private function getTypeFromTypeHint(PhpParser\NodeAbstract $hint) : Type\Union
+    {
+        if ($hint instanceof PhpParser\Node\UnionType) {
+            $type = null;
+
+            if (!$hint->types) {
+                throw new \UnexpectedValueException('bad');
+            }
+
+            foreach ($hint->types as $atomic_typehint) {
+                $resolved_type = $this->getTypeFromTypeHint($atomic_typehint);
+
+                if (!$type) {
+                    $type = $resolved_type;
+                } else {
+                    $type = Type::combineUnionTypes($resolved_type, $type);
+                }
+            }
+
+            return $type;
+        }
+
+        $is_nullable = false;
+
+        if ($hint instanceof PhpParser\Node\NullableType) {
+            $is_nullable = true;
+            $hint = $hint->type;
+        }
+
+        if ($hint instanceof PhpParser\Node\Identifier) {
+            $type_string = $hint->name;
+        } elseif ($hint instanceof PhpParser\Node\Name\FullyQualified) {
+            $type_string = (string)$hint;
+
+            $this->codebase->scanner->queueClassLikeForScanning($type_string);
+            $this->file_storage->referenced_classlikes[strtolower($type_string)] = $type_string;
+        } else {
+            $lower_hint = strtolower($hint->parts[0]);
+
+            if ($this->classlike_storages
+                && ($lower_hint === 'self' || $lower_hint === 'static')
+                && !end($this->classlike_storages)->is_trait
+            ) {
+                $type_string = $this->fq_classlike_names[count($this->fq_classlike_names) - 1];
+
+                if ($lower_hint === 'static') {
+                    $type_string .= '&static';
+                }
+            } else {
+                $type_string = ClassLikeAnalyzer::getFQCLNFromNameObject($hint, $this->aliases);
+            }
+
+            if (!in_array($lower_hint, ['self', 'static', 'parent'], true)) {
+                $this->codebase->scanner->queueClassLikeForScanning($type_string);
+                $this->file_storage->referenced_classlikes[strtolower($type_string)] = $type_string;
+            }
+        }
+
+        $type = Type::parseString(
+            $type_string,
+            [$this->php_major_version, $this->php_minor_version],
+            []
+        );
+
+        if ($is_nullable) {
+            $type->addType(new Type\Atomic\TNull);
+        }
+
+        return $type;
     }
 
     /**
@@ -3411,11 +3422,11 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             if (!$docblock_param_variadic && $storage_param->is_variadic && $new_param_type->hasArray()) {
                 /**
                  * @psalm-suppress PossiblyUndefinedStringArrayOffset
-                 * @var Type\Atomic\TArray|Type\Atomic\ObjectLike|Type\Atomic\TList
+                 * @var Type\Atomic\TArray|Type\Atomic\TKeyedArray|Type\Atomic\TList
                  */
                 $array_type = $new_param_type->getAtomicTypes()['array'];
 
-                if ($array_type instanceof Type\Atomic\ObjectLike) {
+                if ($array_type instanceof Type\Atomic\TKeyedArray) {
                     $new_param_type = $array_type->getGenericValueType();
                 } elseif ($array_type instanceof Type\Atomic\TList) {
                     $new_param_type = $array_type->type_param;
@@ -3548,34 +3559,9 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         $signature_type_location = null;
 
         if ($stmt->type) {
-            $suffix = '';
-
             $parser_property_type = $stmt->type;
 
-            if ($parser_property_type instanceof PhpParser\Node\NullableType) {
-                $suffix = '|null';
-                $parser_property_type = $parser_property_type->type;
-            }
-
-            if ($parser_property_type instanceof PhpParser\Node\Identifier) {
-                $property_type_string = $parser_property_type->name . $suffix;
-            } elseif ($parser_property_type instanceof PhpParser\Node\UnionType) {
-                // not yet supported
-                $property_type_string = 'mixed';
-            } else {
-                $property_type_fq_classlike_name = ClassLikeAnalyzer::getFQCLNFromNameObject(
-                    $parser_property_type,
-                    $this->aliases
-                );
-
-                $property_type_string = $property_type_fq_classlike_name . $suffix;
-            }
-
-            $signature_type = Type::parseString(
-                $property_type_string,
-                [$this->php_major_version, $this->php_minor_version]
-            );
-            $signature_type->queueClassLikesForScanning($this->codebase, $this->file_storage);
+            $signature_type = $this->getTypeFromTypeHint($stmt->type);
 
             $signature_type_location = new CodeLocation(
                 $this->file_scanner,

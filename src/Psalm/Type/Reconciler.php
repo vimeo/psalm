@@ -21,13 +21,13 @@ use Psalm\Issue\RedundantConditionGivenDocblockType;
 use Psalm\Issue\TypeDoesNotContainType;
 use Psalm\IssueBuffer;
 use Psalm\Type;
-use Psalm\Type\Atomic\ObjectLike;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
-use Psalm\Type\Atomic\TCallableObjectLikeArray;
+use Psalm\Type\Atomic\TCallableKeyedArray;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TFalse;
@@ -341,7 +341,7 @@ class Reconciler
 
                 if (substr($key, -1) === ']' && !$has_inverted_isset && !$has_empty && !$is_equality) {
                     $key_parts = self::breakUpPathIntoParts($key);
-                    self::adjustObjectLikeType(
+                    self::adjustTKeyedArrayType(
                         $key_parts,
                         $existing_types,
                         $changed_var_ids,
@@ -610,7 +610,7 @@ class Reconciler
                         ) {
                             $has_object_array_access = true;
                             return null;
-                        } elseif (!$existing_key_type_part instanceof Type\Atomic\ObjectLike) {
+                        } elseif (!$existing_key_type_part instanceof Type\Atomic\TKeyedArray) {
                             return Type::getMixed();
                         } elseif ($array_key[0] === '$' || ($array_key[0] !== '\'' && !\is_numeric($array_key[0]))) {
                             if ($has_empty) {
@@ -895,7 +895,7 @@ class Reconciler
      *
      * @return void
      */
-    private static function adjustObjectLikeType(
+    private static function adjustTKeyedArrayType(
         array $key_parts,
         array &$existing_types,
         array &$changed_var_ids,
@@ -919,7 +919,7 @@ class Reconciler
 
         if (isset($existing_types[$base_key]) && $array_key_offset !== false) {
             foreach ($existing_types[$base_key]->getAtomicTypes() as $base_atomic_type) {
-                if ($base_atomic_type instanceof Type\Atomic\ObjectLike
+                if ($base_atomic_type instanceof Type\Atomic\TKeyedArray
                     || ($base_atomic_type instanceof Type\Atomic\TArray
                         && !$base_atomic_type->type_params[1]->isEmpty())
                     || $base_atomic_type instanceof Type\Atomic\TList
@@ -931,7 +931,7 @@ class Reconciler
                         $previous_key_type = clone $base_atomic_type->type_params[0];
                         $previous_value_type = clone $base_atomic_type->type_params[1];
 
-                        $base_atomic_type = new Type\Atomic\ObjectLike(
+                        $base_atomic_type = new Type\Atomic\TKeyedArray(
                             [
                                 $array_key_offset => clone $result_type,
                             ],
@@ -946,7 +946,7 @@ class Reconciler
                         $previous_key_type = Type::getInt();
                         $previous_value_type = clone $base_atomic_type->type_param;
 
-                        $base_atomic_type = new Type\Atomic\ObjectLike(
+                        $base_atomic_type = new Type\Atomic\TKeyedArray(
                             [
                                 $array_key_offset => clone $result_type,
                             ],
@@ -969,7 +969,7 @@ class Reconciler
                     $changed_var_ids[$base_key . '[' . $array_key . ']'] = true;
 
                     if ($key_parts[count($key_parts) - 1] === ']') {
-                        self::adjustObjectLikeType(
+                        self::adjustTKeyedArrayType(
                             $key_parts,
                             $existing_types,
                             $changed_var_ids,

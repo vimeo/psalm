@@ -3925,7 +3925,7 @@ class ClassTemplateExtendsTest extends TestCase
                 [],
                 '7.4'
             ],
-            'inheritTraitPropertyObjectLike' => [
+            'inheritTraitPropertyTKeyedArray' => [
                 '<?php
                     /** @template TValue */
                     trait A {

@@ -478,7 +478,7 @@ class ArrayAccessTest extends TestCase
                         echo isset($p["key"]) ? $p["key"] : "";
                     }',
             ],
-            'unsetObjectLikeOffset' => [
+            'unsetTKeyedArrayOffset' => [
                 '<?php
                     function takesInt(int $i) : void {}
                     $x = ["a" => "value"];
@@ -707,7 +707,7 @@ class ArrayAccessTest extends TestCase
 
                         /**
                          * @param array<scalar|array> $array
-                         * @psalm-suppress MixedTypeCoercion
+                         * @psalm-suppress MixedArgumentTypeCoercion
                          */
                         final public function __construct(array $array)
                         {
@@ -732,7 +732,7 @@ class ArrayAccessTest extends TestCase
                         /**
                          * @param ?string $name
                          * @param scalar|array $value
-                         * @psalm-suppress MixedTypeCoercion
+                         * @psalm-suppress MixedArgumentTypeCoercion
                          */
                         public function offsetSet($name, $value) : void
                         {
@@ -1230,7 +1230,7 @@ class ArrayAccessTest extends TestCase
                     }',
                 'error_message' => 'TypeDoesNotContainType',
             ],
-            'undefinedObjectLikeArrayOffset' => [
+            'undefinedTKeyedArrayOffset' => [
                 '<?php
                     class Example {
                         /**

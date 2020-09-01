@@ -346,7 +346,7 @@ class TypeCombinationTest extends TestCase
                     'array<int, string>',
                 ],
             ],
-            'combineNestedObjectTypeWithObjectLikeIntKeyedArray' => [
+            'combineNestedObjectTypeWithTKeyedArrayIntKeyedArray' => [
                 'array{a: array<int|string(a), int|string>}',
                 [
                     'array{a: array{a: int}}',
@@ -382,7 +382,7 @@ class TypeCombinationTest extends TestCase
                     'string',
                 ],
             ],
-            'combineMixedArrayWithObjectLike' => [
+            'combineMixedArrayWithTKeyedArray' => [
                 'array<array-key, mixed>',
                 [
                     'array{a: int}',
@@ -536,14 +536,14 @@ class TypeCombinationTest extends TestCase
                     'array<array-key, mixed>',
                 ],
             ],
-            'combineObjectLikeArrayAndArray' => [
+            'combineTKeyedArrayAndArray' => [
                 'array<array-key, mixed>',
                 [
                     'array{hello: int}',
                     'array<array-key, mixed>',
                 ],
             ],
-            'combineObjectLikeArrayAndNestedArray' => [
+            'combineTKeyedArrayAndNestedArray' => [
                 'array<array-key, mixed>',
                 [
                     'array{hello: array{goodbye: int}}',
@@ -564,7 +564,7 @@ class TypeCombinationTest extends TestCase
                     'numeric-string',
                 ],
             ],
-            'combineNonEmptyListWithObjectLikeList' => [
+            'combineNonEmptyListWithTKeyedArrayList' => [
                 'array{0: null|string}<int, string>',
                 [
                     'non-empty-list<string>',

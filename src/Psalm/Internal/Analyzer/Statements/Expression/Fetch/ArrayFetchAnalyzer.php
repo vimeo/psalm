@@ -30,7 +30,7 @@ use Psalm\Issue\PossiblyUndefinedIntArrayOffset;
 use Psalm\Issue\PossiblyUndefinedStringArrayOffset;
 use Psalm\IssueBuffer;
 use Psalm\Type;
-use Psalm\Type\Atomic\ObjectLike;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TClassStringMap;
@@ -178,7 +178,7 @@ class ArrayFetchAnalyzer
             if ($stmt->dim && $stmt_var_type->hasArray()) {
                 /**
                  * @psalm-suppress PossiblyUndefinedStringArrayOffset
-                 * @var TArray|ObjectLike|TList|Type\Atomic\TClassStringMap
+                 * @var TArray|TKeyedArray|TList|Type\Atomic\TClassStringMap
                  */
                 $array_type = $stmt_var_type->getAtomicTypes()['array'];
 
@@ -208,7 +208,7 @@ class ArrayFetchAnalyzer
             ) {
                 /**
                  * @psalm-suppress PossiblyUndefinedStringArrayOffset
-                 * @var TArray|ObjectLike|TList
+                 * @var TArray|TKeyedArray|TList
                  */
                 $array_type = $stmt_var_type->getAtomicTypes()['array'];
 
@@ -551,7 +551,7 @@ class ArrayFetchAnalyzer
             }
 
             if ($type instanceof TArray
-                || $type instanceof ObjectLike
+                || $type instanceof TKeyedArray
                 || $type instanceof TList
                 || $type instanceof TClassStringMap
             ) {
@@ -572,9 +572,9 @@ class ArrayFetchAnalyzer
                         $previous_key_type = $type->type_params[0];
                         $previous_value_type = $type->type_params[1];
 
-                        // ok, type becomes an ObjectLike
+                        // ok, type becomes an TKeyedArray
                         $array_type->removeType($type_string);
-                        $type = new ObjectLike([
+                        $type = new TKeyedArray([
                             $key_values[0] => $from_mixed_array ? Type::getMixed() : Type::getEmpty()
                         ]);
 
@@ -592,7 +592,7 @@ class ArrayFetchAnalyzer
                         continue;
                     }
                 } elseif ($in_assignment
-                    && $type instanceof ObjectLike
+                    && $type instanceof TKeyedArray
                     && $type->previous_value_type
                     && $type->previous_value_type->isMixed()
                     && count($key_values) === 1

@@ -629,13 +629,13 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 } elseif ($var_type_part instanceof TString
                     || $var_type_part instanceof Type\Atomic\TArray
                     || $var_type_part instanceof Type\Atomic\TList
-                    || ($var_type_part instanceof Type\Atomic\ObjectLike
+                    || ($var_type_part instanceof Type\Atomic\TKeyedArray
                         && count($var_type_part->properties) === 2)
                 ) {
                     $potential_method_id = null;
 
-                    if ($var_type_part instanceof Type\Atomic\ObjectLike) {
-                        $potential_method_id = CallableTypeComparator::getCallableMethodIdFromObjectLike(
+                    if ($var_type_part instanceof Type\Atomic\TKeyedArray) {
+                        $potential_method_id = CallableTypeComparator::getCallableMethodIdFromTKeyedArray(
                             $var_type_part,
                             $codebase,
                             $context->calling_method_id,

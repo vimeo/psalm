@@ -312,7 +312,7 @@ class ArrayFunctionCallTest extends TestCase
                         return 0;
                     }',
             ],
-            'arrayShiftFunkyObjectLikeList' => [
+            'arrayShiftFunkyTKeyedArrayList' => [
                 '<?php
                     /**
                      * @param non-empty-list<string>|array{null} $arr
@@ -468,7 +468,7 @@ class ArrayFunctionCallTest extends TestCase
                     '$array' => 'array<string, int>',
                 ],
             ],
-            'arrayMergeObjectLike' => [
+            'arrayMergeTKeyedArray' => [
                 '<?php
                   /**
                    * @param array<string, int> $a
@@ -652,7 +652,7 @@ class ArrayFunctionCallTest extends TestCase
                         return $r;
                     }',
             ],
-            'arrayMapObjectLikeAndCallable' => [
+            'arrayMapTKeyedArrayAndCallable' => [
                 '<?php
                     /**
                      * @psalm-return array{key1:int,key2:int}
@@ -663,7 +663,7 @@ class ArrayFunctionCallTest extends TestCase
                         return $r;
                     }',
             ],
-            'arrayMapObjectLikeListAndCallable' => [
+            'arrayMapTKeyedArrayListAndCallable' => [
                 '<?php
                     /** @param list<int> $list */
                     function takesList(array $list): void {}
@@ -675,7 +675,7 @@ class ArrayFunctionCallTest extends TestCase
                         )
                     );',
             ],
-            'arrayMapObjectLikeAndClosure' => [
+            'arrayMapTKeyedArrayAndClosure' => [
                 '<?php
                     /**
                      * @psalm-return array{key1:int,key2:int}
@@ -687,11 +687,10 @@ class ArrayFunctionCallTest extends TestCase
                     }',
                 'assertions' => [],
                 'error_levels' => [
-                    'MissingClosureParamType',
-                    'MixedTypeCoercion',
+                    'MissingClosureParamType'
                 ],
             ],
-            'arrayMapObjectLikeListAndClosure' => [
+            'arrayMapTKeyedArrayListAndClosure' => [
                 '<?php
                     /** @param list<string> $list */
                     function takesList(array $list): void {}
@@ -905,7 +904,7 @@ class ArrayFunctionCallTest extends TestCase
                     '$b' => 'int'
                 ],
             ],
-            'arrayResetNonEmptyObjectLike' => [
+            'arrayResetNonEmptyTKeyedArray' => [
                 '<?php
                     $a = ["one" => 1, "two" => 3];
                     $b = reset($a);',
@@ -951,7 +950,7 @@ class ArrayFunctionCallTest extends TestCase
                     '$b' => 'false|int'
                 ],
             ],
-            'arrayResetMaybeEmptyObjectLike' => [
+            'arrayResetMaybeEmptyTKeyedArray' => [
                 '<?php
                     /** @return array{foo?: int} */
                     function makeArray(): array { return []; }
@@ -981,7 +980,7 @@ class ArrayFunctionCallTest extends TestCase
                     '$b' => 'int'
                 ],
             ],
-            'arrayEndNonEmptyObjectLike' => [
+            'arrayEndNonEmptyTKeyedArray' => [
                 '<?php
                     $a = ["one" => 1, "two" => 3];
                     $b = end($a);',
@@ -1027,7 +1026,7 @@ class ArrayFunctionCallTest extends TestCase
                     '$b' => 'false|int'
                 ],
             ],
-            'arrayEndMaybeEmptyObjectLike' => [
+            'arrayEndMaybeEmptyTKeyedArray' => [
                 '<?php
                     /** @return array{foo?: int} */
                     function makeArray(): array { return []; }
@@ -1875,7 +1874,7 @@ class ArrayFunctionCallTest extends TestCase
                     }',
                 'error_message' => 'UndefinedVariable',
             ],
-            'arrayFilterObjectLike' => [
+            'arrayFilterTKeyedArray' => [
                 '<?php
                     /** @param list<int> $ints */
                     function ints(array $ints) : void {}

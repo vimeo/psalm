@@ -508,6 +508,9 @@ return [
     'phpparser\\node\\stmt\\interface_' => [
         'stmts' => 'array<int, PhpParser\Node\Stmt>',
     ],
+    'phpparser\\node\\matcharm' => [
+        'conds' => 'null|non-empty-list<PhpParser\Node\Expr>',
+    ],
     'rdkafka\\message' => [
         'err' => 'int',
         'topic_name' => 'string',

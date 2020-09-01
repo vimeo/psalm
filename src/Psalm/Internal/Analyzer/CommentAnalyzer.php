@@ -685,21 +685,6 @@ class CommentAnalyzer
             }
         }
 
-        if (isset($parsed_docblock->tags['template-typeof'])) {
-            foreach ($parsed_docblock->tags['template-typeof'] as $template_typeof) {
-                $typeof_parts = preg_split('/[\s]+/', preg_replace('@^[ \t]*\*@m', '', $template_typeof));
-
-                if ($typeof_parts === false || count($typeof_parts) < 2 || $typeof_parts[1][0] !== '$') {
-                    throw new IncorrectDocblockException('Misplaced variable');
-                }
-
-                $info->template_typeofs[] = [
-                    'template_type' => $typeof_parts[0],
-                    'param_name' => substr($typeof_parts[1], 1),
-                ];
-            }
-        }
-
         if (isset($parsed_docblock->tags['psalm-assert'])) {
             foreach ($parsed_docblock->tags['psalm-assert'] as $assertion) {
                 $line_parts = self::splitDocLine($assertion);
@@ -1108,7 +1093,9 @@ class CommentAnalyzer
                                 'Badly-formatted @method string ' . $method_entry . ' - ' . $e
                             );
                         }
-                        $docblock_lines[] = '@param \\' . $param_type . ' '
+
+                        $param_type_string = $param_type->toNamespacedString('\\', [], null, false);
+                        $docblock_lines[] = '@param ' . $param_type_string . ' '
                             . ($method_tree_child->variadic ? '...' : '')
                             . $method_tree_child->name;
                     }

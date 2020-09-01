@@ -13,7 +13,6 @@ use Psalm\Type;
 
 class FooMethodProvider implements
     MethodExistenceProviderInterface,
-    MethodVisibilityProviderInterface,
     MethodParamsProviderInterface,
     MethodReturnTypeProviderInterface
 {
@@ -34,20 +33,9 @@ class FooMethodProvider implements
         StatementsSource $source = null,
         CodeLocation $code_location = null
     ) {
-        return $method_name_lowercase === 'magicmethod' || $method_name_lowercase === 'magicmethod2';
-    }
-
-    /**
-     * @return ?bool
-     */
-    public static function isMethodVisible(
-        StatementsSource $source,
-        string $fq_classlike_name,
-        string $method_name_lowercase,
-        Context $context = null,
-        CodeLocation $code_location = null
-    ) {
-        return true;
+        if ($method_name_lowercase === 'magicmethod' || $method_name_lowercase === 'magicmethod2') {
+            return true;
+        }
     }
 
     /**
@@ -63,7 +51,9 @@ class FooMethodProvider implements
         Context $context = null,
         CodeLocation $code_location = null
     ) {
-        return [new \Psalm\Storage\FunctionLikeParameter('first', false, Type::getString())];
+        if ($method_name_lowercase === 'magicmethod' || $method_name_lowercase === 'magicmethod2') {
+            return [new \Psalm\Storage\FunctionLikeParameter('first', false, Type::getString())];
+        }
     }
 
     /**

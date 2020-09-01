@@ -219,7 +219,7 @@ class ReturnTypeCollector
                 $yield_type = Type::combineUnionTypeArray($yield_types, null);
 
                 foreach ($yield_type->getAtomicTypes() as $type) {
-                    if ($type instanceof Type\Atomic\ObjectLike) {
+                    if ($type instanceof Type\Atomic\TKeyedArray) {
                         $type = $type->getGenericArrayType();
                     }
 

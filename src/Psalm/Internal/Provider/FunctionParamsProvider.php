@@ -39,7 +39,6 @@ class FunctionParamsProvider
         $callable = \Closure::fromCallable([$class, 'getFunctionParams']);
 
         foreach ($class::getFunctionIds() as $function_id) {
-            /** @psalm-suppress MixedTypeCoercion */
             $this->registerClosure($function_id, $callable);
         }
     }
