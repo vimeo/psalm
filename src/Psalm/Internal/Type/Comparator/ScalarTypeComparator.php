@@ -263,7 +263,11 @@ class ScalarTypeComparator
             return true;
         }
 
-        if (get_class($input_type_part) === TInt::class && $container_type_part instanceof TLiteralInt) {
+        if ((get_class($input_type_part) === TInt::class && $container_type_part instanceof TLiteralInt)
+            || (get_class($input_type_part) === TPositiveInt::class
+                && $container_type_part instanceof TLiteralInt
+                && $container_type_part->value > 0)
+        ) {
             if ($atomic_comparison_result) {
                 $atomic_comparison_result->type_coerced = true;
                 $atomic_comparison_result->type_coerced_from_scalar = true;
