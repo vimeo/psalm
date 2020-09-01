@@ -609,6 +609,11 @@ class Config
      */
     public $debug_emitted_issues = false;
 
+    /**
+     * @var bool
+     */
+    private $report_info = true;
+
     protected function __construct()
     {
         self::$instance = $this;
@@ -843,6 +848,7 @@ class Config
             'allowInternalNamedArgumentsCalls' => 'allow_internal_named_arg_calls',
             'allowNamedArgumentCalls' => 'allow_named_arg_calls',
             'findUnusedPsalmSuppress' => 'find_unused_psalm_suppress',
+            'reportInfo' => 'report_info',
         ];
 
         foreach ($booleanAttributes as $xmlName => $internalName) {
@@ -1587,7 +1593,7 @@ class Config
         $issue_level = $issue_class::ERROR_LEVEL;
 
         if ($issue_level > 0 && $issue_level < $this->level) {
-            return self::REPORT_INFO;
+            return $this->report_info ? self::REPORT_INFO : self::REPORT_SUPPRESS;
         }
 
         return self::REPORT_ERROR;
