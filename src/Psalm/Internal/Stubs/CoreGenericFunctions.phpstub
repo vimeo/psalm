@@ -486,7 +486,7 @@ function strtoupper(string $str) : string {}
  *
  * @psalm-return positive-int|0|false
  */
-function strpos(string $haystack, string $needle, int $offset = 0) : int {}
+function strpos(string $haystack, $needle, int $offset = 0) : int {}
 
 /**
  * @psalm-pure
