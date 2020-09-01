@@ -221,7 +221,7 @@ foreach ($args as $arg) {
 
             foreach ($last_arg_parts as $last_arg_part) {
                 if (strpos($last_arg_part, '::')) {
-                    list(, $identifier_name) = explode('::', $last_arg_part);
+                    [, $identifier_name] = explode('::', $last_arg_part);
                     $to_refactor[$last_arg_part] = $arg . '::' . $identifier_name;
                 } else {
                     $namespace_parts = explode('\\', $last_arg_part);

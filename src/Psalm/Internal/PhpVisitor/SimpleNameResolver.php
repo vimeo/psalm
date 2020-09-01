@@ -42,7 +42,7 @@ class SimpleNameResolver extends NodeVisitorAbstract
     public function __construct(ErrorHandler $errorHandler, array $offset_map = null)
     {
         if ($offset_map) {
-            foreach ($offset_map as list(, , $b_s, $b_e)) {
+            foreach ($offset_map as [, , $b_s, $b_e]) {
                 if ($this->start_change === null) {
                     $this->start_change = $b_s;
                 }

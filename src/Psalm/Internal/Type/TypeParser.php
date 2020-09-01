@@ -847,7 +847,7 @@ class TypeParser
         }
 
         if (strpos($parse_tree->value, '::')) {
-            list($fq_classlike_name, $const_name) = explode('::', $parse_tree->value);
+            [$fq_classlike_name, $const_name] = explode('::', $parse_tree->value);
 
             if (isset($template_type_map[$fq_classlike_name]) && $const_name === 'class') {
                 $first_class = array_keys($template_type_map[$fq_classlike_name])[0];

@@ -254,7 +254,7 @@ class Pool
      */
     private static function streamForParent(array $sockets)
     {
-        list($for_read, $for_write) = $sockets;
+        [$for_read, $for_write] = $sockets;
 
         // The parent will not use the write channel, so it
         // must be closed to prevent deadlock.
@@ -280,7 +280,7 @@ class Pool
      */
     private static function streamForChild(array $sockets)
     {
-        list($for_read, $for_write) = $sockets;
+        [$for_read, $for_write] = $sockets;
 
         // The while will not use the read channel, so it must
         // be closed to prevent deadlock.

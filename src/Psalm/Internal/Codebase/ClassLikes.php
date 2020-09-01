@@ -904,7 +904,7 @@ class ClassLikes
                 continue;
             }
 
-            list($destination_fq_class_name, $destination_name) = explode('::', $destination);
+            [$destination_fq_class_name, $destination_name] = explode('::', $destination);
 
             try {
                 $classlike_storage = $this->classlike_storage_provider->get($destination_fq_class_name);
@@ -984,8 +984,8 @@ class ClassLikes
                 continue;
             }
 
-            list($source_fq_class_name) = explode('::$', $source);
-            list($destination_fq_class_name, $destination_name) = explode('::$', $destination);
+            [$source_fq_class_name] = explode('::$', $source);
+            [$destination_fq_class_name, $destination_name] = explode('::$', $destination);
 
             $source_classlike_storage = $this->classlike_storage_provider->get($source_fq_class_name);
             $destination_classlike_storage = $this->classlike_storage_provider->get($destination_fq_class_name);
@@ -1079,8 +1079,8 @@ class ClassLikes
         $code_migrations = [];
 
         foreach ($codebase->class_constants_to_move as $source => $destination) {
-            list($source_fq_class_name, $source_const_name) = explode('::', $source);
-            list($destination_fq_class_name, $destination_name) = explode('::', $destination);
+            [$source_fq_class_name, $source_const_name] = explode('::', $source);
+            [$destination_fq_class_name, $destination_name] = explode('::', $destination);
 
             $source_classlike_storage = $this->classlike_storage_provider->get($source_fq_class_name);
             $destination_classlike_storage = $this->classlike_storage_provider->get($destination_fq_class_name);
@@ -2443,14 +2443,15 @@ class ClassLikes
      */
     public function addThreadData(array $thread_data)
     {
-        list(
+        [
             $existing_classlikes_lc,
             $existing_classes_lc,
             $existing_traits_lc,
             $existing_traits,
             $existing_interfaces_lc,
             $existing_interfaces,
-            $existing_classes) = $thread_data;
+            $existing_classes
+        ] = $thread_data;
 
         $this->existing_classlikes_lc = array_merge($existing_classlikes_lc, $this->existing_classlikes_lc);
         $this->existing_classes_lc = array_merge($existing_classes_lc, $this->existing_classes_lc);

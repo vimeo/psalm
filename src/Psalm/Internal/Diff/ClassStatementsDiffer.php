@@ -34,7 +34,7 @@ class ClassStatementsDiffer extends AstDiffer
     {
         $diff_map = [];
 
-        list($trace, $x, $y, $bc) = self::calculateTrace(
+        [$trace, $x, $y, $bc] = self::calculateTrace(
             /**
              * @param string $a_code
              * @param string $b_code
@@ -109,13 +109,13 @@ class ClassStatementsDiffer extends AstDiffer
                 }
 
                 if ($a instanceof PhpParser\Node\Stmt\ClassMethod && $b instanceof PhpParser\Node\Stmt\ClassMethod) {
-                    if ((string) $a->name !== (string) $b->name) {
+                    if ((string)$a->name !== (string)$b->name) {
                         return false;
                     }
 
                     if ($a->stmts) {
                         $first_stmt = $a->stmts[0];
-                        $a_stmts_start = (int) $first_stmt->getAttribute('startFilePos');
+                        $a_stmts_start = (int)$first_stmt->getAttribute('startFilePos');
 
                         if ($a_stmt_comments = $first_stmt->getComments()) {
                             $a_stmts_start = $a_stmt_comments[0]->getFilePos();
@@ -126,7 +126,7 @@ class ClassStatementsDiffer extends AstDiffer
 
                     if ($b->stmts) {
                         $first_stmt = $b->stmts[0];
-                        $b_stmts_start = (int) $first_stmt->getAttribute('startFilePos');
+                        $b_stmts_start = (int)$first_stmt->getAttribute('startFilePos');
 
                         if ($b_stmt_comments = $first_stmt->getComments()) {
                             $b_stmts_start = $b_stmt_comments[0]->getFilePos();
@@ -140,7 +140,7 @@ class ClassStatementsDiffer extends AstDiffer
 
                     $body_change = $a_body_size !== $b_body_size
                         || substr($a_code, $a_stmts_start, $a_end - $a_stmts_start)
-                            !== substr($b_code, $b_stmts_start, $b_end - $b_stmts_start);
+                        !== substr($b_code, $b_stmts_start, $b_end - $b_stmts_start);
 
                     if (!$signature_change) {
                         $a_signature = substr($a_code, $a_start, $a_stmts_start - $a_start);
@@ -162,7 +162,7 @@ class ClassStatementsDiffer extends AstDiffer
                         return false;
                     }
 
-                    if ((string) $a->props[0]->name !== (string) $b->props[0]->name || $a->flags !== $b->flags) {
+                    if ((string)$a->props[0]->name !== (string)$b->props[0]->name || $a->flags !== $b->flags) {
                         return false;
                     }
 

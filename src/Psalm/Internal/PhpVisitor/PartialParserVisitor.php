@@ -82,7 +82,7 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
 
         $line_offset = 0;
 
-        foreach ($this->offset_map as list($a_s, $a_e, $b_s, $b_e, $line_diff)) {
+        foreach ($this->offset_map as [$a_s, $a_e, $b_s, $b_e, $line_diff]) {
             if ($a_s > $stmt_end_pos) {
                 break;
             }
@@ -107,7 +107,7 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
             ) {
                 if ($node instanceof PhpParser\Node\Stmt\ClassMethod) {
                     if ($a_s >= $stmt_start_pos && $a_e <= $stmt_end_pos) {
-                        foreach ($this->offset_map as list($a_s2, $a_e2, $b_s2, $b_e2)) {
+                        foreach ($this->offset_map as [$a_s2, $a_e2, $b_s2, $b_e2]) {
                             if ($a_s2 > $stmt_end_pos) {
                                 break;
                             }

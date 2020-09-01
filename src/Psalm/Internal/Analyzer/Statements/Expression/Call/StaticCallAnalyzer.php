@@ -1202,7 +1202,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             ) {
                                 $new_method_id = substr($transformation, 0, -4);
                                 $old_declaring_fq_class_name = $declaring_method_id->fq_class_name;
-                                list($new_fq_class_name, $new_method_name) = explode('::', $new_method_id);
+                                [$new_fq_class_name, $new_method_name] = explode('::', $new_method_id);
 
                                 if ($codebase->classlikes->handleClassLikeReferenceInMigration(
                                     $codebase,

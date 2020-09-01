@@ -196,7 +196,7 @@ class ClassTemplateParamCollector
         }
 
         foreach ($template_types as $type_name => $type_map) {
-            foreach ($type_map as list($type)) {
+            foreach ($type_map as [$type]) {
                 foreach ($candidate_class_storages as $candidate_class_storage) {
                     if ($candidate_class_storage !== $static_class_storage
                         && isset($e[$candidate_class_storage->name][$type_name])
