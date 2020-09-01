@@ -1465,6 +1465,10 @@ class Config
             $reporting_level = $this->getReportingLevelForFile($issue_type, $e->getFilePath());
         }
 
+        if (!$this->report_info && $reporting_level === self::REPORT_INFO) {
+            $reporting_level = self::REPORT_SUPPRESS;
+        }
+
         $parent_issue_type = self::getParentIssueType($issue_type);
 
         if ($parent_issue_type && $reporting_level === Config::REPORT_ERROR) {
@@ -1593,7 +1597,7 @@ class Config
         $issue_level = $issue_class::ERROR_LEVEL;
 
         if ($issue_level > 0 && $issue_level < $this->level) {
-            return $this->report_info ? self::REPORT_INFO : self::REPORT_SUPPRESS;
+            return self::REPORT_INFO;
         }
 
         return self::REPORT_ERROR;
