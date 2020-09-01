@@ -624,14 +624,13 @@ class Methods
     }
 
     /**
-     * @param  string $self_class
      * @param  array<int, PhpParser\Node\Arg>|null $args
      *
      * @return Type\Union|null
      */
     public function getMethodReturnType(
         MethodIdentifier $method_id,
-        &$self_class,
+        ?string &$self_class,
         \Psalm\Internal\Analyzer\SourceAnalyzer $source_analyzer = null,
         array $args = null
     ) {
