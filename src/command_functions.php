@@ -384,7 +384,7 @@ Output:
 
     --output-format=console
         Changes the output format.
-        Available formats: compact, console, text, emacs, json, pylint, xml, checkstyle, junit, sonarqube, github
+        Available formats: compact, console, text, emacs, json, pylint, xml, checkstyle, junit, sonarqube, github, phpstorm
 
     --no-progress
         Disable the progress indicator
@@ -394,9 +394,6 @@ Output:
 
     --stats
         Shows a breakdown of Psalm's ability to infer types in the codebase
-
-    --php-storm-format
-        Shows file links in IDE-compatible way, ability to open the source code directly from the console output
 
 Reports:
     --report=PATH

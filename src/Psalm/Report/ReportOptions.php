@@ -40,8 +40,4 @@ class ReportOptions
      */
     public $show_suggestions = true;
 
-    /**
-     * @var bool Modify console output to let php storm navigate to issue
-     */
-    public $php_storm_format = false;
 }

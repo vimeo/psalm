@@ -637,7 +637,7 @@ class Config
         $config_path = self::locateConfigFile($path);
 
         if (!$config_path) {
-            if ($output_format === \Psalm\Report::TYPE_CONSOLE) {
+            if (in_array($output_format, [\Psalm\Report::TYPE_CONSOLE, \Psalm\Report::TYPE_PHP_STORM])) {
                 echo 'Could not locate a config XML file in path ' . $path
                     . '. Have you run \'psalm --init\' ?' . PHP_EOL;
                 exit(1);

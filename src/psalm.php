@@ -130,7 +130,6 @@ $valid_long_options = [
     'security-analysis',
     'find-unused-psalm-suppress',
     'error-level:',
-    'php-storm-format'
 ];
 
 $args = array_slice($argv, 1);
@@ -598,7 +597,6 @@ $stdout_report_options->show_suggestions = !array_key_exists('no-suggestions', $
 $stdout_report_options->format = $output_format;
 $stdout_report_options->show_snippet = !isset($options['show-snippet']) || $options['show-snippet'] !== "false";
 $stdout_report_options->pretty = isset($options['pretty-print']) && $options['pretty-print'] !== "false";
-$stdout_report_options->php_storm_format = isset($options['php-storm-format']);
 
 /** @var list<string>|string $report_file_paths type guaranteed by argument to getopt() */
 $report_file_paths = $options['report'] ?? [];
