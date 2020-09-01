@@ -143,14 +143,16 @@ class MatchAnalyzer
                     throw new \UnexpectedValueException('bad');
                 }
 
-                $all_conds = array_merge($arm->conds, $all_conds);
+                $all_conds = \array_merge($arm->conds, $all_conds);
             }
 
             $all_match_condition = self::convertCondsToConditional(
-                array_values($all_conds),
+                \array_values($all_conds),
                 $match_condition,
                 $match_condition->getAttributes()
             );
+
+            ExpressionAnalyzer::analyze($statements_analyzer, $all_match_condition, $context);
 
             $clauses = \Psalm\Type\Algebra::getFormula(
                 \spl_object_id($all_match_condition),
