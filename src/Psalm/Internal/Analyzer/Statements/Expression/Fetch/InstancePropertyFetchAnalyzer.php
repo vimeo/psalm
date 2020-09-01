@@ -965,7 +965,8 @@ class InstancePropertyFetchAnalyzer
                         new MissingPropertyType(
                             'Property ' . $fq_class_name . '::$' . $prop_name
                                 . ' does not have a declared type',
-                            new CodeLocation($statements_analyzer->getSource(), $stmt)
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
+                            $property_id
                         ),
                         $statements_analyzer->getSuppressedIssues()
                     )) {

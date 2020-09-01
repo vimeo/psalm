@@ -1710,7 +1710,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             if (IssueBuffer::accepts(
                 new MissingPropertyType(
                     $message,
-                    new CodeLocation($source, $stmt->props[0]->name)
+                    new CodeLocation($source, $stmt->props[0]->name),
+                    $property_id
                 ),
                 $this->source->getSuppressedIssues()
             )) {
