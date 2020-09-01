@@ -35,40 +35,42 @@ class ClosureFromCallableReturnTypeProvider implements \Psalm\Plugin\Hook\Method
         if (!$source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
             return;
         }
+
         $type_provider = $source->getNodeTypeProvider();
         $codebase = $source->getCodebase();
 
-        $closure_types = [];
+        if ($method_name_lowercase === 'fromcallable') {
+            $closure_types = [];
 
-        if ($method_name_lowercase === 'fromcallable'
-            && isset($call_args[0])
-            && ($input_type = $type_provider->getType($call_args[0]->value))
-        ) {
-            foreach ($input_type->getAtomicTypes() as $atomic_type) {
-                $candidate_callable = CallableTypeComparator::getCallableFromAtomic(
-                    $codebase,
-                    $atomic_type,
-                    null,
-                    $source
-                );
-
-                if ($candidate_callable) {
-                    $closure_types[] = new Type\Atomic\TFn(
-                        'Closure',
-                        $candidate_callable->params,
-                        $candidate_callable->return_type,
-                        $candidate_callable->is_pure
+            if (isset($call_args[0])
+                && ($input_type = $type_provider->getType($call_args[0]->value))
+            ) {
+                foreach ($input_type->getAtomicTypes() as $atomic_type) {
+                    $candidate_callable = CallableTypeComparator::getCallableFromAtomic(
+                        $codebase,
+                        $atomic_type,
+                        null,
+                        $source
                     );
-                } else {
-                    return Type::getClosure();
+
+                    if ($candidate_callable) {
+                        $closure_types[] = new Type\Atomic\TFn(
+                            'Closure',
+                            $candidate_callable->params,
+                            $candidate_callable->return_type,
+                            $candidate_callable->is_pure
+                        );
+                    } else {
+                        return Type::getClosure();
+                    }
                 }
             }
-        }
 
-        if ($closure_types) {
-            return TypeCombination::combineTypes($closure_types, $codebase);
-        }
+            if ($closure_types) {
+                return TypeCombination::combineTypes($closure_types, $codebase);
+            }
 
-        return Type::getClosure();
+            return Type::getClosure();
+        }
     }
 }
