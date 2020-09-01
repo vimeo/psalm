@@ -10,6 +10,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentMapPopulator;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentsAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -257,6 +258,33 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
             $statements_analyzer->getFilePath(),
             false
         );
+
+        if ($naive_method_exists && $fq_class_name === 'Closure' && $method_name_lc === '__invoke') {
+            $old_node_data = $statements_analyzer->node_data;
+            $statements_analyzer->node_data = clone $statements_analyzer->node_data;
+
+            $fake_function_call = new PhpParser\Node\Expr\FuncCall(
+                $stmt->var,
+                $stmt->args,
+                $stmt->getAttributes()
+            );
+            $ret_value = FunctionCallAnalyzer::analyze(
+                $statements_analyzer,
+                $fake_function_call,
+                $context
+            );
+
+            $function_return = $statements_analyzer->node_data->getType($fake_function_call);
+            $statements_analyzer->node_data = $old_node_data;
+
+            if (!$result->return_type) {
+                $result->return_type = $function_return;
+            } else {
+                $result->return_type = Type::combineUnionTypes($function_return, $result->return_type);
+            }
+
+            return;
+        }
 
         $fake_method_exists = false;
 
