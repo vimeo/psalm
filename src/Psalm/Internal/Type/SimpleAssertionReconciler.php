@@ -1382,7 +1382,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
         string $assertion
     ) : Union {
         if (strpos($assertion, '::')) {
-            list($fq_classlike_name, $const_name) = explode('::', $assertion);
+            [$fq_classlike_name, $const_name] = explode('::', $assertion);
 
             $class_constant_type = $codebase->classlikes->getConstantForClass(
                 $fq_classlike_name,
@@ -1429,7 +1429,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                 $is_class_string = false;
 
                 if (strpos($assertion, '::class')) {
-                    list($assertion) = explode('::', $assertion);
+                    [$assertion] = explode('::', $assertion);
                     $is_class_string = true;
                 }
 

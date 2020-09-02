@@ -546,7 +546,7 @@ class Analyzer
 
                 $this->analyzed_methods = array_merge($pool_data['analyzed_methods'], $this->analyzed_methods);
 
-                foreach ($pool_data['mixed_counts'] as $file_path => list($mixed_count, $nonmixed_count)) {
+                foreach ($pool_data['mixed_counts'] as $file_path => [$mixed_count, $nonmixed_count]) {
                     if (!isset($this->mixed_counts[$file_path])) {
                         $this->mixed_counts[$file_path] = [$mixed_count, $nonmixed_count];
                     } else {
@@ -580,7 +580,7 @@ class Analyzer
                 }
 
                 foreach ($pool_data['file_maps'] as $file_path => $file_maps) {
-                    list($reference_map, $type_map, $argument_map) = $file_maps;
+                    [$reference_map, $type_map, $argument_map] = $file_maps;
                     $this->reference_map[$file_path] = $reference_map;
                     $this->type_map[$file_path] = $type_map;
                     $this->argument_map[$file_path] = $argument_map;
@@ -615,7 +615,7 @@ class Analyzer
             $this->existing_issues = $codebase->file_reference_provider->getExistingIssues();
             $file_maps = $codebase->file_reference_provider->getFileMaps();
 
-            foreach ($file_maps as $file_path => list($reference_map, $type_map, $argument_map)) {
+            foreach ($file_maps as $file_path => [$reference_map, $type_map, $argument_map]) {
                 $this->reference_map[$file_path] = $reference_map;
                 $this->type_map[$file_path] = $type_map;
                 $this->argument_map[$file_path] = $argument_map;
@@ -658,7 +658,7 @@ class Analyzer
                     continue;
                 }
 
-                list($base_class, $trait) = explode('&', $changed_member);
+                [$base_class, $trait] = explode('&', $changed_member);
 
                 foreach ($all_referencing_methods as $member_id => $_) {
                     if (strpos($member_id, $base_class . '::') !== 0) {
@@ -913,7 +913,7 @@ class Analyzer
 
                 $matched = false;
 
-                foreach ($file_diff_map as list($from, $to, $file_offset, $line_offset)) {
+                foreach ($file_diff_map as [$from, $to, $file_offset, $line_offset]) {
                     if ($issue_data->from >= $from
                         && $issue_data->from <= $to
                         && !$matched
@@ -949,12 +949,12 @@ class Analyzer
             $first_diff_offset = $file_diff_map[0][0];
             $last_diff_offset = $file_diff_map[count($file_diff_map) - 1][1];
 
-            foreach ($reference_map as $reference_from => list($reference_to, $tag)) {
+            foreach ($reference_map as $reference_from => [$reference_to, $tag]) {
                 if ($reference_to < $first_diff_offset || $reference_from > $last_diff_offset) {
                     continue;
                 }
 
-                foreach ($file_diff_map as list($from, $to, $file_offset)) {
+                foreach ($file_diff_map as [$from, $to, $file_offset]) {
                     if ($reference_from >= $from && $reference_from <= $to) {
                         unset($reference_map[$reference_from]);
                         $reference_map[$reference_from += $file_offset] = [
@@ -981,12 +981,12 @@ class Analyzer
             $first_diff_offset = $file_diff_map[0][0];
             $last_diff_offset = $file_diff_map[count($file_diff_map) - 1][1];
 
-            foreach ($type_map as $type_from => list($type_to, $tag)) {
+            foreach ($type_map as $type_from => [$type_to, $tag]) {
                 if ($type_to < $first_diff_offset || $type_from > $last_diff_offset) {
                     continue;
                 }
 
-                foreach ($file_diff_map as list($from, $to, $file_offset)) {
+                foreach ($file_diff_map as [$from, $to, $file_offset]) {
                     if ($type_from >= $from && $type_from <= $to) {
                         unset($type_map[$type_from]);
                         $type_map[$type_from += $file_offset] = [
@@ -1013,12 +1013,12 @@ class Analyzer
             $first_diff_offset = $file_diff_map[0][0];
             $last_diff_offset = $file_diff_map[count($file_diff_map) - 1][1];
 
-            foreach ($argument_map as $argument_from => list($argument_to, $method_id, $argument_number)) {
+            foreach ($argument_map as $argument_from => [$argument_to, $method_id, $argument_number]) {
                 if ($argument_to < $first_diff_offset || $argument_from > $last_diff_offset) {
                     continue;
                 }
 
-                foreach ($file_diff_map as list($from, $to, $file_offset)) {
+                foreach ($file_diff_map as [$from, $to, $file_offset]) {
                     if ($argument_from >= $from && $argument_from <= $to) {
                         unset($argument_map[$argument_from]);
                         $argument_map[$argument_from += $file_offset] = [
@@ -1258,7 +1258,7 @@ class Analyzer
                 continue;
             }
 
-            list($path_mixed_count, $path_nonmixed_count) = $counts;
+            [$path_mixed_count, $path_nonmixed_count] = $counts;
 
             if (isset($this->mixed_counts[$file_path])) {
                 $mixed_count += $path_mixed_count;
@@ -1284,7 +1284,7 @@ class Analyzer
             }
         }
 
-        list($mixed_count, $nonmixed_count) = $this->getTotalTypeCoverage($codebase);
+        [$mixed_count, $nonmixed_count] = $this->getTotalTypeCoverage($codebase);
 
         $total = $mixed_count + $nonmixed_count;
 
@@ -1327,7 +1327,7 @@ class Analyzer
 
         foreach ($all_deep_scanned_files as $file_path => $_) {
             if (isset($this->mixed_counts[$file_path])) {
-                list($path_mixed_count, $path_nonmixed_count) = $this->mixed_counts[$file_path];
+                [$path_mixed_count, $path_nonmixed_count] = $this->mixed_counts[$file_path];
 
                 if ($path_mixed_count + $path_nonmixed_count) {
                     $stats .= number_format(100 * $path_nonmixed_count / ($path_mixed_count + $path_nonmixed_count), 0)

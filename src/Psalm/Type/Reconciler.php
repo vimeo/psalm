@@ -520,7 +520,7 @@ class Reconciler
 
         if (!isset($existing_keys[$base_key])) {
             if (strpos($base_key, '::')) {
-                list($fq_class_name, $const_name) = explode('::', $base_key);
+                [$fq_class_name, $const_name] = explode('::', $base_key);
 
                 if (!$codebase->classlikes->classOrInterfaceExists($fq_class_name)) {
                     return null;

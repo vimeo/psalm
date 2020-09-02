@@ -218,7 +218,7 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
                                 $mapping_function_id_part = \substr($mapping_function_id_part, 1);
                             }
 
-                            list($callable_fq_class_name, $method_name) = explode('::', $mapping_function_id_part);
+                            [$callable_fq_class_name, $method_name] = explode('::', $mapping_function_id_part);
 
                             if (in_array($callable_fq_class_name, ['self', 'static', 'parent'], true)) {
                                 continue;

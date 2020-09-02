@@ -195,7 +195,7 @@ class FileManipulationBuffer
         $code_migration_manipulations = [];
 
         foreach (self::$code_migrations as $code_migration) {
-            list($start_offset, $middle_offset) = self::getCodeOffsets(
+            [$start_offset, $middle_offset] = self::getCodeOffsets(
                 $code_migration->source_file_path,
                 $code_migration->source_start,
                 $code_migration->source_end
@@ -217,7 +217,7 @@ class FileManipulationBuffer
 
             $code_migration_manipulations[$code_migration->source_file_path][] = $delete_file_manipulation;
 
-            list($destination_start_offset) = self::getCodeOffsets(
+            [$destination_start_offset] = self::getCodeOffsets(
                 $code_migration->destination_file_path,
                 $code_migration->destination_start,
                 $code_migration->destination_start

@@ -281,7 +281,7 @@ class ClassConstFetchAnalyzer
             if ($codebase->alter_code && !$moved_class) {
                 foreach ($codebase->class_constant_transforms as $original_pattern => $transformation) {
                     if ($declaring_const_id === $original_pattern) {
-                        list($new_fq_class_name, $new_const_name) = explode('::', $transformation);
+                        [$new_fq_class_name, $new_const_name] = explode('::', $transformation);
 
                         $file_manipulations = [];
 

@@ -813,7 +813,7 @@ class Scanner
      */
     public function addThreadData(array $thread_data)
     {
-        list(
+        [
             $files_to_scan,
             $files_to_deep_scan,
             $classes_to_scan,
@@ -823,7 +823,7 @@ class Scanner
             $deep_scanned_classlike_files,
             $scanned_files,
             $reflected_classlikes_lc
-        ) = $thread_data;
+        ] = $thread_data;
 
         $this->files_to_scan = array_merge($files_to_scan, $this->files_to_scan);
         $this->files_to_deep_scan = array_merge($files_to_deep_scan, $this->files_to_deep_scan);

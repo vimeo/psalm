@@ -100,7 +100,7 @@ class DocComment
         if ($preserve_format) {
             foreach ($lines as $m => $line) {
                 if (preg_match('/^\s?@([\w\-:]+)[\t ]*(.*)$/sm', $line, $matches)) {
-                    list($full_match, $type, $data) = $matches;
+                    [$full_match, $type, $data] = $matches;
 
                     $docblock = str_replace($full_match, '', $docblock);
 
@@ -121,7 +121,7 @@ class DocComment
                 $docblock = preg_replace('/^\s?@([\w\-:]+)\s*([^\n]*)/m', '', $docblock);
                 /** @var string[] $match */
                 foreach ($matches as $m => $match) {
-                    list($_, $type, $data) = $match;
+                    [$_, $type, $data] = $match;
 
                     if (empty($special[$type])) {
                         $special[$type] = [];

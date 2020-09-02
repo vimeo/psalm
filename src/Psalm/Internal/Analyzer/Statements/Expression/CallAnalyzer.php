@@ -399,7 +399,7 @@ class CallAnalyzer
                 }
             } elseif ($declaring_class_storage->template_types) {
                 foreach ($declaring_class_storage->template_types as $template_name => $type_map) {
-                    foreach ($type_map as $key => list($type)) {
+                    foreach ($type_map as $key => [$type]) {
                         $template_types[$template_name][$key] = [$type];
                     }
                 }
@@ -762,7 +762,7 @@ class CallAnalyzer
 
         if ($type_assertions) {
             foreach (($statements_analyzer->getTemplateTypeMap() ?: []) as $template_name => $map) {
-                foreach ($map as $ref => list($type)) {
+                foreach ($map as $ref => [$type]) {
                     $template_type_map[$template_name][$ref] = [
                         new Type\Union([
                             new Type\Atomic\TTemplateParam(
@@ -844,7 +844,7 @@ class CallAnalyzer
     ) : void {
         if ($template_result->upper_bounds && $template_result->lower_bounds) {
             foreach ($template_result->lower_bounds as $template_name => $defining_map) {
-                foreach ($defining_map as $defining_id => list($lower_bound_type)) {
+                foreach ($defining_map as $defining_id => [$lower_bound_type]) {
                     if (isset($template_result->upper_bounds[$template_name][$defining_id])) {
                         $upper_bound_type = $template_result->upper_bounds[$template_name][$defining_id][0];
 

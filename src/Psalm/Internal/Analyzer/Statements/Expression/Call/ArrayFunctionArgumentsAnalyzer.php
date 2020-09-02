@@ -618,7 +618,7 @@ class ArrayFunctionArgumentsAnalyzer
                     $function_id_parts = explode('&', $function_id);
 
                     foreach ($function_id_parts as $function_id_part) {
-                        list($callable_fq_class_name, $method_name) = explode('::', $function_id_part);
+                        [$callable_fq_class_name, $method_name] = explode('::', $function_id_part);
 
                         switch ($callable_fq_class_name) {
                             case 'self':

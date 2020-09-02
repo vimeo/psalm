@@ -224,7 +224,7 @@ class ReturnAnalyzer
                     );
 
                     if ($storage instanceof \Psalm\Storage\MethodStorage) {
-                        list($fq_class_name, $method_name) = explode('::', $cased_method_id);
+                        [$fq_class_name, $method_name] = explode('::', $cased_method_id);
 
                         $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 

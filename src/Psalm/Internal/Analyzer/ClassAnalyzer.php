@@ -1007,7 +1007,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
             if (isset($storage->overridden_property_ids[$property_name])) {
                 foreach ($storage->overridden_property_ids[$property_name] as $overridden_property_id) {
-                    list($guide_class_name) = explode('::$', $overridden_property_id);
+                    [$guide_class_name] = explode('::$', $overridden_property_id);
                     $guide_class_storage = $codebase->classlike_storage_provider->get($guide_class_name);
                     $guide_property_storage = $guide_class_storage->properties[$property_name];
 
@@ -1226,7 +1226,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             }
 
             if ($codebase->diff_methods && $method_already_analyzed && $property->location) {
-                list($start, $end) = $property->location->getSelectionBounds();
+                [$start, $end] = $property->location->getSelectionBounds();
 
                 $existing_issues = $codebase->analyzer->getExistingIssuesForFile(
                     $this->getFilePath(),
@@ -1396,7 +1396,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             );
 
             foreach ($uninitialized_properties as $property_id => $property_storage) {
-                list(,$property_name) = explode('::$', $property_id);
+                [, $property_name] = explode('::$', $property_id);
 
                 if (!isset($method_context->vars_in_scope['$this->' . $property_name])) {
                     $end_type = Type::getVoid();

@@ -885,7 +885,7 @@ class ArgumentAnalyzer
                                 $has_valid_method = false;
 
                                 foreach ($function_id_parts as $function_id_part) {
-                                    list($callable_fq_class_name, $method_name) = explode('::', $function_id_part);
+                                    [$callable_fq_class_name, $method_name] = explode('::', $function_id_part);
 
                                     switch ($callable_fq_class_name) {
                                         case 'self':
@@ -1212,7 +1212,7 @@ class ArgumentAnalyzer
             );
 
             if (strpos($cased_method_id, '::')) {
-                list($fq_classlike_name, $cased_method_name) = explode('::', $cased_method_id);
+                [$fq_classlike_name, $cased_method_name] = explode('::', $cased_method_id);
                 $method_name = strtolower($cased_method_name);
                 $class_storage = $codebase->classlike_storage_provider->get($fq_classlike_name);
 

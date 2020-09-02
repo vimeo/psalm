@@ -678,7 +678,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
 
         $unused_var_remover = new Statements\UnusedAssignmentRemover();
 
-        foreach ($this->unused_var_locations as $hash => list($var_id, $original_location)) {
+        foreach ($this->unused_var_locations as $hash => [$var_id, $original_location]) {
             if (substr($var_id, 0, 2) === '$_' || isset($this->used_var_locations[$hash])) {
                 continue;
             }

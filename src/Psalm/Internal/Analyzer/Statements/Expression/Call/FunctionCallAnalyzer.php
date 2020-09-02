@@ -117,7 +117,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
         $byref_uses = [];
 
         if ($function_name instanceof PhpParser\Node\Expr) {
-            list($expr_function_exists, $expr_function_name, $expr_function_params, $byref_uses)
+            [$expr_function_exists, $expr_function_name, $expr_function_params, $byref_uses]
                 = self::getAnalyzeNamedExpression(
                     $statements_analyzer,
                     $codebase,

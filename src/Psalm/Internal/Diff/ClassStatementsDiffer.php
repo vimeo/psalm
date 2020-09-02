@@ -34,7 +34,7 @@ class ClassStatementsDiffer extends AstDiffer
     {
         $diff_map = [];
 
-        list($trace, $x, $y, $bc) = self::calculateTrace(
+        [$trace, $x, $y, $bc] = self::calculateTrace(
             /**
              * @param string $a_code
              * @param string $b_code

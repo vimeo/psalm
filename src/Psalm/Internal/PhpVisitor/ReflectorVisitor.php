@@ -904,7 +904,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     continue;
                 }
 
-                list($callable_fqcln) = explode('::', $potential_method_id);
+                [$callable_fqcln] = explode('::', $potential_method_id);
 
                 if (!in_array(strtolower($callable_fqcln), ['self', 'parent', 'static'], true)) {
                     $this->codebase->scanner->queueClassLikeForScanning(

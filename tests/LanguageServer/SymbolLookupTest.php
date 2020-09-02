@@ -508,7 +508,7 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
 
         if ($expected_symbol !== null) {
             $this->assertNotNull($reference_location);
-            list($symbol, $argument_number) = $reference_location;
+            [$symbol, $argument_number] = $reference_location;
             $this->assertSame($expected_symbol, $symbol);
             $this->assertSame($expected_argument_number, $argument_number);
 

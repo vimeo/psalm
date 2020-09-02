@@ -595,7 +595,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
         }
 
         if ($context->collect_initializations && $context->calling_method_id) {
-            list($calling_method_class) = explode('::', $context->calling_method_id);
+            [$calling_method_class] = explode('::', $context->calling_method_id);
             $codebase->file_reference_provider->addMethodReferenceToClassMember(
                 $calling_method_class . '::__construct',
                 strtolower((string) $method_id)

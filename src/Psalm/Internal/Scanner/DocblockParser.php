@@ -64,10 +64,10 @@ class DocblockParser
 
             if (preg_match('/^[ \t]*\*?\s*@([\w\-:]+)[\t ]*(.*)$/sm', $line, $matches, PREG_OFFSET_CAPTURE)) {
                 /** @var array<int, array{string, int}> $matches */
-                list($_, $type_info, $data_info) = $matches;
+                [$_, $type_info, $data_info] = $matches;
 
-                list($type) = $type_info;
-                list($data, $data_offset) = $data_info;
+                [$type] = $type_info;
+                [$data, $data_offset] = $data_info;
 
                 if (strpos($data, '*')) {
                     $data = rtrim(preg_replace('/^[ \t]*\*\s*$/m', '', $data));

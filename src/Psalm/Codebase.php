@@ -608,7 +608,7 @@ class Codebase
      */
     public function findReferencesToProperty(string $property_id)
     {
-        list($fq_class_name, $property_name) = explode('::', $property_id);
+        [$fq_class_name, $property_name] = explode('::', $property_id);
 
         return $this->file_reference_provider->getClassPropertyLocations(
             strtolower($fq_class_name) . '::' . $property_name
@@ -1055,7 +1055,7 @@ class Codebase
                     return '<?php ' . $storage->getSignature(true);
                 }
 
-                list(, $symbol_name) = explode('::', $symbol);
+                [, $symbol_name] = explode('::', $symbol);
 
                 if (strpos($symbol, '$') !== false) {
                     $storage = $this->properties->getStorage($symbol);
@@ -1063,7 +1063,7 @@ class Codebase
                     return '<?php ' . $storage->getInfo() . ' ' . $symbol_name;
                 }
 
-                list($fq_classlike_name, $const_name) = explode('::', $symbol);
+                [$fq_classlike_name, $const_name] = explode('::', $symbol);
 
                 $class_constants = $this->classlikes->getConstantsForClass(
                     $fq_classlike_name,
@@ -1149,7 +1149,7 @@ class Codebase
                     return $storage->location;
                 }
 
-                list($fq_classlike_name, $const_name) = explode('::', $symbol);
+                [$fq_classlike_name, $const_name] = explode('::', $symbol);
 
                 $class_constants = $this->classlikes->getConstantsForClass(
                     $fq_classlike_name,
@@ -1209,7 +1209,7 @@ class Codebase
 
         $offset = $position->toOffset($file_contents);
 
-        list($reference_map, $type_map) = $this->analyzer->getMapsForFile($file_path);
+        [$reference_map, $type_map] = $this->analyzer->getMapsForFile($file_path);
 
         $reference = null;
 
@@ -1222,7 +1222,7 @@ class Codebase
 
         ksort($reference_map);
 
-        foreach ($reference_map as $start_pos => list($end_pos, $possible_reference)) {
+        foreach ($reference_map as $start_pos => [$end_pos, $possible_reference]) {
             if ($offset < $start_pos) {
                 break;
             }
@@ -1262,7 +1262,7 @@ class Codebase
 
         $offset = $position->toOffset($file_contents);
 
-        list(, , $argument_map) = $this->analyzer->getMapsForFile($file_path);
+        [, , $argument_map] = $this->analyzer->getMapsForFile($file_path);
 
         $reference = null;
         $argument_number = null;
@@ -1276,7 +1276,7 @@ class Codebase
 
         ksort($argument_map);
 
-        foreach ($argument_map as $start_pos => list($end_pos, $possible_reference, $possible_argument_number)) {
+        foreach ($argument_map as $start_pos => [$end_pos, $possible_reference, $possible_argument_number]) {
             if ($offset < $start_pos) {
                 break;
             }
@@ -1377,7 +1377,7 @@ class Codebase
 
         $offset = $position->toOffset($file_contents);
 
-        list($reference_map, $type_map) = $this->analyzer->getMapsForFile($file_path);
+        [$reference_map, $type_map] = $this->analyzer->getMapsForFile($file_path);
 
         if (!$reference_map && !$type_map) {
             return null;
@@ -1385,7 +1385,7 @@ class Codebase
 
         krsort($type_map);
 
-        foreach ($type_map as $start_pos => list($end_pos_excluding_whitespace, $possible_type)) {
+        foreach ($type_map as $start_pos => [$end_pos_excluding_whitespace, $possible_type]) {
             if ($offset < $start_pos) {
                 continue;
             }
@@ -1411,7 +1411,7 @@ class Codebase
             }
         }
 
-        foreach ($reference_map as $start_pos => list($end_pos, $possible_reference)) {
+        foreach ($reference_map as $start_pos => [$end_pos, $possible_reference]) {
             if ($offset < $start_pos || $possible_reference[0] !== '*') {
                 continue;
             }

@@ -290,8 +290,8 @@ class StaticPropertyFetchAnalyzer
             if (!$moved_class) {
                 foreach ($codebase->property_transforms as $original_pattern => $transformation) {
                     if ($declaring_property_id === $original_pattern) {
-                        list($old_declaring_fq_class_name) = explode('::$', $declaring_property_id);
-                        list($new_fq_class_name, $new_property_name) = explode('::$', $transformation);
+                        [$old_declaring_fq_class_name] = explode('::$', $declaring_property_id);
+                        [$new_fq_class_name, $new_property_name] = explode('::$', $transformation);
 
                         $file_manipulations = [];
 

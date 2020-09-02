@@ -1333,7 +1333,7 @@ class ProjectAnalyzer
             throw new \UnexpectedValueException('Expecting a version number in the format x.y');
         }
 
-        list($php_major_version, $php_minor_version) = explode('.', $version);
+        [$php_major_version, $php_minor_version] = explode('.', $version);
 
         $php_major_version = (int) $php_major_version;
         $php_minor_version = (int) $php_minor_version;
