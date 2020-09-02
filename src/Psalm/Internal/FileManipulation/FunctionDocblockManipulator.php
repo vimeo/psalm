@@ -103,7 +103,7 @@ class FunctionDocblockManipulator
         ProjectAnalyzer $project_analyzer,
         $file_path,
         FunctionLike $stmt
-    ) {
+    ): FunctionDocblockManipulator {
         if (isset(self::$manipulators[$file_path][$stmt->getLine()])) {
             return self::$manipulators[$file_path][$stmt->getLine()];
         }
@@ -315,7 +315,7 @@ class FunctionDocblockManipulator
      *
      * @return string
      */
-    private function getDocblock()
+    private function getDocblock(): string
     {
         $docblock = $this->stmt->getDocComment();
 
@@ -402,7 +402,7 @@ class FunctionDocblockManipulator
      *
      * @return array<int, FileManipulation>
      */
-    public static function getManipulationsForFile($file_path)
+    public static function getManipulationsForFile($file_path): array
     {
         if (!isset(self::$manipulators[$file_path])) {
             return [];
@@ -512,7 +512,7 @@ class FunctionDocblockManipulator
     /**
      * @return array<string, array<int, FunctionDocblockManipulator>>
      */
-    public static function getManipulators()
+    public static function getManipulators(): array
     {
         return self::$manipulators;
     }

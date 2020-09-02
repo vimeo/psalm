@@ -62,7 +62,7 @@ class CommentAnalyzer
         Aliases $aliases,
         array $template_type_map = null,
         ?array $type_aliases = null
-    ) {
+    ): array {
         $parsed_docblock = DocComment::parsePreservingLength($comment);
 
         return self::arrayToDocblocks(
@@ -264,7 +264,7 @@ class CommentAnalyzer
         Aliases $aliases,
         ?array $type_aliases,
         ?string $self_fqcln
-    ) {
+    ): array {
         $parsed_docblock = DocComment::parsePreservingLength($comment);
 
         if (!isset($parsed_docblock->tags['psalm-type'])) {
@@ -293,7 +293,7 @@ class CommentAnalyzer
         Aliases $aliases,
         ?array $type_aliases,
         ?string $self_fqcln
-    ) {
+    ): array {
         $type_alias_tokens = [];
 
         foreach ($type_alias_comment_lines as $var_line) {
@@ -365,7 +365,7 @@ class CommentAnalyzer
      *
      * @return FunctionDocblockComment
      */
-    public static function extractFunctionDocblockInfo(PhpParser\Comment\Doc $comment)
+    public static function extractFunctionDocblockInfo(PhpParser\Comment\Doc $comment): FunctionDocblockComment
     {
         $parsed_docblock = DocComment::parsePreservingLength($comment);
 
@@ -813,7 +813,7 @@ class CommentAnalyzer
         \PhpParser\Node $node,
         PhpParser\Comment\Doc $comment,
         Aliases $aliases
-    ) {
+    ): ClassLikeDocblockComment {
         $parsed_docblock = DocComment::parsePreservingLength($comment);
         $codebase = ProjectAnalyzer::getInstance()->getCodebase();
 

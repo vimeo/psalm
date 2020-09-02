@@ -17,7 +17,7 @@ class CheckTrivialExprVisitor extends PhpParser\NodeVisitorAbstract implements P
      * @param  PhpParser\Node\Expr $node
      * @return bool
      */
-    private function checkNonTrivialExpr(PhpParser\Node\Expr $node)
+    private function checkNonTrivialExpr(PhpParser\Node\Expr $node): bool
     {
         /**
          * @psalm-suppress UndefinedClass
@@ -60,7 +60,7 @@ class CheckTrivialExprVisitor extends PhpParser\NodeVisitorAbstract implements P
      * @param  PhpParser\Node $node
      * @return null|int
      */
-    public function enterNode(PhpParser\Node $node)
+    public function enterNode(PhpParser\Node $node): ?int
     {
         if ($node instanceof PhpParser\Node\Expr) {
             // Check for Non-Trivial Expression first
@@ -82,7 +82,7 @@ class CheckTrivialExprVisitor extends PhpParser\NodeVisitorAbstract implements P
     /**
      * @return array<int, PhpParser\Node\Expr>
      */
-    public function getNonTrivialExpr()
+    public function getNonTrivialExpr(): array
     {
         return $this->non_trivial_expr;
     }

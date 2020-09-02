@@ -16,7 +16,7 @@ class TNonEmptyList extends TList
     /**
      * @return string
      */
-    public function getAssertionString()
+    public function getAssertionString(): string
     {
         return 'non-empty-list';
     }

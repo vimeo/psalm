@@ -63,7 +63,7 @@ class TConditional extends \Psalm\Type\Atomic
         $this->else_type = $else_type;
     }
 
-    public function __toString()
+    public function __toString(): string
     {
         return '('
             . $this->param_name
@@ -84,7 +84,7 @@ class TConditional extends \Psalm\Type\Atomic
     /**
      * @return string
      */
-    public function getKey(bool $include_extra = true)
+    public function getKey(bool $include_extra = true): string
     {
         return $this->__toString();
     }
@@ -92,12 +92,12 @@ class TConditional extends \Psalm\Type\Atomic
     /**
      * @return string
      */
-    public function getAssertionString()
+    public function getAssertionString(): string
     {
         return '';
     }
 
-    public function getId(bool $nested = false)
+    public function getId(bool $nested = false): string
     {
         return '('
             . $this->param_name . ':' . $this->defining_class
@@ -139,7 +139,7 @@ class TConditional extends \Psalm\Type\Atomic
         array $aliased_classes,
         ?string $this_class,
         bool $use_phpdoc_format
-    ) {
+    ): string {
         return '';
     }
 
@@ -151,7 +151,7 @@ class TConditional extends \Psalm\Type\Atomic
     /**
      * @return bool
      */
-    public function canBeFullyExpressedInPhp()
+    public function canBeFullyExpressedInPhp(): bool
     {
         return false;
     }

@@ -101,7 +101,7 @@ class FileScanner implements FileSource
     /**
      * @return string
      */
-    public function getFilePath()
+    public function getFilePath(): string
     {
         return $this->file_path;
     }
@@ -109,7 +109,7 @@ class FileScanner implements FileSource
     /**
      * @return string
      */
-    public function getFileName()
+    public function getFileName(): string
     {
         return $this->file_name;
     }
@@ -117,7 +117,7 @@ class FileScanner implements FileSource
     /**
      * @return string
      */
-    public function getRootFilePath()
+    public function getRootFilePath(): string
     {
         return $this->file_path;
     }
@@ -125,7 +125,7 @@ class FileScanner implements FileSource
     /**
      * @return string
      */
-    public function getRootFileName()
+    public function getRootFileName(): string
     {
         return $this->file_name;
     }
@@ -133,7 +133,7 @@ class FileScanner implements FileSource
     /**
      * @return \Psalm\Aliases
      */
-    public function getAliases()
+    public function getAliases(): \Psalm\Aliases
     {
         return new \Psalm\Aliases();
     }

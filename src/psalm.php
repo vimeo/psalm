@@ -307,7 +307,7 @@ if (isset($options['i'])) {
          *
          * @return bool
          */
-        function ($arg) {
+        function ($arg): bool {
             return $arg !== '--ansi'
                 && $arg !== '--no-ansi'
                 && $arg !== '-i'
@@ -530,7 +530,9 @@ if (isset($options['shepherd'])) {
 if (isset($options['clear-cache'])) {
     $cache_directory = $config->getCacheDirectory();
 
-    Config::removeCacheDirectory($cache_directory);
+    if ($cache_directory !== null) {
+        Config::removeCacheDirectory($cache_directory);
+    }
     echo 'Cache directory deleted' . PHP_EOL;
     exit;
 }

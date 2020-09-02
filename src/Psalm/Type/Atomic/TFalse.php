@@ -3,7 +3,7 @@ namespace Psalm\Type\Atomic;
 
 class TFalse extends TBool
 {
-    public function __toString()
+    public function __toString(): string
     {
         return 'false';
     }
@@ -11,12 +11,12 @@ class TFalse extends TBool
     /**
      * @return string
      */
-    public function getKey(bool $include_extra = true)
+    public function getKey(bool $include_extra = true): string
     {
         return 'false';
     }
 
-    public function canBeFullyExpressedInPhp()
+    public function canBeFullyExpressedInPhp(): bool
     {
         return false;
     }

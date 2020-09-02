@@ -24,7 +24,7 @@ class GetTypeT extends TString
     /**
      * @return bool
      */
-    public function canBeFullyExpressedInPhp()
+    public function canBeFullyExpressedInPhp(): bool
     {
         return false;
     }

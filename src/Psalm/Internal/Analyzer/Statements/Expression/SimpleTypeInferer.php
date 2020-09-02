@@ -29,7 +29,7 @@ class SimpleTypeInferer
         \Psalm\FileSource $file_source = null,
         array $existing_class_constants = null,
         $fq_classlike_name = null
-    ) {
+    ): ?Type\Union {
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp) {
             if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
                 $left = self::infer(

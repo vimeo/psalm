@@ -38,7 +38,7 @@ class TryAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\TryCatch $stmt,
         Context $context
-    ) {
+    ): ?bool {
         $catch_actions = [];
         $all_catches_leave = true;
 

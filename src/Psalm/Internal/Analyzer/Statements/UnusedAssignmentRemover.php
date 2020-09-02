@@ -244,7 +244,7 @@ class UnusedAssignmentRemover
      *          1: PhpParser\Node\Expr\Assign|PhpParser\Node\Expr\AssignOp|PhpParser\Node\Expr\AssignRef|null
      *          }
      */
-    private function findAssignStmt(array $stmts, string $var_id, CodeLocation $original_location)
+    private function findAssignStmt(array $stmts, string $var_id, CodeLocation $original_location): array
     {
         $assign_stmt = null;
         $assign_exp = null;
@@ -344,7 +344,7 @@ class UnusedAssignmentRemover
         string $var_id,
         int $var_start_loc,
         int $search_level = 1
-    ) {
+    ): array {
         if ($current_node instanceof PhpParser\Node\Expr\Assign
             || $current_node instanceof PhpPArser\Node\Expr\AssignOp
             || $current_node instanceof PhpParser\Node\Expr\AssignRef

@@ -86,7 +86,7 @@ class ClassDocblockManipulator
      *
      * @return string
      */
-    private function getDocblock()
+    private function getDocblock(): string
     {
         $docblock = $this->stmt->getDocComment();
 
@@ -115,7 +115,7 @@ class ClassDocblockManipulator
      *
      * @return array<int, FileManipulation>
      */
-    public static function getManipulationsForFile($file_path)
+    public static function getManipulationsForFile($file_path): array
     {
         if (!isset(self::$manipulators[$file_path])) {
             return [];

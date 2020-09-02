@@ -457,7 +457,7 @@ class Context
      *
      * @return array<string,Type\Union>
      */
-    public function getRedefinedVars(array $new_vars_in_scope, $include_new_vars = false)
+    public function getRedefinedVars(array $new_vars_in_scope, $include_new_vars = false): array
     {
         $redefined_vars = [];
 
@@ -489,7 +489,7 @@ class Context
      *
      * @return array<int, string>
      */
-    public static function getNewOrUpdatedVarIds(Context $original_context, Context $new_context)
+    public static function getNewOrUpdatedVarIds(Context $original_context, Context $new_context): array
     {
         $redefined_var_ids = [];
 
@@ -532,7 +532,7 @@ class Context
      *
      * @psalm-pure
      */
-    public static function removeReconciledClauses(array $clauses, array $changed_var_ids)
+    public static function removeReconciledClauses(array $clauses, array $changed_var_ids): array
     {
         $included_clauses = [];
         $rejected_clauses = [];
@@ -756,7 +756,7 @@ class Context
      *
      * @return  bool
      */
-    public function isPhantomClass($class_name)
+    public function isPhantomClass($class_name): bool
     {
         return isset($this->phantom_classes[strtolower($class_name)]);
     }
@@ -766,7 +766,7 @@ class Context
      *
      * @return bool
      */
-    public function hasVariable($var_name, StatementsAnalyzer $statements_analyzer = null)
+    public function hasVariable($var_name, StatementsAnalyzer $statements_analyzer = null): bool
     {
         if (!$var_name) {
             return false;
@@ -847,7 +847,7 @@ class Context
     /**
      * @return bool
      */
-    public function isSuppressingExceptions(StatementsAnalyzer $statements_analyzer)
+    public function isSuppressingExceptions(StatementsAnalyzer $statements_analyzer): bool
     {
         if (!$this->collect_exceptions) {
             return true;

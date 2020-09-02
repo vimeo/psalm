@@ -18,7 +18,7 @@ abstract class Scalar extends \Psalm\Type\Atomic
         $this_class,
         $php_major_version,
         $php_minor_version
-    ) {
+    ): ?string {
         return $php_major_version >= 7 ? $this->getKey() : null;
     }
 

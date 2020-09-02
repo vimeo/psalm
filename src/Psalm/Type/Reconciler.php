@@ -82,7 +82,7 @@ class Reconciler
         array $template_type_map = [],
         bool $inside_loop = false,
         CodeLocation $code_location = null
-    ) {
+    ): array {
         if (!$new_types) {
             return $existing_types;
         }
@@ -381,7 +381,7 @@ class Reconciler
      *
      * @return array<int, string>
      */
-    public static function breakUpPathIntoParts($path)
+    public static function breakUpPathIntoParts($path): array
     {
         if (isset(self::$broken_paths[$path])) {
             return self::$broken_paths[$path];
@@ -504,7 +504,7 @@ class Reconciler
         bool $has_empty,
         bool $inside_loop,
         bool &$has_object_array_access
-    ) {
+    ): ?Union {
         $key_parts = self::breakUpPathIntoParts($key);
 
         if (count($key_parts) === 1) {

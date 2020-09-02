@@ -3,7 +3,7 @@ namespace Psalm\Type\Atomic;
 
 class TInt extends Scalar
 {
-    public function __toString()
+    public function __toString(): string
     {
         return 'int';
     }
@@ -11,7 +11,7 @@ class TInt extends Scalar
     /**
      * @return string
      */
-    public function getKey(bool $include_extra = true)
+    public function getKey(bool $include_extra = true): string
     {
         return 'int';
     }

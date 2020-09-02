@@ -34,7 +34,7 @@ class TClassString extends TString
     /**
      * @return string
      */
-    public function getKey(bool $include_extra = true)
+    public function getKey(bool $include_extra = true): string
     {
         return 'class-string' . ($this->as === 'object' ? '' : '<' . $this->as_type . '>');
     }
@@ -42,17 +42,17 @@ class TClassString extends TString
     /**
      * @return string
      */
-    public function __toString()
+    public function __toString(): string
     {
         return $this->getKey();
     }
 
-    public function getId(bool $nested = false)
+    public function getId(bool $nested = false): string
     {
         return $this->getKey();
     }
 
-    public function getAssertionString()
+    public function getAssertionString(): string
     {
         return 'class-string';
     }
@@ -72,7 +72,7 @@ class TClassString extends TString
         $this_class,
         $php_major_version,
         $php_minor_version
-    ) {
+    ): ?string {
         return 'string';
     }
 
@@ -89,7 +89,7 @@ class TClassString extends TString
         array $aliased_classes,
         ?string $this_class,
         bool $use_phpdoc_format
-    ) {
+    ): string {
         if ($this->as === 'object') {
             return 'class-string';
         }
@@ -116,7 +116,7 @@ class TClassString extends TString
     /**
      * @return bool
      */
-    public function canBeFullyExpressedInPhp()
+    public function canBeFullyExpressedInPhp(): bool
     {
         return false;
     }

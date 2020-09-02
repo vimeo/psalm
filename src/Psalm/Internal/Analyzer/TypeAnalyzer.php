@@ -82,7 +82,7 @@ class TypeAnalyzer
      *
      * @return array<string, Type\Union>
      */
-    public static function combineKeyedTypes(array $new_types, array $existing_types)
+    public static function combineKeyedTypes(array $new_types, array $existing_types): array
     {
         $keys = array_merge(array_keys($new_types), array_keys($existing_types));
         $keys = array_unique($keys);

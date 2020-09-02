@@ -349,7 +349,7 @@ class FileFilter
      *
      * @psalm-pure
      */
-    protected static function slashify($str)
+    protected static function slashify($str): string
     {
         return preg_replace('/\/?$/', DIRECTORY_SEPARATOR, $str);
     }
@@ -360,7 +360,7 @@ class FileFilter
      *
      * @return bool
      */
-    public function allows($file_name, $case_sensitive = false)
+    public function allows($file_name, $case_sensitive = false): bool
     {
         if ($this->inclusive) {
             foreach ($this->directories as $include_dir) {
@@ -419,7 +419,7 @@ class FileFilter
      *
      * @return bool
      */
-    public function allowsClass($fq_classlike_name)
+    public function allowsClass($fq_classlike_name): bool
     {
         if ($this->fq_classlike_patterns) {
             foreach ($this->fq_classlike_patterns as $pattern) {
@@ -437,7 +437,7 @@ class FileFilter
      *
      * @return bool
      */
-    public function allowsMethod($method_id)
+    public function allowsMethod($method_id): bool
     {
         if (!$this->method_ids) {
             return false;
@@ -471,7 +471,7 @@ class FileFilter
      *
      * @return bool
      */
-    public function allowsProperty($property_id)
+    public function allowsProperty($property_id): bool
     {
         return in_array(strtolower($property_id), $this->property_ids, true);
     }
@@ -481,7 +481,7 @@ class FileFilter
      *
      * @return bool
      */
-    public function allowsVariable($var_name)
+    public function allowsVariable($var_name): bool
     {
         return in_array(strtolower($var_name), $this->var_names, true);
     }
@@ -489,7 +489,7 @@ class FileFilter
     /**
      * @return array<string>
      */
-    public function getDirectories()
+    public function getDirectories(): array
     {
         return $this->directories;
     }
@@ -497,7 +497,7 @@ class FileFilter
     /**
      * @return array<string>
      */
-    public function getFiles()
+    public function getFiles(): array
     {
         return $this->files;
     }

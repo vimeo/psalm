@@ -24,7 +24,7 @@ class MethodCallProhibitionAnalyzer
         ?string $namespace,
         CodeLocation $code_location,
         array $suppressed_issues
-    ) {
+    ): ?bool {
         $codebase_methods = $codebase->methods;
 
         $method_id = $codebase_methods->getDeclaringMethodId($method_id);

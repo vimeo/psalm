@@ -30,7 +30,7 @@ class Algebra
      *
      * @psalm-pure
      */
-    public static function negateTypes(array $all_types)
+    public static function negateTypes(array $all_types): array
     {
         return array_filter(
             array_map(
@@ -39,7 +39,7 @@ class Algebra
                  *
                  * @return list<non-empty-list<string>>
                  */
-                function (array $anded_types) {
+                function (array $anded_types): array {
                     if (count($anded_types) > 1) {
                         $new_anded_types = [];
 
@@ -74,7 +74,7 @@ class Algebra
      *
      * @psalm-pure
      */
-    public static function negateType($type)
+    public static function negateType($type): string
     {
         if ($type === 'mixed') {
             return $type;
@@ -533,7 +533,7 @@ class Algebra
         ?int $creating_conditional_id = null,
         array &$cond_referenced_var_ids = [],
         array &$active_truths = []
-    ) {
+    ): array {
         $truths = [];
         $active_truths = [];
 
@@ -573,7 +573,7 @@ class Algebra
                          *
                          * @return bool
                          */
-                        function ($possible_type) {
+                        function ($possible_type): bool {
                             return $possible_type[0] !== '!';
                         }
                     );
@@ -606,7 +606,7 @@ class Algebra
      *
      * @psalm-pure
      */
-    public static function groupImpossibilities(array $clauses)
+    public static function groupImpossibilities(array $clauses): array
     {
         $complexity = 1;
 
@@ -695,8 +695,11 @@ class Algebra
      *
      * @psalm-pure
      */
-    public static function combineOredClauses(array $left_clauses, array $right_clauses, int $conditional_object_id)
-    {
+    public static function combineOredClauses(
+        array $left_clauses,
+        array $right_clauses,
+        int $conditional_object_id
+    ): array {
         $clauses = [];
 
         $all_wedges = true;

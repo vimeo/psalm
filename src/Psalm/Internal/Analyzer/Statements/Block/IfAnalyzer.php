@@ -75,7 +75,7 @@ class IfAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\If_ $stmt,
         Context $context
-    ) {
+    ): ?bool {
         $codebase = $statements_analyzer->getCodebase();
 
         $if_scope = new IfScope();
@@ -213,7 +213,7 @@ class IfAnalyzer
 
         if (array_filter(
             $context->clauses,
-            function ($clause) {
+            function ($clause): bool {
                 return !!$clause->possibilities;
             }
         )) {
@@ -223,7 +223,7 @@ class IfAnalyzer
                  * @param array<string> $carry
                  * @return array<string>
                  */
-                function ($carry, Clause $clause) {
+                function ($carry, Clause $clause): array {
                     return array_merge($carry, array_keys($clause->possibilities));
                 },
                 []
@@ -690,7 +690,7 @@ class IfAnalyzer
              *
              * @return true
              */
-            function (Type\Union $_) {
+            function (Type\Union $_): bool {
                 return true;
             },
             array_diff_key(
@@ -1173,7 +1173,7 @@ class IfAnalyzer
         try {
             if (array_filter(
                 $entry_clauses,
-                function ($clause) {
+                function ($clause): bool {
                     return !!$clause->possibilities;
                 }
             )) {
@@ -1183,7 +1183,7 @@ class IfAnalyzer
                      * @param array<string> $carry
                      * @return array<string>
                      */
-                    function ($carry, Clause $clause) {
+                    function ($carry, Clause $clause): array {
                         return array_merge($carry, array_keys($clause->possibilities));
                     },
                     []

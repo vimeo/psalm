@@ -25,7 +25,7 @@ class GetClassMethodsReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionRe
         array $call_args,
         Context $context,
         CodeLocation $code_location
-    ) {
+    ): ?Type\Union {
         if (!$statements_source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
             return Type::getMixed();
         }

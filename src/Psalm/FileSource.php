@@ -6,12 +6,12 @@ interface FileSource
     /**
      * @return string
      */
-    public function getFileName();
+    public function getFileName(): string;
 
     /**
      * @return string
      */
-    public function getFilePath();
+    public function getFilePath(): string;
 
     /**
      * @return string
@@ -26,5 +26,5 @@ interface FileSource
     /**
      * @return Aliases
      */
-    public function getAliases();
+    public function getAliases(): Aliases;
 }

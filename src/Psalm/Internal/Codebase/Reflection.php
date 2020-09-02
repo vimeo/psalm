@@ -323,7 +323,7 @@ class Reflection
      *
      * @return FunctionLikeParameter
      */
-    private function getReflectionParamData(\ReflectionParameter $param)
+    private function getReflectionParamData(\ReflectionParameter $param): FunctionLikeParameter
     {
         $param_type = self::getPsalmTypeFromReflectionType($param->getType());
         $param_name = (string)$param->getName();
@@ -506,7 +506,7 @@ class Reflection
      *
      * @return bool
      */
-    public function hasFunction($function_id)
+    public function hasFunction($function_id): bool
     {
         return isset(self::$builtin_functions[$function_id]);
     }
@@ -516,7 +516,7 @@ class Reflection
      *
      * @return FunctionStorage
      */
-    public function getFunctionStorage($function_id)
+    public function getFunctionStorage($function_id): FunctionStorage
     {
         if (isset(self::$builtin_functions[$function_id])) {
             return self::$builtin_functions[$function_id];

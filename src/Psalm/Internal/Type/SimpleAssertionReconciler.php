@@ -2166,7 +2166,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                 || ($array_atomic_type instanceof Type\Atomic\TKeyedArray
                     && array_filter(
                         $array_atomic_type->properties,
-                        function (Type\Union $t) {
+                        function (Type\Union $t): bool {
                             return !$t->possibly_undefined;
                         }
                     ))

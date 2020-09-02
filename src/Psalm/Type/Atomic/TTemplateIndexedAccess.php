@@ -31,7 +31,7 @@ class TTemplateIndexedAccess extends \Psalm\Type\Atomic
     /**
      * @return string
      */
-    public function getKey(bool $include_extra = true)
+    public function getKey(bool $include_extra = true): string
     {
         return $this->array_param_name . '[' . $this->offset_param_name . ']';
     }
@@ -39,7 +39,7 @@ class TTemplateIndexedAccess extends \Psalm\Type\Atomic
     /**
      * @return string
      */
-    public function __toString()
+    public function __toString(): string
     {
         return $this->getKey();
     }
@@ -47,7 +47,7 @@ class TTemplateIndexedAccess extends \Psalm\Type\Atomic
     /**
      * @return string
      */
-    public function getId(bool $nested = false)
+    public function getId(bool $nested = false): string
     {
         return $this->getKey();
     }
@@ -67,11 +67,11 @@ class TTemplateIndexedAccess extends \Psalm\Type\Atomic
         $this_class,
         $php_major_version,
         $php_minor_version
-    ) {
+    ): ?string {
         return null;
     }
 
-    public function canBeFullyExpressedInPhp()
+    public function canBeFullyExpressedInPhp(): bool
     {
         return false;
     }
@@ -89,7 +89,7 @@ class TTemplateIndexedAccess extends \Psalm\Type\Atomic
         array $aliased_classes,
         ?string $this_class,
         bool $use_phpdoc_format
-    ) {
+    ): string {
         return $this->getKey();
     }
 }

@@ -436,7 +436,7 @@ class CallAnalyzer
     public static function getFunctionIdsFromCallableArg(
         \Psalm\FileSource $file_source,
         $callable_arg
-    ) {
+    ): array {
         if ($callable_arg instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
             if ($callable_arg->left instanceof PhpParser\Node\Expr\ClassConstFetch
                 && $callable_arg->left->class instanceof PhpParser\Node\Name
@@ -547,7 +547,7 @@ class CallAnalyzer
         &$function_id,
         CodeLocation $code_location,
         $can_be_in_root_scope
-    ) {
+    ): bool {
         $cased_function_id = $function_id;
         $function_id = strtolower($function_id);
 

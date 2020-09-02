@@ -662,7 +662,7 @@ class LoopAnalyzer
         Context $loop_context,
         Context $outer_context,
         bool $is_do
-    ) {
+    ): array {
         $pre_referenced_var_ids = $loop_context->referenced_var_ids;
         $loop_context->referenced_var_ids = [];
 
@@ -757,7 +757,7 @@ class LoopAnalyzer
      *
      * @return int
      */
-    private static function getAssignmentMapDepth($first_var_id, array $assignment_map)
+    private static function getAssignmentMapDepth($first_var_id, array $assignment_map): int
     {
         $max_depth = 0;
 

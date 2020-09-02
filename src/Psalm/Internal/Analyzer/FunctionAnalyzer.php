@@ -54,7 +54,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
         $function_id,
         array $call_args,
         Context $context
-    ) {
+    ): Type\Union {
         $call_map_key = strtolower($function_id);
 
         $call_map = InternalCallMapHandler::getCallMap();
@@ -282,7 +282,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
     /**
      * @return non-empty-lowercase-string
      */
-    public function getFunctionId()
+    public function getFunctionId(): string
     {
         $namespace = $this->source->getNamespace();
 

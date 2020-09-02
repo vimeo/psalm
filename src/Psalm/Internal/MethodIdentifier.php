@@ -56,7 +56,7 @@ class MethodIdentifier
     }
 
     /** @return non-empty-string */
-    public function __toString()
+    public function __toString(): string
     {
         return $this->fq_class_name . '::' . $this->method_name;
     }

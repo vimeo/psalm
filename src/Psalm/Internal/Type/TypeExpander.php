@@ -34,7 +34,7 @@ class TypeExpander
         bool $evaluate_class_constants = true,
         bool $evaluate_conditional_types = false,
         bool $final = false
-    ) {
+    ): Type\Union {
         $return_type = clone $return_type;
 
         $new_return_type_parts = [];

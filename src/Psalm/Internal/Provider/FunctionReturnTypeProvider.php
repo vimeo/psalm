@@ -105,7 +105,7 @@ class FunctionReturnTypeProvider
         array $call_args,
         Context $context,
         CodeLocation $code_location
-    ) {
+    ): ?Type\Union {
         foreach (self::$handlers[strtolower($function_id)] as $function_handler) {
             $return_type = $function_handler(
                 $statements_source,

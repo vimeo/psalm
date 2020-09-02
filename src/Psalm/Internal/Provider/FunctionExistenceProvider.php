@@ -65,7 +65,7 @@ class FunctionExistenceProvider
     public function doesFunctionExist(
         StatementsSource $statements_source,
         string $function_id
-    ) {
+    ): ?bool {
         foreach (self::$handlers[strtolower($function_id)] as $function_handler) {
             $function_exists = $function_handler(
                 $statements_source,

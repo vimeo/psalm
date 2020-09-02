@@ -33,7 +33,7 @@ class ErrorBaseline
      *
      * @psalm-pure
      */
-    public static function countTotalIssues(array $existingIssues)
+    public static function countTotalIssues(array $existingIssues): int
     {
         $totalIssues = 0;
 
@@ -145,7 +145,7 @@ class ErrorBaseline
         string $baselineFile,
         array $issues,
         bool $include_php_versions
-    ) {
+    ): array {
         $existingIssues = self::read($fileProvider, $baselineFile);
         $newIssues = self::countIssueTypesByFile($issues);
 

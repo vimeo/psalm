@@ -91,7 +91,7 @@ class FileStorageCacheProvider
      *
      * @return FileStorage|null
      */
-    public function getLatestFromCache($file_path, $file_contents)
+    public function getLatestFromCache($file_path, $file_contents): ?FileStorage
     {
         $file_path = strtolower($file_path);
         $cached_value = $this->loadFromCache($file_path);
@@ -134,7 +134,7 @@ class FileStorageCacheProvider
      *
      * @return string
      */
-    private function getCacheHash($file_path, $file_contents)
+    private function getCacheHash($file_path, $file_contents): string
     {
         return sha1(strtolower($file_path) . ' ' . $file_contents . $this->modified_timestamps);
     }
@@ -145,7 +145,7 @@ class FileStorageCacheProvider
      *
      * @return FileStorage|null
      */
-    private function loadFromCache($file_path)
+    private function loadFromCache($file_path): ?FileStorage
     {
         $cache_location = $this->getCacheLocationForPath($file_path);
 
@@ -178,7 +178,7 @@ class FileStorageCacheProvider
      *
      * @return string
      */
-    private function getCacheLocationForPath($file_path, $create_directory = false)
+    private function getCacheLocationForPath($file_path, $create_directory = false): string
     {
         $root_cache_directory = $this->config->getCacheDirectory();
 

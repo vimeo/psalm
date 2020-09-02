@@ -266,7 +266,7 @@ class UnionTypeComparator
     public static function isContainedByInPhp(
         ?Type\Union $input_type,
         Type\Union $container_type
-    ) {
+    ): bool {
         if (!$input_type) {
             return false;
         }
@@ -359,7 +359,7 @@ class UnionTypeComparator
         $ignore_null = false,
         $ignore_false = false,
         array &$matching_input_keys = []
-    ) {
+    ): bool {
         if ($container_type->hasMixed()) {
             return true;
         }
@@ -408,7 +408,7 @@ class UnionTypeComparator
         Codebase $codebase,
         Type\Union $type1,
         Type\Union $type2
-    ) {
+    ): bool {
         if ($type1->hasMixed() || $type2->hasMixed()) {
             return true;
         }

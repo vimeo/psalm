@@ -3,7 +3,7 @@ namespace Psalm\Type\Atomic;
 
 class TBool extends Scalar
 {
-    public function __toString()
+    public function __toString(): string
     {
         return 'bool';
     }
@@ -11,7 +11,7 @@ class TBool extends Scalar
     /**
      * @return string
      */
-    public function getKey(bool $include_extra = true)
+    public function getKey(bool $include_extra = true): string
     {
         return 'bool';
     }
@@ -31,7 +31,7 @@ class TBool extends Scalar
         $this_class,
         $php_major_version,
         $php_minor_version
-    ) {
+    ): ?string {
         return $php_major_version >= 7 ? 'bool' : null;
     }
 }

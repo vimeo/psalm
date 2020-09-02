@@ -8,7 +8,7 @@ class TCallableKeyedArray extends TKeyedArray
 {
     const KEY = 'callable-array';
 
-    public function getKey(bool $include_extra = true)
+    public function getKey(bool $include_extra = true): string
     {
         return 'array';
     }

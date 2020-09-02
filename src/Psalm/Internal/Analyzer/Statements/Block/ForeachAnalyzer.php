@@ -55,7 +55,7 @@ class ForeachAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Foreach_ $stmt,
         Context $context
-    ) {
+    ): ?bool {
         $var_comments = [];
 
         $doc_comment = $stmt->getDocComment();
@@ -1140,7 +1140,7 @@ class ForeachAnalyzer
         array $template_type_extends,
         array $class_template_types = null,
         array $calling_type_params = null
-    ) {
+    ): ?Type\Union {
         if ($calling_class === $template_class) {
             if (isset($class_template_types[$template_name]) && $calling_type_params) {
                 $offset = array_search($template_name, array_keys($class_template_types));

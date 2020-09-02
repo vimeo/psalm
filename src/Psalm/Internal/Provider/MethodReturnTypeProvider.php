@@ -94,7 +94,7 @@ class MethodReturnTypeProvider
         array $template_type_parameters = null,
         string $called_fq_classlike_name = null,
         string $called_method_name = null
-    ) {
+    ): ?Type\Union {
         foreach (self::$handlers[strtolower($fq_classlike_name)] as $class_handler) {
             $result = $class_handler(
                 $statements_source,

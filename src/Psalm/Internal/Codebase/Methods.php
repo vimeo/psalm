@@ -612,7 +612,7 @@ class Methods
     /**
      * @return bool
      */
-    public function isVariadic(MethodIdentifier $method_id)
+    public function isVariadic(MethodIdentifier $method_id): bool
     {
         $declaring_method_id = $this->getDeclaringMethodId($method_id);
 
@@ -633,7 +633,7 @@ class Methods
         ?string &$self_class,
         \Psalm\Internal\Analyzer\SourceAnalyzer $source_analyzer = null,
         array $args = null
-    ) {
+    ): ?Type\Union {
         $original_fq_class_name = $method_id->fq_class_name;
         $original_method_name = $method_id->method_name;
 
@@ -811,7 +811,7 @@ class Methods
     /**
      * @return bool
      */
-    public function getMethodReturnsByRef(MethodIdentifier $method_id)
+    public function getMethodReturnsByRef(MethodIdentifier $method_id): bool
     {
         $method_id = $this->getDeclaringMethodId($method_id);
 
@@ -838,7 +838,7 @@ class Methods
     public function getMethodReturnTypeLocation(
         MethodIdentifier $method_id,
         CodeLocation &$defined_location = null
-    ) {
+    ): ?CodeLocation {
         $method_id = $this->getDeclaringMethodId($method_id);
 
         if ($method_id === null) {
@@ -949,7 +949,7 @@ class Methods
     /**
      * @return array<MethodIdentifier>
      */
-    public function getOverriddenMethodIds(MethodIdentifier $method_id)
+    public function getOverriddenMethodIds(MethodIdentifier $method_id): array
     {
         $class_storage = $this->classlike_storage_provider->get($method_id->fq_class_name);
         $method_name = $method_id->method_name;
@@ -992,7 +992,7 @@ class Methods
     /**
      * @return ?MethodStorage
      */
-    public function getUserMethodStorage(MethodIdentifier $method_id)
+    public function getUserMethodStorage(MethodIdentifier $method_id): ?MethodStorage
     {
         $declaring_method_id = $this->getDeclaringMethodId($method_id);
 
@@ -1012,7 +1012,7 @@ class Methods
     /**
      * @return ClassLikeStorage
      */
-    public function getClassLikeStorageForMethod(MethodIdentifier $method_id)
+    public function getClassLikeStorageForMethod(MethodIdentifier $method_id): ClassLikeStorage
     {
         $fq_class_name = $method_id->fq_class_name;
         $method_name = $method_id->method_name;
@@ -1046,7 +1046,7 @@ class Methods
     /**
      * @return MethodStorage
      */
-    public function getStorage(MethodIdentifier $method_id)
+    public function getStorage(MethodIdentifier $method_id): MethodStorage
     {
         try {
             $class_storage = $this->classlike_storage_provider->get($method_id->fq_class_name);
@@ -1068,7 +1068,7 @@ class Methods
     /**
      * @return bool
      */
-    public function hasStorage(MethodIdentifier $method_id)
+    public function hasStorage(MethodIdentifier $method_id): bool
     {
         try {
             $class_storage = $this->classlike_storage_provider->get($method_id->fq_class_name);

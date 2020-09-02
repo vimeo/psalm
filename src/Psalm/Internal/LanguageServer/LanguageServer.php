@@ -112,7 +112,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
                 /**
                  * @return \Generator<int, \Amp\Promise, mixed, void>
                  */
-                function (Message $msg) {
+                function (Message $msg): \Generator {
                     if (!$msg->body) {
                         return;
                     }
@@ -524,7 +524,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
      *
      * @return string
      */
-    public static function uriToPath(string $uri)
+    public static function uriToPath(string $uri): string
     {
         $fragments = parse_url($uri);
         if ($fragments === false

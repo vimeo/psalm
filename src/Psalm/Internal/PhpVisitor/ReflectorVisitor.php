@@ -608,7 +608,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             }
 
             $converted_aliases = \array_map(
-                function (TypeAlias\InlineTypeAlias $t) {
+                function (TypeAlias\InlineTypeAlias $t): ?TypeAlias\ClassTypeAlias {
                     try {
                         $union = TypeParser::parseTokens(
                             $t->replacement_tokens,
@@ -2620,7 +2620,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $storage->has_docblock_param_types = (bool) array_filter(
                 $storage->params,
                 /** @return bool */
-                function (FunctionLikeParameter $p) {
+                function (FunctionLikeParameter $p): bool {
                     return $p->type !== null && $p->has_docblock_type;
                 }
             );
@@ -4037,7 +4037,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
     /**
      * @return string
      */
-    public function getFilePath()
+    public function getFilePath(): string
     {
         return $this->file_path;
     }
@@ -4045,7 +4045,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
     /**
      * @return string
      */
-    public function getFileName()
+    public function getFileName(): string
     {
         return $this->file_scanner->getFileName();
     }
@@ -4053,7 +4053,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
     /**
      * @return string
      */
-    public function getRootFilePath()
+    public function getRootFilePath(): string
     {
         return $this->file_scanner->getRootFilePath();
     }
@@ -4061,7 +4061,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
     /**
      * @return string
      */
-    public function getRootFileName()
+    public function getRootFileName(): string
     {
         return $this->file_scanner->getRootFileName();
     }
@@ -4069,7 +4069,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
     /**
      * @return Aliases
      */
-    public function getAliases()
+    public function getAliases(): Aliases
     {
         return $this->aliases;
     }

@@ -17,7 +17,7 @@ class IdGenerator
      *
      * @return int
      */
-    public function generate()
+    public function generate(): int
     {
         return $this->counter++;
     }

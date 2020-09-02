@@ -77,7 +77,7 @@ class ArrayAssignmentAnalyzer
         ?PhpParser\Node\Expr $assign_value,
         Type\Union $assignment_type,
         Context $context
-    ) {
+    ): ?bool {
         $root_array_expr = $stmt;
 
         $child_stmts = [];

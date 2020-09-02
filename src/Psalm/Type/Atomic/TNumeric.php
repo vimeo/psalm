@@ -3,7 +3,7 @@ namespace Psalm\Type\Atomic;
 
 class TNumeric extends Scalar
 {
-    public function __toString()
+    public function __toString(): string
     {
         return 'numeric';
     }
@@ -11,7 +11,7 @@ class TNumeric extends Scalar
     /**
      * @return string
      */
-    public function getKey(bool $include_extra = true)
+    public function getKey(bool $include_extra = true): string
     {
         return 'numeric';
     }
@@ -31,11 +31,11 @@ class TNumeric extends Scalar
         $this_class,
         $php_major_version,
         $php_minor_version
-    ) {
+    ): ?string {
         return null;
     }
 
-    public function canBeFullyExpressedInPhp()
+    public function canBeFullyExpressedInPhp(): bool
     {
         return false;
     }

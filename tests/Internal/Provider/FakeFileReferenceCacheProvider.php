@@ -63,7 +63,7 @@ class FakeFileReferenceCacheProvider extends \Psalm\Internal\Provider\FileRefere
     /**
      * @return ?array
      */
-    public function getCachedFileReferences()
+    public function getCachedFileReferences(): ?array
     {
         return $this->cached_file_references;
     }
@@ -71,7 +71,7 @@ class FakeFileReferenceCacheProvider extends \Psalm\Internal\Provider\FileRefere
     /**
      * @return ?array
      */
-    public function getCachedClassLikeFiles()
+    public function getCachedClassLikeFiles(): ?array
     {
         return $this->cached_classlike_files;
     }
@@ -79,7 +79,7 @@ class FakeFileReferenceCacheProvider extends \Psalm\Internal\Provider\FileRefere
     /**
      * @return ?array
      */
-    public function getCachedMethodClassReferences()
+    public function getCachedMethodClassReferences(): ?array
     {
         return $this->cached_method_class_references;
     }
@@ -87,7 +87,7 @@ class FakeFileReferenceCacheProvider extends \Psalm\Internal\Provider\FileRefere
     /**
      * @return ?array
      */
-    public function getCachedNonMethodClassReferences()
+    public function getCachedNonMethodClassReferences(): ?array
     {
         return $this->cached_method_class_references;
     }
@@ -95,7 +95,7 @@ class FakeFileReferenceCacheProvider extends \Psalm\Internal\Provider\FileRefere
     /**
      * @return ?array
      */
-    public function getCachedFileMemberReferences()
+    public function getCachedFileMemberReferences(): ?array
     {
         return $this->cached_file_member_references;
     }
@@ -103,7 +103,7 @@ class FakeFileReferenceCacheProvider extends \Psalm\Internal\Provider\FileRefere
     /**
      * @return ?array
      */
-    public function getCachedMethodMemberReferences()
+    public function getCachedMethodMemberReferences(): ?array
     {
         return $this->cached_method_member_references;
     }
@@ -111,7 +111,7 @@ class FakeFileReferenceCacheProvider extends \Psalm\Internal\Provider\FileRefere
     /**
      * @return ?array
      */
-    public function getCachedFileMissingMemberReferences()
+    public function getCachedFileMissingMemberReferences(): ?array
     {
         return $this->cached_file_missing_member_references;
     }
@@ -119,7 +119,7 @@ class FakeFileReferenceCacheProvider extends \Psalm\Internal\Provider\FileRefere
     /**
      * @return ?array
      */
-    public function getCachedMixedMemberNameReferences()
+    public function getCachedMixedMemberNameReferences(): ?array
     {
         return $this->cached_unknown_member_references;
     }
@@ -127,7 +127,7 @@ class FakeFileReferenceCacheProvider extends \Psalm\Internal\Provider\FileRefere
     /**
      * @return ?array
      */
-    public function getCachedMethodMissingMemberReferences()
+    public function getCachedMethodMissingMemberReferences(): ?array
     {
         return $this->cached_method_missing_member_references;
     }
@@ -135,7 +135,7 @@ class FakeFileReferenceCacheProvider extends \Psalm\Internal\Provider\FileRefere
     /**
      * @return ?array
      */
-    public function getCachedMethodParamUses()
+    public function getCachedMethodParamUses(): ?array
     {
         return $this->cached_method_missing_member_references;
     }
@@ -143,7 +143,7 @@ class FakeFileReferenceCacheProvider extends \Psalm\Internal\Provider\FileRefere
     /**
      * @return ?array
      */
-    public function getCachedIssues()
+    public function getCachedIssues(): ?array
     {
         return $this->cached_issues;
     }

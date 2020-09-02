@@ -498,7 +498,7 @@ class StaticCallAnalyzer extends CallAnalyzer
                                 $mixin_candidates[] = clone $mixin_candidate;
                             }
 
-                            $mixin_candidates_no_generic = array_filter($mixin_candidates, function ($check) {
+                            $mixin_candidates_no_generic = array_filter($mixin_candidates, function ($check): bool {
                                 return !($check instanceof Type\Atomic\TGenericObject);
                             });
 
@@ -669,7 +669,7 @@ class StaticCallAnalyzer extends CallAnalyzer
                             /**
                              * @return PhpParser\Node\Expr\ArrayItem
                              */
-                            function (PhpParser\Node\Arg $arg) {
+                            function (PhpParser\Node\Arg $arg): PhpParser\Node\Expr\ArrayItem {
                                 return new PhpParser\Node\Expr\ArrayItem($arg->value);
                             },
                             $args

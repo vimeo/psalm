@@ -321,7 +321,10 @@ class ProjectAnalyzer
                 'Composer lockfile change detected, clearing cache' . "\n"
             );
 
-            Config::removeCacheDirectory($this->config->getCacheDirectory());
+            $cache_directory = $this->config->getCacheDirectory();
+            if ($cache_directory !== null) {
+                Config::removeCacheDirectory($cache_directory);
+            }
 
             if ($this->file_reference_provider->cache) {
                 $this->file_reference_provider->cache->hasConfigChanged();
@@ -335,7 +338,10 @@ class ProjectAnalyzer
                 'Config change detected, clearing cache' . "\n"
             );
 
-            Config::removeCacheDirectory($this->config->getCacheDirectory());
+            $cache_directory = $this->config->getCacheDirectory();
+            if ($cache_directory !== null) {
+                Config::removeCacheDirectory($cache_directory);
+            }
 
             if ($this->project_cache_provider) {
                 $this->project_cache_provider->hasLockfileChanged();
@@ -348,7 +354,7 @@ class ProjectAnalyzer
      * @param  bool   $show_info
      * @return array<ReportOptions>
      */
-    public static function getFileReportOptions(array $report_file_paths, bool $show_info = true)
+    public static function getFileReportOptions(array $report_file_paths, bool $show_info = true): array
     {
         $report_options = [];
 
@@ -529,7 +535,7 @@ class ProjectAnalyzer
     /**
      * @return self
      */
-    public static function getInstance()
+    public static function getInstance(): ProjectAnalyzer
     {
         return self::$instance;
     }
@@ -539,7 +545,7 @@ class ProjectAnalyzer
      *
      * @return bool
      */
-    public function canReportIssues($file_path)
+    public function canReportIssues($file_path): bool
     {
         return isset($this->project_files[$file_path]);
     }
@@ -931,7 +937,7 @@ class ProjectAnalyzer
                     /**
                      * @return int
                      */
-                    function (FileManipulation $a, FileManipulation $b) {
+                    function (FileManipulation $a, FileManipulation $b): int {
                         if ($a->start === $b->start) {
                             if ($b->end === $a->end) {
                                 return $b->insertion_text > $a->insertion_text ? 1 : -1;
@@ -1068,7 +1074,7 @@ class ProjectAnalyzer
      *
      * @return array<int, string>
      */
-    private function getAllFiles(Config $config)
+    private function getAllFiles(Config $config): array
     {
         $file_extensions = $config->getFileExtensions();
         $file_paths = [];
@@ -1104,7 +1110,7 @@ class ProjectAnalyzer
      *
      * @return array<string>
      */
-    protected function getDiffFilesInDir($dir_name, Config $config)
+    protected function getDiffFilesInDir($dir_name, Config $config): array
     {
         $file_extensions = $config->getFileExtensions();
 
@@ -1246,7 +1252,7 @@ class ProjectAnalyzer
     /**
      * @return Config
      */
-    public function getConfig()
+    public function getConfig(): Config
     {
         return $this->config;
     }
@@ -1256,7 +1262,7 @@ class ProjectAnalyzer
      *
      * @return array<string, string>
      */
-    public function getReferencedFilesFromDiff(array $diff_files, bool $include_referencing_files = true)
+    public function getReferencedFilesFromDiff(array $diff_files, bool $include_referencing_files = true): array
     {
         $all_inherited_files_to_check = $diff_files;
 
@@ -1288,7 +1294,7 @@ class ProjectAnalyzer
      *
      * @return bool
      */
-    public function fileExists($file_path)
+    public function fileExists($file_path): bool
     {
         return $this->file_provider->fileExists($file_path);
     }
@@ -1385,7 +1391,7 @@ class ProjectAnalyzer
     /**
      * @return array<string, bool>
      */
-    public function getIssuesToFix()
+    public function getIssuesToFix(): array
     {
         return $this->issues_to_fix;
     }
@@ -1393,7 +1399,7 @@ class ProjectAnalyzer
     /**
      * @return Codebase
      */
-    public function getCodebase()
+    public function getCodebase(): Codebase
     {
         return $this->codebase;
     }
@@ -1403,7 +1409,7 @@ class ProjectAnalyzer
      *
      * @return FileAnalyzer
      */
-    public function getFileAnalyzerForClassLike($fq_class_name)
+    public function getFileAnalyzerForClassLike($fq_class_name): FileAnalyzer
     {
         $fq_class_name_lc = strtolower($fq_class_name);
 

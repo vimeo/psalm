@@ -29,7 +29,7 @@ class TLiteralString extends TString
     /**
      * @return string
      */
-    public function __toString()
+    public function __toString(): string
     {
         return 'string';
     }
@@ -62,7 +62,7 @@ class TLiteralString extends TString
         $this_class,
         $php_major_version,
         $php_minor_version
-    ) {
+    ): ?string {
         return $php_major_version >= 7 ? 'string' : null;
     }
 
@@ -79,7 +79,7 @@ class TLiteralString extends TString
         array $aliased_classes,
         ?string $this_class,
         bool $use_phpdoc_format
-    ) {
+    ): string {
         return 'string';
     }
 }

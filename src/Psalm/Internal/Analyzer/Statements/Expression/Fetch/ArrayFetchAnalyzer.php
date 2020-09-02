@@ -369,7 +369,7 @@ class ArrayFetchAnalyzer
         Context $context,
         PhpParser\Node\Expr $assign_value = null,
         Type\Union $replacement_type = null
-    ) {
+    ): Type\Union {
         $codebase = $statements_analyzer->getCodebase();
 
         $has_array_access = false;
@@ -1587,7 +1587,7 @@ class ArrayFetchAnalyzer
     /**
      * @return Type\Union
      */
-    public static function replaceOffsetTypeWithInts(Type\Union $offset_type)
+    public static function replaceOffsetTypeWithInts(Type\Union $offset_type): Type\Union
     {
         $offset_types = $offset_type->getAtomicTypes();
 

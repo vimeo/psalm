@@ -33,7 +33,7 @@ class TTemplateKeyOf extends TArrayKey
     /**
      * @return string
      */
-    public function getKey(bool $include_extra = true)
+    public function getKey(bool $include_extra = true): string
     {
         return 'key-of<' . $this->param_name . '>';
     }
@@ -41,7 +41,7 @@ class TTemplateKeyOf extends TArrayKey
     /**
      * @return string
      */
-    public function __toString()
+    public function __toString(): string
     {
         return 'key-of<' . $this->param_name . '>';
     }
@@ -49,7 +49,7 @@ class TTemplateKeyOf extends TArrayKey
     /**
      * @return string
      */
-    public function getId(bool $nested = false)
+    public function getId(bool $nested = false): string
     {
         return 'key-of<' . $this->param_name . ':' . $this->defining_class . ' as ' . $this->as->getId() . '>';
     }
@@ -69,14 +69,14 @@ class TTemplateKeyOf extends TArrayKey
         $this_class,
         $php_major_version,
         $php_minor_version
-    ) {
+    ): ?string {
         return null;
     }
 
     /**
      * @return false
      */
-    public function canBeFullyExpressedInPhp()
+    public function canBeFullyExpressedInPhp(): bool
     {
         return false;
     }
@@ -94,7 +94,7 @@ class TTemplateKeyOf extends TArrayKey
         array $aliased_classes,
         ?string $this_class,
         bool $use_phpdoc_format
-    ) {
+    ): string {
         return 'key-of<' . $this->param_name . '>';
     }
 }

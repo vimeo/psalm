@@ -6,7 +6,7 @@ use Psalm\StatementsSource;
 
 class TResource extends \Psalm\Type\Atomic
 {
-    public function __toString()
+    public function __toString(): string
     {
         return 'resource';
     }
@@ -14,7 +14,7 @@ class TResource extends \Psalm\Type\Atomic
     /**
      * @return string
      */
-    public function getKey(bool $include_extra = true)
+    public function getKey(bool $include_extra = true): string
     {
         return 'resource';
     }
@@ -34,11 +34,11 @@ class TResource extends \Psalm\Type\Atomic
         $this_class,
         $php_major_version,
         $php_minor_version
-    ) {
+    ): ?string {
         return null;
     }
 
-    public function canBeFullyExpressedInPhp()
+    public function canBeFullyExpressedInPhp(): bool
     {
         return false;
     }

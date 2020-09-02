@@ -18,7 +18,7 @@ class TLiteralClassString extends TLiteralString
         $this->value = $value;
     }
 
-    public function __toString()
+    public function __toString(): string
     {
         return 'class-string';
     }
@@ -26,7 +26,7 @@ class TLiteralClassString extends TLiteralString
     /**
      * @return string
      */
-    public function getKey(bool $include_extra = true)
+    public function getKey(bool $include_extra = true): string
     {
         return 'class-string(' . $this->value . ')';
     }
@@ -46,14 +46,14 @@ class TLiteralClassString extends TLiteralString
         $this_class,
         $php_major_version,
         $php_minor_version
-    ) {
+    ): string {
         return 'string';
     }
 
     /**
      * @return bool
      */
-    public function canBeFullyExpressedInPhp()
+    public function canBeFullyExpressedInPhp(): bool
     {
         return false;
     }
@@ -61,7 +61,7 @@ class TLiteralClassString extends TLiteralString
     /**
      * @return string
      */
-    public function getId(bool $nested = false)
+    public function getId(bool $nested = false): string
     {
         return $this->value . '::class';
     }
@@ -69,7 +69,7 @@ class TLiteralClassString extends TLiteralString
     /**
      * @return string
      */
-    public function getAssertionString()
+    public function getAssertionString(): string
     {
         return $this->getKey();
     }
@@ -87,7 +87,7 @@ class TLiteralClassString extends TLiteralString
         array $aliased_classes,
         ?string $this_class,
         bool $use_phpdoc_format
-    ) {
+    ): string {
         if ($this->value === 'static') {
             return 'static::class';
         }

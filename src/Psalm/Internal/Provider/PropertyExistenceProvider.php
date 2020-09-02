@@ -78,7 +78,7 @@ class PropertyExistenceProvider
         StatementsSource $source = null,
         Context $context = null,
         CodeLocation $code_location = null
-    ) {
+    ): ?bool {
         foreach (self::$handlers[strtolower($fq_classlike_name)] as $property_handler) {
             $property_exists = $property_handler(
                 $fq_classlike_name,

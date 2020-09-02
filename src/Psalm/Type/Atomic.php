@@ -295,7 +295,7 @@ abstract class Atomic implements TypeNode
     /**
      * @return bool
      */
-    public function isNumericType()
+    public function isNumericType(): bool
     {
         return $this instanceof TInt
             || $this instanceof TFloat
@@ -306,7 +306,7 @@ abstract class Atomic implements TypeNode
     /**
      * @return bool
      */
-    public function isObjectType()
+    public function isObjectType(): bool
     {
         return $this instanceof TObject
             || $this instanceof TNamedObject
@@ -317,7 +317,7 @@ abstract class Atomic implements TypeNode
     /**
      * @return bool
      */
-    public function isNamedObjectType()
+    public function isNamedObjectType(): bool
     {
         return $this instanceof TNamedObject
             || ($this instanceof TTemplateParam
@@ -335,7 +335,7 @@ abstract class Atomic implements TypeNode
     /**
      * @return bool
      */
-    public function isCallableType()
+    public function isCallableType(): bool
     {
         return $this instanceof TCallable
             || $this instanceof TCallableObject
@@ -348,7 +348,7 @@ abstract class Atomic implements TypeNode
     /**
      * @return bool
      */
-    public function isIterable(Codebase $codebase)
+    public function isIterable(Codebase $codebase): bool
     {
         return $this instanceof TIterable
             || $this->hasTraversableInterface($codebase)
@@ -360,7 +360,7 @@ abstract class Atomic implements TypeNode
     /**
      * @return bool
      */
-    public function isCountable(Codebase $codebase)
+    public function isCountable(Codebase $codebase): bool
     {
         return $this->hasCountableInterface($codebase)
             || $this instanceof TArray
@@ -371,7 +371,7 @@ abstract class Atomic implements TypeNode
     /**
      * @return bool
      */
-    public function hasTraversableInterface(Codebase $codebase)
+    public function hasTraversableInterface(Codebase $codebase): bool
     {
         return $this instanceof TNamedObject
             && (
@@ -399,7 +399,7 @@ abstract class Atomic implements TypeNode
     /**
      * @return bool
      */
-    public function hasCountableInterface(Codebase $codebase)
+    public function hasCountableInterface(Codebase $codebase): bool
     {
         return $this instanceof TNamedObject
             && (
@@ -427,7 +427,7 @@ abstract class Atomic implements TypeNode
     /**
      * @return bool
      */
-    public function isArrayAccessibleWithStringKey(Codebase $codebase)
+    public function isArrayAccessibleWithStringKey(Codebase $codebase): bool
     {
         return $this instanceof TArray
             || $this instanceof TKeyedArray
@@ -440,7 +440,7 @@ abstract class Atomic implements TypeNode
     /**
      * @return bool
      */
-    public function isArrayAccessibleWithIntOrStringKey(Codebase $codebase)
+    public function isArrayAccessibleWithIntOrStringKey(Codebase $codebase): bool
     {
         return $this instanceof TString
             || $this->isArrayAccessibleWithStringKey($codebase);
@@ -449,7 +449,7 @@ abstract class Atomic implements TypeNode
     /**
      * @return bool
      */
-    public function hasArrayAccessInterface(Codebase $codebase)
+    public function hasArrayAccessInterface(Codebase $codebase): bool
     {
         return $this instanceof TNamedObject
             && (
@@ -553,7 +553,7 @@ abstract class Atomic implements TypeNode
         }
     }
 
-    public function __toString()
+    public function __toString(): string
     {
         return '';
     }
@@ -588,7 +588,7 @@ abstract class Atomic implements TypeNode
     /**
      * @return string
      */
-    public function getAssertionString()
+    public function getAssertionString(): string
     {
         return $this->getId();
     }
@@ -603,7 +603,7 @@ abstract class Atomic implements TypeNode
         array $aliased_classes,
         ?string $this_class,
         bool $use_phpdoc_format
-    ) {
+    ): string {
         return $this->getKey();
     }
 
@@ -654,7 +654,7 @@ abstract class Atomic implements TypeNode
     /**
      * @return bool
      */
-    public function equals(Atomic $other_type)
+    public function equals(Atomic $other_type): bool
     {
         if (get_class($other_type) !== get_class($this)) {
             return false;

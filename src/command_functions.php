@@ -44,7 +44,7 @@ use function strtoupper;
  *
  * @return ?\Composer\Autoload\ClassLoader
  */
-function requireAutoloaders($current_dir, $has_explicit_root, $vendor_dir)
+function requireAutoloaders($current_dir, $has_explicit_root, $vendor_dir): ?ClassLoader
 {
     $autoload_roots = [$current_dir];
 
@@ -150,7 +150,7 @@ function requireAutoloaders($current_dir, $has_explicit_root, $vendor_dir)
  * @psalm-suppress MixedAssignment
  * @psalm-suppress PossiblyUndefinedStringArrayOffset
  */
-function getVendorDir($current_dir)
+function getVendorDir($current_dir): string
 {
     $composer_json_path = $current_dir . DIRECTORY_SEPARATOR . 'composer.json';
 
@@ -219,7 +219,7 @@ function getArguments() : array
  *
  * @return string[]|null
  */
-function getPathsToCheck($f_paths)
+function getPathsToCheck($f_paths): ?array
 {
     global $argv;
 

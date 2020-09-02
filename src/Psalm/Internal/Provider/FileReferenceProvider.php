@@ -145,7 +145,7 @@ class FileReferenceProvider
     /**
      * @return array<string>
      */
-    public function getDeletedReferencedFiles()
+    public function getDeletedReferencedFiles(): array
     {
         if (self::$deleted_files === null) {
             self::$deleted_files = array_filter(
@@ -155,7 +155,7 @@ class FileReferenceProvider
                  *
                  * @return bool
                  */
-                function ($file_name) {
+                function ($file_name): bool {
                     return !file_exists($file_name);
                 }
             );
@@ -176,7 +176,7 @@ class FileReferenceProvider
     /**
      * @return array<string, array<string,bool>>
      */
-    public function getAllNonMethodReferencesToClasses()
+    public function getAllNonMethodReferencesToClasses(): array
     {
         return self::$nonmethod_references_to_classes;
     }
@@ -227,7 +227,7 @@ class FileReferenceProvider
     /**
      * @return array<string, array<string,bool>>
      */
-    public function getAllFileReferencesToClassMembers()
+    public function getAllFileReferencesToClassMembers(): array
     {
         return self::$file_references_to_class_members;
     }
@@ -235,7 +235,7 @@ class FileReferenceProvider
     /**
      * @return array<string, array<string,bool>>
      */
-    public function getAllFileReferencesToMissingClassMembers()
+    public function getAllFileReferencesToMissingClassMembers(): array
     {
         return self::$file_references_to_missing_class_members;
     }
@@ -302,7 +302,7 @@ class FileReferenceProvider
      *
      * @return  array<int, string>
      */
-    private function calculateFilesReferencingFile(Codebase $codebase, $file)
+    private function calculateFilesReferencingFile(Codebase $codebase, $file): array
     {
         $referenced_files = [];
 
@@ -343,7 +343,7 @@ class FileReferenceProvider
      *
      * @return  array<int, string>
      */
-    private function calculateFilesInheritingFile(Codebase $codebase, $file)
+    private function calculateFilesInheritingFile(Codebase $codebase, $file): array
     {
         $referenced_files = [];
 
@@ -384,7 +384,7 @@ class FileReferenceProvider
      *
      * @return array<string>
      */
-    public function getFilesReferencingFile($file)
+    public function getFilesReferencingFile($file): array
     {
         return isset(self::$file_references[$file]['a']) ? self::$file_references[$file]['a'] : [];
     }
@@ -394,7 +394,7 @@ class FileReferenceProvider
      *
      * @return array<string>
      */
-    public function getFilesInheritingFromFile($file)
+    public function getFilesInheritingFromFile($file): array
     {
         return isset(self::$file_references[$file]['i']) ? self::$file_references[$file]['i'] : [];
     }
@@ -402,7 +402,7 @@ class FileReferenceProvider
     /**
      * @return array<string, array<string, bool>>
      */
-    public function getAllMethodReferencesToClassMembers()
+    public function getAllMethodReferencesToClassMembers(): array
     {
         return self::$method_references_to_class_members;
     }
@@ -410,7 +410,7 @@ class FileReferenceProvider
     /**
      * @return array<string, array<string, bool>>
      */
-    public function getAllMethodReferencesToClasses()
+    public function getAllMethodReferencesToClasses(): array
     {
         return self::$method_references_to_classes;
     }
@@ -418,7 +418,7 @@ class FileReferenceProvider
     /**
      * @return array<string, array<string, bool>>
      */
-    public function getAllMethodReferencesToMissingClassMembers()
+    public function getAllMethodReferencesToMissingClassMembers(): array
     {
         return self::$method_references_to_missing_class_members;
     }
@@ -426,7 +426,7 @@ class FileReferenceProvider
     /**
      * @return array<string, array<string,bool>>
      */
-    public function getAllReferencesToMixedMemberNames()
+    public function getAllReferencesToMixedMemberNames(): array
     {
         return self::$references_to_mixed_member_names;
     }
@@ -434,7 +434,7 @@ class FileReferenceProvider
     /**
      * @return array<string, array<int, array<string, bool>>>
      */
-    public function getAllMethodParamUses()
+    public function getAllMethodParamUses(): array
     {
         return self::$method_param_uses;
     }
@@ -445,7 +445,7 @@ class FileReferenceProvider
      * @return bool
      * @psalm-suppress MixedPropertyTypeCoercion
      */
-    public function loadReferenceCache($force_reload = true)
+    public function loadReferenceCache($force_reload = true): bool
     {
         if ($this->cache && (!$this->loaded_from_cache || $force_reload)) {
             $this->loaded_from_cache = true;
@@ -1041,7 +1041,7 @@ class FileReferenceProvider
     /**
      * @return array<string, array{int, int}>
      */
-    public function getTypeCoverage()
+    public function getTypeCoverage(): array
     {
         return self::$mixed_counts;
     }
@@ -1059,7 +1059,7 @@ class FileReferenceProvider
     /**
      * @return array<string, array<string, int>>
      */
-    public function getAnalyzedMethods()
+    public function getAnalyzedMethods(): array
     {
         return self::$analyzed_methods;
     }
@@ -1067,7 +1067,7 @@ class FileReferenceProvider
     /**
      * @return array<string, FileMapType>
      */
-    public function getFileMaps()
+    public function getFileMaps(): array
     {
         return self::$file_maps;
     }

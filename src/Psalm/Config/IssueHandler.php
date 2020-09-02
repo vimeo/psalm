@@ -29,7 +29,7 @@ class IssueHandler
      *
      * @return self
      */
-    public static function loadFromXMLElement(SimpleXMLElement $e, $base_dir)
+    public static function loadFromXMLElement(SimpleXMLElement $e, $base_dir): IssueHandler
     {
         $handler = new self();
 
@@ -68,7 +68,7 @@ class IssueHandler
      *
      * @return string
      */
-    public function getReportingLevelForFile($file_path)
+    public function getReportingLevelForFile($file_path): string
     {
         foreach ($this->custom_levels as $custom_level) {
             if ($custom_level->allows($file_path)) {
@@ -163,7 +163,7 @@ class IssueHandler
      * @return       string[]
      * @psalm-return array<string>
      */
-    public static function getAllIssueTypes()
+    public static function getAllIssueTypes(): array
     {
         return array_filter(
             array_map(
@@ -182,7 +182,7 @@ class IssueHandler
              *
              * @return bool
              */
-            function ($issue_name) {
+            function ($issue_name): bool {
                 return !empty($issue_name)
                     && $issue_name !== 'MethodIssue'
                     && $issue_name !== 'PropertyIssue'

@@ -333,7 +333,7 @@ class CodeLocation
     /**
      * @return int
      */
-    public function getLineNumber()
+    public function getLineNumber(): int
     {
         return $this->docblock_line_number ?: $this->raw_line_number;
     }
@@ -341,7 +341,7 @@ class CodeLocation
     /**
      * @return int
      */
-    public function getEndLineNumber()
+    public function getEndLineNumber(): int
     {
         $this->calculateRealLocation();
 
@@ -351,7 +351,7 @@ class CodeLocation
     /**
      * @return string
      */
-    public function getSnippet()
+    public function getSnippet(): string
     {
         $this->calculateRealLocation();
 
@@ -361,7 +361,7 @@ class CodeLocation
     /**
      * @return string
      */
-    public function getSelectedText()
+    public function getSelectedText(): string
     {
         $this->calculateRealLocation();
 
@@ -371,7 +371,7 @@ class CodeLocation
     /**
      * @return int
      */
-    public function getColumn()
+    public function getColumn(): int
     {
         $this->calculateRealLocation();
 
@@ -381,7 +381,7 @@ class CodeLocation
     /**
      * @return int
      */
-    public function getEndColumn()
+    public function getEndColumn(): int
     {
         $this->calculateRealLocation();
 
@@ -391,7 +391,7 @@ class CodeLocation
     /**
      * @return array{0: int, 1: int}
      */
-    public function getSelectionBounds()
+    public function getSelectionBounds(): array
     {
         $this->calculateRealLocation();
 
@@ -401,7 +401,7 @@ class CodeLocation
     /**
      * @return array{0: int, 1: int}
      */
-    public function getSnippetBounds()
+    public function getSnippetBounds(): array
     {
         $this->calculateRealLocation();
 
@@ -411,7 +411,7 @@ class CodeLocation
     /**
      * @return string
      */
-    public function getHash()
+    public function getHash(): string
     {
         return (string) $this->file_start;
     }

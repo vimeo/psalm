@@ -57,7 +57,7 @@ class DocComment
      *
      * @psalm-pure
      */
-    public static function parse($docblock, $line_number = null, $preserve_format = false)
+    public static function parse($docblock, $line_number = null, $preserve_format = false): array
     {
         // Strip off comments.
         $docblock = trim($docblock);

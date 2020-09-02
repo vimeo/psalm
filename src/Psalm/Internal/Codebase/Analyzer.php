@@ -224,7 +224,7 @@ class Analyzer
      *
      * @return bool
      */
-    public function canReportIssues($file_path)
+    public function canReportIssues($file_path): bool
     {
         return isset($this->files_with_analysis_results[$file_path]);
     }
@@ -235,8 +235,11 @@ class Analyzer
      *
      * @return FileAnalyzer
      */
-    private function getFileAnalyzer(ProjectAnalyzer $project_analyzer, $file_path, array $filetype_analyzers)
-    {
+    private function getFileAnalyzer(
+        ProjectAnalyzer $project_analyzer,
+        $file_path,
+        array $filetype_analyzers
+    ): FileAnalyzer {
         $extension = (string) (pathinfo($file_path)['extension'] ?? '');
 
         $file_name = $this->config->shortenFileName($file_path);
@@ -1077,7 +1080,7 @@ class Analyzer
      *
      * @return array{0:int, 1:int}
      */
-    public function getMixedCountsForFile($file_path)
+    public function getMixedCountsForFile($file_path): array
     {
         if (!isset($this->mixed_counts[$file_path])) {
             $this->mixed_counts[$file_path] = [0, 0];
@@ -1154,7 +1157,7 @@ class Analyzer
     /**
      * @return array<string, array{0: int, 1: int}>
      */
-    public function getMixedCounts()
+    public function getMixedCounts(): array
     {
         $all_deep_scanned_files = [];
 
@@ -1168,7 +1171,7 @@ class Analyzer
     /**
      * @return array<string, float>
      */
-    public function getFunctionTimings()
+    public function getFunctionTimings(): array
     {
         return $this->function_timings;
     }
@@ -1248,7 +1251,7 @@ class Analyzer
     /**
      * @return array{int, int}
      */
-    public function getTotalTypeCoverage(\Psalm\Codebase $codebase)
+    public function getTotalTypeCoverage(\Psalm\Codebase $codebase): array
     {
         $mixed_count = 0;
         $nonmixed_count = 0;
@@ -1272,7 +1275,7 @@ class Analyzer
     /**
      * @return string
      */
-    public function getTypeInferenceSummary(\Psalm\Codebase $codebase)
+    public function getTypeInferenceSummary(\Psalm\Codebase $codebase): string
     {
         $all_deep_scanned_files = [];
 
@@ -1307,7 +1310,7 @@ class Analyzer
     /**
      * @return string
      */
-    public function getNonMixedStats()
+    public function getNonMixedStats(): string
     {
         $stats = '';
 
@@ -1390,7 +1393,7 @@ class Analyzer
             /**
              * @return int
              */
-            function (FileManipulation $a, FileManipulation $b) {
+            function (FileManipulation $a, FileManipulation $b): int {
                 if ($b->end === $a->end) {
                     if ($a->start === $b->start) {
                         return $b->insertion_text > $a->insertion_text ? 1 : -1;
@@ -1506,7 +1509,7 @@ class Analyzer
     /**
      * @return array<string, array<string, int>>
      */
-    public function getAnalyzedMethods()
+    public function getAnalyzedMethods(): array
     {
         return $this->analyzed_methods;
     }
@@ -1514,7 +1517,7 @@ class Analyzer
     /**
      * @return array<string, FileMapType>
      */
-    public function getFileMaps()
+    public function getFileMaps(): array
     {
         $file_maps = [];
 
@@ -1556,7 +1559,7 @@ class Analyzer
     /**
      * @return array<string, array<int, \Psalm\Type\Union>>
      */
-    public function getPossibleMethodParamTypes()
+    public function getPossibleMethodParamTypes(): array
     {
         return $this->possible_method_param_types;
     }
@@ -1585,7 +1588,7 @@ class Analyzer
      *
      * @return bool
      */
-    public function isMethodAlreadyAnalyzed($file_path, $method_id, $is_constructor = false)
+    public function isMethodAlreadyAnalyzed($file_path, $method_id, $is_constructor = false): bool
     {
         if ($is_constructor) {
             return isset($this->analyzed_methods[$file_path][$method_id])

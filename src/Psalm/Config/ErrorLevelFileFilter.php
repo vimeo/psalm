@@ -22,7 +22,7 @@ class ErrorLevelFileFilter extends FileFilter
         SimpleXMLElement $e,
         $base_dir,
         $inclusive
-    ) {
+    ): ErrorLevelFileFilter {
         $filter = parent::loadFromXMLElement($e, $base_dir, $inclusive);
 
         if (isset($e['type'])) {
@@ -41,7 +41,7 @@ class ErrorLevelFileFilter extends FileFilter
     /**
      * @return string
      */
-    public function getErrorLevel()
+    public function getErrorLevel(): string
     {
         return $this->error_level;
     }

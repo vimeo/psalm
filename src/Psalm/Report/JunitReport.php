@@ -155,7 +155,7 @@ class JunitReport extends Report
      *
      * @return array<string, list<IssueData>>
      */
-    private function groupByType(array $failures)
+    private function groupByType(array $failures): array
     {
         $nfailures = [];
 

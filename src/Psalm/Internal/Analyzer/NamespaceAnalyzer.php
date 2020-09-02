@@ -127,7 +127,7 @@ class NamespaceAnalyzer extends SourceAnalyzer implements StatementsSource
     /**
      * @return string
      */
-    public function getNamespace()
+    public function getNamespace(): string
     {
         return $this->namespace_name;
     }
@@ -149,7 +149,7 @@ class NamespaceAnalyzer extends SourceAnalyzer implements StatementsSource
      *
      * @return array<string,Type\Union>
      */
-    public static function getConstantsForNamespace($namespace_name, $visibility)
+    public static function getConstantsForNamespace($namespace_name, $visibility): array
     {
         // @todo this does not allow for loading in namespace constants not already defined in the current sweep
         if (!isset(self::$public_namespace_constants[$namespace_name])) {

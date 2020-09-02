@@ -6,7 +6,7 @@ class TNonEmptyMixed extends TMixed
     /**
      * @return string
      */
-    public function getId(bool $nested = false)
+    public function getId(bool $nested = false): string
     {
         return 'non-empty-mixed';
     }

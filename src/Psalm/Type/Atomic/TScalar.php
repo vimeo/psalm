@@ -3,7 +3,7 @@ namespace Psalm\Type\Atomic;
 
 class TScalar extends Scalar
 {
-    public function __toString()
+    public function __toString(): string
     {
         return 'scalar';
     }
@@ -11,7 +11,7 @@ class TScalar extends Scalar
     /**
      * @return string
      */
-    public function getKey(bool $include_extra = true)
+    public function getKey(bool $include_extra = true): string
     {
         return 'scalar';
     }
@@ -31,11 +31,11 @@ class TScalar extends Scalar
         $this_class,
         $php_major_version,
         $php_minor_version
-    ) {
+    ): ?string {
         return null;
     }
 
-    public function canBeFullyExpressedInPhp()
+    public function canBeFullyExpressedInPhp(): bool
     {
         return false;
     }
@@ -43,7 +43,7 @@ class TScalar extends Scalar
     /**
      * @return string
      */
-    public function getAssertionString()
+    public function getAssertionString(): string
     {
         return 'scalar';
     }

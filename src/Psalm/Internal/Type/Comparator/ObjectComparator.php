@@ -32,7 +32,7 @@ class ObjectComparator
         Type\Atomic $container_type_part,
         bool $allow_interface_equality,
         ?TypeComparisonResult $atomic_comparison_result
-    ) {
+    ): bool {
         $intersection_input_types = $input_type_part->extra_types ?: [];
         $intersection_input_types[$input_type_part->getKey(false)] = $input_type_part;
 

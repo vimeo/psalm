@@ -3,7 +3,7 @@ namespace Psalm\Type\Atomic;
 
 class TCallableObject extends TObject
 {
-    public function __toString()
+    public function __toString(): string
     {
         return 'callable-object';
     }
@@ -11,7 +11,7 @@ class TCallableObject extends TObject
     /**
      * @return string
      */
-    public function getKey(bool $include_extra = true)
+    public function getKey(bool $include_extra = true): string
     {
         return 'callable-object';
     }
@@ -31,14 +31,14 @@ class TCallableObject extends TObject
         $this_class,
         $php_major_version,
         $php_minor_version
-    ) {
+    ): ?string {
         return $php_major_version >= 7 && $php_minor_version >= 2 ? 'object' : null;
     }
 
     /**
      * @return bool
      */
-    public function canBeFullyExpressedInPhp()
+    public function canBeFullyExpressedInPhp(): bool
     {
         return false;
     }
@@ -46,7 +46,7 @@ class TCallableObject extends TObject
     /**
      * @return string
      */
-    public function getAssertionString()
+    public function getAssertionString(): string
     {
         return 'object';
     }

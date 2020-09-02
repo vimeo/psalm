@@ -9,7 +9,7 @@ class TAnonymousClassInstance extends TNamedObject
         $this_class,
         $php_major_version,
         $php_minor_version
-    ) {
+    ): ?string {
         return $php_major_version >= 7 && $php_minor_version >= 2 ? 'object' : null;
     }
 
@@ -26,7 +26,7 @@ class TAnonymousClassInstance extends TNamedObject
         array $aliased_classes,
         ?string $this_class,
         bool $use_phpdoc_format
-    ) {
+    ): string {
         return 'object';
     }
 }

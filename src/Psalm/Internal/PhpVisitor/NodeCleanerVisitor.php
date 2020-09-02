@@ -20,7 +20,7 @@ class NodeCleanerVisitor extends PhpParser\NodeVisitorAbstract implements PhpPar
      *
      * @return null|int
      */
-    public function enterNode(PhpParser\Node $node)
+    public function enterNode(PhpParser\Node $node): ?int
     {
         if ($node instanceof PhpParser\Node\Expr) {
             $this->type_provider->clearNodeOfTypeAndAssertions($node);

@@ -26,7 +26,7 @@ class MethodVisibilityAnalyzer
         StatementsSource $source,
         CodeLocation $code_location,
         array $suppressed_issues
-    ) {
+    ): ?bool {
         $codebase = $source->getCodebase();
         $codebase_methods = $codebase->methods;
         $codebase_classlikes = $codebase->classlikes;

@@ -37,7 +37,7 @@ abstract class CodeIssue
     /**
      * @return CodeLocation
      */
-    public function getLocation()
+    public function getLocation(): CodeLocation
     {
         return $this->code_location;
     }
@@ -45,7 +45,7 @@ abstract class CodeIssue
     /**
      * @return string
      */
-    public function getShortLocationWithPrevious()
+    public function getShortLocationWithPrevious(): string
     {
         $previous_text = '';
 
@@ -60,7 +60,7 @@ abstract class CodeIssue
     /**
      * @return string
      */
-    public function getShortLocation()
+    public function getShortLocation(): string
     {
         return $this->code_location->file_name . ':' . $this->code_location->getLineNumber();
     }
@@ -68,7 +68,7 @@ abstract class CodeIssue
     /**
      * @return string
      */
-    public function getFilePath()
+    public function getFilePath(): string
     {
         return $this->code_location->file_path;
     }
@@ -78,7 +78,7 @@ abstract class CodeIssue
      *
      * @psalm-suppress PossiblyUnusedMethod for convenience
      */
-    public function getFileName()
+    public function getFileName(): string
     {
         return $this->code_location->file_name;
     }
@@ -86,7 +86,7 @@ abstract class CodeIssue
     /**
      * @return string
      */
-    public function getMessage()
+    public function getMessage(): string
     {
         return $this->message;
     }
@@ -96,7 +96,7 @@ abstract class CodeIssue
      *
      * @return \Psalm\Internal\Analyzer\IssueData
      */
-    public function toIssueData($severity = Config::REPORT_ERROR)
+    public function toIssueData($severity = Config::REPORT_ERROR): \Psalm\Internal\Analyzer\IssueData
     {
         $location = $this->getLocation();
         $selection_bounds = $location->getSelectionBounds();

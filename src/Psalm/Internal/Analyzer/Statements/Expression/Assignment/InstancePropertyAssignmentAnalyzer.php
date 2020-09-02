@@ -71,7 +71,7 @@ class InstancePropertyAssignmentAnalyzer
         Type\Union $assignment_value_type,
         Context $context,
         $direct_assignment = true
-    ) {
+    ): ?bool {
         $class_property_types = [];
 
         $codebase = $statements_analyzer->getCodebase();

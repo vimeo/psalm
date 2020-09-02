@@ -31,7 +31,7 @@ class SwitchAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Switch_ $stmt,
         Context $context
-    ) {
+    ): ?bool {
         $codebase = $statements_analyzer->getCodebase();
 
         $context->inside_conditional = true;

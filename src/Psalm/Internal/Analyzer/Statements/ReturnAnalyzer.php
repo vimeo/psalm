@@ -44,7 +44,7 @@ class ReturnAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Return_ $stmt,
         Context $context
-    ) {
+    ): ?bool {
         $doc_comment = $stmt->getDocComment();
 
         $var_comments = [];

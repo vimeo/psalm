@@ -21,5 +21,5 @@ interface MethodVisibilityProviderInterface
         string $method_name_lowercase,
         Context $context,
         CodeLocation $code_location = null
-    );
+    ): ?bool;
 }

@@ -230,7 +230,7 @@ class MatchAnalyzer
         }
 
         $array_items = array_map(
-            function ($cond) {
+            function ($cond): PhpParser\Node\Expr\ArrayItem {
                 return new PhpParser\Node\Expr\ArrayItem($cond, null, false, $cond->getAttributes());
             },
             $conds

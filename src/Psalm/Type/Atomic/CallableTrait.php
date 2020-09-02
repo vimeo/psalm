@@ -65,7 +65,7 @@ trait CallableTrait
     /**
      * @return string
      */
-    public function getKey(bool $include_extra = true)
+    public function getKey(bool $include_extra = true): string
     {
         return $this->__toString();
     }
@@ -80,7 +80,7 @@ trait CallableTrait
         array $aliased_classes,
         ?string $this_class,
         bool $use_phpdoc_format
-    ) {
+    ): string {
         if ($use_phpdoc_format) {
             if ($this instanceof TNamedObject) {
                 return parent::toNamespacedString($namespace, $aliased_classes, $this_class, true);
@@ -152,7 +152,7 @@ trait CallableTrait
         $this_class,
         $php_major_version,
         $php_minor_version
-    ) {
+    ): string {
         if ($this instanceof TNamedObject) {
             return parent::toNamespacedString($namespace, $aliased_classes, $this_class, true);
         }
@@ -163,7 +163,7 @@ trait CallableTrait
     /**
      * @return string
      */
-    public function getId(bool $nested = false)
+    public function getId(bool $nested = false): string
     {
         $param_string = '';
         $return_type_string = '';
@@ -191,7 +191,7 @@ trait CallableTrait
             . $this->value . $param_string . $return_type_string;
     }
 
-    public function __toString()
+    public function __toString(): string
     {
         return $this->getId();
     }

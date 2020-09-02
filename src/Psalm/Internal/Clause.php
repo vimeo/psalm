@@ -117,7 +117,7 @@ class Clause
      *
      * @return bool
      */
-    public function contains(Clause $other_clause)
+    public function contains(Clause $other_clause): bool
     {
         if (count($other_clause->possibilities) > count($this->possibilities)) {
             return false;
@@ -132,7 +132,7 @@ class Clause
         return true;
     }
 
-    public function __toString()
+    public function __toString(): string
     {
         return implode(
             ' || ',
@@ -143,7 +143,7 @@ class Clause
                  *
                  * @return string
                  */
-                function ($var_id, $values) {
+                function ($var_id, $values): string {
                     return implode(
                         ' || ',
                         array_map(

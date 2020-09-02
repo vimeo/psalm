@@ -73,7 +73,7 @@ class Properties
         StatementsSource $source = null,
         Context $context = null,
         CodeLocation $code_location = null
-    ) {
+    ): bool {
         // remove trailing backslash if it exists
         $property_id = preg_replace('/^\\\\/', '', $property_id);
 
@@ -221,7 +221,7 @@ class Properties
      *
      * @return  \Psalm\Storage\PropertyStorage
      */
-    public function getStorage($property_id)
+    public function getStorage($property_id): \Psalm\Storage\PropertyStorage
     {
         // remove trailing backslash if it exists
         $property_id = preg_replace('/^\\\\/', '', $property_id);
@@ -252,7 +252,7 @@ class Properties
         bool $property_set,
         StatementsSource $source = null,
         Context $context = null
-    ) {
+    ): ?Type\Union {
         // remove trailing backslash if it exists
         $property_id = preg_replace('/^\\\\/', '', $property_id);
 

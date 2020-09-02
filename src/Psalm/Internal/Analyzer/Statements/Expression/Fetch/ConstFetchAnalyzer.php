@@ -92,7 +92,7 @@ class ConstFetchAnalyzer
         Codebase $codebase,
         $fq_const_name,
         $const_name
-    ) {
+    ): ?Type\Union {
         if ($const_name === 'STDERR'
             || $const_name === 'STDOUT'
             || $const_name === 'STDIN'
@@ -188,7 +188,7 @@ class ConstFetchAnalyzer
         string $const_name,
         bool $is_fully_qualified,
         ?Context $context
-    ) {
+    ): ?Type\Union {
         $aliased_constants = $statements_analyzer->getAliases()->constants;
 
         if (isset($aliased_constants[$const_name])) {

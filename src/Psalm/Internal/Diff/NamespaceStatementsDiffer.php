@@ -28,7 +28,7 @@ class NamespaceStatementsDiffer extends AstDiffer
      *      3: array<int, array{0: int, 1: int, 2: int, 3: int}>
      * }
      */
-    public static function diff($name, array $a, array $b, $a_code, $b_code)
+    public static function diff($name, array $a, array $b, $a_code, $b_code): array
     {
         [$trace, $x, $y, $bc] = self::calculateTrace(
             /**
@@ -37,7 +37,13 @@ class NamespaceStatementsDiffer extends AstDiffer
              *
              * @return bool
              */
-            function (PhpParser\Node\Stmt $a, PhpParser\Node\Stmt $b, $a_code, $b_code, bool &$body_change = false) {
+            function (
+                PhpParser\Node\Stmt $a,
+                PhpParser\Node\Stmt $b,
+                $a_code,
+                $b_code,
+                bool &$body_change = false
+            ): bool {
                 if (get_class($a) !== get_class($b)) {
                     return false;
                 }

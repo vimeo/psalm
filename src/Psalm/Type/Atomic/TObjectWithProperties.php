@@ -44,7 +44,7 @@ class TObjectWithProperties extends TObject
         $this->methods = $methods;
     }
 
-    public function __toString()
+    public function __toString(): string
     {
         $extra_types = '';
 
@@ -61,7 +61,7 @@ class TObjectWithProperties extends TObject
                  *
                  * @return string
                  */
-                function ($name, Union $type) {
+                function ($name, Union $type): string {
                     return $name . ($type->possibly_undefined ? '?' : '') . ':' . $type;
                 },
                 array_keys($this->properties),
@@ -72,7 +72,7 @@ class TObjectWithProperties extends TObject
         $methods_string = implode(
             ', ',
             array_map(
-                function (string $name) {
+                function (string $name): string {
                     return $name . '()';
                 },
                 array_keys($this->methods)
@@ -85,7 +85,7 @@ class TObjectWithProperties extends TObject
             . '}' . $extra_types;
     }
 
-    public function getId(bool $nested = false)
+    public function getId(bool $nested = false): string
     {
         $extra_types = '';
 
@@ -102,7 +102,7 @@ class TObjectWithProperties extends TObject
                  *
                  * @return string
                  */
-                function ($name, Union $type) {
+                function ($name, Union $type): string {
                     return $name . ($type->possibly_undefined ? '?' : '') . ':' . $type->getId();
                 },
                 array_keys($this->properties),
@@ -113,7 +113,7 @@ class TObjectWithProperties extends TObject
         $methods_string = implode(
             ', ',
             array_map(
-                function (string $name) {
+                function (string $name): string {
                     return $name . '()';
                 },
                 array_keys($this->methods)
@@ -139,7 +139,7 @@ class TObjectWithProperties extends TObject
         array $aliased_classes,
         ?string $this_class,
         bool $use_phpdoc_format
-    ) {
+    ): string {
         if ($use_phpdoc_format) {
             return 'object';
         }
@@ -186,15 +186,20 @@ class TObjectWithProperties extends TObject
      *
      * @return string
      */
-    public function toPhpString($namespace, array $aliased_classes, $this_class, $php_major_version, $php_minor_version)
-    {
+    public function toPhpString(
+        $namespace,
+        array $aliased_classes,
+        $this_class,
+        $php_major_version,
+        $php_minor_version
+    ): string {
         return $this->getKey();
     }
 
     /**
      * @return bool
      */
-    public function canBeFullyExpressedInPhp()
+    public function canBeFullyExpressedInPhp(): bool
     {
         return false;
     }
@@ -209,7 +214,7 @@ class TObjectWithProperties extends TObject
     /**
      * @return bool
      */
-    public function equals(Atomic $other_type)
+    public function equals(Atomic $other_type): bool
     {
         if (!$other_type instanceof self) {
             return false;
@@ -297,7 +302,7 @@ class TObjectWithProperties extends TObject
     /**
      * @return string
      */
-    public function getAssertionString()
+    public function getAssertionString(): string
     {
         return $this->getKey();
     }

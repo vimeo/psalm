@@ -17,7 +17,7 @@ class TLiteralInt extends TInt
     /**
      * @return string
      */
-    public function getKey(bool $include_extra = true)
+    public function getKey(bool $include_extra = true): string
     {
         return 'int(' . $this->value . ')';
     }
@@ -25,7 +25,7 @@ class TLiteralInt extends TInt
     /**
      * @return string
      */
-    public function getId(bool $nested = false)
+    public function getId(bool $nested = false): string
     {
         return 'int(' . $this->value . ')';
     }
@@ -45,7 +45,7 @@ class TLiteralInt extends TInt
         $this_class,
         $php_major_version,
         $php_minor_version
-    ) {
+    ): ?string {
         return $php_major_version >= 7 ? 'int' : null;
     }
 
@@ -62,7 +62,7 @@ class TLiteralInt extends TInt
         array $aliased_classes,
         ?string $this_class,
         bool $use_phpdoc_format
-    ) {
+    ): string {
         return 'int';
     }
 }

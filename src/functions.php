@@ -9,7 +9,7 @@ use Webmozart\PathUtil\Path;
  *
  * @deprecated Use {@see Webmozart\PathUtil\Path::isAbsolute} instead
  */
-function isAbsolutePath($path)
+function isAbsolutePath($path): bool
 {
     return Path::isAbsolute($path);
 }

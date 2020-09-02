@@ -36,7 +36,7 @@ class ProjectCacheProvider
     /**
      * @return bool
      */
-    public function canDiffFiles()
+    public function canDiffFiles(): bool
     {
         $cache_directory = Config::getInstance()->getCacheDirectory();
 
@@ -64,7 +64,7 @@ class ProjectCacheProvider
     /**
      * @return int
      */
-    public function getLastRun()
+    public function getLastRun(): int
     {
         if ($this->last_run === null) {
             $cache_directory = Config::getInstance()->getCacheDirectory();

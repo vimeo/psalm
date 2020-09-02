@@ -82,7 +82,7 @@ class PluginList
     }
 
     /** @return null|string */
-    public function findPluginPackage(string $class)
+    public function findPluginPackage(string $class): ?string
     {
         // pluginClass => ?pluginPackage
         $plugin_classes = $this->getAll();

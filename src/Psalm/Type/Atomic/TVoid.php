@@ -3,7 +3,7 @@ namespace Psalm\Type\Atomic;
 
 class TVoid extends \Psalm\Type\Atomic
 {
-    public function __toString()
+    public function __toString(): string
     {
         return 'void';
     }
@@ -11,7 +11,7 @@ class TVoid extends \Psalm\Type\Atomic
     /**
      * @return string
      */
-    public function getKey(bool $include_extra = true)
+    public function getKey(bool $include_extra = true): string
     {
         return 'void';
     }
@@ -31,11 +31,11 @@ class TVoid extends \Psalm\Type\Atomic
         $this_class,
         $php_major_version,
         $php_minor_version
-    ) {
+    ): ?string {
         return $php_major_version >= 7 && $php_minor_version >= 1 ? $this->getKey() : null;
     }
 
-    public function canBeFullyExpressedInPhp()
+    public function canBeFullyExpressedInPhp(): bool
     {
         return true;
     }

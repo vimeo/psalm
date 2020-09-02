@@ -536,7 +536,7 @@ class AssertionFinder
         bool $inside_negation = false,
         bool $cache = true,
         bool $inside_conditional = true
-    ) {
+    ): array {
         $if_types = [];
 
         $null_position = self::hasNullVariable($conditional, $source);
@@ -1172,7 +1172,7 @@ class AssertionFinder
         bool $inside_negation = false,
         bool $cache = true,
         bool $inside_conditional = true
-    ) {
+    ): array {
         $if_types = [];
 
         $null_position = self::hasNullVariable($conditional, $source);
@@ -1788,7 +1788,7 @@ class AssertionFinder
         FileSource $source,
         Codebase $codebase = null,
         $negate = false
-    ) {
+    ): array {
         $prefix = $negate ? '!' : '';
 
         $first_var_name = isset($expr->args[0]->value)
@@ -2279,7 +2279,7 @@ class AssertionFinder
         $this_class_name,
         FileSource $source,
         $negate = false
-    ) {
+    ): array {
         if (!$source instanceof StatementsAnalyzer) {
             return [];
         }
@@ -2499,7 +2499,7 @@ class AssertionFinder
     protected static function hasNullVariable(
         PhpParser\Node\Expr\BinaryOp $conditional,
         FileSource $source
-    ) {
+    ): ?int {
         if ($conditional->right instanceof PhpParser\Node\Expr\ConstFetch
             && strtolower($conditional->right->name->parts[0]) === 'null'
         ) {
@@ -2527,7 +2527,7 @@ class AssertionFinder
      *
      * @return  int|null
      */
-    public static function hasFalseVariable(PhpParser\Node\Expr\BinaryOp $conditional)
+    public static function hasFalseVariable(PhpParser\Node\Expr\BinaryOp $conditional): ?int
     {
         if ($conditional->right instanceof PhpParser\Node\Expr\ConstFetch
             && strtolower($conditional->right->name->parts[0]) === 'false'
@@ -2549,7 +2549,7 @@ class AssertionFinder
      *
      * @return  int|null
      */
-    public static function hasTrueVariable(PhpParser\Node\Expr\BinaryOp $conditional)
+    public static function hasTrueVariable(PhpParser\Node\Expr\BinaryOp $conditional): ?int
     {
         if ($conditional->right instanceof PhpParser\Node\Expr\ConstFetch
             && strtolower($conditional->right->name->parts[0]) === 'true'
@@ -2571,7 +2571,7 @@ class AssertionFinder
      *
      * @return  int|null
      */
-    protected static function hasEmptyArrayVariable(PhpParser\Node\Expr\BinaryOp $conditional)
+    protected static function hasEmptyArrayVariable(PhpParser\Node\Expr\BinaryOp $conditional): ?int
     {
         if ($conditional->right instanceof PhpParser\Node\Expr\Array_
             && !$conditional->right->items
@@ -2986,7 +2986,7 @@ class AssertionFinder
      *
      * @return  bool
      */
-    protected static function hasNullCheck(PhpParser\Node\Expr\FuncCall $stmt)
+    protected static function hasNullCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
     {
         if ($stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->parts[0]) === 'is_null') {
             return true;
@@ -3003,7 +3003,7 @@ class AssertionFinder
     protected static function hasIsACheck(
         PhpParser\Node\Expr\FuncCall $stmt,
         StatementsAnalyzer $source
-    ) {
+    ): bool {
         if ($stmt->name instanceof PhpParser\Node\Name
             && (strtolower($stmt->name->parts[0]) === 'is_a'
                 || strtolower($stmt->name->parts[0]) === 'is_subclass_of')
@@ -3033,7 +3033,7 @@ class AssertionFinder
      *
      * @return  bool
      */
-    protected static function hasArrayCheck(PhpParser\Node\Expr\FuncCall $stmt)
+    protected static function hasArrayCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
     {
         if ($stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->parts[0]) === 'is_array') {
             return true;
@@ -3047,7 +3047,7 @@ class AssertionFinder
      *
      * @return  bool
      */
-    protected static function hasStringCheck(PhpParser\Node\Expr\FuncCall $stmt)
+    protected static function hasStringCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
     {
         if ($stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->parts[0]) === 'is_string') {
             return true;
@@ -3061,7 +3061,7 @@ class AssertionFinder
      *
      * @return  bool
      */
-    protected static function hasBoolCheck(PhpParser\Node\Expr\FuncCall $stmt)
+    protected static function hasBoolCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
     {
         if ($stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->parts[0]) === 'is_bool') {
             return true;
@@ -3075,7 +3075,7 @@ class AssertionFinder
      *
      * @return  bool
      */
-    protected static function hasObjectCheck(PhpParser\Node\Expr\FuncCall $stmt)
+    protected static function hasObjectCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
     {
         if ($stmt->name instanceof PhpParser\Node\Name && $stmt->name->parts === ['is_object']) {
             return true;
@@ -3089,7 +3089,7 @@ class AssertionFinder
      *
      * @return  bool
      */
-    protected static function hasNumericCheck(PhpParser\Node\Expr\FuncCall $stmt)
+    protected static function hasNumericCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
     {
         if ($stmt->name instanceof PhpParser\Node\Name && $stmt->name->parts === ['is_numeric']) {
             return true;
@@ -3103,7 +3103,7 @@ class AssertionFinder
      *
      * @return  bool
      */
-    protected static function hasIterableCheck(PhpParser\Node\Expr\FuncCall $stmt)
+    protected static function hasIterableCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
     {
         if ($stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->parts[0]) === 'is_iterable') {
             return true;
@@ -3117,7 +3117,7 @@ class AssertionFinder
      *
      * @return  bool
      */
-    protected static function hasCountableCheck(PhpParser\Node\Expr\FuncCall $stmt)
+    protected static function hasCountableCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
     {
         if ($stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->parts[0]) === 'is_countable') {
             return true;
@@ -3131,7 +3131,7 @@ class AssertionFinder
      *
      * @return  0|1|2
      */
-    protected static function hasClassExistsCheck(PhpParser\Node\Expr\FuncCall $stmt)
+    protected static function hasClassExistsCheck(PhpParser\Node\Expr\FuncCall $stmt): int
     {
         if ($stmt->name instanceof PhpParser\Node\Name
             && strtolower($stmt->name->parts[0]) === 'class_exists'
@@ -3159,7 +3159,7 @@ class AssertionFinder
      *
      * @return  0|1|2
      */
-    protected static function hasTraitExistsCheck(PhpParser\Node\Expr\FuncCall $stmt)
+    protected static function hasTraitExistsCheck(PhpParser\Node\Expr\FuncCall $stmt): int
     {
         if ($stmt->name instanceof PhpParser\Node\Name
             && strtolower($stmt->name->parts[0]) === 'trait_exists'
@@ -3187,7 +3187,7 @@ class AssertionFinder
      *
      * @return  bool
      */
-    protected static function hasInterfaceExistsCheck(PhpParser\Node\Expr\FuncCall $stmt)
+    protected static function hasInterfaceExistsCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
     {
         if ($stmt->name instanceof PhpParser\Node\Name
             && strtolower($stmt->name->parts[0]) === 'interface_exists'
@@ -3203,7 +3203,7 @@ class AssertionFinder
      *
      * @return  bool
      */
-    protected static function hasFunctionExistsCheck(PhpParser\Node\Expr\FuncCall $stmt)
+    protected static function hasFunctionExistsCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
     {
         if ($stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->parts[0]) === 'function_exists') {
             return true;
@@ -3217,7 +3217,7 @@ class AssertionFinder
      *
      * @return  bool
      */
-    protected static function hasIntCheck(PhpParser\Node\Expr\FuncCall $stmt)
+    protected static function hasIntCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
     {
         if ($stmt->name instanceof PhpParser\Node\Name &&
             ($stmt->name->parts === ['is_int'] ||
@@ -3235,7 +3235,7 @@ class AssertionFinder
      *
      * @return  bool
      */
-    protected static function hasFloatCheck(PhpParser\Node\Expr\FuncCall $stmt)
+    protected static function hasFloatCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
     {
         if ($stmt->name instanceof PhpParser\Node\Name &&
             ($stmt->name->parts === ['is_float'] ||
@@ -3253,7 +3253,7 @@ class AssertionFinder
      *
      * @return  bool
      */
-    protected static function hasResourceCheck(PhpParser\Node\Expr\FuncCall $stmt)
+    protected static function hasResourceCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
     {
         if ($stmt->name instanceof PhpParser\Node\Name && $stmt->name->parts === ['is_resource']) {
             return true;
@@ -3267,7 +3267,7 @@ class AssertionFinder
      *
      * @return  bool
      */
-    protected static function hasScalarCheck(PhpParser\Node\Expr\FuncCall $stmt)
+    protected static function hasScalarCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
     {
         if ($stmt->name instanceof PhpParser\Node\Name && $stmt->name->parts === ['is_scalar']) {
             return true;
@@ -3281,7 +3281,7 @@ class AssertionFinder
      *
      * @return  bool
      */
-    protected static function hasCallableCheck(PhpParser\Node\Expr\FuncCall $stmt)
+    protected static function hasCallableCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
     {
         if ($stmt->name instanceof PhpParser\Node\Name && $stmt->name->parts === ['is_callable']) {
             return true;
@@ -3295,7 +3295,7 @@ class AssertionFinder
      *
      * @return  bool
      */
-    protected static function hasInArrayCheck(PhpParser\Node\Expr\FuncCall $stmt)
+    protected static function hasInArrayCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
     {
         if ($stmt->name instanceof PhpParser\Node\Name
             && $stmt->name->parts === ['in_array']
@@ -3318,7 +3318,7 @@ class AssertionFinder
      *
      * @return  bool
      */
-    protected static function hasNonEmptyCountCheck(PhpParser\Node\Expr\FuncCall $stmt)
+    protected static function hasNonEmptyCountCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
     {
         if ($stmt->name instanceof PhpParser\Node\Name
             && $stmt->name->parts === ['count']
@@ -3334,7 +3334,7 @@ class AssertionFinder
      *
      * @return  bool
      */
-    protected static function hasArrayKeyExistsCheck(PhpParser\Node\Expr\FuncCall $stmt)
+    protected static function hasArrayKeyExistsCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
     {
         if ($stmt->name instanceof PhpParser\Node\Name && $stmt->name->parts === ['array_key_exists']) {
             return true;

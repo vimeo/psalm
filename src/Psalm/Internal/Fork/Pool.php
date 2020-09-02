@@ -298,7 +298,7 @@ class Pool
      *
      * @psalm-suppress MixedAssignment
      */
-    private function readResultsFromChildren()
+    private function readResultsFromChildren(): array
     {
         // Create an array of all active streams, indexed by
         // resource id.
@@ -429,7 +429,7 @@ class Pool
      *
      * @return  bool
      */
-    public function didHaveError()
+    public function didHaveError(): bool
     {
         return $this->did_have_error;
     }

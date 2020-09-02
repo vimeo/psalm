@@ -32,7 +32,7 @@ class TArray extends \Psalm\Type\Atomic
     /**
      * @return string
      */
-    public function getKey(bool $include_extra = true)
+    public function getKey(bool $include_extra = true): string
     {
         return 'array';
     }
@@ -52,11 +52,11 @@ class TArray extends \Psalm\Type\Atomic
         $this_class,
         $php_major_version,
         $php_minor_version
-    ) {
+    ): string {
         return $this->getKey();
     }
 
-    public function canBeFullyExpressedInPhp()
+    public function canBeFullyExpressedInPhp(): bool
     {
         return $this->type_params[0]->isArrayKey() && $this->type_params[1]->isMixed();
     }
@@ -64,7 +64,7 @@ class TArray extends \Psalm\Type\Atomic
     /**
      * @return bool
      */
-    public function equals(Atomic $other_type)
+    public function equals(Atomic $other_type): bool
     {
         if (get_class($other_type) !== static::class) {
             return false;
@@ -93,7 +93,7 @@ class TArray extends \Psalm\Type\Atomic
     /**
      * @return string
      */
-    public function getAssertionString()
+    public function getAssertionString(): string
     {
         return $this->getKey();
     }

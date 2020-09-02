@@ -25,11 +25,11 @@ class TCallable extends \Psalm\Type\Atomic
         $this_class,
         $php_major_version,
         $php_minor_version
-    ) {
+    ): string {
         return 'callable';
     }
 
-    public function canBeFullyExpressedInPhp()
+    public function canBeFullyExpressedInPhp(): bool
     {
         return $this->params === null && $this->return_type === null;
     }

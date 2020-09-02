@@ -84,7 +84,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
         CodeLocation $code_location,
         array $suppressed_issues,
         &$is_dynamic_this_method = false
-    ) {
+    ): bool {
         $codebase_methods = $codebase->methods;
 
         if ($method_id->fq_class_name === 'Closure'
@@ -151,7 +151,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
         CodeLocation $code_location,
         array $suppressed_issues,
         ?string $calling_method_id = null
-    ) {
+    ): ?bool {
         if ($codebase->methods->methodExists(
             $method_id,
             $calling_method_id,
@@ -185,7 +185,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
         \Psalm\Internal\MethodIdentifier $method_id,
         Context $context,
         StatementsSource $source
-    ) {
+    ): bool {
         $codebase = $source->getCodebase();
 
         $fq_classlike_name = $method_id->fq_class_name;
@@ -274,7 +274,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
     public static function checkMethodSignatureMustOmitReturnType(
         MethodStorage $method_storage,
         CodeLocation $code_location
-    ) {
+    ): ?bool {
         if ($method_storage->signature_return_type === null) {
             return null;
         }
@@ -300,7 +300,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
      *
      * @return \Psalm\Internal\MethodIdentifier
      */
-    public function getMethodId($context_self = null)
+    public function getMethodId($context_self = null): \Psalm\Internal\MethodIdentifier
     {
         $function_name = (string)$this->function->name;
 

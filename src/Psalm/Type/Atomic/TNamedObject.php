@@ -39,7 +39,7 @@ class TNamedObject extends Atomic
         $this->was_static = $was_static;
     }
 
-    public function __toString()
+    public function __toString(): string
     {
         return $this->getKey();
     }
@@ -47,7 +47,7 @@ class TNamedObject extends Atomic
     /**
      * @return string
      */
-    public function getKey(bool $include_extra = true)
+    public function getKey(bool $include_extra = true): string
     {
         if ($include_extra && $this->extra_types) {
             return $this->value . '&' . implode('&', $this->extra_types);
@@ -56,7 +56,7 @@ class TNamedObject extends Atomic
         return $this->value;
     }
 
-    public function getId(bool $nested = false)
+    public function getId(bool $nested = false): string
     {
         if ($this->extra_types) {
             return $this->value . '&' . implode(
@@ -86,7 +86,7 @@ class TNamedObject extends Atomic
         array $aliased_classes,
         ?string $this_class,
         bool $use_phpdoc_format
-    ) {
+    ): string {
         if ($this->value === 'static') {
             return 'static';
         }
@@ -117,7 +117,7 @@ class TNamedObject extends Atomic
         $this_class,
         $php_major_version,
         $php_minor_version
-    ) {
+    ): ?string {
         if ($this->value === 'static') {
             return null;
         }
@@ -125,7 +125,7 @@ class TNamedObject extends Atomic
         return $this->toNamespacedString($namespace, $aliased_classes, $this_class, false);
     }
 
-    public function canBeFullyExpressedInPhp()
+    public function canBeFullyExpressedInPhp(): bool
     {
         return $this->value !== 'static';
     }

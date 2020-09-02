@@ -38,7 +38,7 @@ class TTemplateParamClass extends TClassString
     /**
      * @return string
      */
-    public function getKey(bool $include_extra = true)
+    public function getKey(bool $include_extra = true): string
     {
         return 'class-string<' . $this->param_name . '>';
     }
@@ -46,7 +46,7 @@ class TTemplateParamClass extends TClassString
     /**
      * @return string
      */
-    public function __toString()
+    public function __toString(): string
     {
         return 'class-string<' . $this->param_name . '>';
     }
@@ -54,7 +54,7 @@ class TTemplateParamClass extends TClassString
     /**
      * @return string
      */
-    public function getId(bool $nested = false)
+    public function getId(bool $nested = false): string
     {
         return 'class-string<' . $this->param_name . ':' . $this->defining_class . ' as ' . $this->as . '>';
     }
@@ -62,7 +62,7 @@ class TTemplateParamClass extends TClassString
     /**
      * @return string
      */
-    public function getAssertionString()
+    public function getAssertionString(): string
     {
         return 'class-string<' . $this->param_name . '>';
     }
@@ -82,11 +82,11 @@ class TTemplateParamClass extends TClassString
         $this_class,
         $php_major_version,
         $php_minor_version
-    ) {
+    ): ?string {
         return 'string';
     }
 
-    public function canBeFullyExpressedInPhp()
+    public function canBeFullyExpressedInPhp(): bool
     {
         return false;
     }
@@ -104,7 +104,7 @@ class TTemplateParamClass extends TClassString
         array $aliased_classes,
         ?string $this_class,
         bool $use_phpdoc_format
-    ) {
+    ): string {
         return $this->param_name . '::class';
     }
 

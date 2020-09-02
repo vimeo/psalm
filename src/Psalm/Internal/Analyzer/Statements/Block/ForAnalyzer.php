@@ -28,7 +28,7 @@ class ForAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\For_ $stmt,
         Context $context
-    ) {
+    ): ?bool {
         $pre_assigned_var_ids = $context->assigned_var_ids;
         $context->assigned_var_ids = [];
 

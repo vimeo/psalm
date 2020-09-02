@@ -17,7 +17,7 @@ class TLiteralFloat extends TFloat
     /**
      * @return string
      */
-    public function getKey(bool $include_extra = true)
+    public function getKey(bool $include_extra = true): string
     {
         return 'float(' . $this->value . ')';
     }
@@ -25,7 +25,7 @@ class TLiteralFloat extends TFloat
     /**
      * @return string
      */
-    public function getId(bool $nested = false)
+    public function getId(bool $nested = false): string
     {
         return 'float(' . $this->value . ')';
     }
@@ -45,7 +45,7 @@ class TLiteralFloat extends TFloat
         $this_class,
         $php_major_version,
         $php_minor_version
-    ) {
+    ): ?string {
         return $php_major_version >= 7 ? 'float' : null;
     }
 
@@ -62,7 +62,7 @@ class TLiteralFloat extends TFloat
         array $aliased_classes,
         ?string $this_class,
         bool $use_phpdoc_format
-    ) {
+    ): string {
         return 'float';
     }
 }

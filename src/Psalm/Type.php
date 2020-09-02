@@ -62,7 +62,7 @@ abstract class Type
         $type_string,
         array $php_version = null,
         array $template_type_map = []
-    ) {
+    ): Union {
         return TypeParser::parseTokens(
             TypeTokenizer::tokenize(
                 $type_string
@@ -163,7 +163,7 @@ abstract class Type
      *
      * @return Type\Union
      */
-    public static function getInt($from_calculation = false, $value = null)
+    public static function getInt($from_calculation = false, $value = null): Union
     {
         if ($value !== null) {
             $union = new Union([new TLiteralInt($value)]);
@@ -182,7 +182,7 @@ abstract class Type
      *
      * @return Type\Union
      */
-    public static function getPositiveInt(bool $from_calculation = false)
+    public static function getPositiveInt(bool $from_calculation = false): Union
     {
         $union = new Union([new Type\Atomic\TPositiveInt()]);
         $union->from_calculation = $from_calculation;
@@ -193,7 +193,7 @@ abstract class Type
     /**
      * @return Type\Union
      */
-    public static function getNumeric()
+    public static function getNumeric(): Union
     {
         $type = new TNumeric;
 
@@ -205,7 +205,7 @@ abstract class Type
      *
      * @return Type\Union
      */
-    public static function getString($value = null)
+    public static function getString($value = null): Union
     {
         $type = null;
 
@@ -239,7 +239,7 @@ abstract class Type
     /**
      * @return Type\Union
      */
-    public static function getSingleLetter()
+    public static function getSingleLetter(): Union
     {
         $type = new TSingleLetter;
 
@@ -251,7 +251,7 @@ abstract class Type
      *
      * @return Type\Union
      */
-    public static function getClassString($extends = 'object')
+    public static function getClassString($extends = 'object'): Union
     {
         return new Union([
             new TClassString(
@@ -268,7 +268,7 @@ abstract class Type
      *
      * @return Type\Union
      */
-    public static function getLiteralClassString($class_type)
+    public static function getLiteralClassString($class_type): Union
     {
         $type = new TLiteralClassString($class_type);
 
@@ -278,7 +278,7 @@ abstract class Type
     /**
      * @return Type\Union
      */
-    public static function getNull()
+    public static function getNull(): Union
     {
         $type = new TNull;
 
@@ -290,7 +290,7 @@ abstract class Type
      *
      * @return Type\Union
      */
-    public static function getMixed($from_loop_isset = false)
+    public static function getMixed($from_loop_isset = false): Union
     {
         $type = new TMixed($from_loop_isset);
 
@@ -300,7 +300,7 @@ abstract class Type
     /**
      * @return Type\Union
      */
-    public static function getScalar()
+    public static function getScalar(): Union
     {
         $type = new TScalar();
 
@@ -310,7 +310,7 @@ abstract class Type
     /**
      * @return Type\Union
      */
-    public static function getEmpty()
+    public static function getEmpty(): Union
     {
         $type = new TEmpty();
 
@@ -320,7 +320,7 @@ abstract class Type
     /**
      * @return Type\Union
      */
-    public static function getBool()
+    public static function getBool(): Union
     {
         $type = new TBool;
 
@@ -332,7 +332,7 @@ abstract class Type
      *
      * @return Type\Union
      */
-    public static function getFloat($value = null)
+    public static function getFloat($value = null): Union
     {
         if ($value !== null) {
             $type = new TLiteralFloat($value);
@@ -346,7 +346,7 @@ abstract class Type
     /**
      * @return Type\Union
      */
-    public static function getObject()
+    public static function getObject(): Union
     {
         $type = new TObject;
 
@@ -356,7 +356,7 @@ abstract class Type
     /**
      * @return Type\Union
      */
-    public static function getClosure()
+    public static function getClosure(): Union
     {
         $type = new Type\Atomic\TFn('Closure');
 
@@ -366,7 +366,7 @@ abstract class Type
     /**
      * @return Type\Union
      */
-    public static function getArrayKey()
+    public static function getArrayKey(): Union
     {
         $type = new TArrayKey();
 
@@ -376,7 +376,7 @@ abstract class Type
     /**
      * @return Type\Union
      */
-    public static function getArray()
+    public static function getArray(): Union
     {
         $type = new TArray(
             [
@@ -391,7 +391,7 @@ abstract class Type
     /**
      * @return Type\Union
      */
-    public static function getEmptyArray()
+    public static function getEmptyArray(): Union
     {
         $array_type = new TArray(
             [
@@ -408,7 +408,7 @@ abstract class Type
     /**
      * @return Type\Union
      */
-    public static function getList()
+    public static function getList(): Union
     {
         $type = new TList(new Type\Union([new TMixed]));
 
@@ -418,7 +418,7 @@ abstract class Type
     /**
      * @return Type\Union
      */
-    public static function getNonEmptyList()
+    public static function getNonEmptyList(): Union
     {
         $type = new Type\Atomic\TNonEmptyList(new Type\Union([new TMixed]));
 
@@ -428,7 +428,7 @@ abstract class Type
     /**
      * @return Type\Union
      */
-    public static function getVoid()
+    public static function getVoid(): Union
     {
         $type = new TVoid;
 
@@ -438,7 +438,7 @@ abstract class Type
     /**
      * @return Type\Union
      */
-    public static function getFalse()
+    public static function getFalse(): Union
     {
         $type = new TFalse;
 
@@ -448,7 +448,7 @@ abstract class Type
     /**
      * @return Type\Union
      */
-    public static function getTrue()
+    public static function getTrue(): Union
     {
         $type = new TTrue;
 
@@ -458,7 +458,7 @@ abstract class Type
     /**
      * @return Type\Union
      */
-    public static function getResource()
+    public static function getResource(): Union
     {
         return new Union([new TResource]);
     }
@@ -494,7 +494,7 @@ abstract class Type
         bool $overwrite_empty_array = false,
         bool $allow_mixed_union = true,
         int $literal_limit = 500
-    ) {
+    ): Union {
         if ($type_1 === $type_2) {
             return $type_1;
         }
@@ -587,7 +587,7 @@ abstract class Type
         Union $type_1,
         Union $type_2,
         Codebase $codebase
-    ) {
+    ): ?Union {
         $intersection_performed = false;
 
         if ($type_1->isMixed() && $type_2->isMixed()) {

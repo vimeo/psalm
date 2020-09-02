@@ -32,7 +32,7 @@ class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
      *
      * @return null|int
      */
-    public function enterNode(PhpParser\Node $node)
+    public function enterNode(PhpParser\Node $node): ?int
     {
         if ($node instanceof PhpParser\Node\Expr\Assign) {
             $left_var_id = ExpressionIdentifier::getRootVarId($node->var, $this->this_class_name);
@@ -80,7 +80,7 @@ class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
     /**
      * @return array<string, array<string, bool>>
      */
-    public function getAssignmentMap()
+    public function getAssignmentMap(): array
     {
         return $this->assignment_map;
     }

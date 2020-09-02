@@ -245,7 +245,7 @@ class BuildInfoCollector
      * @return $this
      * @psalm-suppress PossiblyUndefinedStringArrayOffset
      */
-    protected function fillGithubActions()
+    protected function fillGithubActions(): BuildInfoCollector
     {
         if (isset($this->env['GITHUB_ACTIONS'])) {
             $this->env['CI_NAME'] = 'github-actions';

@@ -26,7 +26,7 @@ class ExpressionIdentifier
         $this_class_name,
         FileSource $source = null,
         &$nesting = null
-    ) {
+    ): ?string {
         if ($stmt instanceof PhpParser\Node\Expr\Variable && is_string($stmt->name)) {
             return '$' . $stmt->name;
         }
@@ -85,7 +85,7 @@ class ExpressionIdentifier
         PhpParser\Node\Expr $stmt,
         $this_class_name,
         FileSource $source = null
-    ) {
+    ): ?string {
         if ($stmt instanceof PhpParser\Node\Expr\Variable
             || $stmt instanceof PhpParser\Node\Expr\StaticPropertyFetch
         ) {
@@ -118,7 +118,7 @@ class ExpressionIdentifier
         PhpParser\Node\Expr $stmt,
         $this_class_name,
         FileSource $source = null
-    ) {
+    ): ?string {
         if ($stmt instanceof PhpParser\Node\Expr\Assign) {
             return self::getArrayVarId($stmt->var, $this_class_name, $source);
         }

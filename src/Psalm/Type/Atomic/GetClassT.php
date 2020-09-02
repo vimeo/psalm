@@ -30,7 +30,7 @@ class GetClassT extends TString
         $this->as_type = $as_type;
     }
 
-    public function getId(bool $nested = false)
+    public function getId(bool $nested = false): string
     {
         return $this->as_type->isMixed()
             || $this->as_type->hasObject()
@@ -41,7 +41,7 @@ class GetClassT extends TString
     /**
      * @return bool
      */
-    public function canBeFullyExpressedInPhp()
+    public function canBeFullyExpressedInPhp(): bool
     {
         return false;
     }

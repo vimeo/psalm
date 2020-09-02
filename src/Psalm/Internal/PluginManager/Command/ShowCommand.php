@@ -42,7 +42,7 @@ class ShowCommand extends Command
     /**
      * @return int
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
         $current_dir = (string) getcwd() . DIRECTORY_SEPARATOR;

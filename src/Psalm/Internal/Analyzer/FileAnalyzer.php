@@ -294,7 +294,7 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
      *
      * @return array<int, PhpParser\Node\Stmt>
      */
-    public function populateCheckers(array $stmts)
+    public function populateCheckers(array $stmts): array
     {
         $leftover_stmts = [];
 
@@ -476,7 +476,7 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
     /**
      * @return null|string
      */
-    public function getNamespace()
+    public function getNamespace(): ?string
     {
         return null;
     }
@@ -486,7 +486,7 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
      *
      * @return array<string, string>
      */
-    public function getAliasedClassesFlipped($namespace_name = null)
+    public function getAliasedClassesFlipped($namespace_name = null): array
     {
         if ($namespace_name && isset($this->namespace_aliased_classes_flipped[$namespace_name])) {
             return $this->namespace_aliased_classes_flipped[$namespace_name];
@@ -500,7 +500,7 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
      *
      * @return array<string, string>
      */
-    public function getAliasedClassesFlippedReplaceable($namespace_name = null)
+    public function getAliasedClassesFlippedReplaceable($namespace_name = null): array
     {
         if ($namespace_name && isset($this->namespace_aliased_classes_flipped_replaceable[$namespace_name])) {
             return $this->namespace_aliased_classes_flipped_replaceable[$namespace_name];
@@ -528,7 +528,7 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
     /**
      * @return string
      */
-    public function getFileName()
+    public function getFileName(): string
     {
         return $this->file_name;
     }
@@ -536,7 +536,7 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
     /**
      * @return string
      */
-    public function getFilePath()
+    public function getFilePath(): string
     {
         return $this->file_path;
     }
@@ -594,7 +594,7 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
      *
      * @return bool
      */
-    public function hasParentFilePath($file_path)
+    public function hasParentFilePath($file_path): bool
     {
         return $this->file_path === $file_path || isset($this->parent_file_paths[$file_path]);
     }
@@ -604,7 +604,7 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
      *
      * @return bool
      */
-    public function hasAlreadyRequiredFilePath($file_path)
+    public function hasAlreadyRequiredFilePath($file_path): bool
     {
         return isset($this->required_file_paths[$file_path]);
     }
@@ -612,7 +612,7 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
     /**
      * @return array<int, string>
      */
-    public function getRequiredFilePaths()
+    public function getRequiredFilePaths(): array
     {
         return array_keys($this->required_file_paths);
     }
@@ -620,7 +620,7 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
     /**
      * @return array<int, string>
      */
-    public function getParentFilePaths()
+    public function getParentFilePaths(): array
     {
         return array_keys($this->parent_file_paths);
     }
@@ -628,7 +628,7 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
     /**
      * @return int
      */
-    public function getRequireNesting()
+    public function getRequireNesting(): int
     {
         return count($this->parent_file_paths);
     }
@@ -636,7 +636,7 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
     /**
      * @return array<string>
      */
-    public function getSuppressedIssues()
+    public function getSuppressedIssues(): array
     {
         return $this->suppressed_issues;
     }
@@ -672,7 +672,7 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
     /**
      * @return null|string
      */
-    public function getFQCLN()
+    public function getFQCLN(): ?string
     {
         return null;
     }
@@ -680,7 +680,7 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
     /**
      * @return null|string
      */
-    public function getParentFQCLN()
+    public function getParentFQCLN(): ?string
     {
         return null;
     }
@@ -688,7 +688,7 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
     /**
      * @return null|string
      */
-    public function getClassName()
+    public function getClassName(): ?string
     {
         return null;
     }
@@ -696,7 +696,7 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
     /**
      * @return array<string, array<string, array{Type\Union}>>|null
      */
-    public function getTemplateTypeMap()
+    public function getTemplateTypeMap(): ?array
     {
         return null;
     }
@@ -704,7 +704,7 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
     /**
      * @return bool
      */
-    public function isStatic()
+    public function isStatic(): bool
     {
         return false;
     }

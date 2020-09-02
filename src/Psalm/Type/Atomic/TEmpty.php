@@ -3,7 +3,7 @@ namespace Psalm\Type\Atomic;
 
 class TEmpty extends Scalar
 {
-    public function __toString()
+    public function __toString(): string
     {
         return 'empty';
     }
@@ -11,7 +11,7 @@ class TEmpty extends Scalar
     /**
      * @return string
      */
-    public function getKey(bool $include_extra = true)
+    public function getKey(bool $include_extra = true): string
     {
         return 'empty';
     }
@@ -31,7 +31,7 @@ class TEmpty extends Scalar
         $this_class,
         $php_major_version,
         $php_minor_version
-    ) {
+    ): ?string {
         return null;
     }
 }

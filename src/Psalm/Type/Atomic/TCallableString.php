@@ -6,12 +6,12 @@ class TCallableString extends TString
     /**
      * @return string
      */
-    public function getKey(bool $include_extra = true)
+    public function getKey(bool $include_extra = true): string
     {
         return 'callable-string';
     }
 
-    public function getId(bool $nested = false)
+    public function getId(bool $nested = false): string
     {
         return $this->getKey();
     }
@@ -19,7 +19,7 @@ class TCallableString extends TString
     /**
      * @return bool
      */
-    public function canBeFullyExpressedInPhp()
+    public function canBeFullyExpressedInPhp(): bool
     {
         return false;
     }
@@ -27,7 +27,7 @@ class TCallableString extends TString
     /**
      * @return string
      */
-    public function getAssertionString()
+    public function getAssertionString(): string
     {
         return 'string';
     }
