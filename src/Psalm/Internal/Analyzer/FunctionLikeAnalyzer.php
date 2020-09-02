@@ -524,7 +524,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         }
 
         if ($storage->signature_return_type && $storage->signature_return_type_location) {
-            list($start, $end) = $storage->signature_return_type_location->getSelectionBounds();
+            [$start, $end] = $storage->signature_return_type_location->getSelectionBounds();
 
             $codebase->analyzer->addOffsetReference(
                 $this->getFilePath(),
@@ -945,7 +945,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
         $unused_params = [];
 
-        foreach ($statements_analyzer->getUnusedVarLocations() as list($var_name, $original_location)) {
+        foreach ($statements_analyzer->getUnusedVarLocations() as [$var_name, $original_location]) {
             if (!array_key_exists(substr($var_name, 1), $storage->param_lookup)) {
                 continue;
             }
@@ -1083,7 +1083,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     $referenced_type = clone $referenced_type;
                     $referenced_type->removeType('null');
                 }
-                list($start, $end) = $signature_type_location->getSelectionBounds();
+                [$start, $end] = $signature_type_location->getSelectionBounds();
                 $codebase->analyzer->addOffsetReference(
                     $this->getFilePath(),
                     $start,

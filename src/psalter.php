@@ -347,7 +347,7 @@ if (isset($options['codeowner'])) {
 
     $codeowner_files = [];
 
-    foreach ($codeowner_lines as list($path, $owners)) {
+    foreach ($codeowner_lines as [$path, $owners]) {
         if (!file_exists($path)) {
             continue;
         }

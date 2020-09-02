@@ -50,7 +50,7 @@ class TemplateScanner extends Psalm\Internal\Scanner\FileScanner
                     throw new \InvalidArgumentException('Could not interpret doc comment correctly');
                 }
 
-                list($fq_class_name) = explode('::', $matches[1]);
+                [$fq_class_name] = explode('::', $matches[1]);
 
                 $codebase->scanner->queueClassLikeForScanning(
                     $fq_class_name,

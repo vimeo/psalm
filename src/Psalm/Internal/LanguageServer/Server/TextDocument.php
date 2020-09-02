@@ -166,7 +166,7 @@ class TextDocument
             return new Success(null);
         }
 
-        list($reference) = $reference_location;
+        [$reference] = $reference_location;
 
         $code_location = $this->codebase->getSymbolLocation($file_path, $reference);
 
@@ -210,7 +210,7 @@ class TextDocument
             return new Success(null);
         }
 
-        list($reference, $range) = $reference_location;
+        [$reference, $range] = $reference_location;
 
         $symbol_information = $this->codebase->getSymbolInformation($file_path, $reference);
 
@@ -259,7 +259,7 @@ class TextDocument
             return new Success([]);
         }
 
-        list($recent_type, $gap, $offset) = $completion_data;
+        [$recent_type, $gap, $offset] = $completion_data;
 
         if ($gap === '->' || $gap === '::') {
             $completion_items = $this->codebase->getCompletionItemsForClassishThing($recent_type, $gap);

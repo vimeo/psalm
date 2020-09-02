@@ -173,7 +173,7 @@ class StatementsProvider
             );
 
             if ($existing_file_contents && $existing_statements) {
-                list($unchanged_members, $unchanged_signature_members, $changed_members, $diff_map)
+                [$unchanged_members, $unchanged_signature_members, $changed_members, $diff_map]
                     = \Psalm\Internal\Diff\FileStatementsDiffer::diff(
                         $existing_statements,
                         $stmts,

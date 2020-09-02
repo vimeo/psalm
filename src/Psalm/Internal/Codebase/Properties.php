@@ -76,7 +76,7 @@ class Properties
         // remove trailing backslash if it exists
         $property_id = preg_replace('/^\\\\/', '', $property_id);
 
-        list($fq_class_name, $property_name) = explode('::$', $property_id);
+        [$fq_class_name, $property_name] = explode('::$', $property_id);
         $fq_class_name_lc = strtolower($fq_class_name);
 
         if ($this->property_existence_provider->has($fq_class_name)) {
@@ -160,7 +160,7 @@ class Properties
      */
     public function getDeclaringClassForProperty(string $property_id, bool $read_mode, ?StatementsSource $source = null)
     {
-        list($fq_class_name, $property_name) = explode('::$', $property_id);
+        [$fq_class_name, $property_name] = explode('::$', $property_id);
 
         if ($this->property_existence_provider->has($fq_class_name)) {
             if ($this->property_existence_provider->doesPropertyExist(
@@ -187,7 +187,7 @@ class Properties
      */
     public function getAppearingClassForProperty(string $property_id, bool $read_mode, ?StatementsSource $source = null)
     {
-        list($fq_class_name, $property_name) = explode('::$', $property_id);
+        [$fq_class_name, $property_name] = explode('::$', $property_id);
 
         if ($this->property_existence_provider->has($fq_class_name)) {
             if ($this->property_existence_provider->doesPropertyExist(
@@ -215,7 +215,7 @@ class Properties
         // remove trailing backslash if it exists
         $property_id = preg_replace('/^\\\\/', '', $property_id);
 
-        list($fq_class_name, $property_name) = explode('::$', $property_id);
+        [$fq_class_name, $property_name] = explode('::$', $property_id);
 
         $class_storage = $this->classlike_storage_provider->get($fq_class_name);
 
@@ -240,7 +240,7 @@ class Properties
         // remove trailing backslash if it exists
         $property_id = preg_replace('/^\\\\/', '', $property_id);
 
-        list($fq_class_name, $property_name) = explode('::$', $property_id);
+        [$fq_class_name, $property_name] = explode('::$', $property_id);
 
         if ($this->property_type_provider->has($fq_class_name)) {
             $property_type = $this->property_type_provider->getPropertyType(

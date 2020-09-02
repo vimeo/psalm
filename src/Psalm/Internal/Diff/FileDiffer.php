@@ -124,7 +124,7 @@ class FileDiffer
     {
         $a = explode("\n", $a_code);
         $b = explode("\n", $b_code);
-        list($trace, $x, $y) = self::calculateTrace($a, $b);
+        [$trace, $x, $y] = self::calculateTrace($a, $b);
 
         $diff = self::coalesceReplacements(self::extractDiff($trace, $x, $y, $a, $b));
 
