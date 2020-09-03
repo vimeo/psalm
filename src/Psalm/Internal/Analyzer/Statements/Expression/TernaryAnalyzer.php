@@ -2,6 +2,7 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
+use Psalm\Internal\Analyzer\AlgebraAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use \Psalm\Internal\Analyzer\Statements\Block\IfAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -47,6 +48,7 @@ class TernaryAnalyzer
             $if_context = $if_conditional_scope->if_context;
 
             $cond_referenced_var_ids = $if_conditional_scope->cond_referenced_var_ids;
+            $cond_assigned_var_ids = $if_conditional_scope->cond_assigned_var_ids;
         } catch (\Psalm\Exception\ScopeAnalysisException $e) {
             return false;
         }
@@ -100,6 +102,15 @@ class TernaryAnalyzer
                 },
                 $if_clauses
             )
+        );
+
+        // this will see whether any of the clauses in set A conflict with the clauses in set B
+        AlgebraAnalyzer::checkForParadox(
+            $context->clauses,
+            $if_clauses,
+            $statements_analyzer,
+            $stmt->cond,
+            $cond_assigned_var_ids
         );
 
         $ternary_clauses = array_merge($context->clauses, $if_clauses);
@@ -178,7 +189,16 @@ class TernaryAnalyzer
             );
         }
 
+        $t_else_context->clauses = Algebra::simplifyCNF(
+            array_merge(
+                $t_else_context->clauses,
+                $negated_clauses
+            )
+        );
+
         if ($negated_if_types) {
+            $changed_var_ids = [];
+
             $t_else_vars_in_scope_reconciled = Reconciler::reconcileKeyedTypes(
                 $negated_if_types,
                 $negated_if_types,
@@ -192,6 +212,8 @@ class TernaryAnalyzer
             );
 
             $t_else_context->vars_in_scope = $t_else_vars_in_scope_reconciled;
+
+            $t_else_context->clauses = Context::removeReconciledClauses($t_else_context->clauses, $changed_var_ids)[0];
         }
 
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->else, $t_else_context) === false) {

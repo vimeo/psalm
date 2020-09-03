@@ -163,6 +163,19 @@ class MatchTest extends TestCase
                 false,
                 '8.0',
             ],
+            'paradoxWithDuplicateValue' => [
+                '<?php
+                    function foo(int $i) : void {
+                        echo match ($i) {
+                            1 => 0,
+                            1 => 1,
+                        };
+                    };',
+                'error_message' => 'ParadoxicalCondition',
+                [],
+                false,
+                '8.0',
+            ],
         ];
     }
 }
