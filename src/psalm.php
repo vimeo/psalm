@@ -305,7 +305,6 @@ if (isset($options['i'])) {
         /**
          * @param string $arg
          *
-         * @return bool
          */
         function ($arg): bool {
             return $arg !== '--ansi'

@@ -628,7 +628,6 @@ class Config
      * @param  string $current_dir
      * @param  string $output_format
      *
-     * @return Config
      * @throws ConfigException if a config path is not found
      *
      */
@@ -653,7 +652,6 @@ class Config
      *
      * @throws ConfigException
      *
-     * @return ?string
      */
     public static function locateConfigFile(string $path): ?string
     {
@@ -686,7 +684,6 @@ class Config
      * @param  string           $file_path
      * @param  string           $current_dir
      *
-     * @return self
      */
     public static function loadFromXMLFile($file_path, $current_dir): Config
     {
@@ -713,13 +710,11 @@ class Config
     /**
      * Creates a new config object from an XML string
      *
-     * @throws ConfigException
-     *
      * @param  string           $base_dir
      * @param  string           $file_contents
      * @param  string|null      $current_dir Current working directory, if different to $base_dir
      *
-     * @return self
+     * @throws ConfigException
      */
     public static function loadFromXML($base_dir, $file_contents, $current_dir = null): Config
     {
@@ -1341,7 +1336,6 @@ class Config
     /**
      * @param  string $file_name
      *
-     * @return string
      */
     public function shortenFileName($file_name): string
     {
@@ -1352,7 +1346,6 @@ class Config
      * @param   string $issue_type
      * @param   string $file_path
      *
-     * @return  bool
      */
     public function reportIssueInFile($issue_type, $file_path): bool
     {
@@ -1407,7 +1400,6 @@ class Config
     /**
      * @param   string $file_path
      *
-     * @return  bool
      */
     public function isInProjectDirs($file_path): bool
     {
@@ -1417,7 +1409,6 @@ class Config
     /**
      * @param   string $file_path
      *
-     * @return  bool
      */
     public function isInExtraDirs($file_path): bool
     {
@@ -1427,7 +1418,6 @@ class Config
     /**
      * @param   string $file_path
      *
-     * @return  bool
      */
     public function mustBeIgnored($file_path): bool
     {
@@ -1485,7 +1475,6 @@ class Config
     /**
      * @param string $issue_type
      *
-     * @return string|null
      *
      * @psalm-pure
      */
@@ -1578,7 +1567,6 @@ class Config
      * @param   string $issue_type
      * @param   string $file_path
      *
-     * @return  string
      */
     public function getReportingLevelForFile($issue_type, $file_path): string
     {
@@ -1663,8 +1651,6 @@ class Config
     }
 
     /**
-     * @param   string $issue_type
-     * @param   string $var_name
      *
      * @return  string|null
      */
@@ -1714,7 +1700,6 @@ class Config
     /**
      * @param   string $file_path
      *
-     * @return  bool
      */
     public function reportTypeStatsForFile($file_path): bool
     {
@@ -1726,7 +1711,6 @@ class Config
     /**
      * @param   string $file_path
      *
-     * @return  bool
      */
     public function useStrictTypesForFile($file_path): bool
     {
@@ -1850,18 +1834,12 @@ class Config
 
         $codebase->register_stub_files = false;
     }
-
-    /**
-     * @return string|null
-     */
+    
     public function getCacheDirectory(): ?string
     {
         return $this->cache_directory;
     }
-
-    /**
-     * @return ?string
-     */
+    
     public function getGlobalCacheDirectory(): ?string
     {
         return $this->global_cache_directory;

@@ -36,7 +36,6 @@ class ClassLikeStorageProvider
      * @param  string $fq_classlike_name
      * @throws \InvalidArgumentException when class does not exist
      *
-     * @return ClassLikeStorage
      */
     public function get($fq_classlike_name): ClassLikeStorage
     {
@@ -51,7 +50,6 @@ class ClassLikeStorageProvider
     /**
      * @param  string $fq_classlike_name
      *
-     * @return bool
      */
     public function has($fq_classlike_name): bool
     {
@@ -65,7 +63,6 @@ class ClassLikeStorageProvider
      * @param  string|null $file_path
      * @param  string|null $file_contents
      *
-     * @return ClassLikeStorage
      */
     public function exhume($fq_classlike_name, $file_path, $file_contents): ClassLikeStorage
     {
@@ -125,7 +122,6 @@ class ClassLikeStorageProvider
     /**
      * @param  string $fq_classlike_name
      *
-     * @return ClassLikeStorage
      */
     public function create($fq_classlike_name): ClassLikeStorage
     {

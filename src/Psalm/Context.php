@@ -395,11 +395,8 @@ class Context
      * Updates the parent context, looking at the changes within a block and then applying those changes, where
      * necessary, to the parent context
      *
-     * @param  Context     $start_context
-     * @param  Context     $end_context
      * @param  bool        $has_leaving_statements   whether or not the parent scope is abandoned between
      *                                               $start_context and $end_context
-     * @param  array       $vars_to_update
      * @param  array<string, bool>  $updated_vars
      *
      * @return void
@@ -484,8 +481,6 @@ class Context
     }
 
     /**
-     * @param  Context $original_context
-     * @param  Context $new_context
      *
      * @return array<int, string>
      */
@@ -738,7 +733,6 @@ class Context
     }
 
     /**
-     * @param   Context $op_context
      *
      * @return  void
      */
@@ -754,7 +748,6 @@ class Context
     /**
      * @param   string $class_name
      *
-     * @return  bool
      */
     public function isPhantomClass($class_name): bool
     {
@@ -764,7 +757,6 @@ class Context
     /**
      * @param  string|null  $var_name
      *
-     * @return bool
      */
     public function hasVariable($var_name, StatementsAnalyzer $statements_analyzer = null): bool
     {
@@ -843,10 +835,7 @@ class Context
             }
         }
     }
-
-    /**
-     * @return bool
-     */
+    
     public function isSuppressingExceptions(StatementsAnalyzer $statements_analyzer): bool
     {
         if (!$this->collect_exceptions) {

@@ -11,9 +11,6 @@ class TFn extends TNamedObject
     /** @var array<string, bool> */
     public $byref_uses = [];
 
-    /**
-     * @return bool
-     */
     public function canBeFullyExpressedInPhp(): bool
     {
         return false;

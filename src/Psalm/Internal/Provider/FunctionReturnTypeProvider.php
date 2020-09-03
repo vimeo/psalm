@@ -97,7 +97,6 @@ class FunctionReturnTypeProvider
      * @param  non-empty-string $function_id
      * @param  array<PhpParser\Node\Arg>  $call_args
      *
-     * @return ?Type\Union
      */
     public function getReturnType(
         StatementsSource $statements_source,

@@ -63,10 +63,7 @@ class Methods
 
     /** @var MethodVisibilityProvider */
     public $visibility_provider;
-
-    /**
-     * @param ClassLikeStorageProvider $storage_provider
-     */
+    
     public function __construct(
         ClassLikeStorageProvider $storage_provider,
         FileReferenceProvider $file_reference_provider,
@@ -608,10 +605,7 @@ class Methods
 
         return $extra_added_types;
     }
-
-    /**
-     * @return bool
-     */
+    
     public function isVariadic(MethodIdentifier $method_id): bool
     {
         $declaring_method_id = $this->getDeclaringMethodId($method_id);
@@ -626,7 +620,6 @@ class Methods
     /**
      * @param  array<int, PhpParser\Node\Arg>|null $args
      *
-     * @return Type\Union|null
      */
     public function getMethodReturnType(
         MethodIdentifier $method_id,
@@ -808,9 +801,6 @@ class Methods
         return $candidate_type;
     }
 
-    /**
-     * @return bool
-     */
     public function getMethodReturnsByRef(MethodIdentifier $method_id): bool
     {
         $method_id = $this->getDeclaringMethodId($method_id);
@@ -833,7 +823,6 @@ class Methods
     /**
      * @param  CodeLocation|null    $defined_location
      *
-     * @return CodeLocation|null
      */
     public function getMethodReturnTypeLocation(
         MethodIdentifier $method_id,
@@ -989,9 +978,6 @@ class Methods
         return $fq_class_name . '::' . $storage->cased_name;
     }
 
-    /**
-     * @return ?MethodStorage
-     */
     public function getUserMethodStorage(MethodIdentifier $method_id): ?MethodStorage
     {
         $declaring_method_id = $this->getDeclaringMethodId($method_id);
@@ -1008,10 +994,7 @@ class Methods
 
         return $storage;
     }
-
-    /**
-     * @return ClassLikeStorage
-     */
+    
     public function getClassLikeStorageForMethod(MethodIdentifier $method_id): ClassLikeStorage
     {
         $fq_class_name = $method_id->fq_class_name;
@@ -1043,9 +1026,6 @@ class Methods
         return $this->classlike_storage_provider->get($declaring_fq_class_name);
     }
 
-    /**
-     * @return MethodStorage
-     */
     public function getStorage(MethodIdentifier $method_id): MethodStorage
     {
         try {
@@ -1065,9 +1045,6 @@ class Methods
         return $class_storage->methods[$method_name];
     }
 
-    /**
-     * @return bool
-     */
     public function hasStorage(MethodIdentifier $method_id): bool
     {
         try {

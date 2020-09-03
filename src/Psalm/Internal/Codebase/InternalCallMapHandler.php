@@ -55,7 +55,6 @@ class InternalCallMapHandler
      * @param  string                           $method_id
      * @param  array<int, PhpParser\Node\Arg>   $args
      *
-     * @return TCallable
      */
     public static function getCallableFromCallMapById(
         Codebase $codebase,
@@ -83,7 +82,6 @@ class InternalCallMapHandler
      * @param  array<int, TCallable>  $callables
      * @param  array<int, PhpParser\Node\Arg>                 $args
      *
-     * @return TCallable
      */
     public static function getMatchingCallableFromCallMapOptions(
         Codebase $codebase,
@@ -220,7 +218,6 @@ class InternalCallMapHandler
     /**
      * @param  string $function_id
      *
-     * @return array|null
      * @psalm-return array<int, TCallable>|null
      */
     public static function getCallablesFromCallMap($function_id): ?array
@@ -413,7 +410,6 @@ class InternalCallMapHandler
     /**
      * @param   string $key
      *
-     * @return  bool
      */
     public static function inCallMap($key): bool
     {

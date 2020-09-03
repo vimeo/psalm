@@ -70,7 +70,6 @@ class PropertyVisibilityProvider
     /**
      * @param  array<PhpParser\Node\Arg>  $call_args
      *
-     * @return ?bool
      */
     public function isPropertyVisible(
         StatementsSource $source,

@@ -20,9 +20,6 @@ class PylintReport extends Report
         return $output;
     }
 
-    /**
-     * @return string
-     */
     private function format(\Psalm\Internal\Analyzer\IssueData $issue_data): string
     {
         $message = sprintf(

@@ -3,9 +3,6 @@ namespace Psalm;
 
 interface StatementsSource extends FileSource
 {
-    /**
-     * @return null|string
-     */
     public function getNamespace(): ?string;
 
     /**
@@ -18,19 +15,10 @@ interface StatementsSource extends FileSource
      */
     public function getAliasedClassesFlippedReplaceable(): array;
 
-    /**
-     * @return string|null
-     */
     public function getFQCLN(): ?string;
 
-    /**
-     * @return string|null
-     */
     public function getClassName(): ?string;
 
-    /**
-     * @return string|null
-     */
     public function getParentFQCLN(): ?string;
 
     /**
@@ -49,25 +37,17 @@ interface StatementsSource extends FileSource
     /**
      * @param string $file_path
      *
-     * @return bool
      */
     public function hasParentFilePath($file_path): bool;
 
     /**
      * @param string $file_path
      *
-     * @return bool
      */
     public function hasAlreadyRequiredFilePath($file_path): bool;
 
-    /**
-     * @return int
-     */
     public function getRequireNesting(): int;
 
-    /**
-     * @return bool
-     */
     public function isStatic(): bool;
 
     /**

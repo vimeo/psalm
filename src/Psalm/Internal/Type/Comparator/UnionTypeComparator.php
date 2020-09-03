@@ -258,10 +258,7 @@ class UnionTypeComparator
     /**
      * Used for comparing signature typehints, uses PHP's light contravariance rules
      *
-     * @param  ?Type\Union  $input_type
-     * @param  Type\Union   $container_type
      *
-     * @return bool
      */
     public static function isContainedByInPhp(
         ?Type\Union $input_type,
@@ -299,8 +296,6 @@ class UnionTypeComparator
     /**
      * Used for comparing docblock types to signature types before we know about all types
      *
-     * @param  Type\Union   $input_type
-     * @param  Type\Union   $container_type
      */
     public static function isSimplyContainedBy(
         Type\Union $input_type,
@@ -345,12 +340,9 @@ class UnionTypeComparator
     /**
      * Does the input param type match the given param type
      *
-     * @param  Type\Union   $input_type
-     * @param  Type\Union   $container_type
      * @param  bool         $ignore_null
      * @param  bool         $ignore_false
      *
-     * @return bool
      */
     public static function canBeContainedBy(
         Codebase $codebase,
@@ -402,7 +394,6 @@ class UnionTypeComparator
     /**
      * Can any part of the $type1 be equal to any part of $type2
      *
-     * @return bool
      */
     public static function canExpressionTypesBeIdentical(
         Codebase $codebase,

@@ -221,8 +221,6 @@ class Analyzer
 
     /**
      * @param  string $file_path
-     *
-     * @return bool
      */
     public function canReportIssues($file_path): bool
     {
@@ -232,8 +230,6 @@ class Analyzer
     /**
      * @param  string $file_path
      * @param  array<string, class-string<FileAnalyzer>> $filetype_analyzers
-     *
-     * @return FileAnalyzer
      */
     private function getFileAnalyzer(
         ProjectAnalyzer $project_analyzer,
@@ -256,10 +252,6 @@ class Analyzer
     }
 
     /**
-     * @param  ProjectAnalyzer $project_analyzer
-     * @param  int            $pool_size
-     * @param  bool           $alter_code
-     *
      * @return void
      */
     public function analyzeFiles(
@@ -1272,9 +1264,6 @@ class Analyzer
         return [$mixed_count, $nonmixed_count];
     }
 
-    /**
-     * @return string
-     */
     public function getTypeInferenceSummary(\Psalm\Codebase $codebase): string
     {
         $all_deep_scanned_files = [];
@@ -1307,9 +1296,6 @@ class Analyzer
             . ' of the codebase';
     }
 
-    /**
-     * @return string
-     */
     public function getNonMixedStats(): string
     {
         $stats = '';
@@ -1390,9 +1376,6 @@ class Analyzer
 
         usort(
             $file_manipulations,
-            /**
-             * @return int
-             */
             function (FileManipulation $a, FileManipulation $b): int {
                 if ($b->end === $a->end) {
                     if ($a->start === $b->start) {
@@ -1585,8 +1568,6 @@ class Analyzer
      * @param  string  $file_path
      * @param  string  $method_id
      * @param bool $is_constructor
-     *
-     * @return bool
      */
     public function isMethodAlreadyAnalyzed($file_path, $method_id, $is_constructor = false): bool
     {

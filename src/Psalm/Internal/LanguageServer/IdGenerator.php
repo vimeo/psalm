@@ -15,7 +15,6 @@ class IdGenerator
     /**
      * Returns a unique ID
      *
-     * @return int
      */
     public function generate(): int
     {

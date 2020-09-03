@@ -44,9 +44,6 @@ class TConditional extends \Psalm\Type\Atomic
      */
     public $else_type;
 
-    /**
-     * @param string $defining_class
-     */
     public function __construct(
         string $param_name,
         string $defining_class,
@@ -81,17 +78,11 @@ class TConditional extends \Psalm\Type\Atomic
         $this->as_type = clone $this->as_type;
     }
 
-    /**
-     * @return string
-     */
     public function getKey(bool $include_extra = true): string
     {
         return $this->__toString();
     }
 
-    /**
-     * @return string
-     */
     public function getAssertionString(): string
     {
         return '';
@@ -127,12 +118,8 @@ class TConditional extends \Psalm\Type\Atomic
     }
 
     /**
-     * @param  string|null   $namespace
      * @param  array<string, string> $aliased_classes
-     * @param  string|null   $this_class
-     * @param  bool          $use_phpdoc_format
      *
-     * @return string
      */
     public function toNamespacedString(
         ?string $namespace,
@@ -148,9 +135,6 @@ class TConditional extends \Psalm\Type\Atomic
         return [$this->conditional_type, $this->if_type, $this->else_type];
     }
 
-    /**
-     * @return bool
-     */
     public function canBeFullyExpressedInPhp(): bool
     {
         return false;

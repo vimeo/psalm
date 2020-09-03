@@ -154,7 +154,6 @@ class Functions
     /**
      * @param  string  $function_id
      *
-     * @return bool
      */
     public function hasStubbedFunction($function_id): bool
     {
@@ -171,7 +170,6 @@ class Functions
 
     /**
      * @param lowercase-string $function_id
-     * @return bool
      */
     public function functionExists(
         StatementsAnalyzer $statements_analyzer,
@@ -219,7 +217,6 @@ class Functions
 
     /**
      * @param  non-empty-string         $function_name
-     * @param  StatementsSource         $source
      *
      * @return non-empty-string
      */
@@ -268,7 +265,6 @@ class Functions
      * @param  string $function_id
      * @param  string $file_path
      *
-     * @return bool
      */
     public static function isVariadic(Codebase $codebase, $function_id, $file_path): bool
     {

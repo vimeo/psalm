@@ -41,7 +41,6 @@ trait CanAlias
     private $aliased_constants = [];
 
     /**
-     * @param  PhpParser\Node\Stmt\Use_ $stmt
      *
      * @return void
      */
@@ -104,7 +103,6 @@ trait CanAlias
     }
 
     /**
-     * @param  PhpParser\Node\Stmt\GroupUse $stmt
      *
      * @return void
      */
@@ -157,9 +155,6 @@ trait CanAlias
         return $this->aliased_classes_flipped_replaceable;
     }
 
-    /**
-     * @return Aliases
-     */
     public function getAliases(): Aliases
     {
         return new Aliases(

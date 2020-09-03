@@ -22,7 +22,6 @@ class Value extends \Psalm\Internal\Type\ParseTree
     public $offset_end;
 
     /**
-     * @param string $value
      * @param \Psalm\Internal\Type\ParseTree|null $parent
      */
     public function __construct(

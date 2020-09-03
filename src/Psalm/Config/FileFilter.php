@@ -91,7 +91,6 @@ class FileFilter
     }
 
     /**
-     * @param  SimpleXMLElement $e
      * @param  string           $base_dir
      * @param  bool             $inclusive
      *
@@ -345,7 +344,6 @@ class FileFilter
     /**
      * @param string $str
      *
-     * @return string
      *
      * @psalm-pure
      */
@@ -358,7 +356,6 @@ class FileFilter
      * @param  string  $file_name
      * @param  bool $case_sensitive
      *
-     * @return bool
      */
     public function allows($file_name, $case_sensitive = false): bool
     {
@@ -417,7 +414,6 @@ class FileFilter
     /**
      * @param  string  $fq_classlike_name
      *
-     * @return bool
      */
     public function allowsClass($fq_classlike_name): bool
     {
@@ -435,7 +431,6 @@ class FileFilter
     /**
      * @param  string  $method_id
      *
-     * @return bool
      */
     public function allowsMethod($method_id): bool
     {
@@ -469,7 +464,6 @@ class FileFilter
     /**
      * @param  string  $property_id
      *
-     * @return bool
      */
     public function allowsProperty($property_id): bool
     {
@@ -479,7 +473,6 @@ class FileFilter
     /**
      * @param  string  $var_name
      *
-     * @return bool
      */
     public function allowsVariable($var_name): bool
     {

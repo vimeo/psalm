@@ -154,7 +154,6 @@ class PropertyDocblockManipulator
      * Gets a new docblock given the existing docblock, if one exists, and the updated return types
      * and/or parameters
      *
-     * @return string
      */
     private function getDocblock(): string
     {

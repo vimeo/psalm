@@ -484,7 +484,6 @@ class Codebase
     /**
      * @param  string $file_path
      *
-     * @return string
      */
     public function getFileContents($file_path): string
     {
@@ -508,7 +507,6 @@ class Codebase
     /**
      * @param  string $fq_classlike_name
      *
-     * @return ClassLikeStorage
      */
     public function createClassLikeStorage($fq_classlike_name): ClassLikeStorage
     {
@@ -564,7 +562,6 @@ class Codebase
     /**
      * @param  string $file_path
      *
-     * @return FileStorage
      */
     public function createFileStorageForPath($file_path): FileStorage
     {
@@ -636,7 +633,6 @@ class Codebase
      * @param  string $file_path
      * @param  string $closure_id
      *
-     * @return FunctionLikeStorage
      */
     public function getClosureStorage($file_path, $closure_id): FunctionLikeStorage
     {
@@ -654,7 +650,6 @@ class Codebase
 
     /**
      * @param  string $const_id
-     * @param  Type\Union $type
      *
      * @return  void
      */
@@ -666,7 +661,6 @@ class Codebase
     /**
      * @param  string $const_id
      *
-     * @return Type\Union|null
      */
     public function getStubbedConstantType($const_id): ?Type\Union
     {
@@ -684,7 +678,6 @@ class Codebase
     /**
      * @param  string $file_path
      *
-     * @return bool
      */
     public function fileExists($file_path): bool
     {
@@ -695,9 +688,7 @@ class Codebase
      * Check whether a class/interface exists
      *
      * @param  string          $fq_class_name
-     * @param  CodeLocation $code_location
      *
-     * @return bool
      */
     public function classOrInterfaceExists(
         $fq_class_name,
@@ -717,7 +708,6 @@ class Codebase
      * @param  string       $fq_class_name
      * @param  string       $possible_parent
      *
-     * @return bool
      */
     public function classExtendsOrImplements($fq_class_name, $possible_parent): bool
     {
@@ -730,7 +720,6 @@ class Codebase
      *
      * @param  string       $fq_class_name
      *
-     * @return bool
      */
     public function classExists(
         $fq_class_name,
@@ -755,7 +744,6 @@ class Codebase
      * @throws \Psalm\Exception\UnpopulatedClasslikeException when called on unpopulated class
      * @throws \InvalidArgumentException when class does not exist
      *
-     * @return bool
      */
     public function classExtends($fq_class_name, $possible_parent): bool
     {
@@ -768,7 +756,6 @@ class Codebase
      * @param  string       $fq_class_name
      * @param  string       $interface
      *
-     * @return bool
      */
     public function classImplements($fq_class_name, $interface): bool
     {
@@ -778,7 +765,6 @@ class Codebase
     /**
      * @param  string         $fq_interface_name
      *
-     * @return bool
      */
     public function interfaceExists(
         $fq_interface_name,
@@ -798,7 +784,6 @@ class Codebase
      * @param  string         $interface_name
      * @param  string         $possible_parent
      *
-     * @return bool
      */
     public function interfaceExtends($interface_name, $possible_parent): bool
     {
@@ -822,7 +807,6 @@ class Codebase
      *
      * @param  string $fq_class_name
      *
-     * @return bool
      */
     public function classHasCorrectCasing($fq_class_name): bool
     {
@@ -832,7 +816,6 @@ class Codebase
     /**
      * @param  string $fq_interface_name
      *
-     * @return bool
      */
     public function interfaceHasCorrectCasing($fq_interface_name): bool
     {
@@ -842,7 +825,6 @@ class Codebase
     /**
      * @param  string $fq_trait_name
      *
-     * @return bool
      */
     public function traitHasCorrectCase($fq_trait_name): bool
     {
@@ -914,7 +896,6 @@ class Codebase
     /**
      * @param  string|\Psalm\Internal\MethodIdentifier $method_id
      *
-     * @return bool
      */
     public function isVariadic($method_id): bool
     {
@@ -925,7 +906,6 @@ class Codebase
      * @param  string|\Psalm\Internal\MethodIdentifier $method_id
      * @param  array<int, PhpParser\Node\Arg> $call_args
      *
-     * @return Type\Union|null
      */
     public function getMethodReturnType($method_id, ?string &$self_class, array $call_args = []): ?Type\Union
     {
@@ -940,7 +920,6 @@ class Codebase
     /**
      * @param  string|\Psalm\Internal\MethodIdentifier $method_id
      *
-     * @return bool
      */
     public function getMethodReturnsByRef($method_id): bool
     {
@@ -951,7 +930,6 @@ class Codebase
      * @param  string|\Psalm\Internal\MethodIdentifier   $method_id
      * @param  CodeLocation|null    $defined_location
      *
-     * @return CodeLocation|null
      */
     public function getMethodReturnTypeLocation(
         $method_id,
@@ -966,7 +944,6 @@ class Codebase
     /**
      * @param  string|\Psalm\Internal\MethodIdentifier $method_id
      *
-     * @return string|null
      */
     public function getDeclaringMethodId($method_id): ?string
     {
@@ -978,7 +955,6 @@ class Codebase
      *
      * @param  string|\Psalm\Internal\MethodIdentifier $method_id
      *
-     * @return string|null
      */
     public function getAppearingMethodId($method_id): ?string
     {
@@ -998,7 +974,6 @@ class Codebase
     /**
      * @param  string|\Psalm\Internal\MethodIdentifier $method_id
      *
-     * @return string
      */
     public function getCasedMethodId($method_id): string
     {
@@ -1006,7 +981,6 @@ class Codebase
     }
 
     /**
-     * @param string $file_path
      *
      * @return void
      */
@@ -1027,10 +1001,7 @@ class Codebase
 
         $this->file_storage_provider->remove($file_path);
     }
-
-    /**
-     * @return ?string
-     */
+    
     public function getSymbolInformation(string $file_path, string $symbol): ?string
     {
         if (\is_numeric($symbol[0])) {

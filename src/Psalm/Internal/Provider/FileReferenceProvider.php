@@ -153,7 +153,6 @@ class FileReferenceProvider
                 /**
                  * @param  string $file_name
                  *
-                 * @return bool
                  */
                 function ($file_name): bool {
                     return !file_exists($file_name);
@@ -442,7 +441,6 @@ class FileReferenceProvider
     /**
      * @param bool $force_reload
      *
-     * @return bool
      * @psalm-suppress MixedPropertyTypeCoercion
      */
     public function loadReferenceCache($force_reload = true): bool
@@ -1002,7 +1000,6 @@ class FileReferenceProvider
 
     /**
      * @param string $file_path
-     * @param IssueData $issue
      *
      * @return void
      */

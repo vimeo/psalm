@@ -40,7 +40,6 @@ class PropertyMap
     /**
      * @param   string $class_name
      *
-     * @return  bool
      */
     public static function inPropertyMap($class_name): bool
     {

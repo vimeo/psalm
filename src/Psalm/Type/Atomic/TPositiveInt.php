@@ -3,9 +3,6 @@ namespace Psalm\Type\Atomic;
 
 class TPositiveInt extends TInt
 {
-    /**
-     * @return string
-     */
     public function getId(bool $nested = false): string
     {
         return 'positive-int';

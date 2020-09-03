@@ -39,7 +39,6 @@ class FileStorageProvider
     /**
      * @param  string $file_path
      *
-     * @return FileStorage
      */
     public function get($file_path): FileStorage
     {
@@ -64,9 +63,7 @@ class FileStorageProvider
 
     /**
      * @param  string $file_path
-     * @param  string $file_contents
      *
-     * @return bool
      */
     public function has($file_path, string $file_contents = null): bool
     {
@@ -126,7 +123,6 @@ class FileStorageProvider
     /**
      * @param  string $file_path
      *
-     * @return FileStorage
      */
     public function create($file_path): FileStorage
     {

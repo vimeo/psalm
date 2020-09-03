@@ -8,9 +8,6 @@ class TBool extends Scalar
         return 'bool';
     }
 
-    /**
-     * @return string
-     */
     public function getKey(bool $include_extra = true): string
     {
         return 'bool';
@@ -23,7 +20,6 @@ class TBool extends Scalar
      * @param  int           $php_major_version
      * @param  int           $php_minor_version
      *
-     * @return null|string
      */
     public function toPhpString(
         $namespace,

@@ -33,17 +33,11 @@ class TraitAnalyzer extends ClassLikeAnalyzer
         $this->aliases = $aliases;
     }
 
-    /**
-     * @return null|string
-     */
     public function getNamespace(): ?string
     {
         return $this->aliases->namespace;
     }
 
-    /**
-     * @return Aliases
-     */
     public function getAliases(): Aliases
     {
         return $this->aliases;

@@ -31,17 +31,11 @@ class TClassString extends TString
         $this->as_type = $as_type;
     }
 
-    /**
-     * @return string
-     */
     public function getKey(bool $include_extra = true): string
     {
         return 'class-string' . ($this->as === 'object' ? '' : '<' . $this->as_type . '>');
     }
 
-    /**
-     * @return string
-     */
     public function __toString(): string
     {
         return $this->getKey();
@@ -64,7 +58,6 @@ class TClassString extends TString
      * @param  int           $php_major_version
      * @param  int           $php_minor_version
      *
-     * @return string|null
      */
     public function toPhpString(
         $namespace,
@@ -77,12 +70,8 @@ class TClassString extends TString
     }
 
     /**
-     * @param  string|null   $namespace
      * @param  array<string> $aliased_classes
-     * @param  string|null   $this_class
-     * @param  bool          $use_phpdoc_format
      *
-     * @return string
      */
     public function toNamespacedString(
         ?string $namespace,
@@ -113,9 +102,6 @@ class TClassString extends TString
         return 'class-string<\\' . $this->as . '>';
     }
 
-    /**
-     * @return bool
-     */
     public function canBeFullyExpressedInPhp(): bool
     {
         return false;

@@ -331,7 +331,6 @@ class ParserCacheProvider
     /**
      * @param  float $time_before
      *
-     * @return int
      */
     public function deleteOldParserCaches($time_before): int
     {
@@ -427,7 +426,6 @@ class ParserCacheProvider
     /**
      * @param  string  $file_name
      *
-     * @return string
      */
     private function getParserCacheKey($file_name): string
     {

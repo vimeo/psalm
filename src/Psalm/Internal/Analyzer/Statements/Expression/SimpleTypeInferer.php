@@ -15,11 +15,9 @@ use function reset;
 class SimpleTypeInferer
 {
     /**
-     * @param   PhpParser\Node\Expr $stmt
      * @param   ?array<string, Type\Union> $existing_class_constants
      * @param   string $fq_classlike_name
      *
-     * @return  Type\Union|null
      */
     public static function infer(
         \Psalm\Codebase $codebase,

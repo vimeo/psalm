@@ -44,9 +44,6 @@ trait GenericTrait
         return $this->value . '<' . substr($s, 0, -2) . '>' . $extra_types;
     }
 
-    /**
-     * @return string
-     */
     public function getId(bool $nested = false): string
     {
         $s = '';
@@ -74,7 +71,6 @@ trait GenericTrait
     /**
      * @param  array<string, string> $aliased_classes
      *
-     * @return string
      */
     public function toNamespacedString(
         ?string $namespace,

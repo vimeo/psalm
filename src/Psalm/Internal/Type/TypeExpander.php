@@ -19,11 +19,8 @@ use function array_values;
 class TypeExpander
 {
     /**
-     * @param  Type\Union   $return_type
-     * @param  string|null  $self_class
      * @param  string|Type\Atomic\TNamedObject|Type\Atomic\TTemplateParam|null $static_class_type
      *
-     * @return Type\Union
      */
     public static function expandUnion(
         Codebase $codebase,
@@ -83,8 +80,6 @@ class TypeExpander
     }
 
     /**
-     * @param  Type\Atomic  &$return_type
-     * @param  string|null  $self_class
      * @param  string|Type\Atomic\TNamedObject|Type\Atomic\TTemplateParam|null $static_class_type
      *
      * @return Type\Atomic|non-empty-array<int, Type\Atomic>

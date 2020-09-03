@@ -192,9 +192,6 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
     }
 
     /**
-     * @param   StatementsAnalyzer           $statements_analyzer
-     * @param   PhpParser\Node\Expr\Closure $stmt
-     * @param   Context                     $context
      *
      * @return  false|null
      */

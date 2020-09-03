@@ -69,7 +69,6 @@ class PropertyExistenceProvider
     /**
      * @param  array<PhpParser\Node\Arg>  $call_args
      *
-     * @return ?bool
      */
     public function doesPropertyExist(
         string $fq_classlike_name,

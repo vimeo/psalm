@@ -166,9 +166,6 @@ class JunitReport extends Report
         return $nfailures;
     }
 
-    /**
-     * @param  IssueData  $data
-     */
     private function dataToOutput(IssueData $data): string
     {
         $ret = 'message: ' . htmlspecialchars(trim($data->message), ENT_XML1 | ENT_QUOTES) . "\n";

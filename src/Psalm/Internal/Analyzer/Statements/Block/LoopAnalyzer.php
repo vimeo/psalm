@@ -33,7 +33,6 @@ class LoopAnalyzer
      * @param  PhpParser\Node\Expr[]        $post_expressions
      * @param  Context                      loop_scope->loop_context
      * @param  Context                      $loop_scope->loop_parent_context
-     * @param  bool                         $is_do
      *
      * @return false|null
      */
@@ -605,8 +604,6 @@ class LoopAnalyzer
     }
 
     /**
-     * @param  LoopScope $loop_scope
-     * @param  Context   $pre_outer_context
      *
      * @return void
      */
@@ -648,10 +645,7 @@ class LoopAnalyzer
     }
 
     /**
-     * @param  PhpParser\Node\Expr $pre_condition
      * @param  array<int, Clause>  $pre_condition_clauses
-     * @param  Context             $loop_context
-     * @param  Context             $outer_context
      *
      * @return string[]
      */
@@ -755,7 +749,6 @@ class LoopAnalyzer
      * @param  string                               $first_var_id
      * @param  array<string, array<string, bool>>   $assignment_map
      *
-     * @return int
      */
     private static function getAssignmentMapDepth($first_var_id, array $assignment_map): int
     {

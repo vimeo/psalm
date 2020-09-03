@@ -68,7 +68,6 @@ class MethodVisibilityProvider
     /**
      * @param  array<PhpParser\Node\Arg>  $call_args
      *
-     * @return ?bool
      */
     public function isMethodVisible(
         StatementsSource $source,

@@ -44,9 +44,6 @@ class TNamedObject extends Atomic
         return $this->getKey();
     }
 
-    /**
-     * @return string
-     */
     public function getKey(bool $include_extra = true): string
     {
         if ($include_extra && $this->extra_types) {
@@ -74,12 +71,8 @@ class TNamedObject extends Atomic
     }
 
     /**
-     * @param  string|null   $namespace
      * @param  array<string, string> $aliased_classes
-     * @param  string|null   $this_class
-     * @param  bool          $use_phpdoc_format
      *
-     * @return string
      */
     public function toNamespacedString(
         ?string $namespace,
@@ -109,7 +102,6 @@ class TNamedObject extends Atomic
      * @param  int           $php_major_version
      * @param  int           $php_minor_version
      *
-     * @return string|null
      */
     public function toPhpString(
         $namespace,

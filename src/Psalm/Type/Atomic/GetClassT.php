@@ -38,9 +38,6 @@ class GetClassT extends TString
             : 'class-string<' . $this->as_type->getId() . '>';
     }
 
-    /**
-     * @return bool
-     */
     public function canBeFullyExpressedInPhp(): bool
     {
         return false;

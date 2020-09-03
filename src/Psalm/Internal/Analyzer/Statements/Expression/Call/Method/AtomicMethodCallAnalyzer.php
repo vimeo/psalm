@@ -44,10 +44,6 @@ use function count;
 class AtomicMethodCallAnalyzer extends CallAnalyzer
 {
     /**
-     * @param  StatementsAnalyzer             $statements_analyzer
-     * @param  PhpParser\Node\Expr\MethodCall $stmt
-     * @param  Codebase                       $codebase
-     * @param  Context                        $context
      * @param  Type\Atomic\TNamedObject|Type\Atomic\TTemplateParam  $static_type
      * @param  ?string                        $lhs_var_id
      */
@@ -1056,8 +1052,6 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
      * If an `@property` annotation is specified, the setter must set something with the correct
      * type.
      *
-     * @param StatementsAnalyzer $statements_analyzer
-     * @param PhpParser\Node\Expr\MethodCall $stmt
      * @param string $fq_class_name
      */
     private static function getMagicGetterOrSetterProperty(

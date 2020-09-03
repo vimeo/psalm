@@ -70,8 +70,6 @@ class Algebra
     /**
      * @param string $type
      *
-     * @return string
-     *
      * @psalm-pure
      */
     public static function negateType($type): string
@@ -84,9 +82,7 @@ class Algebra
     }
 
     /**
-     * @param  PhpParser\Node\Expr      $conditional
      * @param  string|null              $this_class_name
-     * @param  FileSource         $source
      *
      * @return array<int, Clause>
      */
@@ -570,8 +566,6 @@ class Algebra
                         $possible_types,
                         /**
                          * @param  string $possible_type
-                         *
-                         * @return bool
                          */
                         function ($possible_type): bool {
                             return $possible_type[0] !== '!';

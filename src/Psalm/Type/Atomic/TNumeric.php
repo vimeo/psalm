@@ -8,9 +8,6 @@ class TNumeric extends Scalar
         return 'numeric';
     }
 
-    /**
-     * @return string
-     */
     public function getKey(bool $include_extra = true): string
     {
         return 'numeric';
@@ -23,7 +20,6 @@ class TNumeric extends Scalar
      * @param  int           $php_major_version
      * @param  int           $php_minor_version
      *
-     * @return null|string
      */
     public function toPhpString(
         $namespace,

@@ -99,8 +99,6 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
     protected $storage;
 
     /**
-     * @param PhpParser\Node\Stmt\ClassLike $class
-     * @param SourceAnalyzer                $source
      * @param string                        $fq_class_name
      */
     public function __construct(PhpParser\Node\Stmt\ClassLike $class, SourceAnalyzer $source, $fq_class_name)
@@ -121,7 +119,6 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
 
     /**
      * @param  string       $method_name
-     * @param  Context      $context
      *
      * @return void
      */
@@ -210,7 +207,6 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
     }
 
     /**
-     * @param  string           $fq_class_name
      * @param  array<string>    $suppressed_issues
      * @param  bool             $inferred - whether or not the type was inferred
      *
@@ -407,10 +403,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
     /**
      * Gets the fully-qualified class name from a Name object
      *
-     * @param  PhpParser\Node\Name      $class_name
-     * @param  Aliases                  $aliases
      *
-     * @return string
      */
     public static function getFQCLNFromNameObject(
         PhpParser\Node\Name $class_name,
@@ -461,17 +454,11 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
         return [];
     }
 
-    /**
-     * @return string
-     */
     public function getFQCLN(): string
     {
         return $this->fq_class_name;
     }
 
-    /**
-     * @return string|null
-     */
     public function getClassName(): ?string
     {
         return $this->class->name ? $this->class->name->name : null;
@@ -485,17 +472,11 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
         return $this->storage->template_types;
     }
 
-    /**
-     * @return string|null
-     */
     public function getParentFQCLN(): ?string
     {
         return $this->parent_fq_class_name;
     }
 
-    /**
-     * @return bool
-     */
     public function isStatic(): bool
     {
         return false;
@@ -506,7 +487,6 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
      *
      * @param  mixed $value
      *
-     * @return Type\Union
      */
     public static function getTypeFromValue($value): Type\Union
     {
@@ -541,12 +521,9 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
     /**
      * @param  string           $property_id
      * @param  string|null      $calling_context
-     * @param  SourceAnalyzer   $source
-     * @param  CodeLocation     $code_location
      * @param  string[]         $suppressed_issues
      * @param  bool             $emit_issues
      *
-     * @return bool|null
      */
     public static function checkPropertyVisibility(
         $property_id,

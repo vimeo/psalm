@@ -85,7 +85,6 @@ class CommitInfo
     /**
      * Return commit ID.
      *
-     * @return ?string
      */
     public function getId(): ?string
     {
@@ -105,7 +104,6 @@ class CommitInfo
     /**
      * Return author name.
      *
-     * @return null|string
      */
     public function getAuthorName(): ?string
     {
@@ -115,7 +113,6 @@ class CommitInfo
     /**
      * Set author email.
      *
-     * @param string $author_email
      */
     public function setAuthorEmail(string $author_email) : self
     {
@@ -127,7 +124,6 @@ class CommitInfo
     /**
      * Return author email.
      *
-     * @return null|string
      */
     public function getAuthorEmail(): ?string
     {
@@ -147,7 +143,6 @@ class CommitInfo
     /**
      * Return committer name.
      *
-     * @return null|string
      */
     public function getCommitterName(): ?string
     {
@@ -167,7 +162,6 @@ class CommitInfo
     /**
      * Return committer email.
      *
-     * @return null|string
      */
     public function getCommitterEmail(): ?string
     {
@@ -187,7 +181,6 @@ class CommitInfo
     /**
      * Return commit message.
      *
-     * @return null|string
      */
     public function getMessage(): ?string
     {
@@ -207,7 +200,6 @@ class CommitInfo
     /**
      * Return commit date.
      *
-     * @return null|int
      */
     public function getDate(): ?int
     {

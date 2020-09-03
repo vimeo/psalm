@@ -3,17 +3,11 @@ namespace Psalm\Type\Atomic;
 
 class TTraitString extends TString
 {
-    /**
-     * @return string
-     */
     public function getKey(bool $include_extra = true): string
     {
         return 'trait-string';
     }
 
-    /**
-     * @return string
-     */
     public function __toString(): string
     {
         return $this->getKey();
@@ -31,7 +25,6 @@ class TTraitString extends TString
      * @param  int           $php_major_version
      * @param  int           $php_minor_version
      *
-     * @return string|null
      */
     public function toPhpString(
         $namespace,
@@ -44,12 +37,8 @@ class TTraitString extends TString
     }
 
     /**
-     * @param  string|null   $namespace
      * @param  array<string> $aliased_classes
-     * @param  string|null   $this_class
-     * @param  bool          $use_phpdoc_format
      *
-     * @return string
      */
     public function toNamespacedString(
         ?string $namespace,
@@ -60,9 +49,6 @@ class TTraitString extends TString
         return 'trait-string';
     }
 
-    /**
-     * @return bool
-     */
     public function canBeFullyExpressedInPhp(): bool
     {
         return false;

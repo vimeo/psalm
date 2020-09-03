@@ -158,7 +158,6 @@ class TypeCombination
      * @param  int    $literal_limit any greater number of literal types than this
      *                               will be merged to a scalar
      *
-     * @return Union
      */
     public static function combineTypes(
         array $types,
@@ -613,8 +612,6 @@ class TypeCombination
     }
 
     /**
-     * @param  Atomic  $type
-     * @param  TypeCombination $combination
      * @param  Codebase|null   $codebase
      *
      * @return null|Union

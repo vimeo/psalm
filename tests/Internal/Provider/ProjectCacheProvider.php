@@ -15,9 +15,6 @@ class ProjectCacheProvider extends \Psalm\Internal\Provider\ProjectCacheProvider
     {
     }
 
-    /**
-     * @return int
-     */
     public function getLastRun(): int
     {
         return $this->last_run;
@@ -33,9 +30,6 @@ class ProjectCacheProvider extends \Psalm\Internal\Provider\ProjectCacheProvider
         $this->last_run = (int) $start_time;
     }
 
-    /**
-     * @return bool
-     */
     public function canDiffFiles(): bool
     {
         return $this->last_run > 0;

@@ -49,7 +49,6 @@ class RemoteInfo
     /**
      * Return remote name.
      *
-     * @return null|string
      */
     public function getName(): ?string
     {
@@ -73,7 +72,6 @@ class RemoteInfo
     /**
      * Return remote URL.
      *
-     * @return null|string
      */
     public function getUrl(): ?string
     {

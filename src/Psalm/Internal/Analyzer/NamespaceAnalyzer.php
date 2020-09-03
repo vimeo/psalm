@@ -41,10 +41,6 @@ class NamespaceAnalyzer extends SourceAnalyzer implements StatementsSource
      */
     protected static $public_namespace_constants = [];
 
-    /**
-     * @param Namespace_        $namespace
-     * @param FileAnalyzer       $source
-     */
     public function __construct(Namespace_ $namespace, FileAnalyzer $source)
     {
         $this->source = $source;
@@ -99,7 +95,6 @@ class NamespaceAnalyzer extends SourceAnalyzer implements StatementsSource
     }
 
     /**
-     * @param  PhpParser\Node\Stmt\ClassLike $stmt
      *
      * @return void
      */
@@ -124,9 +119,6 @@ class NamespaceAnalyzer extends SourceAnalyzer implements StatementsSource
         }
     }
 
-    /**
-     * @return string
-     */
     public function getNamespace(): string
     {
         return $this->namespace_name;
@@ -134,7 +126,6 @@ class NamespaceAnalyzer extends SourceAnalyzer implements StatementsSource
 
     /**
      * @param string     $const_name
-     * @param Type\Union $const_type
      *
      * @return void
      */
@@ -171,7 +162,6 @@ class NamespaceAnalyzer extends SourceAnalyzer implements StatementsSource
     /**
      * Returns true if $className is the same as, or starts with $namespace, in a case-insensitive comparison.
      *
-     * @return bool
      *
      * @psalm-pure
      */

@@ -24,7 +24,6 @@ class FileProvider
     /**
      * @param  string  $file_path
      *
-     * @return string
      */
     public function getContents($file_path, bool $go_to_source = false): string
     {
@@ -82,7 +81,6 @@ class FileProvider
     /**
      * @param  string $file_path
      *
-     * @return int
      */
     public function getModifiedTime($file_path): int
     {
@@ -117,9 +115,6 @@ class FileProvider
         $this->open_files[strtolower($file_path)] = $this->getContents($file_path, true);
     }
 
-    /**
-     * @return bool
-     */
     public function isOpen(string $file_path): bool
     {
         return isset($this->temp_files[strtolower($file_path)]) || isset($this->open_files[strtolower($file_path)]);
@@ -136,7 +131,6 @@ class FileProvider
     /**
      * @param  string $file_path
      *
-     * @return bool
      */
     public function fileExists($file_path): bool
     {

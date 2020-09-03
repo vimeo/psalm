@@ -24,10 +24,8 @@ class IssueHandler
     private $custom_levels = [];
 
     /**
-     * @param  SimpleXMLElement $e
      * @param  string           $base_dir
      *
-     * @return self
      */
     public static function loadFromXMLElement(SimpleXMLElement $e, $base_dir): IssueHandler
     {
@@ -66,7 +64,6 @@ class IssueHandler
     /**
      * @param string $file_path
      *
-     * @return string
      */
     public function getReportingLevelForFile($file_path): string
     {
@@ -180,7 +177,6 @@ class IssueHandler
             /**
              * @param string $issue_name
              *
-             * @return bool
              */
             function ($issue_name): bool {
                 return !empty($issue_name)

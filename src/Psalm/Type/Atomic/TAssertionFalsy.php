@@ -8,17 +8,11 @@ class TAssertionFalsy extends \Psalm\Type\Atomic
         return 'falsy';
     }
 
-    /**
-     * @return string
-     */
     public function getKey(bool $include_extra = true): string
     {
         return 'falsy';
     }
 
-    /**
-     * @return string
-     */
     public function getAssertionString(): string
     {
         return 'falsy';
@@ -31,7 +25,6 @@ class TAssertionFalsy extends \Psalm\Type\Atomic
      * @param  int           $php_major_version
      * @param  int           $php_minor_version
      *
-     * @return null|string
      */
     public function toPhpString(
         $namespace,

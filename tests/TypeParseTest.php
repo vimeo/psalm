@@ -10,9 +10,6 @@ use function stripos;
 
 class TypeParseTest extends TestCase
 {
-    /**
-     * @return void
-     */
     public function setUp() : void
     {
         RuntimeCaches::clearAll();

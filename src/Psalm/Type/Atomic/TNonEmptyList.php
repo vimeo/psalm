@@ -13,9 +13,6 @@ class TNonEmptyList extends TList
 
     public const KEY = 'non-empty-list';
 
-    /**
-     * @return string
-     */
     public function getAssertionString(): string
     {
         return 'non-empty-list';

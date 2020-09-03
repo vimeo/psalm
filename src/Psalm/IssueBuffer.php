@@ -84,10 +84,8 @@ class IssueBuffer
     protected static $used_suppressions = [];
 
     /**
-     * @param   CodeIssue $e
      * @param   string[]  $suppressed_issues
      *
-     * @return  bool
      */
     public static function accepts(CodeIssue $e, array $suppressed_issues = [], bool $is_fixable = false): bool
     {
@@ -116,10 +114,8 @@ class IssueBuffer
     }
 
     /**
-     * @param   CodeIssue $e
      * @param   string[]  $suppressed_issues
      *
-     * @return  bool
      */
     public static function isSuppressed(CodeIssue $e, array $suppressed_issues = []) : bool
     {
@@ -187,11 +183,9 @@ class IssueBuffer
     }
 
     /**
-     * @param   CodeIssue $e
      *
      * @throws  Exception\CodeException
      *
-     * @return  bool
      */
     public static function add(CodeIssue $e, bool $is_fixable = false): bool
     {
@@ -398,9 +392,6 @@ class IssueBuffer
         }
     }
 
-    /**
-     * @return int
-     */
     public static function getErrorCount(): int
     {
         return self::$error_count;
@@ -428,10 +419,6 @@ class IssueBuffer
     }
 
     /**
-     * @param  ProjectAnalyzer                   $project_analyzer
-     * @param  bool                             $is_full
-     * @param  float                            $start_time
-     * @param  bool                             $add_stats
      * @param  array<string,array<string,array{o:int, s:array<int, string>}>>  $issue_baseline
      *
      * @return void
@@ -679,7 +666,6 @@ class IssueBuffer
      * @param array<string, array<int, IssueData>> $issues_data
      * @param array{int, int} $mixed_counts
      *
-     * @return string
      */
     public static function getOutput(
         array $issues_data,
@@ -753,7 +739,6 @@ class IssueBuffer
     /**
      * @param  string $message
      *
-     * @return bool
      */
     protected static function alreadyEmitted($message): bool
     {
@@ -795,9 +780,6 @@ class IssueBuffer
         return $current_data;
     }
 
-    /**
-     * @return bool
-     */
     public static function isRecording(): bool
     {
         return self::$recording_level > 0;

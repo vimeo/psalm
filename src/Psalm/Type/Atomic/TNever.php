@@ -8,9 +8,6 @@ class TNever extends \Psalm\Type\Atomic
         return 'never-return';
     }
 
-    /**
-     * @return string
-     */
     public function getKey(bool $include_extra = true): string
     {
         return 'never-return';
@@ -23,7 +20,6 @@ class TNever extends \Psalm\Type\Atomic
      * @param  int           $php_major_version
      * @param  int           $php_minor_version
      *
-     * @return null|string
      */
     public function toPhpString(
         $namespace,

@@ -20,14 +20,12 @@ class ConfigFileTest extends \Psalm\Tests\TestCase
     /** @var string */
     private $file_path;
 
-    /** @return void */
     public function setUp() : void
     {
         RuntimeCaches::clearAll();
         $this->file_path = tempnam(sys_get_temp_dir(), 'psalm-test-config');
     }
 
-    /** @return void */
     public function tearDown() : void
     {
         @unlink($this->file_path);

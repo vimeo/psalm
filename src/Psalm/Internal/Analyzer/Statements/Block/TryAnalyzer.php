@@ -28,9 +28,6 @@ use const PHP_VERSION;
 class TryAnalyzer
 {
     /**
-     * @param   StatementsAnalyzer               $statements_analyzer
-     * @param   PhpParser\Node\Stmt\TryCatch    $stmt
-     * @param   Context                         $context
      *
      * @return  false|null
      */

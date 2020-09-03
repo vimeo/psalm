@@ -53,7 +53,6 @@ class FileReferenceCacheProvider
     }
 
     /**
-     * @return ?array
      *
      * @psalm-suppress MixedAssignment
      */
@@ -81,7 +80,6 @@ class FileReferenceCacheProvider
     }
 
     /**
-     * @return ?array
      *
      * @psalm-suppress MixedAssignment
      */
@@ -109,7 +107,6 @@ class FileReferenceCacheProvider
     }
 
     /**
-     * @return ?array
      *
      * @psalm-suppress MixedAssignment
      */
@@ -137,7 +134,6 @@ class FileReferenceCacheProvider
     }
 
     /**
-     * @return ?array
      *
      * @psalm-suppress MixedAssignment
      */
@@ -165,7 +161,6 @@ class FileReferenceCacheProvider
     }
 
     /**
-     * @return ?array
      *
      * @psalm-suppress MixedAssignment
      */
@@ -193,7 +188,6 @@ class FileReferenceCacheProvider
     }
 
     /**
-     * @return ?array
      *
      * @psalm-suppress MixedAssignment
      */
@@ -221,7 +215,6 @@ class FileReferenceCacheProvider
     }
 
     /**
-     * @return ?array
      *
      * @psalm-suppress MixedAssignment
      */
@@ -249,7 +242,6 @@ class FileReferenceCacheProvider
     }
 
     /**
-     * @return ?array
      *
      * @psalm-suppress MixedAssignment
      */
@@ -278,7 +270,6 @@ class FileReferenceCacheProvider
     }
 
     /**
-     * @return ?array
      *
      * @psalm-suppress MixedAssignment
      */
@@ -306,7 +297,6 @@ class FileReferenceCacheProvider
     }
 
     /**
-     * @return ?array
      *
      * @psalm-suppress MixedAssignment
      */
@@ -334,7 +324,6 @@ class FileReferenceCacheProvider
     }
 
     /**
-     * @return ?array
      *
      * @psalm-suppress MixedAssignment
      */

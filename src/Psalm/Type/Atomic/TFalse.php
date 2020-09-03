@@ -7,10 +7,7 @@ class TFalse extends TBool
     {
         return 'false';
     }
-
-    /**
-     * @return string
-     */
+    
     public function getKey(bool $include_extra = true): string
     {
         return 'false';

@@ -19,25 +19,16 @@ class TValueOfClassConstant extends \Psalm\Type\Atomic
         $this->const_name = $const_name;
     }
 
-    /**
-     * @return string
-     */
     public function getKey(bool $include_extra = true): string
     {
         return 'value-of<' . $this->fq_classlike_name . '::' . $this->const_name . '>';
     }
 
-    /**
-     * @return string
-     */
     public function __toString(): string
     {
         return 'value-of<' . $this->fq_classlike_name . '::' . $this->const_name . '>';
     }
 
-    /**
-     * @return string
-     */
     public function getId(bool $nested = false): string
     {
         return $this->getKey();
@@ -50,7 +41,6 @@ class TValueOfClassConstant extends \Psalm\Type\Atomic
      * @param  int           $php_major_version
      * @param  int           $php_minor_version
      *
-     * @return string|null
      */
     public function toPhpString(
         $namespace,
@@ -68,12 +58,8 @@ class TValueOfClassConstant extends \Psalm\Type\Atomic
     }
 
     /**
-     * @param  string|null   $namespace
      * @param  array<string, string> $aliased_classes
-     * @param  string|null   $this_class
-     * @param  bool          $use_phpdoc_format
      *
-     * @return string
      */
     public function toNamespacedString(
         ?string $namespace,
@@ -90,9 +76,6 @@ class TValueOfClassConstant extends \Psalm\Type\Atomic
             . '>::' . $this->const_name . '>';
     }
 
-    /**
-     * @return string
-     */
     public function getAssertionString(): string
     {
         return 'mixed';

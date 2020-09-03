@@ -30,7 +30,6 @@ class NegatedAssertionReconciler extends Reconciler
      * @param  string[]   $suppressed_issues
      * @param  0|1|2      $failed_reconciliation
      *
-     * @return Type\Union
      */
     public static function reconcile(
         StatementsAnalyzer $statements_analyzer,
@@ -284,14 +283,8 @@ class NegatedAssertionReconciler extends Reconciler
     }
 
     /**
-     * @param  string     $assertion
-     * @param  int        $bracket_pos
-     * @param  string     $old_var_type_string
-     * @param  string|null $key
-     * @param  CodeLocation|null $code_location
      * @param  string[]   $suppressed_issues
      *
-     * @return Type\Union
      */
     private static function handleLiteralNegatedEquality(
         StatementsAnalyzer $statements_analyzer,

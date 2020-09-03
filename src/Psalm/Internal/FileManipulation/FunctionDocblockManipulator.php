@@ -97,7 +97,6 @@ class FunctionDocblockManipulator
      * @param  string $file_path
      * @param  Closure|Function_|ClassMethod|ArrowFunction $stmt
      *
-     * @return self
      */
     public static function getForFunction(
         ProjectAnalyzer $project_analyzer,
@@ -283,10 +282,6 @@ class FunctionDocblockManipulator
     /**
      * Sets a new param type
      *
-     * @param   string      $param_name
-     * @param   ?string     $php_type
-     * @param   string      $new_type
-     * @param   string      $phpdoc_type
      * @param   bool        $is_php_compatible
      *
      * @return  void
@@ -313,7 +308,6 @@ class FunctionDocblockManipulator
      * Gets a new docblock given the existing docblock, if one exists, and the updated return types
      * and/or parameters
      *
-     * @return string
      */
     private function getDocblock(): string
     {

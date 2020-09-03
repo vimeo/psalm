@@ -180,7 +180,6 @@ class DocComment
     /**
      * Parse a docblock comment into its parts.
      *
-     * @param  \PhpParser\Comment\Doc  $docblock
      * @param  bool    $preserve_format
      */
     public static function parsePreservingLength(\PhpParser\Comment\Doc $docblock) : ParsedDocblock

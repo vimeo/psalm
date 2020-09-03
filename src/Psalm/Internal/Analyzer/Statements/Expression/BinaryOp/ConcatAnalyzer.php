@@ -28,9 +28,6 @@ use function strlen;
 class ConcatAnalyzer
 {
     /**
-     * @param  StatementsAnalyzer     $statements_analyzer
-     * @param  PhpParser\Node\Expr   $left
-     * @param  PhpParser\Node\Expr   $right
      * @param  Type\Union|null       &$result_type
      *
      * @return void

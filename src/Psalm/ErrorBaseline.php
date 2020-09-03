@@ -29,7 +29,6 @@ class ErrorBaseline
     /**
      * @param array<string,array<string,array{o:int, s:array<int, string>}>> $existingIssues
      *
-     * @return int
      *
      * @psalm-pure
      */
@@ -54,8 +53,6 @@ class ErrorBaseline
     }
 
     /**
-     * @param FileProvider $fileProvider
-     * @param string $baselineFile
      * @param array<string, list<IssueData>> $issues
      *
      * @return void
@@ -72,12 +69,9 @@ class ErrorBaseline
     }
 
     /**
-     * @param FileProvider $fileProvider
-     * @param string $baselineFile
+     * @return array<string,array<string,array{o:int, s:array<int, string>}>>
      *
      * @throws Exception\ConfigException
-     *
-     * @return array<string,array<string,array{o:int, s:array<int, string>}>>
      */
     public static function read(FileProvider $fileProvider, string $baselineFile): array
     {
@@ -132,13 +126,11 @@ class ErrorBaseline
     }
 
     /**
-     * @param FileProvider $fileProvider
-     * @param string $baselineFile
      * @param array<string, list<IssueData>> $issues
      *
-     * @throws Exception\ConfigException
-     *
      * @return array<string,array<string,array{o:int, s:array<int, string>}>>
+     *
+     * @throws Exception\ConfigException
      */
     public static function update(
         FileProvider $fileProvider,
@@ -237,8 +229,6 @@ class ErrorBaseline
     }
 
     /**
-     * @param FileProvider $fileProvider
-     * @param string $baselineFile
      * @param array<string,array<string,array{o:int, s:array<int, string>}>> $groupedIssues
      *
      * @return void

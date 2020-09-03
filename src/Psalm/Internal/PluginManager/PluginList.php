@@ -81,7 +81,6 @@ class PluginList
         return $class;
     }
 
-    /** @return null|string */
     public function findPluginPackage(string $class): ?string
     {
         // pluginClass => ?pluginPackage

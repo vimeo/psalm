@@ -21,9 +21,6 @@ abstract class SourceAnalyzer implements StatementsSource
         $this->source = null;
     }
 
-    /**
-     * @return Aliases
-     */
     public function getAliases(): Aliases
     {
         return $this->source->getAliases();
@@ -45,41 +42,26 @@ abstract class SourceAnalyzer implements StatementsSource
         return $this->source->getAliasedClassesFlippedReplaceable();
     }
 
-    /**
-     * @return string|null
-     */
     public function getFQCLN(): ?string
     {
         return $this->source->getFQCLN();
     }
 
-    /**
-     * @return string|null
-     */
     public function getClassName(): ?string
     {
         return $this->source->getClassName();
     }
 
-    /**
-     * @return string|null
-     */
     public function getParentFQCLN(): ?string
     {
         return $this->source->getParentFQCLN();
     }
 
-    /**
-     * @return string
-     */
     public function getFileName(): string
     {
         return $this->source->getFileName();
     }
 
-    /**
-     * @return string
-     */
     public function getFilePath(): string
     {
         return $this->source->getFilePath();
@@ -115,7 +97,6 @@ abstract class SourceAnalyzer implements StatementsSource
     /**
      * @param string $file_path
      *
-     * @return bool
      */
     public function hasParentFilePath($file_path): bool
     {
@@ -125,16 +106,12 @@ abstract class SourceAnalyzer implements StatementsSource
     /**
      * @param string $file_path
      *
-     * @return bool
      */
     public function hasAlreadyRequiredFilePath($file_path): bool
     {
         return $this->source->hasAlreadyRequiredFilePath($file_path);
     }
 
-    /**
-     * @return int
-     */
     public function getRequireNesting(): int
     {
         return $this->source->getRequireNesting();
@@ -179,17 +156,11 @@ abstract class SourceAnalyzer implements StatementsSource
         $this->source->removeSuppressedIssues($new_issues);
     }
 
-    /**
-     * @return null|string
-     */
     public function getNamespace(): ?string
     {
         return $this->source->getNamespace();
     }
 
-    /**
-     * @return bool
-     */
     public function isStatic(): bool
     {
         return $this->source->isStatic();

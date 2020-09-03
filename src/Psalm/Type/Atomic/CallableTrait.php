@@ -37,7 +37,6 @@ trait CallableTrait
      *
      * @param string                            $value
      * @param array<int, FunctionLikeParameter> $params
-     * @param Union                             $return_type
      */
     public function __construct(
         $value = 'callable',
@@ -62,9 +61,6 @@ trait CallableTrait
         $this->return_type = $this->return_type ? clone $this->return_type : null;
     }
 
-    /**
-     * @return string
-     */
     public function getKey(bool $include_extra = true): string
     {
         return $this->__toString();
@@ -73,7 +69,6 @@ trait CallableTrait
     /**
      * @param  array<string, string> $aliased_classes
      *
-     * @return string
      */
     public function toNamespacedString(
         ?string $namespace,
@@ -144,7 +139,6 @@ trait CallableTrait
      * @param  int           $php_major_version
      * @param  int           $php_minor_version
      *
-     * @return string
      */
     public function toPhpString(
         $namespace,
@@ -160,9 +154,6 @@ trait CallableTrait
         return $this->value;
     }
 
-    /**
-     * @return string
-     */
     public function getId(bool $nested = false): string
     {
         $param_string = '';

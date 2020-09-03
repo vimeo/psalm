@@ -43,7 +43,6 @@ class PsalmRestarter extends \Composer\XdebugHandler\XdebugHandler
             /**
              * @param string $extension
              *
-             * @return bool
              */
             function ($extension): bool {
                 return extension_loaded($extension);

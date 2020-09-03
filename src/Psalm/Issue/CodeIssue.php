@@ -24,7 +24,6 @@ abstract class CodeIssue
 
     /**
      * @param string        $message
-     * @param CodeLocation  $code_location
      */
     public function __construct(
         $message,
@@ -34,17 +33,11 @@ abstract class CodeIssue
         $this->message = $message;
     }
 
-    /**
-     * @return CodeLocation
-     */
     public function getLocation(): CodeLocation
     {
         return $this->code_location;
     }
 
-    /**
-     * @return string
-     */
     public function getShortLocationWithPrevious(): string
     {
         $previous_text = '';
@@ -57,24 +50,17 @@ abstract class CodeIssue
         return $this->code_location->file_name . ':' . $this->code_location->getLineNumber() . $previous_text;
     }
 
-    /**
-     * @return string
-     */
     public function getShortLocation(): string
     {
         return $this->code_location->file_name . ':' . $this->code_location->getLineNumber();
     }
 
-    /**
-     * @return string
-     */
     public function getFilePath(): string
     {
         return $this->code_location->file_path;
     }
 
     /**
-     * @return string
      *
      * @psalm-suppress PossiblyUnusedMethod for convenience
      */
@@ -83,9 +69,6 @@ abstract class CodeIssue
         return $this->code_location->file_name;
     }
 
-    /**
-     * @return string
-     */
     public function getMessage(): string
     {
         return $this->message;
@@ -94,7 +77,6 @@ abstract class CodeIssue
     /**
      * @param  string          $severity
      *
-     * @return \Psalm\Internal\Analyzer\IssueData
      */
     public function toIssueData($severity = Config::REPORT_ERROR): \Psalm\Internal\Analyzer\IssueData
     {

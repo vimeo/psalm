@@ -23,7 +23,6 @@ class TaintedInput extends CodeIssue
 
     /**
      * @param string        $message
-     * @param CodeLocation  $code_location
      * @param list<array{location: ?CodeLocation, label: string, entry_path_type: string}> $journey
      */
     public function __construct(

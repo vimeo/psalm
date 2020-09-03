@@ -245,10 +245,8 @@ class IncludeAnalyzer
     }
 
     /**
-     * @param  PhpParser\Node\Expr $stmt
      * @param  string              $file_name
      *
-     * @return string|null
      * @psalm-suppress MixedAssignment
      */
     public static function getPathTo(
@@ -358,7 +356,6 @@ class IncludeAnalyzer
      * @param   string  $file_name
      * @param   string  $current_directory
      *
-     * @return  string|null
      */
     public static function resolveIncludePath($file_name, $current_directory): ?string
     {

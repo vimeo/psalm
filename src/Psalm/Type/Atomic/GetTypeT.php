@@ -21,9 +21,6 @@ class GetTypeT extends TString
         $this->typeof = $typeof;
     }
 
-    /**
-     * @return bool
-     */
     public function canBeFullyExpressedInPhp(): bool
     {
         return false;

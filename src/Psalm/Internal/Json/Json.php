@@ -22,9 +22,7 @@ class Json
 
     /**
      * @param mixed $data
-     * @param int|null $options
      *
-     * @return string
      *
      * @psalm-pure
      */

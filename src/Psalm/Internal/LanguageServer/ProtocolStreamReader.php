@@ -81,11 +81,6 @@ class ProtocolStreamReader implements ProtocolReader
         );
     }
 
-    /**
-     * @param string $buffer
-     *
-     * @return int
-     */
     private function readMessages(string $buffer) : int
     {
         $emitted_messages = 0;

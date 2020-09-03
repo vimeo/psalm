@@ -45,9 +45,6 @@ use function array_keys;
 class ForeachAnalyzer
 {
     /**
-     * @param   StatementsAnalyzer               $statements_analyzer
-     * @param   PhpParser\Node\Stmt\Foreach_    $stmt
-     * @param   Context                         $context
      *
      * @return  false|null
      */
@@ -1127,11 +1124,9 @@ class ForeachAnalyzer
     }
 
     /**
-     * @param  string $template_name
      * @param  array<string, array<int|string, Type\Union>>  $template_type_extends
      * @param  array<string, array<string, array{Type\Union}>>  $class_template_types
      * @param  array<int, Type\Union> $calling_type_params
-     * @return Type\Union|null
      */
     private static function getExtendedType(
         string $template_name,

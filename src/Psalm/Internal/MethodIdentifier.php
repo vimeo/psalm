@@ -11,7 +11,6 @@ class MethodIdentifier
     public $method_name;
 
     /**
-     * @param  string $fq_class_name
      * @param  lowercase-string $method_name
      */
     public function __construct(string $fq_class_name, string $method_name)

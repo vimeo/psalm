@@ -42,7 +42,6 @@ use function strtoupper;
  * @param  bool   $has_explicit_root
  * @param  string $vendor_dir
  *
- * @return ?\Composer\Autoload\ClassLoader
  */
 function requireAutoloaders($current_dir, $has_explicit_root, $vendor_dir): ?ClassLoader
 {
@@ -144,7 +143,6 @@ function requireAutoloaders($current_dir, $has_explicit_root, $vendor_dir): ?Cla
 /**
  * @param  string $current_dir
  *
- * @return string
  *
  * @psalm-suppress MixedArrayAccess
  * @psalm-suppress MixedAssignment

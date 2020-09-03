@@ -11,17 +11,11 @@ class TClosedResource extends \Psalm\Type\Atomic
         return 'closed-resource';
     }
 
-    /**
-     * @return string
-     */
     public function getKey(bool $include_extra = true): string
     {
         return 'closed-resource';
     }
 
-    /**
-     * @return string
-     */
     public function getId(bool $nested = false): string
     {
         return 'closed-resource';
@@ -34,7 +28,6 @@ class TClosedResource extends \Psalm\Type\Atomic
      * @param  int           $php_major_version
      * @param  int           $php_minor_version
      *
-     * @return null|string
      */
     public function toPhpString(
         $namespace,

@@ -28,9 +28,6 @@ class TGenericObject extends TNamedObject
         $this->type_params = $type_params;
     }
 
-    /**
-     * @return string
-     */
     public function getKey(bool $include_extra = true): string
     {
         $s = '';
@@ -48,9 +45,6 @@ class TGenericObject extends TNamedObject
         return $this->value . '<' . substr($s, 0, -2) . '>' . $extra_types;
     }
 
-    /**
-     * @return bool
-     */
     public function canBeFullyExpressedInPhp(): bool
     {
         return false;
@@ -63,7 +57,6 @@ class TGenericObject extends TNamedObject
      * @param  int           $php_major_version
      * @param  int           $php_minor_version
      *
-     * @return string|null
      */
     public function toPhpString(
         $namespace,
@@ -75,9 +68,6 @@ class TGenericObject extends TNamedObject
         return parent::toNamespacedString($namespace, $aliased_classes, $this_class, false);
     }
 
-    /**
-     * @return bool
-     */
     public function equals(Atomic $other_type): bool
     {
         if (!$other_type instanceof self) {
@@ -97,9 +87,6 @@ class TGenericObject extends TNamedObject
         return true;
     }
 
-    /**
-     * @return string
-     */
     public function getAssertionString(): string
     {
         return $this->value;

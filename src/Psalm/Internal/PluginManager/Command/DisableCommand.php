@@ -44,9 +44,6 @@ class DisableCommand extends Command
         $this->addUsage('\'Plugin\Class\Name\' [-c path/to/psalm.xml]');
     }
 
-    /**
-     * @return int
-     */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);

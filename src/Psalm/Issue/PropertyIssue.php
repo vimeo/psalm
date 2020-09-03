@@ -10,7 +10,6 @@ abstract class PropertyIssue extends CodeIssue
 
     /**
      * @param string        $message
-     * @param \Psalm\CodeLocation  $code_location
      * @param string        $property_id
      */
     public function __construct(

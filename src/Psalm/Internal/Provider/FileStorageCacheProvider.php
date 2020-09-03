@@ -89,7 +89,6 @@ class FileStorageCacheProvider
      * @param  string $file_path
      * @param  string $file_contents
      *
-     * @return FileStorage|null
      */
     public function getLatestFromCache($file_path, $file_contents): ?FileStorage
     {
@@ -132,7 +131,6 @@ class FileStorageCacheProvider
      * @param  string $file_path
      * @param  string $file_contents
      *
-     * @return string
      */
     private function getCacheHash($file_path, $file_contents): string
     {
@@ -143,7 +141,6 @@ class FileStorageCacheProvider
      * @param  string  $file_path
      * @psalm-suppress MixedAssignment
      *
-     * @return FileStorage|null
      */
     private function loadFromCache($file_path): ?FileStorage
     {
@@ -176,7 +173,6 @@ class FileStorageCacheProvider
      * @param  string  $file_path
      * @param  bool $create_directory
      *
-     * @return string
      */
     private function getCacheLocationForPath($file_path, $create_directory = false): string
     {

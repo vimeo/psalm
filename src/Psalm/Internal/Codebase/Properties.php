@@ -65,7 +65,6 @@ class Properties
     /**
      * Whether or not a given property exists
      *
-     * @return bool
      */
     public function propertyExists(
         string $property_id,
@@ -219,7 +218,6 @@ class Properties
     /**
      * @param  string $property_id
      *
-     * @return  \Psalm\Storage\PropertyStorage
      */
     public function getStorage($property_id): \Psalm\Storage\PropertyStorage
     {
@@ -245,7 +243,6 @@ class Properties
     /**
      * @param  string $property_id
      *
-     * @return  ?Type\Union
      */
     public function getPropertyType(
         $property_id,

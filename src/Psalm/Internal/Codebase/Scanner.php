@@ -248,7 +248,6 @@ class Scanner
     /**
      * @param  string $fq_classlike_name_lc
      *
-     * @return string
      */
     public function getClassLikeFilePath($fq_classlike_name_lc): string
     {
@@ -317,9 +316,6 @@ class Scanner
         }
     }
 
-    /**
-     * @return bool
-     */
     public function scanFiles(ClassLikes $classlikes, int $pool_size = 1): bool
     {
         $has_changes = false;
@@ -580,7 +576,6 @@ class Scanner
      * @param  array<string, class-string<FileScanner>>  $filetype_scanners
      * @param  bool   $will_analyze
      *
-     * @return FileScanner
      */
     private function scanFile(
         $file_path,
@@ -675,7 +670,6 @@ class Scanner
      * @param  array<string, class-string<FileScanner>>  $filetype_scanners
      * @param  bool   $will_analyze
      *
-     * @return FileScanner
      */
     private function getScannerForPath(
         $file_path,
@@ -709,7 +703,6 @@ class Scanner
      *
      * @param  string $fq_class_name
      *
-     * @return bool
      */
     private function fileExistsForClassLike(ClassLikes $classlikes, $fq_class_name): bool
     {

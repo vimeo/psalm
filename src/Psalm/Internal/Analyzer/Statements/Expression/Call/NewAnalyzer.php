@@ -697,10 +697,8 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
     }
 
     /**
-     * @param  string $template_name
      * @param  array<string, array<int|string, Type\Union>>  $template_type_extends
      * @param  array<string, array<string, array{Type\Union}>>  $found_generic_params
-     * @return Type\Union
      */
     private static function getGenericParamForOffset(
         string $fq_class_name,

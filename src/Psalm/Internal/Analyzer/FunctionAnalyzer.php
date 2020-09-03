@@ -47,7 +47,6 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
      * @param  string                      $function_id
      * @param  array<PhpParser\Node\Arg>   $call_args
      *
-     * @return Type\Union
      */
     public static function getReturnTypeFromCallMapWithArgs(
         StatementsAnalyzer $statements_analyzer,

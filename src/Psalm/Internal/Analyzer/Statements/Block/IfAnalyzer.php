@@ -65,9 +65,6 @@ class IfAnalyzer
      *   (x: null)
      *   throw new Exception -- effects: remove null from the type of x
      *
-     * @param  StatementsAnalyzer       $statements_analyzer
-     * @param  PhpParser\Node\Stmt\If_ $stmt
-     * @param  Context                 $context
      *
      * @return null|false
      */
@@ -766,12 +763,6 @@ class IfAnalyzer
     }
 
     /**
-     * @param  StatementsAnalyzer        $statements_analyzer
-     * @param  PhpParser\Node\Stmt\If_  $stmt
-     * @param  IfScope                  $if_scope
-     * @param  Context                  $if_context
-     * @param  Context                  $old_if_context
-     * @param  Context                  $outer_context
      * @param  array<string,Type\Union> $pre_assignment_else_redefined_vars
      *
      * @return false|null
@@ -1044,11 +1035,7 @@ class IfAnalyzer
     }
 
     /**
-     * @param  StatementsAnalyzer           $statements_analyzer
-     * @param  PhpParser\Node\Stmt\ElseIf_ $elseif
-     * @param  IfScope                     $if_scope
      * @param  Context                     $elseif_context
-     * @param  Context                     $outer_context
      *
      * @return false|null
      */
@@ -1533,11 +1520,7 @@ class IfAnalyzer
     }
 
     /**
-     * @param  StatementsAnalyzer         $statements_analyzer
      * @param  PhpParser\Node\Stmt\Else_|null $else
-     * @param  IfScope                   $if_scope
-     * @param  Context                   $else_context
-     * @param  Context                   $outer_context
      *
      * @return false|null
      */
@@ -1823,7 +1806,6 @@ class IfAnalyzer
      * Returns statements that are definitely evaluated before any statements after the end of the
      * if/elseif/else blocks
      *
-     * @param  PhpParser\Node\Expr $stmt
      *
      * @return PhpParser\Node\Expr|null
      */
@@ -1871,7 +1853,6 @@ class IfAnalyzer
      * Returns statements that are definitely evaluated before any statements inside
      * the if block
      *
-     * @param  PhpParser\Node\Expr $stmt
      *
      * @return PhpParser\Node\Expr|null
      */

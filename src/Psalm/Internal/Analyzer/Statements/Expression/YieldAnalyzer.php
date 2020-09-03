@@ -19,11 +19,6 @@ use Psalm\Type;
 
 class YieldAnalyzer
 {
-    /**
-     * @param   StatementsAnalyzer           $statements_analyzer
-     * @param   PhpParser\Node\Expr\Yield_  $stmt
-     * @param   Context                     $context
-     */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Yield_ $stmt,

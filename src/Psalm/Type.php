@@ -56,7 +56,6 @@ abstract class Type
      * @param  array{int,int}|null   $php_version
      * @param  array<string, array<string, array{Type\Union}>> $template_type_map
      *
-     * @return Union
      */
     public static function parseString(
         $type_string,
@@ -161,7 +160,6 @@ abstract class Type
      * @param bool $from_calculation
      * @param int|null $value
      *
-     * @return Type\Union
      */
     public static function getInt($from_calculation = false, $value = null): Union
     {
@@ -177,10 +175,8 @@ abstract class Type
     }
 
     /**
-     * @param bool $from_calculation
      * @param int|null $value
      *
-     * @return Type\Union
      */
     public static function getPositiveInt(bool $from_calculation = false): Union
     {
@@ -190,9 +186,6 @@ abstract class Type
         return $union;
     }
 
-    /**
-     * @return Type\Union
-     */
     public static function getNumeric(): Union
     {
         $type = new TNumeric;
@@ -203,7 +196,6 @@ abstract class Type
     /**
      * @param string|null $value
      *
-     * @return Type\Union
      */
     public static function getString($value = null): Union
     {
@@ -236,9 +228,6 @@ abstract class Type
         return new Union([$type]);
     }
 
-    /**
-     * @return Type\Union
-     */
     public static function getSingleLetter(): Union
     {
         $type = new TSingleLetter;
@@ -249,7 +238,6 @@ abstract class Type
     /**
      * @param string $extends
      *
-     * @return Type\Union
      */
     public static function getClassString($extends = 'object'): Union
     {
@@ -266,7 +254,6 @@ abstract class Type
     /**
      * @param string $class_type
      *
-     * @return Type\Union
      */
     public static function getLiteralClassString($class_type): Union
     {
@@ -275,9 +262,6 @@ abstract class Type
         return new Union([$type]);
     }
 
-    /**
-     * @return Type\Union
-     */
     public static function getNull(): Union
     {
         $type = new TNull;
@@ -288,7 +272,6 @@ abstract class Type
     /**
      * @param bool $from_loop_isset
      *
-     * @return Type\Union
      */
     public static function getMixed($from_loop_isset = false): Union
     {
@@ -297,9 +280,6 @@ abstract class Type
         return new Union([$type]);
     }
 
-    /**
-     * @return Type\Union
-     */
     public static function getScalar(): Union
     {
         $type = new TScalar();
@@ -307,9 +287,6 @@ abstract class Type
         return new Union([$type]);
     }
 
-    /**
-     * @return Type\Union
-     */
     public static function getEmpty(): Union
     {
         $type = new TEmpty();
@@ -317,9 +294,6 @@ abstract class Type
         return new Union([$type]);
     }
 
-    /**
-     * @return Type\Union
-     */
     public static function getBool(): Union
     {
         $type = new TBool;
@@ -330,7 +304,6 @@ abstract class Type
     /**
      * @param float|null $value
      *
-     * @return Type\Union
      */
     public static function getFloat($value = null): Union
     {
@@ -343,9 +316,6 @@ abstract class Type
         return new Union([$type]);
     }
 
-    /**
-     * @return Type\Union
-     */
     public static function getObject(): Union
     {
         $type = new TObject;
@@ -353,9 +323,6 @@ abstract class Type
         return new Union([$type]);
     }
 
-    /**
-     * @return Type\Union
-     */
     public static function getClosure(): Union
     {
         $type = new Type\Atomic\TFn('Closure');
@@ -363,9 +330,6 @@ abstract class Type
         return new Union([$type]);
     }
 
-    /**
-     * @return Type\Union
-     */
     public static function getArrayKey(): Union
     {
         $type = new TArrayKey();
@@ -373,9 +337,6 @@ abstract class Type
         return new Union([$type]);
     }
 
-    /**
-     * @return Type\Union
-     */
     public static function getArray(): Union
     {
         $type = new TArray(
@@ -388,9 +349,6 @@ abstract class Type
         return new Union([$type]);
     }
 
-    /**
-     * @return Type\Union
-     */
     public static function getEmptyArray(): Union
     {
         $array_type = new TArray(
@@ -405,9 +363,6 @@ abstract class Type
         ]);
     }
 
-    /**
-     * @return Type\Union
-     */
     public static function getList(): Union
     {
         $type = new TList(new Type\Union([new TMixed]));
@@ -415,9 +370,6 @@ abstract class Type
         return new Union([$type]);
     }
 
-    /**
-     * @return Type\Union
-     */
     public static function getNonEmptyList(): Union
     {
         $type = new Type\Atomic\TNonEmptyList(new Type\Union([new TMixed]));
@@ -425,9 +377,6 @@ abstract class Type
         return new Union([$type]);
     }
 
-    /**
-     * @return Type\Union
-     */
     public static function getVoid(): Union
     {
         $type = new TVoid;
@@ -435,9 +384,6 @@ abstract class Type
         return new Union([$type]);
     }
 
-    /**
-     * @return Type\Union
-     */
     public static function getFalse(): Union
     {
         $type = new TFalse;
@@ -445,9 +391,6 @@ abstract class Type
         return new Union([$type]);
     }
 
-    /**
-     * @return Type\Union
-     */
     public static function getTrue(): Union
     {
         $type = new TTrue;
@@ -455,9 +398,6 @@ abstract class Type
         return new Union([$type]);
     }
 
-    /**
-     * @return Type\Union
-     */
     public static function getResource(): Union
     {
         return new Union([new TResource]);
@@ -480,12 +420,9 @@ abstract class Type
     /**
      * Combines two union types into one
      *
-     * @param  Union  $type_1
-     * @param  Union  $type_2
      * @param  int    $literal_limit any greater number of literal types than this
      *                               will be merged to a scalar
      *
-     * @return Union
      */
     public static function combineUnionTypes(
         Union $type_1,
@@ -578,10 +515,7 @@ abstract class Type
     /**
      * Combines two union types into one via an intersection
      *
-     * @param  Union  $type_1
-     * @param  Union  $type_2
      *
-     * @return ?Union
      */
     public static function intersectUnionTypes(
         Union $type_1,

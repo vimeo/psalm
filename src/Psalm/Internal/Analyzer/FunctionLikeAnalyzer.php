@@ -117,7 +117,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
     /**
      * @param Closure|Function_|ClassMethod|ArrowFunction $function
-     * @param SourceAnalyzer $source
      */
     protected function __construct($function, SourceAnalyzer $source, FunctionLikeStorage $storage)
     {
@@ -129,7 +128,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * @param Context       $context
      * @param Context|null  $global_context
      * @param bool          $add_mutations  whether or not to add mutations to this method
      * @param ?array<string, bool> $byref_uses
@@ -428,7 +426,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         if ($storage instanceof MethodStorage) {
             $non_null_param_types = array_filter(
                 $storage->params,
-                /** @return bool */
                 function (FunctionLikeParameter $p): bool {
                     return $p->type !== null && $p->has_docblock_type;
                 }
@@ -436,7 +433,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         } else {
             $non_null_param_types = array_filter(
                 $storage->params,
-                /** @return bool */
                 function (FunctionLikeParameter $p): bool {
                     return $p->type !== null;
                 }
@@ -449,7 +445,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         ) {
             $types_without_docblocks = array_filter(
                 $storage->params,
-                /** @return bool */
                 function (FunctionLikeParameter $p): bool {
                     return !$p->type || !$p->has_docblock_type;
                 }
@@ -1577,7 +1572,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
      * Adds return types for the given function
      *
      * @param   string  $return_type
-     * @param   Context $context
      *
      * @return  void
      */
@@ -1661,7 +1655,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     /**
      * @param string|null $context_self
      *
-     * @return string
      */
     public function getCorrectlyCasedMethodId($context_self = null): string
     {
@@ -1683,10 +1676,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
         return $this->getClosureId();
     }
-
-    /**
-     * @return FunctionLikeStorage
-     */
+    
     public function getFunctionLikeStorage(StatementsAnalyzer $statements_analyzer = null): FunctionLikeStorage
     {
         $codebase = $this->codebase;
@@ -1768,17 +1758,11 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         return [];
     }
 
-    /**
-     * @return string|null
-     */
     public function getFQCLN(): ?string
     {
         return $this->source->getFQCLN();
     }
 
-    /**
-     * @return null|string
-     */
     public function getClassName(): ?string
     {
         return $this->source->getClassName();
@@ -1797,9 +1781,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         return $this->storage->template_types;
     }
 
-    /**
-     * @return string|null
-     */
     public function getParentFQCLN(): ?string
     {
         return $this->source->getParentFQCLN();
@@ -1810,17 +1791,11 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         return $this->source->getNodeTypeProvider();
     }
 
-    /**
-     * @return bool
-     */
     public function isStatic(): bool
     {
         return $this->is_static;
     }
 
-    /**
-     * @return StatementsSource
-     */
     public function getSource(): StatementsSource
     {
         return $this->source;
@@ -1889,9 +1864,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         self::$no_effects_hashes = [];
     }
 
-    /**
-     * @return Type\Union
-     */
     public function getLocalReturnType(Type\Union $storage_return_type, bool $final = false): Type\Union
     {
         if ($this->local_return_type) {

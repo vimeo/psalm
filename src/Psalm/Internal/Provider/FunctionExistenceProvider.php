@@ -60,7 +60,6 @@ class FunctionExistenceProvider
     /**
      * @param  array<PhpParser\Node\Arg>  $call_args
      *
-     * @return ?bool
      */
     public function doesFunctionExist(
         StatementsSource $statements_source,

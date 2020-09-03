@@ -213,9 +213,6 @@ class SimpleNameResolver extends NodeVisitorAbstract
         return $name;
     }
 
-    /**
-     * @return Name
-     */
     protected function resolveClassName(Name $name): Name
     {
         return $this->resolveName($name, Stmt\Use_::TYPE_NORMAL);

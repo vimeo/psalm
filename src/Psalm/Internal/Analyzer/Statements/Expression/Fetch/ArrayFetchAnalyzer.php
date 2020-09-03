@@ -350,15 +350,7 @@ class ArrayFetchAnalyzer
             $stmt_type->parent_nodes = [$new_parent_node];
         }
     }
-
-    /**
-     * @param  Type\Union $array_type
-     * @param  Type\Union $offset_type
-     * @param  bool       $in_assignment
-     * @param  null|string    $array_var_id
-     *
-     * @return Type\Union
-     */
+    
     public static function getArrayAccessTypeGivenOffset(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
@@ -1583,10 +1575,7 @@ class ArrayFetchAnalyzer
             }
         }
     }
-
-    /**
-     * @return Type\Union
-     */
+    
     public static function replaceOffsetTypeWithInts(Type\Union $offset_type): Type\Union
     {
         $offset_types = $offset_type->getAtomicTypes();

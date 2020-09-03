@@ -70,11 +70,9 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
      *
      * @param  bool            $self_call
      * @param  bool            $is_context_dynamic
-     * @param  CodeLocation    $code_location
      * @param  array<string>   $suppressed_issues
      * @param  bool            $is_dynamic_this_method
      *
-     * @return bool
      */
     public static function checkStatic(
         \Psalm\Internal\MethodIdentifier $method_id,
@@ -139,11 +137,9 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
     }
 
     /**
-     * @param  CodeLocation $code_location
      * @param  string[]     $suppressed_issues
      * @param  lowercase-string|null  $calling_method_id
      *
-     * @return bool|null
      */
     public static function checkMethodExists(
         Codebase $codebase,
@@ -174,13 +170,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
 
         return null;
     }
-
-    /**
-     * @param  Context          $context
-     * @param  StatementsSource $source
-     *
-     * @return bool
-     */
+    
     public static function isMethodVisible(
         \Psalm\Internal\MethodIdentifier $method_id,
         Context $context,
@@ -267,8 +257,6 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
      * Check that __clone, __construct, and __destruct do not have a return type
      * hint in their signature.
      *
-     * @param  MethodStorage $method_storage
-     * @param  CodeLocation  $code_location
      * @return false|null
      */
     public static function checkMethodSignatureMustOmitReturnType(
@@ -298,7 +286,6 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
     /**
      * @param string|null $context_self
      *
-     * @return \Psalm\Internal\MethodIdentifier
      */
     public function getMethodId($context_self = null): \Psalm\Internal\MethodIdentifier
     {

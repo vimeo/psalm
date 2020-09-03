@@ -133,7 +133,6 @@ class TKeyedArray extends \Psalm\Type\Atomic
     /**
      * @param  array<string, string> $aliased_classes
      *
-     * @return string
      */
     public function toNamespacedString(
         ?string $namespace,
@@ -189,7 +188,6 @@ class TKeyedArray extends \Psalm\Type\Atomic
      * @param  int           $php_major_version
      * @param  int           $php_minor_version
      *
-     * @return string
      */
     public function toPhpString(
         $namespace,
@@ -206,9 +204,6 @@ class TKeyedArray extends \Psalm\Type\Atomic
         return false;
     }
 
-    /**
-     * @return Union
-     */
     public function getGenericKeyType(): Union
     {
         $key_types = [];
@@ -234,9 +229,6 @@ class TKeyedArray extends \Psalm\Type\Atomic
         return $key_type;
     }
 
-    /**
-     * @return Union
-     */
     public function getGenericValueType(): Union
     {
         $value_type = null;
@@ -316,9 +308,6 @@ class TKeyedArray extends \Psalm\Type\Atomic
         }
     }
 
-    /**
-     * @return string
-     */
     public function getKey(bool $include_extra = true): string
     {
         /** @var string */
@@ -383,9 +372,6 @@ class TKeyedArray extends \Psalm\Type\Atomic
         return $this->properties;
     }
 
-    /**
-     * @return bool
-     */
     public function equals(Atomic $other_type): bool
     {
         if (get_class($other_type) !== static::class) {
@@ -413,9 +399,6 @@ class TKeyedArray extends \Psalm\Type\Atomic
         return true;
     }
 
-    /**
-     * @return string
-     */
     public function getAssertionString(): string
     {
         return $this->getKey();

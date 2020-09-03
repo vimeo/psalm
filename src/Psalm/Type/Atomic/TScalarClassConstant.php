@@ -22,25 +22,16 @@ class TScalarClassConstant extends Scalar
         $this->const_name = $const_name;
     }
 
-    /**
-     * @return string
-     */
     public function getKey(bool $include_extra = true): string
     {
         return 'scalar-class-constant(' . $this->fq_classlike_name . '::' . $this->const_name . ')';
     }
 
-    /**
-     * @return string
-     */
     public function __toString(): string
     {
         return $this->fq_classlike_name . '::' . $this->const_name;
     }
 
-    /**
-     * @return string
-     */
     public function getId(bool $nested = false): string
     {
         return $this->getKey();
@@ -53,7 +44,6 @@ class TScalarClassConstant extends Scalar
      * @param  int           $php_major_version
      * @param  int           $php_minor_version
      *
-     * @return string|null
      */
     public function toPhpString(
         $namespace,
@@ -71,12 +61,8 @@ class TScalarClassConstant extends Scalar
     }
 
     /**
-     * @param  string|null   $namespace
      * @param  array<string, string> $aliased_classes
-     * @param  string|null   $this_class
-     * @param  bool          $use_phpdoc_format
      *
-     * @return string
      */
     public function toNamespacedString(
         ?string $namespace,
@@ -93,9 +79,6 @@ class TScalarClassConstant extends Scalar
             . $this->const_name;
     }
 
-    /**
-     * @return string
-     */
     public function getAssertionString(): string
     {
         return 'mixed';

@@ -21,9 +21,6 @@ use function array_merge;
 class SwitchAnalyzer
 {
     /**
-     * @param   StatementsAnalyzer               $statements_analyzer
-     * @param   PhpParser\Node\Stmt\Switch_     $stmt
-     * @param   Context                         $context
      *
      * @return  false|null
      */

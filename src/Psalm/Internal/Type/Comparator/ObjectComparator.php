@@ -24,7 +24,6 @@ class ObjectComparator
      * @param  TNamedObject|TTemplateParam|TIterable  $input_type_part
      * @param  TNamedObject|TTemplateParam|TIterable  $container_type_part
      *
-     * @return bool
      */
     public static function isShallowlyContainedBy(
         Codebase $codebase,

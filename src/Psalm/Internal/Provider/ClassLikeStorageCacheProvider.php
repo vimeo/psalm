@@ -119,7 +119,6 @@ class ClassLikeStorageCacheProvider
      * @param  string|null $file_path
      * @param  string|null $file_contents
      *
-     * @return string
      */
     private function getCacheHash($file_path, $file_contents): string
     {
@@ -131,7 +130,6 @@ class ClassLikeStorageCacheProvider
      * @param  string|null  $file_path
      * @psalm-suppress MixedAssignment
      *
-     * @return ClassLikeStorage|null
      */
     private function loadFromCache($fq_classlike_name_lc, $file_path): ?ClassLikeStorage
     {
@@ -165,7 +163,6 @@ class ClassLikeStorageCacheProvider
      * @param  string|null  $file_path
      * @param  bool $create_directory
      *
-     * @return string
      */
     private function getCacheLocationForClass($fq_classlike_name_lc, $file_path, $create_directory = false): string
     {

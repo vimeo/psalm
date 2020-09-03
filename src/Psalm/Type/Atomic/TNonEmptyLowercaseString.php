@@ -3,9 +3,6 @@ namespace Psalm\Type\Atomic;
 
 class TNonEmptyLowercaseString extends TNonEmptyString
 {
-    /**
-     * @return string
-     */
     public function getKey(bool $include_extra = true): string
     {
         return 'string';

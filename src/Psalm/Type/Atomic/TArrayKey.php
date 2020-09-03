@@ -8,9 +8,6 @@ class TArrayKey extends Scalar
         return 'array-key';
     }
 
-    /**
-     * @return string
-     */
     public function getKey(bool $include_extra = true): string
     {
         return 'array-key';
@@ -23,7 +20,6 @@ class TArrayKey extends Scalar
      * @param  int           $php_major_version
      * @param  int           $php_minor_version
      *
-     * @return null|string
      */
     public function toPhpString(
         $namespace,

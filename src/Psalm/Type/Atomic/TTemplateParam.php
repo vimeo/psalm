@@ -31,9 +31,6 @@ class TTemplateParam extends \Psalm\Type\Atomic
      */
     public $defining_class;
 
-    /**
-     * @param string $defining_class
-     */
     public function __construct(string $param_name, Union $extends, string $defining_class)
     {
         $this->param_name = $param_name;
@@ -46,9 +43,6 @@ class TTemplateParam extends \Psalm\Type\Atomic
         return $this->param_name;
     }
 
-    /**
-     * @return string
-     */
     public function getKey(bool $include_extra = true): string
     {
         if ($include_extra && $this->extra_types) {
@@ -58,9 +52,6 @@ class TTemplateParam extends \Psalm\Type\Atomic
         return $this->param_name . ':' . $this->defining_class;
     }
 
-    /**
-     * @return string
-     */
     public function getAssertionString(): string
     {
         return $this->as->getId();
@@ -100,12 +91,8 @@ class TTemplateParam extends \Psalm\Type\Atomic
     }
 
     /**
-     * @param  string|null   $namespace
      * @param  array<string, string> $aliased_classes
-     * @param  string|null   $this_class
-     * @param  bool          $use_phpdoc_format
      *
-     * @return string
      */
     public function toNamespacedString(
         ?string $namespace,
@@ -137,9 +124,6 @@ class TTemplateParam extends \Psalm\Type\Atomic
         return [$this->as];
     }
 
-    /**
-     * @return bool
-     */
     public function canBeFullyExpressedInPhp(): bool
     {
         return false;

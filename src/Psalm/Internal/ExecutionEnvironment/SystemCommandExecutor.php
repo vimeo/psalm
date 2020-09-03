@@ -15,7 +15,6 @@ final class SystemCommandExecutor
     /**
      * Execute command.
      *
-     * @param string $command
      *
      * @throws \RuntimeException
      *

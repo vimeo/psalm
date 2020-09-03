@@ -35,8 +35,6 @@ use function strtolower;
 class ReturnAnalyzer
 {
     /**
-     * @param  PhpParser\Node\Stmt\Return_ $stmt
-     * @param  Context                     $context
      *
      * @return false|null
      */

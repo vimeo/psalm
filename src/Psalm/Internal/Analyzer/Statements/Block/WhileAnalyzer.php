@@ -17,9 +17,6 @@ use function array_merge;
 class WhileAnalyzer
 {
     /**
-     * @param   StatementsAnalyzer           $statements_analyzer
-     * @param   PhpParser\Node\Stmt\While_  $stmt
-     * @param   Context                     $context
      *
      * @return  false|null
      */

@@ -34,7 +34,6 @@ class ScopeAnalyzer
     /**
      * @param   array<PhpParser\Node\Stmt>   $stmts
      *
-     * @return  bool
      */
     public static function doesEverBreak(array $stmts): bool
     {
@@ -344,7 +343,6 @@ class ScopeAnalyzer
     /**
      * @param   array<PhpParser\Node> $stmts
      *
-     * @return  bool
      */
     public static function onlyThrowsOrExits(\Psalm\NodeTypeProvider $type_provider, array $stmts): bool
     {

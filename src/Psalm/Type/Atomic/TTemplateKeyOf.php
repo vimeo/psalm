@@ -30,25 +30,16 @@ class TTemplateKeyOf extends TArrayKey
         $this->as = $as;
     }
 
-    /**
-     * @return string
-     */
     public function getKey(bool $include_extra = true): string
     {
         return 'key-of<' . $this->param_name . '>';
     }
 
-    /**
-     * @return string
-     */
     public function __toString(): string
     {
         return 'key-of<' . $this->param_name . '>';
     }
 
-    /**
-     * @return string
-     */
     public function getId(bool $nested = false): string
     {
         return 'key-of<' . $this->param_name . ':' . $this->defining_class . ' as ' . $this->as->getId() . '>';
@@ -61,7 +52,6 @@ class TTemplateKeyOf extends TArrayKey
      * @param  int           $php_major_version
      * @param  int           $php_minor_version
      *
-     * @return string|null
      */
     public function toPhpString(
         $namespace,
@@ -82,12 +72,8 @@ class TTemplateKeyOf extends TArrayKey
     }
 
     /**
-     * @param  string|null   $namespace
      * @param  array<string> $aliased_classes
-     * @param  string|null   $this_class
-     * @param  bool          $use_phpdoc_format
      *
-     * @return string
      */
     public function toNamespacedString(
         ?string $namespace,

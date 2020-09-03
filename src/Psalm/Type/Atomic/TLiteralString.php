@@ -26,9 +26,6 @@ class TLiteralString extends TString
         return $this->getId();
     }
 
-    /**
-     * @return string
-     */
     public function __toString(): string
     {
         return 'string';
@@ -54,7 +51,6 @@ class TLiteralString extends TString
      * @param  int           $php_major_version
      * @param  int           $php_minor_version
      *
-     * @return string|null
      */
     public function toPhpString(
         $namespace,
@@ -67,12 +63,8 @@ class TLiteralString extends TString
     }
 
     /**
-     * @param  string|null   $namespace
      * @param  array<string> $aliased_classes
-     * @param  string|null   $this_class
-     * @param  bool          $use_phpdoc_format
      *
-     * @return string
      */
     public function toNamespacedString(
         ?string $namespace,

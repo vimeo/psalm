@@ -82,7 +82,6 @@ class MethodReturnTypeProvider
      * @param array<PhpParser\Node\Arg>  $call_args
      * @param  ?array<Type\Union> $template_type_parameters
      *
-     * @return  ?Type\Union
      */
     public function getReturnType(
         StatementsSource $statements_source,

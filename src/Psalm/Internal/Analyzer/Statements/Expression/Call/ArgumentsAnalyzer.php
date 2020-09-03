@@ -42,12 +42,9 @@ use function is_string;
 class ArgumentsAnalyzer
 {
     /**
-     * @param   StatementsAnalyzer                       $statements_analyzer
      * @param   array<int, PhpParser\Node\Arg>          $args
      * @param   array<int, FunctionLikeParameter>|null  $function_params
      * @param   array<string, array<string, array{Type\Union, 1?:int}>>|null   $generic_params
-     * @param   string|null                             $method_id
-     * @param   Context                                 $context
      *
      * @return  false|null
      */
@@ -365,14 +362,11 @@ class ArgumentsAnalyzer
     }
 
     /**
-     * @param   StatementsAnalyzer                       $statements_analyzer
      * @param   array<int, PhpParser\Node\Arg>          $args
      * @param   string|MethodIdentifier|null  $method_id
      * @param   array<int,FunctionLikeParameter>        $function_params
      * @param   FunctionLikeStorage|null                $function_storage
      * @param   ClassLikeStorage|null                   $class_storage
-     * @param   CodeLocation                            $code_location
-     * @param   Context                                 $context
      *
      * @return  false|null
      */

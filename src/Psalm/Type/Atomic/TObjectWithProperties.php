@@ -127,12 +127,8 @@ class TObjectWithProperties extends TObject
     }
 
     /**
-     * @param  string|null   $namespace
      * @param  array<string, string> $aliased_classes
-     * @param  string|null   $this_class
-     * @param  bool          $use_phpdoc_format
      *
-     * @return string
      */
     public function toNamespacedString(
         ?string $namespace,
@@ -196,9 +192,6 @@ class TObjectWithProperties extends TObject
         return $this->getKey();
     }
 
-    /**
-     * @return bool
-     */
     public function canBeFullyExpressedInPhp(): bool
     {
         return false;
@@ -211,9 +204,6 @@ class TObjectWithProperties extends TObject
         }
     }
 
-    /**
-     * @return bool
-     */
     public function equals(Atomic $other_type): bool
     {
         if (!$other_type instanceof self) {
@@ -299,9 +289,6 @@ class TObjectWithProperties extends TObject
         return array_merge($this->properties, $this->extra_types !== null ? array_values($this->extra_types) : []);
     }
 
-    /**
-     * @return string
-     */
     public function getAssertionString(): string
     {
         return $this->getKey();

@@ -66,7 +66,6 @@ class Reconciler
      * @param  array<string, Type\Union> $existing_types
      * @param  array<string, bool>       $changed_var_ids
      * @param  array<string, bool>       $referenced_var_ids
-     * @param  StatementsAnalyzer         $statements_analyzer
      * @param  CodeLocation|null         $code_location
      * @param  array<string, array<string, array{Type\Union}>> $template_type_map
      *
@@ -486,12 +485,10 @@ class Reconciler
     /**
      * Gets the type for a given (non-existent key) based on the passed keys
      *
-     * @param  string                    $key
      * @param  array<string,Type\Union>  $existing_keys
      * @param  array<string,mixed>       $new_assertions
      * @param  string[][]                $new_type_parts
      *
-     * @return Type\Union|null
      */
     private static function getValueForKey(
         Codebase $codebase,
@@ -814,10 +811,6 @@ class Reconciler
     }
 
     /**
-     * @param  string       $key
-     * @param  string       $old_var_type_string
-     * @param  string       $assertion
-     * @param  bool         $redundant
      * @param  string[]     $suppressed_issues
      *
      * @return void

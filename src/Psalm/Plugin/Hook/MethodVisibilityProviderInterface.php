@@ -12,9 +12,6 @@ interface MethodVisibilityProviderInterface
      */
     public static function getClassLikeNames() : array;
 
-    /**
-     * @return ?bool
-     */
     public static function isMethodVisible(
         StatementsSource $source,
         string $fq_classlike_name,

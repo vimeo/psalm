@@ -16,8 +16,6 @@ use function is_string;
 class StaticAnalyzer
 {
     /**
-     * @param   PhpParser\Node\Stmt\Static_ $stmt
-     * @param   Context                     $context
      *
      * @return  false|null
      */

@@ -18,9 +18,6 @@ use function array_intersect_key;
 class ForAnalyzer
 {
     /**
-     * @param   StatementsAnalyzer           $statements_analyzer
-     * @param   PhpParser\Node\Stmt\For_    $stmt
-     * @param   Context                     $context
      *
      * @return  false|null
      */

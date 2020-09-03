@@ -8,9 +8,6 @@ class TFloat extends Scalar
         return 'float';
     }
 
-    /**
-     * @return string
-     */
     public function getKey(bool $include_extra = true): string
     {
         return 'float';

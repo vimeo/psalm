@@ -247,7 +247,6 @@ class ProjectAnalyzer
 
     /**
      * @param array<ReportOptions> $generated_report_options
-     * @param int           $threads
      * @param string        $reports
      */
     public function __construct(
@@ -351,7 +350,6 @@ class ProjectAnalyzer
 
     /**
      * @param  array<string>  $report_file_paths
-     * @param  bool   $show_info
      * @return array<ReportOptions>
      */
     public static function getFileReportOptions(array $report_file_paths, bool $show_info = true): array
@@ -532,9 +530,6 @@ class ProjectAnalyzer
         }
     }
 
-    /**
-     * @return self
-     */
     public static function getInstance(): ProjectAnalyzer
     {
         return self::$instance;
@@ -543,7 +538,6 @@ class ProjectAnalyzer
     /**
      * @param  string $file_path
      *
-     * @return bool
      */
     public function canReportIssues($file_path): bool
     {
@@ -934,9 +928,6 @@ class ProjectAnalyzer
             foreach ($migration_manipulations as $file_path => $file_manipulations) {
                 usort(
                     $file_manipulations,
-                    /**
-                     * @return int
-                     */
                     function (FileManipulation $a, FileManipulation $b): int {
                         if ($a->start === $b->start) {
                             if ($b->end === $a->end) {
@@ -1047,7 +1038,6 @@ class ProjectAnalyzer
 
     /**
      * @param  string $dir_name
-     * @param  Config $config
      * @param  bool   $allow_non_project_files
      *
      * @return void
@@ -1070,7 +1060,6 @@ class ProjectAnalyzer
     }
 
     /**
-     * @param  Config $config
      *
      * @return array<int, string>
      */
@@ -1106,7 +1095,6 @@ class ProjectAnalyzer
 
     /**
      * @param  string $dir_name
-     * @param  Config $config
      *
      * @return array<string>
      */
@@ -1139,7 +1127,6 @@ class ProjectAnalyzer
     }
 
     /**
-     * @param  Config           $config
      * @param  array<string>    $file_list
      *
      * @return void
@@ -1249,9 +1236,6 @@ class ProjectAnalyzer
         }
     }
 
-    /**
-     * @return Config
-     */
     public function getConfig(): Config
     {
         return $this->config;
@@ -1292,7 +1276,6 @@ class ProjectAnalyzer
     /**
      * @param  string $file_path
      *
-     * @return bool
      */
     public function fileExists($file_path): bool
     {
@@ -1396,9 +1379,6 @@ class ProjectAnalyzer
         return $this->issues_to_fix;
     }
 
-    /**
-     * @return Codebase
-     */
     public function getCodebase(): Codebase
     {
         return $this->codebase;
@@ -1407,7 +1387,6 @@ class ProjectAnalyzer
     /**
      * @param  string $fq_class_name
      *
-     * @return FileAnalyzer
      */
     public function getFileAnalyzerForClassLike($fq_class_name): FileAnalyzer
     {
@@ -1425,7 +1404,6 @@ class ProjectAnalyzer
     }
 
     /**
-     * @param  Context  $this_context
      *
      * @return void
      */
@@ -1508,7 +1486,6 @@ class ProjectAnalyzer
      * Copyleft 2018, license: WTFPL
      * @throws \RuntimeException
      * @throws \LogicException
-     * @return int
      * @psalm-suppress ForbiddenCode
      */
     public static function getCpuCount(): int

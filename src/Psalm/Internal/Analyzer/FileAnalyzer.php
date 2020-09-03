@@ -373,7 +373,6 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
 
     /**
      * @param string       $fq_class_name
-     * @param ClassAnalyzer $class_analyzer
      *
      * @return  void
      */
@@ -384,7 +383,6 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
 
     /**
      * @param string            $fq_class_name
-     * @param InterfaceAnalyzer  $interface_analyzer
      *
      * @return  void
      */
@@ -473,9 +471,6 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
         return $class_analyzer_to_examine->getFunctionLikeAnalyzer($method_name);
     }
 
-    /**
-     * @return null|string
-     */
     public function getNamespace(): ?string
     {
         return null;
@@ -525,17 +520,11 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
         \Psalm\Internal\Provider\FileReferenceProvider::clearCache();
     }
 
-    /**
-     * @return string
-     */
     public function getFileName(): string
     {
         return $this->file_name;
     }
 
-    /**
-     * @return string
-     */
     public function getFilePath(): string
     {
         return $this->file_path;
@@ -592,7 +581,6 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
     /**
      * @param string $file_path
      *
-     * @return bool
      */
     public function hasParentFilePath($file_path): bool
     {
@@ -602,7 +590,6 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
     /**
      * @param string $file_path
      *
-     * @return bool
      */
     public function hasAlreadyRequiredFilePath($file_path): bool
     {
@@ -625,9 +612,6 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
         return array_keys($this->parent_file_paths);
     }
 
-    /**
-     * @return int
-     */
     public function getRequireNesting(): int
     {
         return count($this->parent_file_paths);
@@ -669,25 +653,16 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
         $this->suppressed_issues = \array_diff_key($this->suppressed_issues, $new_issues);
     }
 
-    /**
-     * @return null|string
-     */
     public function getFQCLN(): ?string
     {
         return null;
     }
 
-    /**
-     * @return null|string
-     */
     public function getParentFQCLN(): ?string
     {
         return null;
     }
 
-    /**
-     * @return null|string
-     */
     public function getClassName(): ?string
     {
         return null;
@@ -701,9 +676,6 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
         return null;
     }
 
-    /**
-     * @return bool
-     */
     public function isStatic(): bool
     {
         return false;

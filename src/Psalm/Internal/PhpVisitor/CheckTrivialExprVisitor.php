@@ -13,10 +13,6 @@ class CheckTrivialExprVisitor extends PhpParser\NodeVisitorAbstract implements P
      */
     protected $non_trivial_expr = [];
 
-    /**
-     * @param  PhpParser\Node\Expr $node
-     * @return bool
-     */
     private function checkNonTrivialExpr(PhpParser\Node\Expr $node): bool
     {
         /**
@@ -56,10 +52,7 @@ class CheckTrivialExprVisitor extends PhpParser\NodeVisitorAbstract implements P
             return false;
         }
     }
-    /**
-     * @param  PhpParser\Node $node
-     * @return null|int
-     */
+
     public function enterNode(PhpParser\Node $node): ?int
     {
         if ($node instanceof PhpParser\Node\Expr) {

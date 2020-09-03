@@ -37,10 +37,7 @@ class TIterable extends Atomic
             $this->type_params = [\Psalm\Type::getMixed(), \Psalm\Type::getMixed()];
         }
     }
-
-    /**
-     * @return string
-     */
+    
     public function getKey(bool $include_extra = true): string
     {
         if ($include_extra && $this->extra_types) {
@@ -50,9 +47,6 @@ class TIterable extends Atomic
         return 'iterable';
     }
 
-    /**
-     * @return string
-     */
     public function getAssertionString(): string
     {
         return 'iterable';
@@ -86,7 +80,6 @@ class TIterable extends Atomic
      * @param  int           $php_major_version
      * @param  int           $php_minor_version
      *
-     * @return string|null
      */
     public function toPhpString(
         $namespace,
@@ -101,17 +94,11 @@ class TIterable extends Atomic
             : null;
     }
 
-    /**
-     * @return bool
-     */
     public function canBeFullyExpressedInPhp(): bool
     {
         return $this->type_params[0]->isMixed() && $this->type_params[1]->isMixed();
     }
 
-    /**
-     * @return bool
-     */
     public function equals(Atomic $other_type): bool
     {
         if (!$other_type instanceof self) {

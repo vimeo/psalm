@@ -39,9 +39,6 @@ class ShowCommand extends Command
             ->addUsage('[-c path/to/psalm.xml]');
     }
 
-    /**
-     * @return int
-     */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);

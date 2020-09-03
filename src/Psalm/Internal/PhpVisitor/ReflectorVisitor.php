@@ -162,7 +162,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
     }
 
     /**
-     * @param  PhpParser\Node $node
      *
      * @return null|int
      */
@@ -1817,7 +1816,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
     }
 
     /**
-     * @param  PhpParser\Node\FunctionLike $stmt
      * @param  bool $fake_method in the case of @method annotations we do something a little strange
      *
      * @return FunctionLikeStorage|false
@@ -2619,7 +2617,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         if ($storage instanceof MethodStorage) {
             $storage->has_docblock_param_types = (bool) array_filter(
                 $storage->params,
-                /** @return bool */
                 function (FunctionLikeParameter $p): bool {
                     return $p->type !== null && $p->has_docblock_type;
                 }
@@ -3131,11 +3128,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         return $assertion_type_parts;
     }
 
-    /**
-     * @param  PhpParser\Node\Param $param
-     *
-     * @return FunctionLikeParameter
-     */
     public function getTranslatedFunctionParam(
         PhpParser\Node\Param $param,
         PhpParser\Node\FunctionLike $stmt,
@@ -3280,9 +3272,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
     }
 
     /**
-     * @param  FunctionLikeStorage          $storage
      * @param  array<int, array{type:string,name:string,line_number:int,start:int,end:int}>  $docblock_params
-     * @param  PhpParser\Node\FunctionLike  $function
      *
      * @return void
      */
@@ -3502,8 +3492,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
     }
 
     /**
-     * @param   PhpParser\Node\Stmt\Property    $stmt
-     * @param   Config                          $config
      * @param   string                          $fq_classlike_name
      *
      * @return  void
@@ -3693,7 +3681,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
     }
 
     /**
-     * @param   PhpParser\Node\Stmt\ClassConst  $stmt
      * @param   string $fq_classlike_name
      *
      * @return  void
@@ -3973,7 +3960,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
     }
 
     /**
-     * @param  PhpParser\Node\Expr\Include_ $stmt
      *
      * @return void
      */
@@ -4034,41 +4020,26 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         }
     }
 
-    /**
-     * @return string
-     */
     public function getFilePath(): string
     {
         return $this->file_path;
     }
 
-    /**
-     * @return string
-     */
     public function getFileName(): string
     {
         return $this->file_scanner->getFileName();
     }
 
-    /**
-     * @return string
-     */
     public function getRootFilePath(): string
     {
         return $this->file_scanner->getRootFilePath();
     }
 
-    /**
-     * @return string
-     */
     public function getRootFileName(): string
     {
         return $this->file_scanner->getRootFileName();
     }
 
-    /**
-     * @return Aliases
-     */
     public function getAliases(): Aliases
     {
         return $this->aliases;

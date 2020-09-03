@@ -13,9 +13,6 @@ use function strpos;
 
 class CachedStorageTest extends \Psalm\Tests\TestCase
 {
-    /**
-     * @return void
-     */
     public function setUp() : void
     {
         parent::setUp();

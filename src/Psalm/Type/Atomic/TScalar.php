@@ -8,9 +8,6 @@ class TScalar extends Scalar
         return 'scalar';
     }
 
-    /**
-     * @return string
-     */
     public function getKey(bool $include_extra = true): string
     {
         return 'scalar';
@@ -23,7 +20,6 @@ class TScalar extends Scalar
      * @param  int           $php_major_version
      * @param  int           $php_minor_version
      *
-     * @return null|string
      */
     public function toPhpString(
         $namespace,
@@ -40,9 +36,6 @@ class TScalar extends Scalar
         return false;
     }
 
-    /**
-     * @return string
-     */
     public function getAssertionString(): string
     {
         return 'scalar';

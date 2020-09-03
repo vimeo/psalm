@@ -123,10 +123,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
 
     /** @var \Psalm\Internal\Provider\NodeDataProvider */
     public $node_data;
-
-    /**
-     * @param SourceAnalyzer $source
-     */
+    
     public function __construct(SourceAnalyzer $source, \Psalm\Internal\Provider\NodeDataProvider $node_data)
     {
         $this->source = $source;
@@ -139,7 +136,6 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
      * Checks an array of statements for validity
      *
      * @param  array<PhpParser\Node\Stmt>   $stmts
-     * @param  Context                                          $context
      * @param  Context|null                                     $global_context
      * @param  bool                                             $root_scope
      *
@@ -721,7 +717,6 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
     /**
      * @param  string       $var_name
      *
-     * @return bool
      */
     public function hasVariable($var_name): bool
     {
@@ -730,7 +725,6 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
 
     /**
      * @param  string       $var_id
-     * @param  CodeLocation $location
      * @param  int|null     $branch_point
      *
      * @return void
@@ -748,7 +742,6 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
 
     /**
      * @param  string       $var_id
-     * @param  CodeLocation $location
      *
      * @return void
      */
@@ -782,7 +775,6 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
      *
      * @param  string  $var_id
      *
-     * @return CodeLocation|null
      */
     public function getFirstAppearance($var_id): ?CodeLocation
     {
@@ -792,7 +784,6 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
     /**
      * @param  string $var_id
      *
-     * @return int|null
      */
     public function getBranchPoint($var_id): ?int
     {

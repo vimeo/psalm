@@ -14,17 +14,11 @@ class TLiteralInt extends TInt
         $this->value = $value;
     }
 
-    /**
-     * @return string
-     */
     public function getKey(bool $include_extra = true): string
     {
         return 'int(' . $this->value . ')';
     }
 
-    /**
-     * @return string
-     */
     public function getId(bool $nested = false): string
     {
         return 'int(' . $this->value . ')';
@@ -37,7 +31,6 @@ class TLiteralInt extends TInt
      * @param  int           $php_major_version
      * @param  int           $php_minor_version
      *
-     * @return null|string
      */
     public function toPhpString(
         $namespace,
@@ -50,12 +43,8 @@ class TLiteralInt extends TInt
     }
 
     /**
-     * @param  string|null   $namespace
      * @param  array<string> $aliased_classes
-     * @param  string|null   $this_class
-     * @param  bool          $use_phpdoc_format
      *
-     * @return string
      */
     public function toNamespacedString(
         ?string $namespace,

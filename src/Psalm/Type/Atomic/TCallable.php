@@ -17,7 +17,6 @@ class TCallable extends \Psalm\Type\Atomic
      * @param  int           $php_major_version
      * @param  int           $php_minor_version
      *
-     * @return string
      */
     public function toPhpString(
         $namespace,

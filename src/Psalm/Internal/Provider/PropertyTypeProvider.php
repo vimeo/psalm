@@ -68,7 +68,6 @@ class PropertyTypeProvider
     /**
      * @param  array<PhpParser\Node\Arg>  $call_args
      *
-     * @return ?Type\Union
      */
     public function getPropertyType(
         string $fq_classlike_name,

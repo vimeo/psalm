@@ -65,7 +65,6 @@ class MethodExistenceProvider
     /**
      * @param  array<PhpParser\Node\Arg>  $call_args
      *
-     * @return ?bool
      */
     public function doesMethodExist(
         string $fq_classlike_name,

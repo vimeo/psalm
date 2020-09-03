@@ -21,7 +21,6 @@ class TraitFinder extends PhpParser\NodeVisitorAbstract implements PhpParser\Nod
     }
 
     /**
-     * @param  PhpParser\Node $node
      * @param  bool $traverseChildren
      *
      * @return null|int|PhpParser\Node
