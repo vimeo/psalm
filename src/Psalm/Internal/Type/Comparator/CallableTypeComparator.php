@@ -312,6 +312,10 @@ class CallableTypeComparator
                 }
             }
         } elseif ($input_type_part instanceof TNamedObject
+            && $input_type_part->value === 'Closure'
+        ) {
+            return new TCallable();
+        } elseif ($input_type_part instanceof TNamedObject
             && $codebase->classExists($input_type_part->value)
         ) {
             $invoke_id = new \Psalm\Internal\MethodIdentifier(
