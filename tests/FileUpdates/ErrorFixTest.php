@@ -65,14 +65,17 @@ class ErrorFixTest extends \Psalm\Tests\TestCase
             $config->setCustomErrorLevel($error_type, $error_level);
         }
 
+        $analyzed_files = [];
+
         for ($i = 0; $i < count($files); ++$i) {
             $batch = $files[$i];
 
             foreach ($batch as $file_path => $contents) {
                 $this->file_provider->registerFile($file_path, $contents);
 
-                if ($i === 0) {
+                if (!isset($analyzed_files[$file_path])) {
                     $codebase->addFilesToAnalyze([$file_path => $file_path]);
+                    $analyzed_files[$file_path] = true;
                 }
             }
 
@@ -376,6 +379,37 @@ class ErrorFixTest extends \Psalm\Tests\TestCase
                     ],
                 ],
                 'error_counts' => [1, 0],
+            ],
+            'changeContent' => [
+                'files' => [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            function add(int $a, int $b): int {
+                                return $a + $b;
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                            function hasMethod(object $input, string $method): bool {
+                                return (new ReflectionClass($input))
+                                    ->hasMethod($method);
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'C.php' => '<?php
+                            function add(int $a, int $b): int {
+                                return $a + $b;
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'D.php' => '<?php
+                            function hasMethod(object $input, string $method): bool {
+                                return (new ReflectionClass($input))
+                                    ->hasMethod($method);
+                            }',
+                    ],
+                ],
+                'error_counts' => [0, 0, 0, 0],
             ],
         ];
     }
