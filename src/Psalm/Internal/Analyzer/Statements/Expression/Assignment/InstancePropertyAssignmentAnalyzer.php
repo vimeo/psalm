@@ -1117,26 +1117,6 @@ class InstancePropertyAssignmentAnalyzer
                 ) {
                     $codebase->analyzer->addMutableClass($declaring_class_storage->name);
                 }
-            } elseif ($assignment_value_type
-                && ($declaring_class_storage->mutation_free
-                    || $codebase->alter_code)
-            ) {
-                $visitor = new \Psalm\Internal\TypeVisitor\ImmutablePropertyAssignmentVisitor(
-                    $statements_analyzer,
-                    $stmt
-                );
-
-                $visitor->traverse($assignment_value_type);
-
-                if (!$declaring_class_storage->mutation_free
-                    && $statements_analyzer->getSource()
-                        instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
-                    && $statements_analyzer->getSource()->track_mutations
-                    && $visitor->has_mutation
-                ) {
-                    $statements_analyzer->getSource()->inferred_has_mutation = true;
-                    $statements_analyzer->getSource()->inferred_impure = true;
-                }
             }
         }
     }
