@@ -696,7 +696,6 @@ class InstancePropertyAssignmentAnalyzer
                         $property_id,
                         $property_storage,
                         $declaring_class_storage,
-                        $assignment_value_type,
                         $context
                     );
 
@@ -1069,7 +1068,6 @@ class InstancePropertyAssignmentAnalyzer
         string $property_id,
         \Psalm\Storage\PropertyStorage $property_storage,
         \Psalm\Storage\ClassLikeStorage $declaring_class_storage,
-        ?Type\Union $assignment_value_type,
         Context $context
     ): void {
         $codebase = $statements_analyzer->getCodebase();

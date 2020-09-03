@@ -115,7 +115,7 @@ class ImmutableAnnotationAdditionTest extends FileManipulationTest
                 ['MissingImmutableAnnotation'],
                 true,
             ],
-            'dontAddPureAnnotationWhenClassCanHoldMutableData' => [
+            'addPureAnnotationWhenClassCanHoldMutableData' => [
                 '<?php
                     class B {
                         public int $i = 5;
@@ -147,6 +147,9 @@ class ImmutableAnnotationAdditionTest extends FileManipulationTest
                         public int $i = 5;
                     }
 
+                    /**
+                     * @psalm-immutable
+                     */
                     class A {
                         public B $b;
 
