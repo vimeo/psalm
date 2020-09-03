@@ -942,7 +942,6 @@ class InstancePropertyFetchAnalyzer
                         $property_id,
                         $property_storage,
                         $declaring_class_storage,
-                        null,
                         $context
                     );
                 }
