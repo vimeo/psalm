@@ -18,6 +18,7 @@ abstract class Report
     const TYPE_CHECKSTYLE = 'checkstyle';
     const TYPE_TEXT = 'text';
     const TYPE_GITHUB_ACTIONS = 'github';
+    const TYPE_PHP_STORM = 'phpstorm';
 
     const SUPPORTED_OUTPUT_TYPES = [
         self::TYPE_COMPACT,
@@ -32,6 +33,7 @@ abstract class Report
         self::TYPE_CHECKSTYLE,
         self::TYPE_TEXT,
         self::TYPE_GITHUB_ACTIONS,
+        self::TYPE_PHP_STORM,
     ];
 
     /**

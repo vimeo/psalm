@@ -1,6 +1,7 @@
 <?php
 namespace Psalm;
 
+use Psalm\Report\PhpStormReport;
 use function array_pop;
 use function array_search;
 use function array_splice;
@@ -37,6 +38,7 @@ use function str_replace;
 use function usort;
 use function array_merge;
 use function array_values;
+use function in_array;
 use const DEBUG_BACKTRACE_IGNORE_ARGS;
 use const STDERR;
 
@@ -455,7 +457,10 @@ class IssueBuffer
         $issues_data = [];
 
         if (self::$issues_data) {
-            if ($project_analyzer->stdout_report_options->format === Report::TYPE_CONSOLE) {
+            if (in_array(
+                $project_analyzer->stdout_report_options->format,
+                [\Psalm\Report::TYPE_CONSOLE, \Psalm\Report::TYPE_PHP_STORM]
+            )) {
                 echo "\n";
             }
 
@@ -575,7 +580,10 @@ class IssueBuffer
             );
         }
 
-        if ($project_analyzer->stdout_report_options->format === Report::TYPE_CONSOLE) {
+        if (in_array(
+            $project_analyzer->stdout_report_options->format,
+            [\Psalm\Report::TYPE_CONSOLE, \Psalm\Report::TYPE_PHP_STORM]
+        )) {
             echo str_repeat('-', 30) . "\n";
 
             if ($error_count) {
@@ -744,6 +752,10 @@ class IssueBuffer
 
             case Report::TYPE_GITHUB_ACTIONS:
                 $output = new GithubActionsReport($normalized_data, self::$fixable_issue_counts, $report_options);
+                break;
+
+            case Report::TYPE_PHP_STORM:
+                $output = new PhpStormReport($normalized_data, self::$fixable_issue_counts, $report_options);
                 break;
         }
 
