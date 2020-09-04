@@ -6,7 +6,7 @@ use Psalm\Report;
 use Psalm\Internal\Analyzer\TaintNodeData;
 use function substr;
 
-class ConsoleReport extends Report
+class PhpStormReport extends Report
 {
     /**
      * {@inheritdoc}
@@ -36,8 +36,8 @@ class ConsoleReport extends Report
         $issue_reference = ' (see ' . $issue_data->link . ')';
 
         $issue_string .= ': ' . $issue_data->type
-            . ' - ' . $issue_data->file_name . ':' . $issue_data->line_from . ':' . $issue_data->column_from
-            . ' - ' . $issue_data->message . $issue_reference . "\n";
+            . "\nat " . $issue_data->file_name . ':' . $issue_data->line_from . ':' . $issue_data->column_from
+            . "\n" . $issue_data->message . $issue_reference . "\n";
 
 
         if ($issue_data->taint_trace) {
