@@ -162,125 +162,18 @@ class ArgumentsAnalyzer
                 && $template_result
                 && $template_result->upper_bounds
                 && $param
-                && $param->type
                 && !$arg->value->getDocComment()
             ) {
-                if (($argument_offset === 1 && $method_id === 'array_filter' && count($args) === 2)
-                    || ($argument_offset === 0 && $method_id === 'array_map' && count($args) >= 2)
-                ) {
-                    $function_like_params = [];
-
-                    foreach ($template_result->upper_bounds as $template_name => $_) {
-                        $function_like_params[] = new \Psalm\Storage\FunctionLikeParameter(
-                            'function',
-                            false,
-                            new Type\Union([
-                                new Type\Atomic\TTemplateParam(
-                                    $template_name,
-                                    Type::getMixed(),
-                                    $method_id
-                                )
-                            ])
-                        );
-                    }
-
-                    $replaced_type = new Type\Union([
-                        new Type\Atomic\TCallable(
-                            'callable',
-                            array_reverse($function_like_params)
-                        )
-                    ]);
-                } else {
-                    $replaced_type = clone $param->type;
-                }
-
-                $replace_template_result = new \Psalm\Internal\Type\TemplateResult(
-                    $template_result->upper_bounds,
-                    []
-                );
-
-                $replaced_type = \Psalm\Internal\Type\UnionTemplateHandler::replaceTemplateTypesWithStandins(
-                    $replaced_type,
-                    $replace_template_result,
-                    $codebase,
+                self::handleClosureArg(
                     $statements_analyzer,
-                    null,
-                    null,
-                    null,
-                    'fn-' . ($context->calling_method_id ?: $context->calling_function_id)
+                    $args,
+                    $method_id,
+                    $context,
+                    $template_result,
+                    $argument_offset,
+                    $arg,
+                    $param
                 );
-
-                $replaced_type->replaceTemplateTypesWithArgTypes(
-                    $replace_template_result,
-                    $codebase
-                );
-
-                $closure_id = strtolower($statements_analyzer->getFilePath())
-                    . ':' . $arg->value->getLine()
-                    . ':' . (int)$arg->value->getAttribute('startFilePos')
-                    . ':-:closure';
-
-                try {
-                    $closure_storage = $codebase->getClosureStorage(
-                        $statements_analyzer->getFilePath(),
-                        $closure_id
-                    );
-                } catch (\UnexpectedValueException $e) {
-                    continue;
-                }
-
-                foreach ($replaced_type->getAtomicTypes() as $replaced_type_part) {
-                    if ($replaced_type_part instanceof Type\Atomic\TCallable
-                        || $replaced_type_part instanceof Type\Atomic\TFn
-                    ) {
-                        foreach ($closure_storage->params as $closure_param_offset => $param_storage) {
-                            if (isset($replaced_type_part->params[$closure_param_offset]->type)
-                                && !$replaced_type_part->params[$closure_param_offset]->type->hasTemplate()
-                            ) {
-                                if ($param_storage->type) {
-                                    if ($method_id === 'array_map' || $method_id === 'array_filter') {
-                                        ArrayFetchAnalyzer::taintArrayFetch(
-                                            $statements_analyzer,
-                                            $args[1 - $argument_offset]->value,
-                                            null,
-                                            $param_storage->type,
-                                            Type::getMixed()
-                                        );
-                                    }
-
-                                    if (!$param_storage->type_inferred) {
-                                        if ($param_storage->type !== $param_storage->signature_type) {
-                                            continue;
-                                        }
-
-                                        $type_match_found = UnionTypeComparator::isContainedBy(
-                                            $codebase,
-                                            $replaced_type_part->params[$closure_param_offset]->type,
-                                            $param_storage->type
-                                        );
-
-                                        if (!$type_match_found) {
-                                            continue;
-                                        }
-                                    }
-                                }
-
-                                $param_storage->type = $replaced_type_part->params[$closure_param_offset]->type;
-                                $param_storage->type_inferred = true;
-
-                                if ($method_id === 'array_map' || $method_id === 'array_filter') {
-                                    ArrayFetchAnalyzer::taintArrayFetch(
-                                        $statements_analyzer,
-                                        $args[1 - $argument_offset]->value,
-                                        null,
-                                        $param_storage->type,
-                                        Type::getMixed()
-                                    );
-                                }
-                            }
-                        }
-                    }
-                }
             }
 
             $was_inside_call = $context->inside_call;
@@ -298,45 +191,14 @@ class ArgumentsAnalyzer
             if (($argument_offset === 0 && $method_id === 'array_filter' && count($args) === 2)
                 || ($argument_offset > 0 && $method_id === 'array_map' && count($args) >= 2)
             ) {
-                $generic_param_type = new Type\Union([
-                    new Type\Atomic\TArray([
-                        Type::getArrayKey(),
-                        new Type\Union([
-                            new Type\Atomic\TTemplateParam(
-                                'ArrayValue' . $argument_offset,
-                                Type::getMixed(),
-                                $method_id
-                            )
-                        ])
-                    ])
-                ]);
-
-                $template_types = ['ArrayValue' . $argument_offset => [$method_id => [Type::getMixed()]]];
-
-                $replace_template_result = new \Psalm\Internal\Type\TemplateResult(
-                    $template_types,
-                    []
-                );
-
-                $existing_type = $statements_analyzer->node_data->getType($arg->value);
-
-                \Psalm\Internal\Type\UnionTemplateHandler::replaceTemplateTypesWithStandins(
-                    $generic_param_type,
-                    $replace_template_result,
-                    $codebase,
+                self::handleArrayMapFilterArrayArg(
                     $statements_analyzer,
-                    $existing_type,
+                    $method_id,
                     $argument_offset,
-                    'fn-' . ($context->calling_method_id ?: $context->calling_function_id)
+                    $arg,
+                    $context,
+                    $template_result
                 );
-
-                if ($replace_template_result->upper_bounds) {
-                    if (!$template_result) {
-                        $template_result = new TemplateResult([], []);
-                    }
-
-                    $template_result->upper_bounds += $replace_template_result->upper_bounds;
-                }
             }
 
             if ($codebase->find_unused_variables
@@ -357,6 +219,194 @@ class ArgumentsAnalyzer
 
             if ($toggled_class_exists) {
                 $context->inside_class_exists = false;
+            }
+        }
+    }
+
+    private static function handleArrayMapFilterArrayArg(
+        StatementsAnalyzer $statements_analyzer,
+        string $method_id,
+        int $argument_offset,
+        PhpParser\Node\Arg $arg,
+        Context $context,
+        ?TemplateResult &$template_result
+    ) : void {
+        $codebase = $statements_analyzer->getCodebase();
+
+        $generic_param_type = new Type\Union([
+            new Type\Atomic\TArray([
+                Type::getArrayKey(),
+                new Type\Union([
+                    new Type\Atomic\TTemplateParam(
+                        'ArrayValue' . $argument_offset,
+                        Type::getMixed(),
+                        $method_id
+                    )
+                ])
+            ])
+        ]);
+
+        $template_types = ['ArrayValue' . $argument_offset => [$method_id => [Type::getMixed()]]];
+
+        $replace_template_result = new \Psalm\Internal\Type\TemplateResult(
+            $template_types,
+            []
+        );
+
+        $existing_type = $statements_analyzer->node_data->getType($arg->value);
+
+        \Psalm\Internal\Type\UnionTemplateHandler::replaceTemplateTypesWithStandins(
+            $generic_param_type,
+            $replace_template_result,
+            $codebase,
+            $statements_analyzer,
+            $existing_type,
+            $argument_offset,
+            'fn-' . ($context->calling_method_id ?: $context->calling_function_id)
+        );
+
+        if ($replace_template_result->upper_bounds) {
+            if (!$template_result) {
+                $template_result = new TemplateResult([], []);
+            }
+
+            $template_result->upper_bounds += $replace_template_result->upper_bounds;
+        }
+    }
+
+    /**
+     * @param   array<int, PhpParser\Node\Arg>  $args
+     */
+    private static function handleClosureArg(
+        StatementsAnalyzer $statements_analyzer,
+        array $args,
+        ?string $method_id,
+        Context $context,
+        TemplateResult $template_result,
+        int $argument_offset,
+        PhpParser\Node\Arg $arg,
+        FunctionLikeParameter $param
+    ) : void {
+        if (!$param->type) {
+            return;
+        }
+
+        $codebase = $statements_analyzer->getCodebase();
+
+        if (($argument_offset === 1 && $method_id === 'array_filter' && count($args) === 2)
+            || ($argument_offset === 0 && $method_id === 'array_map' && count($args) >= 2)
+        ) {
+            $function_like_params = [];
+
+            foreach ($template_result->upper_bounds as $template_name => $_) {
+                $function_like_params[] = new \Psalm\Storage\FunctionLikeParameter(
+                    'function',
+                    false,
+                    new Type\Union([
+                        new Type\Atomic\TTemplateParam(
+                            $template_name,
+                            Type::getMixed(),
+                            $method_id
+                        )
+                    ])
+                );
+            }
+
+            $replaced_type = new Type\Union([
+                new Type\Atomic\TCallable(
+                    'callable',
+                    array_reverse($function_like_params)
+                )
+            ]);
+        } else {
+            $replaced_type = clone $param->type;
+        }
+
+        $replace_template_result = new \Psalm\Internal\Type\TemplateResult(
+            $template_result->upper_bounds,
+            []
+        );
+
+        $replaced_type = \Psalm\Internal\Type\UnionTemplateHandler::replaceTemplateTypesWithStandins(
+            $replaced_type,
+            $replace_template_result,
+            $codebase,
+            $statements_analyzer,
+            null,
+            null,
+            null,
+            'fn-' . ($context->calling_method_id ?: $context->calling_function_id)
+        );
+
+        $replaced_type->replaceTemplateTypesWithArgTypes(
+            $replace_template_result,
+            $codebase
+        );
+
+        $closure_id = strtolower($statements_analyzer->getFilePath())
+            . ':' . $arg->value->getLine()
+            . ':' . (int)$arg->value->getAttribute('startFilePos')
+            . ':-:closure';
+
+        try {
+            $closure_storage = $codebase->getClosureStorage(
+                $statements_analyzer->getFilePath(),
+                $closure_id
+            );
+        } catch (\UnexpectedValueException $e) {
+            return;
+        }
+
+        foreach ($replaced_type->getAtomicTypes() as $replaced_type_part) {
+            if ($replaced_type_part instanceof Type\Atomic\TCallable
+                || $replaced_type_part instanceof Type\Atomic\TFn
+            ) {
+                foreach ($closure_storage->params as $closure_param_offset => $param_storage) {
+                    if (isset($replaced_type_part->params[$closure_param_offset]->type)
+                        && !$replaced_type_part->params[$closure_param_offset]->type->hasTemplate()
+                    ) {
+                        if ($param_storage->type) {
+                            if ($method_id === 'array_map' || $method_id === 'array_filter') {
+                                ArrayFetchAnalyzer::taintArrayFetch(
+                                    $statements_analyzer,
+                                    $args[1 - $argument_offset]->value,
+                                    null,
+                                    $param_storage->type,
+                                    Type::getMixed()
+                                );
+                            }
+
+                            if (!$param_storage->type_inferred) {
+                                if ($param_storage->type !== $param_storage->signature_type) {
+                                    continue;
+                                }
+
+                                $type_match_found = UnionTypeComparator::isContainedBy(
+                                    $codebase,
+                                    $replaced_type_part->params[$closure_param_offset]->type,
+                                    $param_storage->type
+                                );
+
+                                if (!$type_match_found) {
+                                    continue;
+                                }
+                            }
+                        }
+
+                        $param_storage->type = $replaced_type_part->params[$closure_param_offset]->type;
+                        $param_storage->type_inferred = true;
+
+                        if ($method_id === 'array_map' || $method_id === 'array_filter') {
+                            ArrayFetchAnalyzer::taintArrayFetch(
+                                $statements_analyzer,
+                                $args[1 - $argument_offset]->value,
+                                null,
+                                $param_storage->type,
+                                Type::getMixed()
+                            );
+                        }
+                    }
+                }
             }
         }
     }
