@@ -642,7 +642,29 @@ function preg_replace_callback($search, $replace, $subject, int $limit = -1, &$c
  * @param string $subject
  * @param mixed $matches
  * @param TFlags $flags
- * @param-out (TFlags is 256 ? list<list<array{string, int}>> : list<list<string>>) $matches
+ * @param-out (
+ *          TFlags is 1
+            ? array<list<string>>
+            : (TFlags is 2
+                ? list<array<string>>
+                : (TFlags is 256|257
+                    ? array<list<array{string, int}>>
+                    : (TFlags is 258
+                        ? list<array<array{string, int}>>
+                        : (TFlags is 512|513
+                            ? array<list<?string>>
+                            : (TFlags is 514
+                                ? list<array<?string>>
+                                : (TFlags is 770
+                                    ? list<array<array{?string, 1}>>
+                                    : array
+                                )
+                            )
+                        )
+                    )
+                )
+            )
+ *        ) $matches
  * @return int
  */
 function preg_match_all($pattern, $replace, &$matches, int $flags = 1) {}
