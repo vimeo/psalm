@@ -58,6 +58,7 @@ class ArgumentAnalyzer
         ?FunctionLikeParameter $function_param,
         int $argument_offset,
         PhpParser\Node\Arg $arg,
+        ?Type\Union $arg_value_type,
         Context $context,
         array $class_generic_params,
         ?TemplateResult $template_result,
@@ -65,8 +66,6 @@ class ArgumentAnalyzer
         bool $in_call_map
     ) {
         $codebase = $statements_analyzer->getCodebase();
-
-        $arg_value_type = $statements_analyzer->node_data->getType($arg->value);
 
         if (!$arg_value_type) {
             if ($function_param && !$function_param->by_ref) {

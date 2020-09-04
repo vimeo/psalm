@@ -636,6 +636,19 @@ function preg_replace_callback($search, $replace, $subject, int $limit = -1, &$c
 
 /**
  * @psalm-pure
+ * @template TFlags as int
+ *
+ * @param string $pattern
+ * @param string $subject
+ * @param mixed $matches
+ * @param TFlags $flags
+ * @param-out (TFlags is 256 ? list<list<array{string, int}>> : list<list<string>>) $matches
+ * @return int
+ */
+function preg_match_all($pattern, $replace, &$matches, int $flags = 1) {}
+
+/**
+ * @psalm-pure
  *
  * @return string|false
  * @psalm-ignore-falsable-return

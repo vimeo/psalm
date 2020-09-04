@@ -1322,6 +1322,19 @@ class FunctionCallTest extends TestCase
                         if ($one && array_values($one) === array_values($two)) {}
                     }'
             ],
+            'pregMatchAll' => [
+                '<?php
+                    /**
+                     * @psalm-pure
+                     *
+                     * @return list<list<string>>
+                     */
+                    function extractUsernames(string $input): array {
+                        preg_match_all(\'/@[a-z\d](?:[a-z\d]|-(?=[a-z\d])){0,38}(?!\w)/\', $input, $matches);
+
+                        return $matches;
+                    }'
+            ],
         ];
     }
 
