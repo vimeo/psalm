@@ -39,9 +39,6 @@ class VariableFetchAnalyzer
     ];
 
     /**
-     * @param   StatementsAnalyzer               $statements_analyzer
-     * @param   PhpParser\Node\Expr\Variable    $stmt
-     * @param   Context                         $context
      * @param   bool                            $passed_by_reference
      * @param   Type\Union|null                 $by_ref_type
      * @param   bool                            $array_assignment

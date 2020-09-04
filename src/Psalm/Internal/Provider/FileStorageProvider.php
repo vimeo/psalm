@@ -39,9 +39,8 @@ class FileStorageProvider
     /**
      * @param  string $file_path
      *
-     * @return FileStorage
      */
-    public function get($file_path)
+    public function get($file_path): FileStorage
     {
         $file_path = strtolower($file_path);
 
@@ -64,11 +63,9 @@ class FileStorageProvider
 
     /**
      * @param  string $file_path
-     * @param  string $file_contents
      *
-     * @return bool
      */
-    public function has($file_path, string $file_contents = null)
+    public function has($file_path, string $file_contents = null): bool
     {
         $file_path = strtolower($file_path);
 
@@ -99,7 +96,7 @@ class FileStorageProvider
     /**
      * @return array<string, FileStorage>
      */
-    public function getAll()
+    public function getAll(): array
     {
         return self::$storage;
     }
@@ -107,7 +104,7 @@ class FileStorageProvider
     /**
      * @return array<string, FileStorage>
      */
-    public function getNew()
+    public function getNew(): array
     {
         return self::$new_storage;
     }
@@ -126,9 +123,8 @@ class FileStorageProvider
     /**
      * @param  string $file_path
      *
-     * @return FileStorage
      */
-    public function create($file_path)
+    public function create($file_path): FileStorage
     {
         $file_path_lc = strtolower($file_path);
 

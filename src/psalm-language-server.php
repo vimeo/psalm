@@ -248,7 +248,9 @@ $config->setServerMode();
 if (isset($options['clear-cache'])) {
     $cache_directory = $config->getCacheDirectory();
 
-    Config::removeCacheDirectory($cache_directory);
+    if ($cache_directory !== null) {
+        Config::removeCacheDirectory($cache_directory);
+    }
     echo 'Cache directory deleted' . PHP_EOL;
     exit;
 }

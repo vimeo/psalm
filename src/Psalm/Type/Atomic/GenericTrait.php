@@ -28,7 +28,7 @@ trait GenericTrait
      */
     public $type_params;
 
-    public function __toString()
+    public function __toString(): string
     {
         $s = '';
         foreach ($this->type_params as $type_param) {
@@ -44,10 +44,7 @@ trait GenericTrait
         return $this->value . '<' . substr($s, 0, -2) . '>' . $extra_types;
     }
 
-    /**
-     * @return string
-     */
-    public function getId(bool $nested = false)
+    public function getId(bool $nested = false): string
     {
         $s = '';
         foreach ($this->type_params as $type_param) {
@@ -74,14 +71,13 @@ trait GenericTrait
     /**
      * @param  array<string, string> $aliased_classes
      *
-     * @return string
      */
     public function toNamespacedString(
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
         bool $use_phpdoc_format
-    ) {
+    ): string {
         $base_value = $this instanceof TNamedObject
             ? parent::toNamespacedString($namespace, $aliased_classes, $this_class, $use_phpdoc_format)
             : $this->value;

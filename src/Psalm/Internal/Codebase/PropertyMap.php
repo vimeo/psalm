@@ -18,7 +18,7 @@ class PropertyMap
      *
      * @return array<string, array<string, string>>
      */
-    public static function getPropertyMap()
+    public static function getPropertyMap(): array
     {
         if (self::$property_map !== null) {
             return self::$property_map;
@@ -40,9 +40,8 @@ class PropertyMap
     /**
      * @param   string $class_name
      *
-     * @return  bool
      */
-    public static function inPropertyMap($class_name)
+    public static function inPropertyMap($class_name): bool
     {
         return isset(self::getPropertyMap()[strtolower($class_name)]);
     }

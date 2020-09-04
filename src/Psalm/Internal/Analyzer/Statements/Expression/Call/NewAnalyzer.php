@@ -697,10 +697,8 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
     }
 
     /**
-     * @param  string $template_name
      * @param  array<string, array<int|string, Type\Union>>  $template_type_extends
      * @param  array<string, array<string, array{Type\Union}>>  $found_generic_params
-     * @return Type\Union
      */
     private static function getGenericParamForOffset(
         string $fq_class_name,
@@ -708,7 +706,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
         array $template_type_extends,
         array $found_generic_params,
         bool $mapped = false
-    ) {
+    ): Type\Union {
         if (isset($found_generic_params[$template_name][$fq_class_name])) {
             if (!$mapped && isset($template_type_extends[$fq_class_name][$template_name])) {
                 foreach ($template_type_extends[$fq_class_name][$template_name]->getAtomicTypes() as $t) {

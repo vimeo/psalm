@@ -43,7 +43,6 @@ use Psalm\Internal\Type\TypeExpander;
 class ArrayFunctionArgumentsAnalyzer
 {
     /**
-     * @param   StatementsAnalyzer              $statements_analyzer
      * @param   array<int, PhpParser\Node\Arg> $args
      * @param   string                         $method_id
      *
@@ -122,9 +121,7 @@ class ArrayFunctionArgumentsAnalyzer
     }
 
     /**
-     * @param   StatementsAnalyzer                      $statements_analyzer
      * @param   array<int, PhpParser\Node\Arg>          $args
-     * @param   Context                                 $context
      *
      * @return  false|null
      */
@@ -323,9 +320,7 @@ class ArrayFunctionArgumentsAnalyzer
     }
 
     /**
-     * @param   StatementsAnalyzer                      $statements_analyzer
      * @param   array<int, PhpParser\Node\Arg>          $args
-     * @param   Context                                 $context
      *
      * @return  false|null
      */

@@ -119,9 +119,8 @@ class ClassLikeStorageCacheProvider
      * @param  string|null $file_path
      * @param  string|null $file_contents
      *
-     * @return string
      */
-    private function getCacheHash($file_path, $file_contents)
+    private function getCacheHash($file_path, $file_contents): string
     {
         return sha1(($file_path ? $file_contents : '') . $this->modified_timestamps);
     }
@@ -131,9 +130,8 @@ class ClassLikeStorageCacheProvider
      * @param  string|null  $file_path
      * @psalm-suppress MixedAssignment
      *
-     * @return ClassLikeStorage|null
      */
-    private function loadFromCache($fq_classlike_name_lc, $file_path)
+    private function loadFromCache($fq_classlike_name_lc, $file_path): ?ClassLikeStorage
     {
         $cache_location = $this->getCacheLocationForClass($fq_classlike_name_lc, $file_path);
 
@@ -165,9 +163,8 @@ class ClassLikeStorageCacheProvider
      * @param  string|null  $file_path
      * @param  bool $create_directory
      *
-     * @return string
      */
-    private function getCacheLocationForClass($fq_classlike_name_lc, $file_path, $create_directory = false)
+    private function getCacheLocationForClass($fq_classlike_name_lc, $file_path, $create_directory = false): string
     {
         $root_cache_directory = $this->config->getCacheDirectory();
 

@@ -28,9 +28,6 @@ class ProjectCheckerTest extends TestCase
     /** @var \Psalm\Internal\Analyzer\ProjectAnalyzer */
     protected $project_analyzer;
 
-    /**
-     * @return void
-     */
     public static function setUpBeforeClass() : void
     {
         self::$config = new TestConfig();
@@ -44,9 +41,6 @@ class ProjectCheckerTest extends TestCase
         }
     }
 
-    /**
-     * @return void
-     */
     public function setUp() : void
     {
         RuntimeCaches::clearAll();

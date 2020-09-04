@@ -123,10 +123,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
 
     /** @var \Psalm\Internal\Provider\NodeDataProvider */
     public $node_data;
-
-    /**
-     * @param SourceAnalyzer $source
-     */
+    
     public function __construct(SourceAnalyzer $source, \Psalm\Internal\Provider\NodeDataProvider $node_data)
     {
         $this->source = $source;
@@ -139,7 +136,6 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
      * Checks an array of statements for validity
      *
      * @param  array<PhpParser\Node\Stmt>   $stmts
-     * @param  Context                                          $context
      * @param  Context|null                                     $global_context
      * @param  bool                                             $root_scope
      *
@@ -355,7 +351,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                          *
                          * @return string
                          */
-                        function ($line) {
+                        function ($line): string {
                             return preg_split('/[\s]+/', $line)[0];
                         },
                         $statements_analyzer->parsed_docblock->tags['psalm-suppress']
@@ -721,16 +717,14 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
     /**
      * @param  string       $var_name
      *
-     * @return bool
      */
-    public function hasVariable($var_name)
+    public function hasVariable($var_name): bool
     {
         return isset($this->all_vars[$var_name]);
     }
 
     /**
      * @param  string       $var_id
-     * @param  CodeLocation $location
      * @param  int|null     $branch_point
      *
      * @return void
@@ -748,7 +742,6 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
 
     /**
      * @param  string       $var_id
-     * @param  CodeLocation $location
      *
      * @return void
      */
@@ -772,7 +765,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
     /**
      * @return array<string, array{0: string, 1: CodeLocation}>
      */
-    public function getUnusedVarLocations()
+    public function getUnusedVarLocations(): array
     {
         return \array_diff_key($this->unused_var_locations, $this->used_var_locations);
     }
@@ -782,9 +775,8 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
      *
      * @param  string  $var_id
      *
-     * @return CodeLocation|null
      */
-    public function getFirstAppearance($var_id)
+    public function getFirstAppearance($var_id): ?CodeLocation
     {
         return isset($this->all_vars[$var_id]) ? $this->all_vars[$var_id] : null;
     }
@@ -792,9 +784,8 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
     /**
      * @param  string $var_id
      *
-     * @return int|null
      */
-    public function getBranchPoint($var_id)
+    public function getBranchPoint($var_id): ?int
     {
         return isset($this->var_branch_points[$var_id]) ? $this->var_branch_points[$var_id] : null;
     }
@@ -823,7 +814,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
     /**
      * @return array<string, FunctionAnalyzer>
      */
-    public function getFunctionAnalyzers()
+    public function getFunctionAnalyzers(): array
     {
         return $this->function_analyzers;
     }
@@ -840,7 +831,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
     /**
      * @return array<string, array<array-key, CodeLocation>>
      */
-    public function getUncaughtThrows(Context $context)
+    public function getUncaughtThrows(Context $context): array
     {
         $uncaught_throws = [];
 
@@ -899,7 +890,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
         return $this->parsed_docblock;
     }
 
-    public function getFQCLN()
+    public function getFQCLN(): ?string
     {
         if ($this->fake_this_class) {
             return $this->fake_this_class;

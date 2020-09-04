@@ -104,7 +104,6 @@ class TypeParser
     }
 
     /**
-     * @param  ParseTree $parse_tree
      * @param  array{int,int}|null   $php_version
      * @param  array<string, array<string, array{Union}>> $template_type_map
      * @param  array<string, TypeAlias> $type_aliases

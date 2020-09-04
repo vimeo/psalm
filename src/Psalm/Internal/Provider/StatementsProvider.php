@@ -187,7 +187,7 @@ class StatementsProvider
                      *
                      * @return bool
                      */
-                    function ($_) {
+                    function ($_): bool {
                         return true;
                     },
                     array_flip($unchanged_members)
@@ -199,7 +199,7 @@ class StatementsProvider
                      *
                      * @return bool
                      */
-                    function ($_) {
+                    function ($_): bool {
                         return true;
                     },
                     array_flip($unchanged_signature_members)
@@ -224,7 +224,7 @@ class StatementsProvider
                      *
                      * @return bool
                      */
-                    function ($_) {
+                    function ($_): bool {
                         return true;
                     },
                     array_flip($changed_members)
@@ -282,7 +282,7 @@ class StatementsProvider
     /**
      * @return array<string, array<string, bool>>
      */
-    public function getChangedMembers()
+    public function getChangedMembers(): array
     {
         return $this->changed_members;
     }
@@ -300,7 +300,7 @@ class StatementsProvider
     /**
      * @return array<string, array<string, bool>>
      */
-    public function getUnchangedSignatureMembers()
+    public function getUnchangedSignatureMembers(): array
     {
         return $this->unchanged_signature_members;
     }
@@ -330,7 +330,7 @@ class StatementsProvider
     /**
      * @return array<string, array<int, array{0: int, 1: int, 2: int, 3: int}>>
      */
-    public function getDiffMap()
+    public function getDiffMap(): array
     {
         return $this->diff_map;
     }

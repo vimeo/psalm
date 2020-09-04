@@ -22,7 +22,7 @@ class FakeFileProvider extends \Psalm\Internal\Provider\FileProvider
      *
      * @return bool
      */
-    public function fileExists($file_path)
+    public function fileExists($file_path): bool
     {
         return isset($this->fake_files[$file_path]) || parent::fileExists($file_path);
     }
@@ -32,7 +32,7 @@ class FakeFileProvider extends \Psalm\Internal\Provider\FileProvider
      *
      * @return string
      */
-    public function getContents($file_path, bool $go_to_source = false)
+    public function getContents($file_path, bool $go_to_source = false): string
     {
         if (!$go_to_source && isset($this->temp_files[strtolower($file_path)])) {
             return $this->temp_files[strtolower($file_path)];
@@ -61,7 +61,7 @@ class FakeFileProvider extends \Psalm\Internal\Provider\FileProvider
      *
      * @return int
      */
-    public function getModifiedTime($file_path)
+    public function getModifiedTime($file_path): int
     {
         if (isset($this->fake_file_times[$file_path])) {
             return $this->fake_file_times[$file_path];
@@ -89,7 +89,7 @@ class FakeFileProvider extends \Psalm\Internal\Provider\FileProvider
      *
      * @return array<int, string>
      */
-    public function getFilesInDir($dir_path, array $file_extensions)
+    public function getFilesInDir($dir_path, array $file_extensions): array
     {
         $file_paths = parent::getFilesInDir($dir_path, $file_extensions);
 

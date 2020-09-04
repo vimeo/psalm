@@ -330,58 +330,40 @@ class CodeLocation
         $this->end_line_number = $this->getLineNumber() + $newlines;
     }
 
-    /**
-     * @return int
-     */
-    public function getLineNumber()
+    public function getLineNumber(): int
     {
         return $this->docblock_line_number ?: $this->raw_line_number;
     }
 
-    /**
-     * @return int
-     */
-    public function getEndLineNumber()
+    public function getEndLineNumber(): int
     {
         $this->calculateRealLocation();
 
         return $this->end_line_number;
     }
 
-    /**
-     * @return string
-     */
-    public function getSnippet()
+    public function getSnippet(): string
     {
         $this->calculateRealLocation();
 
         return $this->snippet;
     }
 
-    /**
-     * @return string
-     */
-    public function getSelectedText()
+    public function getSelectedText(): string
     {
         $this->calculateRealLocation();
 
         return (string)$this->text;
     }
 
-    /**
-     * @return int
-     */
-    public function getColumn()
+    public function getColumn(): int
     {
         $this->calculateRealLocation();
 
         return $this->column_from;
     }
 
-    /**
-     * @return int
-     */
-    public function getEndColumn()
+    public function getEndColumn(): int
     {
         $this->calculateRealLocation();
 
@@ -391,7 +373,7 @@ class CodeLocation
     /**
      * @return array{0: int, 1: int}
      */
-    public function getSelectionBounds()
+    public function getSelectionBounds(): array
     {
         $this->calculateRealLocation();
 
@@ -401,17 +383,14 @@ class CodeLocation
     /**
      * @return array{0: int, 1: int}
      */
-    public function getSnippetBounds()
+    public function getSnippetBounds(): array
     {
         $this->calculateRealLocation();
 
         return [$this->preview_start, $this->preview_end];
     }
 
-    /**
-     * @return string
-     */
-    public function getHash()
+    public function getHash(): string
     {
         return (string) $this->file_start;
     }

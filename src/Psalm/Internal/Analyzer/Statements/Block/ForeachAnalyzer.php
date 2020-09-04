@@ -45,9 +45,6 @@ use function array_keys;
 class ForeachAnalyzer
 {
     /**
-     * @param   StatementsAnalyzer               $statements_analyzer
-     * @param   PhpParser\Node\Stmt\Foreach_    $stmt
-     * @param   Context                         $context
      *
      * @return  false|null
      */
@@ -55,7 +52,7 @@ class ForeachAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Foreach_ $stmt,
         Context $context
-    ) {
+    ): ?bool {
         $var_comments = [];
 
         $doc_comment = $stmt->getDocComment();
@@ -1127,11 +1124,9 @@ class ForeachAnalyzer
     }
 
     /**
-     * @param  string $template_name
      * @param  array<string, array<int|string, Type\Union>>  $template_type_extends
      * @param  array<string, array<string, array{Type\Union}>>  $class_template_types
      * @param  array<int, Type\Union> $calling_type_params
-     * @return Type\Union|null
      */
     private static function getExtendedType(
         string $template_name,
@@ -1140,7 +1135,7 @@ class ForeachAnalyzer
         array $template_type_extends,
         array $class_template_types = null,
         array $calling_type_params = null
-    ) {
+    ): ?Type\Union {
         if ($calling_class === $template_class) {
             if (isset($class_template_types[$template_name]) && $calling_type_params) {
                 $offset = array_search($template_name, array_keys($class_template_types));

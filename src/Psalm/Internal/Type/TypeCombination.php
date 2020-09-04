@@ -158,7 +158,6 @@ class TypeCombination
      * @param  int    $literal_limit any greater number of literal types than this
      *                               will be merged to a scalar
      *
-     * @return Union
      */
     public static function combineTypes(
         array $types,
@@ -166,7 +165,7 @@ class TypeCombination
         bool $overwrite_empty_array = false,
         bool $allow_mixed_union = true,
         int $literal_limit = 500
-    ) {
+    ): Union {
         if (in_array(null, $types, true)) {
             return Type::getMixed();
         }
@@ -613,8 +612,6 @@ class TypeCombination
     }
 
     /**
-     * @param  Atomic  $type
-     * @param  TypeCombination $combination
      * @param  Codebase|null   $codebase
      *
      * @return null|Union
@@ -1302,7 +1299,7 @@ class TypeCombination
 
                     $all_nonnegative = !array_filter(
                         $combination->ints,
-                        function ($int) {
+                        function ($int): bool {
                             return $int->value < 0;
                         }
                     );
@@ -1322,7 +1319,7 @@ class TypeCombination
                     if ($combination->ints) {
                         $all_nonnegative = !array_filter(
                             $combination->ints,
-                            function ($int) {
+                            function ($int): bool {
                                 return $int->value < 0;
                             }
                         );
@@ -1421,7 +1418,7 @@ class TypeCombination
     /**
      * @return array<string, bool>
      */
-    private static function getClassLikes(Codebase $codebase, string $fq_classlike_name)
+    private static function getClassLikes(Codebase $codebase, string $fq_classlike_name): array
     {
         try {
             $class_storage = $codebase->classlike_storage_provider->get($fq_classlike_name);

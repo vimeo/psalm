@@ -23,7 +23,7 @@ class CloningVisitor extends NodeVisitorAbstract
                     /**
                      * @return \PhpParser\Comment
                      */
-                    function (\PhpParser\Comment $c) {
+                    function (\PhpParser\Comment $c): \PhpParser\Comment {
                         return clone $c;
                     },
                     $cs

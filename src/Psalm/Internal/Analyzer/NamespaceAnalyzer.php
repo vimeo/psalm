@@ -41,10 +41,6 @@ class NamespaceAnalyzer extends SourceAnalyzer implements StatementsSource
      */
     protected static $public_namespace_constants = [];
 
-    /**
-     * @param Namespace_        $namespace
-     * @param FileAnalyzer       $source
-     */
     public function __construct(Namespace_ $namespace, FileAnalyzer $source)
     {
         $this->source = $source;
@@ -99,7 +95,6 @@ class NamespaceAnalyzer extends SourceAnalyzer implements StatementsSource
     }
 
     /**
-     * @param  PhpParser\Node\Stmt\ClassLike $stmt
      *
      * @return void
      */
@@ -124,17 +119,13 @@ class NamespaceAnalyzer extends SourceAnalyzer implements StatementsSource
         }
     }
 
-    /**
-     * @return string
-     */
-    public function getNamespace()
+    public function getNamespace(): string
     {
         return $this->namespace_name;
     }
 
     /**
      * @param string     $const_name
-     * @param Type\Union $const_type
      *
      * @return void
      */
@@ -149,7 +140,7 @@ class NamespaceAnalyzer extends SourceAnalyzer implements StatementsSource
      *
      * @return array<string,Type\Union>
      */
-    public static function getConstantsForNamespace($namespace_name, $visibility)
+    public static function getConstantsForNamespace($namespace_name, $visibility): array
     {
         // @todo this does not allow for loading in namespace constants not already defined in the current sweep
         if (!isset(self::$public_namespace_constants[$namespace_name])) {
@@ -171,7 +162,6 @@ class NamespaceAnalyzer extends SourceAnalyzer implements StatementsSource
     /**
      * Returns true if $className is the same as, or starts with $namespace, in a case-insensitive comparison.
      *
-     * @return bool
      *
      * @psalm-pure
      */

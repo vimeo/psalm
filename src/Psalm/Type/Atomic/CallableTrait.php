@@ -37,7 +37,6 @@ trait CallableTrait
      *
      * @param string                            $value
      * @param array<int, FunctionLikeParameter> $params
-     * @param Union                             $return_type
      */
     public function __construct(
         $value = 'callable',
@@ -62,10 +61,7 @@ trait CallableTrait
         $this->return_type = $this->return_type ? clone $this->return_type : null;
     }
 
-    /**
-     * @return string
-     */
-    public function getKey(bool $include_extra = true)
+    public function getKey(bool $include_extra = true): string
     {
         return $this->__toString();
     }
@@ -73,14 +69,13 @@ trait CallableTrait
     /**
      * @param  array<string, string> $aliased_classes
      *
-     * @return string
      */
     public function toNamespacedString(
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
         bool $use_phpdoc_format
-    ) {
+    ): string {
         if ($use_phpdoc_format) {
             if ($this instanceof TNamedObject) {
                 return parent::toNamespacedString($namespace, $aliased_classes, $this_class, true);
@@ -144,7 +139,6 @@ trait CallableTrait
      * @param  int           $php_major_version
      * @param  int           $php_minor_version
      *
-     * @return string
      */
     public function toPhpString(
         $namespace,
@@ -152,7 +146,7 @@ trait CallableTrait
         $this_class,
         $php_major_version,
         $php_minor_version
-    ) {
+    ): string {
         if ($this instanceof TNamedObject) {
             return parent::toNamespacedString($namespace, $aliased_classes, $this_class, true);
         }
@@ -160,10 +154,7 @@ trait CallableTrait
         return $this->value;
     }
 
-    /**
-     * @return string
-     */
-    public function getId(bool $nested = false)
+    public function getId(bool $nested = false): string
     {
         $param_string = '';
         $return_type_string = '';
@@ -191,7 +182,7 @@ trait CallableTrait
             . $this->value . $param_string . $return_type_string;
     }
 
-    public function __toString()
+    public function __toString(): string
     {
         return $this->getId();
     }

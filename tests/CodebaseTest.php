@@ -19,7 +19,6 @@ class CodebaseTest extends TestCase
     /** @var Codebase */
     private $codebase;
 
-    /** @return void */
     public function setUp() : void
     {
         parent::setUp();

@@ -100,7 +100,7 @@ class GitInfoCollector
      *
      * @return RemoteInfo[]
      */
-    protected function collectRemotes()
+    protected function collectRemotes(): array
     {
         $remotesResult = $this->executor->execute('git remote -v');
 

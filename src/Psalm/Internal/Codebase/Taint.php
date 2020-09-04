@@ -387,7 +387,7 @@ class Taint
 
         return \array_filter(
             $generated_sources,
-            function ($new_source) {
+            function ($new_source): bool {
                 return isset($this->forward_edges[$new_source->id]);
             }
         );

@@ -66,11 +66,8 @@ class TypeChecker extends NodeVisitor
     private $calling_method_id;
 
     /**
-     * @param  StatementsSource $source
-     * @param  CodeLocation     $code_location
      * @param  array<string>    $suppressed_issues
      * @param  array<string, bool> $phantom_classes
-     * @param  bool             $inferred
      *
      * @return null|false
      */

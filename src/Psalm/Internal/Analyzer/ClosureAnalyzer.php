@@ -45,7 +45,7 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
         parent::__construct($function, $source, $storage);
     }
 
-    public function getTemplateTypeMap()
+    public function getTemplateTypeMap(): ?array
     {
         return $this->source->getTemplateTypeMap();
     }
@@ -53,7 +53,7 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
     /**
      * @return non-empty-lowercase-string
      */
-    public function getClosureId()
+    public function getClosureId(): string
     {
         return strtolower($this->getFilePath())
             . ':' . $this->function->getLine()
@@ -192,9 +192,6 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
     }
 
     /**
-     * @param   StatementsAnalyzer           $statements_analyzer
-     * @param   PhpParser\Node\Expr\Closure $stmt
-     * @param   Context                     $context
      *
      * @return  false|null
      */

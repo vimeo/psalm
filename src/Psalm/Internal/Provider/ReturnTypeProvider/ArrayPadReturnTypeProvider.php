@@ -22,7 +22,7 @@ class ArrayPadReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
         array $call_args,
         Context $context,
         CodeLocation $code_location
-    ) {
+    ): ?Type\Union {
         $type_provider = $statements_source->getNodeTypeProvider();
 
         if (count($call_args) >= 3

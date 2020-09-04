@@ -17,7 +17,6 @@ class ReturnTypeCollector
      *
      * @param  array<PhpParser\Node>     $stmts
      * @param  list<Type\Union>         $yield_types
-     * @param  bool                      $collapse_types
      *
      * @return list<Type\Union>    a list of return types
      */
@@ -274,7 +273,6 @@ class ReturnTypeCollector
     }
 
     /**
-     * @param   PhpParser\Node\Expr $stmt
      *
      * @return  list<Type\Union>
      */

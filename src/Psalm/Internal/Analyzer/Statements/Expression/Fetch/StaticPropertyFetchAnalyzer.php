@@ -24,11 +24,6 @@ use function explode;
  */
 class StaticPropertyFetchAnalyzer
 {
-    /**
-     * @param   StatementsAnalyzer                       $statements_analyzer
-     * @param   PhpParser\Node\Expr\StaticPropertyFetch $stmt
-     * @param   Context                                 $context
-     */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\StaticPropertyFetch $stmt,

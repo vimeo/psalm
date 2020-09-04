@@ -16,8 +16,6 @@ use function is_string;
 class StaticAnalyzer
 {
     /**
-     * @param   PhpParser\Node\Stmt\Static_ $stmt
-     * @param   Context                     $context
      *
      * @return  false|null
      */
@@ -25,7 +23,7 @@ class StaticAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Static_ $stmt,
         Context $context
-    ) {
+    ): ?bool {
         $codebase = $statements_analyzer->getCodebase();
 
         if ($context->mutation_free) {

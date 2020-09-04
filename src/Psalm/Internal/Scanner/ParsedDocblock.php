@@ -82,7 +82,6 @@ class ParsedDocblock
     /**
      * Sets whether a new line should be added between the annotations or not.
      *
-     * @param bool $should
      */
     public static function addNewLineBetweenAnnotations(bool $should = true): void
     {

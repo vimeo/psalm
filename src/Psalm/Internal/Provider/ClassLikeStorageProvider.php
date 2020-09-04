@@ -36,9 +36,8 @@ class ClassLikeStorageProvider
      * @param  string $fq_classlike_name
      * @throws \InvalidArgumentException when class does not exist
      *
-     * @return ClassLikeStorage
      */
-    public function get($fq_classlike_name)
+    public function get($fq_classlike_name): ClassLikeStorage
     {
         $fq_classlike_name_lc = strtolower($fq_classlike_name);
         if (!isset(self::$storage[$fq_classlike_name_lc])) {
@@ -51,9 +50,8 @@ class ClassLikeStorageProvider
     /**
      * @param  string $fq_classlike_name
      *
-     * @return bool
      */
-    public function has($fq_classlike_name)
+    public function has($fq_classlike_name): bool
     {
         $fq_classlike_name_lc = strtolower($fq_classlike_name);
 
@@ -65,9 +63,8 @@ class ClassLikeStorageProvider
      * @param  string|null $file_path
      * @param  string|null $file_contents
      *
-     * @return ClassLikeStorage
      */
-    public function exhume($fq_classlike_name, $file_path, $file_contents)
+    public function exhume($fq_classlike_name, $file_path, $file_contents): ClassLikeStorage
     {
         $fq_classlike_name_lc = strtolower($fq_classlike_name);
 
@@ -90,7 +87,7 @@ class ClassLikeStorageProvider
     /**
      * @return array<string, ClassLikeStorage>
      */
-    public function getAll()
+    public function getAll(): array
     {
         return self::$storage;
     }
@@ -98,7 +95,7 @@ class ClassLikeStorageProvider
     /**
      * @return array<string, ClassLikeStorage>
      */
-    public function getNew()
+    public function getNew(): array
     {
         return self::$new_storage;
     }
@@ -125,9 +122,8 @@ class ClassLikeStorageProvider
     /**
      * @param  string $fq_classlike_name
      *
-     * @return ClassLikeStorage
      */
-    public function create($fq_classlike_name)
+    public function create($fq_classlike_name): ClassLikeStorage
     {
         $fq_classlike_name_lc = strtolower($fq_classlike_name);
 

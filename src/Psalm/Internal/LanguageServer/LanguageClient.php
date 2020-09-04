@@ -42,7 +42,7 @@ class LanguageClient
      *  - 2 = Warning
      *  - 3 = Info
      *  - 4 = Log
-
+     *
      * @return Promise<void>
      */
     public function logMessage(string $message, int $type = 4, string $method = 'window/logMessage'): Promise

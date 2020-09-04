@@ -68,7 +68,7 @@ class ReturnTypeAnalyzer
         array $compatible_method_ids = [],
         bool $did_explicitly_return = false,
         bool $closure_inside_call = false
-    ) {
+    ): ?bool {
         $suppressed_issues = $function_like_analyzer->getSuppressedIssues();
         $codebase = $source->getCodebase();
         $project_analyzer = $source->getProjectAnalyzer();

@@ -11,7 +11,6 @@ class MethodIdentifier
     public $method_name;
 
     /**
-     * @param  string $fq_class_name
      * @param  lowercase-string $method_name
      */
     public function __construct(string $fq_class_name, string $method_name)
@@ -56,7 +55,7 @@ class MethodIdentifier
     }
 
     /** @return non-empty-string */
-    public function __toString()
+    public function __toString(): string
     {
         return $this->fq_class_name . '::' . $this->method_name;
     }

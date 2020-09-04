@@ -33,10 +33,7 @@ class ProjectCacheProvider
         $this->composer_lock_location = $composer_lock_location;
     }
 
-    /**
-     * @return bool
-     */
-    public function canDiffFiles()
+    public function canDiffFiles(): bool
     {
         $cache_directory = Config::getInstance()->getCacheDirectory();
 
@@ -61,10 +58,7 @@ class ProjectCacheProvider
         \touch($run_cache_location, (int)$start_time);
     }
 
-    /**
-     * @return int
-     */
-    public function getLastRun()
+    public function getLastRun(): int
     {
         if ($this->last_run === null) {
             $cache_directory = Config::getInstance()->getCacheDirectory();

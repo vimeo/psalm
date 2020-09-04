@@ -517,7 +517,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
         PhpParser\Node\Expr\FuncCall $real_stmt,
         PhpParser\Node\Expr $function_name,
         Context $context
-    ) {
+    ): array {
         $function_params = null;
 
         $explicit_function_name = null;
@@ -853,7 +853,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 $context->vars_in_scope,
                 $changed_var_ids,
                 array_map(
-                    function ($v) {
+                    function ($v): bool {
                         return true;
                     },
                     $assert_type_assertions

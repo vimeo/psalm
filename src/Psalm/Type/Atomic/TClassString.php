@@ -31,28 +31,22 @@ class TClassString extends TString
         $this->as_type = $as_type;
     }
 
-    /**
-     * @return string
-     */
-    public function getKey(bool $include_extra = true)
+    public function getKey(bool $include_extra = true): string
     {
         return 'class-string' . ($this->as === 'object' ? '' : '<' . $this->as_type . '>');
     }
 
-    /**
-     * @return string
-     */
-    public function __toString()
+    public function __toString(): string
     {
         return $this->getKey();
     }
 
-    public function getId(bool $nested = false)
+    public function getId(bool $nested = false): string
     {
         return $this->getKey();
     }
 
-    public function getAssertionString()
+    public function getAssertionString(): string
     {
         return 'class-string';
     }
@@ -64,7 +58,6 @@ class TClassString extends TString
      * @param  int           $php_major_version
      * @param  int           $php_minor_version
      *
-     * @return string|null
      */
     public function toPhpString(
         $namespace,
@@ -72,24 +65,20 @@ class TClassString extends TString
         $this_class,
         $php_major_version,
         $php_minor_version
-    ) {
+    ): ?string {
         return 'string';
     }
 
     /**
-     * @param  string|null   $namespace
      * @param  array<string> $aliased_classes
-     * @param  string|null   $this_class
-     * @param  bool          $use_phpdoc_format
      *
-     * @return string
      */
     public function toNamespacedString(
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
         bool $use_phpdoc_format
-    ) {
+    ): string {
         if ($this->as === 'object') {
             return 'class-string';
         }
@@ -113,10 +102,7 @@ class TClassString extends TString
         return 'class-string<\\' . $this->as . '>';
     }
 
-    /**
-     * @return bool
-     */
-    public function canBeFullyExpressedInPhp()
+    public function canBeFullyExpressedInPhp(): bool
     {
         return false;
     }

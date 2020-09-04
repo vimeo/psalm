@@ -155,7 +155,7 @@ class JunitReport extends Report
      *
      * @return array<string, list<IssueData>>
      */
-    private function groupByType(array $failures)
+    private function groupByType(array $failures): array
     {
         $nfailures = [];
 
@@ -166,9 +166,6 @@ class JunitReport extends Report
         return $nfailures;
     }
 
-    /**
-     * @param  IssueData  $data
-     */
     private function dataToOutput(IssueData $data): string
     {
         $ret = 'message: ' . htmlspecialchars(trim($data->message), ENT_XML1 | ENT_QUOTES) . "\n";

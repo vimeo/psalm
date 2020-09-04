@@ -27,8 +27,6 @@ class AlgebraAnalyzer
      *
      * @param  array<int, Clause>   $formula1
      * @param  array<int, Clause>   $formula2
-     * @param  StatementsAnalyzer    $statements_analyzer,
-     * @param  PhpParser\Node       $stmt
      * @param  array<string, bool>  $new_assigned_var_ids
      *
      * @return void

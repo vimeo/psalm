@@ -97,13 +97,12 @@ class FunctionDocblockManipulator
      * @param  string $file_path
      * @param  Closure|Function_|ClassMethod|ArrowFunction $stmt
      *
-     * @return self
      */
     public static function getForFunction(
         ProjectAnalyzer $project_analyzer,
         $file_path,
         FunctionLike $stmt
-    ) {
+    ): FunctionDocblockManipulator {
         if (isset(self::$manipulators[$file_path][$stmt->getLine()])) {
             return self::$manipulators[$file_path][$stmt->getLine()];
         }
@@ -283,10 +282,6 @@ class FunctionDocblockManipulator
     /**
      * Sets a new param type
      *
-     * @param   string      $param_name
-     * @param   ?string     $php_type
-     * @param   string      $new_type
-     * @param   string      $phpdoc_type
      * @param   bool        $is_php_compatible
      *
      * @return  void
@@ -313,9 +308,8 @@ class FunctionDocblockManipulator
      * Gets a new docblock given the existing docblock, if one exists, and the updated return types
      * and/or parameters
      *
-     * @return string
      */
-    private function getDocblock()
+    private function getDocblock(): string
     {
         $docblock = $this->stmt->getDocComment();
 
@@ -402,7 +396,7 @@ class FunctionDocblockManipulator
      *
      * @return array<int, FileManipulation>
      */
-    public static function getManipulationsForFile($file_path)
+    public static function getManipulationsForFile($file_path): array
     {
         if (!isset(self::$manipulators[$file_path])) {
             return [];
@@ -512,7 +506,7 @@ class FunctionDocblockManipulator
     /**
      * @return array<string, array<int, FunctionDocblockManipulator>>
      */
-    public static function getManipulators()
+    public static function getManipulators(): array
     {
         return self::$manipulators;
     }

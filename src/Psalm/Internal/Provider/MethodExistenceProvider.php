@@ -65,14 +65,13 @@ class MethodExistenceProvider
     /**
      * @param  array<PhpParser\Node\Arg>  $call_args
      *
-     * @return ?bool
      */
     public function doesMethodExist(
         string $fq_classlike_name,
         string $method_name_lowercase,
         StatementsSource $source = null,
         CodeLocation $code_location = null
-    ) {
+    ): ?bool {
         foreach (self::$handlers[strtolower($fq_classlike_name)] as $method_handler) {
             $method_exists = $method_handler(
                 $fq_classlike_name,

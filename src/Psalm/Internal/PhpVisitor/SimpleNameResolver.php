@@ -54,7 +54,7 @@ class SimpleNameResolver extends NodeVisitorAbstract
         $this->nameContext = new NameContext($errorHandler);
     }
 
-    public function beforeTraverse(array $nodes)
+    public function beforeTraverse(array $nodes): ?array
     {
         $this->nameContext->startNamespace();
 
@@ -203,7 +203,7 @@ class SimpleNameResolver extends NodeVisitorAbstract
      *
      * @return Name Resolved name, or original name with attribute
      */
-    protected function resolveName(Name $name, $type)
+    protected function resolveName(Name $name, $type): Name
     {
         $resolvedName = $this->nameContext->getResolvedName($name, $type);
         if (null !== $resolvedName) {
@@ -213,10 +213,7 @@ class SimpleNameResolver extends NodeVisitorAbstract
         return $name;
     }
 
-    /**
-     * @return Name
-     */
-    protected function resolveClassName(Name $name)
+    protected function resolveClassName(Name $name): Name
     {
         return $this->resolveName($name, Stmt\Use_::TYPE_NORMAL);
     }

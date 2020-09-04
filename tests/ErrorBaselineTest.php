@@ -18,9 +18,6 @@ class ErrorBaselineTest extends TestCase
     /** @var ObjectProphecy */
     private $fileProvider;
 
-    /**
-     * @return void
-     */
     public function setUp() : void
     {
         RuntimeCaches::clearAll();

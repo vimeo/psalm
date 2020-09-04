@@ -61,6 +61,7 @@ class BuildInfoCollector
      * "TRAVIS", "TRAVIS_JOB_ID" must be set.
      *
      * @return $this
+     *
      * @psalm-suppress PossiblyUndefinedStringArrayOffset
      */
     protected function fillTravisCi() : self
@@ -136,8 +137,9 @@ class BuildInfoCollector
      *
      * "APPVEYOR", "APPVEYOR_BUILD_NUMBER" must be set.
      *
-     * @return $this
      * @psalm-suppress PossiblyUndefinedStringArrayOffset
+     *
+     * @return $this
      */
     protected function fillAppVeyor() : self
     {
@@ -208,8 +210,9 @@ class BuildInfoCollector
      *
      * "JENKINS_URL", "BUILD_NUMBER" must be set.
      *
-     * @return $this
      * @psalm-suppress PossiblyUndefinedStringArrayOffset
+     *
+     * @return $this
      */
     protected function fillScrutinizer() : self
     {
@@ -245,7 +248,7 @@ class BuildInfoCollector
      * @return $this
      * @psalm-suppress PossiblyUndefinedStringArrayOffset
      */
-    protected function fillGithubActions()
+    protected function fillGithubActions(): BuildInfoCollector
     {
         if (isset($this->env['GITHUB_ACTIONS'])) {
             $this->env['CI_NAME'] = 'github-actions';

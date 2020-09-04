@@ -14,15 +14,12 @@ class TMixed extends \Psalm\Type\Atomic
         $this->from_loop_isset = $from_loop_isset;
     }
 
-    public function __toString()
+    public function __toString(): string
     {
         return 'mixed';
     }
-
-    /**
-     * @return string
-     */
-    public function getKey(bool $include_extra = true)
+    
+    public function getKey(bool $include_extra = true): string
     {
         return 'mixed';
     }
@@ -34,7 +31,6 @@ class TMixed extends \Psalm\Type\Atomic
      * @param  int           $php_major_version
      * @param  int           $php_minor_version
      *
-     * @return null|string
      */
     public function toPhpString(
         $namespace,
@@ -42,19 +38,16 @@ class TMixed extends \Psalm\Type\Atomic
         $this_class,
         $php_major_version,
         $php_minor_version
-    ) {
+    ): ?string {
         return null;
     }
 
-    public function canBeFullyExpressedInPhp()
+    public function canBeFullyExpressedInPhp(): bool
     {
         return false;
     }
 
-    /**
-     * @return string
-     */
-    public function getAssertionString()
+    public function getAssertionString(): string
     {
         return 'mixed';
     }

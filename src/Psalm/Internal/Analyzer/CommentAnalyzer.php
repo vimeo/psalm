@@ -62,7 +62,7 @@ class CommentAnalyzer
         Aliases $aliases,
         array $template_type_map = null,
         ?array $type_aliases = null
-    ) {
+    ): array {
         $parsed_docblock = DocComment::parsePreservingLength($comment);
 
         return self::arrayToDocblocks(
@@ -252,19 +252,18 @@ class CommentAnalyzer
     }
 
     /**
-     * @param  Aliases          $aliases
      * @param  array<string, TypeAlias> $type_aliases
      *
-     * @throws DocblockParseException if there was a problem parsing the docblock
-     *
      * @return array<string, TypeAlias\InlineTypeAlias>
+     *
+     * @throws DocblockParseException if there was a problem parsing the docblock
      */
     public static function getTypeAliasesFromComment(
         PhpParser\Comment\Doc $comment,
         Aliases $aliases,
         ?array $type_aliases,
         ?string $self_fqcln
-    ) {
+    ): array {
         $parsed_docblock = DocComment::parsePreservingLength($comment);
 
         if (!isset($parsed_docblock->tags['psalm-type'])) {
@@ -281,19 +280,18 @@ class CommentAnalyzer
 
     /**
      * @param  array<string>    $type_alias_comment_lines
-     * @param  Aliases          $aliases
      * @param  array<string, TypeAlias> $type_aliases
      *
-     * @throws DocblockParseException if there was a problem parsing the docblock
-     *
      * @return array<string, TypeAlias\InlineTypeAlias>
+     *
+     * @throws DocblockParseException if there was a problem parsing the docblock
      */
     private static function getTypeAliasesFromCommentLines(
         array $type_alias_comment_lines,
         Aliases $aliases,
         ?array $type_aliases,
         ?string $self_fqcln
-    ) {
+    ): array {
         $type_alias_tokens = [];
 
         foreach ($type_alias_comment_lines as $var_line) {
@@ -363,9 +361,8 @@ class CommentAnalyzer
      *
      * @throws DocblockParseException if there was a problem parsing the docblock
      *
-     * @return FunctionDocblockComment
      */
-    public static function extractFunctionDocblockInfo(PhpParser\Comment\Doc $comment)
+    public static function extractFunctionDocblockInfo(PhpParser\Comment\Doc $comment): FunctionDocblockComment
     {
         $parsed_docblock = DocComment::parsePreservingLength($comment);
 
@@ -821,14 +818,13 @@ class CommentAnalyzer
     /**
      * @throws DocblockParseException if there was a problem parsing the docblock
      *
-     * @return ClassLikeDocblockComment
      * @psalm-suppress MixedArrayAccess
      */
     public static function extractClassLikeDocblockInfo(
         \PhpParser\Node $node,
         PhpParser\Comment\Doc $comment,
         Aliases $aliases
-    ) {
+    ): ClassLikeDocblockComment {
         $parsed_docblock = DocComment::parsePreservingLength($comment);
         $codebase = ProjectAnalyzer::getInstance()->getCodebase();
 
@@ -1175,14 +1171,12 @@ class CommentAnalyzer
     }
 
     /**
-     * @param ClassLikeDocblockComment $info
      * @param array<string, array<int, string>> $specials
      * @param 'property'|'psalm-property'|'property-read'|
      *     'psalm-property-read'|'property-write'|'psalm-property-write' $property_tag
      *
      * @throws DocblockParseException
      *
-     * @return void
      */
     protected static function addMagicPropertyToInfo(
         PhpParser\Comment\Doc $comment,
@@ -1373,7 +1367,6 @@ class CommentAnalyzer
     }
 
     /**
-     * @param ParsedDocblock $parsed_docblock
      *
      * @return void
      *

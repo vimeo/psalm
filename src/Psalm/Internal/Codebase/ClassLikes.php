@@ -294,14 +294,13 @@ class ClassLikes
     /**
      * @param string $fq_class_name
      *
-     * @return bool
      */
     public function hasFullyQualifiedClassName(
         $fq_class_name,
         CodeLocation $code_location = null,
         ?string $calling_fq_class_name = null,
         ?string $calling_method_id = null
-    ) {
+    ): bool {
         $fq_class_name_lc = strtolower($fq_class_name);
 
         if (isset($this->classlike_aliases[$fq_class_name_lc])) {
@@ -370,14 +369,13 @@ class ClassLikes
     /**
      * @param string $fq_class_name
      *
-     * @return bool
      */
     public function hasFullyQualifiedInterfaceName(
         $fq_class_name,
         CodeLocation $code_location = null,
         ?string $calling_fq_class_name = null,
         ?string $calling_method_id = null
-    ) {
+    ): bool {
         $fq_class_name_lc = strtolower($fq_class_name);
 
         if (isset($this->classlike_aliases[$fq_class_name_lc])) {
@@ -446,9 +444,8 @@ class ClassLikes
     /**
      * @param string $fq_class_name
      *
-     * @return bool
      */
-    public function hasFullyQualifiedTraitName($fq_class_name, CodeLocation $code_location = null)
+    public function hasFullyQualifiedTraitName($fq_class_name, CodeLocation $code_location = null): bool
     {
         $fq_class_name_lc = strtolower($fq_class_name);
 
@@ -476,16 +473,14 @@ class ClassLikes
      * Check whether a class/interface exists
      *
      * @param  string          $fq_class_name
-     * @param  CodeLocation $code_location
      *
-     * @return bool
      */
     public function classOrInterfaceExists(
         $fq_class_name,
         CodeLocation $code_location = null,
         ?string $calling_fq_class_name = null,
         ?string $calling_method_id = null
-    ) {
+    ): bool {
         if (!$this->classExists($fq_class_name, $code_location, $calling_fq_class_name, $calling_method_id)
             && !$this->interfaceExists($fq_class_name, $code_location, $calling_fq_class_name, $calling_method_id)
         ) {
@@ -500,14 +495,13 @@ class ClassLikes
      *
      * @param  string       $fq_class_name
      *
-     * @return bool
      */
     public function classExists(
         $fq_class_name,
         CodeLocation $code_location = null,
         ?string $calling_fq_class_name = null,
         ?string $calling_method_id = null
-    ) {
+    ): bool {
         if (isset(ClassLikeAnalyzer::SPECIAL_TYPES[$fq_class_name])) {
             return false;
         }
@@ -533,9 +527,8 @@ class ClassLikes
      * @throws UnpopulatedClasslikeException when called on unpopulated class
      * @throws \InvalidArgumentException when class does not exist
      *
-     * @return bool
      */
-    public function classExtends($fq_class_name, $possible_parent, bool $from_api = false)
+    public function classExtends($fq_class_name, $possible_parent, bool $from_api = false): bool
     {
         $fq_class_name_lc = strtolower($fq_class_name);
 
@@ -560,9 +553,8 @@ class ClassLikes
      * @param  string       $fq_class_name
      * @param  string       $interface
      *
-     * @return bool
      */
-    public function classImplements($fq_class_name, $interface)
+    public function classImplements($fq_class_name, $interface): bool
     {
         $interface_id = strtolower($interface);
 
@@ -598,14 +590,13 @@ class ClassLikes
     /**
      * @param  string         $fq_interface_name
      *
-     * @return bool
      */
     public function interfaceExists(
         $fq_interface_name,
         CodeLocation $code_location = null,
         ?string $calling_fq_class_name = null,
         ?string $calling_method_id = null
-    ) {
+    ): bool {
         if (isset(ClassLikeAnalyzer::SPECIAL_TYPES[strtolower($fq_interface_name)])) {
             return false;
         }
@@ -622,9 +613,8 @@ class ClassLikes
      * @param  string         $interface_name
      * @param  string         $possible_parent
      *
-     * @return bool
      */
-    public function interfaceExtends($interface_name, $possible_parent)
+    public function interfaceExtends($interface_name, $possible_parent): bool
     {
         return isset($this->getParentInterfaces($interface_name)[strtolower($possible_parent)]);
     }
@@ -634,7 +624,7 @@ class ClassLikes
      *
      * @return array<string, string>   all interfaces extended by $interface_name
      */
-    public function getParentInterfaces($fq_interface_name)
+    public function getParentInterfaces($fq_interface_name): array
     {
         $fq_interface_name = strtolower($fq_interface_name);
 
@@ -646,9 +636,8 @@ class ClassLikes
     /**
      * @param  string         $fq_trait_name
      *
-     * @return bool
      */
-    public function traitExists($fq_trait_name, CodeLocation $code_location = null)
+    public function traitExists($fq_trait_name, CodeLocation $code_location = null): bool
     {
         return $this->hasFullyQualifiedTraitName($fq_trait_name, $code_location);
     }
@@ -658,9 +647,8 @@ class ClassLikes
      *
      * @param  string $fq_class_name
      *
-     * @return bool
      */
-    public function classHasCorrectCasing($fq_class_name)
+    public function classHasCorrectCasing($fq_class_name): bool
     {
         if ($fq_class_name === 'Generator') {
             return true;
@@ -676,9 +664,8 @@ class ClassLikes
     /**
      * @param  string $fq_interface_name
      *
-     * @return bool
      */
-    public function interfaceHasCorrectCasing($fq_interface_name)
+    public function interfaceHasCorrectCasing($fq_interface_name): bool
     {
         if (isset($this->classlike_aliases[strtolower($fq_interface_name)])) {
             return true;
@@ -690,9 +677,8 @@ class ClassLikes
     /**
      * @param  string $fq_trait_name
      *
-     * @return bool
      */
-    public function traitHasCorrectCase($fq_trait_name)
+    public function traitHasCorrectCase($fq_trait_name): bool
     {
         if (isset($this->classlike_aliases[strtolower($fq_trait_name)])) {
             return true;
@@ -704,9 +690,8 @@ class ClassLikes
     /**
      * @param  lowercase-string  $fq_class_name
      *
-     * @return bool
      */
-    public function isUserDefined($fq_class_name)
+    public function isUserDefined($fq_class_name): bool
     {
         return $this->classlike_storage_provider->get($fq_class_name)->user_defined;
     }
@@ -714,9 +699,8 @@ class ClassLikes
     /**
      * @param  string $fq_trait_name
      *
-     * @return PhpParser\Node\Stmt\Trait_
      */
-    public function getTraitNode($fq_trait_name)
+    public function getTraitNode($fq_trait_name): PhpParser\Node\Stmt\Trait_
     {
         $fq_trait_name_lc = strtolower($fq_trait_name);
 
@@ -760,11 +744,8 @@ class ClassLikes
     {
         $this->classlike_aliases[$alias_name] = $fq_class_name;
     }
-
-    /**
-     * @return string
-     */
-    public function getUnAliasedName(string $alias_name)
+    
+    public function getUnAliasedName(string $alias_name): string
     {
         $alias_name_lc = strtolower($alias_name);
         if ($this->existing_classlikes_lc[$alias_name_lc] ?? false) {
@@ -1522,7 +1503,7 @@ class ClassLikes
      *
      * @return array<string,Type\Union>
      */
-    public function getConstantsForClass($class_name, $visibility)
+    public function getConstantsForClass($class_name, $visibility): array
     {
         $class_name = strtolower($class_name);
 
@@ -1846,7 +1827,6 @@ class ClassLikes
     /**
      * @param   string      $class_name
      * @param   string      $const_name
-     * @param   Type\Union  $type
      * @param   int         $visibility
      *
      * @return  void
@@ -2357,9 +2337,8 @@ class ClassLikes
     /**
      * @param  lowercase-string $fq_classlike_name_lc
      *
-     * @return bool
      */
-    public function isMissingClassLike($fq_classlike_name_lc)
+    public function isMissingClassLike($fq_classlike_name_lc): bool
     {
         return isset($this->existing_classlikes_lc[$fq_classlike_name_lc])
             && $this->existing_classlikes_lc[$fq_classlike_name_lc] === false;
@@ -2368,9 +2347,8 @@ class ClassLikes
     /**
      * @param  lowercase-string $fq_classlike_name_lc
      *
-     * @return bool
      */
-    public function doesClassLikeExist($fq_classlike_name_lc)
+    public function doesClassLikeExist($fq_classlike_name_lc): bool
     {
         return isset($this->existing_classlikes_lc[$fq_classlike_name_lc])
             && $this->existing_classlikes_lc[$fq_classlike_name_lc];
@@ -2415,7 +2393,7 @@ class ClassLikes
      *     6: array<string, bool>,
      * }
      */
-    public function getThreadData()
+    public function getThreadData(): array
     {
         return [
             $this->existing_classlikes_lc,

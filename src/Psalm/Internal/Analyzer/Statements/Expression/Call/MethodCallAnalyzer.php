@@ -32,11 +32,6 @@ use function array_reduce;
  */
 class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer
 {
-    /**
-     * @param   StatementsAnalyzer               $statements_analyzer
-     * @param   PhpParser\Node\Expr\MethodCall  $stmt
-     * @param   Context                         $context
-     */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\MethodCall $stmt,

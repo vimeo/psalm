@@ -25,9 +25,7 @@ class Message
     /**
      * Parses a message
      *
-     * @param string $msg
      *
-     * @return Message
      * @psalm-suppress UnusedMethod
      */
     public static function parse(string $msg): Message
@@ -46,7 +44,6 @@ class Message
     }
 
     /**
-     * @param \AdvancedJsonRpc\Message $body
      * @param string[] $headers
      */
     public function __construct(MessageBody $body = null, array $headers = [])

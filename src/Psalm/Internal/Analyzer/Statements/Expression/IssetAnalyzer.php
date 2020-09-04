@@ -10,9 +10,6 @@ use Psalm\Type;
 class IssetAnalyzer
 {
     /**
-     * @param  StatementsAnalyzer          $statements_analyzer
-     * @param  PhpParser\Node\Expr\Isset_ $stmt
-     * @param  Context                    $context
      *
      * @return void
      */

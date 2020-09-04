@@ -248,9 +248,8 @@ class Scanner
     /**
      * @param  string $fq_classlike_name_lc
      *
-     * @return string
      */
-    public function getClassLikeFilePath($fq_classlike_name_lc)
+    public function getClassLikeFilePath($fq_classlike_name_lc): string
     {
         if (!isset($this->classlike_files[$fq_classlike_name_lc])) {
             throw new \UnexpectedValueException('Could not find file for ' . $fq_classlike_name_lc);
@@ -317,10 +316,7 @@ class Scanner
         }
     }
 
-    /**
-     * @return bool
-     */
-    public function scanFiles(ClassLikes $classlikes, int $pool_size = 1)
+    public function scanFiles(ClassLikes $classlikes, int $pool_size = 1): bool
     {
         $has_changes = false;
         while ($this->files_to_scan || $this->classes_to_scan) {
@@ -580,13 +576,12 @@ class Scanner
      * @param  array<string, class-string<FileScanner>>  $filetype_scanners
      * @param  bool   $will_analyze
      *
-     * @return FileScanner
      */
     private function scanFile(
         $file_path,
         array $filetype_scanners,
         $will_analyze = false
-    ) {
+    ): FileScanner {
         $file_scanner = $this->getScannerForPath($file_path, $filetype_scanners, $will_analyze);
 
         if (isset($this->scanned_files[$file_path])
@@ -675,13 +670,12 @@ class Scanner
      * @param  array<string, class-string<FileScanner>>  $filetype_scanners
      * @param  bool   $will_analyze
      *
-     * @return FileScanner
      */
     private function getScannerForPath(
         $file_path,
         array $filetype_scanners,
         $will_analyze = false
-    ) {
+    ): FileScanner {
         $path_parts = explode(DIRECTORY_SEPARATOR, $file_path);
         $file_name_parts = explode('.', array_pop($path_parts));
         $extension = count($file_name_parts) > 1 ? array_pop($file_name_parts) : null;
@@ -698,7 +692,7 @@ class Scanner
     /**
      * @return array<string, bool>
      */
-    public function getScannedFiles()
+    public function getScannedFiles(): array
     {
         return $this->scanned_files;
     }
@@ -709,9 +703,8 @@ class Scanner
      *
      * @param  string $fq_class_name
      *
-     * @return bool
      */
-    private function fileExistsForClassLike(ClassLikes $classlikes, $fq_class_name)
+    private function fileExistsForClassLike(ClassLikes $classlikes, $fq_class_name): bool
     {
         $fq_class_name_lc = strtolower($fq_class_name);
 

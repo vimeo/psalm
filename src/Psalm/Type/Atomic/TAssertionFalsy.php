@@ -3,23 +3,17 @@ namespace Psalm\Type\Atomic;
 
 class TAssertionFalsy extends \Psalm\Type\Atomic
 {
-    public function __toString()
+    public function __toString(): string
     {
         return 'falsy';
     }
 
-    /**
-     * @return string
-     */
-    public function getKey(bool $include_extra = true)
+    public function getKey(bool $include_extra = true): string
     {
         return 'falsy';
     }
 
-    /**
-     * @return string
-     */
-    public function getAssertionString()
+    public function getAssertionString(): string
     {
         return 'falsy';
     }
@@ -31,7 +25,6 @@ class TAssertionFalsy extends \Psalm\Type\Atomic
      * @param  int           $php_major_version
      * @param  int           $php_minor_version
      *
-     * @return null|string
      */
     public function toPhpString(
         $namespace,
@@ -39,11 +32,11 @@ class TAssertionFalsy extends \Psalm\Type\Atomic
         $this_class,
         $php_major_version,
         $php_minor_version
-    ) {
+    ): ?string {
         return null;
     }
 
-    public function canBeFullyExpressedInPhp()
+    public function canBeFullyExpressedInPhp(): bool
     {
         return false;
     }

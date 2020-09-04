@@ -57,7 +57,7 @@ class DocComment
      *
      * @psalm-pure
      */
-    public static function parse($docblock, $line_number = null, $preserve_format = false)
+    public static function parse($docblock, $line_number = null, $preserve_format = false): array
     {
         // Strip off comments.
         $docblock = trim($docblock);
@@ -180,7 +180,6 @@ class DocComment
     /**
      * Parse a docblock comment into its parts.
      *
-     * @param  \PhpParser\Comment\Doc  $docblock
      * @param  bool    $preserve_format
      */
     public static function parsePreservingLength(\PhpParser\Comment\Doc $docblock) : ParsedDocblock

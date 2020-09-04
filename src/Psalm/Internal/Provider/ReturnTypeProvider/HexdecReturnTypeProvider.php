@@ -16,7 +16,6 @@ class HexdecReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypeP
 
     /**
      * @param  array<PhpParser\Node\Arg>    $call_args
-     * @param  CodeLocation                 $code_location
      */
     public static function getFunctionReturnType(
         StatementsSource $statements_source,

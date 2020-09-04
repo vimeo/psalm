@@ -14,9 +14,6 @@ use Psalm\Tests\TestConfig;
 
 class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
 {
-    /**
-     * @return void
-     */
     public function setUp() : void
     {
         parent::setUp();

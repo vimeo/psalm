@@ -176,7 +176,7 @@ class FileManipulationBuffer
      *
      * @return FileManipulation[]
      */
-    public static function getManipulationsForFile($file_path)
+    public static function getManipulationsForFile($file_path): array
     {
         if (!isset(self::$file_manipulations[$file_path])) {
             return [];

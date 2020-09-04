@@ -165,7 +165,7 @@ class Config
     /**
      * The directory to store PHP Parser (and other) caches
      *
-     * @var string
+     * @var string|null
      */
     public $cache_directory;
 
@@ -629,11 +629,10 @@ class Config
      * @param  string $current_dir
      * @param  string $output_format
      *
-     * @return Config
      * @throws ConfigException if a config path is not found
      *
      */
-    public static function getConfigForPath($path, $current_dir, $output_format)
+    public static function getConfigForPath($path, $current_dir, $output_format): Config
     {
         $config_path = self::locateConfigFile($path);
 
@@ -654,9 +653,8 @@ class Config
      *
      * @throws ConfigException
      *
-     * @return ?string
      */
-    public static function locateConfigFile(string $path)
+    public static function locateConfigFile(string $path): ?string
     {
         $dir_path = realpath($path);
 
@@ -687,9 +685,8 @@ class Config
      * @param  string           $file_path
      * @param  string           $current_dir
      *
-     * @return self
      */
-    public static function loadFromXMLFile($file_path, $current_dir)
+    public static function loadFromXMLFile($file_path, $current_dir): Config
     {
         $file_contents = file_get_contents($file_path);
 
@@ -714,15 +711,13 @@ class Config
     /**
      * Creates a new config object from an XML string
      *
-     * @throws ConfigException
-     *
      * @param  string           $base_dir
      * @param  string           $file_contents
      * @param  string|null      $current_dir Current working directory, if different to $base_dir
      *
-     * @return self
+     * @throws ConfigException
      */
-    public static function loadFromXML($base_dir, $file_contents, $current_dir = null)
+    public static function loadFromXML($base_dir, $file_contents, $current_dir = null): Config
     {
         if ($current_dir === null) {
             $current_dir = $base_dir;
@@ -1113,7 +1108,7 @@ class Config
     /**
      * @return $this
      */
-    public static function getInstance()
+    public static function getInstance(): Config
     {
         if (self::$instance) {
             return self::$instance;
@@ -1343,9 +1338,8 @@ class Config
     /**
      * @param  string $file_name
      *
-     * @return string
      */
-    public function shortenFileName($file_name)
+    public function shortenFileName($file_name): string
     {
         return preg_replace('/^' . preg_quote($this->base_dir, '/') . '/', '', $file_name);
     }
@@ -1354,9 +1348,8 @@ class Config
      * @param   string $issue_type
      * @param   string $file_path
      *
-     * @return  bool
      */
-    public function reportIssueInFile($issue_type, $file_path)
+    public function reportIssueInFile($issue_type, $file_path): bool
     {
         if (($this->show_mixed_issues === false || $this->level > 2)
             && in_array($issue_type, self::MIXED_ISSUES, true)
@@ -1409,9 +1402,8 @@ class Config
     /**
      * @param   string $file_path
      *
-     * @return  bool
      */
-    public function isInProjectDirs($file_path)
+    public function isInProjectDirs($file_path): bool
     {
         return $this->project_files && $this->project_files->allows($file_path);
     }
@@ -1419,9 +1411,8 @@ class Config
     /**
      * @param   string $file_path
      *
-     * @return  bool
      */
-    public function isInExtraDirs($file_path)
+    public function isInExtraDirs($file_path): bool
     {
         return $this->extra_files && $this->extra_files->allows($file_path);
     }
@@ -1429,9 +1420,8 @@ class Config
     /**
      * @param   string $file_path
      *
-     * @return  bool
      */
-    public function mustBeIgnored($file_path)
+    public function mustBeIgnored($file_path): bool
     {
         return $this->project_files && $this->project_files->forbids($file_path);
     }
@@ -1487,11 +1477,10 @@ class Config
     /**
      * @param string $issue_type
      *
-     * @return string|null
      *
      * @psalm-pure
      */
-    public static function getParentIssueType($issue_type)
+    public static function getParentIssueType($issue_type): ?string
     {
         if ($issue_type === 'PossiblyUndefinedIntArrayOffset'
             || $issue_type === 'PossiblyUndefinedStringArrayOffset'
@@ -1595,9 +1584,8 @@ class Config
      * @param   string $issue_type
      * @param   string $file_path
      *
-     * @return  string
      */
-    public function getReportingLevelForFile($issue_type, $file_path)
+    public function getReportingLevelForFile($issue_type, $file_path): string
     {
         if (isset($this->issue_handlers[$issue_type])) {
             return $this->issue_handlers[$issue_type]->getReportingLevelForFile($file_path);
@@ -1680,8 +1668,6 @@ class Config
     }
 
     /**
-     * @param   string $issue_type
-     * @param   string $var_name
      *
      * @return  string|null
      */
@@ -1695,7 +1681,7 @@ class Config
     /**
      * @return array<string>
      */
-    public function getProjectDirectories()
+    public function getProjectDirectories(): array
     {
         if (!$this->project_files) {
             return [];
@@ -1707,7 +1693,7 @@ class Config
     /**
      * @return array<string>
      */
-    public function getProjectFiles()
+    public function getProjectFiles(): array
     {
         if (!$this->project_files) {
             return [];
@@ -1719,7 +1705,7 @@ class Config
     /**
      * @return array<string>
      */
-    public function getExtraDirectories()
+    public function getExtraDirectories(): array
     {
         if (!$this->extra_files) {
             return [];
@@ -1731,9 +1717,8 @@ class Config
     /**
      * @param   string $file_path
      *
-     * @return  bool
      */
-    public function reportTypeStatsForFile($file_path)
+    public function reportTypeStatsForFile($file_path): bool
     {
         return $this->project_files
             && $this->project_files->allows($file_path)
@@ -1743,9 +1728,8 @@ class Config
     /**
      * @param   string $file_path
      *
-     * @return  bool
      */
-    public function useStrictTypesForFile($file_path)
+    public function useStrictTypesForFile($file_path): bool
     {
         return $this->project_files && $this->project_files->useStrictTypes($file_path);
     }
@@ -1753,7 +1737,7 @@ class Config
     /**
      * @return array<string>
      */
-    public function getFileExtensions()
+    public function getFileExtensions(): array
     {
         return $this->file_extensions;
     }
@@ -1761,7 +1745,7 @@ class Config
     /**
      * @return array<string, class-string<FileScanner>>
      */
-    public function getFiletypeScanners()
+    public function getFiletypeScanners(): array
     {
         return $this->filetype_scanners;
     }
@@ -1769,7 +1753,7 @@ class Config
     /**
      * @return array<string, class-string<FileAnalyzer>>
      */
-    public function getFiletypeAnalyzers()
+    public function getFiletypeAnalyzers(): array
     {
         return $this->filetype_analyzers;
     }
@@ -1777,7 +1761,7 @@ class Config
     /**
      * @return array<int, string>
      */
-    public function getMockClasses()
+    public function getMockClasses(): array
     {
         return $this->mock_classes;
     }
@@ -1867,19 +1851,13 @@ class Config
 
         $codebase->register_stub_files = false;
     }
-
-    /**
-     * @return string
-     */
-    public function getCacheDirectory()
+    
+    public function getCacheDirectory(): ?string
     {
         return $this->cache_directory;
     }
-
-    /**
-     * @return ?string
-     */
-    public function getGlobalCacheDirectory()
+    
+    public function getGlobalCacheDirectory(): ?string
     {
         return $this->global_cache_directory;
     }
@@ -1887,7 +1865,7 @@ class Config
     /**
      * @return array<string, mixed>
      */
-    public function getPredefinedConstants()
+    public function getPredefinedConstants(): array
     {
         return $this->predefined_constants;
     }
@@ -1903,7 +1881,7 @@ class Config
     /**
      * @return array<callable-string, bool>
      */
-    public function getPredefinedFunctions()
+    public function getPredefinedFunctions(): array
     {
         return $this->predefined_functions;
     }

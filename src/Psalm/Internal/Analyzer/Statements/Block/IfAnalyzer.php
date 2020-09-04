@@ -65,9 +65,6 @@ class IfAnalyzer
      *   (x: null)
      *   throw new Exception -- effects: remove null from the type of x
      *
-     * @param  StatementsAnalyzer       $statements_analyzer
-     * @param  PhpParser\Node\Stmt\If_ $stmt
-     * @param  Context                 $context
      *
      * @return null|false
      */
@@ -75,7 +72,7 @@ class IfAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\If_ $stmt,
         Context $context
-    ) {
+    ): ?bool {
         $codebase = $statements_analyzer->getCodebase();
 
         $if_scope = new IfScope();
@@ -213,7 +210,7 @@ class IfAnalyzer
 
         if (array_filter(
             $context->clauses,
-            function ($clause) {
+            function ($clause): bool {
                 return !!$clause->possibilities;
             }
         )) {
@@ -223,7 +220,7 @@ class IfAnalyzer
                  * @param array<string> $carry
                  * @return array<string>
                  */
-                function ($carry, Clause $clause) {
+                function ($carry, Clause $clause): array {
                     return array_merge($carry, array_keys($clause->possibilities));
                 },
                 []
@@ -690,7 +687,7 @@ class IfAnalyzer
              *
              * @return true
              */
-            function (Type\Union $_) {
+            function (Type\Union $_): bool {
                 return true;
             },
             array_diff_key(
@@ -766,12 +763,6 @@ class IfAnalyzer
     }
 
     /**
-     * @param  StatementsAnalyzer        $statements_analyzer
-     * @param  PhpParser\Node\Stmt\If_  $stmt
-     * @param  IfScope                  $if_scope
-     * @param  Context                  $if_context
-     * @param  Context                  $old_if_context
-     * @param  Context                  $outer_context
      * @param  array<string,Type\Union> $pre_assignment_else_redefined_vars
      *
      * @return false|null
@@ -1044,11 +1035,7 @@ class IfAnalyzer
     }
 
     /**
-     * @param  StatementsAnalyzer           $statements_analyzer
-     * @param  PhpParser\Node\Stmt\ElseIf_ $elseif
-     * @param  IfScope                     $if_scope
      * @param  Context                     $elseif_context
-     * @param  Context                     $outer_context
      *
      * @return false|null
      */
@@ -1173,7 +1160,7 @@ class IfAnalyzer
         try {
             if (array_filter(
                 $entry_clauses,
-                function ($clause) {
+                function ($clause): bool {
                     return !!$clause->possibilities;
                 }
             )) {
@@ -1183,7 +1170,7 @@ class IfAnalyzer
                      * @param array<string> $carry
                      * @return array<string>
                      */
-                    function ($carry, Clause $clause) {
+                    function ($carry, Clause $clause): array {
                         return array_merge($carry, array_keys($clause->possibilities));
                     },
                     []
@@ -1533,11 +1520,7 @@ class IfAnalyzer
     }
 
     /**
-     * @param  StatementsAnalyzer         $statements_analyzer
      * @param  PhpParser\Node\Stmt\Else_|null $else
-     * @param  IfScope                   $if_scope
-     * @param  Context                   $else_context
-     * @param  Context                   $outer_context
      *
      * @return false|null
      */
@@ -1823,7 +1806,6 @@ class IfAnalyzer
      * Returns statements that are definitely evaluated before any statements after the end of the
      * if/elseif/else blocks
      *
-     * @param  PhpParser\Node\Expr $stmt
      *
      * @return PhpParser\Node\Expr|null
      */
@@ -1871,7 +1853,6 @@ class IfAnalyzer
      * Returns statements that are definitely evaluated before any statements inside
      * the if block
      *
-     * @param  PhpParser\Node\Expr $stmt
      *
      * @return PhpParser\Node\Expr|null
      */

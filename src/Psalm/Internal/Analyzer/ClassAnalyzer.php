@@ -67,8 +67,6 @@ class ClassAnalyzer extends ClassLikeAnalyzer
     public $inferred_property_types = [];
 
     /**
-     * @param PhpParser\Node\Stmt\Class_    $class
-     * @param SourceAnalyzer                $source
      * @param string|null                   $fq_class_name
      */
     public function __construct(PhpParser\Node\Stmt\Class_ $class, SourceAnalyzer $source, $fq_class_name)
@@ -92,12 +90,10 @@ class ClassAnalyzer extends ClassLikeAnalyzer
     }
 
     /**
-     * @param  PhpParser\Node\Stmt\Class_ $class
      * @param  string                     $file_path
      *
-     * @return string
      */
-    public static function getAnonymousClassName(PhpParser\Node\Stmt\Class_ $class, $file_path)
+    public static function getAnonymousClassName(PhpParser\Node\Stmt\Class_ $class, $file_path): string
     {
         return preg_replace('/[^A-Za-z0-9]/', '_', $file_path)
             . '_' . $class->getLine() . '_' . (int)$class->getAttribute('startFilePos');
@@ -1617,7 +1613,6 @@ class ClassAnalyzer extends ClassLikeAnalyzer
     }
 
     /**
-     * @param   PhpParser\Node\Stmt\Property    $stmt
      *
      * @return  void
      */
@@ -1766,9 +1761,6 @@ class ClassAnalyzer extends ClassLikeAnalyzer
     }
 
     /**
-     * @param  PhpParser\Node\Stmt\ClassMethod $stmt
-     * @param  SourceAnalyzer                  $source
-     * @param  Context                         $class_context
      * @param  Context|null                    $global_context
      * @param  bool                            $is_fake
      *

@@ -31,12 +31,6 @@ use function array_pop;
 class ArrayAssignmentAnalyzer
 {
     /**
-     * @param   StatementsAnalyzer                  $statements_analyzer
-     * @param   PhpParser\Node\Expr\ArrayDimFetch   $stmt
-     * @param   Context                             $context
-     * @param   PhpParser\Node\Expr|null            $assign_value
-     * @param   Type\Union                          $assignment_value_type
-     *
      * @return  void
      */
     public static function analyze(
@@ -77,7 +71,7 @@ class ArrayAssignmentAnalyzer
         ?PhpParser\Node\Expr $assign_value,
         Type\Union $assignment_type,
         Context $context
-    ) {
+    ): ?bool {
         $root_array_expr = $stmt;
 
         $child_stmts = [];

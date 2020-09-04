@@ -80,7 +80,7 @@ class MethodParamsProvider
         StatementsSource $statements_source = null,
         Context $context = null,
         CodeLocation $code_location = null
-    ) {
+    ): ?array {
         foreach (self::$handlers[strtolower($fq_classlike_name)] as $class_handler) {
             $result = $class_handler(
                 $fq_classlike_name,

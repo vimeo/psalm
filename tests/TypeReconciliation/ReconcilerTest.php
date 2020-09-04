@@ -19,9 +19,6 @@ class ReconcilerTest extends \Psalm\Tests\TestCase
     /** @var StatementsAnalyzer */
     protected $statements_analyzer;
 
-    /**
-     * @return void
-     */
     public function setUp() : void
     {
         parent::setUp();

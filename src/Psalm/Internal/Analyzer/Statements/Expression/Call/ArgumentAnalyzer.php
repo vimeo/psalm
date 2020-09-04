@@ -46,8 +46,6 @@ use function explode;
 class ArgumentAnalyzer
 {
     /**
-     * @param  ?string $self_fq_class_name
-     * @param  ?string $static_fq_class_name
      * @param  array<string, array<string, array{Type\Union, 1?:int}>> $class_generic_params
      * @return false|null
      */
@@ -145,8 +143,6 @@ class ArgumentAnalyzer
     }
 
     /**
-     * @param  ?string $self_fq_class_name
-     * @param  ?string $static_fq_class_name
      * @param  array<string, array<string, array{Type\Union, 1?:int}>> $class_generic_params
      * @param  array<string, array<string, array{Type\Union, 1?:int}>> $generic_params
      * @param  array<string, array<string, array{Type\Union}>> $template_types

@@ -37,9 +37,6 @@ use function array_merge;
 class CallAnalyzer
 {
     /**
-     * @param   FunctionLikeAnalyzer $source
-     * @param   string              $method_name
-     * @param   Context             $context
      *
      * @return  void
      */
@@ -237,9 +234,6 @@ class CallAnalyzer
 
     /**
      * @param  array<int, PhpParser\Node\Arg>   $args
-     * @param  Context                          $context
-     * @param  CodeLocation                     $code_location
-     * @param  StatementsAnalyzer               $statements_analyzer
      */
     public static function checkMethodArgs(
         ?\Psalm\Internal\MethodIdentifier $method_id,
@@ -436,7 +430,7 @@ class CallAnalyzer
     public static function getFunctionIdsFromCallableArg(
         \Psalm\FileSource $file_source,
         $callable_arg
-    ) {
+    ): array {
         if ($callable_arg instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
             if ($callable_arg->left instanceof PhpParser\Node\Expr\ClassConstFetch
                 && $callable_arg->left->class instanceof PhpParser\Node\Name
@@ -535,19 +529,16 @@ class CallAnalyzer
     }
 
     /**
-     * @param  StatementsAnalyzer   $statements_analyzer
      * @param  non-empty-string     $function_id
-     * @param  CodeLocation         $code_location
      * @param  bool                 $can_be_in_root_scope if true, the function can be shortened to the root version
      *
-     * @return bool
      */
     public static function checkFunctionExists(
         StatementsAnalyzer $statements_analyzer,
         &$function_id,
         CodeLocation $code_location,
         $can_be_in_root_scope
-    ) {
+    ): bool {
         $cased_function_id = $function_id;
         $function_id = strtolower($function_id);
 
@@ -586,9 +577,7 @@ class CallAnalyzer
      * @param  \Psalm\Storage\Assertion[] $assertions
      * @param  string $thisName
      * @param  array<int, PhpParser\Node\Arg> $args
-     * @param  Context           $context
      * @param  array<string, array<string, array{Type\Union}>> $template_type_map,
-     * @param  StatementsAnalyzer $statements_analyzer
      *
      * @return void
      */

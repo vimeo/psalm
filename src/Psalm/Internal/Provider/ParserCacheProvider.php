@@ -175,7 +175,7 @@ class ParserCacheProvider
     /**
      * @return array<string, string>
      */
-    private function getExistingFileContentHashes()
+    private function getExistingFileContentHashes(): array
     {
         $config = Config::getInstance();
         $root_cache_directory = $config->getCacheDirectory();
@@ -259,7 +259,7 @@ class ParserCacheProvider
     /**
      * @return array<string, string>
      */
-    public function getNewFileContentHashes()
+    public function getNewFileContentHashes(): array
     {
         return $this->new_file_content_hashes;
     }
@@ -331,9 +331,8 @@ class ParserCacheProvider
     /**
      * @param  float $time_before
      *
-     * @return int
      */
-    public function deleteOldParserCaches($time_before)
+    public function deleteOldParserCaches($time_before): int
     {
         $cache_directory = Config::getInstance()->getCacheDirectory();
 
@@ -427,9 +426,8 @@ class ParserCacheProvider
     /**
      * @param  string  $file_name
      *
-     * @return string
      */
-    private function getParserCacheKey($file_name)
+    private function getParserCacheKey($file_name): string
     {
         return md5($file_name) . ($this->use_igbinary ? '-igbinary' : '') . '-r';
     }

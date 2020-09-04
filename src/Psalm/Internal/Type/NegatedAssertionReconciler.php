@@ -30,7 +30,6 @@ class NegatedAssertionReconciler extends Reconciler
      * @param  string[]   $suppressed_issues
      * @param  0|1|2      $failed_reconciliation
      *
-     * @return Type\Union
      */
     public static function reconcile(
         StatementsAnalyzer $statements_analyzer,
@@ -44,7 +43,7 @@ class NegatedAssertionReconciler extends Reconciler
         ?CodeLocation $code_location,
         array $suppressed_issues,
         int &$failed_reconciliation
-    ) {
+    ): Type\Union {
         $is_equality = $is_strict_equality || $is_loose_equality;
 
         // this is a specific value comparison type that cannot be negated
@@ -284,14 +283,8 @@ class NegatedAssertionReconciler extends Reconciler
     }
 
     /**
-     * @param  string     $assertion
-     * @param  int        $bracket_pos
-     * @param  string     $old_var_type_string
-     * @param  string|null $key
-     * @param  CodeLocation|null $code_location
      * @param  string[]   $suppressed_issues
      *
-     * @return Type\Union
      */
     private static function handleLiteralNegatedEquality(
         StatementsAnalyzer $statements_analyzer,
@@ -303,7 +296,7 @@ class NegatedAssertionReconciler extends Reconciler
         ?CodeLocation $code_location,
         array $suppressed_issues,
         bool $is_strict_equality
-    ) {
+    ): Type\Union {
         $scalar_type = substr($assertion, 0, $bracket_pos);
 
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();

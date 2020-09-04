@@ -26,9 +26,6 @@ use function array_pop;
 class ConstFetchAnalyzer
 {
     /**
-     * @param   StatementsAnalyzer               $statements_analyzer
-     * @param   PhpParser\Node\Expr\ConstFetch  $stmt
-     * @param   Context                         $context
      *
      * @return  void
      */
@@ -82,17 +79,15 @@ class ConstFetchAnalyzer
     }
 
     /**
-     * @param  Codebase $codebase
      * @param  ?string  $fq_const_name
      * @param  string   $const_name
      *
-     * @return Type\Union|null
      */
     public static function getGlobalConstType(
         Codebase $codebase,
         $fq_const_name,
         $const_name
-    ) {
+    ): ?Type\Union {
         if ($const_name === 'STDERR'
             || $const_name === 'STDOUT'
             || $const_name === 'STDIN'
@@ -177,18 +172,15 @@ class ConstFetchAnalyzer
     }
 
     /**
-     * @param   string  $const_name
-     * @param   bool    $is_fully_qualified
      * @param   Context $context
      *
-     * @return  Type\Union|null
      */
     public static function getConstType(
         StatementsAnalyzer $statements_analyzer,
         string $const_name,
         bool $is_fully_qualified,
         ?Context $context
-    ) {
+    ): ?Type\Union {
         $aliased_constants = $statements_analyzer->getAliases()->constants;
 
         if (isset($aliased_constants[$const_name])) {
@@ -241,9 +233,6 @@ class ConstFetchAnalyzer
     }
 
     /**
-     * @param   string      $const_name
-     * @param   Type\Union  $const_type
-     * @param   Context     $context
      *
      * @return  void
      */
@@ -289,8 +278,6 @@ class ConstFetchAnalyzer
     }
 
     /**
-     * @param   PhpParser\Node\Stmt\Const_  $stmt
-     * @param   Context                     $context
      *
      * @return  void
      */
