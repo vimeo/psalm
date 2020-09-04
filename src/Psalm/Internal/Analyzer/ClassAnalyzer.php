@@ -1520,6 +1520,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 )) {
                     return false;
                 }
+
+                return null;
             } else {
                 if (!$codebase->traitHasCorrectCase($fq_trait_name)) {
                     if (IssueBuffer::accepts(
