@@ -25,12 +25,6 @@ use function get_class;
  */
 class ExpressionAnalyzer
 {
-    /**
-     * @param   StatementsAnalyzer   $statements_analyzer
-     * @param   PhpParser\Node\Expr $stmt
-     * @param   Context             $context
-     * @param   bool                $array_assignment
-     */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $stmt,
@@ -402,9 +396,8 @@ class ExpressionAnalyzer
     /**
      * @param  string  $fq_class_name
      *
-     * @return bool
      */
-    public static function isMock($fq_class_name)
+    public static function isMock($fq_class_name): bool
     {
         return in_array(strtolower($fq_class_name), Config::getInstance()->getMockClasses(), true);
     }

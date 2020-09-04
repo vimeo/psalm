@@ -30,7 +30,7 @@ class FileStorageInstanceCacheProvider extends \Psalm\Internal\Provider\FileStor
      *
      * @return FileStorage|null
      */
-    public function getLatestFromCache($file_path, $file_contents)
+    public function getLatestFromCache($file_path, $file_contents): ?FileStorage
     {
         $cached_value = $this->loadFromCache(strtolower($file_path));
 

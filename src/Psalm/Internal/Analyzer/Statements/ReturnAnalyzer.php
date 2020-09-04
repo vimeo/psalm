@@ -35,8 +35,6 @@ use function strtolower;
 class ReturnAnalyzer
 {
     /**
-     * @param  PhpParser\Node\Stmt\Return_ $stmt
-     * @param  Context                     $context
      *
      * @return false|null
      */
@@ -44,7 +42,7 @@ class ReturnAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Return_ $stmt,
         Context $context
-    ) {
+    ): ?bool {
         $doc_comment = $stmt->getDocComment();
 
         $var_comments = [];

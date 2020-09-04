@@ -29,7 +29,6 @@ class UnusedAssignmentRemover
      * @param array<PhpParser\Node\Stmt>   $stmts
      * @param array<string, CodeLocation> $var_loc_map
      *
-     * @return void
      */
     public function findUnusedAssignment(
         Codebase $codebase,
@@ -116,13 +115,7 @@ class UnusedAssignmentRemover
             $this->removed_unref_vars[$var_id] = $original_location;
         }
     }
-
-    /**
-     * @param  CodeLocation   $var_loc
-     * @param  int  $end_bound
-     * @param  bool   $assign_ref
-     * @return FileManipulation
-     */
+    
     private function getPartialRemovalBounds(
         Codebase $codebase,
         CodeLocation $var_loc,
@@ -178,7 +171,6 @@ class UnusedAssignmentRemover
     /**
      * @param  PhpParser\Node\Expr\Assign|PhpParser\Node\Expr\AssignOp|PhpParser\Node\Expr\AssignRef $cur_assign
      * @param  array<string, CodeLocation>    $var_loc_map
-     * @return void
      */
     private function markRemovedChainAssignVar(PhpParser\Node\Expr $cur_assign, array $var_loc_map): void
     {
@@ -201,7 +193,6 @@ class UnusedAssignmentRemover
     /**
      * @param  PhpParser\Node\Expr\Assign|PhpParser\Node\Expr\AssignOp|PhpParser\Node\Expr\AssignRef $cur_assign
      * @param  array<string, CodeLocation> $var_loc_map
-     * @return bool
      */
     private function checkRemovableChainAssignment(PhpParser\Node\Expr $cur_assign, array $var_loc_map): bool
     {
@@ -237,14 +228,12 @@ class UnusedAssignmentRemover
 
     /**
      * @param  array<PhpParser\Node\Stmt>   $stmts
-     * @param  string   $var_id
-     * @param  CodeLocation   $original_location
      * @return array{
      *          0: PhpParser\Node\Stmt|null,
      *          1: PhpParser\Node\Expr\Assign|PhpParser\Node\Expr\AssignOp|PhpParser\Node\Expr\AssignRef|null
      *          }
      */
-    private function findAssignStmt(array $stmts, string $var_id, CodeLocation $original_location)
+    private function findAssignStmt(array $stmts, string $var_id, CodeLocation $original_location): array
     {
         $assign_stmt = null;
         $assign_exp = null;
@@ -330,10 +319,6 @@ class UnusedAssignmentRemover
     }
 
     /**
-     * @param  PhpParser\Node\Expr $current_node
-     * @param  string   $var_id
-     * @param  int      $var_start_loc
-     * @param  int     $search_level
      * @return array{
      *          0: PhpParser\Node\Expr\Assign|PhpParser\Node\Expr\AssignOp|PhpParser\Node\Expr\AssignRef|null,
      *          1: int
@@ -344,7 +329,7 @@ class UnusedAssignmentRemover
         string $var_id,
         int $var_start_loc,
         int $search_level = 1
-    ) {
+    ): array {
         if ($current_node instanceof PhpParser\Node\Expr\Assign
             || $current_node instanceof PhpPArser\Node\Expr\AssignOp
             || $current_node instanceof PhpParser\Node\Expr\AssignRef
@@ -365,11 +350,7 @@ class UnusedAssignmentRemover
             return [null, $search_level];
         }
     }
-
-    /**
-     * @param  CodeLocation $var_loc
-     * @return bool
-     */
+    
     public function checkIfVarRemoved(string $var_id, CodeLocation $var_loc): bool
     {
         return array_key_exists($var_id, $this->removed_unref_vars)

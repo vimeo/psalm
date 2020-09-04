@@ -150,7 +150,7 @@ class MissingMethodCallHandler
             /**
              * @return PhpParser\Node\Expr\ArrayItem
              */
-            function (PhpParser\Node\Arg $arg) {
+            function (PhpParser\Node\Arg $arg): PhpParser\Node\Expr\ArrayItem {
                 return new PhpParser\Node\Expr\ArrayItem($arg->value);
             },
             $stmt->args

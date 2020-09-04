@@ -3,15 +3,12 @@ namespace Psalm\Type\Atomic;
 
 class TArrayKey extends Scalar
 {
-    public function __toString()
+    public function __toString(): string
     {
         return 'array-key';
     }
 
-    /**
-     * @return string
-     */
-    public function getKey(bool $include_extra = true)
+    public function getKey(bool $include_extra = true): string
     {
         return 'array-key';
     }
@@ -23,7 +20,6 @@ class TArrayKey extends Scalar
      * @param  int           $php_major_version
      * @param  int           $php_minor_version
      *
-     * @return null|string
      */
     public function toPhpString(
         $namespace,
@@ -31,11 +27,11 @@ class TArrayKey extends Scalar
         $this_class,
         $php_major_version,
         $php_minor_version
-    ) {
+    ): ?string {
         return null;
     }
 
-    public function canBeFullyExpressedInPhp()
+    public function canBeFullyExpressedInPhp(): bool
     {
         return false;
     }

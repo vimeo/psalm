@@ -29,9 +29,6 @@ class ConfigTest extends \Psalm\Tests\TestCase
     /** @var \Psalm\Internal\Analyzer\ProjectAnalyzer */
     protected $project_analyzer;
 
-    /**
-     * @return void
-     */
     public static function setUpBeforeClass() : void
     {
         self::$config = new TestConfig();
@@ -45,9 +42,6 @@ class ConfigTest extends \Psalm\Tests\TestCase
         }
     }
 
-    /**
-     * @return void
-     */
     public function setUp() : void
     {
         RuntimeCaches::clearAll();

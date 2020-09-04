@@ -6,10 +6,7 @@ namespace Psalm\Type\Atomic;
  */
 class TNonEmptyString extends TString
 {
-    /**
-     * @return string
-     */
-    public function getId(bool $nested = false)
+    public function getId(bool $nested = false): string
     {
         return 'non-empty-string';
     }

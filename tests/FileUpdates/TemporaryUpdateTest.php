@@ -16,9 +16,6 @@ use Psalm\Tests\TestConfig;
 
 class TemporaryUpdateTest extends \Psalm\Tests\TestCase
 {
-    /**
-     * @return void
-     */
     public function setUp() : void
     {
         parent::setUp();

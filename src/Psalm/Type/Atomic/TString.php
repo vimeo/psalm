@@ -3,7 +3,7 @@ namespace Psalm\Type\Atomic;
 
 class TString extends Scalar
 {
-    public function __toString()
+    public function __toString(): string
     {
         return 'string';
     }

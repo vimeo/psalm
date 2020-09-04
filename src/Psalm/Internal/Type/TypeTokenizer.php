@@ -282,10 +282,8 @@ class TypeTokenizer
     }
 
     /**
-     * @param string $type_string
      * @param array{int,int}|null   $php_version
      *
-     * @return string
      *
      * @psalm-pure
      */

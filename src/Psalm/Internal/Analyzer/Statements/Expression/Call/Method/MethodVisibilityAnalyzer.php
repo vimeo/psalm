@@ -13,9 +13,6 @@ use function strtolower;
 class MethodVisibilityAnalyzer
 {
     /**
-     * @param  Context          $context
-     * @param  StatementsSource $source
-     * @param  CodeLocation     $code_location
      * @param  string[]         $suppressed_issues
      *
      * @return false|null
@@ -26,7 +23,7 @@ class MethodVisibilityAnalyzer
         StatementsSource $source,
         CodeLocation $code_location,
         array $suppressed_issues
-    ) {
+    ): ?bool {
         $codebase = $source->getCodebase();
         $codebase_methods = $codebase->methods;
         $codebase_classlikes = $codebase->classlikes;

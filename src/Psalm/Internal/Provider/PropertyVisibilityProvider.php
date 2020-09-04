@@ -70,7 +70,6 @@ class PropertyVisibilityProvider
     /**
      * @param  array<PhpParser\Node\Arg>  $call_args
      *
-     * @return ?bool
      */
     public function isPropertyVisible(
         StatementsSource $source,
@@ -79,7 +78,7 @@ class PropertyVisibilityProvider
         bool $read_mode,
         Context $context,
         CodeLocation $code_location
-    ) {
+    ): ?bool {
         foreach (self::$handlers[strtolower($fq_classlike_name)] as $property_handler) {
             $property_visible = $property_handler(
                 $source,

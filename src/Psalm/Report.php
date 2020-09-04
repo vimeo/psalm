@@ -97,8 +97,5 @@ abstract class Report
         $this->total_expression_count = $total_expression_count;
     }
 
-    /**
-     * @return string
-     */
     abstract public function create(): string;
 }

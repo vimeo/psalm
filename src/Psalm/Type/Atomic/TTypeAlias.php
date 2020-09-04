@@ -25,24 +25,18 @@ class TTypeAlias extends \Psalm\Type\Atomic
         $this->alias_name = $alias_name;
     }
 
-    /**
-     * @return string
-     */
-    public function getKey(bool $include_extra = true)
+    public function getKey(bool $include_extra = true): string
     {
         return 'type-alias(' . $this->declaring_fq_classlike_name . '::' . $this->alias_name . ')';
     }
 
-    /**
-     * @return string
-     */
-    public function __toString()
+    public function __toString(): string
     {
         if ($this->extra_types) {
             return $this->getKey() . '&' . implode(
                 '&',
                 array_map(
-                    function ($type) {
+                    function ($type): string {
                         return (string) $type;
                     },
                     $this->extra_types
@@ -53,10 +47,7 @@ class TTypeAlias extends \Psalm\Type\Atomic
         return $this->getKey();
     }
 
-    /**
-     * @return string
-     */
-    public function getId(bool $nested = false)
+    public function getId(bool $nested = false): string
     {
         if ($this->extra_types) {
             return $this->getKey() . '&' . implode(
@@ -80,7 +71,6 @@ class TTypeAlias extends \Psalm\Type\Atomic
      * @param  int           $php_major_version
      * @param  int           $php_minor_version
      *
-     * @return string|null
      */
     public function toPhpString(
         $namespace,
@@ -88,36 +78,29 @@ class TTypeAlias extends \Psalm\Type\Atomic
         $this_class,
         $php_major_version,
         $php_minor_version
-    ) {
+    ): ?string {
         return null;
     }
 
-    public function canBeFullyExpressedInPhp()
+    public function canBeFullyExpressedInPhp(): bool
     {
         return false;
     }
 
     /**
-     * @param  string|null   $namespace
      * @param  array<string, string> $aliased_classes
-     * @param  string|null   $this_class
-     * @param  bool          $use_phpdoc_format
      *
-     * @return string
      */
     public function toNamespacedString(
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
         bool $use_phpdoc_format
-    ) {
+    ): string {
         return $this->getKey();
     }
 
-    /**
-     * @return string
-     */
-    public function getAssertionString()
+    public function getAssertionString(): string
     {
         return 'mixed';
     }

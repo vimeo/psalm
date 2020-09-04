@@ -46,12 +46,8 @@ use function substr;
 class AssignmentAnalyzer
 {
     /**
-     * @param  StatementsAnalyzer        $statements_analyzer
-     * @param  PhpParser\Node\Expr      $assign_var
      * @param  PhpParser\Node\Expr|null $assign_value  This has to be null to support list destructuring
      * @param  Type\Union|null          $assign_value_type
-     * @param  Context                  $context
-     * @param  ?PhpParser\Comment\Doc   $doc_comment
      *
      * @return false|Type\Union
      */
@@ -1021,18 +1017,11 @@ class AssignmentAnalyzer
         }
     }
 
-    /**
-     * @param   StatementsAnalyzer               $statements_analyzer
-     * @param   PhpParser\Node\Expr\AssignOp    $stmt
-     * @param   Context                         $context
-     *
-     * @return  bool
-     */
     public static function analyzeAssignmentOperation(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\AssignOp $stmt,
         Context $context
-    ) {
+    ): bool {
         $array_var_id = ExpressionIdentifier::getArrayVarId(
             $stmt->var,
             $statements_analyzer->getFQCLN(),
@@ -1307,11 +1296,6 @@ class AssignmentAnalyzer
         return true;
     }
 
-    /**
-     * @param   StatementsAnalyzer               $statements_analyzer
-     * @param   PhpParser\Node\Expr\AssignRef   $stmt
-     * @param   Context                         $context
-     */
     public static function analyzeAssignmentRef(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\AssignRef $stmt,
@@ -1357,11 +1341,6 @@ class AssignmentAnalyzer
     }
 
     /**
-     * @param  StatementsAnalyzer    $statements_analyzer
-     * @param  PhpParser\Node\Expr  $stmt
-     * @param  Type\Union           $by_ref_type
-     * @param  Context              $context
-     * @param  bool                 $constrain_type
      *
      * @return void
      */

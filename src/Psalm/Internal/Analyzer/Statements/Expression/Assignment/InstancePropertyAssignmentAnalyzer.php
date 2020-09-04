@@ -53,12 +53,9 @@ use Psalm\Internal\Taint\TaintNode;
 class InstancePropertyAssignmentAnalyzer
 {
     /**
-     * @param   StatementsAnalyzer               $statements_analyzer
      * @param   PropertyFetch|PropertyProperty  $stmt
      * @param   string                          $prop_name
      * @param   PhpParser\Node\Expr|null        $assignment_value
-     * @param   Type\Union                      $assignment_value_type
-     * @param   Context                         $context
      * @param   bool                            $direct_assignment whether the variable is assigned explicitly
      *
      * @return  false|null
@@ -71,7 +68,7 @@ class InstancePropertyAssignmentAnalyzer
         Type\Union $assignment_value_type,
         Context $context,
         $direct_assignment = true
-    ) {
+    ): ?bool {
         $class_property_types = [];
 
         $codebase = $statements_analyzer->getCodebase();

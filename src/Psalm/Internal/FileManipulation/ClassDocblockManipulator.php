@@ -84,9 +84,8 @@ class ClassDocblockManipulator
      * Gets a new docblock given the existing docblock, if one exists, and the updated return types
      * and/or parameters
      *
-     * @return string
      */
-    private function getDocblock()
+    private function getDocblock(): string
     {
         $docblock = $this->stmt->getDocComment();
 
@@ -115,7 +114,7 @@ class ClassDocblockManipulator
      *
      * @return array<int, FileManipulation>
      */
-    public static function getManipulationsForFile($file_path)
+    public static function getManipulationsForFile($file_path): array
     {
         if (!isset(self::$manipulators[$file_path])) {
             return [];

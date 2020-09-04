@@ -83,7 +83,6 @@ class GitInfo extends SourceControlInfo
     /**
      * Return branch name.
      *
-     * @return string
      */
     public function getBranch() : string
     {
@@ -93,7 +92,6 @@ class GitInfo extends SourceControlInfo
     /**
      * Return HEAD commit.
      *
-     * @return CommitInfo
      */
     public function getHead() : CommitInfo
     {

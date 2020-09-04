@@ -90,7 +90,6 @@ class FunctionLikeParameter
 
     /**
      * @param string        $name
-     * @param bool       $by_ref
      * @param Type\Union|null    $type
      * @param CodeLocation|null  $location
      * @param bool       $is_optional

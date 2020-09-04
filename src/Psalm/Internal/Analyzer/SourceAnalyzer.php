@@ -21,10 +21,7 @@ abstract class SourceAnalyzer implements StatementsSource
         $this->source = null;
     }
 
-    /**
-     * @return Aliases
-     */
-    public function getAliases()
+    public function getAliases(): Aliases
     {
         return $this->source->getAliases();
     }
@@ -32,7 +29,7 @@ abstract class SourceAnalyzer implements StatementsSource
     /**
      * @return array<string, string>
      */
-    public function getAliasedClassesFlipped()
+    public function getAliasedClassesFlipped(): array
     {
         return $this->source->getAliasedClassesFlipped();
     }
@@ -40,47 +37,32 @@ abstract class SourceAnalyzer implements StatementsSource
     /**
      * @return array<string, string>
      */
-    public function getAliasedClassesFlippedReplaceable()
+    public function getAliasedClassesFlippedReplaceable(): array
     {
         return $this->source->getAliasedClassesFlippedReplaceable();
     }
 
-    /**
-     * @return string|null
-     */
-    public function getFQCLN()
+    public function getFQCLN(): ?string
     {
         return $this->source->getFQCLN();
     }
 
-    /**
-     * @return string|null
-     */
-    public function getClassName()
+    public function getClassName(): ?string
     {
         return $this->source->getClassName();
     }
 
-    /**
-     * @return string|null
-     */
-    public function getParentFQCLN()
+    public function getParentFQCLN(): ?string
     {
         return $this->source->getParentFQCLN();
     }
 
-    /**
-     * @return string
-     */
-    public function getFileName()
+    public function getFileName(): string
     {
         return $this->source->getFileName();
     }
 
-    /**
-     * @return string
-     */
-    public function getFilePath()
+    public function getFilePath(): string
     {
         return $this->source->getFilePath();
     }
@@ -115,9 +97,8 @@ abstract class SourceAnalyzer implements StatementsSource
     /**
      * @param string $file_path
      *
-     * @return bool
      */
-    public function hasParentFilePath($file_path)
+    public function hasParentFilePath($file_path): bool
     {
         return $this->source->hasParentFilePath($file_path);
     }
@@ -125,17 +106,13 @@ abstract class SourceAnalyzer implements StatementsSource
     /**
      * @param string $file_path
      *
-     * @return bool
      */
-    public function hasAlreadyRequiredFilePath($file_path)
+    public function hasAlreadyRequiredFilePath($file_path): bool
     {
         return $this->source->hasAlreadyRequiredFilePath($file_path);
     }
 
-    /**
-     * @return int
-     */
-    public function getRequireNesting()
+    public function getRequireNesting(): int
     {
         return $this->source->getRequireNesting();
     }
@@ -154,7 +131,7 @@ abstract class SourceAnalyzer implements StatementsSource
      *
      * @return array<string>
      */
-    public function getSuppressedIssues()
+    public function getSuppressedIssues(): array
     {
         return $this->source->getSuppressedIssues();
     }
@@ -179,18 +156,12 @@ abstract class SourceAnalyzer implements StatementsSource
         $this->source->removeSuppressedIssues($new_issues);
     }
 
-    /**
-     * @return null|string
-     */
-    public function getNamespace()
+    public function getNamespace(): ?string
     {
         return $this->source->getNamespace();
     }
 
-    /**
-     * @return bool
-     */
-    public function isStatic()
+    public function isStatic(): bool
     {
         return $this->source->isStatic();
     }
@@ -222,7 +193,7 @@ abstract class SourceAnalyzer implements StatementsSource
     /**
      * @return array<string, array<string, array{Type\Union}>>|null
      */
-    public function getTemplateTypeMap()
+    public function getTemplateTypeMap(): ?array
     {
         return $this->source->getTemplateTypeMap();
     }

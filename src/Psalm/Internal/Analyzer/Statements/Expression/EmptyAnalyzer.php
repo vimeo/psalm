@@ -10,13 +10,6 @@ use Psalm\Type;
 
 class EmptyAnalyzer
 {
-    /**
-     * @param   StatementsAnalyzer           $statements_analyzer
-     * @param   PhpParser\Node\Expr\Empty_  $stmt
-     * @param   Context                     $context
-     *
-     * @return  void
-     */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Empty_ $stmt,

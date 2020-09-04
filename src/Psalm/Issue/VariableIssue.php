@@ -12,7 +12,6 @@ abstract class VariableIssue extends CodeIssue
 
     /**
      * @param string $message
-     * @param \Psalm\CodeLocation $code_location
      * @param string $var_name
      */
     public function __construct(

@@ -294,11 +294,10 @@ class Pool
      * The results are returned in an array, one for each worker. The order of the results
      * is not maintained.
      *
-     * @return array
      *
      * @psalm-suppress MixedAssignment
      */
-    private function readResultsFromChildren()
+    private function readResultsFromChildren(): array
     {
         // Create an array of all active streams, indexed by
         // resource id.
@@ -381,7 +380,6 @@ class Pool
     /**
      * Wait for all child processes to complete
      *
-     * @return array
      */
     public function wait(): array
     {
@@ -427,9 +425,8 @@ class Pool
     /**
      * Returns true if this had an error, e.g. due to memory limits or due to a child process crashing.
      *
-     * @return  bool
      */
-    public function didHaveError()
+    public function didHaveError(): bool
     {
         return $this->did_have_error;
     }

@@ -14,7 +14,6 @@ class ShortClosureVisitor extends PhpParser\NodeVisitorAbstract implements PhpPa
     protected $used_variables = [];
 
     /**
-     * @param  PhpParser\Node $node
      *
      * @return null|int
      */
@@ -28,7 +27,7 @@ class ShortClosureVisitor extends PhpParser\NodeVisitorAbstract implements PhpPa
     /**
      * @return array<string, bool>
      */
-    public function getUsedVariables()
+    public function getUsedVariables(): array
     {
         return $this->used_variables;
     }

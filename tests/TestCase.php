@@ -27,9 +27,6 @@ class TestCase extends BaseTestCase
     /** @var Provider\FakeFileProvider */
     protected $file_provider;
 
-    /**
-     * @return void
-     */
     public static function setUpBeforeClass() : void
     {
         ini_set('memory_limit', '-1');
@@ -46,17 +43,11 @@ class TestCase extends BaseTestCase
         self::$src_dir_path = getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR;
     }
 
-    /**
-     * @return Config
-     */
     protected function makeConfig() : Config
     {
         return new TestConfig();
     }
 
-    /**
-     * @return void
-     */
     public function setUp() : void
     {
         parent::setUp();

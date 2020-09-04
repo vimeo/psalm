@@ -34,7 +34,6 @@ class TextDocument
     /**
      * Diagnostics notification are sent from the server to the client to signal results of validation runs.
      *
-     * @param string $uri
      * @param Diagnostic[] $diagnostics
      *
      * @return Promise<void>

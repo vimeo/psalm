@@ -122,7 +122,7 @@ class Creator
             // remove any issues where < 0.1% of expressions are affected
             $filtered_issues = array_filter(
                 $issues,
-                function ($amount) {
+                function ($amount): bool {
                     return $amount > 0.1;
                 }
             );

@@ -71,7 +71,7 @@ abstract class Taintable
         int $argument_offset,
         ?CodeLocation $arg_location,
         ?CodeLocation $code_location = null
-    ) {
+    ): Taintable {
         $arg_id = strtolower($method_id) . '#' . ($argument_offset + 1);
 
         $label = $cased_method_id . '#' . ($argument_offset + 1);
@@ -96,7 +96,7 @@ abstract class Taintable
     final public static function getForAssignment(
         string $var_id,
         CodeLocation $assignment_location
-    ) {
+    ): Taintable {
         $id = $var_id
             . '-' . $assignment_location->file_name
             . ':' . $assignment_location->raw_file_start
@@ -113,7 +113,7 @@ abstract class Taintable
         string $cased_method_id,
         ?CodeLocation $code_location,
         ?CodeLocation $function_location = null
-    ) {
+    ): Taintable {
         $specialization_key = null;
 
         if ($function_location) {
@@ -128,7 +128,7 @@ abstract class Taintable
         );
     }
 
-    public function __toString()
+    public function __toString(): string
     {
         return $this->id;
     }

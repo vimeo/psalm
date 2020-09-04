@@ -32,13 +32,13 @@ class TList extends \Psalm\Type\Atomic
         $this->type_param = $type_param;
     }
 
-    public function __toString()
+    public function __toString(): string
     {
         /** @psalm-suppress MixedOperand */
         return static::KEY . '<' . $this->type_param . '>';
     }
 
-    public function getId(bool $nested = false)
+    public function getId(bool $nested = false): string
     {
         /** @psalm-suppress MixedOperand */
         return static::KEY . '<' . $this->type_param->getId() . '>';
@@ -52,14 +52,13 @@ class TList extends \Psalm\Type\Atomic
     /**
      * @param  array<string, string> $aliased_classes
      *
-     * @return string
      */
     public function toNamespacedString(
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
         bool $use_phpdoc_format
-    ) {
+    ): string {
         if ($use_phpdoc_format) {
             return (new TArray([Type::getInt(), $this->type_param]))
                 ->toNamespacedString(
@@ -89,22 +88,23 @@ class TList extends \Psalm\Type\Atomic
      * @param  int           $php_major_version
      * @param  int           $php_minor_version
      *
-     * @return string
      */
-    public function toPhpString($namespace, array $aliased_classes, $this_class, $php_major_version, $php_minor_version)
-    {
+    public function toPhpString(
+        $namespace,
+        array $aliased_classes,
+        $this_class,
+        $php_major_version,
+        $php_minor_version
+    ): string {
         return 'array';
     }
 
-    public function canBeFullyExpressedInPhp()
+    public function canBeFullyExpressedInPhp(): bool
     {
         return false;
     }
 
-    /**
-     * @return string
-     */
-    public function getKey(bool $include_extra = true)
+    public function getKey(bool $include_extra = true): string
     {
         return 'array';
     }
@@ -176,10 +176,7 @@ class TList extends \Psalm\Type\Atomic
         $this->type_param->replaceTemplateTypesWithArgTypes($template_result, $codebase);
     }
 
-    /**
-     * @return bool
-     */
-    public function equals(Atomic $other_type)
+    public function equals(Atomic $other_type): bool
     {
         if (get_class($other_type) !== static::class) {
             return false;
@@ -192,10 +189,7 @@ class TList extends \Psalm\Type\Atomic
         return true;
     }
 
-    /**
-     * @return string
-     */
-    public function getAssertionString()
+    public function getAssertionString(): string
     {
         return 'list';
     }

@@ -12,7 +12,6 @@ use Psalm\IssueBuffer;
 class MethodCallProhibitionAnalyzer
 {
     /**
-     * @param  CodeLocation $code_location
      * @param  string[]     $suppressed_issues
      *
      * @return false|null
@@ -24,7 +23,7 @@ class MethodCallProhibitionAnalyzer
         ?string $namespace,
         CodeLocation $code_location,
         array $suppressed_issues
-    ) {
+    ): ?bool {
         $codebase_methods = $codebase->methods;
 
         $method_id = $codebase_methods->getDeclaringMethodId($method_id);

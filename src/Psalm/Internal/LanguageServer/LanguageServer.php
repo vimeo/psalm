@@ -80,10 +80,6 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
      */
     protected $onchange_paths_to_analyze = [];
 
-    /**
-     * @param ProtocolReader  $reader
-     * @param ProtocolWriter $writer
-     */
     public function __construct(
         ProtocolReader $reader,
         ProtocolWriter $writer,
@@ -112,7 +108,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
                 /**
                  * @return \Generator<int, \Amp\Promise, mixed, void>
                  */
-                function (Message $msg) {
+                function (Message $msg): \Generator {
                     if (!$msg->body) {
                         return;
                     }
@@ -452,7 +448,6 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
      *  - 2 = Warning
      *  - 3 = Info
      *  - 4 = Log
-     * @return Promise
      */
     private function verboseLog(string $message, int $type = 4): Promise
     {
@@ -476,7 +471,6 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
      * @param string $status The log message to send to the client. Should not contain colons `:`.
      * @param string|null $additional_info This is additional info that the client
      *                                       can use as part of the display message.
-     * @return Promise
      */
     private function clientStatus(string $status, string $additional_info = null): Promise
     {
@@ -495,9 +489,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
     /**
      * Transforms an absolute file path into a URI as used by the language server protocol.
      *
-     * @param string $filepath
      *
-     * @return string
      *
      * @psalm-pure
      */
@@ -520,11 +512,9 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
     /**
      * Transforms URI into file path
      *
-     * @param string $uri
      *
-     * @return string
      */
-    public static function uriToPath(string $uri)
+    public static function uriToPath(string $uri): string
     {
         $fragments = parse_url($uri);
         if ($fragments === false

@@ -15,11 +15,9 @@ use function reset;
 class SimpleTypeInferer
 {
     /**
-     * @param   PhpParser\Node\Expr $stmt
      * @param   ?array<string, Type\Union> $existing_class_constants
      * @param   string $fq_classlike_name
      *
-     * @return  Type\Union|null
      */
     public static function infer(
         \Psalm\Codebase $codebase,
@@ -29,7 +27,7 @@ class SimpleTypeInferer
         \Psalm\FileSource $file_source = null,
         array $existing_class_constants = null,
         $fq_classlike_name = null
-    ) {
+    ): ?Type\Union {
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp) {
             if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
                 $left = self::infer(

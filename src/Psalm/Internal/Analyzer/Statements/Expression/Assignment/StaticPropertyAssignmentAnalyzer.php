@@ -28,11 +28,7 @@ use function explode;
 class StaticPropertyAssignmentAnalyzer
 {
     /**
-     * @param   StatementsAnalyzer                         $statements_analyzer
-     * @param   PhpParser\Node\Expr\StaticPropertyFetch   $stmt
      * @param   PhpParser\Node\Expr|null                  $assignment_value
-     * @param   Type\Union                                $assignment_value_type
-     * @param   Context                                   $context
      *
      * @return  false|null
      */

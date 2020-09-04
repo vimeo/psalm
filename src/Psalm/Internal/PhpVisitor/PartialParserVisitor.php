@@ -59,7 +59,6 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
     }
 
     /**
-     * @param  PhpParser\Node $node
      * @param  bool $traverseChildren
      *
      * @return null|int|PhpParser\Node

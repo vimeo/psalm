@@ -66,7 +66,6 @@ class Reconciler
      * @param  array<string, Type\Union> $existing_types
      * @param  array<string, bool>       $changed_var_ids
      * @param  array<string, bool>       $referenced_var_ids
-     * @param  StatementsAnalyzer         $statements_analyzer
      * @param  CodeLocation|null         $code_location
      * @param  array<string, array<string, array{Type\Union}>> $template_type_map
      *
@@ -82,7 +81,7 @@ class Reconciler
         array $template_type_map = [],
         bool $inside_loop = false,
         CodeLocation $code_location = null
-    ) {
+    ): array {
         if (!$new_types) {
             return $existing_types;
         }
@@ -381,7 +380,7 @@ class Reconciler
      *
      * @return array<int, string>
      */
-    public static function breakUpPathIntoParts($path)
+    public static function breakUpPathIntoParts($path): array
     {
         if (isset(self::$broken_paths[$path])) {
             return self::$broken_paths[$path];
@@ -486,12 +485,10 @@ class Reconciler
     /**
      * Gets the type for a given (non-existent key) based on the passed keys
      *
-     * @param  string                    $key
      * @param  array<string,Type\Union>  $existing_keys
      * @param  array<string,mixed>       $new_assertions
      * @param  string[][]                $new_type_parts
      *
-     * @return Type\Union|null
      */
     private static function getValueForKey(
         Codebase $codebase,
@@ -504,7 +501,7 @@ class Reconciler
         bool $has_empty,
         bool $inside_loop,
         bool &$has_object_array_access
-    ) {
+    ): ?Union {
         $key_parts = self::breakUpPathIntoParts($key);
 
         if (count($key_parts) === 1) {
@@ -814,10 +811,6 @@ class Reconciler
     }
 
     /**
-     * @param  string       $key
-     * @param  string       $old_var_type_string
-     * @param  string       $assertion
-     * @param  bool         $redundant
      * @param  string[]     $suppressed_issues
      *
      * @return void

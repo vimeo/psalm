@@ -23,12 +23,7 @@ class FileManipulation
 
     /** @var bool */
     public $remove_trailing_newline;
-
-    /**
-     * @param int $start
-     * @param int $end
-     * @param string $insertion_text
-     */
+    
     public function __construct(
         int $start,
         int $end,

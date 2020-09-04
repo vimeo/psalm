@@ -11,9 +11,6 @@ use function substr;
 
 class JsonOutputTest extends TestCase
 {
-    /**
-     * @return void
-     */
     public function setUp() : void
     {
         // `TestCase::setUp()` creates its own ProjectAnalyzer and Config instance, but we don't want to do that in this

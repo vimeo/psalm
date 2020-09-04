@@ -31,7 +31,6 @@ class FileBasedPluginAdapter implements Plugin\PluginEntryPointInterface
     /**
      * @psalm-suppress PossiblyUnusedParam
      *
-     * @param  Plugin\RegistrationInterface $registration
      * @param  SimpleXMLElement|null        $config
      *
      * @return  void

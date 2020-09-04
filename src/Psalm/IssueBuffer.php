@@ -86,12 +86,10 @@ class IssueBuffer
     protected static $used_suppressions = [];
 
     /**
-     * @param   CodeIssue $e
      * @param   string[]  $suppressed_issues
      *
-     * @return  bool
      */
-    public static function accepts(CodeIssue $e, array $suppressed_issues = [], bool $is_fixable = false)
+    public static function accepts(CodeIssue $e, array $suppressed_issues = [], bool $is_fixable = false): bool
     {
         if (self::isSuppressed($e, $suppressed_issues)) {
             return false;
@@ -118,10 +116,8 @@ class IssueBuffer
     }
 
     /**
-     * @param   CodeIssue $e
      * @param   string[]  $suppressed_issues
      *
-     * @return  bool
      */
     public static function isSuppressed(CodeIssue $e, array $suppressed_issues = []) : bool
     {
@@ -189,13 +185,11 @@ class IssueBuffer
     }
 
     /**
-     * @param   CodeIssue $e
      *
      * @throws  Exception\CodeException
      *
-     * @return  bool
      */
-    public static function add(CodeIssue $e, bool $is_fixable = false)
+    public static function add(CodeIssue $e, bool $is_fixable = false): bool
     {
         $config = Config::getInstance();
 
@@ -295,7 +289,7 @@ class IssueBuffer
     /**
      * @return array<string, list<IssueData>>
      */
-    public static function getIssuesData()
+    public static function getIssuesData(): array
     {
         return self::$issues_data;
     }
@@ -311,7 +305,7 @@ class IssueBuffer
     /**
      * @return array<string, int>
      */
-    public static function getFixableIssues()
+    public static function getFixableIssues(): array
     {
         return self::$fixable_issue_counts;
     }
@@ -400,10 +394,7 @@ class IssueBuffer
         }
     }
 
-    /**
-     * @return int
-     */
-    public static function getErrorCount()
+    public static function getErrorCount(): int
     {
         return self::$error_count;
     }
@@ -430,10 +421,6 @@ class IssueBuffer
     }
 
     /**
-     * @param  ProjectAnalyzer                   $project_analyzer
-     * @param  bool                             $is_full
-     * @param  float                            $start_time
-     * @param  bool                             $add_stats
      * @param  array<string,array<string,array{o:int, s:array<int, string>}>>  $issue_baseline
      *
      * @return void
@@ -687,13 +674,12 @@ class IssueBuffer
      * @param array<string, array<int, IssueData>> $issues_data
      * @param array{int, int} $mixed_counts
      *
-     * @return string
      */
     public static function getOutput(
         array $issues_data,
         \Psalm\Report\ReportOptions $report_options,
         array $mixed_counts = [0, 0]
-    ) {
+    ): string {
         $total_expression_count = $mixed_counts[0] + $mixed_counts[1];
         $mixed_expression_count = $mixed_counts[0];
 
@@ -765,9 +751,8 @@ class IssueBuffer
     /**
      * @param  string $message
      *
-     * @return bool
      */
-    protected static function alreadyEmitted($message)
+    protected static function alreadyEmitted($message): bool
     {
         $sham = sha1($message);
 
@@ -798,7 +783,7 @@ class IssueBuffer
     /**
      * @return array<string, list<IssueData>>
      */
-    public static function clear()
+    public static function clear(): array
     {
         $current_data = self::$issues_data;
         self::$issues_data = [];
@@ -807,10 +792,7 @@ class IssueBuffer
         return $current_data;
     }
 
-    /**
-     * @return bool
-     */
-    public static function isRecording()
+    public static function isRecording(): bool
     {
         return self::$recording_level > 0;
     }
@@ -839,7 +821,7 @@ class IssueBuffer
     /**
      * @return array<int, CodeIssue>
      */
-    public static function clearRecordingLevel()
+    public static function clearRecordingLevel(): array
     {
         if (self::$recording_level === 0) {
             throw new \UnexpectedValueException('Not currently recording');

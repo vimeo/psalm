@@ -56,7 +56,7 @@ class TestConfig extends Config
         return false;
     }
 
-    public function getProjectDirectories()
+    public function getProjectDirectories(): array
     {
         return [];
     }

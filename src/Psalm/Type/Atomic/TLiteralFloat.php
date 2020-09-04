@@ -14,18 +14,12 @@ class TLiteralFloat extends TFloat
         $this->value = $value;
     }
 
-    /**
-     * @return string
-     */
-    public function getKey(bool $include_extra = true)
+    public function getKey(bool $include_extra = true): string
     {
         return 'float(' . $this->value . ')';
     }
 
-    /**
-     * @return string
-     */
-    public function getId(bool $nested = false)
+    public function getId(bool $nested = false): string
     {
         return 'float(' . $this->value . ')';
     }
@@ -37,7 +31,6 @@ class TLiteralFloat extends TFloat
      * @param  int           $php_major_version
      * @param  int           $php_minor_version
      *
-     * @return null|string
      */
     public function toPhpString(
         $namespace,
@@ -45,24 +38,20 @@ class TLiteralFloat extends TFloat
         $this_class,
         $php_major_version,
         $php_minor_version
-    ) {
+    ): ?string {
         return $php_major_version >= 7 ? 'float' : null;
     }
 
     /**
-     * @param  string|null   $namespace
      * @param  array<string> $aliased_classes
-     * @param  string|null   $this_class
-     * @param  bool          $use_phpdoc_format
      *
-     * @return string
      */
     public function toNamespacedString(
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
         bool $use_phpdoc_format
-    ) {
+    ): string {
         return 'float';
     }
 }

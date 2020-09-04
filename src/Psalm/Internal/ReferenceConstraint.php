@@ -11,9 +11,6 @@ class ReferenceConstraint
     /** @var Type\Union|null */
     public $type;
 
-    /**
-     * @param  Type\Union $type
-     */
     public function __construct(Type\Union $type = null)
     {
         if ($type) {

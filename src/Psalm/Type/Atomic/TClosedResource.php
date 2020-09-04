@@ -6,23 +6,17 @@ use Psalm\StatementsSource;
 
 class TClosedResource extends \Psalm\Type\Atomic
 {
-    public function __toString()
+    public function __toString(): string
     {
         return 'closed-resource';
     }
 
-    /**
-     * @return string
-     */
-    public function getKey(bool $include_extra = true)
+    public function getKey(bool $include_extra = true): string
     {
         return 'closed-resource';
     }
 
-    /**
-     * @return string
-     */
-    public function getId(bool $nested = false)
+    public function getId(bool $nested = false): string
     {
         return 'closed-resource';
     }
@@ -34,7 +28,6 @@ class TClosedResource extends \Psalm\Type\Atomic
      * @param  int           $php_major_version
      * @param  int           $php_minor_version
      *
-     * @return null|string
      */
     public function toPhpString(
         $namespace,
@@ -42,11 +35,11 @@ class TClosedResource extends \Psalm\Type\Atomic
         $this_class,
         $php_major_version,
         $php_minor_version
-    ) {
+    ): ?string {
         return null;
     }
 
-    public function canBeFullyExpressedInPhp()
+    public function canBeFullyExpressedInPhp(): bool
     {
         return false;
     }

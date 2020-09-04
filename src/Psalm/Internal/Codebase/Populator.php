@@ -152,8 +152,6 @@ class Populator
     }
 
     /**
-     * @param  ClassLikeStorage $storage
-     * @param  array            $dependent_classlikes
      *
      * @return void
      */
@@ -890,7 +888,6 @@ class Populator
     }
 
     /**
-     * @param  FileStorage $storage
      * @param  array<string, bool> $dependent_file_paths
      *
      * @return void
@@ -1025,7 +1022,6 @@ class Populator
     }
 
     /**
-     * @param  Type\Union $candidate
      * @param  bool       $is_property
      *
      * @return void
@@ -1085,8 +1081,6 @@ class Populator
     }
 
     /**
-     * @param ClassLikeStorage $storage
-     * @param ClassLikeStorage $parent_storage
      *
      * @return void
      */
@@ -1208,8 +1202,6 @@ class Populator
     }
 
     /**
-     * @param ClassLikeStorage $storage
-     * @param ClassLikeStorage $parent_storage
      *
      * @return void
      */

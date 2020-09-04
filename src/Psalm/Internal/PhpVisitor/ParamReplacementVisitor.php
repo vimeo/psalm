@@ -31,7 +31,6 @@ class ParamReplacementVisitor extends PhpParser\NodeVisitorAbstract implements P
     }
 
     /**
-     * @param  PhpParser\Node $node
      *
      * @return null|int
      */

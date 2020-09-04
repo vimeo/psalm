@@ -484,9 +484,8 @@ class Codebase
     /**
      * @param  string $file_path
      *
-     * @return string
      */
-    public function getFileContents($file_path)
+    public function getFileContents($file_path): string
     {
         return $this->file_provider->getContents($file_path);
     }
@@ -508,9 +507,8 @@ class Codebase
     /**
      * @param  string $fq_classlike_name
      *
-     * @return ClassLikeStorage
      */
-    public function createClassLikeStorage($fq_classlike_name)
+    public function createClassLikeStorage($fq_classlike_name): ClassLikeStorage
     {
         return $this->classlike_storage_provider->create($fq_classlike_name);
     }
@@ -564,9 +562,8 @@ class Codebase
     /**
      * @param  string $file_path
      *
-     * @return FileStorage
      */
-    public function createFileStorageForPath($file_path)
+    public function createFileStorageForPath($file_path): FileStorage
     {
         return $this->file_storage_provider->create($file_path);
     }
@@ -576,7 +573,7 @@ class Codebase
      *
      * @return \Psalm\CodeLocation[]
      */
-    public function findReferencesToSymbol($symbol)
+    public function findReferencesToSymbol($symbol): array
     {
         if (!$this->collect_locations) {
             throw new \UnexpectedValueException('Should not be checking references');
@@ -598,7 +595,7 @@ class Codebase
      *
      * @return \Psalm\CodeLocation[]
      */
-    public function findReferencesToMethod($method_id)
+    public function findReferencesToMethod($method_id): array
     {
         return $this->file_reference_provider->getClassMethodLocations(strtolower($method_id));
     }
@@ -606,7 +603,7 @@ class Codebase
     /**
      * @return \Psalm\CodeLocation[]
      */
-    public function findReferencesToProperty(string $property_id)
+    public function findReferencesToProperty(string $property_id): array
     {
         [$fq_class_name, $property_name] = explode('::', $property_id);
 
@@ -620,7 +617,7 @@ class Codebase
      *
      * @return \Psalm\CodeLocation[]
      */
-    public function findReferencesToClassLike($fq_class_name)
+    public function findReferencesToClassLike($fq_class_name): array
     {
         $fq_class_name_lc = strtolower($fq_class_name);
         $locations = $this->file_reference_provider->getClassLocations($fq_class_name_lc);
@@ -636,9 +633,8 @@ class Codebase
      * @param  string $file_path
      * @param  string $closure_id
      *
-     * @return FunctionLikeStorage
      */
-    public function getClosureStorage($file_path, $closure_id)
+    public function getClosureStorage($file_path, $closure_id): FunctionLikeStorage
     {
         $file_storage = $this->file_storage_provider->get($file_path);
 
@@ -654,7 +650,6 @@ class Codebase
 
     /**
      * @param  string $const_id
-     * @param  Type\Union $type
      *
      * @return  void
      */
@@ -666,9 +661,8 @@ class Codebase
     /**
      * @param  string $const_id
      *
-     * @return Type\Union|null
      */
-    public function getStubbedConstantType($const_id)
+    public function getStubbedConstantType($const_id): ?Type\Union
     {
         return isset(self::$stubbed_constants[$const_id]) ? self::$stubbed_constants[$const_id] : null;
     }
@@ -676,7 +670,7 @@ class Codebase
     /**
      * @return array<string, Type\Union>
      */
-    public function getAllStubbedConstants()
+    public function getAllStubbedConstants(): array
     {
         return self::$stubbed_constants;
     }
@@ -684,9 +678,8 @@ class Codebase
     /**
      * @param  string $file_path
      *
-     * @return bool
      */
-    public function fileExists($file_path)
+    public function fileExists($file_path): bool
     {
         return $this->file_provider->fileExists($file_path);
     }
@@ -695,16 +688,14 @@ class Codebase
      * Check whether a class/interface exists
      *
      * @param  string          $fq_class_name
-     * @param  CodeLocation $code_location
      *
-     * @return bool
      */
     public function classOrInterfaceExists(
         $fq_class_name,
         CodeLocation $code_location = null,
         ?string $calling_fq_class_name = null,
         ?string $calling_method_id = null
-    ) {
+    ): bool {
         return $this->classlikes->classOrInterfaceExists(
             $fq_class_name,
             $code_location,
@@ -717,9 +708,8 @@ class Codebase
      * @param  string       $fq_class_name
      * @param  string       $possible_parent
      *
-     * @return bool
      */
-    public function classExtendsOrImplements($fq_class_name, $possible_parent)
+    public function classExtendsOrImplements($fq_class_name, $possible_parent): bool
     {
         return $this->classlikes->classExtends($fq_class_name, $possible_parent)
             || $this->classlikes->classImplements($fq_class_name, $possible_parent);
@@ -730,14 +720,13 @@ class Codebase
      *
      * @param  string       $fq_class_name
      *
-     * @return bool
      */
     public function classExists(
         $fq_class_name,
         CodeLocation $code_location = null,
         ?string $calling_fq_class_name = null,
         ?string $calling_method_id = null
-    ) {
+    ): bool {
         return $this->classlikes->classExists(
             $fq_class_name,
             $code_location,
@@ -755,9 +744,8 @@ class Codebase
      * @throws \Psalm\Exception\UnpopulatedClasslikeException when called on unpopulated class
      * @throws \InvalidArgumentException when class does not exist
      *
-     * @return bool
      */
-    public function classExtends($fq_class_name, $possible_parent)
+    public function classExtends($fq_class_name, $possible_parent): bool
     {
         return $this->classlikes->classExtends($fq_class_name, $possible_parent, true);
     }
@@ -768,9 +756,8 @@ class Codebase
      * @param  string       $fq_class_name
      * @param  string       $interface
      *
-     * @return bool
      */
-    public function classImplements($fq_class_name, $interface)
+    public function classImplements($fq_class_name, $interface): bool
     {
         return $this->classlikes->classImplements($fq_class_name, $interface);
     }
@@ -778,14 +765,13 @@ class Codebase
     /**
      * @param  string         $fq_interface_name
      *
-     * @return bool
      */
     public function interfaceExists(
         $fq_interface_name,
         CodeLocation $code_location = null,
         ?string $calling_fq_class_name = null,
         ?string $calling_method_id = null
-    ) {
+    ): bool {
         return $this->classlikes->interfaceExists(
             $fq_interface_name,
             $code_location,
@@ -798,9 +784,8 @@ class Codebase
      * @param  string         $interface_name
      * @param  string         $possible_parent
      *
-     * @return bool
      */
-    public function interfaceExtends($interface_name, $possible_parent)
+    public function interfaceExtends($interface_name, $possible_parent): bool
     {
         return $this->classlikes->interfaceExtends($interface_name, $possible_parent);
     }
@@ -810,7 +795,7 @@ class Codebase
      *
      * @return array<string>   all interfaces extended by $interface_name
      */
-    public function getParentInterfaces($fq_interface_name)
+    public function getParentInterfaces($fq_interface_name): array
     {
         return $this->classlikes->getParentInterfaces(
             $this->classlikes->getUnAliasedName($fq_interface_name)
@@ -822,9 +807,8 @@ class Codebase
      *
      * @param  string $fq_class_name
      *
-     * @return bool
      */
-    public function classHasCorrectCasing($fq_class_name)
+    public function classHasCorrectCasing($fq_class_name): bool
     {
         return $this->classlikes->classHasCorrectCasing($fq_class_name);
     }
@@ -832,9 +816,8 @@ class Codebase
     /**
      * @param  string $fq_interface_name
      *
-     * @return bool
      */
-    public function interfaceHasCorrectCasing($fq_interface_name)
+    public function interfaceHasCorrectCasing($fq_interface_name): bool
     {
         return $this->classlikes->interfaceHasCorrectCasing($fq_interface_name);
     }
@@ -842,9 +825,8 @@ class Codebase
     /**
      * @param  string $fq_trait_name
      *
-     * @return bool
      */
-    public function traitHasCorrectCase($fq_trait_name)
+    public function traitHasCorrectCase($fq_trait_name): bool
     {
         return $this->classlikes->traitHasCorrectCase($fq_trait_name);
     }
@@ -891,7 +873,7 @@ class Codebase
         ?CodeLocation $code_location = null,
         $calling_method_id = null,
         ?string $file_path = null
-    ) {
+    ): bool {
         return $this->methods->methodExists(
             Internal\MethodIdentifier::wrap($method_id),
             is_string($calling_method_id) ? strtolower($calling_method_id) : strtolower((string) $calling_method_id),
@@ -906,7 +888,7 @@ class Codebase
      *
      * @return array<int, \Psalm\Storage\FunctionLikeParameter>
      */
-    public function getMethodParams($method_id)
+    public function getMethodParams($method_id): array
     {
         return $this->methods->getMethodParams(Internal\MethodIdentifier::wrap($method_id));
     }
@@ -914,9 +896,8 @@ class Codebase
     /**
      * @param  string|\Psalm\Internal\MethodIdentifier $method_id
      *
-     * @return bool
      */
-    public function isVariadic($method_id)
+    public function isVariadic($method_id): bool
     {
         return $this->methods->isVariadic(Internal\MethodIdentifier::wrap($method_id));
     }
@@ -925,9 +906,8 @@ class Codebase
      * @param  string|\Psalm\Internal\MethodIdentifier $method_id
      * @param  array<int, PhpParser\Node\Arg> $call_args
      *
-     * @return Type\Union|null
      */
-    public function getMethodReturnType($method_id, ?string &$self_class, array $call_args = [])
+    public function getMethodReturnType($method_id, ?string &$self_class, array $call_args = []): ?Type\Union
     {
         return $this->methods->getMethodReturnType(
             Internal\MethodIdentifier::wrap($method_id),
@@ -940,9 +920,8 @@ class Codebase
     /**
      * @param  string|\Psalm\Internal\MethodIdentifier $method_id
      *
-     * @return bool
      */
-    public function getMethodReturnsByRef($method_id)
+    public function getMethodReturnsByRef($method_id): bool
     {
         return $this->methods->getMethodReturnsByRef(Internal\MethodIdentifier::wrap($method_id));
     }
@@ -951,12 +930,11 @@ class Codebase
      * @param  string|\Psalm\Internal\MethodIdentifier   $method_id
      * @param  CodeLocation|null    $defined_location
      *
-     * @return CodeLocation|null
      */
     public function getMethodReturnTypeLocation(
         $method_id,
         CodeLocation &$defined_location = null
-    ) {
+    ): ?CodeLocation {
         return $this->methods->getMethodReturnTypeLocation(
             Internal\MethodIdentifier::wrap($method_id),
             $defined_location
@@ -966,9 +944,8 @@ class Codebase
     /**
      * @param  string|\Psalm\Internal\MethodIdentifier $method_id
      *
-     * @return string|null
      */
-    public function getDeclaringMethodId($method_id)
+    public function getDeclaringMethodId($method_id): ?string
     {
         return $this->methods->getDeclaringMethodId(Internal\MethodIdentifier::wrap($method_id));
     }
@@ -978,9 +955,8 @@ class Codebase
      *
      * @param  string|\Psalm\Internal\MethodIdentifier $method_id
      *
-     * @return string|null
      */
-    public function getAppearingMethodId($method_id)
+    public function getAppearingMethodId($method_id): ?string
     {
         return $this->methods->getAppearingMethodId(Internal\MethodIdentifier::wrap($method_id));
     }
@@ -990,7 +966,7 @@ class Codebase
      *
      * @return array<string>
      */
-    public function getOverriddenMethodIds($method_id)
+    public function getOverriddenMethodIds($method_id): array
     {
         return $this->methods->getOverriddenMethodIds(Internal\MethodIdentifier::wrap($method_id));
     }
@@ -998,15 +974,13 @@ class Codebase
     /**
      * @param  string|\Psalm\Internal\MethodIdentifier $method_id
      *
-     * @return string
      */
-    public function getCasedMethodId($method_id)
+    public function getCasedMethodId($method_id): string
     {
         return $this->methods->getCasedMethodId(Internal\MethodIdentifier::wrap($method_id));
     }
 
     /**
-     * @param string $file_path
      *
      * @return void
      */
@@ -1027,11 +1001,8 @@ class Codebase
 
         $this->file_storage_provider->remove($file_path);
     }
-
-    /**
-     * @return ?string
-     */
-    public function getSymbolInformation(string $file_path, string $symbol)
+    
+    public function getSymbolInformation(string $file_path, string $symbol): ?string
     {
         if (\is_numeric($symbol[0])) {
             return \preg_replace('/^[^:]*:/', '', $symbol);
@@ -1197,7 +1168,7 @@ class Codebase
     /**
      * @return array{0: string, 1: Range}|null
      */
-    public function getReferenceAtPosition(string $file_path, Position $position)
+    public function getReferenceAtPosition(string $file_path, Position $position): ?array
     {
         $is_open = $this->file_provider->isOpen($file_path);
 
@@ -1250,7 +1221,7 @@ class Codebase
     /**
      * @return array{0: non-empty-string, 1: int, 2: Range}|null
      */
-    public function getFunctionArgumentAtPosition(string $file_path, Position $position)
+    public function getFunctionArgumentAtPosition(string $file_path, Position $position): ?array
     {
         $is_open = $this->file_provider->isOpen($file_path);
 
@@ -1365,7 +1336,7 @@ class Codebase
     /**
      * @return array{0: string, 1: '->'|'::'|'symbol', 2: int}|null
      */
-    public function getCompletionDataAtPosition(string $file_path, Position $position)
+    public function getCompletionDataAtPosition(string $file_path, Position $position): ?array
     {
         $is_open = $this->file_provider->isOpen($file_path);
 

@@ -20,9 +20,6 @@ class StubTest extends TestCase
     /** @var TestConfig */
     protected static $config;
 
-    /**
-     * @return void
-     */
     public static function setUpBeforeClass() : void
     {
         self::$config = new TestConfig();
@@ -36,9 +33,6 @@ class StubTest extends TestCase
         }
     }
 
-    /**
-     * @return void
-     */
     public function setUp() : void
     {
         RuntimeCaches::clearAll();

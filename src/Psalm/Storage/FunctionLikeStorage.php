@@ -204,7 +204,7 @@ abstract class FunctionLikeStorage
      */
     public $allow_named_arg_calls = true;
 
-    public function __toString()
+    public function __toString(): string
     {
         return $this->getSignature(false);
     }

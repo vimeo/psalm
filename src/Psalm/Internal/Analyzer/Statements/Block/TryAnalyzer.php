@@ -28,9 +28,6 @@ use const PHP_VERSION;
 class TryAnalyzer
 {
     /**
-     * @param   StatementsAnalyzer               $statements_analyzer
-     * @param   PhpParser\Node\Stmt\TryCatch    $stmt
-     * @param   Context                         $context
      *
      * @return  false|null
      */
@@ -38,7 +35,7 @@ class TryAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\TryCatch $stmt,
         Context $context
-    ) {
+    ): ?bool {
         $catch_actions = [];
         $all_catches_leave = true;
 

@@ -154,9 +154,8 @@ class Functions
     /**
      * @param  string  $function_id
      *
-     * @return bool
      */
-    public function hasStubbedFunction($function_id)
+    public function hasStubbedFunction($function_id): bool
     {
         return isset(self::$stubbed_functions[strtolower($function_id)]);
     }
@@ -164,19 +163,18 @@ class Functions
     /**
      * @return array<string, FunctionStorage>
      */
-    public function getAllStubbedFunctions()
+    public function getAllStubbedFunctions(): array
     {
         return self::$stubbed_functions;
     }
 
     /**
      * @param lowercase-string $function_id
-     * @return bool
      */
     public function functionExists(
         StatementsAnalyzer $statements_analyzer,
         string $function_id
-    ) {
+    ): bool {
         if ($this->existence_provider->has($function_id)) {
             $function_exists = $this->existence_provider->doesFunctionExist($statements_analyzer, $function_id);
 
@@ -219,7 +217,6 @@ class Functions
 
     /**
      * @param  non-empty-string         $function_name
-     * @param  StatementsSource         $source
      *
      * @return non-empty-string
      */
@@ -268,9 +265,8 @@ class Functions
      * @param  string $function_id
      * @param  string $file_path
      *
-     * @return bool
      */
-    public static function isVariadic(Codebase $codebase, $function_id, $file_path)
+    public static function isVariadic(Codebase $codebase, $function_id, $file_path): bool
     {
         $file_storage = $codebase->file_storage_provider->get($file_path);
 
