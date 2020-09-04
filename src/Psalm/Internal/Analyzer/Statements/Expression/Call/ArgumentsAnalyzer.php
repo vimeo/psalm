@@ -10,6 +10,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Internal\Stubs\Generator\StubsGenerator;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateResult;
@@ -92,6 +93,8 @@ class ArgumentsAnalyzer
             $args = array_reverse($args, true);
         }
 
+        $codebase = $statements_analyzer->getCodebase();
+
         foreach ($args as $argument_offset => $arg) {
             if ($function_params === null) {
                 if (self::evaluateAribitraryParam(
@@ -154,8 +157,6 @@ class ArgumentsAnalyzer
                 $context->inside_class_exists = true;
                 $toggled_class_exists = true;
             }
-
-            $codebase = $statements_analyzer->getCodebase();
 
             if (($arg->value instanceof PhpParser\Node\Expr\Closure
                     || $arg->value instanceof PhpParser\Node\Expr\ArrowFunction)
@@ -569,6 +570,35 @@ class ArgumentsAnalyzer
 
         $function_param_count = count($function_params);
 
+        if (count($function_params) > count($args) && !$has_packed_var) {
+            for ($i = count($args); $i < count($function_params); $i++) {
+                if ($function_params[$i]->default_type
+                    && $function_params[$i]->type
+                    && $function_params[$i]->type->hasTemplate()
+                    && $function_params[$i]->default_type->hasLiteralValue()
+                ) {
+                    ArgumentAnalyzer::checkArgumentMatches(
+                        $statements_analyzer,
+                        $cased_method_id,
+                        $self_fq_class_name,
+                        $static_fq_class_name,
+                        $code_location,
+                        $function_params[$i],
+                        $i,
+                        new PhpParser\Node\Arg(
+                            StubsGenerator::getExpressionFromType($function_params[$i]->default_type)
+                        ),
+                        $function_params[$i]->default_type,
+                        $context,
+                        $class_generic_params,
+                        $template_result,
+                        $function_storage ? $function_storage->specialize_call : true,
+                        $in_call_map
+                    );
+                }
+            }
+        }
+
         foreach ($args as $argument_offset => $arg) {
             $function_param = $function_param_count > $argument_offset
                 ? $function_params[$argument_offset]
@@ -594,8 +624,10 @@ class ArgumentsAnalyzer
                 }
             }
 
+            $arg_value_type = $statements_analyzer->node_data->getType($arg->value);
+
             if ($method_id === 'compact'
-                && ($arg_value_type = $statements_analyzer->node_data->getType($arg->value))
+                && $arg_value_type
                 && $arg_value_type->isSingleStringLiteral()
             ) {
                 $literal = $arg_value_type->getSingleStringLiteral();
@@ -622,6 +654,7 @@ class ArgumentsAnalyzer
                 $function_param,
                 $argument_offset,
                 $arg,
+                $arg_value_type,
                 $context,
                 $class_generic_params,
                 $template_result,

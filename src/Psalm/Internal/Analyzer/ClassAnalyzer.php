@@ -1518,10 +1518,10 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues()
                 )) {
-                    return false;
+                    // fall through
                 }
 
-                return null;
+                return false;
             } else {
                 if (!$codebase->traitHasCorrectCase($fq_trait_name)) {
                     if (IssueBuffer::accepts(

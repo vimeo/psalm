@@ -689,6 +689,13 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
             $functionlike_storage = array_pop($this->functionlike_storages);
 
+            if ($functionlike_storage->docblock_issues
+                && (strpos($this->file_path, 'CoreGenericFunctions.phpstub')
+                    || strpos($this->file_path, 'CoreGenericClasses.phpstub'))
+            ) {
+                throw new \UnexpectedValueException('Error with core stub file docblocks');
+            }
+
             if ($functionlike_storage->has_visitor_issues) {
                 $this->file_storage->has_visitor_issues = true;
             }
@@ -2645,6 +2652,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     $e->getMessage() . ' in docblock for ' . $cased_function_id,
                     new CodeLocation($this->file_scanner, $stmt, null, true)
                 );
+
+
 
                 continue;
             }
