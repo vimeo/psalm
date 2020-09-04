@@ -1327,7 +1327,7 @@ class FunctionCallTest extends TestCase
                     /**
                      * @psalm-pure
                      *
-                     * @return list<list<string>>
+                     * @return array<list<string>>
                      */
                     function extractUsernames(string $input): array {
                         preg_match_all(\'/@[a-z\d](?:[a-z\d]|-(?=[a-z\d])){0,38}(?!\w)/\', $input, $matches);
