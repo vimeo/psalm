@@ -102,20 +102,22 @@ class VariableFetchAnalyzer
                 );
             }
 
-            if ($context->pure) {
-                if (IssueBuffer::accepts(
-                    new ImpureVariable(
-                        'Cannot reference $this in a pure context',
-                        new CodeLocation($statements_analyzer->getSource(), $stmt)
-                    ),
-                    $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
+            if (!$context->collect_mutations && !$context->collect_initializations) {
+                if ($context->pure) {
+                    if (IssueBuffer::accepts(
+                        new ImpureVariable(
+                            'Cannot reference $this in a pure context',
+                            new CodeLocation($statements_analyzer->getSource(), $stmt)
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                } elseif ($statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                    && $statements_analyzer->getSource()->track_mutations
+                ) {
+                    $statements_analyzer->getSource()->inferred_impure = true;
                 }
-            } elseif ($statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
-                && $statements_analyzer->getSource()->track_mutations
-            ) {
-                $statements_analyzer->getSource()->inferred_impure = true;
             }
 
             return true;
