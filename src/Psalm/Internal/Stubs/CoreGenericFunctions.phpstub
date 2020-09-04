@@ -656,7 +656,7 @@ function preg_replace_callback($search, $replace, $subject, int $limit = -1, &$c
  *                          : (TFlags is 514
  *                              ? list<array<?string>>
  *                              : (TFlags is 770
- *                                  ? list<array<array{?string, 1}>>
+ *                                  ? list<array<array{?string, int}>>
  *                                  : array
  *                              )
  *                          )
