@@ -68,8 +68,6 @@ class Algebra
     }
 
     /**
-     * @param string $type
-     *
      * @psalm-pure
      */
     public static function negateType(string $type): string
@@ -82,8 +80,6 @@ class Algebra
     }
 
     /**
-     * @param  string|null              $this_class_name
-     *
      * @return array<int, Clause>
      */
     public static function getFormula(
@@ -457,8 +453,6 @@ class Algebra
                         array_filter(
                             $clause_b->possibilities[$clause_var],
                             /**
-                             * @param string $possible_type
-                             *
                              * @return bool
                              */
                             function (string $possible_type) use ($negated_clause_type) {
@@ -564,9 +558,6 @@ class Algebra
                     // if there's only one active clause, return all the non-negation clause members ORed together
                     $things_that_can_be_said = array_filter(
                         $possible_types,
-                        /**
-                         * @param  string $possible_type
-                         */
                         function (string $possible_type): bool {
                             return $possible_type[0] !== '!';
                         }

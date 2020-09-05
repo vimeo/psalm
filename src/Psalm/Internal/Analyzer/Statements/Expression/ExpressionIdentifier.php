@@ -14,10 +14,8 @@ use function implode;
 class ExpressionIdentifier
 {
     /**
-     * @param  string|null              $this_class_name
      * @param  FileSource|null    $source
      * @param  int|null                 &$nesting
-     *
      */
     public static function getVarId(
         PhpParser\Node\Expr $stmt,
@@ -73,9 +71,7 @@ class ExpressionIdentifier
     }
 
     /**
-     * @param  string|null              $this_class_name
      * @param  FileSource|null    $source
-     *
      */
     public static function getRootVarId(
         PhpParser\Node\Expr $stmt,
@@ -104,9 +100,7 @@ class ExpressionIdentifier
     }
 
     /**
-     * @param  string|null              $this_class_name
      * @param  FileSource|null    $source
-     *
      */
     public static function getArrayVarId(
         PhpParser\Node\Expr $stmt,

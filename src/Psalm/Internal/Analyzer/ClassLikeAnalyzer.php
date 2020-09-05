@@ -98,9 +98,6 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
     /** @var ClassLikeStorage */
     protected $storage;
 
-    /**
-     * @param string                        $fq_class_name
-     */
     public function __construct(PhpParser\Node\Stmt\ClassLike $class, SourceAnalyzer $source, string $fq_class_name)
     {
         $this->class = $class;
@@ -118,8 +115,6 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
     }
 
     /**
-     * @param  string       $method_name
-     *
      * @return void
      */
     public function getMethodMutations(
@@ -519,7 +514,6 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
     }
 
     /**
-     * @param  string           $property_id
      * @param  string|null      $calling_context
      * @param  string[]         $suppressed_issues
      * @param  bool             $emit_issues
@@ -649,8 +643,6 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
     }
 
     /**
-     * @param   string $file_path
-     *
      * @return  array<string, string>
      */
     public static function getClassesForFile(Codebase $codebase, string $file_path): array

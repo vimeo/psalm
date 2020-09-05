@@ -31,7 +31,6 @@ use function array_diff_key;
 class SwitchCaseAnalyzer
 {
     /**
-     * @param ?string $switch_var_id
      * @return null|false
      */
     public static function analyze(
@@ -522,7 +521,6 @@ class SwitchCaseAnalyzer
     }
 
     /**
-     * @param ?string $switch_var_id
      * @param array<string, bool> $new_case_assigned_var_ids
      * @param array<string, bool> $new_case_possibly_assigned_var_ids
      * @return null|false

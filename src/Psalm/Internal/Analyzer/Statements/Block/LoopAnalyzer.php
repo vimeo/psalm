@@ -746,7 +746,6 @@ class LoopAnalyzer
     }
 
     /**
-     * @param  string                               $first_var_id
      * @param  array<string, array<string, bool>>   $assignment_map
      *
      */

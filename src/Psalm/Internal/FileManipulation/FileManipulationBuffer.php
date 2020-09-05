@@ -23,7 +23,6 @@ class FileManipulationBuffer
     private static $code_migrations = [];
 
     /**
-     * @param string $file_path
      * @param FileManipulation[] $file_manipulations
      *
      * @return void
@@ -172,8 +171,6 @@ class FileManipulationBuffer
     }
 
     /**
-     * @param string $file_path
-     *
      * @return FileManipulation[]
      */
     public static function getManipulationsForFile(string $file_path): array

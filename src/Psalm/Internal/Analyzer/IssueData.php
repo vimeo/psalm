@@ -116,15 +116,8 @@ class IssueData
     public $taint_trace;
 
     /**
-     * @param string $severity
      * @param int $line_from
      * @param int $line_to
-     * @param string $type
-     * @param string $message
-     * @param string $file_name
-     * @param string $file_path
-     * @param string $snippet
-     * @param string $selected_text
      * @param int $from
      * @param int $to
      * @param int $snippet_from

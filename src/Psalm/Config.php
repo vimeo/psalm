@@ -624,10 +624,6 @@ class Config
      *
      * Searches up a folder hierarchy for the most immediate config.
      *
-     * @param  string $path
-     * @param  string $current_dir
-     * @param  string $output_format
-     *
      * @throws ConfigException if a config path is not found
      *
      */
@@ -680,10 +676,6 @@ class Config
 
     /**
      * Creates a new config object from the file
-     *
-     * @param  string           $file_path
-     * @param  string           $current_dir
-     *
      */
     public static function loadFromXMLFile(string $file_path, string $current_dir): Config
     {
@@ -709,9 +701,6 @@ class Config
 
     /**
      * Creates a new config object from an XML string
-     *
-     * @param  string           $base_dir
-     * @param  string           $file_contents
      * @param  string|null      $current_dir Current working directory, if different to $base_dir
      *
      * @throws ConfigException
@@ -1125,9 +1114,6 @@ class Config
     }
 
     /**
-     * @param string $issue_key
-     * @param string $error_level
-     *
      * @return void
      */
     public function setCustomErrorLevel(string $issue_key, string $error_level)
@@ -1172,8 +1158,6 @@ class Config
     }
 
     /**
-     * @param string $path
-     *
      * @return void
      */
     public function addPluginPath(string $path)
@@ -1292,7 +1276,6 @@ class Config
     /**
      * @template T
      *
-     * @param  string $path
      * @param  T::class $must_extend
      *
      * @return class-string<T>
@@ -1333,20 +1316,11 @@ class Config
         return $fq_class_name;
     }
 
-    /**
-     * @param  string $file_name
-     *
-     */
     public function shortenFileName(string $file_name): string
     {
         return preg_replace('/^' . preg_quote($this->base_dir, '/') . '/', '', $file_name);
     }
 
-    /**
-     * @param   string $issue_type
-     * @param   string $file_path
-     *
-     */
     public function reportIssueInFile(string $issue_type, string $file_path): bool
     {
         if (($this->show_mixed_issues === false || $this->level > 2)
@@ -1406,19 +1380,11 @@ class Config
         return $this->project_files && $this->project_files->allows($file_path);
     }
 
-    /**
-     * @param   string $file_path
-     *
-     */
     public function isInExtraDirs(string $file_path): bool
     {
         return $this->extra_files && $this->extra_files->allows($file_path);
     }
 
-    /**
-     * @param   string $file_path
-     *
-     */
     public function mustBeIgnored(string $file_path): bool
     {
         return $this->project_files && $this->project_files->forbids($file_path);
@@ -1473,9 +1439,6 @@ class Config
     }
 
     /**
-     * @param string $issue_type
-     *
-     *
      * @psalm-pure
      */
     public static function getParentIssueType(string $issue_type): ?string
@@ -1563,11 +1526,6 @@ class Config
         return null;
     }
 
-    /**
-     * @param   string $issue_type
-     * @param   string $file_path
-     *
-     */
     public function getReportingLevelForFile(string $issue_type, string $file_path): string
     {
         if (isset($this->issue_handlers[$issue_type])) {
@@ -1592,9 +1550,6 @@ class Config
     }
 
     /**
-     * @param   string $issue_type
-     * @param   string $fq_classlike_name
-     *
      * @return  string|null
      */
     public function getReportingLevelForClass(string $issue_type, string $fq_classlike_name)
@@ -1605,9 +1560,6 @@ class Config
     }
 
     /**
-     * @param   string $issue_type
-     * @param   string $method_id
-     *
      * @return  string|null
      */
     public function getReportingLevelForMethod(string $issue_type, string $method_id)
@@ -1638,9 +1590,6 @@ class Config
     }
 
     /**
-     * @param   string $issue_type
-     * @param   string $property_id
-     *
      * @return  string|null
      */
     public function getReportingLevelForProperty(string $issue_type, string $property_id)
@@ -1697,10 +1646,6 @@ class Config
         return $this->extra_files->getDirectories();
     }
 
-    /**
-     * @param   string $file_path
-     *
-     */
     public function reportTypeStatsForFile(string $file_path): bool
     {
         return $this->project_files
@@ -1708,10 +1653,6 @@ class Config
             && $this->project_files->reportTypeStats($file_path);
     }
 
-    /**
-     * @param   string $file_path
-     *
-     */
     public function useStrictTypesForFile(string $file_path): bool
     {
         return $this->project_files && $this->project_files->useStrictTypes($file_path);
@@ -1967,8 +1908,6 @@ class Config
     }
 
     /**
-     * @param  string $fq_classlike_name
-     *
      * @return string|false
      */
     public function getComposerFilePathForClassLike(string $fq_classlike_name)
@@ -2022,8 +1961,6 @@ class Config
     }
 
     /**
-     * @param string $dir
-     *
      * @return void
      */
     public static function removeCacheDirectory(string $dir)

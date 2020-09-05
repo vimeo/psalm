@@ -853,9 +853,7 @@ class Methods
     }
 
     /**
-     * @param string $fq_class_name
      * @param lowercase-string $method_name_lc
-     * @param string $declaring_fq_class_name
      * @param lowercase-string $declaring_method_name_lc
      *
      * @return void
@@ -875,9 +873,7 @@ class Methods
     }
 
     /**
-     * @param string $fq_class_name
      * @param lowercase-string $method_name_lc
-     * @param string $appearing_fq_class_name
      * @param lowercase-string $appearing_method_name_lc
      *
      * @return void

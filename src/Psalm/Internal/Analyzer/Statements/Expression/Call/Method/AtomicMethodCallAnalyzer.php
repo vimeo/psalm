@@ -45,7 +45,6 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
 {
     /**
      * @param  Type\Atomic\TNamedObject|Type\Atomic\TTemplateParam  $static_type
-     * @param  ?string                        $lhs_var_id
      */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
@@ -1051,8 +1050,6 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
      * If `@psalm-seal-properties` is set, they must be defined.
      * If an `@property` annotation is specified, the setter must set something with the correct
      * type.
-     *
-     * @param string $fq_class_name
      */
     private static function getMagicGetterOrSetterProperty(
         StatementsAnalyzer $statements_analyzer,

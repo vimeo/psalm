@@ -37,10 +37,6 @@ class PropertyMap
         return self::$property_map;
     }
 
-    /**
-     * @param   string $class_name
-     *
-     */
     public static function inPropertyMap(string $class_name): bool
     {
         return isset(self::getPropertyMap()[strtolower($class_name)]);

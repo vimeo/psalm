@@ -79,7 +79,6 @@ class TypeTokenizer
     private static $memoized_tokens = [];
 
     /**
-     * @param  string $string_type
      * @param  bool   $ignore_space
      *
      * @return list<array{0: string, 1: int}>

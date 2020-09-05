@@ -67,12 +67,8 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
 
     /**
      * Determines whether a given method is static or not
-     *
-     * @param  bool            $self_call
-     * @param  bool            $is_context_dynamic
      * @param  array<string>   $suppressed_issues
      * @param  bool            $is_dynamic_this_method
-     *
      */
     public static function checkStatic(
         \Psalm\Internal\MethodIdentifier $method_id,

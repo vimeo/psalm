@@ -98,7 +98,6 @@ abstract class Atomic implements TypeNode
     public $offset_end;
 
     /**
-     * @param  string $value
      * @param  array{int,int}|null   $php_version
      * @param  array<string, array<string, array{Union}>> $template_type_map
      * @param  array<string, TypeAlias> $type_aliases
@@ -570,11 +569,7 @@ abstract class Atomic implements TypeNode
     }
 
     /**
-     * @param  string|null   $namespace
      * @param  array<string, string> $aliased_classes
-     * @param  string|null   $this_class
-     * @param  int           $php_major_version
-     * @param  int           $php_minor_version
      *
      * @return null|string
      */

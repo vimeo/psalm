@@ -156,8 +156,6 @@ class Properties
     }
 
     /**
-     * @param  string $property_id
-     *
      * @return string|null
      */
     public function getDeclaringClassForProperty(string $property_id, bool $read_mode, StatementsSource $source = null)
@@ -185,9 +183,6 @@ class Properties
 
     /**
      * Get the class this property appears in (vs is declared in, which could give a trait)
-     *
-     * @param  string $property_id
-     *
      * @return string|null
      */
     public function getAppearingClassForProperty(string $property_id, bool $read_mode, StatementsSource $source = null)
@@ -215,10 +210,6 @@ class Properties
         }
     }
 
-    /**
-     * @param  string $property_id
-     *
-     */
     public function getStorage(string $property_id): \Psalm\Storage\PropertyStorage
     {
         // remove trailing backslash if it exists
@@ -240,10 +231,6 @@ class Properties
         throw new \UnexpectedValueException('Property ' . $property_id . ' should exist');
     }
 
-    /**
-     * @param  string $property_id
-     *
-     */
     public function getPropertyType(
         string $property_id,
         bool $property_set,

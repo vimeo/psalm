@@ -219,16 +219,12 @@ class Analyzer
         $this->files_to_update = $files_to_update;
     }
 
-    /**
-     * @param  string $file_path
-     */
     public function canReportIssues(string $file_path): bool
     {
         return isset($this->files_with_analysis_results[$file_path]);
     }
 
     /**
-     * @param  string $file_path
      * @param  array<string, class-string<FileAnalyzer>> $filetype_analyzers
      */
     private function getFileAnalyzer(
@@ -339,9 +335,6 @@ class Analyzer
 
         $analysis_worker =
             /**
-             * @param int $_
-             * @param string $file_path
-             *
              * @return array
              */
             function (int $_, string $file_path) use ($project_analyzer, $filetype_analyzers) {
@@ -1068,8 +1061,6 @@ class Analyzer
     }
 
     /**
-     * @param  string $file_path
-     *
      * @return array{0:int, 1:int}
      */
     public function getMixedCountsForFile(string $file_path): array
@@ -1082,7 +1073,6 @@ class Analyzer
     }
 
     /**
-     * @param  string $file_path
      * @param  array{0:int, 1:int} $mixed_counts
      *
      * @return void
@@ -1093,8 +1083,6 @@ class Analyzer
     }
 
     /**
-     * @param  string $file_path
-     *
      * @return void
      */
     public function incrementMixedCount(string $file_path)
@@ -1111,8 +1099,6 @@ class Analyzer
     }
 
     /**
-     * @param  string $file_path
-     *
      * @return void
      */
     public function decrementMixedCount(string $file_path)
@@ -1129,8 +1115,6 @@ class Analyzer
     }
 
     /**
-     * @param  string $file_path
-     *
      * @return void
      */
     public function incrementNonMixedCount(string $file_path)
@@ -1346,7 +1330,6 @@ class Analyzer
     }
 
     /**
-     * @param  string $file_path
      * @param  bool $dry_run
      *
      * @return void
@@ -1420,7 +1403,6 @@ class Analyzer
     }
 
     /**
-     * @param string $file_path
      * @param int $start
      * @param int $end
      *
@@ -1446,7 +1428,6 @@ class Analyzer
     }
 
     /**
-     * @param string $file_path
      * @param int $start
      * @param int $end
      *
@@ -1553,8 +1534,6 @@ class Analyzer
     }
 
     /**
-     * @param string $file_path
-     * @param string $method_id
      * @param bool $is_constructor
      *
      * @return void
@@ -1565,8 +1544,6 @@ class Analyzer
     }
 
     /**
-     * @param  string  $file_path
-     * @param  string  $method_id
      * @param bool $is_constructor
      */
     public function isMethodAlreadyAnalyzed(string $file_path, string $method_id, $is_constructor = false): bool

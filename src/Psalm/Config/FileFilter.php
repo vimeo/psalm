@@ -91,9 +91,6 @@ class FileFilter
     }
 
     /**
-     * @param  string           $base_dir
-     * @param  bool             $inclusive
-     *
      * @return static
      */
     public static function loadFromXMLElement(
@@ -342,9 +339,6 @@ class FileFilter
     }
 
     /**
-     * @param string $str
-     *
-     *
      * @psalm-pure
      */
     protected static function slashify(string $str): string
@@ -353,9 +347,7 @@ class FileFilter
     }
 
     /**
-     * @param  string  $file_name
      * @param  bool $case_sensitive
-     *
      */
     public function allows(string $file_name, $case_sensitive = false): bool
     {
@@ -411,10 +403,6 @@ class FileFilter
         return true;
     }
 
-    /**
-     * @param  string  $fq_classlike_name
-     *
-     */
     public function allowsClass(string $fq_classlike_name): bool
     {
         if ($this->fq_classlike_patterns) {
@@ -428,10 +416,6 @@ class FileFilter
         return in_array(strtolower($fq_classlike_name), $this->fq_classlike_names, true);
     }
 
-    /**
-     * @param  string  $method_id
-     *
-     */
     public function allowsMethod(string $method_id): bool
     {
         if (!$this->method_ids) {
@@ -461,19 +445,11 @@ class FileFilter
         return in_array($method_id, $this->method_ids, true);
     }
 
-    /**
-     * @param  string  $property_id
-     *
-     */
     public function allowsProperty(string $property_id): bool
     {
         return in_array(strtolower($property_id), $this->property_ids, true);
     }
 
-    /**
-     * @param  string  $var_name
-     *
-     */
     public function allowsVariable(string $var_name): bool
     {
         return in_array(strtolower($var_name), $this->var_names, true);
@@ -496,8 +472,6 @@ class FileFilter
     }
 
     /**
-     * @param   string $file_name
-     *
      * @return  void
      */
     public function addFile(string $file_name)
@@ -507,8 +481,6 @@ class FileFilter
     }
 
     /**
-     * @param string $dir_name
-     *
      * @return void
      */
     public function addDirectory(string $dir_name)

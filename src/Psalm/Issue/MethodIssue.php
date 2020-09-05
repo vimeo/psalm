@@ -10,10 +10,6 @@ abstract class MethodIssue extends CodeIssue
      */
     public $method_id;
 
-    /**
-     * @param string        $message
-     * @param string        $method_id
-     */
     public function __construct(
         string $message,
         \Psalm\CodeLocation $code_location,

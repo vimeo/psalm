@@ -31,11 +31,6 @@ class FileScanner implements FileSource
      */
     public $will_analyze;
 
-    /**
-     * @param string $file_path
-     * @param string $file_name
-     * @param bool $will_analyze
-     */
     public function __construct(string $file_path, string $file_name, bool $will_analyze)
     {
         $this->file_path = $file_path;

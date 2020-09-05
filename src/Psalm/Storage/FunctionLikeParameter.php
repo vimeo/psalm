@@ -94,7 +94,6 @@ class FunctionLikeParameter
     public $expect_variable = false;
 
     /**
-     * @param string        $name
      * @param Type\Union|null    $type
      * @param CodeLocation|null  $location
      * @param bool       $is_optional

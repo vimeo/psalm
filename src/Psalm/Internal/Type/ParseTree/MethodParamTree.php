@@ -27,9 +27,6 @@ class MethodParamTree extends \Psalm\Internal\Type\ParseTree
     public $name;
 
     /**
-     * @param string $name
-     * @param bool $byref
-     * @param bool $variadic
      * @param \Psalm\Internal\Type\ParseTree|null $parent
      */
     public function __construct(

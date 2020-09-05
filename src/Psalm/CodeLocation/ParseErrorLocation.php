@@ -7,11 +7,6 @@ use function substr_count;
 
 class ParseErrorLocation extends \Psalm\CodeLocation
 {
-    /**
-     * @param string $file_path
-     * @param string $file_name
-     * @param string $file_contents
-     */
     public function __construct(
         PhpParser\Error $error,
         string $file_contents,

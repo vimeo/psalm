@@ -418,9 +418,6 @@ class Reflection
     }
 
     /**
-     * @param string $fq_class_name
-     * @param string $parent_class
-     *
      * @return void
      */
     private function registerInheritedMethods(
@@ -495,19 +492,11 @@ class Reflection
         }
     }
 
-    /**
-     * @param  string  $function_id
-     *
-     */
     public function hasFunction(string $function_id): bool
     {
         return isset(self::$builtin_functions[$function_id]);
     }
 
-    /**
-     * @param  string  $function_id
-     *
-     */
     public function getFunctionStorage(string $function_id): FunctionStorage
     {
         if (isset(self::$builtin_functions[$function_id])) {

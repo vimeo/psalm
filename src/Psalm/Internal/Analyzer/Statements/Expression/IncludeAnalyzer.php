@@ -245,8 +245,6 @@ class IncludeAnalyzer
     }
 
     /**
-     * @param  string              $file_name
-     *
      * @psalm-suppress MixedAssignment
      */
     public static function getPathTo(
@@ -352,11 +350,6 @@ class IncludeAnalyzer
         return null;
     }
 
-    /**
-     * @param   string  $file_name
-     * @param   string  $current_directory
-     *
-     */
     public static function resolveIncludePath(string $file_name, string $current_directory): ?string
     {
         if (!$current_directory) {

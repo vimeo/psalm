@@ -113,10 +113,6 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
     /** @var ?Type\Union */
     private $return_type;
 
-    /**
-     * @param string  $file_path
-     * @param string  $file_name
-     */
     public function __construct(ProjectAnalyzer $project_analyzer, string $file_path, string $file_name)
     {
         $this->source = $this;
@@ -372,8 +368,6 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
     }
 
     /**
-     * @param string       $fq_class_name
-     *
      * @return  void
      */
     public function addNamespacedClassAnalyzer(string $fq_class_name, ClassAnalyzer $class_analyzer)
@@ -382,8 +376,6 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
     }
 
     /**
-     * @param string            $fq_class_name
-     *
      * @return  void
      */
     public function addNamespacedInterfaceAnalyzer(string $fq_class_name, InterfaceAnalyzer $interface_analyzer)
@@ -547,9 +539,6 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
     }
 
     /**
-     * @param string $file_path
-     * @param string $file_name
-     *
      * @return void
      */
     public function setRootFilePath(string $file_path, string $file_name)
@@ -559,8 +548,6 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
     }
 
     /**
-     * @param string $file_path
-     *
      * @return void
      */
     public function addRequiredFilePath(string $file_path)
@@ -569,8 +556,6 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
     }
 
     /**
-     * @param string $file_path
-     *
      * @return void
      */
     public function addParentFilePath(string $file_path)
@@ -578,19 +563,11 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
         $this->parent_file_paths[$file_path] = true;
     }
 
-    /**
-     * @param string $file_path
-     *
-     */
     public function hasParentFilePath(string $file_path): bool
     {
         return $this->file_path === $file_path || isset($this->parent_file_paths[$file_path]);
     }
 
-    /**
-     * @param string $file_path
-     *
-     */
     public function hasAlreadyRequiredFilePath(string $file_path): bool
     {
         return isset($this->required_file_paths[$file_path]);

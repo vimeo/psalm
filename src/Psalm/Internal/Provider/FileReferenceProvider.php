@@ -150,10 +150,6 @@ class FileReferenceProvider
         if (self::$deleted_files === null) {
             self::$deleted_files = array_filter(
                 array_keys(self::$file_references),
-                /**
-                 * @param  string $file_name
-                 *
-                 */
                 function (string $file_name): bool {
                     return !file_exists($file_name);
                 }
@@ -278,9 +274,6 @@ class FileReferenceProvider
     }
 
     /**
-     * @param string $source_file
-     * @param string $fq_class_name_lc
-     *
      * @return void
      */
     public function addFileInheritanceToClass(string $source_file, string $fq_class_name_lc)
@@ -297,8 +290,6 @@ class FileReferenceProvider
     }
 
     /**
-     * @param   string $file
-     *
      * @return  array<int, string>
      */
     private function calculateFilesReferencingFile(Codebase $codebase, string $file): array
@@ -338,8 +329,6 @@ class FileReferenceProvider
     }
 
     /**
-     * @param   string $file
-     *
      * @return  array<int, string>
      */
     private function calculateFilesInheritingFile(Codebase $codebase, string $file): array
@@ -379,8 +368,6 @@ class FileReferenceProvider
     }
 
     /**
-     * @param  string $file
-     *
      * @return array<string>
      */
     public function getFilesReferencingFile(string $file): array
@@ -389,8 +376,6 @@ class FileReferenceProvider
     }
 
     /**
-     * @param  string $file
-     *
      * @return array<string>
      */
     public function getFilesInheritingFromFile(string $file): array
@@ -978,8 +963,6 @@ class FileReferenceProvider
     }
 
     /**
-     * @param string $file_path
-     *
      * @return void
      */
     public function clearExistingIssuesForFile(string $file_path)
@@ -988,7 +971,6 @@ class FileReferenceProvider
     }
 
     /**
-     * @param string $file_path
      * @param IssueData $issue
      *
      * @return void
@@ -999,8 +981,6 @@ class FileReferenceProvider
     }
 
     /**
-     * @param string $file_path
-     *
      * @return void
      */
     public function addIssue(string $file_path, IssueData $issue)

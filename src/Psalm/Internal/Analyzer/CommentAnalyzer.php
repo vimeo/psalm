@@ -1220,8 +1220,6 @@ class CommentAnalyzer
     }
 
     /**
-     * @param string $return_block
-     *
      * @throws DocblockParseException if an invalid string is found
      *
      * @return list<string>

@@ -125,8 +125,6 @@ class NamespaceAnalyzer extends SourceAnalyzer implements StatementsSource
     }
 
     /**
-     * @param string     $const_name
-     *
      * @return void
      */
     public function setConstType(string $const_name, Type\Union $const_type)
@@ -135,7 +133,6 @@ class NamespaceAnalyzer extends SourceAnalyzer implements StatementsSource
     }
 
     /**
-     * @param  string $namespace_name
      * @param  mixed  $visibility
      *
      * @return array<string,Type\Union>

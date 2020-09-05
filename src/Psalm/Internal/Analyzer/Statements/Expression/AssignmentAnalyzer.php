@@ -47,7 +47,6 @@ class AssignmentAnalyzer
 {
     /**
      * @param  PhpParser\Node\Expr|null $assign_value  This has to be null to support list destructuring
-     * @param  Type\Union|null          $assign_value_type
      *
      * @return false|Type\Union
      */

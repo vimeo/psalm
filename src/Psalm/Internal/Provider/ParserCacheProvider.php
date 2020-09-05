@@ -66,8 +66,6 @@ class ParserCacheProvider
 
     /**
      * @param  int      $file_modified_time
-     * @param  string   $file_content_hash
-     * @param  string   $file_path
      *
      * @return list<PhpParser\Node\Stmt>|null
      *
@@ -109,8 +107,6 @@ class ParserCacheProvider
     }
 
     /**
-     * @param  string   $file_path
-     *
      * @return list<PhpParser\Node\Stmt>|null
      *
      * @psalm-suppress UndefinedFunction
@@ -143,8 +139,6 @@ class ParserCacheProvider
     }
 
     /**
-     * @param  string   $file_path
-     *
      * @return string|null
      */
     public function loadExistingFileContentsFromCache(string $file_path)
@@ -214,10 +208,7 @@ class ParserCacheProvider
     }
 
     /**
-     * @param  string                           $file_path
-     * @param  string                           $file_content_hash
      * @param  list<PhpParser\Node\Stmt>        $stmts
-     * @param  bool                             $touch_only
      *
      * @return void
      *
@@ -296,9 +287,6 @@ class ParserCacheProvider
     }
 
     /**
-     * @param  string  $file_path
-     * @param  string  $file_contents
-     *
      * @return void
      */
     public function cacheFileContents(string $file_path, string $file_contents)
@@ -328,10 +316,6 @@ class ParserCacheProvider
         file_put_contents($cache_location, $file_contents);
     }
 
-    /**
-     * @param  float $time_before
-     *
-     */
     public function deleteOldParserCaches(float $time_before): int
     {
         $cache_directory = Config::getInstance()->getCacheDirectory();
@@ -396,7 +380,6 @@ class ParserCacheProvider
 
     /**
      * @param  array<string>    $file_names
-     * @param  int              $min_time
      *
      * @return void
      */
@@ -423,10 +406,6 @@ class ParserCacheProvider
         }
     }
 
-    /**
-     * @param  string  $file_name
-     *
-     */
     private function getParserCacheKey(string $file_name): string
     {
         return md5($file_name) . ($this->use_igbinary ? '-igbinary' : '') . '-r';

@@ -13,9 +13,6 @@ class ProjectFileFilter extends FileFilter
     private $file_filter = null;
 
     /**
-     * @param  string           $base_dir
-     * @param  bool             $inclusive
-     *
      * @return static
      */
     public static function loadFromXMLElement(
@@ -38,9 +35,7 @@ class ProjectFileFilter extends FileFilter
     }
 
     /**
-     * @param  string  $file_name
      * @param  bool $case_sensitive
-     *
      */
     public function allows(string $file_name, $case_sensitive = false): bool
     {
@@ -54,9 +49,7 @@ class ProjectFileFilter extends FileFilter
     }
 
     /**
-     * @param  string  $file_name
      * @param  bool $case_sensitive
-     *
      */
     public function forbids(string $file_name, $case_sensitive = false): bool
     {
@@ -70,9 +63,7 @@ class ProjectFileFilter extends FileFilter
     }
 
     /**
-     * @param  string $file_name
      * @param  bool   $case_sensitive
-     *
      */
     public function reportTypeStats(string $file_name, $case_sensitive = false): bool
     {
@@ -92,9 +83,7 @@ class ProjectFileFilter extends FileFilter
     }
 
     /**
-     * @param  string $file_name
      * @param  bool   $case_sensitive
-     *
      */
     public function useStrictTypes(string $file_name, $case_sensitive = false): bool
     {

@@ -123,9 +123,6 @@ class NodeDataProvider implements \Psalm\NodeTypeProvider
         return ($node_type && $node_type->reference_free) || isset($node->pure);
     }
 
-    /**
-     * @param PhpParser\Node\Expr $node
-     */
     public function clearNodeOfTypeAndAssertions(PhpParser\Node\Expr $node) : void
     {
         unset($this->node_types[$node], $this->node_assertions[$node]);

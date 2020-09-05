@@ -393,10 +393,6 @@ class ExpressionAnalyzer
         return false;
     }
 
-    /**
-     * @param  string  $fq_class_name
-     *
-     */
     public static function isMock(string $fq_class_name): bool
     {
         return in_array(strtolower($fq_class_name), Config::getInstance()->getMockClasses(), true);

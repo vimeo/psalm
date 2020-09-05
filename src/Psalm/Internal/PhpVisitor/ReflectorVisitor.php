@@ -3508,8 +3508,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
     }
 
     /**
-     * @param   string                          $fq_classlike_name
-     *
      * @return  void
      */
     private function visitPropertyDeclaration(
@@ -3697,8 +3695,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
     }
 
     /**
-     * @param   string $fq_classlike_name
-     *
      * @return  void
      */
     private function visitClassConstDeclaration(

@@ -714,17 +714,12 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
         }
     }
 
-    /**
-     * @param  string       $var_name
-     *
-     */
     public function hasVariable(string $var_name): bool
     {
         return isset($this->all_vars[$var_name]);
     }
 
     /**
-     * @param  string       $var_id
      * @param  int|null     $branch_point
      *
      * @return void
@@ -741,8 +736,6 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
     }
 
     /**
-     * @param  string       $var_id
-     *
      * @return void
      */
     public function registerVariableAssignment(string $var_id, CodeLocation $location)
@@ -772,26 +765,18 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
 
     /**
      * The first appearance of the variable in this set of statements being evaluated
-     *
-     * @param  string  $var_id
-     *
      */
     public function getFirstAppearance(string $var_id): ?CodeLocation
     {
         return isset($this->all_vars[$var_id]) ? $this->all_vars[$var_id] : null;
     }
 
-    /**
-     * @param  string $var_id
-     *
-     */
     public function getBranchPoint(string $var_id): ?int
     {
         return isset($this->var_branch_points[$var_id]) ? $this->var_branch_points[$var_id] : null;
     }
 
     /**
-     * @param string $var_id
      * @param int    $branch_point
      *
      * @return void

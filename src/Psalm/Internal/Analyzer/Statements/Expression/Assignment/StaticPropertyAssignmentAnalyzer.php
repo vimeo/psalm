@@ -28,8 +28,6 @@ use function explode;
 class StaticPropertyAssignmentAnalyzer
 {
     /**
-     * @param   PhpParser\Node\Expr|null                  $assignment_value
-     *
      * @return  false|null
      */
     public static function analyze(

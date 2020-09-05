@@ -535,17 +535,12 @@ class ProjectAnalyzer
         return self::$instance;
     }
 
-    /**
-     * @param  string $file_path
-     *
-     */
     public function canReportIssues(string $file_path): bool
     {
         return isset($this->project_files[$file_path]);
     }
 
     /**
-     * @param  string  $base_dir
      * @param  bool $is_diff
      *
      * @return void
@@ -975,8 +970,6 @@ class ProjectAnalyzer
     }
 
     /**
-     * @param  string $symbol
-     *
      * @return void
      */
     public function findReferencesTo(string $symbol)
@@ -1008,8 +1001,6 @@ class ProjectAnalyzer
     }
 
     /**
-     * @param  string  $dir_name
-     *
      * @return void
      */
     public function checkDir(string $dir_name)
@@ -1037,7 +1028,6 @@ class ProjectAnalyzer
     }
 
     /**
-     * @param  string $dir_name
      * @param  bool   $allow_non_project_files
      *
      * @return void
@@ -1094,8 +1084,6 @@ class ProjectAnalyzer
     }
 
     /**
-     * @param  string $dir_name
-     *
      * @return array<string>
      */
     protected function getDiffFilesInDir(string $dir_name, Config $config): array
@@ -1153,8 +1141,6 @@ class ProjectAnalyzer
     }
 
     /**
-     * @param  string  $file_path
-     *
      * @return void
      */
     public function checkFile(string $file_path)
@@ -1276,10 +1262,6 @@ class ProjectAnalyzer
         return array_combine($all_files_to_check, $all_files_to_check);
     }
 
-    /**
-     * @param  string $file_path
-     *
-     */
     public function fileExists(string $file_path): bool
     {
         return $this->file_provider->fileExists($file_path);
@@ -1387,10 +1369,6 @@ class ProjectAnalyzer
         return $this->codebase;
     }
 
-    /**
-     * @param  string $fq_class_name
-     *
-     */
     public function getFileAnalyzerForClassLike(string $fq_class_name): FileAnalyzer
     {
         $fq_class_name_lc = strtolower($fq_class_name);

@@ -23,10 +23,6 @@ class IssueHandler
      */
     private $custom_levels = [];
 
-    /**
-     * @param  string           $base_dir
-     *
-     */
     public static function loadFromXMLElement(SimpleXMLElement $e, string $base_dir): IssueHandler
     {
         $handler = new self();
@@ -48,8 +44,6 @@ class IssueHandler
     }
 
     /**
-     * @param string $error_level
-     *
      * @return void
      */
     public function setErrorLevel(string $error_level)
@@ -61,10 +55,6 @@ class IssueHandler
         $this->error_level = $error_level;
     }
 
-    /**
-     * @param string $file_path
-     *
-     */
     public function getReportingLevelForFile(string $file_path): string
     {
         foreach ($this->custom_levels as $custom_level) {
@@ -77,8 +67,6 @@ class IssueHandler
     }
 
     /**
-     * @param string $fq_classlike_name
-     *
      * @return string|null
      */
     public function getReportingLevelForClass(string $fq_classlike_name)
@@ -91,8 +79,6 @@ class IssueHandler
     }
 
     /**
-     * @param string $method_id
-     *
      * @return string|null
      */
     public function getReportingLevelForMethod(string $method_id)
@@ -129,8 +115,6 @@ class IssueHandler
     }
 
     /**
-     * @param string $property_id
-     *
      * @return string|null
      */
     public function getReportingLevelForProperty(string $property_id)
@@ -143,8 +127,6 @@ class IssueHandler
     }
 
     /**
-     * @param string $var_name
-     *
      * @return string|null
      */
     public function getReportingLevelForVariable(string $var_name)
@@ -174,10 +156,6 @@ class IssueHandler
                 },
                 scandir(dirname(__DIR__) . '/Issue', SCANDIR_SORT_NONE)
             ),
-            /**
-             * @param string $issue_name
-             *
-             */
             function (string $issue_name): bool {
                 return !empty($issue_name)
                     && $issue_name !== 'MethodIssue'

@@ -316,8 +316,6 @@ class StatementsProvider
     }
 
     /**
-     * @param string $file_path
-     *
      * @return void
      */
     public function setUnchangedFile(string $file_path)
@@ -357,7 +355,6 @@ class StatementsProvider
     }
 
     /**
-     * @param  string  $file_contents
      * @param  string   $file_path
      * @param  list<\PhpParser\Node\Stmt> $existing_statements
      * @param  array<int, array{0:int, 1:int, 2: int, 3: int, 4: int, 5:string}> $file_changes

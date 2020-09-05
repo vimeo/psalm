@@ -1509,7 +1509,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * @param string $param_name
      * @param bool $docblock_only
      *
      * @return void
@@ -1846,8 +1845,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
     /**
      * Adds a suppressed issue, useful when creating a method checker from scratch
-     *
-     * @param string $issue_name
      *
      * @return void
      */

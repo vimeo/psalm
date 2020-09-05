@@ -44,7 +44,6 @@ class DocComment
      * Taken from advanced api docmaker, which was taken from
      * https://github.com/facebook/libphutil/blob/master/src/parser/docblock/PhutilDocblockParser.php
      *
-     * @param string  $docblock
      * @param int     $line_number
      * @param bool    $preserve_format
      *

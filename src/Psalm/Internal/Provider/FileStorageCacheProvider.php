@@ -68,8 +68,6 @@ class FileStorageCacheProvider
     }
 
     /**
-     * @param  string $file_contents
-     *
      * @return void
      */
     public function writeToCache(FileStorage $storage, string $file_contents)
@@ -85,11 +83,6 @@ class FileStorageCacheProvider
         }
     }
 
-    /**
-     * @param  string $file_path
-     * @param  string $file_contents
-     *
-     */
     public function getLatestFromCache(string $file_path, string $file_contents): ?FileStorage
     {
         $file_path = strtolower($file_path);
@@ -114,8 +107,6 @@ class FileStorageCacheProvider
     }
 
     /**
-     * @param  string $file_path
-     *
      * @return void
      */
     public function removeCacheForFile(string $file_path)
@@ -127,20 +118,13 @@ class FileStorageCacheProvider
         }
     }
 
-    /**
-     * @param  string $file_path
-     * @param  string $file_contents
-     *
-     */
     private function getCacheHash(string $file_path, string $file_contents): string
     {
         return sha1(strtolower($file_path) . ' ' . $file_contents . $this->modified_timestamps);
     }
 
     /**
-     * @param  string  $file_path
      * @psalm-suppress MixedAssignment
-     *
      */
     private function loadFromCache(string $file_path): ?FileStorage
     {
@@ -170,9 +154,7 @@ class FileStorageCacheProvider
     }
 
     /**
-     * @param  string  $file_path
      * @param  bool $create_directory
-     *
      */
     private function getCacheLocationForPath(string $file_path, $create_directory = false): string
     {

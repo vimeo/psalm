@@ -67,9 +67,6 @@ class ClassLikeStorageCacheProvider
     }
 
     /**
-     * @param  string|null $file_path
-     * @param  string|null $file_contents
-     *
      * @return void
      */
     public function writeToCache(ClassLikeStorage $storage, ?string $file_path, ?string $file_contents)
@@ -87,10 +84,6 @@ class ClassLikeStorageCacheProvider
     }
 
     /**
-     * @param  string  $fq_classlike_name_lc
-     * @param  string|null $file_path
-     * @param  string|null $file_contents
-     *
      * @return ClassLikeStorage
      */
     public function getLatestFromCache(string $fq_classlike_name_lc, ?string $file_path, ?string $file_contents)
@@ -115,21 +108,13 @@ class ClassLikeStorageCacheProvider
         return $cached_value;
     }
 
-    /**
-     * @param  string|null $file_path
-     * @param  string|null $file_contents
-     *
-     */
     private function getCacheHash(?string $file_path, ?string $file_contents): string
     {
         return sha1(($file_path ? $file_contents : '') . $this->modified_timestamps);
     }
 
     /**
-     * @param  string  $fq_classlike_name_lc
-     * @param  string|null  $file_path
      * @psalm-suppress MixedAssignment
-     *
      */
     private function loadFromCache(string $fq_classlike_name_lc, ?string $file_path): ?ClassLikeStorage
     {
@@ -159,10 +144,7 @@ class ClassLikeStorageCacheProvider
     }
 
     /**
-     * @param  string  $fq_classlike_name_lc
-     * @param  string|null  $file_path
      * @param  bool $create_directory
-     *
      */
     private function getCacheLocationForClass(
         string $fq_classlike_name_lc,

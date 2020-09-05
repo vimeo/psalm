@@ -52,9 +52,7 @@ class InternalCallMapHandler
     private static $taint_sink_map = [];
 
     /**
-     * @param  string                           $method_id
      * @param  array<int, PhpParser\Node\Arg>   $args
-     *
      */
     public static function getCallableFromCallMapById(
         Codebase $codebase,
@@ -216,8 +214,6 @@ class InternalCallMapHandler
     }
 
     /**
-     * @param  string $function_id
-     *
      * @psalm-return array<int, TCallable>|null
      */
     public static function getCallablesFromCallMap(string $function_id): ?array
@@ -411,10 +407,6 @@ class InternalCallMapHandler
         return self::$call_map;
     }
 
-    /**
-     * @param   string $key
-     *
-     */
     public static function inCallMap(string $key): bool
     {
         return isset(self::getCallMap()[strtolower($key)]);

@@ -72,11 +72,7 @@ class TTemplateParam extends \Psalm\Type\Atomic
     }
 
     /**
-     * @param  string|null   $namespace
      * @param  array<string> $aliased_classes
-     * @param  string|null   $this_class
-     * @param  int           $php_major_version
-     * @param  int           $php_minor_version
      *
      * @return null
      */

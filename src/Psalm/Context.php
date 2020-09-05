@@ -500,8 +500,6 @@ class Context
     }
 
     /**
-     * @param  string $remove_var_id
-     *
      * @return void
      */
     public function remove(string $remove_var_id)
@@ -552,7 +550,6 @@ class Context
     }
 
     /**
-     * @param  string                 $remove_var_id
      * @param  Clause[]               $clauses
      * @param  Union|null             $new_type
      * @param  StatementsAnalyzer|null $statements_analyzer
@@ -635,7 +632,6 @@ class Context
     }
 
     /**
-     * @param  string               $remove_var_id
      * @param  Union|null           $new_type
      * @param  null|StatementsAnalyzer   $statements_analyzer
      *
@@ -654,7 +650,6 @@ class Context
     }
 
     /**
-     * @param  string                 $remove_var_id
      * @param  \Psalm\Type\Union|null $existing_type
      * @param  \Psalm\Type\Union|null $new_type
      * @param  null|StatementsAnalyzer     $statements_analyzer
@@ -745,19 +740,11 @@ class Context
         $this->check_consts = $this->check_consts && $op_context->check_consts;
     }
 
-    /**
-     * @param   string $class_name
-     *
-     */
     public function isPhantomClass(string $class_name): bool
     {
         return isset($this->phantom_classes[strtolower($class_name)]);
     }
 
-    /**
-     * @param  string|null  $var_name
-     *
-     */
     public function hasVariable(?string $var_name, StatementsAnalyzer $statements_analyzer = null): bool
     {
         if (!$var_name) {

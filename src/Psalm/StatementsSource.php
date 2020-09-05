@@ -27,23 +27,12 @@ interface StatementsSource extends FileSource
     public function getTemplateTypeMap(): ?array;
 
     /**
-     * @param string $file_path
-     * @param string $file_name
-     *
      * @return void
      */
     public function setRootFilePath(string $file_path, string $file_name);
 
-    /**
-     * @param string $file_path
-     *
-     */
     public function hasParentFilePath(string $file_path): bool;
 
-    /**
-     * @param string $file_path
-     *
-     */
     public function hasAlreadyRequiredFilePath(string $file_path): bool;
 
     public function getRequireNesting(): int;

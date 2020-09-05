@@ -350,8 +350,6 @@ class ForeachAnalyzer
     }
 
     /**
-     * @param  ?Type\Union  $key_type
-     * @param  ?Type\Union  $value_type
      * @return false|null
      */
     public static function checkIteratorType(
@@ -708,8 +706,6 @@ class ForeachAnalyzer
     }
 
     /**
-     * @param  ?Type\Union  $key_type
-     * @param  ?Type\Union  $value_type
      * @return void
      */
     public static function handleIterable(
@@ -973,8 +969,6 @@ class ForeachAnalyzer
     }
 
     /**
-     * @param  ?Type\Union  $key_type
-     * @param  ?Type\Union  $value_type
      * @return void
      */
     public static function getKeyValueParamsForTraversableObject(

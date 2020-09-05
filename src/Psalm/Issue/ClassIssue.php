@@ -8,10 +8,6 @@ abstract class ClassIssue extends CodeIssue
      */
     public $fq_classlike_name;
 
-    /**
-     * @param string        $message
-     * @param string        $fq_classlike_name
-     */
     public function __construct(
         string $message,
         \Psalm\CodeLocation $code_location,

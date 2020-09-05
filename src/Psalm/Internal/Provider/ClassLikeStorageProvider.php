@@ -33,9 +33,7 @@ class ClassLikeStorageProvider
     }
 
     /**
-     * @param  string $fq_classlike_name
      * @throws \InvalidArgumentException when class does not exist
-     *
      */
     public function get(string $fq_classlike_name): ClassLikeStorage
     {
@@ -47,10 +45,6 @@ class ClassLikeStorageProvider
         return self::$storage[$fq_classlike_name_lc];
     }
 
-    /**
-     * @param  string $fq_classlike_name
-     *
-     */
     public function has(string $fq_classlike_name): bool
     {
         $fq_classlike_name_lc = strtolower($fq_classlike_name);
@@ -58,12 +52,6 @@ class ClassLikeStorageProvider
         return isset(self::$storage[$fq_classlike_name_lc]);
     }
 
-    /**
-     * @param  string  $fq_classlike_name
-     * @param  string|null $file_path
-     * @param  string|null $file_contents
-     *
-     */
     public function exhume(string $fq_classlike_name, ?string $file_path, ?string $file_contents): ClassLikeStorage
     {
         $fq_classlike_name_lc = strtolower($fq_classlike_name);
@@ -119,10 +107,6 @@ class ClassLikeStorageProvider
         self::$new_storage[$fq_classlike_name_lc] = self::$storage[$fq_classlike_name_lc];
     }
 
-    /**
-     * @param  string $fq_classlike_name
-     *
-     */
     public function create(string $fq_classlike_name): ClassLikeStorage
     {
         $fq_classlike_name_lc = strtolower($fq_classlike_name);
@@ -135,8 +119,6 @@ class ClassLikeStorageProvider
     }
 
     /**
-     * @param string $fq_classlike_name
-     *
      * @return void
      */
     public function remove(string $fq_classlike_name)

@@ -83,15 +83,8 @@ class TaintNodeData
     public $column_to;
 
     /**
-     * @param string $label
-     * @param string $entry_path_type
-     * @param ?string $entry_path_description
      * @param int $line_from
      * @param int $line_to
-     * @param string $file_name
-     * @param string $file_path
-     * @param string $snippet
-     * @param string $selected_text
      * @param int $from
      * @param int $to
      * @param int $snippet_from

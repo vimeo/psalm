@@ -183,7 +183,6 @@ class ClassLikes
     }
 
     /**
-     * @param string        $fq_class_name
      * @param string|null   $file_path
      *
      * @return void
@@ -203,7 +202,6 @@ class ClassLikes
     }
 
     /**
-     * @param string        $fq_class_name
      * @param string|null   $file_path
      *
      * @return void
@@ -223,7 +221,6 @@ class ClassLikes
     }
 
     /**
-     * @param string        $fq_class_name
      * @param string|null   $file_path
      *
      * @return void
@@ -243,7 +240,6 @@ class ClassLikes
     }
 
     /**
-     * @param string        $fq_class_name_lc
      * @param string|null   $file_path
      *
      * @return void
@@ -291,10 +287,6 @@ class ClassLikes
         return $matching_classes;
     }
 
-    /**
-     * @param string $fq_class_name
-     *
-     */
     public function hasFullyQualifiedClassName(
         string $fq_class_name,
         CodeLocation $code_location = null,
@@ -366,10 +358,6 @@ class ClassLikes
         return true;
     }
 
-    /**
-     * @param string $fq_class_name
-     *
-     */
     public function hasFullyQualifiedInterfaceName(
         string $fq_class_name,
         CodeLocation $code_location = null,
@@ -441,10 +429,6 @@ class ClassLikes
         return true;
     }
 
-    /**
-     * @param string $fq_class_name
-     *
-     */
     public function hasFullyQualifiedTraitName(string $fq_class_name, CodeLocation $code_location = null): bool
     {
         $fq_class_name_lc = strtolower($fq_class_name);
@@ -471,9 +455,6 @@ class ClassLikes
 
     /**
      * Check whether a class/interface exists
-     *
-     * @param  string          $fq_class_name
-     *
      */
     public function classOrInterfaceExists(
         string $fq_class_name,
@@ -492,9 +473,6 @@ class ClassLikes
 
     /**
      * Determine whether or not a given class exists
-     *
-     * @param  string       $fq_class_name
-     *
      */
     public function classExists(
         string $fq_class_name,
@@ -521,12 +499,8 @@ class ClassLikes
     /**
      * Determine whether or not a class extends a parent
      *
-     * @param  string       $fq_class_name
-     * @param  string       $possible_parent
-     *
      * @throws UnpopulatedClasslikeException when called on unpopulated class
      * @throws \InvalidArgumentException when class does not exist
-     *
      */
     public function classExtends(string $fq_class_name, string $possible_parent, bool $from_api = false): bool
     {
@@ -549,10 +523,6 @@ class ClassLikes
 
     /**
      * Check whether a class implements an interface
-     *
-     * @param  string       $fq_class_name
-     * @param  string       $interface
-     *
      */
     public function classImplements(string $fq_class_name, string $interface): bool
     {
@@ -587,10 +557,6 @@ class ClassLikes
         return isset($class_storage->class_implements[$interface_id]);
     }
 
-    /**
-     * @param  string         $fq_interface_name
-     *
-     */
     public function interfaceExists(
         string $fq_interface_name,
         CodeLocation $code_location = null,
@@ -609,19 +575,12 @@ class ClassLikes
         );
     }
 
-    /**
-     * @param  string         $interface_name
-     * @param  string         $possible_parent
-     *
-     */
     public function interfaceExtends(string $interface_name, string $possible_parent): bool
     {
         return isset($this->getParentInterfaces($interface_name)[strtolower($possible_parent)]);
     }
 
     /**
-     * @param  string         $fq_interface_name
-     *
      * @return array<string, string>   all interfaces extended by $interface_name
      */
     public function getParentInterfaces(string $fq_interface_name): array
@@ -633,10 +592,6 @@ class ClassLikes
         return $storage->parent_interfaces;
     }
 
-    /**
-     * @param  string         $fq_trait_name
-     *
-     */
     public function traitExists(string $fq_trait_name, CodeLocation $code_location = null): bool
     {
         return $this->hasFullyQualifiedTraitName($fq_trait_name, $code_location);
@@ -644,9 +599,6 @@ class ClassLikes
 
     /**
      * Determine whether or not a class has the correct casing
-     *
-     * @param  string $fq_class_name
-     *
      */
     public function classHasCorrectCasing(string $fq_class_name): bool
     {
@@ -661,10 +613,6 @@ class ClassLikes
         return isset($this->existing_classes[$fq_class_name]);
     }
 
-    /**
-     * @param  string $fq_interface_name
-     *
-     */
     public function interfaceHasCorrectCasing(string $fq_interface_name): bool
     {
         if (isset($this->classlike_aliases[strtolower($fq_interface_name)])) {
@@ -674,10 +622,6 @@ class ClassLikes
         return isset($this->existing_interfaces[$fq_interface_name]);
     }
 
-    /**
-     * @param  string $fq_trait_name
-     *
-     */
     public function traitHasCorrectCase(string $fq_trait_name): bool
     {
         if (isset($this->classlike_aliases[strtolower($fq_trait_name)])) {
@@ -696,10 +640,6 @@ class ClassLikes
         return $this->classlike_storage_provider->get($fq_class_name)->user_defined;
     }
 
-    /**
-     * @param  string $fq_trait_name
-     *
-     */
     public function getTraitNode(string $fq_trait_name): PhpParser\Node\Stmt\Trait_
     {
         $fq_trait_name_lc = strtolower($fq_trait_name);
@@ -1498,7 +1438,6 @@ class ClassLikes
     }
 
     /**
-     * @param  string $class_name
      * @param  mixed  $visibility
      *
      * @return array<string,Type\Union>
@@ -1825,8 +1764,6 @@ class ClassLikes
     }
 
     /**
-     * @param   string      $class_name
-     * @param   string      $const_name
      * @param   int         $visibility
      *
      * @return  void
@@ -2360,8 +2297,6 @@ class ClassLikes
     }
 
     /**
-     * @param string $fq_class_name
-     *
      * @return void
      */
     public function removeClassLike(string $fq_class_name)

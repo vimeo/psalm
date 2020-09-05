@@ -376,8 +376,6 @@ class Reconciler
     }
 
     /**
-     * @param  string $path
-     *
      * @return array<int, string>
      */
     public static function breakUpPathIntoParts(string $path): array

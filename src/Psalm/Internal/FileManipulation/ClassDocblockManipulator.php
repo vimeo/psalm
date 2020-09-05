@@ -110,8 +110,6 @@ class ClassDocblockManipulator
     }
 
     /**
-     * @param  string $file_path
-     *
      * @return array<int, FileManipulation>
      */
     public static function getManipulationsForFile(string $file_path): array

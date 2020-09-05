@@ -22,9 +22,6 @@ abstract class CodeIssue
      */
     protected $message;
 
-    /**
-     * @param string        $message
-     */
     public function __construct(
         string $message,
         CodeLocation $code_location

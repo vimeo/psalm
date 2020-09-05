@@ -612,8 +612,6 @@ class TypeCombination
     }
 
     /**
-     * @param  Codebase|null   $codebase
-     *
      * @return null|Union
      */
     private static function scrapeTypeProperties(

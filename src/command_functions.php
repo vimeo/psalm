@@ -37,12 +37,6 @@ use function ini_get;
 use function preg_match;
 use function strtoupper;
 
-/**
- * @param  string $current_dir
- * @param  bool   $has_explicit_root
- * @param  string $vendor_dir
- *
- */
 function requireAutoloaders(string $current_dir, bool $has_explicit_root, string $vendor_dir): ?ClassLoader
 {
     $autoload_roots = [$current_dir];
@@ -141,9 +135,6 @@ function requireAutoloaders(string $current_dir, bool $has_explicit_root, string
 }
 
 /**
- * @param  string $current_dir
- *
- *
  * @psalm-suppress MixedArrayAccess
  * @psalm-suppress MixedAssignment
  * @psalm-suppress PossiblyUndefinedStringArrayOffset

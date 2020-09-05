@@ -21,10 +21,6 @@ class FileProvider
      */
     protected $open_files = [];
 
-    /**
-     * @param  string  $file_path
-     *
-     */
     public function getContents(string $file_path, bool $go_to_source = false): string
     {
         if (!$go_to_source && isset($this->temp_files[strtolower($file_path)])) {
@@ -47,9 +43,6 @@ class FileProvider
     }
 
     /**
-     * @param  string  $file_path
-     * @param  string  $file_contents
-     *
      * @return void
      */
     public function setContents(string $file_path, string $file_contents)
@@ -78,10 +71,6 @@ class FileProvider
         }
     }
 
-    /**
-     * @param  string $file_path
-     *
-     */
     public function getModifiedTime(string $file_path): int
     {
         if (!file_exists($file_path)) {
@@ -128,17 +117,12 @@ class FileProvider
         unset($this->temp_files[strtolower($file_path)], $this->open_files[strtolower($file_path)]);
     }
 
-    /**
-     * @param  string $file_path
-     *
-     */
     public function fileExists(string $file_path): bool
     {
         return file_exists($file_path);
     }
 
     /**
-     * @param string $dir_path
      * @param array<string> $file_extensions
      *
      * @return array<int, string>

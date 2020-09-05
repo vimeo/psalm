@@ -78,11 +78,6 @@ class ConstFetchAnalyzer
         }
     }
 
-    /**
-     * @param  ?string  $fq_const_name
-     * @param  string   $const_name
-     *
-     */
     public static function getGlobalConstType(
         Codebase $codebase,
         ?string $fq_const_name,

@@ -52,10 +52,8 @@ abstract class Type
     /**
      * Parses a string type representation
      *
-     * @param  string $type_string
      * @param  array{int,int}|null   $php_version
      * @param  array<string, array<string, array{Type\Union}>> $template_type_map
-     *
      */
     public static function parseString(
         string $type_string,
@@ -251,10 +249,6 @@ abstract class Type
         ]);
     }
 
-    /**
-     * @param string $class_type
-     *
-     */
     public static function getLiteralClassString(string $class_type): Union
     {
         $type = new TLiteralClassString($class_type);

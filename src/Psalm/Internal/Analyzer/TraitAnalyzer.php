@@ -14,9 +14,6 @@ class TraitAnalyzer extends ClassLikeAnalyzer
      */
     private $aliases;
 
-    /**
-     * @param string $fq_class_name
-     */
     public function __construct(
         PhpParser\Node\Stmt\Trait_ $class,
         SourceAnalyzer $source,

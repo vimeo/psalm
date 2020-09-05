@@ -748,10 +748,6 @@ class IssueBuffer
         return $output->create();
     }
 
-    /**
-     * @param  string $message
-     *
-     */
     protected static function alreadyEmitted(string $message): bool
     {
         $sham = sha1($message);

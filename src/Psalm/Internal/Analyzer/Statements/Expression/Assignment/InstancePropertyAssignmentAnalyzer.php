@@ -54,7 +54,6 @@ class InstancePropertyAssignmentAnalyzer
 {
     /**
      * @param   PropertyFetch|PropertyProperty  $stmt
-     * @param   string                          $prop_name
      * @param   PhpParser\Node\Expr|null        $assignment_value
      * @param   bool                            $direct_assignment whether the variable is assigned explicitly
      *

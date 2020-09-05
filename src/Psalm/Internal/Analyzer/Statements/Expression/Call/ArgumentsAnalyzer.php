@@ -796,9 +796,6 @@ class ArgumentsAnalyzer
     }
 
     /**
-     * @param  string|null $method_id
-     * @param  string|null $cased_method_id
-     * @param  FunctionLikeParameter|null $last_param
      * @param  array<int, FunctionLikeParameter> $function_params
      * @return false|null
      */
@@ -1055,7 +1052,6 @@ class ArgumentsAnalyzer
     }
 
     /**
-     * @param string|null $method_id
      * @return false|null
      */
     private static function handleByRefFunctionArg(

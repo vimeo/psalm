@@ -66,9 +66,6 @@ class ClassAnalyzer extends ClassLikeAnalyzer
      */
     public $inferred_property_types = [];
 
-    /**
-     * @param string|null                   $fq_class_name
-     */
     public function __construct(PhpParser\Node\Stmt\Class_ $class, SourceAnalyzer $source, ?string $fq_class_name)
     {
         if (!$fq_class_name) {
@@ -89,10 +86,6 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         }
     }
 
-    /**
-     * @param  string                     $file_path
-     *
-     */
     public static function getAnonymousClassName(PhpParser\Node\Stmt\Class_ $class, string $file_path): string
     {
         return preg_replace('/[^A-Za-z0-9]/', '_', $file_path)

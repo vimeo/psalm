@@ -445,9 +445,7 @@ class Union implements TypeNode
     }
 
     /**
-     * @param  string|null   $namespace
      * @param  array<string, string> $aliased_classes
-     * @param  string|null   $this_class
      * @param  int           $php_major_version
      * @param  int           $php_minor_version
      *
@@ -518,10 +516,6 @@ class Union implements TypeNode
         return $atomic_type->canBeFullyExpressedInPhp();
     }
 
-    /**
-     * @param  string $type_string
-     *
-     */
     public function removeType(string $type_string): bool
     {
         if (isset($this->types[$type_string])) {
@@ -579,10 +573,6 @@ class Union implements TypeNode
         $this->id = null;
     }
 
-    /**
-     * @param  string  $type_string
-     *
-     */
     public function hasType(string $type_string): bool
     {
         return isset($this->types[$type_string]);

@@ -37,8 +37,6 @@ class AssertionFinder
     /**
      * Gets all the type assertions in a conditional
      *
-     * @param string|null $this_class_name
-     *
      * @return array<string, non-empty-list<non-empty-list<string>>>|null
      */
     public static function scrapeAssertions(
@@ -524,7 +522,6 @@ class AssertionFinder
 
     /**
      * @param PhpParser\Node\Expr\BinaryOp\Identical|PhpParser\Node\Expr\BinaryOp\Equal $conditional
-     * @param string|null $this_class_name
      *
      * @return array<string, non-empty-list<non-empty-list<string>>>
      */
@@ -1160,7 +1157,6 @@ class AssertionFinder
 
     /**
      * @param PhpParser\Node\Expr\BinaryOp\NotIdentical|PhpParser\Node\Expr\BinaryOp\NotEqual $conditional
-     * @param string|null $this_class_name
      *
      * @return array<string, non-empty-list<non-empty-list<string>>>
      */
@@ -1775,7 +1771,6 @@ class AssertionFinder
     }
 
     /**
-     * @param  string|null                  $this_class_name
      * @param  bool                         $negate
      *
      * @return array<string, non-empty-list<non-empty-list<string>>>
@@ -2266,7 +2261,6 @@ class AssertionFinder
 
     /**
      * @param  PhpParser\Node\Expr\FuncCall|PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $expr
-     * @param  string|null  $this_class_name
      * @param  bool         $negate
      *
      * @return array<string, non-empty-list<non-empty-list<string>>>
@@ -2434,8 +2428,6 @@ class AssertionFinder
     }
 
     /**
-     * @param  string|null                     $this_class_name
-     *
      * @return list<string>
      */
     protected static function getInstanceOfTypes(

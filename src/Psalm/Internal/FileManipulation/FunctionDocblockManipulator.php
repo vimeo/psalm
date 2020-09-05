@@ -94,9 +94,7 @@ class FunctionDocblockManipulator
     private $is_pure = false;
 
     /**
-     * @param  string $file_path
      * @param  Closure|Function_|ClassMethod|ArrowFunction $stmt
-     *
      */
     public static function getForFunction(
         ProjectAnalyzer $project_analyzer,
@@ -115,7 +113,6 @@ class FunctionDocblockManipulator
     }
 
     /**
-     * @param string $file_path
      * @param Closure|Function_|ClassMethod|ArrowFunction $stmt
      */
     private function __construct(string $file_path, FunctionLike $stmt, ProjectAnalyzer $project_analyzer)
@@ -259,12 +256,7 @@ class FunctionDocblockManipulator
 
     /**
      * Sets the new return type
-     *
-     * @param   ?string     $php_type
-     * @param   string      $new_type
-     * @param   string      $phpdoc_type
      * @param   bool        $is_php_compatible
-     * @param   ?string     $description
      *
      * @return  void
      */
@@ -397,8 +389,6 @@ class FunctionDocblockManipulator
     }
 
     /**
-     * @param  string $file_path
-     *
      * @return array<int, FileManipulation>
      */
     public static function getManipulationsForFile(string $file_path): array

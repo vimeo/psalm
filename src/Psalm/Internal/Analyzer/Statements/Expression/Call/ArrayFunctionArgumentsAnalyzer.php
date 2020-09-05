@@ -44,8 +44,6 @@ class ArrayFunctionArgumentsAnalyzer
 {
     /**
      * @param   array<int, PhpParser\Node\Arg> $args
-     * @param   string                         $method_id
-     *
      * @return  false|null
      */
     public static function checkArgumentsMatch(
@@ -563,7 +561,6 @@ class ArrayFunctionArgumentsAnalyzer
     }
 
     /**
-     * @param  string   $method_id
      * @param  int      $min_closure_param_count
      * @param  int      $max_closure_param_count [description]
      * @param  (TArray|null)[] $array_arg_types
@@ -733,9 +730,6 @@ class ArrayFunctionArgumentsAnalyzer
 
     /**
      * @param  Type\Atomic\TFn|Type\Atomic\TCallable $closure_type
-     * @param  string   $method_id
-     * @param  int      $min_closure_param_count
-     * @param  int      $max_closure_param_count
      * @param  (TArray|null)[] $array_arg_types
      *
      * @return void
