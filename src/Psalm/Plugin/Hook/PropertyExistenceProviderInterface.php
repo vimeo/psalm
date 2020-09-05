@@ -23,8 +23,8 @@ interface PropertyExistenceProviderInterface
         string $fq_classlike_name,
         string $property_name,
         bool $read_mode,
-        StatementsSource $source = null,
-        Context $context = null,
-        CodeLocation $code_location = null
+        ?StatementsSource $source = null,
+        ?Context $context = null,
+        ?CodeLocation $code_location = null
     );
 }

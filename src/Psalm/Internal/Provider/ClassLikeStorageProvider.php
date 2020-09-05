@@ -27,7 +27,7 @@ class ClassLikeStorageProvider
      */
     public $cache;
 
-    public function __construct(ClassLikeStorageCacheProvider $cache = null)
+    public function __construct(?ClassLikeStorageCacheProvider $cache = null)
     {
         $this->cache = $cache;
     }

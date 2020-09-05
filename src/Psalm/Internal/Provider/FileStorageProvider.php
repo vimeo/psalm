@@ -31,7 +31,7 @@ class FileStorageProvider
      */
     public $cache;
 
-    public function __construct(FileStorageCacheProvider $cache = null)
+    public function __construct(?FileStorageCacheProvider $cache = null)
     {
         $this->cache = $cache;
     }
@@ -55,7 +55,7 @@ class FileStorageProvider
         unset(self::$storage[strtolower($file_path)]);
     }
 
-    public function has(string $file_path, string $file_contents = null): bool
+    public function has(string $file_path, ?string $file_contents = null): bool
     {
         $file_path = strtolower($file_path);
 

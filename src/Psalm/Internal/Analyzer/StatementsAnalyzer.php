@@ -144,8 +144,8 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
     public function analyze(
         array $stmts,
         Context $context,
-        Context $global_context = null,
-        $root_scope = false
+        ?Context $global_context = null,
+        bool $root_scope = false
     ) {
         if (!$stmts) {
             return;

@@ -69,9 +69,9 @@ class Properties
     public function propertyExists(
         string $property_id,
         bool $read_mode,
-        StatementsSource $source = null,
-        Context $context = null,
-        CodeLocation $code_location = null
+        ?StatementsSource $source = null,
+        ?Context $context = null,
+        ?CodeLocation $code_location = null
     ): bool {
         // remove trailing backslash if it exists
         $property_id = preg_replace('/^\\\\/', '', $property_id);
@@ -158,7 +158,7 @@ class Properties
     /**
      * @return string|null
      */
-    public function getDeclaringClassForProperty(string $property_id, bool $read_mode, StatementsSource $source = null)
+    public function getDeclaringClassForProperty(string $property_id, bool $read_mode, ?StatementsSource $source = null)
     {
         [$fq_class_name, $property_name] = explode('::$', $property_id);
 
@@ -185,7 +185,7 @@ class Properties
      * Get the class this property appears in (vs is declared in, which could give a trait)
      * @return string|null
      */
-    public function getAppearingClassForProperty(string $property_id, bool $read_mode, StatementsSource $source = null)
+    public function getAppearingClassForProperty(string $property_id, bool $read_mode, ?StatementsSource $source = null)
     {
         [$fq_class_name, $property_name] = explode('::$', $property_id);
 
@@ -234,8 +234,8 @@ class Properties
     public function getPropertyType(
         string $property_id,
         bool $property_set,
-        StatementsSource $source = null,
-        Context $context = null
+        ?StatementsSource $source = null,
+        ?Context $context = null
     ): ?Type\Union {
         // remove trailing backslash if it exists
         $property_id = preg_replace('/^\\\\/', '', $property_id);

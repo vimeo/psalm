@@ -63,8 +63,8 @@ class ReturnTypeAnalyzer
         \Psalm\Internal\Provider\NodeDataProvider $type_provider,
         FunctionLikeAnalyzer $function_like_analyzer,
         Type\Union $return_type = null,
-        $fq_class_name = null,
-        CodeLocation $return_type_location = null,
+        ?string $fq_class_name = null,
+        ?CodeLocation $return_type_location = null,
         array $compatible_method_ids = [],
         bool $did_explicitly_return = false,
         bool $closure_inside_call = false
@@ -843,8 +843,8 @@ class ReturnTypeAnalyzer
         ProjectAnalyzer $project_analyzer,
         Type\Union $inferred_return_type,
         StatementsSource $source,
-        $docblock_only = false,
-        FunctionLikeStorage $function_like_storage = null
+        bool $docblock_only = false,
+        ?FunctionLikeStorage $function_like_storage = null
     ) {
         $manipulator = FunctionDocblockManipulator::getForFunction(
             $project_analyzer,

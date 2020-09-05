@@ -106,7 +106,7 @@ abstract class Atomic implements TypeNode
      */
     public static function create(
         string $value,
-        array $php_version = null,
+        ?array $php_version = null,
         array $template_type_map = [],
         array $type_aliases = []
     ) {
@@ -588,7 +588,7 @@ abstract class Atomic implements TypeNode
 
     public function replaceTemplateTypesWithStandins(
         TemplateResult $template_result,
-        Codebase $codebase = null,
+        ?Codebase $codebase = null,
         ?StatementsAnalyzer $statements_analyzer = null,
         Type\Atomic $input_type = null,
         ?int $input_arg_offset = null,

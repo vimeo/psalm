@@ -30,8 +30,8 @@ class FooMethodProvider implements
     public static function doesMethodExist(
         string $fq_classlike_name,
         string $method_name_lowercase,
-        StatementsSource $source = null,
-        CodeLocation $code_location = null
+        ?StatementsSource $source = null,
+        ?CodeLocation $code_location = null
     ) {
         if ($method_name_lowercase === 'magicmethod' || $method_name_lowercase === 'magicmethod2') {
             return true;
@@ -46,10 +46,10 @@ class FooMethodProvider implements
     public static function getMethodParams(
         string $fq_classlike_name,
         string $method_name_lowercase,
-        array $call_args = null,
-        StatementsSource $statements_source = null,
-        Context $context = null,
-        CodeLocation $code_location = null
+        ?array $call_args = null,
+        ?StatementsSource $statements_source = null,
+        ?Context $context = null,
+        ?CodeLocation $code_location = null
     ) {
         if ($method_name_lowercase === 'magicmethod' || $method_name_lowercase === 'magicmethod2') {
             return [new \Psalm\Storage\FunctionLikeParameter('first', false, Type::getString())];
@@ -68,9 +68,9 @@ class FooMethodProvider implements
         array $call_args,
         Context $context,
         CodeLocation $code_location,
-        array $template_type_parameters = null,
-        string $called_fq_classlike_name = null,
-        string $called_method_name_lowercase = null
+        ?array $template_type_parameters = null,
+        ?string $called_fq_classlike_name = null,
+        ?string $called_method_name_lowercase = null
     ) {
         if ($method_name_lowercase == 'magicmethod') {
             return Type::getString();

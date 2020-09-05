@@ -30,7 +30,7 @@ class ExpressionAnalyzer
         PhpParser\Node\Expr $stmt,
         Context $context,
         bool $array_assignment = false,
-        Context $global_context = null,
+        ?Context $global_context = null,
         bool $from_stmt = false
     ) : bool {
         $codebase = $statements_analyzer->getCodebase();

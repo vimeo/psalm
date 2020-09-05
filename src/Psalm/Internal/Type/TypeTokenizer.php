@@ -333,8 +333,8 @@ class TypeTokenizer
     public static function getFullyQualifiedTokens(
         string $string_type,
         Aliases $aliases,
-        array $template_type_map = null,
-        array $type_aliases = null,
+        ?array $template_type_map = null,
+        ?array $type_aliases = null,
         ?string $self_fqcln = null,
         ?string $parent_fqcln = null,
         bool $allow_assertions = false

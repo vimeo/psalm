@@ -88,7 +88,7 @@ class Algebra
         PhpParser\Node\Expr $conditional,
         ?string $this_class_name,
         FileSource $source,
-        Codebase $codebase = null,
+        ?Codebase $codebase = null,
         bool $inside_negation = false,
         bool $cache = true
     ) {

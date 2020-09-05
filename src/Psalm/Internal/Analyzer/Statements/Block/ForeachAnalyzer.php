@@ -1127,8 +1127,8 @@ class ForeachAnalyzer
         string $template_class,
         string $calling_class,
         array $template_type_extends,
-        array $class_template_types = null,
-        array $calling_type_params = null
+        ?array $class_template_types = null,
+        ?array $calling_type_params = null
     ): ?Type\Union {
         if ($calling_class === $template_class) {
             if (isset($class_template_types[$template_name]) && $calling_type_params) {

@@ -22,7 +22,7 @@ class TemplateScanner extends Psalm\Internal\Scanner\FileScanner
         Codebase $codebase,
         FileStorage $file_storage,
         $storage_from_cache = false,
-        Progress $progress = null
+        ?Progress $progress = null
     ) {
         $stmts = $codebase->statements_provider->getStatementsForFile(
             $file_storage->file_path,

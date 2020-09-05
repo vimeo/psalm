@@ -43,7 +43,7 @@ class AssertionFinder
         PhpParser\Node\Expr $conditional,
         ?string $this_class_name,
         FileSource $source,
-        Codebase $codebase = null,
+        ?Codebase $codebase = null,
         bool $inside_negation = false,
         bool $cache = true,
         bool $inside_conditional = true
@@ -529,7 +529,7 @@ class AssertionFinder
         PhpParser\Node\Expr\BinaryOp $conditional,
         ?string $this_class_name,
         FileSource $source,
-        Codebase $codebase = null,
+        ?Codebase $codebase = null,
         bool $inside_negation = false,
         bool $cache = true,
         bool $inside_conditional = true
@@ -1164,7 +1164,7 @@ class AssertionFinder
         PhpParser\Node\Expr\BinaryOp $conditional,
         ?string $this_class_name,
         FileSource $source,
-        Codebase $codebase = null,
+        ?Codebase $codebase = null,
         bool $inside_negation = false,
         bool $cache = true,
         bool $inside_conditional = true
@@ -1779,7 +1779,7 @@ class AssertionFinder
         PhpParser\Node\Expr\FuncCall $expr,
         ?string $this_class_name,
         FileSource $source,
-        Codebase $codebase = null,
+        ?Codebase $codebase = null,
         $negate = false
     ): array {
         $prefix = $negate ? '!' : '';

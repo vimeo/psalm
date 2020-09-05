@@ -42,7 +42,7 @@ class IncludeAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Include_ $stmt,
         Context $context,
-        Context $global_context = null
+        ?Context $global_context = null
     ) : bool {
         $codebase = $statements_analyzer->getCodebase();
         $config = $codebase->config;

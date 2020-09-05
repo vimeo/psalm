@@ -73,8 +73,8 @@ class PropertyTypeProvider
         string $fq_classlike_name,
         string $property_name,
         bool $read_mode,
-        StatementsSource $source = null,
-        Context $context = null
+        ?StatementsSource $source = null,
+        ?Context $context = null
     ): ?Type\Union {
         foreach (self::$handlers[strtolower($fq_classlike_name)] as $property_handler) {
             $property_type = $property_handler(

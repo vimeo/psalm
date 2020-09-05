@@ -366,7 +366,7 @@ class Context
     /**
      * @param string|null $self
      */
-    public function __construct($self = null)
+    public function __construct(?string $self = null)
     {
         $this->self = $self;
     }
@@ -559,8 +559,8 @@ class Context
     public static function filterClauses(
         string $remove_var_id,
         array $clauses,
-        Union $new_type = null,
-        StatementsAnalyzer $statements_analyzer = null
+        ?Union $new_type = null,
+        ?StatementsAnalyzer $statements_analyzer = null
     ) {
         $new_type_string = $new_type ? $new_type->getId() : '';
 
@@ -639,8 +639,8 @@ class Context
      */
     public function removeVarFromConflictingClauses(
         string $remove_var_id,
-        Union $new_type = null,
-        StatementsAnalyzer $statements_analyzer = null
+        ?Union $new_type = null,
+        ?StatementsAnalyzer $statements_analyzer = null
     ) {
         $this->clauses = self::filterClauses($remove_var_id, $this->clauses, $new_type, $statements_analyzer);
 
@@ -658,9 +658,9 @@ class Context
      */
     public function removeDescendents(
         string $remove_var_id,
-        Union $existing_type = null,
-        Union $new_type = null,
-        StatementsAnalyzer $statements_analyzer = null
+        ?Union $existing_type = null,
+        ?Union $new_type = null,
+        ?StatementsAnalyzer $statements_analyzer = null
     ) {
         if (!$existing_type && isset($this->vars_in_scope[$remove_var_id])) {
             $existing_type = $this->vars_in_scope[$remove_var_id];
@@ -745,7 +745,7 @@ class Context
         return isset($this->phantom_classes[strtolower($class_name)]);
     }
 
-    public function hasVariable(?string $var_name, StatementsAnalyzer $statements_analyzer = null): bool
+    public function hasVariable(?string $var_name, ?StatementsAnalyzer $statements_analyzer = null): bool
     {
         if (!$var_name) {
             return false;

@@ -66,7 +66,7 @@ class TKeyedArray extends \Psalm\Type\Atomic
      * @param non-empty-array<string|int, Union> $properties
      * @param array<string, bool> $class_strings
      */
-    public function __construct(array $properties, array $class_strings = null)
+    public function __construct(array $properties, ?array $class_strings = null)
     {
         $this->properties = $properties;
         $this->class_strings = $class_strings;
@@ -313,7 +313,7 @@ class TKeyedArray extends \Psalm\Type\Atomic
         TemplateResult $template_result,
         ?Codebase $codebase = null,
         ?StatementsAnalyzer $statements_analyzer = null,
-        Atomic $input_type = null,
+        ?Atomic $input_type = null,
         ?int $input_arg_offset = null,
         ?string $calling_class = null,
         ?string $calling_function = null,

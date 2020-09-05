@@ -35,7 +35,7 @@ class FileBasedPluginAdapter implements Plugin\PluginEntryPointInterface
      *
      * @return  void
      */
-    public function __invoke(Plugin\RegistrationInterface $registration, SimpleXMLElement $config = null)
+    public function __invoke(Plugin\RegistrationInterface $registration, ?SimpleXMLElement $config = null)
     {
         $fq_class_name = $this->getPluginClassForPath($this->path);
 

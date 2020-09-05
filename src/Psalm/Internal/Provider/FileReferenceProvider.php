@@ -137,7 +137,7 @@ class FileReferenceProvider
      */
     public $cache;
 
-    public function __construct(FileReferenceCacheProvider $cache = null)
+    public function __construct(?FileReferenceCacheProvider $cache = null)
     {
         $this->cache = $cache;
     }

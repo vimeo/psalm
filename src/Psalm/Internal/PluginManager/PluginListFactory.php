@@ -21,7 +21,7 @@ class PluginListFactory
         $this->psalm_root = $psalm_root;
     }
 
-    public function __invoke(string $current_dir, string $config_file_path = null): PluginList
+    public function __invoke(string $current_dir, ?string $config_file_path = null): PluginList
     {
         $config_file = new ConfigFile($current_dir, $config_file_path);
         $composer_lock = new ComposerLock($this->findLockFiles());

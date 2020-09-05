@@ -967,7 +967,7 @@ class Union implements TypeNode
     /**
      * @return void
      */
-    public function substitute(Union $old_type, Union $new_type = null)
+    public function substitute(Union $old_type, ?Union $new_type = null)
     {
         if ($this->hasMixed() && !$this->isEmptyMixed()) {
             return;
@@ -1556,7 +1556,7 @@ class Union implements TypeNode
      */
     public function queueClassLikesForScanning(
         Codebase $codebase,
-        FileStorage $file_storage = null,
+        ?FileStorage $file_storage = null,
         array $phantom_classes = []
     ) {
         $scanner_visitor = new \Psalm\Internal\TypeVisitor\TypeScanner(

@@ -128,9 +128,9 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
      * @return void
      */
     public function analyze(
-        Context $file_context = null,
+        ?Context $file_context = null,
         $preserve_analyzers = false,
-        Context $global_context = null
+        ?Context $global_context = null
     ) {
         $codebase = $this->project_analyzer->getCodebase();
 
@@ -473,7 +473,7 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
      *
      * @return array<string, string>
      */
-    public function getAliasedClassesFlipped($namespace_name = null): array
+    public function getAliasedClassesFlipped(?string $namespace_name = null): array
     {
         if ($namespace_name && isset($this->namespace_aliased_classes_flipped[$namespace_name])) {
             return $this->namespace_aliased_classes_flipped[$namespace_name];
@@ -487,7 +487,7 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
      *
      * @return array<string, string>
      */
-    public function getAliasedClassesFlippedReplaceable($namespace_name = null): array
+    public function getAliasedClassesFlippedReplaceable(?string $namespace_name = null): array
     {
         if ($namespace_name && isset($this->namespace_aliased_classes_flipped_replaceable[$namespace_name])) {
             return $this->namespace_aliased_classes_flipped_replaceable[$namespace_name];

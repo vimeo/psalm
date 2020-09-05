@@ -255,7 +255,7 @@ class ProjectAnalyzer
         ?ReportOptions $stdout_report_options = null,
         array $generated_report_options = [],
         int $threads = 1,
-        Progress $progress = null
+        ?Progress $progress = null
     ) {
         if ($progress === null) {
             $progress = new VoidProgress();

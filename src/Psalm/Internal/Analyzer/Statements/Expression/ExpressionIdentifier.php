@@ -20,8 +20,8 @@ class ExpressionIdentifier
     public static function getVarId(
         PhpParser\Node\Expr $stmt,
         ?string $this_class_name,
-        FileSource $source = null,
-        &$nesting = null
+        ?FileSource $source = null,
+        ?int &$nesting = null
     ): ?string {
         if ($stmt instanceof PhpParser\Node\Expr\Variable && is_string($stmt->name)) {
             return '$' . $stmt->name;
@@ -76,7 +76,7 @@ class ExpressionIdentifier
     public static function getRootVarId(
         PhpParser\Node\Expr $stmt,
         ?string $this_class_name,
-        FileSource $source = null
+        ?FileSource $source = null
     ): ?string {
         if ($stmt instanceof PhpParser\Node\Expr\Variable
             || $stmt instanceof PhpParser\Node\Expr\StaticPropertyFetch
@@ -105,7 +105,7 @@ class ExpressionIdentifier
     public static function getArrayVarId(
         PhpParser\Node\Expr $stmt,
         ?string $this_class_name,
-        FileSource $source = null
+        ?FileSource $source = null
     ): ?string {
         if ($stmt instanceof PhpParser\Node\Expr\Assign) {
             return self::getArrayVarId($stmt->var, $this_class_name, $source);

@@ -105,12 +105,12 @@ class FunctionLikeParameter
         string $name,
         bool $by_ref,
         Type\Union $type = null,
-        CodeLocation $location = null,
-        CodeLocation $type_location = null,
+        ?CodeLocation $location = null,
+        ?CodeLocation $type_location = null,
         $is_optional = true,
         $is_nullable = false,
         $is_variadic = false,
-        $default_type = null
+        ?Type\Union $default_type = null
     ) {
         $this->name = $name;
         $this->by_ref = $by_ref;

@@ -277,7 +277,7 @@ class Codebase
     public function __construct(
         Config $config,
         Providers $providers,
-        Progress $progress = null
+        ?Progress $progress = null
     ) {
         if ($progress === null) {
             $progress = new VoidProgress();
@@ -649,7 +649,7 @@ class Codebase
      */
     public function classOrInterfaceExists(
         string $fq_class_name,
-        CodeLocation $code_location = null,
+        ?CodeLocation $code_location = null,
         ?string $calling_fq_class_name = null,
         ?string $calling_method_id = null
     ): bool {
@@ -672,7 +672,7 @@ class Codebase
      */
     public function classExists(
         string $fq_class_name,
-        CodeLocation $code_location = null,
+        ?CodeLocation $code_location = null,
         ?string $calling_fq_class_name = null,
         ?string $calling_method_id = null
     ): bool {
@@ -705,7 +705,7 @@ class Codebase
     
     public function interfaceExists(
         string $fq_interface_name,
-        CodeLocation $code_location = null,
+        ?CodeLocation $code_location = null,
         ?string $calling_fq_class_name = null,
         ?string $calling_method_id = null
     ): bool {

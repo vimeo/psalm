@@ -69,8 +69,8 @@ class MethodExistenceProvider
     public function doesMethodExist(
         string $fq_classlike_name,
         string $method_name_lowercase,
-        StatementsSource $source = null,
-        CodeLocation $code_location = null
+        ?StatementsSource $source = null,
+        ?CodeLocation $code_location = null
     ): ?bool {
         foreach (self::$handlers[strtolower($fq_classlike_name)] as $method_handler) {
             $method_exists = $method_handler(

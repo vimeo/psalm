@@ -402,7 +402,7 @@ class Reflection
         }
     }
 
-    public static function getPsalmTypeFromReflectionType(\ReflectionType $reflection_type = null) : Type\Union
+    public static function getPsalmTypeFromReflectionType(?\ReflectionType $reflection_type = null) : Type\Union
     {
         if (!$reflection_type) {
             return Type::getMixed();
@@ -449,8 +449,8 @@ class Reflection
      * @return void
      */
     private function registerInheritedProperties(
-        $fq_class_name,
-        $parent_class
+        string $fq_class_name,
+        string $parent_class
     ) {
         $parent_storage = $this->storage_provider->get($parent_class);
         $storage = $this->storage_provider->get($fq_class_name);

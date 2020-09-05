@@ -47,7 +47,7 @@ interface EmitterInterface
     public function emit(
         string $eventName,
         array $arguments = [],
-        callable $continueCallBack = null
+        ?callable $continueCallBack = null
     ) : bool;
 
     /**

@@ -46,8 +46,8 @@ class FileScanner implements FileSource
     public function scan(
         Codebase $codebase,
         FileStorage $file_storage,
-        $storage_from_cache = false,
-        Progress $progress = null
+        bool $storage_from_cache = false,
+        ?Progress $progress = null
     ) {
         if ($progress === null) {
             $progress = new VoidProgress();

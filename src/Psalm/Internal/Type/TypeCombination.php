@@ -161,7 +161,7 @@ class TypeCombination
      */
     public static function combineTypes(
         array $types,
-        Codebase $codebase = null,
+        ?Codebase $codebase = null,
         bool $overwrite_empty_array = false,
         bool $allow_mixed_union = true,
         int $literal_limit = 500

@@ -29,7 +29,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
     public function __construct(
         PhpParser\Node\Stmt\ClassMethod $function,
         SourceAnalyzer $source,
-        MethodStorage $storage = null
+        ?MethodStorage $storage = null
     ) {
         $codebase = $source->getCodebase();
 
@@ -283,7 +283,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
      * @param string|null $context_self
      *
      */
-    public function getMethodId($context_self = null): \Psalm\Internal\MethodIdentifier
+    public function getMethodId(?string $context_self = null): \Psalm\Internal\MethodIdentifier
     {
         $function_name = (string)$this->function->name;
 

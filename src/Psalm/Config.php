@@ -705,7 +705,7 @@ class Config
      *
      * @throws ConfigException
      */
-    public static function loadFromXML(string $base_dir, string $file_contents, $current_dir = null): Config
+    public static function loadFromXML(string $base_dir, string $file_contents, ?string $current_dir = null): Config
     {
         if ($current_dir === null) {
             $current_dir = $base_dir;
@@ -1170,7 +1170,7 @@ class Config
     }
 
     /** @return void */
-    public function addPluginClass(string $class_name, SimpleXMLElement $plugin_config = null)
+    public function addPluginClass(string $class_name, ?SimpleXMLElement $plugin_config = null)
     {
         $this->plugin_classes[] = ['class' => $class_name, 'config' => $plugin_config];
     }
@@ -1280,7 +1280,7 @@ class Config
      *
      * @return class-string<T>
      */
-    private function getPluginClassForPath(Codebase $codebase, string $path, $must_extend)
+    private function getPluginClassForPath(Codebase $codebase, string $path, string $must_extend)
     {
         $file_storage = $codebase->createFileStorageForPath($path);
         $file_to_scan = new FileScanner($path, $this->shortenFileName($path), true);
@@ -1693,7 +1693,7 @@ class Config
     /**
      * @return void
      */
-    public function visitStubFiles(Codebase $codebase, Progress $progress = null)
+    public function visitStubFiles(Codebase $codebase, ?Progress $progress = null)
     {
         if ($progress === null) {
             $progress = new VoidProgress();
@@ -1841,7 +1841,7 @@ class Config
      * @psalm-suppress MixedAssignment
      * @psalm-suppress MixedArrayAccess
      */
-    public function visitComposerAutoloadFiles(ProjectAnalyzer $project_analyzer, Progress $progress = null)
+    public function visitComposerAutoloadFiles(ProjectAnalyzer $project_analyzer, ?Progress $progress = null)
     {
         if ($progress === null) {
             $progress = new VoidProgress();

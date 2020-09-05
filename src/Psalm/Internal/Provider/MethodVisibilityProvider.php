@@ -74,7 +74,7 @@ class MethodVisibilityProvider
         string $fq_classlike_name,
         string $method_name,
         Context $context,
-        CodeLocation $code_location = null
+        ?CodeLocation $code_location = null
     ): ?bool {
         foreach (self::$handlers[strtolower($fq_classlike_name)] as $method_handler) {
             $method_visible = $method_handler(

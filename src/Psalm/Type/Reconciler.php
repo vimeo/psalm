@@ -80,7 +80,7 @@ class Reconciler
         StatementsAnalyzer $statements_analyzer,
         array $template_type_map = [],
         bool $inside_loop = false,
-        CodeLocation $code_location = null
+        ?CodeLocation $code_location = null
     ): array {
         if (!$new_types) {
             return $existing_types;

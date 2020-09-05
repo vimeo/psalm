@@ -99,8 +99,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
      * @return null|false
      */
     public function analyze(
-        Context $class_context = null,
-        Context $global_context = null
+        ?Context $class_context = null,
+        ?Context $global_context = null
     ) {
         $class = $this->class;
 
@@ -1145,8 +1145,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         Config $config,
         ClassLikeStorage $storage,
         Context $class_context,
-        Context $global_context = null,
-        MethodAnalyzer $constructor_analyzer = null
+        ?Context $global_context = null,
+        ?MethodAnalyzer $constructor_analyzer = null
     ) {
         if (!$config->reportIssueInFile('PropertyNotSetInConstructor', $this->getFilePath())) {
             return;
@@ -1486,9 +1486,9 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         ProjectAnalyzer $project_analyzer,
         ClassLikeStorage $storage,
         Context $class_context,
-        Context $global_context = null,
-        MethodAnalyzer &$constructor_analyzer = null,
-        TraitAnalyzer $previous_trait_analyzer = null
+        ?Context $global_context = null,
+        ?MethodAnalyzer &$constructor_analyzer = null,
+        ?TraitAnalyzer $previous_trait_analyzer = null
     ) {
         $codebase = $this->getCodebase();
 
@@ -1766,7 +1766,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         ClassLikeStorage $class_storage,
         SourceAnalyzer $source,
         Context $class_context,
-        Context $global_context = null,
+        ?Context $global_context = null,
         $is_fake = false
     ) {
         $config = Config::getInstance();

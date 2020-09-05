@@ -187,7 +187,7 @@ class ClassLikes
      *
      * @return void
      */
-    public function addFullyQualifiedClassName(string $fq_class_name, $file_path = null)
+    public function addFullyQualifiedClassName(string $fq_class_name, ?string $file_path = null)
     {
         $fq_class_name_lc = strtolower($fq_class_name);
         $this->existing_classlikes_lc[$fq_class_name_lc] = true;
@@ -206,7 +206,7 @@ class ClassLikes
      *
      * @return void
      */
-    public function addFullyQualifiedInterfaceName(string $fq_class_name, $file_path = null)
+    public function addFullyQualifiedInterfaceName(string $fq_class_name, ?string $file_path = null)
     {
         $fq_class_name_lc = strtolower($fq_class_name);
         $this->existing_classlikes_lc[$fq_class_name_lc] = true;
@@ -225,7 +225,7 @@ class ClassLikes
      *
      * @return void
      */
-    public function addFullyQualifiedTraitName(string $fq_class_name, $file_path = null)
+    public function addFullyQualifiedTraitName(string $fq_class_name, ?string $file_path = null)
     {
         $fq_class_name_lc = strtolower($fq_class_name);
         $this->existing_classlikes_lc[$fq_class_name_lc] = true;
@@ -244,7 +244,7 @@ class ClassLikes
      *
      * @return void
      */
-    public function addFullyQualifiedClassLikeName(string $fq_class_name_lc, $file_path = null)
+    public function addFullyQualifiedClassLikeName(string $fq_class_name_lc, ?string $file_path = null)
     {
         if ($file_path) {
             $this->scanner->setClassLikeFilePath($fq_class_name_lc, $file_path);
@@ -289,7 +289,7 @@ class ClassLikes
 
     public function hasFullyQualifiedClassName(
         string $fq_class_name,
-        CodeLocation $code_location = null,
+        ?CodeLocation $code_location = null,
         ?string $calling_fq_class_name = null,
         ?string $calling_method_id = null
     ): bool {
@@ -360,7 +360,7 @@ class ClassLikes
 
     public function hasFullyQualifiedInterfaceName(
         string $fq_class_name,
-        CodeLocation $code_location = null,
+        ?CodeLocation $code_location = null,
         ?string $calling_fq_class_name = null,
         ?string $calling_method_id = null
     ): bool {
@@ -429,7 +429,7 @@ class ClassLikes
         return true;
     }
 
-    public function hasFullyQualifiedTraitName(string $fq_class_name, CodeLocation $code_location = null): bool
+    public function hasFullyQualifiedTraitName(string $fq_class_name, ?CodeLocation $code_location = null): bool
     {
         $fq_class_name_lc = strtolower($fq_class_name);
 
@@ -458,7 +458,7 @@ class ClassLikes
      */
     public function classOrInterfaceExists(
         string $fq_class_name,
-        CodeLocation $code_location = null,
+        ?CodeLocation $code_location = null,
         ?string $calling_fq_class_name = null,
         ?string $calling_method_id = null
     ): bool {
@@ -476,7 +476,7 @@ class ClassLikes
      */
     public function classExists(
         string $fq_class_name,
-        CodeLocation $code_location = null,
+        ?CodeLocation $code_location = null,
         ?string $calling_fq_class_name = null,
         ?string $calling_method_id = null
     ): bool {
@@ -559,7 +559,7 @@ class ClassLikes
 
     public function interfaceExists(
         string $fq_interface_name,
-        CodeLocation $code_location = null,
+        ?CodeLocation $code_location = null,
         ?string $calling_fq_class_name = null,
         ?string $calling_method_id = null
     ): bool {
@@ -592,7 +592,7 @@ class ClassLikes
         return $storage->parent_interfaces;
     }
 
-    public function traitExists(string $fq_trait_name, CodeLocation $code_location = null): bool
+    public function traitExists(string $fq_trait_name, ?CodeLocation $code_location = null): bool
     {
         return $this->hasFullyQualifiedTraitName($fq_trait_name, $code_location);
     }
@@ -797,7 +797,7 @@ class ClassLikes
     /**
      * @return void
      */
-    public function moveMethods(Methods $methods, Progress $progress = null)
+    public function moveMethods(Methods $methods, ?Progress $progress = null)
     {
         if ($progress === null) {
             $progress = new VoidProgress();
@@ -881,7 +881,7 @@ class ClassLikes
     /**
      * @return void
      */
-    public function moveProperties(Properties $properties, Progress $progress = null)
+    public function moveProperties(Properties $properties, ?Progress $progress = null)
     {
         if ($progress === null) {
             $progress = new VoidProgress();
@@ -982,7 +982,7 @@ class ClassLikes
     /**
      * @return void
      */
-    public function moveClassConstants(Progress $progress = null)
+    public function moveClassConstants(?Progress $progress = null)
     {
         if ($progress === null) {
             $progress = new VoidProgress();

@@ -32,8 +32,8 @@ interface MethodReturnTypeProviderInterface
         array $call_args,
         Context $context,
         CodeLocation $code_location,
-        array $template_type_parameters = null,
-        string $called_fq_classlike_name = null,
-        string $called_method_name_lowercase = null
+        ?array $template_type_parameters = null,
+        ?string $called_fq_classlike_name = null,
+        ?string $called_method_name_lowercase = null
     );
 }
