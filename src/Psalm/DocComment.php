@@ -119,7 +119,6 @@ class DocComment
             // Parse @specials.
             if (preg_match_all('/^\s?@([\w\-:]+)[\t ]*([^\n]*)/m', $docblock, $matches, PREG_SET_ORDER)) {
                 $docblock = preg_replace('/^\s?@([\w\-:]+)\s*([^\n]*)/m', '', $docblock);
-                /** @var string[] $match */
                 foreach ($matches as $m => $match) {
                     [$_, $type, $data] = $match;
 
