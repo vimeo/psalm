@@ -539,7 +539,7 @@ class ProjectAnalyzer
      * @param  string $file_path
      *
      */
-    public function canReportIssues($file_path): bool
+    public function canReportIssues(string $file_path): bool
     {
         return isset($this->project_files[$file_path]);
     }
@@ -550,7 +550,7 @@ class ProjectAnalyzer
      *
      * @return void
      */
-    public function check($base_dir, $is_diff = false)
+    public function check(string $base_dir, $is_diff = false)
     {
         $start_checks = (int)microtime(true);
 
@@ -979,7 +979,7 @@ class ProjectAnalyzer
      *
      * @return void
      */
-    public function findReferencesTo($symbol)
+    public function findReferencesTo(string $symbol)
     {
         if (!$this->stdout_report_options) {
             throw new \UnexpectedValueException('Not expecting to emit output');
@@ -1012,7 +1012,7 @@ class ProjectAnalyzer
      *
      * @return void
      */
-    public function checkDir($dir_name)
+    public function checkDir(string $dir_name)
     {
         $this->file_reference_provider->loadReferenceCache();
 
@@ -1042,7 +1042,7 @@ class ProjectAnalyzer
      *
      * @return void
      */
-    private function checkDirWithConfig($dir_name, Config $config, $allow_non_project_files = false)
+    private function checkDirWithConfig(string $dir_name, Config $config, $allow_non_project_files = false)
     {
         $file_extensions = $config->getFileExtensions();
 
@@ -1098,7 +1098,7 @@ class ProjectAnalyzer
      *
      * @return array<string>
      */
-    protected function getDiffFilesInDir($dir_name, Config $config): array
+    protected function getDiffFilesInDir(string $dir_name, Config $config): array
     {
         $file_extensions = $config->getFileExtensions();
 
@@ -1157,7 +1157,7 @@ class ProjectAnalyzer
      *
      * @return void
      */
-    public function checkFile($file_path)
+    public function checkFile(string $file_path)
     {
         $this->progress->debug('Checking ' . $file_path . "\n");
 
@@ -1280,7 +1280,7 @@ class ProjectAnalyzer
      * @param  string $file_path
      *
      */
-    public function fileExists($file_path): bool
+    public function fileExists(string $file_path): bool
     {
         return $this->file_provider->fileExists($file_path);
     }
@@ -1391,7 +1391,7 @@ class ProjectAnalyzer
      * @param  string $fq_class_name
      *
      */
-    public function getFileAnalyzerForClassLike($fq_class_name): FileAnalyzer
+    public function getFileAnalyzerForClassLike(string $fq_class_name): FileAnalyzer
     {
         $fq_class_name_lc = strtolower($fq_class_name);
 

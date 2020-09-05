@@ -404,7 +404,7 @@ class Context
     public function update(
         Context $start_context,
         Context $end_context,
-        $has_leaving_statements,
+        bool $has_leaving_statements,
         array $vars_to_update,
         array &$updated_vars
     ) {
@@ -504,7 +504,7 @@ class Context
      *
      * @return void
      */
-    public function remove($remove_var_id)
+    public function remove(string $remove_var_id)
     {
         unset(
             $this->referenced_var_ids[$remove_var_id],
@@ -560,7 +560,7 @@ class Context
      * @return list<Clause>
      */
     public static function filterClauses(
-        $remove_var_id,
+        string $remove_var_id,
         array $clauses,
         Union $new_type = null,
         StatementsAnalyzer $statements_analyzer = null
@@ -642,7 +642,7 @@ class Context
      * @return void
      */
     public function removeVarFromConflictingClauses(
-        $remove_var_id,
+        string $remove_var_id,
         Union $new_type = null,
         StatementsAnalyzer $statements_analyzer = null
     ) {
@@ -662,7 +662,7 @@ class Context
      * @return void
      */
     public function removeDescendents(
-        $remove_var_id,
+        string $remove_var_id,
         Union $existing_type = null,
         Union $new_type = null,
         StatementsAnalyzer $statements_analyzer = null
@@ -749,7 +749,7 @@ class Context
      * @param   string $class_name
      *
      */
-    public function isPhantomClass($class_name): bool
+    public function isPhantomClass(string $class_name): bool
     {
         return isset($this->phantom_classes[strtolower($class_name)]);
     }
@@ -758,7 +758,7 @@ class Context
      * @param  string|null  $var_name
      *
      */
-    public function hasVariable($var_name, StatementsAnalyzer $statements_analyzer = null): bool
+    public function hasVariable(?string $var_name, StatementsAnalyzer $statements_analyzer = null): bool
     {
         if (!$var_name) {
             return false;

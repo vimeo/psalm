@@ -18,7 +18,7 @@ class FileStorageInstanceCacheProvider extends \Psalm\Internal\Provider\FileStor
      *
      * @return void
      */
-    public function writeToCache(FileStorage $storage, $file_contents)
+    public function writeToCache(FileStorage $storage, string $file_contents)
     {
         $file_path = strtolower($storage->file_path);
         $this->cache[$file_path] = $storage;
@@ -30,7 +30,7 @@ class FileStorageInstanceCacheProvider extends \Psalm\Internal\Provider\FileStor
      *
      * @return FileStorage|null
      */
-    public function getLatestFromCache($file_path, $file_contents): ?FileStorage
+    public function getLatestFromCache(string $file_path, string $file_contents): ?FileStorage
     {
         $cached_value = $this->loadFromCache(strtolower($file_path));
 
@@ -46,7 +46,7 @@ class FileStorageInstanceCacheProvider extends \Psalm\Internal\Provider\FileStor
      *
      * @return void
      */
-    public function removeCacheForFile($file_path)
+    public function removeCacheForFile(string $file_path)
     {
         unset($this->cache[strtolower($file_path)]);
     }

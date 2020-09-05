@@ -103,7 +103,7 @@ class FunctionLikeParameter
      * @param Type\Union|null    $default_type
      */
     public function __construct(
-        $name,
+        string $name,
         bool $by_ref,
         Type\Union $type = null,
         CodeLocation $location = null,

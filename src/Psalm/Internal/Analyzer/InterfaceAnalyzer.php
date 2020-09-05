@@ -13,8 +13,11 @@ class InterfaceAnalyzer extends ClassLikeAnalyzer
     /**
      * @param string                         $fq_interface_name
      */
-    public function __construct(PhpParser\Node\Stmt\Interface_ $interface, SourceAnalyzer $source, $fq_interface_name)
-    {
+    public function __construct(
+        PhpParser\Node\Stmt\Interface_ $interface,
+        SourceAnalyzer $source,
+        string $fq_interface_name
+    ) {
         parent::__construct($interface, $source, $fq_interface_name);
     }
 

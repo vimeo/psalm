@@ -718,7 +718,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
      * @param  string       $var_name
      *
      */
-    public function hasVariable($var_name): bool
+    public function hasVariable(string $var_name): bool
     {
         return isset($this->all_vars[$var_name]);
     }
@@ -729,7 +729,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
      *
      * @return void
      */
-    public function registerVariable($var_id, CodeLocation $location, $branch_point)
+    public function registerVariable(string $var_id, CodeLocation $location, $branch_point)
     {
         $this->all_vars[$var_id] = $location;
 
@@ -745,7 +745,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
      *
      * @return void
      */
-    public function registerVariableAssignment($var_id, CodeLocation $location)
+    public function registerVariableAssignment(string $var_id, CodeLocation $location)
     {
         $this->unused_var_locations[$location->getHash()] = [$var_id, $location];
     }
@@ -776,7 +776,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
      * @param  string  $var_id
      *
      */
-    public function getFirstAppearance($var_id): ?CodeLocation
+    public function getFirstAppearance(string $var_id): ?CodeLocation
     {
         return isset($this->all_vars[$var_id]) ? $this->all_vars[$var_id] : null;
     }
@@ -785,7 +785,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
      * @param  string $var_id
      *
      */
-    public function getBranchPoint($var_id): ?int
+    public function getBranchPoint(string $var_id): ?int
     {
         return isset($this->var_branch_points[$var_id]) ? $this->var_branch_points[$var_id] : null;
     }
@@ -796,7 +796,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
      *
      * @return void
      */
-    public function addVariableInitialization($var_id, $branch_point)
+    public function addVariableInitialization(string $var_id, $branch_point)
     {
         $this->vars_to_initialize[$var_id] = $branch_point;
     }

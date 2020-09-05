@@ -56,7 +56,7 @@ class ShowCommand extends Command
 
         $formatRow =
             /** @param null|string $package */
-            function (string $class, $package): array {
+            function (string $class, ?string $package): array {
                 return [$package, $class];
             };
 

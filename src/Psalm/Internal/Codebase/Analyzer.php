@@ -222,7 +222,7 @@ class Analyzer
     /**
      * @param  string $file_path
      */
-    public function canReportIssues($file_path): bool
+    public function canReportIssues(string $file_path): bool
     {
         return isset($this->files_with_analysis_results[$file_path]);
     }
@@ -233,7 +233,7 @@ class Analyzer
      */
     private function getFileAnalyzer(
         ProjectAnalyzer $project_analyzer,
-        $file_path,
+        string $file_path,
         array $filetype_analyzers
     ): FileAnalyzer {
         $extension = (string) (pathinfo($file_path)['extension'] ?? '');
@@ -344,7 +344,7 @@ class Analyzer
              *
              * @return array
              */
-            function ($_, $file_path) use ($project_analyzer, $filetype_analyzers) {
+            function (int $_, string $file_path) use ($project_analyzer, $filetype_analyzers) {
                 $file_analyzer = $this->getFileAnalyzer($project_analyzer, $file_path, $filetype_analyzers);
 
                 $this->progress->debug('Analyzing ' . $file_analyzer->getFilePath() . "\n");
@@ -1072,7 +1072,7 @@ class Analyzer
      *
      * @return array{0:int, 1:int}
      */
-    public function getMixedCountsForFile($file_path): array
+    public function getMixedCountsForFile(string $file_path): array
     {
         if (!isset($this->mixed_counts[$file_path])) {
             $this->mixed_counts[$file_path] = [0, 0];
@@ -1087,7 +1087,7 @@ class Analyzer
      *
      * @return void
      */
-    public function setMixedCountsForFile($file_path, array $mixed_counts)
+    public function setMixedCountsForFile(string $file_path, array $mixed_counts)
     {
         $this->mixed_counts[$file_path] = $mixed_counts;
     }
@@ -1097,7 +1097,7 @@ class Analyzer
      *
      * @return void
      */
-    public function incrementMixedCount($file_path)
+    public function incrementMixedCount(string $file_path)
     {
         if (!$this->count_mixed) {
             return;
@@ -1115,7 +1115,7 @@ class Analyzer
      *
      * @return void
      */
-    public function decrementMixedCount($file_path)
+    public function decrementMixedCount(string $file_path)
     {
         if (!$this->count_mixed) {
             return;
@@ -1133,7 +1133,7 @@ class Analyzer
      *
      * @return void
      */
-    public function incrementNonMixedCount($file_path)
+    public function incrementNonMixedCount(string $file_path)
     {
         if (!$this->count_mixed) {
             return;
@@ -1351,7 +1351,7 @@ class Analyzer
      *
      * @return void
      */
-    public function updateFile($file_path, $dry_run)
+    public function updateFile(string $file_path, $dry_run)
     {
         FileManipulationBuffer::add(
             $file_path,
@@ -1426,7 +1426,7 @@ class Analyzer
      *
      * @return list<IssueData>
      */
-    public function getExistingIssuesForFile($file_path, $start, $end, ?string $issue_type = null)
+    public function getExistingIssuesForFile(string $file_path, $start, $end, ?string $issue_type = null)
     {
         if (!isset($this->existing_issues[$file_path])) {
             return [];
@@ -1452,7 +1452,7 @@ class Analyzer
      *
      * @return void
      */
-    public function removeExistingDataForFile($file_path, $start, $end, ?string $issue_type = null)
+    public function removeExistingDataForFile(string $file_path, $start, $end, ?string $issue_type = null)
     {
         if (isset($this->existing_issues[$file_path])) {
             foreach ($this->existing_issues[$file_path] as $i => $issue_data) {
@@ -1559,7 +1559,7 @@ class Analyzer
      *
      * @return void
      */
-    public function setAnalyzedMethod($file_path, $method_id, $is_constructor = false)
+    public function setAnalyzedMethod(string $file_path, string $method_id, $is_constructor = false)
     {
         $this->analyzed_methods[$file_path][$method_id] = $is_constructor ? 2 : 1;
     }
@@ -1569,7 +1569,7 @@ class Analyzer
      * @param  string  $method_id
      * @param bool $is_constructor
      */
-    public function isMethodAlreadyAnalyzed($file_path, $method_id, $is_constructor = false): bool
+    public function isMethodAlreadyAnalyzed(string $file_path, string $method_id, $is_constructor = false): bool
     {
         if ($is_constructor) {
             return isset($this->analyzed_methods[$file_path][$method_id])

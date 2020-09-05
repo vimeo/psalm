@@ -14,7 +14,7 @@ abstract class ArgumentIssue extends CodeIssue
      * @param string        $message
      */
     public function __construct(
-        $message,
+        string $message,
         \Psalm\CodeLocation $code_location,
         string $function_id = null
     ) {

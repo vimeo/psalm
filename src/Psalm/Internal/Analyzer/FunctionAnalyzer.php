@@ -50,7 +50,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
      */
     public static function getReturnTypeFromCallMapWithArgs(
         StatementsAnalyzer $statements_analyzer,
-        $function_id,
+        string $function_id,
         array $call_args,
         Context $context
     ): Type\Union {

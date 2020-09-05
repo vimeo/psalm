@@ -14,9 +14,9 @@ class ParseErrorLocation extends \Psalm\CodeLocation
      */
     public function __construct(
         PhpParser\Error $error,
-        $file_contents,
-        $file_path,
-        $file_name
+        string $file_contents,
+        string $file_path,
+        string $file_name
     ) {
         /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
         $this->file_start = (int)$error->getAttributes()['startFilePos'];

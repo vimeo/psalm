@@ -320,7 +320,7 @@ class StatementsProvider
      *
      * @return void
      */
-    public function setUnchangedFile($file_path)
+    public function setUnchangedFile(string $file_path)
     {
         if (!isset($this->diff_map[$file_path])) {
             $this->diff_map[$file_path] = [];
@@ -365,7 +365,7 @@ class StatementsProvider
      * @return list<\PhpParser\Node\Stmt>
      */
     public static function parseStatements(
-        $file_contents,
+        string $file_contents,
         string $php_version,
         $file_path = null,
         string $existing_file_contents = null,

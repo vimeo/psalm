@@ -752,7 +752,7 @@ class IssueBuffer
      * @param  string $message
      *
      */
-    protected static function alreadyEmitted($message): bool
+    protected static function alreadyEmitted(string $message): bool
     {
         $sham = sha1($message);
 

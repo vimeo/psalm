@@ -30,7 +30,7 @@ class ParserInstanceCacheProvider extends \Psalm\Internal\Provider\ParserCachePr
     {
     }
 
-    public function loadStatementsFromCache($file_path, $file_modified_time, $file_content_hash)
+    public function loadStatementsFromCache(string $file_path, $file_modified_time, string $file_content_hash)
     {
         if (isset($this->statements_cache[$file_path])
             && $this->statements_cache_time[$file_path] >= $file_modified_time
@@ -49,7 +49,7 @@ class ParserInstanceCacheProvider extends \Psalm\Internal\Provider\ParserCachePr
      *
      * @return list<PhpParser\Node\Stmt>|null
      */
-    public function loadExistingStatementsFromCache($file_path)
+    public function loadExistingStatementsFromCache(string $file_path)
     {
         if (isset($this->statements_cache[$file_path])) {
             return $this->statements_cache[$file_path];
@@ -66,7 +66,7 @@ class ParserInstanceCacheProvider extends \Psalm\Internal\Provider\ParserCachePr
      *
      * @return void
      */
-    public function saveStatementsToCache($file_path, $file_content_hash, array $stmts, $touch_only)
+    public function saveStatementsToCache(string $file_path, string $file_content_hash, array $stmts, bool $touch_only)
     {
         $this->statements_cache[$file_path] = $stmts;
         $this->statements_cache_time[$file_path] = microtime(true);
@@ -78,7 +78,7 @@ class ParserInstanceCacheProvider extends \Psalm\Internal\Provider\ParserCachePr
      *
      * @return string|null
      */
-    public function loadExistingFileContentsFromCache($file_path)
+    public function loadExistingFileContentsFromCache(string $file_path)
     {
         if (isset($this->file_contents_cache[$file_path])) {
             return $this->file_contents_cache[$file_path];
@@ -93,7 +93,7 @@ class ParserInstanceCacheProvider extends \Psalm\Internal\Provider\ParserCachePr
      *
      * @return void
      */
-    public function cacheFileContents($file_path, $file_contents)
+    public function cacheFileContents(string $file_path, string $file_contents)
     {
         $this->file_contents_cache[$file_path] = $file_contents;
     }

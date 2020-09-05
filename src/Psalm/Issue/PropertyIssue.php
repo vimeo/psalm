@@ -13,9 +13,9 @@ abstract class PropertyIssue extends CodeIssue
      * @param string        $property_id
      */
     public function __construct(
-        $message,
+        string $message,
         \Psalm\CodeLocation $code_location,
-        $property_id
+        string $property_id
     ) {
         parent::__construct($message, $code_location);
         $this->property_id = $property_id;

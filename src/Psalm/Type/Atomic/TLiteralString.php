@@ -13,7 +13,7 @@ class TLiteralString extends TString
     /**
      * @param string $value
      */
-    public function __construct($value)
+    public function __construct(string $value)
     {
         $this->value = $value;
     }
@@ -53,11 +53,11 @@ class TLiteralString extends TString
      *
      */
     public function toPhpString(
-        $namespace,
+        ?string $namespace,
         array $aliased_classes,
-        $this_class,
-        $php_major_version,
-        $php_minor_version
+        ?string $this_class,
+        int $php_major_version,
+        int $php_minor_version
     ): ?string {
         return $php_major_version >= 7 ? 'string' : null;
     }

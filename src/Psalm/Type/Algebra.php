@@ -72,7 +72,7 @@ class Algebra
      *
      * @psalm-pure
      */
-    public static function negateType($type): string
+    public static function negateType(string $type): string
     {
         if ($type === 'mixed') {
             return $type;
@@ -90,7 +90,7 @@ class Algebra
         int $conditional_object_id,
         int $creating_object_id,
         PhpParser\Node\Expr $conditional,
-        $this_class_name,
+        ?string $this_class_name,
         FileSource $source,
         Codebase $codebase = null,
         bool $inside_negation = false,
@@ -461,7 +461,7 @@ class Algebra
                              *
                              * @return bool
                              */
-                            function ($possible_type) use ($negated_clause_type) {
+                            function (string $possible_type) use ($negated_clause_type) {
                                 return $possible_type !== $negated_clause_type;
                             }
                         )
@@ -567,7 +567,7 @@ class Algebra
                         /**
                          * @param  string $possible_type
                          */
-                        function ($possible_type): bool {
+                        function (string $possible_type): bool {
                             return $possible_type[0] !== '!';
                         }
                     );

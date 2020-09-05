@@ -15,9 +15,9 @@ abstract class FunctionIssue extends CodeIssue
      * @param string        $function_id
      */
     public function __construct(
-        $message,
+        string $message,
         \Psalm\CodeLocation $code_location,
-        $function_id
+        string $function_id
     ) {
         parent::__construct($message, $code_location);
         $this->function_id = strtolower($function_id);

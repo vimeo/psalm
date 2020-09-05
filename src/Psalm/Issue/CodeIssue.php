@@ -26,7 +26,7 @@ abstract class CodeIssue
      * @param string        $message
      */
     public function __construct(
-        $message,
+        string $message,
         CodeLocation $code_location
     ) {
         $this->code_location = $code_location;

@@ -3516,7 +3516,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         PhpParser\Node\Stmt\Property $stmt,
         Config $config,
         ClassLikeStorage $storage,
-        $fq_classlike_name
+        string $fq_classlike_name
     ) {
         if (!$this->fq_classlike_names) {
             throw new \LogicException('$this->fq_classlike_names should not be empty');
@@ -3704,7 +3704,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
     private function visitClassConstDeclaration(
         PhpParser\Node\Stmt\ClassConst $stmt,
         ClassLikeStorage $storage,
-        $fq_classlike_name
+        string $fq_classlike_name
     ) {
         $existing_constants = $storage->protected_class_constants
             + $storage->private_class_constants

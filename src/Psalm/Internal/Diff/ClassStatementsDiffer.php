@@ -30,7 +30,7 @@ class ClassStatementsDiffer extends AstDiffer
      *      3: array<int, array{0: int, 1: int, 2: int, 3: int}>
      * }
      */
-    public static function diff($name, array $a, array $b, $a_code, $b_code)
+    public static function diff(string $name, array $a, array $b, string $a_code, string $b_code)
     {
         $diff_map = [];
 

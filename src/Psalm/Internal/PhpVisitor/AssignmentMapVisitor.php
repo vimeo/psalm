@@ -22,7 +22,7 @@ class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
     /**
      * @param string|null $this_class_name
      */
-    public function __construct($this_class_name)
+    public function __construct(?string $this_class_name)
     {
         $this->this_class_name = $this_class_name;
     }

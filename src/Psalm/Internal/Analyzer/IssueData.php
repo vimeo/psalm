@@ -136,15 +136,15 @@ class IssueData
      * @param ?list<TaintNodeData|array{label: string, entry_path_type: string}> $taint_trace
      */
     public function __construct(
-        $severity,
+        string $severity,
         $line_from,
         $line_to,
-        $type,
-        $message,
-        $file_name,
-        $file_path,
-        $snippet,
-        $selected_text,
+        string $type,
+        string $message,
+        string $file_name,
+        string $file_path,
+        string $snippet,
+        string $selected_text,
         $from,
         $to,
         $snippet_from,

@@ -72,7 +72,7 @@ class FileStorageCacheProvider
      *
      * @return void
      */
-    public function writeToCache(FileStorage $storage, $file_contents)
+    public function writeToCache(FileStorage $storage, string $file_contents)
     {
         $file_path = strtolower($storage->file_path);
         $cache_location = $this->getCacheLocationForPath($file_path, true);
@@ -90,7 +90,7 @@ class FileStorageCacheProvider
      * @param  string $file_contents
      *
      */
-    public function getLatestFromCache($file_path, $file_contents): ?FileStorage
+    public function getLatestFromCache(string $file_path, string $file_contents): ?FileStorage
     {
         $file_path = strtolower($file_path);
         $cached_value = $this->loadFromCache($file_path);
@@ -118,7 +118,7 @@ class FileStorageCacheProvider
      *
      * @return void
      */
-    public function removeCacheForFile($file_path)
+    public function removeCacheForFile(string $file_path)
     {
         $cache_path = $this->getCacheLocationForPath($file_path);
 
@@ -132,7 +132,7 @@ class FileStorageCacheProvider
      * @param  string $file_contents
      *
      */
-    private function getCacheHash($file_path, $file_contents): string
+    private function getCacheHash(string $file_path, string $file_contents): string
     {
         return sha1(strtolower($file_path) . ' ' . $file_contents . $this->modified_timestamps);
     }
@@ -142,7 +142,7 @@ class FileStorageCacheProvider
      * @psalm-suppress MixedAssignment
      *
      */
-    private function loadFromCache($file_path): ?FileStorage
+    private function loadFromCache(string $file_path): ?FileStorage
     {
         $cache_location = $this->getCacheLocationForPath($file_path);
 
@@ -174,7 +174,7 @@ class FileStorageCacheProvider
      * @param  bool $create_directory
      *
      */
-    private function getCacheLocationForPath($file_path, $create_directory = false): string
+    private function getCacheLocationForPath(string $file_path, $create_directory = false): string
     {
         $root_cache_directory = $this->config->getCacheDirectory();
 

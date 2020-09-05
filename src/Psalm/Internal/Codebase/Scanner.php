@@ -195,7 +195,7 @@ class Scanner
      *
      * @return void
      */
-    public function addFileToShallowScan($file_path)
+    public function addFileToShallowScan(string $file_path)
     {
         $this->files_to_scan[$file_path] = $file_path;
     }
@@ -205,7 +205,7 @@ class Scanner
      *
      * @return void
      */
-    public function addFileToDeepScan($file_path)
+    public function addFileToDeepScan(string $file_path)
     {
         $this->files_to_scan[$file_path] = $file_path;
         $this->files_to_deep_scan[$file_path] = $file_path;
@@ -216,7 +216,7 @@ class Scanner
      *
      * @return void
      */
-    public function removeFile($file_path)
+    public function removeFile(string $file_path)
     {
         unset($this->scanned_files[$file_path]);
     }
@@ -226,7 +226,7 @@ class Scanner
      *
      * @return void
      */
-    public function removeClassLike($fq_classlike_name_lc)
+    public function removeClassLike(string $fq_classlike_name_lc)
     {
         unset(
             $this->classlike_files[$fq_classlike_name_lc],
@@ -240,7 +240,7 @@ class Scanner
      *
      * @return void
      */
-    public function setClassLikeFilePath($fq_classlike_name_lc, $file_path)
+    public function setClassLikeFilePath(string $fq_classlike_name_lc, string $file_path)
     {
         $this->classlike_files[$fq_classlike_name_lc] = $file_path;
     }
@@ -249,7 +249,7 @@ class Scanner
      * @param  string $fq_classlike_name_lc
      *
      */
-    public function getClassLikeFilePath($fq_classlike_name_lc): string
+    public function getClassLikeFilePath(string $fq_classlike_name_lc): string
     {
         if (!isset($this->classlike_files[$fq_classlike_name_lc])) {
             throw new \UnexpectedValueException('Could not find file for ' . $fq_classlike_name_lc);
@@ -268,7 +268,7 @@ class Scanner
      * @return void
      */
     public function queueClassLikeForScanning(
-        $fq_classlike_name,
+        string $fq_classlike_name,
         $analyze_too = false,
         $store_failure = true,
         array $phantom_classes = []
@@ -359,7 +359,7 @@ class Scanner
              *
              * @return void
              */
-            function ($_, $file_path) use ($filetype_scanners, $files_to_deep_scan) {
+            function (int $_, string $file_path) use ($filetype_scanners, $files_to_deep_scan) {
                 $this->scanFile(
                     $file_path,
                     $filetype_scanners,
@@ -578,7 +578,7 @@ class Scanner
      *
      */
     private function scanFile(
-        $file_path,
+        string $file_path,
         array $filetype_scanners,
         $will_analyze = false
     ): FileScanner {
@@ -672,7 +672,7 @@ class Scanner
      *
      */
     private function getScannerForPath(
-        $file_path,
+        string $file_path,
         array $filetype_scanners,
         $will_analyze = false
     ): FileScanner {
@@ -704,7 +704,7 @@ class Scanner
      * @param  string $fq_class_name
      *
      */
-    private function fileExistsForClassLike(ClassLikes $classlikes, $fq_class_name): bool
+    private function fileExistsForClassLike(ClassLikes $classlikes, string $fq_class_name): bool
     {
         $fq_class_name_lc = strtolower($fq_class_name);
 

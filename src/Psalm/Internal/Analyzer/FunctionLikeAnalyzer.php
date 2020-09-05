@@ -1516,7 +1516,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
      */
     public function addOrUpdateParamType(
         ProjectAnalyzer $project_analyzer,
-        $param_name,
+        string $param_name,
         Type\Union $inferred_return_type,
         $docblock_only = false
     ) {
@@ -1851,7 +1851,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
      *
      * @return void
      */
-    public function addSuppressedIssue($issue_name)
+    public function addSuppressedIssue(string $issue_name)
     {
         $this->suppressed_issues[] = $issue_name;
     }

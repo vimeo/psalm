@@ -27,7 +27,7 @@ class FileStatementsDiffer extends AstDiffer
      *      3: array<int, array{0: int, 1: int, 2: int, 3: int}>
      * }
      */
-    public static function diff(array $a, array $b, $a_code, $b_code): array
+    public static function diff(array $a, array $b, string $a_code, string $b_code): array
     {
         [$trace, $x, $y, $bc] = self::calculateTrace(
             /**

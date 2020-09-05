@@ -188,7 +188,7 @@ class ClassLikes
      *
      * @return void
      */
-    public function addFullyQualifiedClassName($fq_class_name, $file_path = null)
+    public function addFullyQualifiedClassName(string $fq_class_name, $file_path = null)
     {
         $fq_class_name_lc = strtolower($fq_class_name);
         $this->existing_classlikes_lc[$fq_class_name_lc] = true;
@@ -208,7 +208,7 @@ class ClassLikes
      *
      * @return void
      */
-    public function addFullyQualifiedInterfaceName($fq_class_name, $file_path = null)
+    public function addFullyQualifiedInterfaceName(string $fq_class_name, $file_path = null)
     {
         $fq_class_name_lc = strtolower($fq_class_name);
         $this->existing_classlikes_lc[$fq_class_name_lc] = true;
@@ -228,7 +228,7 @@ class ClassLikes
      *
      * @return void
      */
-    public function addFullyQualifiedTraitName($fq_class_name, $file_path = null)
+    public function addFullyQualifiedTraitName(string $fq_class_name, $file_path = null)
     {
         $fq_class_name_lc = strtolower($fq_class_name);
         $this->existing_classlikes_lc[$fq_class_name_lc] = true;
@@ -248,7 +248,7 @@ class ClassLikes
      *
      * @return void
      */
-    public function addFullyQualifiedClassLikeName($fq_class_name_lc, $file_path = null)
+    public function addFullyQualifiedClassLikeName(string $fq_class_name_lc, $file_path = null)
     {
         if ($file_path) {
             $this->scanner->setClassLikeFilePath($fq_class_name_lc, $file_path);
@@ -296,7 +296,7 @@ class ClassLikes
      *
      */
     public function hasFullyQualifiedClassName(
-        $fq_class_name,
+        string $fq_class_name,
         CodeLocation $code_location = null,
         ?string $calling_fq_class_name = null,
         ?string $calling_method_id = null
@@ -371,7 +371,7 @@ class ClassLikes
      *
      */
     public function hasFullyQualifiedInterfaceName(
-        $fq_class_name,
+        string $fq_class_name,
         CodeLocation $code_location = null,
         ?string $calling_fq_class_name = null,
         ?string $calling_method_id = null
@@ -445,7 +445,7 @@ class ClassLikes
      * @param string $fq_class_name
      *
      */
-    public function hasFullyQualifiedTraitName($fq_class_name, CodeLocation $code_location = null): bool
+    public function hasFullyQualifiedTraitName(string $fq_class_name, CodeLocation $code_location = null): bool
     {
         $fq_class_name_lc = strtolower($fq_class_name);
 
@@ -476,7 +476,7 @@ class ClassLikes
      *
      */
     public function classOrInterfaceExists(
-        $fq_class_name,
+        string $fq_class_name,
         CodeLocation $code_location = null,
         ?string $calling_fq_class_name = null,
         ?string $calling_method_id = null
@@ -497,7 +497,7 @@ class ClassLikes
      *
      */
     public function classExists(
-        $fq_class_name,
+        string $fq_class_name,
         CodeLocation $code_location = null,
         ?string $calling_fq_class_name = null,
         ?string $calling_method_id = null
@@ -528,7 +528,7 @@ class ClassLikes
      * @throws \InvalidArgumentException when class does not exist
      *
      */
-    public function classExtends($fq_class_name, $possible_parent, bool $from_api = false): bool
+    public function classExtends(string $fq_class_name, string $possible_parent, bool $from_api = false): bool
     {
         $fq_class_name_lc = strtolower($fq_class_name);
 
@@ -554,7 +554,7 @@ class ClassLikes
      * @param  string       $interface
      *
      */
-    public function classImplements($fq_class_name, $interface): bool
+    public function classImplements(string $fq_class_name, string $interface): bool
     {
         $interface_id = strtolower($interface);
 
@@ -592,7 +592,7 @@ class ClassLikes
      *
      */
     public function interfaceExists(
-        $fq_interface_name,
+        string $fq_interface_name,
         CodeLocation $code_location = null,
         ?string $calling_fq_class_name = null,
         ?string $calling_method_id = null
@@ -614,7 +614,7 @@ class ClassLikes
      * @param  string         $possible_parent
      *
      */
-    public function interfaceExtends($interface_name, $possible_parent): bool
+    public function interfaceExtends(string $interface_name, string $possible_parent): bool
     {
         return isset($this->getParentInterfaces($interface_name)[strtolower($possible_parent)]);
     }
@@ -624,7 +624,7 @@ class ClassLikes
      *
      * @return array<string, string>   all interfaces extended by $interface_name
      */
-    public function getParentInterfaces($fq_interface_name): array
+    public function getParentInterfaces(string $fq_interface_name): array
     {
         $fq_interface_name = strtolower($fq_interface_name);
 
@@ -637,7 +637,7 @@ class ClassLikes
      * @param  string         $fq_trait_name
      *
      */
-    public function traitExists($fq_trait_name, CodeLocation $code_location = null): bool
+    public function traitExists(string $fq_trait_name, CodeLocation $code_location = null): bool
     {
         return $this->hasFullyQualifiedTraitName($fq_trait_name, $code_location);
     }
@@ -648,7 +648,7 @@ class ClassLikes
      * @param  string $fq_class_name
      *
      */
-    public function classHasCorrectCasing($fq_class_name): bool
+    public function classHasCorrectCasing(string $fq_class_name): bool
     {
         if ($fq_class_name === 'Generator') {
             return true;
@@ -665,7 +665,7 @@ class ClassLikes
      * @param  string $fq_interface_name
      *
      */
-    public function interfaceHasCorrectCasing($fq_interface_name): bool
+    public function interfaceHasCorrectCasing(string $fq_interface_name): bool
     {
         if (isset($this->classlike_aliases[strtolower($fq_interface_name)])) {
             return true;
@@ -678,7 +678,7 @@ class ClassLikes
      * @param  string $fq_trait_name
      *
      */
-    public function traitHasCorrectCase($fq_trait_name): bool
+    public function traitHasCorrectCase(string $fq_trait_name): bool
     {
         if (isset($this->classlike_aliases[strtolower($fq_trait_name)])) {
             return true;
@@ -700,7 +700,7 @@ class ClassLikes
      * @param  string $fq_trait_name
      *
      */
-    public function getTraitNode($fq_trait_name): PhpParser\Node\Stmt\Trait_
+    public function getTraitNode(string $fq_trait_name): PhpParser\Node\Stmt\Trait_
     {
         $fq_trait_name_lc = strtolower($fq_trait_name);
 
@@ -1503,7 +1503,7 @@ class ClassLikes
      *
      * @return array<string,Type\Union>
      */
-    public function getConstantsForClass($class_name, $visibility): array
+    public function getConstantsForClass(string $class_name, $visibility): array
     {
         $class_name = strtolower($class_name);
 
@@ -1832,8 +1832,8 @@ class ClassLikes
      * @return  void
      */
     public function setConstantType(
-        $class_name,
-        $const_name,
+        string $class_name,
+        string $const_name,
         Type\Union $type,
         $visibility
     ) {
@@ -2364,7 +2364,7 @@ class ClassLikes
      *
      * @return void
      */
-    public function removeClassLike($fq_class_name)
+    public function removeClassLike(string $fq_class_name)
     {
         $fq_class_name_lc = strtolower($fq_class_name);
 

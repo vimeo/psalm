@@ -126,7 +126,7 @@ class NodeDataProvider implements \Psalm\NodeTypeProvider
     /**
      * @param PhpParser\Node\Expr $node
      */
-    public function clearNodeOfTypeAndAssertions($node) : void
+    public function clearNodeOfTypeAndAssertions(PhpParser\Node\Expr $node) : void
     {
         unset($this->node_types[$node], $this->node_assertions[$node]);
     }

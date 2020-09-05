@@ -805,10 +805,10 @@ class ArgumentsAnalyzer
     private static function handlePossiblyMatchingByRefParam(
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
-        $method_id,
-        $cased_method_id,
-        $last_param,
-        $function_params,
+        ?string $method_id,
+        ?string $cased_method_id,
+        ?FunctionLikeParameter $last_param,
+        array $function_params,
         int $argument_offset,
         PhpParser\Node\Arg $arg,
         Context $context,
@@ -1060,7 +1060,7 @@ class ArgumentsAnalyzer
      */
     private static function handleByRefFunctionArg(
         StatementsAnalyzer $statements_analyzer,
-        $method_id,
+        ?string $method_id,
         int $argument_offset,
         PhpParser\Node\Arg $arg,
         Context $context

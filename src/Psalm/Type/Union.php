@@ -453,9 +453,9 @@ class Union implements TypeNode
      *
      */
     public function toPhpString(
-        $namespace,
+        ?string $namespace,
         array $aliased_classes,
-        $this_class,
+        ?string $this_class,
         $php_major_version,
         $php_minor_version
     ): ?string {
@@ -522,7 +522,7 @@ class Union implements TypeNode
      * @param  string $type_string
      *
      */
-    public function removeType($type_string): bool
+    public function removeType(string $type_string): bool
     {
         if (isset($this->types[$type_string])) {
             unset($this->types[$type_string]);
@@ -583,7 +583,7 @@ class Union implements TypeNode
      * @param  string  $type_string
      *
      */
-    public function hasType($type_string): bool
+    public function hasType(string $type_string): bool
     {
         return isset($this->types[$type_string]);
     }

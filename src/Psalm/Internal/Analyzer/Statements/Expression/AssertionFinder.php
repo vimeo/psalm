@@ -43,7 +43,7 @@ class AssertionFinder
      */
     public static function scrapeAssertions(
         PhpParser\Node\Expr $conditional,
-        $this_class_name,
+        ?string $this_class_name,
         FileSource $source,
         Codebase $codebase = null,
         bool $inside_negation = false,
@@ -530,7 +530,7 @@ class AssertionFinder
      */
     private static function scrapeEqualityAssertions(
         PhpParser\Node\Expr\BinaryOp $conditional,
-        $this_class_name,
+        ?string $this_class_name,
         FileSource $source,
         Codebase $codebase = null,
         bool $inside_negation = false,
@@ -1166,7 +1166,7 @@ class AssertionFinder
      */
     private static function scrapeInequalityAssertions(
         PhpParser\Node\Expr\BinaryOp $conditional,
-        $this_class_name,
+        ?string $this_class_name,
         FileSource $source,
         Codebase $codebase = null,
         bool $inside_negation = false,
@@ -1782,7 +1782,7 @@ class AssertionFinder
      */
     public static function processFunctionCall(
         PhpParser\Node\Expr\FuncCall $expr,
-        $this_class_name,
+        ?string $this_class_name,
         FileSource $source,
         Codebase $codebase = null,
         $negate = false
@@ -2273,7 +2273,7 @@ class AssertionFinder
      */
     protected static function processCustomAssertion(
         $expr,
-        $this_class_name,
+        ?string $this_class_name,
         FileSource $source,
         $negate = false
     ): array {
@@ -2440,7 +2440,7 @@ class AssertionFinder
      */
     protected static function getInstanceOfTypes(
         PhpParser\Node\Expr\Instanceof_ $stmt,
-        $this_class_name,
+        ?string $this_class_name,
         FileSource $source
     ) {
         if ($stmt->class instanceof PhpParser\Node\Name) {

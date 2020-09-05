@@ -63,7 +63,7 @@ class InstancePropertyAssignmentAnalyzer
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         $stmt,
-        $prop_name,
+        string $prop_name,
         $assignment_value,
         Type\Union $assignment_value_type,
         Context $context,

@@ -117,7 +117,7 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
      * @param string  $file_path
      * @param string  $file_name
      */
-    public function __construct(ProjectAnalyzer $project_analyzer, $file_path, $file_name)
+    public function __construct(ProjectAnalyzer $project_analyzer, string $file_path, string $file_name)
     {
         $this->source = $this;
         $this->file_path = $file_path;
@@ -376,7 +376,7 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
      *
      * @return  void
      */
-    public function addNamespacedClassAnalyzer($fq_class_name, ClassAnalyzer $class_analyzer)
+    public function addNamespacedClassAnalyzer(string $fq_class_name, ClassAnalyzer $class_analyzer)
     {
         $this->class_analyzers_to_analyze[strtolower($fq_class_name)] = $class_analyzer;
     }
@@ -386,7 +386,7 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
      *
      * @return  void
      */
-    public function addNamespacedInterfaceAnalyzer($fq_class_name, InterfaceAnalyzer $interface_analyzer)
+    public function addNamespacedInterfaceAnalyzer(string $fq_class_name, InterfaceAnalyzer $interface_analyzer)
     {
         $this->interface_analyzers_to_analyze[strtolower($fq_class_name)] = $interface_analyzer;
     }
@@ -552,7 +552,7 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
      *
      * @return void
      */
-    public function setRootFilePath($file_path, $file_name)
+    public function setRootFilePath(string $file_path, string $file_name)
     {
         $this->root_file_name = $file_name;
         $this->root_file_path = $file_path;
@@ -563,7 +563,7 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
      *
      * @return void
      */
-    public function addRequiredFilePath($file_path)
+    public function addRequiredFilePath(string $file_path)
     {
         $this->required_file_paths[$file_path] = true;
     }
@@ -573,7 +573,7 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
      *
      * @return void
      */
-    public function addParentFilePath($file_path)
+    public function addParentFilePath(string $file_path)
     {
         $this->parent_file_paths[$file_path] = true;
     }
@@ -582,7 +582,7 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
      * @param string $file_path
      *
      */
-    public function hasParentFilePath($file_path): bool
+    public function hasParentFilePath(string $file_path): bool
     {
         return $this->file_path === $file_path || isset($this->parent_file_paths[$file_path]);
     }
@@ -591,7 +591,7 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
      * @param string $file_path
      *
      */
-    public function hasAlreadyRequiredFilePath($file_path): bool
+    public function hasAlreadyRequiredFilePath(string $file_path): bool
     {
         return isset($this->required_file_paths[$file_path]);
     }

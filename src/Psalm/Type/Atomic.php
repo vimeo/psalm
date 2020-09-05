@@ -106,7 +106,7 @@ abstract class Atomic implements TypeNode
      * @return Atomic
      */
     public static function create(
-        $value,
+        string $value,
         array $php_version = null,
         array $template_type_map = [],
         array $type_aliases = []
@@ -579,11 +579,11 @@ abstract class Atomic implements TypeNode
      * @return null|string
      */
     abstract public function toPhpString(
-        $namespace,
+        ?string $namespace,
         array $aliased_classes,
-        $this_class,
-        $php_major_version,
-        $php_minor_version
+        ?string $this_class,
+        int $php_major_version,
+        int $php_minor_version
     );
 
     /**

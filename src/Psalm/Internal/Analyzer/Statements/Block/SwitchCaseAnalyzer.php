@@ -38,7 +38,7 @@ class SwitchCaseAnalyzer
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
         PhpParser\Node\Stmt\Switch_ $stmt,
-        $switch_var_id,
+        ?string $switch_var_id,
         PhpParser\Node\Stmt\Case_ $case,
         Context $context,
         Context $original_context,
@@ -529,7 +529,7 @@ class SwitchCaseAnalyzer
      */
     private static function handleNonReturningCase(
         StatementsAnalyzer $statements_analyzer,
-        $switch_var_id,
+        ?string $switch_var_id,
         PhpParser\Node\Stmt\Case_ $case,
         Context $context,
         Context $case_context,

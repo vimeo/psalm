@@ -619,7 +619,7 @@ class TypeCombination
     private static function scrapeTypeProperties(
         Atomic $type,
         TypeCombination $combination,
-        $codebase,
+        ?Codebase $codebase,
         bool $overwrite_empty_array,
         bool $allow_mixed_union,
         int $literal_limit

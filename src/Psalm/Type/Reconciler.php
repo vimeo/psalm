@@ -380,7 +380,7 @@ class Reconciler
      *
      * @return array<int, string>
      */
-    public static function breakUpPathIntoParts($path): array
+    public static function breakUpPathIntoParts(string $path): array
     {
         if (isset(self::$broken_paths[$path])) {
             return self::$broken_paths[$path];

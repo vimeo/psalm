@@ -220,7 +220,7 @@ class IfAnalyzer
                  * @param array<string> $carry
                  * @return array<string>
                  */
-                function ($carry, Clause $clause): array {
+                function (array $carry, Clause $clause): array {
                     return array_merge($carry, array_keys($clause->possibilities));
                 },
                 []
@@ -1170,7 +1170,7 @@ class IfAnalyzer
                      * @param array<string> $carry
                      * @return array<string>
                      */
-                    function ($carry, Clause $clause): array {
+                    function (array $carry, Clause $clause): array {
                         return array_merge($carry, array_keys($clause->possibilities));
                     },
                     []

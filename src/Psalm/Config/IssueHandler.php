@@ -27,7 +27,7 @@ class IssueHandler
      * @param  string           $base_dir
      *
      */
-    public static function loadFromXMLElement(SimpleXMLElement $e, $base_dir): IssueHandler
+    public static function loadFromXMLElement(SimpleXMLElement $e, string $base_dir): IssueHandler
     {
         $handler = new self();
 
@@ -52,7 +52,7 @@ class IssueHandler
      *
      * @return void
      */
-    public function setErrorLevel($error_level)
+    public function setErrorLevel(string $error_level)
     {
         if (!in_array($error_level, \Psalm\Config::$ERROR_LEVELS, true)) {
             throw new \Psalm\Exception\ConfigException('Unexpected error level ' . $error_level);
@@ -65,7 +65,7 @@ class IssueHandler
      * @param string $file_path
      *
      */
-    public function getReportingLevelForFile($file_path): string
+    public function getReportingLevelForFile(string $file_path): string
     {
         foreach ($this->custom_levels as $custom_level) {
             if ($custom_level->allows($file_path)) {
@@ -81,7 +81,7 @@ class IssueHandler
      *
      * @return string|null
      */
-    public function getReportingLevelForClass($fq_classlike_name)
+    public function getReportingLevelForClass(string $fq_classlike_name)
     {
         foreach ($this->custom_levels as $custom_level) {
             if ($custom_level->allowsClass($fq_classlike_name)) {
@@ -95,7 +95,7 @@ class IssueHandler
      *
      * @return string|null
      */
-    public function getReportingLevelForMethod($method_id)
+    public function getReportingLevelForMethod(string $method_id)
     {
         foreach ($this->custom_levels as $custom_level) {
             if ($custom_level->allowsMethod(strtolower($method_id))) {
@@ -133,7 +133,7 @@ class IssueHandler
      *
      * @return string|null
      */
-    public function getReportingLevelForProperty($property_id)
+    public function getReportingLevelForProperty(string $property_id)
     {
         foreach ($this->custom_levels as $custom_level) {
             if ($custom_level->allowsProperty($property_id)) {
@@ -147,7 +147,7 @@ class IssueHandler
      *
      * @return string|null
      */
-    public function getReportingLevelForVariable($var_name)
+    public function getReportingLevelForVariable(string $var_name)
     {
         foreach ($this->custom_levels as $custom_level) {
             if ($custom_level->allowsVariable($var_name)) {
@@ -178,7 +178,7 @@ class IssueHandler
              * @param string $issue_name
              *
              */
-            function ($issue_name): bool {
+            function (string $issue_name): bool {
                 return !empty($issue_name)
                     && $issue_name !== 'MethodIssue'
                     && $issue_name !== 'PropertyIssue'

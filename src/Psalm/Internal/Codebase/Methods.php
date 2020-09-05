@@ -861,10 +861,10 @@ class Methods
      * @return void
      */
     public function setDeclaringMethodId(
-        $fq_class_name,
-        $method_name_lc,
-        $declaring_fq_class_name,
-        $declaring_method_name_lc
+        string $fq_class_name,
+        string $method_name_lc,
+        string $declaring_fq_class_name,
+        string $declaring_method_name_lc
     ) {
         $class_storage = $this->classlike_storage_provider->get($fq_class_name);
 
@@ -883,10 +883,10 @@ class Methods
      * @return void
      */
     public function setAppearingMethodId(
-        $fq_class_name,
-        $method_name_lc,
-        $appearing_fq_class_name,
-        $appearing_method_name_lc
+        string $fq_class_name,
+        string $method_name_lc,
+        string $appearing_fq_class_name,
+        string $appearing_method_name_lc
     ) {
         $class_storage = $this->classlike_storage_provider->get($fq_class_name);
 

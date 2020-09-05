@@ -45,7 +45,7 @@ class ProjectCacheProvider
      *
      * @return void
      */
-    public function processSuccessfulRun($start_time)
+    public function processSuccessfulRun(float $start_time)
     {
         $cache_directory = Config::getInstance()->getCacheDirectory();
 

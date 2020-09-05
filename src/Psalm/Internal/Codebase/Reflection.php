@@ -424,8 +424,8 @@ class Reflection
      * @return void
      */
     private function registerInheritedMethods(
-        $fq_class_name,
-        $parent_class
+        string $fq_class_name,
+        string $parent_class
     ) {
         $parent_storage = $this->storage_provider->get($parent_class);
         $storage = $this->storage_provider->get($fq_class_name);
@@ -499,7 +499,7 @@ class Reflection
      * @param  string  $function_id
      *
      */
-    public function hasFunction($function_id): bool
+    public function hasFunction(string $function_id): bool
     {
         return isset(self::$builtin_functions[$function_id]);
     }
@@ -508,7 +508,7 @@ class Reflection
      * @param  string  $function_id
      *
      */
-    public function getFunctionStorage($function_id): FunctionStorage
+    public function getFunctionStorage(string $function_id): FunctionStorage
     {
         if (isset(self::$builtin_functions[$function_id])) {
             return self::$builtin_functions[$function_id];

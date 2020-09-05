@@ -89,7 +89,7 @@ abstract class SourceAnalyzer implements StatementsSource
      *
      * @return void
      */
-    public function setRootFilePath($file_path, $file_name)
+    public function setRootFilePath(string $file_path, string $file_name)
     {
         $this->source->setRootFilePath($file_path, $file_name);
     }
@@ -98,7 +98,7 @@ abstract class SourceAnalyzer implements StatementsSource
      * @param string $file_path
      *
      */
-    public function hasParentFilePath($file_path): bool
+    public function hasParentFilePath(string $file_path): bool
     {
         return $this->source->hasParentFilePath($file_path);
     }
@@ -107,7 +107,7 @@ abstract class SourceAnalyzer implements StatementsSource
      * @param string $file_path
      *
      */
-    public function hasAlreadyRequiredFilePath($file_path): bool
+    public function hasAlreadyRequiredFilePath(string $file_path): bool
     {
         return $this->source->hasAlreadyRequiredFilePath($file_path);
     }

@@ -52,7 +52,7 @@ class ArrayFunctionArgumentsAnalyzer
         StatementsAnalyzer $statements_analyzer,
         Context $context,
         array $args,
-        $method_id,
+        string $method_id,
         bool $check_functions
     ) {
         $closure_index = $method_id === 'array_map' ? 0 : 1;
@@ -573,11 +573,11 @@ class ArrayFunctionArgumentsAnalyzer
     private static function checkClosureType(
         StatementsAnalyzer $statements_analyzer,
         Context $context,
-        $method_id,
+        string $method_id,
         Type\Atomic $closure_type,
         PhpParser\Node\Arg $closure_arg,
         $min_closure_param_count,
-        $max_closure_param_count,
+        int $max_closure_param_count,
         array $array_arg_types,
         bool $check_functions
     ) {
@@ -743,11 +743,11 @@ class ArrayFunctionArgumentsAnalyzer
     private static function checkClosureTypeArgs(
         StatementsAnalyzer $statements_analyzer,
         Context $context,
-        $method_id,
+        string $method_id,
         Type\Atomic $closure_type,
         PhpParser\Node\Arg $closure_arg,
-        $min_closure_param_count,
-        $max_closure_param_count,
+        int $min_closure_param_count,
+        int $max_closure_param_count,
         array $array_arg_types
     ) {
         $codebase = $statements_analyzer->getCodebase();

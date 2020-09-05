@@ -55,7 +55,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
         Type\Atomic $lhs_type_part,
         ?Type\Atomic $static_type,
         bool $is_intersection,
-        $lhs_var_id,
+        ?string $lhs_var_id,
         AtomicMethodCallAnalysisResult $result
     ) : void {
         $config = $codebase->config;
@@ -1058,7 +1058,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\MethodCall $stmt,
         Context $context,
-        $fq_class_name
+        string $fq_class_name
     ) : ?Type\Union {
         if (!$stmt->name instanceof PhpParser\Node\Identifier) {
             return null;

@@ -55,7 +55,7 @@ class AssignmentAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $assign_var,
         $assign_value,
-        $assign_value_type,
+        ?Type\Union $assign_value_type,
         Context $context,
         ?PhpParser\Comment\Doc $doc_comment
     ) {

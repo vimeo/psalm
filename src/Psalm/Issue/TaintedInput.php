@@ -26,7 +26,7 @@ class TaintedInput extends CodeIssue
      * @param list<array{location: ?CodeLocation, label: string, entry_path_type: string}> $journey
      */
     public function __construct(
-        $message,
+        string $message,
         CodeLocation $code_location,
         array $journey,
         string $journey_text

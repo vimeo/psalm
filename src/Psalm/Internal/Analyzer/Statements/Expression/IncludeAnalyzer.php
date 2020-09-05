@@ -253,7 +253,7 @@ class IncludeAnalyzer
         PhpParser\Node\Expr $stmt,
         ?\Psalm\Internal\Provider\NodeDataProvider $type_provider,
         ?StatementsAnalyzer $statements_analyzer,
-        $file_name,
+        string $file_name,
         Config $config
     ): ?string {
         if (DIRECTORY_SEPARATOR === '/') {
@@ -357,7 +357,7 @@ class IncludeAnalyzer
      * @param   string  $current_directory
      *
      */
-    public static function resolveIncludePath($file_name, $current_directory): ?string
+    public static function resolveIncludePath(string $file_name, string $current_directory): ?string
     {
         if (!$current_directory) {
             return $file_name;

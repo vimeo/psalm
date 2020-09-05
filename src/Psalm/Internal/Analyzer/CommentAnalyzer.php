@@ -1228,7 +1228,7 @@ class CommentAnalyzer
      *
      * @psalm-pure
      */
-    public static function splitDocLine($return_block)
+    public static function splitDocLine(string $return_block)
     {
         $brackets = '';
 

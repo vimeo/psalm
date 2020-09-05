@@ -58,7 +58,7 @@ class InternalCallMapHandler
      */
     public static function getCallableFromCallMapById(
         Codebase $codebase,
-        $method_id,
+        string $method_id,
         array $args,
         ?\Psalm\Internal\Provider\NodeDataProvider $nodes
     ): TCallable {
@@ -220,7 +220,7 @@ class InternalCallMapHandler
      *
      * @psalm-return array<int, TCallable>|null
      */
-    public static function getCallablesFromCallMap($function_id): ?array
+    public static function getCallablesFromCallMap(string $function_id): ?array
     {
         $call_map_key = strtolower($function_id);
 
@@ -415,7 +415,7 @@ class InternalCallMapHandler
      * @param   string $key
      *
      */
-    public static function inCallMap($key): bool
+    public static function inCallMap(string $key): bool
     {
         return isset(self::getCallMap()[strtolower($key)]);
     }

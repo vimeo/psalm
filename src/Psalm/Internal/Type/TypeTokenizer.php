@@ -84,7 +84,7 @@ class TypeTokenizer
      *
      * @return list<array{0: string, 1: int}>
      */
-    public static function tokenize($string_type, $ignore_space = true)
+    public static function tokenize(string $string_type, $ignore_space = true)
     {
         $type_tokens = [['', 0]];
         $was_char = false;

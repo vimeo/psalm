@@ -100,15 +100,15 @@ class TaintNodeData
      * @param int $column_to
      */
     public function __construct(
-        $label,
-        $entry_path_type,
-        $entry_path_description,
+        string $label,
+        string $entry_path_type,
+        ?string $entry_path_description,
         $line_from,
         $line_to,
-        $file_name,
-        $file_path,
-        $snippet,
-        $selected_text,
+        string $file_name,
+        string $file_path,
+        string $snippet,
+        string $selected_text,
         $from,
         $to,
         $snippet_from,

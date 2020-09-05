@@ -35,7 +35,7 @@ class StaticPropertyAssignmentAnalyzer
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\StaticPropertyFetch $stmt,
-        $assignment_value,
+        ?PhpParser\Node\Expr $assignment_value,
         Type\Union $assignment_value_type,
         Context $context
     ) {

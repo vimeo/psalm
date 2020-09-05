@@ -160,7 +160,7 @@ class Properties
      *
      * @return string|null
      */
-    public function getDeclaringClassForProperty($property_id, bool $read_mode, StatementsSource $source = null)
+    public function getDeclaringClassForProperty(string $property_id, bool $read_mode, StatementsSource $source = null)
     {
         [$fq_class_name, $property_name] = explode('::$', $property_id);
 
@@ -190,7 +190,7 @@ class Properties
      *
      * @return string|null
      */
-    public function getAppearingClassForProperty($property_id, bool $read_mode, StatementsSource $source = null)
+    public function getAppearingClassForProperty(string $property_id, bool $read_mode, StatementsSource $source = null)
     {
         [$fq_class_name, $property_name] = explode('::$', $property_id);
 
@@ -219,7 +219,7 @@ class Properties
      * @param  string $property_id
      *
      */
-    public function getStorage($property_id): \Psalm\Storage\PropertyStorage
+    public function getStorage(string $property_id): \Psalm\Storage\PropertyStorage
     {
         // remove trailing backslash if it exists
         $property_id = preg_replace('/^\\\\/', '', $property_id);
@@ -245,7 +245,7 @@ class Properties
      *
      */
     public function getPropertyType(
-        $property_id,
+        string $property_id,
         bool $property_set,
         StatementsSource $source = null,
         Context $context = null

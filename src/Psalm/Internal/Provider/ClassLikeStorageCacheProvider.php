@@ -72,7 +72,7 @@ class ClassLikeStorageCacheProvider
      *
      * @return void
      */
-    public function writeToCache(ClassLikeStorage $storage, $file_path, $file_contents)
+    public function writeToCache(ClassLikeStorage $storage, ?string $file_path, ?string $file_contents)
     {
         $fq_classlike_name_lc = strtolower($storage->name);
 
@@ -93,7 +93,7 @@ class ClassLikeStorageCacheProvider
      *
      * @return ClassLikeStorage
      */
-    public function getLatestFromCache($fq_classlike_name_lc, $file_path, $file_contents)
+    public function getLatestFromCache(string $fq_classlike_name_lc, ?string $file_path, ?string $file_contents)
     {
         $cached_value = $this->loadFromCache($fq_classlike_name_lc, $file_path);
 
@@ -120,7 +120,7 @@ class ClassLikeStorageCacheProvider
      * @param  string|null $file_contents
      *
      */
-    private function getCacheHash($file_path, $file_contents): string
+    private function getCacheHash(?string $file_path, ?string $file_contents): string
     {
         return sha1(($file_path ? $file_contents : '') . $this->modified_timestamps);
     }
@@ -131,7 +131,7 @@ class ClassLikeStorageCacheProvider
      * @psalm-suppress MixedAssignment
      *
      */
-    private function loadFromCache($fq_classlike_name_lc, $file_path): ?ClassLikeStorage
+    private function loadFromCache(string $fq_classlike_name_lc, ?string $file_path): ?ClassLikeStorage
     {
         $cache_location = $this->getCacheLocationForClass($fq_classlike_name_lc, $file_path);
 
@@ -164,8 +164,11 @@ class ClassLikeStorageCacheProvider
      * @param  bool $create_directory
      *
      */
-    private function getCacheLocationForClass($fq_classlike_name_lc, $file_path, $create_directory = false): string
-    {
+    private function getCacheLocationForClass(
+        string $fq_classlike_name_lc,
+        ?string $file_path,
+        $create_directory = false
+    ): string {
         $root_cache_directory = $this->config->getCacheDirectory();
 
         if (!$root_cache_directory) {

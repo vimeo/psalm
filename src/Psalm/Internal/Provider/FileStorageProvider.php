@@ -40,7 +40,7 @@ class FileStorageProvider
      * @param  string $file_path
      *
      */
-    public function get($file_path): FileStorage
+    public function get(string $file_path): FileStorage
     {
         $file_path = strtolower($file_path);
 
@@ -56,7 +56,7 @@ class FileStorageProvider
      *
      * @return void
      */
-    public function remove($file_path)
+    public function remove(string $file_path)
     {
         unset(self::$storage[strtolower($file_path)]);
     }
@@ -65,7 +65,7 @@ class FileStorageProvider
      * @param  string $file_path
      *
      */
-    public function has($file_path, string $file_contents = null): bool
+    public function has(string $file_path, string $file_contents = null): bool
     {
         $file_path = strtolower($file_path);
 
@@ -124,7 +124,7 @@ class FileStorageProvider
      * @param  string $file_path
      *
      */
-    public function create($file_path): FileStorage
+    public function create(string $file_path): FileStorage
     {
         $file_path_lc = strtolower($file_path);
 

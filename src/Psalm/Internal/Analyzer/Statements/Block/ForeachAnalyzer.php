@@ -360,8 +360,8 @@ class ForeachAnalyzer
         Type\Union $iterator_type,
         Codebase $codebase,
         Context $context,
-        &$key_type,
-        &$value_type,
+        ?Type\Union &$key_type,
+        ?Type\Union &$value_type,
         bool &$always_non_empty_array
     ) {
         if ($iterator_type->isNull()) {
@@ -718,8 +718,8 @@ class ForeachAnalyzer
         PhpParser\Node\Expr $foreach_expr,
         Codebase $codebase,
         Context $context,
-        &$key_type,
-        &$value_type,
+        ?Type\Union &$key_type,
+        ?Type\Union &$value_type,
         bool &$has_valid_iterator
     ) {
         if ($iterator_atomic_type->extra_types) {
@@ -980,8 +980,8 @@ class ForeachAnalyzer
     public static function getKeyValueParamsForTraversableObject(
         Type\Atomic $iterator_atomic_type,
         Codebase $codebase,
-        &$key_type,
-        &$value_type
+        ?Type\Union &$key_type,
+        ?Type\Union &$value_type
     ) {
         if ($iterator_atomic_type instanceof Type\Atomic\TIterable
             || ($iterator_atomic_type instanceof Type\Atomic\TGenericObject

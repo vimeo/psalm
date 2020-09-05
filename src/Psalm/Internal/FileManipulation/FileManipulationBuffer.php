@@ -28,7 +28,7 @@ class FileManipulationBuffer
      *
      * @return void
      */
-    public static function add($file_path, array $file_manipulations)
+    public static function add(string $file_path, array $file_manipulations)
     {
         if (!isset(self::$file_manipulations[$file_path])) {
             self::$file_manipulations[$file_path] = [];
@@ -176,7 +176,7 @@ class FileManipulationBuffer
      *
      * @return FileManipulation[]
      */
-    public static function getManipulationsForFile($file_path): array
+    public static function getManipulationsForFile(string $file_path): array
     {
         if (!isset(self::$file_manipulations[$file_path])) {
             return [];

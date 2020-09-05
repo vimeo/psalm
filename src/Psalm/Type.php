@@ -58,7 +58,7 @@ abstract class Type
      *
      */
     public static function parseString(
-        $type_string,
+        string $type_string,
         array $php_version = null,
         array $template_type_map = []
     ): Union {
@@ -255,7 +255,7 @@ abstract class Type
      * @param string $class_type
      *
      */
-    public static function getLiteralClassString($class_type): Union
+    public static function getLiteralClassString(string $class_type): Union
     {
         $type = new TLiteralClassString($class_type);
 

@@ -13,7 +13,7 @@ class TValueOfClassConstant extends \Psalm\Type\Atomic
      * @param string $fq_classlike_name
      * @param string $const_name
      */
-    public function __construct($fq_classlike_name, $const_name)
+    public function __construct(string $fq_classlike_name, string $const_name)
     {
         $this->fq_classlike_name = $fq_classlike_name;
         $this->const_name = $const_name;
@@ -43,11 +43,11 @@ class TValueOfClassConstant extends \Psalm\Type\Atomic
      *
      */
     public function toPhpString(
-        $namespace,
+        ?string $namespace,
         array $aliased_classes,
-        $this_class,
-        $php_major_version,
-        $php_minor_version
+        ?string $this_class,
+        int $php_major_version,
+        int $php_minor_version
     ): ?string {
         return null;
     }

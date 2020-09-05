@@ -81,11 +81,11 @@ class TTemplateParam extends \Psalm\Type\Atomic
      * @return null
      */
     public function toPhpString(
-        $namespace,
+        ?string $namespace,
         array $aliased_classes,
-        $this_class,
-        $php_major_version,
-        $php_minor_version
+        ?string $this_class,
+        int $php_major_version,
+        int $php_minor_version
     ) {
         return null;
     }

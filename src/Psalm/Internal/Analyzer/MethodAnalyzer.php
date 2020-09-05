@@ -76,8 +76,8 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
      */
     public static function checkStatic(
         \Psalm\Internal\MethodIdentifier $method_id,
-        $self_call,
-        $is_context_dynamic,
+        bool $self_call,
+        bool $is_context_dynamic,
         Codebase $codebase,
         CodeLocation $code_location,
         array $suppressed_issues,
