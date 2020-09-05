@@ -1520,8 +1520,6 @@ class IfAnalyzer
     }
 
     /**
-     * @param  PhpParser\Node\Stmt\Else_|null $else
-     *
      * @return false|null
      */
     protected static function analyzeElseBlock(
