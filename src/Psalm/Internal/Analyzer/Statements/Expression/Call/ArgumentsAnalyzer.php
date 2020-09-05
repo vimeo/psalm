@@ -599,6 +599,10 @@ class ArgumentsAnalyzer
             }
         }
 
+        if ($method_id === 'preg_match_all' && count($args) > 3) {
+            $args = array_reverse($args, true);
+        }
+
         foreach ($args as $argument_offset => $arg) {
             $function_param = $function_param_count > $argument_offset
                 ? $function_params[$argument_offset]

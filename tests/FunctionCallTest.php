@@ -1325,14 +1325,20 @@ class FunctionCallTest extends TestCase
             'pregMatchAll' => [
                 '<?php
                     /**
-                     * @psalm-pure
-                     *
                      * @return array<list<string>>
                      */
                     function extractUsernames(string $input): array {
-                        preg_match_all(\'/@[a-z\d](?:[a-z\d]|-(?=[a-z\d])){0,38}(?!\w)/\', $input, $matches);
+                        preg_match_all(\'/([a-zA-Z])*/\', $input, $matches);
 
                         return $matches;
+                    }'
+            ],
+            'pregMatchAllOffsetCapture' => [
+                '<?php
+                    function foo(string $input): array {
+                        preg_match_all(\'/([a-zA-Z])*/\', $input, $matches, PREG_OFFSET_CAPTURE);
+
+                        return $matches[0];
                     }'
             ],
         ];
