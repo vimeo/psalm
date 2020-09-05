@@ -50,8 +50,6 @@ class ReturnTypeAnalyzer
      * @param Closure|Function_|ClassMethod|ArrowFunction $function
      * @param PhpParser\Node\Stmt[] $function_stmts
      * @param Type\Union|null     $return_type
-     * @param string              $fq_class_name
-     * @param CodeLocation|null   $return_type_location
      * @param string[]            $compatible_method_ids
      *
      * @return  false|null
@@ -834,7 +832,6 @@ class ReturnTypeAnalyzer
 
     /**
      * @param Closure|Function_|ClassMethod|ArrowFunction $function
-     * @param bool $docblock_only
      *
      * @return void
      */

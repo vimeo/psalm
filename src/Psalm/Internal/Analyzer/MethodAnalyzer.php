@@ -279,10 +279,6 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
         return null;
     }
 
-    /**
-     * @param string|null $context_self
-     *
-     */
     public function getMethodId(?string $context_self = null): \Psalm\Internal\MethodIdentifier
     {
         $function_name = (string)$this->function->name;

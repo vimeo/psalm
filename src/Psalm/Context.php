@@ -363,9 +363,6 @@ class Context
      */
     public $has_returned = false;
 
-    /**
-     * @param string|null $self
-     */
     public function __construct(?string $self = null)
     {
         $this->self = $self;
@@ -551,8 +548,6 @@ class Context
 
     /**
      * @param  Clause[]               $clauses
-     * @param  Union|null             $new_type
-     * @param  StatementsAnalyzer|null $statements_analyzer
      *
      * @return list<Clause>
      */
@@ -632,9 +627,6 @@ class Context
     }
 
     /**
-     * @param  Union|null           $new_type
-     * @param  null|StatementsAnalyzer   $statements_analyzer
-     *
      * @return void
      */
     public function removeVarFromConflictingClauses(
@@ -650,10 +642,6 @@ class Context
     }
 
     /**
-     * @param  \Psalm\Type\Union|null $existing_type
-     * @param  \Psalm\Type\Union|null $new_type
-     * @param  null|StatementsAnalyzer     $statements_analyzer
-     *
      * @return void
      */
     public function removeDescendents(

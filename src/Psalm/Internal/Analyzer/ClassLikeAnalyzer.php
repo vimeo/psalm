@@ -514,10 +514,8 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
     }
 
     /**
-     * @param  string|null      $calling_context
      * @param  string[]         $suppressed_issues
      * @param  bool             $emit_issues
-     *
      */
     public static function checkPropertyVisibility(
         string $property_id,

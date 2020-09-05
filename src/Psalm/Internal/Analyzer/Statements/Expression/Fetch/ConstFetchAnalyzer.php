@@ -166,10 +166,6 @@ class ConstFetchAnalyzer
         return null;
     }
 
-    /**
-     * @param   Context $context
-     *
-     */
     public static function getConstType(
         StatementsAnalyzer $statements_analyzer,
         string $const_name,

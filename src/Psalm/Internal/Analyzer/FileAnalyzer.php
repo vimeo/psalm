@@ -469,8 +469,6 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
     }
 
     /**
-     * @param  string|null $namespace_name
-     *
      * @return array<string, string>
      */
     public function getAliasedClassesFlipped(?string $namespace_name = null): array
@@ -483,8 +481,6 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
     }
 
     /**
-     * @param  string|null $namespace_name
-     *
      * @return array<string, string>
      */
     public function getAliasedClassesFlippedReplaceable(?string $namespace_name = null): array

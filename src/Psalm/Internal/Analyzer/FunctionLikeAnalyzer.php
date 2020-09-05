@@ -128,7 +128,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * @param Context|null  $global_context
      * @param bool          $add_mutations  whether or not to add mutations to this method
      * @param ?array<string, bool> $byref_uses
      *
@@ -1480,7 +1479,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
      * @param array<PhpParser\Node\Stmt> $function_stmts
      * @param Type\Union|null     $return_type
      * @param string              $fq_class_name
-     * @param CodeLocation|null   $return_type_location
      *
      * @return  false|null
      */
@@ -1651,10 +1649,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         }
     }
 
-    /**
-     * @param string|null $context_self
-     *
-     */
     public function getCorrectlyCasedMethodId(?string $context_self = null): string
     {
         if ($this->function instanceof ClassMethod) {

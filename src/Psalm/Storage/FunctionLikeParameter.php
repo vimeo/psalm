@@ -95,11 +95,9 @@ class FunctionLikeParameter
 
     /**
      * @param Type\Union|null    $type
-     * @param CodeLocation|null  $location
      * @param bool       $is_optional
      * @param bool       $is_nullable
      * @param bool       $is_variadic
-     * @param Type\Union|null    $default_type
      */
     public function __construct(
         string $name,

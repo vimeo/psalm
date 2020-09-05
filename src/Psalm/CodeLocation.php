@@ -101,12 +101,6 @@ class CodeLocation
     const CATCH_VAR = 6;
     const FUNCTION_PHPDOC_METHOD = 7;
 
-    /**
-     * @param bool                 $single_line
-     * @param null|CodeLocation    $previous_location
-     * @param null|int             $regex_type
-     * @param null|string          $selected_text
-     */
     public function __construct(
         FileSource $file_source,
         PhpParser\Node $stmt,

@@ -21,9 +21,6 @@ class ParseTree
      */
     public $possibly_undefined = false;
 
-    /**
-     * @param ParseTree|null $parent
-     */
     public function __construct(?ParseTree $parent = null)
     {
         $this->parent = $parent;

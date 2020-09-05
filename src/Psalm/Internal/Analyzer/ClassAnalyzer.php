@@ -93,9 +93,6 @@ class ClassAnalyzer extends ClassLikeAnalyzer
     }
 
     /**
-     * @param Context|null  $class_context
-     * @param Context|null  $global_context
-     *
      * @return null|false
      */
     public function analyze(
@@ -1756,7 +1753,6 @@ class ClassAnalyzer extends ClassLikeAnalyzer
     }
 
     /**
-     * @param  Context|null                    $global_context
      * @param  bool                            $is_fake
      *
      * @return MethodAnalyzer|null

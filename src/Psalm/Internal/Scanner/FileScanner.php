@@ -39,8 +39,6 @@ class FileScanner implements FileSource
     }
 
     /**
-     * @param bool $storage_from_cache
-     *
      * @return void
      */
     public function scan(

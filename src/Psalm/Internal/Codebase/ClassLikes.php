@@ -183,8 +183,6 @@ class ClassLikes
     }
 
     /**
-     * @param string|null   $file_path
-     *
      * @return void
      */
     public function addFullyQualifiedClassName(string $fq_class_name, ?string $file_path = null)
@@ -202,8 +200,6 @@ class ClassLikes
     }
 
     /**
-     * @param string|null   $file_path
-     *
      * @return void
      */
     public function addFullyQualifiedInterfaceName(string $fq_class_name, ?string $file_path = null)
@@ -221,8 +217,6 @@ class ClassLikes
     }
 
     /**
-     * @param string|null   $file_path
-     *
      * @return void
      */
     public function addFullyQualifiedTraitName(string $fq_class_name, ?string $file_path = null)
@@ -240,8 +234,6 @@ class ClassLikes
     }
 
     /**
-     * @param string|null   $file_path
-     *
      * @return void
      */
     public function addFullyQualifiedClassLikeName(string $fq_class_name_lc, ?string $file_path = null)

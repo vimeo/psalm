@@ -11,9 +11,6 @@ class IndexedAccessTree extends \Psalm\Internal\Type\ParseTree
      */
     public $value;
 
-    /**
-     * @param \Psalm\Internal\Type\ParseTree|null $parent
-     */
     public function __construct(string $value, ?\Psalm\Internal\Type\ParseTree $parent = null)
     {
         $this->value = $value;
