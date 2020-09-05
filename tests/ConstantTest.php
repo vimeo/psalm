@@ -412,8 +412,8 @@ class ConstantTest extends TestCase
                     class A {
                         private const STRING = "x";
 
-                        public static function bar() : bool {
-                            return !defined("FOO") && strpos("x", self::STRING) === 0;
+                        public static function bar(string $s) : bool {
+                            return !defined("FOO") && strpos($s, self::STRING) === 0;
                         }
                     }'
             ],
