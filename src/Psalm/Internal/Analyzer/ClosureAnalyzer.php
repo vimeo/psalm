@@ -29,7 +29,6 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
 
     /**
      * @param PhpParser\Node\Expr\Closure|PhpParser\Node\Expr\ArrowFunction $function
-     * @param SourceAnalyzer               $source   [description]
      */
     public function __construct(PhpParser\Node\FunctionLike $function, SourceAnalyzer $source)
     {

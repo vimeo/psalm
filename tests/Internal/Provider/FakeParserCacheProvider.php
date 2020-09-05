@@ -7,7 +7,7 @@ class FakeParserCacheProvider extends \Psalm\Internal\Provider\ParserCacheProvid
     {
     }
 
-    public function loadStatementsFromCache(string $file_path, $file_modified_time, string $file_content_hash)
+    public function loadStatementsFromCache(string $file_path, int $file_modified_time, string $file_content_hash)
     {
         return null;
     }

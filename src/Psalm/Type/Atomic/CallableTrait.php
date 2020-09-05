@@ -35,11 +35,10 @@ trait CallableTrait
     /**
      * Constructs a new instance of a generic type
      *
-     * @param string                            $value
      * @param array<int, FunctionLikeParameter> $params
      */
     public function __construct(
-        $value = 'callable',
+        string $value = 'callable',
         ?array $params = null,
         ?Union $return_type = null,
         ?bool $is_pure = null
@@ -68,7 +67,6 @@ trait CallableTrait
 
     /**
      * @param  array<string, string> $aliased_classes
-     *
      */
     public function toNamespacedString(
         ?string $namespace,

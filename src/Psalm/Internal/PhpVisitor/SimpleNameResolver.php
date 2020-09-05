@@ -140,11 +140,9 @@ class SimpleNameResolver extends NodeVisitorAbstract
     }
 
     /**
-     * @param int $type
-     *
      * @return void
      */
-    private function addAlias(Stmt\UseUse $use, $type, ?Name $prefix = null)
+    private function addAlias(Stmt\UseUse $use, int $type, ?Name $prefix = null)
     {
         // Add prefix for group uses
         /** @var Name $name */

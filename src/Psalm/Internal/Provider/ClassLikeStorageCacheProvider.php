@@ -143,13 +143,10 @@ class ClassLikeStorageCacheProvider
         return null;
     }
 
-    /**
-     * @param  bool $create_directory
-     */
     private function getCacheLocationForClass(
         string $fq_classlike_name_lc,
         ?string $file_path,
-        $create_directory = false
+        bool $create_directory = false
     ): string {
         $root_cache_directory = $this->config->getCacheDirectory();
 

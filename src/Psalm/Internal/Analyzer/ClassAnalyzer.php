@@ -1753,8 +1753,6 @@ class ClassAnalyzer extends ClassLikeAnalyzer
     }
 
     /**
-     * @param  bool                            $is_fake
-     *
      * @return MethodAnalyzer|null
      */
     private function analyzeClassMethod(
@@ -1763,7 +1761,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         SourceAnalyzer $source,
         Context $class_context,
         ?Context $global_context = null,
-        $is_fake = false
+        bool $is_fake = false
     ) {
         $config = Config::getInstance();
 

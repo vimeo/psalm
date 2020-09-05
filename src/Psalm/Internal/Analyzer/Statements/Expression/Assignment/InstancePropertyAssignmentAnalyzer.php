@@ -54,19 +54,18 @@ class InstancePropertyAssignmentAnalyzer
 {
     /**
      * @param   PropertyFetch|PropertyProperty  $stmt
-     * @param   PhpParser\Node\Expr|null        $assignment_value
      * @param   bool                            $direct_assignment whether the variable is assigned explicitly
      *
      * @return  false|null
      */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
-        $stmt,
+        PhpParser\NodeAbstract $stmt,
         string $prop_name,
-        $assignment_value,
+        ?PhpParser\Node\Expr $assignment_value,
         Type\Union $assignment_value_type,
         Context $context,
-        $direct_assignment = true
+        bool $direct_assignment = true
     ): ?bool {
         $class_property_types = [];
 

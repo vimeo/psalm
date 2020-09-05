@@ -1771,8 +1771,6 @@ class AssertionFinder
     }
 
     /**
-     * @param  bool                         $negate
-     *
      * @return array<string, non-empty-list<non-empty-list<string>>>
      */
     public static function processFunctionCall(
@@ -1780,7 +1778,7 @@ class AssertionFinder
         ?string $this_class_name,
         FileSource $source,
         ?Codebase $codebase = null,
-        $negate = false
+        bool $negate = false
     ): array {
         $prefix = $negate ? '!' : '';
 
@@ -2261,15 +2259,14 @@ class AssertionFinder
 
     /**
      * @param  PhpParser\Node\Expr\FuncCall|PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $expr
-     * @param  bool         $negate
      *
      * @return array<string, non-empty-list<non-empty-list<string>>>
      */
     protected static function processCustomAssertion(
-        $expr,
+        PhpParser\Node\Expr $expr,
         ?string $this_class_name,
         FileSource $source,
-        $negate = false
+        bool $negate = false
     ): array {
         if (!$source instanceof StatementsAnalyzer) {
             return [];

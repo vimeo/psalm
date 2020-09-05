@@ -718,11 +718,9 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
     }
 
     /**
-     * @param  int|null     $branch_point
-     *
      * @return void
      */
-    public function registerVariable(string $var_id, CodeLocation $location, $branch_point)
+    public function registerVariable(string $var_id, CodeLocation $location, ?int $branch_point)
     {
         $this->all_vars[$var_id] = $location;
 
@@ -775,11 +773,9 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
     }
 
     /**
-     * @param int    $branch_point
-     *
      * @return void
      */
-    public function addVariableInitialization(string $var_id, $branch_point)
+    public function addVariableInitialization(string $var_id, int $branch_point)
     {
         $this->vars_to_initialize[$var_id] = $branch_point;
     }

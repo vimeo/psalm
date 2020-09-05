@@ -446,16 +446,13 @@ class Union implements TypeNode
 
     /**
      * @param  array<string, string> $aliased_classes
-     * @param  int           $php_major_version
-     * @param  int           $php_minor_version
-     *
      */
     public function toPhpString(
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        $php_major_version,
-        $php_minor_version
+        int $php_major_version,
+        int $php_minor_version
     ): ?string {
         $nullable = false;
 

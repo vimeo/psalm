@@ -971,8 +971,6 @@ class FileReferenceProvider
     }
 
     /**
-     * @param IssueData $issue
-     *
      * @return void
      */
     public function clearExistingFileMapsForFile(string $file_path)

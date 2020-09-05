@@ -68,7 +68,6 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
     /**
      * Determines whether a given method is static or not
      * @param  array<string>   $suppressed_issues
-     * @param  bool            $is_dynamic_this_method
      */
     public static function checkStatic(
         \Psalm\Internal\MethodIdentifier $method_id,
@@ -77,7 +76,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
         Codebase $codebase,
         CodeLocation $code_location,
         array $suppressed_issues,
-        &$is_dynamic_this_method = false
+        ?bool &$is_dynamic_this_method = false
     ): bool {
         $codebase_methods = $codebase->methods;
 

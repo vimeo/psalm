@@ -93,21 +93,15 @@ class FunctionLikeParameter
      */
     public $expect_variable = false;
 
-    /**
-     * @param Type\Union|null    $type
-     * @param bool       $is_optional
-     * @param bool       $is_nullable
-     * @param bool       $is_variadic
-     */
     public function __construct(
         string $name,
         bool $by_ref,
-        Type\Union $type = null,
+        ?Type\Union $type = null,
         ?CodeLocation $location = null,
         ?CodeLocation $type_location = null,
-        $is_optional = true,
-        $is_nullable = false,
-        $is_variadic = false,
+        bool $is_optional = true,
+        bool $is_nullable = false,
+        bool $is_variadic = false,
         ?Type\Union $default_type = null
     ) {
         $this->name = $name;

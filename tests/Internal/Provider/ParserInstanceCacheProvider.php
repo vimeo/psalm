@@ -30,7 +30,7 @@ class ParserInstanceCacheProvider extends \Psalm\Internal\Provider\ParserCachePr
     {
     }
 
-    public function loadStatementsFromCache(string $file_path, $file_modified_time, string $file_content_hash)
+    public function loadStatementsFromCache(string $file_path, int $file_modified_time, string $file_content_hash)
     {
         if (isset($this->statements_cache[$file_path])
             && $this->statements_cache_time[$file_path] >= $file_modified_time
@@ -43,10 +43,6 @@ class ParserInstanceCacheProvider extends \Psalm\Internal\Provider\ParserCachePr
     }
 
     /**
-     * @param  string   $file_content_hash
-     * @param  string   $file_path
-     * @param mixed $file_modified_time
-     *
      * @return list<PhpParser\Node\Stmt>|null
      */
     public function loadExistingStatementsFromCache(string $file_path)
@@ -59,10 +55,7 @@ class ParserInstanceCacheProvider extends \Psalm\Internal\Provider\ParserCachePr
     }
 
     /**
-     * @param  string                           $file_path
-     * @param  string                           $file_content_hash
      * @param  list<PhpParser\Node\Stmt>        $stmts
-     * @param  bool                             $touch_only
      *
      * @return void
      */
@@ -74,8 +67,6 @@ class ParserInstanceCacheProvider extends \Psalm\Internal\Provider\ParserCachePr
     }
 
     /**
-     * @param  string   $file_path
-     *
      * @return string|null
      */
     public function loadExistingFileContentsFromCache(string $file_path)
@@ -88,9 +79,6 @@ class ParserInstanceCacheProvider extends \Psalm\Internal\Provider\ParserCachePr
     }
 
     /**
-     * @param  string  $file_path
-     * @param  string  $file_contents
-     *
      * @return void
      */
     public function cacheFileContents(string $file_path, string $file_contents)

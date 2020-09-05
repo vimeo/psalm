@@ -23,11 +23,10 @@ class DiffElem
     public $new;
 
     /**
-     * @param int    $type
      * @param mixed  $old
      * @param mixed  $new
      */
-    public function __construct($type, $old, $new)
+    public function __construct(int $type, $old, $new)
     {
         $this->type = $type;
         $this->old = $old;

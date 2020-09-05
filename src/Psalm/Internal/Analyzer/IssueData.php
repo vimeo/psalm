@@ -116,37 +116,27 @@ class IssueData
     public $taint_trace;
 
     /**
-     * @param int $line_from
-     * @param int $line_to
-     * @param int $from
-     * @param int $to
-     * @param int $snippet_from
-     * @param int $snippet_to
-     * @param int $column_from
-     * @param int $column_to
-     * @param int $error_level
-     * @param int $shortcode
      * @param ?list<TaintNodeData|array{label: string, entry_path_type: string}> $taint_trace
      */
     public function __construct(
         string $severity,
-        $line_from,
-        $line_to,
+        int $line_from,
+        int $line_to,
         string $type,
         string $message,
         string $file_name,
         string $file_path,
         string $snippet,
         string $selected_text,
-        $from,
-        $to,
-        $snippet_from,
-        $snippet_to,
-        $column_from,
-        $column_to,
-        $shortcode = 0,
-        $error_level = -1,
-        $taint_trace = null
+        int $from,
+        int $to,
+        int $snippet_from,
+        int $snippet_to,
+        int $column_from,
+        int $column_to,
+        int $shortcode = 0,
+        int $error_level = -1,
+        ?array $taint_trace = null
     ) {
         $this->severity = $severity;
         $this->line_from = $line_from;

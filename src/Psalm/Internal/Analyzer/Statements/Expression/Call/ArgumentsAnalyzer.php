@@ -416,8 +416,6 @@ class ArgumentsAnalyzer
      * @param   array<int, PhpParser\Node\Arg>          $args
      * @param   string|MethodIdentifier|null  $method_id
      * @param   array<int,FunctionLikeParameter>        $function_params
-     * @param   FunctionLikeStorage|null                $function_storage
-     * @param   ClassLikeStorage|null                   $class_storage
      *
      * @return  false|null
      */
@@ -426,8 +424,8 @@ class ArgumentsAnalyzer
         array $args,
         $method_id,
         array $function_params,
-        $function_storage,
-        $class_storage,
+        ?FunctionLikeStorage $function_storage,
+        ?ClassLikeStorage $class_storage,
         ?TemplateResult $class_template_result,
         CodeLocation $code_location,
         Context $context

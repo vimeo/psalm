@@ -1526,7 +1526,7 @@ class IfAnalyzer
      */
     protected static function analyzeElseBlock(
         StatementsAnalyzer $statements_analyzer,
-        $else,
+        ?PhpParser\Node\Stmt\Else_ $else,
         IfScope $if_scope,
         Context $else_context,
         Context $outer_context

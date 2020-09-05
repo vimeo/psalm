@@ -515,7 +515,6 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
 
     /**
      * @param  string[]         $suppressed_issues
-     * @param  bool             $emit_issues
      */
     public static function checkPropertyVisibility(
         string $property_id,
@@ -523,7 +522,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
         SourceAnalyzer $source,
         CodeLocation $code_location,
         array $suppressed_issues,
-        $emit_issues = true
+        bool $emit_issues = true
     ): ?bool {
         [$fq_class_name, $property_name] = explode('::$', (string)$property_id);
 

@@ -561,8 +561,6 @@ class ArrayFunctionArgumentsAnalyzer
     }
 
     /**
-     * @param  int      $min_closure_param_count
-     * @param  int      $max_closure_param_count [description]
      * @param  (TArray|null)[] $array_arg_types
      *
      * @return void
@@ -573,7 +571,7 @@ class ArrayFunctionArgumentsAnalyzer
         string $method_id,
         Type\Atomic $closure_type,
         PhpParser\Node\Arg $closure_arg,
-        $min_closure_param_count,
+        int $min_closure_param_count,
         int $max_closure_param_count,
         array $array_arg_types,
         bool $check_functions

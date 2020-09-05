@@ -65,13 +65,11 @@ class ParserCacheProvider
     }
 
     /**
-     * @param  int      $file_modified_time
-     *
      * @return list<PhpParser\Node\Stmt>|null
      *
      * @psalm-suppress UndefinedFunction
      */
-    public function loadStatementsFromCache(string $file_path, $file_modified_time, string $file_content_hash)
+    public function loadStatementsFromCache(string $file_path, int $file_modified_time, string $file_content_hash)
     {
         $root_cache_directory = Config::getInstance()->getCacheDirectory();
 

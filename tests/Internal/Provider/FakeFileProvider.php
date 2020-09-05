@@ -17,21 +17,11 @@ class FakeFileProvider extends \Psalm\Internal\Provider\FileProvider
      */
     public $fake_file_times = [];
 
-    /**
-     * @param  string $file_path
-     *
-     * @return bool
-     */
     public function fileExists(string $file_path): bool
     {
         return isset($this->fake_files[$file_path]) || parent::fileExists($file_path);
     }
 
-    /**
-     * @param  string $file_path
-     *
-     * @return string
-     */
     public function getContents(string $file_path, bool $go_to_source = false): string
     {
         if (!$go_to_source && isset($this->temp_files[strtolower($file_path)])) {
@@ -46,9 +36,6 @@ class FakeFileProvider extends \Psalm\Internal\Provider\FileProvider
     }
 
     /**
-     * @param  string  $file_path
-     * @param  string  $file_contents
-     *
      * @return void
      */
     public function setContents(string $file_path, string $file_contents)
@@ -56,11 +43,6 @@ class FakeFileProvider extends \Psalm\Internal\Provider\FileProvider
         $this->fake_files[$file_path] = $file_contents;
     }
 
-    /**
-     * @param  string $file_path
-     *
-     * @return int
-     */
     public function getModifiedTime(string $file_path): int
     {
         if (isset($this->fake_file_times[$file_path])) {
@@ -71,20 +53,16 @@ class FakeFileProvider extends \Psalm\Internal\Provider\FileProvider
     }
 
     /**
-     * @param  string $file_path
-     * @param  string $file_contents
-     *
      * @return void
      * @psalm-suppress InvalidPropertyAssignmentValue because microtime is needed for cache busting
      */
-    public function registerFile($file_path, $file_contents)
+    public function registerFile(string $file_path, string $file_contents)
     {
         $this->fake_files[$file_path] = $file_contents;
         $this->fake_file_times[$file_path] = microtime(true);
     }
 
     /**
-     * @param string $dir_path
      * @param array<string> $file_extensions
      *
      * @return array<int, string>

@@ -244,17 +244,15 @@ class Scanner
     }
 
     /**
-     * @param  string|null  $referencing_file_path
-     * @param  bool $analyze_too
-     * @param  bool $store_failure
+    /**
      * @param  array<string, mixed> $phantom_classes
      *
      * @return void
      */
     public function queueClassLikeForScanning(
         string $fq_classlike_name,
-        $analyze_too = false,
-        $store_failure = true,
+        bool $analyze_too = false,
+        bool $store_failure = true,
         array $phantom_classes = []
     ) {
         if ($fq_classlike_name[0] === '\\') {
@@ -554,12 +552,11 @@ class Scanner
 
     /**
      * @param  array<string, class-string<FileScanner>>  $filetype_scanners
-     * @param  bool   $will_analyze
      */
     private function scanFile(
         string $file_path,
         array $filetype_scanners,
-        $will_analyze = false
+        bool $will_analyze = false
     ): FileScanner {
         $file_scanner = $this->getScannerForPath($file_path, $filetype_scanners, $will_analyze);
 
@@ -646,12 +643,11 @@ class Scanner
 
     /**
      * @param  array<string, class-string<FileScanner>>  $filetype_scanners
-     * @param  bool   $will_analyze
      */
     private function getScannerForPath(
         string $file_path,
         array $filetype_scanners,
-        $will_analyze = false
+        bool $will_analyze = false
     ): FileScanner {
         $path_parts = explode(DIRECTORY_SEPARATOR, $file_path);
         $file_name_parts = explode('.', array_pop($path_parts));

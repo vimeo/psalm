@@ -1129,7 +1129,7 @@ class Config
      *
      * @return void
      */
-    private function loadFileExtensions($extensions)
+    private function loadFileExtensions(array $extensions)
     {
         foreach ($extensions as $extension) {
             $extension_name = preg_replace('/^\.?/', '', (string)$extension['name']);
@@ -1371,11 +1371,7 @@ class Config
         return true;
     }
 
-    /**
-     * @param   string $file_path
-     *
-     */
-    public function isInProjectDirs($file_path): bool
+    public function isInProjectDirs(string $file_path): bool
     {
         return $this->project_files && $this->project_files->allows($file_path);
     }

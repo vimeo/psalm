@@ -153,10 +153,7 @@ class FileStorageCacheProvider
         return null;
     }
 
-    /**
-     * @param  bool $create_directory
-     */
-    private function getCacheLocationForPath(string $file_path, $create_directory = false): string
+    private function getCacheLocationForPath(string $file_path, bool $create_directory = false): string
     {
         $root_cache_directory = $this->config->getCacheDirectory();
 

@@ -346,10 +346,7 @@ class FileFilter
         return preg_replace('/\/?$/', DIRECTORY_SEPARATOR, $str);
     }
 
-    /**
-     * @param  bool $case_sensitive
-     */
-    public function allows(string $file_name, $case_sensitive = false): bool
+    public function allows(string $file_name, bool $case_sensitive = false): bool
     {
         if ($this->inclusive) {
             foreach ($this->directories as $include_dir) {

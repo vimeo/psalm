@@ -6,10 +6,7 @@ class TLiteralInt extends TInt
     /** @var int */
     public $value;
 
-    /**
-     * @param int $value
-     */
-    public function __construct($value)
+    public function __construct(int $value)
     {
         $this->value = $value;
     }

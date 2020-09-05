@@ -541,11 +541,9 @@ class ProjectAnalyzer
     }
 
     /**
-     * @param  bool $is_diff
-     *
      * @return void
      */
-    public function check(string $base_dir, $is_diff = false)
+    public function check(string $base_dir, bool $is_diff = false)
     {
         $start_checks = (int)microtime(true);
 
@@ -1028,11 +1026,9 @@ class ProjectAnalyzer
     }
 
     /**
-     * @param  bool   $allow_non_project_files
-     *
      * @return void
      */
-    private function checkDirWithConfig(string $dir_name, Config $config, $allow_non_project_files = false)
+    private function checkDirWithConfig(string $dir_name, Config $config, bool $allow_non_project_files = false)
     {
         $file_extensions = $config->getFileExtensions();
 

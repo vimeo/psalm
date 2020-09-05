@@ -536,10 +536,7 @@ class Codebase
         }
     }
 
-    /**
-     * @param  ?\ReflectionType $type
-     */
-    public static function getPsalmTypeFromReflection($type) : Type\Union
+    public static function getPsalmTypeFromReflection(?\ReflectionType $type) : Type\Union
     {
         return \Psalm\Internal\Codebase\Reflection::getPsalmTypeFromReflectionType($type);
     }

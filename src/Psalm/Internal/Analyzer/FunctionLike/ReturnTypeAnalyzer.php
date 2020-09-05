@@ -49,7 +49,6 @@ class ReturnTypeAnalyzer
     /**
      * @param Closure|Function_|ClassMethod|ArrowFunction $function
      * @param PhpParser\Node\Stmt[] $function_stmts
-     * @param Type\Union|null     $return_type
      * @param string[]            $compatible_method_ids
      *
      * @return  false|null
@@ -60,7 +59,7 @@ class ReturnTypeAnalyzer
         SourceAnalyzer $source,
         \Psalm\Internal\Provider\NodeDataProvider $type_provider,
         FunctionLikeAnalyzer $function_like_analyzer,
-        Type\Union $return_type = null,
+        ?Type\Union $return_type = null,
         ?string $fq_class_name = null,
         ?CodeLocation $return_type_location = null,
         array $compatible_method_ids = [],

@@ -256,7 +256,6 @@ class FunctionDocblockManipulator
 
     /**
      * Sets the new return type
-     * @param   bool        $is_php_compatible
      *
      * @return  void
      */
@@ -264,7 +263,7 @@ class FunctionDocblockManipulator
         ?string $php_type,
         string $new_type,
         string $phpdoc_type,
-        $is_php_compatible,
+        bool $is_php_compatible,
         ?string $description
     ) {
         $new_type = str_replace(['<mixed, mixed>', '<array-key, mixed>'], '', $new_type);

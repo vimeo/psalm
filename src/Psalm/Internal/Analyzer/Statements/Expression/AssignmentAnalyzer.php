@@ -53,7 +53,7 @@ class AssignmentAnalyzer
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $assign_var,
-        $assign_value,
+        ?PhpParser\Node\Expr $assign_value,
         ?Type\Union $assign_value_type,
         Context $context,
         ?PhpParser\Comment\Doc $doc_comment

@@ -21,8 +21,6 @@ class ProjectCacheProvider extends \Psalm\Internal\Provider\ProjectCacheProvider
     }
 
     /**
-     * @param float $start_time
-     *
      * @return void
      */
     public function processSuccessfulRun(float $start_time)

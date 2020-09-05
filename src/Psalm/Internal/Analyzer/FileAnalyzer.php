@@ -123,13 +123,11 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
     }
 
     /**
-     * @param  bool $preserve_analyzers
-     *
      * @return void
      */
     public function analyze(
         ?Context $file_context = null,
-        $preserve_analyzers = false,
+        bool $preserve_analyzers = false,
         ?Context $global_context = null
     ) {
         $codebase = $this->project_analyzer->getCodebase();

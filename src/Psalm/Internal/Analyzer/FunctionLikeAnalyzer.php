@@ -137,7 +137,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         Context $context,
         \Psalm\Internal\Provider\NodeDataProvider $type_provider,
         ?Context $global_context = null,
-        $add_mutations = false,
+        bool $add_mutations = false,
         ?array $byref_uses = null
     ): ?bool {
         $storage = $this->storage;
@@ -1477,15 +1477,13 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
     /**
      * @param array<PhpParser\Node\Stmt> $function_stmts
-     * @param Type\Union|null     $return_type
-     * @param string              $fq_class_name
      *
      * @return  false|null
      */
     public function verifyReturnType(
         array $function_stmts,
         StatementsAnalyzer $statements_analyzer,
-        Type\Union $return_type = null,
+        ?Type\Union $return_type = null,
         ?string $fq_class_name = null,
         ?CodeLocation $return_type_location = null,
         bool $did_explicitly_return = false,
@@ -1507,15 +1505,13 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * @param bool $docblock_only
-     *
      * @return void
      */
     public function addOrUpdateParamType(
         ProjectAnalyzer $project_analyzer,
         string $param_name,
         Type\Union $inferred_return_type,
-        $docblock_only = false
+        bool $docblock_only = false
     ) {
         $manipulator = FunctionDocblockManipulator::getForFunction(
             $project_analyzer,

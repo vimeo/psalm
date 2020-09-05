@@ -1330,11 +1330,9 @@ class Analyzer
     }
 
     /**
-     * @param  bool $dry_run
-     *
      * @return void
      */
-    public function updateFile(string $file_path, $dry_run)
+    public function updateFile(string $file_path, bool $dry_run)
     {
         FileManipulationBuffer::add(
             $file_path,
@@ -1403,12 +1401,9 @@ class Analyzer
     }
 
     /**
-     * @param int $start
-     * @param int $end
-     *
      * @return list<IssueData>
      */
-    public function getExistingIssuesForFile(string $file_path, $start, $end, ?string $issue_type = null)
+    public function getExistingIssuesForFile(string $file_path, int $start, int $end, ?string $issue_type = null)
     {
         if (!isset($this->existing_issues[$file_path])) {
             return [];
@@ -1428,12 +1423,9 @@ class Analyzer
     }
 
     /**
-     * @param int $start
-     * @param int $end
-     *
      * @return void
      */
-    public function removeExistingDataForFile(string $file_path, $start, $end, ?string $issue_type = null)
+    public function removeExistingDataForFile(string $file_path, int $start, int $end, ?string $issue_type = null)
     {
         if (isset($this->existing_issues[$file_path])) {
             foreach ($this->existing_issues[$file_path] as $i => $issue_data) {
@@ -1534,19 +1526,14 @@ class Analyzer
     }
 
     /**
-     * @param bool $is_constructor
-     *
      * @return void
      */
-    public function setAnalyzedMethod(string $file_path, string $method_id, $is_constructor = false)
+    public function setAnalyzedMethod(string $file_path, string $method_id, bool $is_constructor = false)
     {
         $this->analyzed_methods[$file_path][$method_id] = $is_constructor ? 2 : 1;
     }
 
-    /**
-     * @param bool $is_constructor
-     */
-    public function isMethodAlreadyAnalyzed(string $file_path, string $method_id, $is_constructor = false): bool
+    public function isMethodAlreadyAnalyzed(string $file_path, string $method_id, bool $is_constructor = false): bool
     {
         if ($is_constructor) {
             return isset($this->analyzed_methods[$file_path][$method_id])

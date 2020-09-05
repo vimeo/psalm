@@ -1756,15 +1756,13 @@ class ClassLikes
     }
 
     /**
-     * @param   int         $visibility
-     *
      * @return  void
      */
     public function setConstantType(
         string $class_name,
         string $const_name,
         Type\Union $type,
-        $visibility
+        int $visibility
     ) {
         $storage = $this->classlike_storage_provider->get($class_name);
 
