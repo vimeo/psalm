@@ -307,6 +307,10 @@ class InternalCallMapHandler
                     $function_param->out_type = $out_type;
                 }
 
+                if ($arg_name === 'haystack') {
+                    $function_param->expect_variable = true;
+                }
+
                 if (isset(self::$taint_sink_map[$call_map_key][$arg_offset])) {
                     $function_param->sinks = self::$taint_sink_map[$call_map_key][$arg_offset];
                 }

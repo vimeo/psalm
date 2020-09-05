@@ -120,6 +120,23 @@ class ArgumentAnalyzer
             return;
         }
 
+        if ($function_param->expect_variable
+            && $arg_value_type->hasLiteralString()
+            && !$arg->value instanceof PhpParser\Node\Scalar
+        ) {
+            if (IssueBuffer::accepts(
+                new InvalidArgument(
+                    'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id
+                        . ' expects a non-literal value, ' . $arg_value_type->getId() . ' provided',
+                    new CodeLocation($statements_analyzer->getSource(), $arg->value),
+                    $cased_method_id
+                ),
+                $statements_analyzer->getSuppressedIssues()
+            )) {
+                // fall through
+            }
+        }
+
         if (self::checkFunctionLikeTypeMatches(
             $statements_analyzer,
             $codebase,

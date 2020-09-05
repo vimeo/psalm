@@ -2089,6 +2089,13 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
             $param_array = $this->getTranslatedFunctionParam($param, $stmt, $fake_method, $fq_classlike_name);
 
+            if ($param_array->name === 'haystack'
+                && (strpos($this->file_path, 'CoreGenericFunctions.phpstub')
+                    || strpos($this->file_path, 'CoreGenericClasses.phpstub'))
+            ) {
+                $param_array->expect_variable = true;
+            }
+
             if (isset($existing_params['$' . $param_array->name])) {
                 $storage->docblock_issues[] = new DuplicateParam(
                     'Duplicate param $' . $param_array->name . ' in docblock for ' . $cased_function_id,

@@ -89,6 +89,11 @@ class FunctionLikeParameter
     public $type_inferred = false;
 
     /**
+     * @var bool
+     */
+    public $expect_variable = false;
+
+    /**
      * @param string        $name
      * @param Type\Union|null    $type
      * @param CodeLocation|null  $location
