@@ -1297,6 +1297,7 @@ class Codebase
         $static_completion_items = [];
 
         $type = Type::parseString($type_string);
+        $snippets_supported = false;
 
         foreach ($type->getAtomicTypes() as $atomic_type) {
             if ($atomic_type instanceof Type\Atomic\TNamedObject) {
@@ -1313,12 +1314,15 @@ class Codebase
                             null,
                             (string)$method_storage->visibility,
                             $method_storage->cased_name,
-                            $method_storage->cased_name . (count($method_storage->params) !== 0 ? '($0)' : '()'),
+                            $method_storage->cased_name,
                             null,
                             null,
                             new Command('Trigger parameter hints', 'editor.action.triggerParameterHints')
                         );
-                        $completion_item->insertTextFormat = \LanguageServerProtocol\InsertTextFormat::SNIPPET;
+                        if ($snippets_supported && count($method_storage->params) > 0) {
+                            $completion_item->insertText .= '($0)';
+                            $completion_item->insertTextFormat = \LanguageServerProtocol\InsertTextFormat::SNIPPET;
+                        }
 
                         if ($method_storage->is_static) {
                             $static_completion_items[] = $completion_item;
