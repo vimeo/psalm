@@ -128,7 +128,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * @param Context|null  $global_context
      * @param bool          $add_mutations  whether or not to add mutations to this method
      * @param ?array<string, bool> $byref_uses
      *
@@ -137,9 +136,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     public function analyze(
         Context $context,
         \Psalm\Internal\Provider\NodeDataProvider $type_provider,
-        Context $global_context = null,
-        $add_mutations = false,
-        array $byref_uses = null
+        ?Context $global_context = null,
+        bool $add_mutations = false,
+        ?array $byref_uses = null
     ): ?bool {
         $storage = $this->storage;
 
@@ -1478,18 +1477,15 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
     /**
      * @param array<PhpParser\Node\Stmt> $function_stmts
-     * @param Type\Union|null     $return_type
-     * @param string              $fq_class_name
-     * @param CodeLocation|null   $return_type_location
      *
      * @return  false|null
      */
     public function verifyReturnType(
         array $function_stmts,
         StatementsAnalyzer $statements_analyzer,
-        Type\Union $return_type = null,
-        $fq_class_name = null,
-        CodeLocation $return_type_location = null,
+        ?Type\Union $return_type = null,
+        ?string $fq_class_name = null,
+        ?CodeLocation $return_type_location = null,
         bool $did_explicitly_return = false,
         bool $closure_inside_call = false
     ) {
@@ -1509,16 +1505,13 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * @param string $param_name
-     * @param bool $docblock_only
-     *
      * @return void
      */
     public function addOrUpdateParamType(
         ProjectAnalyzer $project_analyzer,
-        $param_name,
+        string $param_name,
         Type\Union $inferred_return_type,
-        $docblock_only = false
+        bool $docblock_only = false
     ) {
         $manipulator = FunctionDocblockManipulator::getForFunction(
             $project_analyzer,
@@ -1652,11 +1645,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         }
     }
 
-    /**
-     * @param string|null $context_self
-     *
-     */
-    public function getCorrectlyCasedMethodId($context_self = null): string
+    public function getCorrectlyCasedMethodId(?string $context_self = null): string
     {
         if ($this->function instanceof ClassMethod) {
             $function_name = (string)$this->function->name;
@@ -1677,7 +1666,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         return $this->getClosureId();
     }
     
-    public function getFunctionLikeStorage(StatementsAnalyzer $statements_analyzer = null): FunctionLikeStorage
+    public function getFunctionLikeStorage(?StatementsAnalyzer $statements_analyzer = null): FunctionLikeStorage
     {
         $codebase = $this->codebase;
 
@@ -1847,11 +1836,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     /**
      * Adds a suppressed issue, useful when creating a method checker from scratch
      *
-     * @param string $issue_name
-     *
      * @return void
      */
-    public function addSuppressedIssue($issue_name)
+    public function addSuppressedIssue(string $issue_name)
     {
         $this->suppressed_issues[] = $issue_name;
     }

@@ -220,7 +220,7 @@ class IfAnalyzer
                  * @param array<string> $carry
                  * @return array<string>
                  */
-                function ($carry, Clause $clause): array {
+                function (array $carry, Clause $clause): array {
                     return array_merge($carry, array_keys($clause->possibilities));
                 },
                 []
@@ -1170,7 +1170,7 @@ class IfAnalyzer
                      * @param array<string> $carry
                      * @return array<string>
                      */
-                    function ($carry, Clause $clause): array {
+                    function (array $carry, Clause $clause): array {
                         return array_merge($carry, array_keys($clause->possibilities));
                     },
                     []
@@ -1520,13 +1520,11 @@ class IfAnalyzer
     }
 
     /**
-     * @param  PhpParser\Node\Stmt\Else_|null $else
-     *
      * @return false|null
      */
     protected static function analyzeElseBlock(
         StatementsAnalyzer $statements_analyzer,
-        $else,
+        ?PhpParser\Node\Stmt\Else_ $else,
         IfScope $if_scope,
         Context $else_context,
         Context $outer_context

@@ -91,15 +91,12 @@ class FileFilter
     }
 
     /**
-     * @param  string           $base_dir
-     * @param  bool             $inclusive
-     *
      * @return static
      */
     public static function loadFromXMLElement(
         SimpleXMLElement $e,
-        $base_dir,
-        $inclusive
+        string $base_dir,
+        bool $inclusive
     ) {
         $allow_missing_files = ((string) $e['allowMissingFiles']) === 'true';
 
@@ -342,22 +339,14 @@ class FileFilter
     }
 
     /**
-     * @param string $str
-     *
-     *
      * @psalm-pure
      */
-    protected static function slashify($str): string
+    protected static function slashify(string $str): string
     {
         return preg_replace('/\/?$/', DIRECTORY_SEPARATOR, $str);
     }
 
-    /**
-     * @param  string  $file_name
-     * @param  bool $case_sensitive
-     *
-     */
-    public function allows($file_name, $case_sensitive = false): bool
+    public function allows(string $file_name, bool $case_sensitive = false): bool
     {
         if ($this->inclusive) {
             foreach ($this->directories as $include_dir) {
@@ -411,11 +400,7 @@ class FileFilter
         return true;
     }
 
-    /**
-     * @param  string  $fq_classlike_name
-     *
-     */
-    public function allowsClass($fq_classlike_name): bool
+    public function allowsClass(string $fq_classlike_name): bool
     {
         if ($this->fq_classlike_patterns) {
             foreach ($this->fq_classlike_patterns as $pattern) {
@@ -428,11 +413,7 @@ class FileFilter
         return in_array(strtolower($fq_classlike_name), $this->fq_classlike_names, true);
     }
 
-    /**
-     * @param  string  $method_id
-     *
-     */
-    public function allowsMethod($method_id): bool
+    public function allowsMethod(string $method_id): bool
     {
         if (!$this->method_ids) {
             return false;
@@ -461,20 +442,12 @@ class FileFilter
         return in_array($method_id, $this->method_ids, true);
     }
 
-    /**
-     * @param  string  $property_id
-     *
-     */
-    public function allowsProperty($property_id): bool
+    public function allowsProperty(string $property_id): bool
     {
         return in_array(strtolower($property_id), $this->property_ids, true);
     }
 
-    /**
-     * @param  string  $var_name
-     *
-     */
-    public function allowsVariable($var_name): bool
+    public function allowsVariable(string $var_name): bool
     {
         return in_array(strtolower($var_name), $this->var_names, true);
     }
@@ -496,22 +469,18 @@ class FileFilter
     }
 
     /**
-     * @param   string $file_name
-     *
      * @return  void
      */
-    public function addFile($file_name)
+    public function addFile(string $file_name)
     {
         $this->files[] = $file_name;
         $this->files_lowercase[] = strtolower($file_name);
     }
 
     /**
-     * @param string $dir_name
-     *
      * @return void
      */
-    public function addDirectory($dir_name)
+    public function addDirectory(string $dir_name)
     {
         $this->directories[] = self::slashify($dir_name);
     }

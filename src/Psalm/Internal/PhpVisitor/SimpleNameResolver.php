@@ -39,7 +39,7 @@ class SimpleNameResolver extends NodeVisitorAbstract
      * @param ErrorHandler $errorHandler Error handler
      * @param array<int, array{0: int, 1: int, 2: int, 3: int}> $offset_map
      */
-    public function __construct(ErrorHandler $errorHandler, array $offset_map = null)
+    public function __construct(ErrorHandler $errorHandler, ?array $offset_map = null)
     {
         if ($offset_map) {
             foreach ($offset_map as [, , $b_s, $b_e]) {
@@ -140,11 +140,9 @@ class SimpleNameResolver extends NodeVisitorAbstract
     }
 
     /**
-     * @param int $type
-     *
      * @return void
      */
-    private function addAlias(Stmt\UseUse $use, $type, Name $prefix = null)
+    private function addAlias(Stmt\UseUse $use, int $type, ?Name $prefix = null)
     {
         // Add prefix for group uses
         /** @var Name $name */

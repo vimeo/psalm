@@ -98,10 +98,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
     /** @var ClassLikeStorage */
     protected $storage;
 
-    /**
-     * @param string                        $fq_class_name
-     */
-    public function __construct(PhpParser\Node\Stmt\ClassLike $class, SourceAnalyzer $source, $fq_class_name)
+    public function __construct(PhpParser\Node\Stmt\ClassLike $class, SourceAnalyzer $source, string $fq_class_name)
     {
         $this->class = $class;
         $this->source = $source;
@@ -118,12 +115,10 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
     }
 
     /**
-     * @param  string       $method_name
-     *
      * @return void
      */
     public function getMethodMutations(
-        $method_name,
+        string $method_name,
         Context $context
     ) {
         $project_analyzer = $this->getFileAnalyzer()->project_analyzer;
@@ -519,19 +514,15 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
     }
 
     /**
-     * @param  string           $property_id
-     * @param  string|null      $calling_context
      * @param  string[]         $suppressed_issues
-     * @param  bool             $emit_issues
-     *
      */
     public static function checkPropertyVisibility(
-        $property_id,
+        string $property_id,
         Context $context,
         SourceAnalyzer $source,
         CodeLocation $code_location,
         array $suppressed_issues,
-        $emit_issues = true
+        bool $emit_issues = true
     ): ?bool {
         [$fq_class_name, $property_name] = explode('::$', (string)$property_id);
 
@@ -649,11 +640,9 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
     }
 
     /**
-     * @param   string $file_path
-     *
      * @return  array<string, string>
      */
-    public static function getClassesForFile(Codebase $codebase, $file_path): array
+    public static function getClassesForFile(Codebase $codebase, string $file_path): array
     {
         try {
             return $codebase->file_storage_provider->get($file_path)->classlikes_in_file;

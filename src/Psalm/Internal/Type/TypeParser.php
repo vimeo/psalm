@@ -60,7 +60,7 @@ class TypeParser
      */
     public static function parseTokens(
         array $type_tokens,
-        array $php_version = null,
+        ?array $php_version = null,
         array $template_type_map = [],
         array $type_aliases = []
     ) {
@@ -113,7 +113,7 @@ class TypeParser
     public static function getTypeFromTree(
         ParseTree $parse_tree,
         Codebase $codebase,
-        array $php_version = null,
+        ?array $php_version = null,
         array $template_type_map = [],
         array $type_aliases = []
     ) {

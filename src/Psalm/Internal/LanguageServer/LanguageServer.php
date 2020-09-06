@@ -190,8 +190,8 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
      */
     public function initialize(
         ClientCapabilities $capabilities,
-        string $rootPath = null,
-        int $processId = null
+        ?string $rootPath = null,
+        ?int $processId = null
     ): Promise {
         return call(
             /** @return \Generator<int, true, mixed, InitializeResult> */
@@ -472,7 +472,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
      * @param string|null $additional_info This is additional info that the client
      *                                       can use as part of the display message.
      */
-    private function clientStatus(string $status, string $additional_info = null): Promise
+    private function clientStatus(string $status, ?string $additional_info = null): Promise
     {
         try {
             // here we send a notification to the client using the telemetry notification method

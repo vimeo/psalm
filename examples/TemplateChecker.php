@@ -18,7 +18,7 @@ class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
 {
     const VIEW_CLASS = 'Your\\View\\Class';
 
-    public function analyze(Context $file_context = null, $preserve_analyzers = false, Context $global_context = null)
+    public function analyze(?Context $file_context = null, bool $preserve_analyzers = false, ?Context $global_context = null)
     {
         $codebase = $this->project_analyzer->getCodebase();
         $stmts = $codebase->getStatementsForFile($this->file_path);

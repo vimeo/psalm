@@ -302,11 +302,7 @@ if (isset($options['i'])) {
 
     $args = array_values(array_filter(
         $args,
-        /**
-         * @param string $arg
-         *
-         */
-        function ($arg): bool {
+        function (string $arg): bool {
             return $arg !== '--ansi'
                 && $arg !== '--no-ansi'
                 && $arg !== '-i'

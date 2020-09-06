@@ -31,12 +31,7 @@ class FileScanner implements FileSource
      */
     public $will_analyze;
 
-    /**
-     * @param string $file_path
-     * @param string $file_name
-     * @param bool $will_analyze
-     */
-    public function __construct($file_path, $file_name, $will_analyze)
+    public function __construct(string $file_path, string $file_name, bool $will_analyze)
     {
         $this->file_path = $file_path;
         $this->file_name = $file_name;
@@ -44,15 +39,13 @@ class FileScanner implements FileSource
     }
 
     /**
-     * @param bool $storage_from_cache
-     *
      * @return void
      */
     public function scan(
         Codebase $codebase,
         FileStorage $file_storage,
-        $storage_from_cache = false,
-        Progress $progress = null
+        bool $storage_from_cache = false,
+        ?Progress $progress = null
     ) {
         if ($progress === null) {
             $progress = new VoidProgress();

@@ -85,9 +85,9 @@ class Methods
     public function methodExists(
         MethodIdentifier $method_id,
         ?string $calling_method_id = null,
-        CodeLocation $code_location = null,
-        StatementsSource $source = null,
-        string $source_file_path = null,
+        ?CodeLocation $code_location = null,
+        ?StatementsSource $source = null,
+        ?string $source_file_path = null,
         bool $use_method_existence_provider = true
     ) : bool {
         $fq_class_name = $method_id->fq_class_name;
@@ -314,9 +314,9 @@ class Methods
      */
     public function getMethodParams(
         MethodIdentifier $method_id,
-        StatementsSource $source = null,
-        array $args = null,
-        Context $context = null
+        ?StatementsSource $source = null,
+        ?array $args = null,
+        ?Context $context = null
     ) : array {
         $fq_class_name = $method_id->fq_class_name;
         $method_name = $method_id->method_name;
@@ -624,8 +624,8 @@ class Methods
     public function getMethodReturnType(
         MethodIdentifier $method_id,
         ?string &$self_class,
-        \Psalm\Internal\Analyzer\SourceAnalyzer $source_analyzer = null,
-        array $args = null
+        ?\Psalm\Internal\Analyzer\SourceAnalyzer $source_analyzer = null,
+        ?array $args = null
     ): ?Type\Union {
         $original_fq_class_name = $method_id->fq_class_name;
         $original_method_name = $method_id->method_name;
@@ -853,18 +853,16 @@ class Methods
     }
 
     /**
-     * @param string $fq_class_name
      * @param lowercase-string $method_name_lc
-     * @param string $declaring_fq_class_name
      * @param lowercase-string $declaring_method_name_lc
      *
      * @return void
      */
     public function setDeclaringMethodId(
-        $fq_class_name,
-        $method_name_lc,
-        $declaring_fq_class_name,
-        $declaring_method_name_lc
+        string $fq_class_name,
+        string $method_name_lc,
+        string $declaring_fq_class_name,
+        string $declaring_method_name_lc
     ) {
         $class_storage = $this->classlike_storage_provider->get($fq_class_name);
 
@@ -875,18 +873,16 @@ class Methods
     }
 
     /**
-     * @param string $fq_class_name
      * @param lowercase-string $method_name_lc
-     * @param string $appearing_fq_class_name
      * @param lowercase-string $appearing_method_name_lc
      *
      * @return void
      */
     public function setAppearingMethodId(
-        $fq_class_name,
-        $method_name_lc,
-        $appearing_fq_class_name,
-        $appearing_method_name_lc
+        string $fq_class_name,
+        string $method_name_lc,
+        string $appearing_fq_class_name,
+        string $appearing_method_name_lc
     ) {
         $class_storage = $this->classlike_storage_provider->get($fq_class_name);
 

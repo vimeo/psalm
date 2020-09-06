@@ -53,7 +53,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
         StatementsAnalyzer $statements_analyzer,
         bool $inside_loop,
         array $template_type_map,
-        CodeLocation $code_location = null,
+        ?CodeLocation $code_location = null,
         array $suppressed_issues = [],
         ?int &$failed_reconciliation = 0
     ) : Union {

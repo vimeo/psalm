@@ -68,11 +68,9 @@ class Algebra
     }
 
     /**
-     * @param string $type
-     *
      * @psalm-pure
      */
-    public static function negateType($type): string
+    public static function negateType(string $type): string
     {
         if ($type === 'mixed') {
             return $type;
@@ -82,17 +80,15 @@ class Algebra
     }
 
     /**
-     * @param  string|null              $this_class_name
-     *
      * @return array<int, Clause>
      */
     public static function getFormula(
         int $conditional_object_id,
         int $creating_object_id,
         PhpParser\Node\Expr $conditional,
-        $this_class_name,
+        ?string $this_class_name,
         FileSource $source,
-        Codebase $codebase = null,
+        ?Codebase $codebase = null,
         bool $inside_negation = false,
         bool $cache = true
     ) {
@@ -457,11 +453,9 @@ class Algebra
                         array_filter(
                             $clause_b->possibilities[$clause_var],
                             /**
-                             * @param string $possible_type
-                             *
                              * @return bool
                              */
-                            function ($possible_type) use ($negated_clause_type) {
+                            function (string $possible_type) use ($negated_clause_type) {
                                 return $possible_type !== $negated_clause_type;
                             }
                         )
@@ -564,10 +558,7 @@ class Algebra
                     // if there's only one active clause, return all the non-negation clause members ORed together
                     $things_that_can_be_said = array_filter(
                         $possible_types,
-                        /**
-                         * @param  string $possible_type
-                         */
-                        function ($possible_type): bool {
+                        function (string $possible_type): bool {
                             return $possible_type[0] !== '!';
                         }
                     );

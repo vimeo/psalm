@@ -416,8 +416,6 @@ class ArgumentsAnalyzer
      * @param   array<int, PhpParser\Node\Arg>          $args
      * @param   string|MethodIdentifier|null  $method_id
      * @param   array<int,FunctionLikeParameter>        $function_params
-     * @param   FunctionLikeStorage|null                $function_storage
-     * @param   ClassLikeStorage|null                   $class_storage
      *
      * @return  false|null
      */
@@ -426,8 +424,8 @@ class ArgumentsAnalyzer
         array $args,
         $method_id,
         array $function_params,
-        $function_storage,
-        $class_storage,
+        ?FunctionLikeStorage $function_storage,
+        ?ClassLikeStorage $class_storage,
         ?TemplateResult $class_template_result,
         CodeLocation $code_location,
         Context $context
@@ -796,19 +794,16 @@ class ArgumentsAnalyzer
     }
 
     /**
-     * @param  string|null $method_id
-     * @param  string|null $cased_method_id
-     * @param  FunctionLikeParameter|null $last_param
      * @param  array<int, FunctionLikeParameter> $function_params
      * @return false|null
      */
     private static function handlePossiblyMatchingByRefParam(
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
-        $method_id,
-        $cased_method_id,
-        $last_param,
-        $function_params,
+        ?string $method_id,
+        ?string $cased_method_id,
+        ?FunctionLikeParameter $last_param,
+        array $function_params,
         int $argument_offset,
         PhpParser\Node\Arg $arg,
         Context $context,
@@ -1055,12 +1050,11 @@ class ArgumentsAnalyzer
     }
 
     /**
-     * @param string|null $method_id
      * @return false|null
      */
     private static function handleByRefFunctionArg(
         StatementsAnalyzer $statements_analyzer,
-        $method_id,
+        ?string $method_id,
         int $argument_offset,
         PhpParser\Node\Arg $arg,
         Context $context

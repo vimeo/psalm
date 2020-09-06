@@ -66,10 +66,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
      */
     public $inferred_property_types = [];
 
-    /**
-     * @param string|null                   $fq_class_name
-     */
-    public function __construct(PhpParser\Node\Stmt\Class_ $class, SourceAnalyzer $source, $fq_class_name)
+    public function __construct(PhpParser\Node\Stmt\Class_ $class, SourceAnalyzer $source, ?string $fq_class_name)
     {
         if (!$fq_class_name) {
             $fq_class_name = self::getAnonymousClassName($class, $source->getFilePath());
@@ -89,25 +86,18 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         }
     }
 
-    /**
-     * @param  string                     $file_path
-     *
-     */
-    public static function getAnonymousClassName(PhpParser\Node\Stmt\Class_ $class, $file_path): string
+    public static function getAnonymousClassName(PhpParser\Node\Stmt\Class_ $class, string $file_path): string
     {
         return preg_replace('/[^A-Za-z0-9]/', '_', $file_path)
             . '_' . $class->getLine() . '_' . (int)$class->getAttribute('startFilePos');
     }
 
     /**
-     * @param Context|null  $class_context
-     * @param Context|null  $global_context
-     *
      * @return null|false
      */
     public function analyze(
-        Context $class_context = null,
-        Context $global_context = null
+        ?Context $class_context = null,
+        ?Context $global_context = null
     ) {
         $class = $this->class;
 
@@ -1152,8 +1142,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         Config $config,
         ClassLikeStorage $storage,
         Context $class_context,
-        Context $global_context = null,
-        MethodAnalyzer $constructor_analyzer = null
+        ?Context $global_context = null,
+        ?MethodAnalyzer $constructor_analyzer = null
     ) {
         if (!$config->reportIssueInFile('PropertyNotSetInConstructor', $this->getFilePath())) {
             return;
@@ -1493,9 +1483,9 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         ProjectAnalyzer $project_analyzer,
         ClassLikeStorage $storage,
         Context $class_context,
-        Context $global_context = null,
-        MethodAnalyzer &$constructor_analyzer = null,
-        TraitAnalyzer $previous_trait_analyzer = null
+        ?Context $global_context = null,
+        ?MethodAnalyzer &$constructor_analyzer = null,
+        ?TraitAnalyzer $previous_trait_analyzer = null
     ) {
         $codebase = $this->getCodebase();
 
@@ -1763,9 +1753,6 @@ class ClassAnalyzer extends ClassLikeAnalyzer
     }
 
     /**
-     * @param  Context|null                    $global_context
-     * @param  bool                            $is_fake
-     *
      * @return MethodAnalyzer|null
      */
     private function analyzeClassMethod(
@@ -1773,8 +1760,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         ClassLikeStorage $class_storage,
         SourceAnalyzer $source,
         Context $class_context,
-        Context $global_context = null,
-        $is_fake = false
+        ?Context $global_context = null,
+        bool $is_fake = false
     ) {
         $config = Config::getInstance();
 

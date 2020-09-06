@@ -24,8 +24,7 @@ class ConfigFile
     /** @var int|null */
     private $psalm_tag_end_pos;
 
-    /** @param null|string $explicit_path */
-    public function __construct(string $current_dir, $explicit_path)
+    public function __construct(string $current_dir, ?string $explicit_path)
     {
         $this->current_dir = $current_dir;
 

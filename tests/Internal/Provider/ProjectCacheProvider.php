@@ -21,11 +21,9 @@ class ProjectCacheProvider extends \Psalm\Internal\Provider\ProjectCacheProvider
     }
 
     /**
-     * @param float $start_time
-     *
      * @return void
      */
-    public function processSuccessfulRun($start_time)
+    public function processSuccessfulRun(float $start_time)
     {
         $this->last_run = (int) $start_time;
     }

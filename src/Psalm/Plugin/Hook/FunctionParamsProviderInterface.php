@@ -22,7 +22,7 @@ interface FunctionParamsProviderInterface
         StatementsSource $statements_source,
         string $function_id,
         array $call_args,
-        Context $context = null,
-        CodeLocation $code_location = null
+        ?Context $context = null,
+        ?CodeLocation $code_location = null
     );
 }

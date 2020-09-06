@@ -14,9 +14,6 @@ class FileStatementsDiffer extends AstDiffer
 {
     /**
      * Calculate diff (edit script) from $a to $b.
-     *
-     * @param string $a_code
-     * @param string $b_code
      * @param array<int, PhpParser\Node\Stmt> $a
      * @param array<int, PhpParser\Node\Stmt> $b
      *
@@ -27,7 +24,7 @@ class FileStatementsDiffer extends AstDiffer
      *      3: array<int, array{0: int, 1: int, 2: int, 3: int}>
      * }
      */
-    public static function diff(array $a, array $b, $a_code, $b_code): array
+    public static function diff(array $a, array $b, string $a_code, string $b_code): array
     {
         [$trace, $x, $y, $bc] = self::calculateTrace(
             /**

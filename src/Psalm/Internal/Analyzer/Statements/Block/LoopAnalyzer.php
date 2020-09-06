@@ -746,11 +746,10 @@ class LoopAnalyzer
     }
 
     /**
-     * @param  string                               $first_var_id
      * @param  array<string, array<string, bool>>   $assignment_map
      *
      */
-    private static function getAssignmentMapDepth($first_var_id, array $assignment_map): int
+    private static function getAssignmentMapDepth(string $first_var_id, array $assignment_map): int
     {
         $max_depth = 0;
 

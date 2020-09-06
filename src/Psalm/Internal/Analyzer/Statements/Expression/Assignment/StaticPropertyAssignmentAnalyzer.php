@@ -28,14 +28,12 @@ use function explode;
 class StaticPropertyAssignmentAnalyzer
 {
     /**
-     * @param   PhpParser\Node\Expr|null                  $assignment_value
-     *
      * @return  false|null
      */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\StaticPropertyFetch $stmt,
-        $assignment_value,
+        ?PhpParser\Node\Expr $assignment_value,
         Type\Union $assignment_value_type,
         Context $context
     ) {

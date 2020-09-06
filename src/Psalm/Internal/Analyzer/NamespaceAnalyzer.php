@@ -125,22 +125,19 @@ class NamespaceAnalyzer extends SourceAnalyzer implements StatementsSource
     }
 
     /**
-     * @param string     $const_name
-     *
      * @return void
      */
-    public function setConstType($const_name, Type\Union $const_type)
+    public function setConstType(string $const_name, Type\Union $const_type)
     {
         self::$public_namespace_constants[$this->namespace_name][$const_name] = $const_type;
     }
 
     /**
-     * @param  string $namespace_name
      * @param  mixed  $visibility
      *
      * @return array<string,Type\Union>
      */
-    public static function getConstantsForNamespace($namespace_name, $visibility): array
+    public static function getConstantsForNamespace(string $namespace_name, $visibility): array
     {
         // @todo this does not allow for loading in namespace constants not already defined in the current sweep
         if (!isset(self::$public_namespace_constants[$namespace_name])) {

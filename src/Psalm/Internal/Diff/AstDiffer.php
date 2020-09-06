@@ -70,8 +70,6 @@ class AstDiffer
 
     /**
      * @param array<int, array<int, int>> $trace
-     * @param int $x
-     * @param int $y
      * @param array<int, PhpParser\Node\Stmt> $a
      * @param array<int, PhpParser\Node\Stmt> $b
      * @param array<int, bool> $bc
@@ -80,7 +78,7 @@ class AstDiffer
      *
      * @psalm-pure
      */
-    protected static function extractDiff(array $trace, $x, $y, array $a, array $b, array $bc) : array
+    protected static function extractDiff(array $trace, int $x, int $y, array $a, array $b, array $bc) : array
     {
         $result = [];
         for ($d = \count($trace) - 1; $d >= 0; --$d) {

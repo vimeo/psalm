@@ -21,11 +21,7 @@ class FileProvider
      */
     protected $open_files = [];
 
-    /**
-     * @param  string  $file_path
-     *
-     */
-    public function getContents($file_path, bool $go_to_source = false): string
+    public function getContents(string $file_path, bool $go_to_source = false): string
     {
         if (!$go_to_source && isset($this->temp_files[strtolower($file_path)])) {
             return $this->temp_files[strtolower($file_path)];
@@ -47,12 +43,9 @@ class FileProvider
     }
 
     /**
-     * @param  string  $file_path
-     * @param  string  $file_contents
-     *
      * @return void
      */
-    public function setContents($file_path, $file_contents)
+    public function setContents(string $file_path, string $file_contents)
     {
         if (isset($this->open_files[strtolower($file_path)])) {
             $this->open_files[strtolower($file_path)] = $file_contents;
@@ -66,23 +59,16 @@ class FileProvider
     }
 
     /**
-     * @param  string  $file_path
-     * @param  string  $file_contents
-     *
      * @return void
      */
-    public function setOpenContents($file_path, $file_contents)
+    public function setOpenContents(string $file_path, string $file_contents)
     {
         if (isset($this->open_files[strtolower($file_path)])) {
             $this->open_files[strtolower($file_path)] = $file_contents;
         }
     }
 
-    /**
-     * @param  string $file_path
-     *
-     */
-    public function getModifiedTime($file_path): int
+    public function getModifiedTime(string $file_path): int
     {
         if (!file_exists($file_path)) {
             throw new \UnexpectedValueException('File should exist to get modified time');
@@ -128,22 +114,17 @@ class FileProvider
         unset($this->temp_files[strtolower($file_path)], $this->open_files[strtolower($file_path)]);
     }
 
-    /**
-     * @param  string $file_path
-     *
-     */
-    public function fileExists($file_path): bool
+    public function fileExists(string $file_path): bool
     {
         return file_exists($file_path);
     }
 
     /**
-     * @param string $dir_path
      * @param array<string> $file_extensions
      *
      * @return array<int, string>
      */
-    public function getFilesInDir($dir_path, array $file_extensions): array
+    public function getFilesInDir(string $dir_path, array $file_extensions): array
     {
         $file_paths = [];
 

@@ -137,7 +137,7 @@ class FileReferenceProvider
      */
     public $cache;
 
-    public function __construct(FileReferenceCacheProvider $cache = null)
+    public function __construct(?FileReferenceCacheProvider $cache = null)
     {
         $this->cache = $cache;
     }
@@ -150,11 +150,7 @@ class FileReferenceProvider
         if (self::$deleted_files === null) {
             self::$deleted_files = array_filter(
                 array_keys(self::$file_references),
-                /**
-                 * @param  string $file_name
-                 *
-                 */
-                function ($file_name): bool {
+                function (string $file_name): bool {
                     return !file_exists($file_name);
                 }
             );
@@ -278,12 +274,9 @@ class FileReferenceProvider
     }
 
     /**
-     * @param string $source_file
-     * @param string $fq_class_name_lc
-     *
      * @return void
      */
-    public function addFileInheritanceToClass($source_file, $fq_class_name_lc)
+    public function addFileInheritanceToClass(string $source_file, string $fq_class_name_lc)
     {
         self::$files_inheriting_classes[$fq_class_name_lc][$source_file] = true;
     }
@@ -297,11 +290,9 @@ class FileReferenceProvider
     }
 
     /**
-     * @param   string $file
-     *
      * @return  array<int, string>
      */
-    private function calculateFilesReferencingFile(Codebase $codebase, $file): array
+    private function calculateFilesReferencingFile(Codebase $codebase, string $file): array
     {
         $referenced_files = [];
 
@@ -338,11 +329,9 @@ class FileReferenceProvider
     }
 
     /**
-     * @param   string $file
-     *
      * @return  array<int, string>
      */
-    private function calculateFilesInheritingFile(Codebase $codebase, $file): array
+    private function calculateFilesInheritingFile(Codebase $codebase, string $file): array
     {
         $referenced_files = [];
 
@@ -379,21 +368,17 @@ class FileReferenceProvider
     }
 
     /**
-     * @param  string $file
-     *
      * @return array<string>
      */
-    public function getFilesReferencingFile($file): array
+    public function getFilesReferencingFile(string $file): array
     {
         return isset(self::$file_references[$file]['a']) ? self::$file_references[$file]['a'] : [];
     }
 
     /**
-     * @param  string $file
-     *
      * @return array<string>
      */
-    public function getFilesInheritingFromFile($file): array
+    public function getFilesInheritingFromFile(string $file): array
     {
         return isset(self::$file_references[$file]['i']) ? self::$file_references[$file]['i'] : [];
     }
@@ -978,32 +963,25 @@ class FileReferenceProvider
     }
 
     /**
-     * @param string $file_path
-     *
      * @return void
      */
-    public function clearExistingIssuesForFile($file_path)
+    public function clearExistingIssuesForFile(string $file_path)
     {
         unset(self::$issues[$file_path]);
     }
 
     /**
-     * @param string $file_path
-     * @param IssueData $issue
-     *
      * @return void
      */
-    public function clearExistingFileMapsForFile($file_path)
+    public function clearExistingFileMapsForFile(string $file_path)
     {
         unset(self::$file_maps[$file_path]);
     }
 
     /**
-     * @param string $file_path
-     *
      * @return void
      */
-    public function addIssue($file_path, IssueData $issue)
+    public function addIssue(string $file_path, IssueData $issue)
     {
         // don’t save parse errors ever, as they're not responsive to AST diffing
         if ($issue->type === 'ParseError') {

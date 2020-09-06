@@ -207,11 +207,9 @@ class PropertyDocblockManipulator
     }
 
     /**
-     * @param  string $file_path
-     *
      * @return array<int, FileManipulation>
      */
-    public static function getManipulationsForFile($file_path): array
+    public static function getManipulationsForFile(string $file_path): array
     {
         if (!isset(self::$manipulators[$file_path])) {
             return [];

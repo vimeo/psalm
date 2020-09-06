@@ -37,15 +37,13 @@ class AssertionFinder
     /**
      * Gets all the type assertions in a conditional
      *
-     * @param string|null $this_class_name
-     *
      * @return array<string, non-empty-list<non-empty-list<string>>>|null
      */
     public static function scrapeAssertions(
         PhpParser\Node\Expr $conditional,
-        $this_class_name,
+        ?string $this_class_name,
         FileSource $source,
-        Codebase $codebase = null,
+        ?Codebase $codebase = null,
         bool $inside_negation = false,
         bool $cache = true,
         bool $inside_conditional = true
@@ -524,15 +522,14 @@ class AssertionFinder
 
     /**
      * @param PhpParser\Node\Expr\BinaryOp\Identical|PhpParser\Node\Expr\BinaryOp\Equal $conditional
-     * @param string|null $this_class_name
      *
      * @return array<string, non-empty-list<non-empty-list<string>>>
      */
     private static function scrapeEqualityAssertions(
         PhpParser\Node\Expr\BinaryOp $conditional,
-        $this_class_name,
+        ?string $this_class_name,
         FileSource $source,
-        Codebase $codebase = null,
+        ?Codebase $codebase = null,
         bool $inside_negation = false,
         bool $cache = true,
         bool $inside_conditional = true
@@ -1160,15 +1157,14 @@ class AssertionFinder
 
     /**
      * @param PhpParser\Node\Expr\BinaryOp\NotIdentical|PhpParser\Node\Expr\BinaryOp\NotEqual $conditional
-     * @param string|null $this_class_name
      *
      * @return array<string, non-empty-list<non-empty-list<string>>>
      */
     private static function scrapeInequalityAssertions(
         PhpParser\Node\Expr\BinaryOp $conditional,
-        $this_class_name,
+        ?string $this_class_name,
         FileSource $source,
-        Codebase $codebase = null,
+        ?Codebase $codebase = null,
         bool $inside_negation = false,
         bool $cache = true,
         bool $inside_conditional = true
@@ -1775,17 +1771,14 @@ class AssertionFinder
     }
 
     /**
-     * @param  string|null                  $this_class_name
-     * @param  bool                         $negate
-     *
      * @return array<string, non-empty-list<non-empty-list<string>>>
      */
     public static function processFunctionCall(
         PhpParser\Node\Expr\FuncCall $expr,
-        $this_class_name,
+        ?string $this_class_name,
         FileSource $source,
-        Codebase $codebase = null,
-        $negate = false
+        ?Codebase $codebase = null,
+        bool $negate = false
     ): array {
         $prefix = $negate ? '!' : '';
 
@@ -2266,16 +2259,14 @@ class AssertionFinder
 
     /**
      * @param  PhpParser\Node\Expr\FuncCall|PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $expr
-     * @param  string|null  $this_class_name
-     * @param  bool         $negate
      *
      * @return array<string, non-empty-list<non-empty-list<string>>>
      */
     protected static function processCustomAssertion(
-        $expr,
-        $this_class_name,
+        PhpParser\Node\Expr $expr,
+        ?string $this_class_name,
         FileSource $source,
-        $negate = false
+        bool $negate = false
     ): array {
         if (!$source instanceof StatementsAnalyzer) {
             return [];
@@ -2434,13 +2425,11 @@ class AssertionFinder
     }
 
     /**
-     * @param  string|null                     $this_class_name
-     *
      * @return list<string>
      */
     protected static function getInstanceOfTypes(
         PhpParser\Node\Expr\Instanceof_ $stmt,
-        $this_class_name,
+        ?string $this_class_name,
         FileSource $source
     ) {
         if ($stmt->class instanceof PhpParser\Node\Name) {

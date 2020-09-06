@@ -73,8 +73,8 @@ class FunctionParamsProvider
         StatementsSource $statements_source,
         string $function_id,
         array $call_args,
-        Context $context = null,
-        CodeLocation $code_location = null
+        ?Context $context = null,
+        ?CodeLocation $code_location = null
     ): ?array {
         foreach (self::$handlers[strtolower($function_id)] as $class_handler) {
             $result = $class_handler(

@@ -142,20 +142,14 @@ class Functions
     }
 
     /**
-     * @param string $function_id
-     *
      * @return void
      */
-    public function addGlobalFunction($function_id, FunctionStorage $storage)
+    public function addGlobalFunction(string $function_id, FunctionStorage $storage)
     {
         self::$stubbed_functions[strtolower($function_id)] = $storage;
     }
 
-    /**
-     * @param  string  $function_id
-     *
-     */
-    public function hasStubbedFunction($function_id): bool
+    public function hasStubbedFunction(string $function_id): bool
     {
         return isset(self::$stubbed_functions[strtolower($function_id)]);
     }
@@ -261,12 +255,7 @@ class Functions
         return ($namespace ? $namespace . '\\' : '') . $function_name;
     }
 
-    /**
-     * @param  string $function_id
-     * @param  string $file_path
-     *
-     */
-    public static function isVariadic(Codebase $codebase, $function_id, $file_path): bool
+    public static function isVariadic(Codebase $codebase, string $function_id, string $file_path): bool
     {
         $file_storage = $codebase->file_storage_provider->get($file_path);
 

@@ -44,10 +44,6 @@ class DocComment
      * Taken from advanced api docmaker, which was taken from
      * https://github.com/facebook/libphutil/blob/master/src/parser/docblock/PhutilDocblockParser.php
      *
-     * @param string  $docblock
-     * @param int     $line_number
-     * @param bool    $preserve_format
-     *
      * @return array Array of the main comment and specials
      *
      * @psalm-return array{description:string, specials:array<string, array<int, string>>}
@@ -57,7 +53,7 @@ class DocComment
      *
      * @psalm-pure
      */
-    public static function parse($docblock, $line_number = null, $preserve_format = false): array
+    public static function parse(string $docblock, ?int $line_number = null, bool $preserve_format = false): array
     {
         // Strip off comments.
         $docblock = trim($docblock);

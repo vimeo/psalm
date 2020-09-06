@@ -98,7 +98,6 @@ abstract class Atomic implements TypeNode
     public $offset_end;
 
     /**
-     * @param  string $value
      * @param  array{int,int}|null   $php_version
      * @param  array<string, array<string, array{Union}>> $template_type_map
      * @param  array<string, TypeAlias> $type_aliases
@@ -106,8 +105,8 @@ abstract class Atomic implements TypeNode
      * @return Atomic
      */
     public static function create(
-        $value,
-        array $php_version = null,
+        string $value,
+        ?array $php_version = null,
         array $template_type_map = [],
         array $type_aliases = []
     ) {
@@ -570,20 +569,16 @@ abstract class Atomic implements TypeNode
     }
 
     /**
-     * @param  string|null   $namespace
      * @param  array<string, string> $aliased_classes
-     * @param  string|null   $this_class
-     * @param  int           $php_major_version
-     * @param  int           $php_minor_version
      *
      * @return null|string
      */
     abstract public function toPhpString(
-        $namespace,
+        ?string $namespace,
         array $aliased_classes,
-        $this_class,
-        $php_major_version,
-        $php_minor_version
+        ?string $this_class,
+        int $php_major_version,
+        int $php_minor_version
     );
 
     /**
@@ -593,7 +588,7 @@ abstract class Atomic implements TypeNode
 
     public function replaceTemplateTypesWithStandins(
         TemplateResult $template_result,
-        Codebase $codebase = null,
+        ?Codebase $codebase = null,
         ?StatementsAnalyzer $statements_analyzer = null,
         Type\Atomic $input_type = null,
         ?int $input_arg_offset = null,

@@ -94,13 +94,11 @@ class FunctionDocblockManipulator
     private $is_pure = false;
 
     /**
-     * @param  string $file_path
      * @param  Closure|Function_|ClassMethod|ArrowFunction $stmt
-     *
      */
     public static function getForFunction(
         ProjectAnalyzer $project_analyzer,
-        $file_path,
+        string $file_path,
         FunctionLike $stmt
     ): FunctionDocblockManipulator {
         if (isset(self::$manipulators[$file_path][$stmt->getLine()])) {
@@ -115,10 +113,9 @@ class FunctionDocblockManipulator
     }
 
     /**
-     * @param string $file_path
      * @param Closure|Function_|ClassMethod|ArrowFunction $stmt
      */
-    private function __construct($file_path, FunctionLike $stmt, ProjectAnalyzer $project_analyzer)
+    private function __construct(string $file_path, FunctionLike $stmt, ProjectAnalyzer $project_analyzer)
     {
         $this->stmt = $stmt;
         $docblock = $stmt->getDocComment();
@@ -260,16 +257,15 @@ class FunctionDocblockManipulator
     /**
      * Sets the new return type
      *
-     * @param   ?string     $php_type
-     * @param   string      $new_type
-     * @param   string      $phpdoc_type
-     * @param   bool        $is_php_compatible
-     * @param   ?string     $description
-     *
      * @return  void
      */
-    public function setReturnType($php_type, $new_type, $phpdoc_type, $is_php_compatible, $description)
-    {
+    public function setReturnType(
+        ?string $php_type,
+        string $new_type,
+        string $phpdoc_type,
+        bool $is_php_compatible,
+        ?string $description
+    ) {
         $new_type = str_replace(['<mixed, mixed>', '<array-key, mixed>'], '', $new_type);
 
         $this->new_php_return_type = $php_type;
@@ -392,11 +388,9 @@ class FunctionDocblockManipulator
     }
 
     /**
-     * @param  string $file_path
-     *
      * @return array<int, FileManipulation>
      */
-    public static function getManipulationsForFile($file_path): array
+    public static function getManipulationsForFile(string $file_path): array
     {
         if (!isset(self::$manipulators[$file_path])) {
             return [];

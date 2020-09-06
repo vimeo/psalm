@@ -49,9 +49,6 @@ class ReturnTypeAnalyzer
     /**
      * @param Closure|Function_|ClassMethod|ArrowFunction $function
      * @param PhpParser\Node\Stmt[] $function_stmts
-     * @param Type\Union|null     $return_type
-     * @param string              $fq_class_name
-     * @param CodeLocation|null   $return_type_location
      * @param string[]            $compatible_method_ids
      *
      * @return  false|null
@@ -62,9 +59,9 @@ class ReturnTypeAnalyzer
         SourceAnalyzer $source,
         \Psalm\Internal\Provider\NodeDataProvider $type_provider,
         FunctionLikeAnalyzer $function_like_analyzer,
-        Type\Union $return_type = null,
-        $fq_class_name = null,
-        CodeLocation $return_type_location = null,
+        ?Type\Union $return_type = null,
+        ?string $fq_class_name = null,
+        ?CodeLocation $return_type_location = null,
         array $compatible_method_ids = [],
         bool $did_explicitly_return = false,
         bool $closure_inside_call = false
@@ -834,7 +831,6 @@ class ReturnTypeAnalyzer
 
     /**
      * @param Closure|Function_|ClassMethod|ArrowFunction $function
-     * @param bool $docblock_only
      *
      * @return void
      */
@@ -843,8 +839,8 @@ class ReturnTypeAnalyzer
         ProjectAnalyzer $project_analyzer,
         Type\Union $inferred_return_type,
         StatementsSource $source,
-        $docblock_only = false,
-        FunctionLikeStorage $function_like_storage = null
+        bool $docblock_only = false,
+        ?FunctionLikeStorage $function_like_storage = null
     ) {
         $manipulator = FunctionDocblockManipulator::getForFunction(
             $project_analyzer,

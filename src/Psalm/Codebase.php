@@ -277,7 +277,7 @@ class Codebase
     public function __construct(
         Config $config,
         Providers $providers,
-        Progress $progress = null
+        ?Progress $progress = null
     ) {
         if ($progress === null) {
             $progress = new VoidProgress();
@@ -481,21 +481,15 @@ class Codebase
         }
     }
 
-    /**
-     * @param  string $file_path
-     *
-     */
-    public function getFileContents($file_path): string
+    public function getFileContents(string $file_path): string
     {
         return $this->file_provider->getContents($file_path);
     }
 
     /**
-     * @param  string $file_path
-     *
      * @return list<PhpParser\Node\Stmt>
      */
-    public function getStatementsForFile($file_path)
+    public function getStatementsForFile(string $file_path)
     {
         return $this->statements_provider->getStatementsForFile(
             $file_path,
@@ -504,21 +498,15 @@ class Codebase
         );
     }
 
-    /**
-     * @param  string $fq_classlike_name
-     *
-     */
-    public function createClassLikeStorage($fq_classlike_name): ClassLikeStorage
+    public function createClassLikeStorage(string $fq_classlike_name): ClassLikeStorage
     {
         return $this->classlike_storage_provider->create($fq_classlike_name);
     }
 
     /**
-     * @param  string $file_path
-     *
      * @return void
      */
-    public function cacheClassLikeStorage(ClassLikeStorage $classlike_storage, $file_path)
+    public function cacheClassLikeStorage(ClassLikeStorage $classlike_storage, string $file_path)
     {
         $file_contents = $this->file_provider->getContents($file_path);
 
@@ -528,12 +516,9 @@ class Codebase
     }
 
     /**
-     * @param  string $fq_classlike_name
-     * @param  string $file_path
-     *
      * @return void
      */
-    public function exhumeClassLikeStorage($fq_classlike_name, $file_path)
+    public function exhumeClassLikeStorage(string $fq_classlike_name, string $file_path)
     {
         $file_contents = $this->file_provider->getContents($file_path);
         $storage = $this->classlike_storage_provider->exhume(
@@ -551,29 +536,20 @@ class Codebase
         }
     }
 
-    /**
-     * @param  ?\ReflectionType $type
-     */
-    public static function getPsalmTypeFromReflection($type) : Type\Union
+    public static function getPsalmTypeFromReflection(?\ReflectionType $type) : Type\Union
     {
         return \Psalm\Internal\Codebase\Reflection::getPsalmTypeFromReflectionType($type);
     }
 
-    /**
-     * @param  string $file_path
-     *
-     */
-    public function createFileStorageForPath($file_path): FileStorage
+    public function createFileStorageForPath(string $file_path): FileStorage
     {
         return $this->file_storage_provider->create($file_path);
     }
 
     /**
-     * @param  string $symbol
-     *
      * @return \Psalm\CodeLocation[]
      */
-    public function findReferencesToSymbol($symbol): array
+    public function findReferencesToSymbol(string $symbol): array
     {
         if (!$this->collect_locations) {
             throw new \UnexpectedValueException('Should not be checking references');
@@ -591,11 +567,9 @@ class Codebase
     }
 
     /**
-     * @param  string $method_id
-     *
      * @return \Psalm\CodeLocation[]
      */
-    public function findReferencesToMethod($method_id): array
+    public function findReferencesToMethod(string $method_id): array
     {
         return $this->file_reference_provider->getClassMethodLocations(strtolower($method_id));
     }
@@ -613,11 +587,9 @@ class Codebase
     }
 
     /**
-     * @param  string $fq_class_name
-     *
      * @return \Psalm\CodeLocation[]
      */
-    public function findReferencesToClassLike($fq_class_name): array
+    public function findReferencesToClassLike(string $fq_class_name): array
     {
         $fq_class_name_lc = strtolower($fq_class_name);
         $locations = $this->file_reference_provider->getClassLocations($fq_class_name_lc);
@@ -629,12 +601,7 @@ class Codebase
         return $locations;
     }
 
-    /**
-     * @param  string $file_path
-     * @param  string $closure_id
-     *
-     */
-    public function getClosureStorage($file_path, $closure_id): FunctionLikeStorage
+    public function getClosureStorage(string $file_path, string $closure_id): FunctionLikeStorage
     {
         $file_storage = $this->file_storage_provider->get($file_path);
 
@@ -649,20 +616,14 @@ class Codebase
     }
 
     /**
-     * @param  string $const_id
-     *
      * @return  void
      */
-    public function addGlobalConstantType($const_id, Type\Union $type)
+    public function addGlobalConstantType(string $const_id, Type\Union $type)
     {
         self::$stubbed_constants[$const_id] = $type;
     }
 
-    /**
-     * @param  string $const_id
-     *
-     */
-    public function getStubbedConstantType($const_id): ?Type\Union
+    public function getStubbedConstantType(string $const_id): ?Type\Union
     {
         return isset(self::$stubbed_constants[$const_id]) ? self::$stubbed_constants[$const_id] : null;
     }
@@ -675,24 +636,17 @@ class Codebase
         return self::$stubbed_constants;
     }
 
-    /**
-     * @param  string $file_path
-     *
-     */
-    public function fileExists($file_path): bool
+    public function fileExists(string $file_path): bool
     {
         return $this->file_provider->fileExists($file_path);
     }
 
     /**
      * Check whether a class/interface exists
-     *
-     * @param  string          $fq_class_name
-     *
      */
     public function classOrInterfaceExists(
-        $fq_class_name,
-        CodeLocation $code_location = null,
+        string $fq_class_name,
+        ?CodeLocation $code_location = null,
         ?string $calling_fq_class_name = null,
         ?string $calling_method_id = null
     ): bool {
@@ -704,12 +658,7 @@ class Codebase
         );
     }
 
-    /**
-     * @param  string       $fq_class_name
-     * @param  string       $possible_parent
-     *
-     */
-    public function classExtendsOrImplements($fq_class_name, $possible_parent): bool
+    public function classExtendsOrImplements(string $fq_class_name, string $possible_parent): bool
     {
         return $this->classlikes->classExtends($fq_class_name, $possible_parent)
             || $this->classlikes->classImplements($fq_class_name, $possible_parent);
@@ -717,13 +666,10 @@ class Codebase
 
     /**
      * Determine whether or not a given class exists
-     *
-     * @param  string       $fq_class_name
-     *
      */
     public function classExists(
-        $fq_class_name,
-        CodeLocation $code_location = null,
+        string $fq_class_name,
+        ?CodeLocation $code_location = null,
         ?string $calling_fq_class_name = null,
         ?string $calling_method_id = null
     ): bool {
@@ -738,37 +684,25 @@ class Codebase
     /**
      * Determine whether or not a class extends a parent
      *
-     * @param  string       $fq_class_name
-     * @param  string       $possible_parent
-     *
      * @throws \Psalm\Exception\UnpopulatedClasslikeException when called on unpopulated class
      * @throws \InvalidArgumentException when class does not exist
-     *
      */
-    public function classExtends($fq_class_name, $possible_parent): bool
+    public function classExtends(string $fq_class_name, string $possible_parent): bool
     {
         return $this->classlikes->classExtends($fq_class_name, $possible_parent, true);
     }
 
     /**
      * Check whether a class implements an interface
-     *
-     * @param  string       $fq_class_name
-     * @param  string       $interface
-     *
      */
-    public function classImplements($fq_class_name, $interface): bool
+    public function classImplements(string $fq_class_name, string $interface): bool
     {
         return $this->classlikes->classImplements($fq_class_name, $interface);
     }
-
-    /**
-     * @param  string         $fq_interface_name
-     *
-     */
+    
     public function interfaceExists(
-        $fq_interface_name,
-        CodeLocation $code_location = null,
+        string $fq_interface_name,
+        ?CodeLocation $code_location = null,
         ?string $calling_fq_class_name = null,
         ?string $calling_method_id = null
     ): bool {
@@ -780,22 +714,15 @@ class Codebase
         );
     }
 
-    /**
-     * @param  string         $interface_name
-     * @param  string         $possible_parent
-     *
-     */
-    public function interfaceExtends($interface_name, $possible_parent): bool
+    public function interfaceExtends(string $interface_name, string $possible_parent): bool
     {
         return $this->classlikes->interfaceExtends($interface_name, $possible_parent);
     }
 
     /**
-     * @param  string         $fq_interface_name
-     *
      * @return array<string>   all interfaces extended by $interface_name
      */
-    public function getParentInterfaces($fq_interface_name): array
+    public function getParentInterfaces(string $fq_interface_name): array
     {
         return $this->classlikes->getParentInterfaces(
             $this->classlikes->getUnAliasedName($fq_interface_name)
@@ -804,29 +731,18 @@ class Codebase
 
     /**
      * Determine whether or not a class has the correct casing
-     *
-     * @param  string $fq_class_name
-     *
      */
-    public function classHasCorrectCasing($fq_class_name): bool
+    public function classHasCorrectCasing(string $fq_class_name): bool
     {
         return $this->classlikes->classHasCorrectCasing($fq_class_name);
     }
 
-    /**
-     * @param  string $fq_interface_name
-     *
-     */
-    public function interfaceHasCorrectCasing($fq_interface_name): bool
+    public function interfaceHasCorrectCasing(string $fq_interface_name): bool
     {
         return $this->classlikes->interfaceHasCorrectCasing($fq_interface_name);
     }
 
-    /**
-     * @param  string $fq_trait_name
-     *
-     */
-    public function traitHasCorrectCase($fq_trait_name): bool
+    public function traitHasCorrectCase(string $fq_trait_name): bool
     {
         return $this->classlikes->traitHasCorrectCase($fq_trait_name);
     }

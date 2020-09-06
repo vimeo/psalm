@@ -24,7 +24,7 @@ class GetClassT extends TString
     /**
      * @param string $typeof the variable id
      */
-    public function __construct($typeof, Union $as_type)
+    public function __construct(string $typeof, Union $as_type)
     {
         $this->typeof = $typeof;
         $this->as_type = $as_type;

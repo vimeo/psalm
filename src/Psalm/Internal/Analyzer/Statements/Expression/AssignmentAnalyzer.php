@@ -47,15 +47,14 @@ class AssignmentAnalyzer
 {
     /**
      * @param  PhpParser\Node\Expr|null $assign_value  This has to be null to support list destructuring
-     * @param  Type\Union|null          $assign_value_type
      *
      * @return false|Type\Union
      */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $assign_var,
-        $assign_value,
-        $assign_value_type,
+        ?PhpParser\Node\Expr $assign_value,
+        ?Type\Union $assign_value_type,
         Context $context,
         ?PhpParser\Comment\Doc $doc_comment
     ) {

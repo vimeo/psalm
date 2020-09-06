@@ -30,7 +30,7 @@ class ExpressionAnalyzer
         PhpParser\Node\Expr $stmt,
         Context $context,
         bool $array_assignment = false,
-        Context $global_context = null,
+        ?Context $global_context = null,
         bool $from_stmt = false
     ) : bool {
         $codebase = $statements_analyzer->getCodebase();
@@ -393,11 +393,7 @@ class ExpressionAnalyzer
         return false;
     }
 
-    /**
-     * @param  string  $fq_class_name
-     *
-     */
-    public static function isMock($fq_class_name): bool
+    public static function isMock(string $fq_class_name): bool
     {
         return in_array(strtolower($fq_class_name), Config::getInstance()->getMockClasses(), true);
     }

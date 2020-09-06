@@ -66,7 +66,7 @@ class TKeyedArray extends \Psalm\Type\Atomic
      * @param non-empty-array<string|int, Union> $properties
      * @param array<string, bool> $class_strings
      */
-    public function __construct(array $properties, array $class_strings = null)
+    public function __construct(array $properties, ?array $class_strings = null)
     {
         $this->properties = $properties;
         $this->class_strings = $class_strings;
@@ -182,19 +182,14 @@ class TKeyedArray extends \Psalm\Type\Atomic
     }
 
     /**
-     * @param  string|null   $namespace
      * @param  array<string> $aliased_classes
-     * @param  string|null   $this_class
-     * @param  int           $php_major_version
-     * @param  int           $php_minor_version
-     *
      */
     public function toPhpString(
-        $namespace,
+        ?string $namespace,
         array $aliased_classes,
-        $this_class,
-        $php_major_version,
-        $php_minor_version
+        ?string $this_class,
+        int $php_major_version,
+        int $php_minor_version
     ): string {
         return $this->getKey();
     }
@@ -318,7 +313,7 @@ class TKeyedArray extends \Psalm\Type\Atomic
         TemplateResult $template_result,
         ?Codebase $codebase = null,
         ?StatementsAnalyzer $statements_analyzer = null,
-        Atomic $input_type = null,
+        ?Atomic $input_type = null,
         ?int $input_arg_offset = null,
         ?string $calling_class = null,
         ?string $calling_function = null,

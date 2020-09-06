@@ -113,11 +113,7 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
     /** @var ?Type\Union */
     private $return_type;
 
-    /**
-     * @param string  $file_path
-     * @param string  $file_name
-     */
-    public function __construct(ProjectAnalyzer $project_analyzer, $file_path, $file_name)
+    public function __construct(ProjectAnalyzer $project_analyzer, string $file_path, string $file_name)
     {
         $this->source = $this;
         $this->file_path = $file_path;
@@ -127,14 +123,12 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
     }
 
     /**
-     * @param  bool $preserve_analyzers
-     *
      * @return void
      */
     public function analyze(
-        Context $file_context = null,
-        $preserve_analyzers = false,
-        Context $global_context = null
+        ?Context $file_context = null,
+        bool $preserve_analyzers = false,
+        ?Context $global_context = null
     ) {
         $codebase = $this->project_analyzer->getCodebase();
 
@@ -372,21 +366,17 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
     }
 
     /**
-     * @param string       $fq_class_name
-     *
      * @return  void
      */
-    public function addNamespacedClassAnalyzer($fq_class_name, ClassAnalyzer $class_analyzer)
+    public function addNamespacedClassAnalyzer(string $fq_class_name, ClassAnalyzer $class_analyzer)
     {
         $this->class_analyzers_to_analyze[strtolower($fq_class_name)] = $class_analyzer;
     }
 
     /**
-     * @param string            $fq_class_name
-     *
      * @return  void
      */
-    public function addNamespacedInterfaceAnalyzer($fq_class_name, InterfaceAnalyzer $interface_analyzer)
+    public function addNamespacedInterfaceAnalyzer(string $fq_class_name, InterfaceAnalyzer $interface_analyzer)
     {
         $this->interface_analyzers_to_analyze[strtolower($fq_class_name)] = $interface_analyzer;
     }
@@ -477,11 +467,9 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
     }
 
     /**
-     * @param  string|null $namespace_name
-     *
      * @return array<string, string>
      */
-    public function getAliasedClassesFlipped($namespace_name = null): array
+    public function getAliasedClassesFlipped(?string $namespace_name = null): array
     {
         if ($namespace_name && isset($this->namespace_aliased_classes_flipped[$namespace_name])) {
             return $this->namespace_aliased_classes_flipped[$namespace_name];
@@ -491,11 +479,9 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
     }
 
     /**
-     * @param  string|null $namespace_name
-     *
      * @return array<string, string>
      */
-    public function getAliasedClassesFlippedReplaceable($namespace_name = null): array
+    public function getAliasedClassesFlippedReplaceable(?string $namespace_name = null): array
     {
         if ($namespace_name && isset($this->namespace_aliased_classes_flipped_replaceable[$namespace_name])) {
             return $this->namespace_aliased_classes_flipped_replaceable[$namespace_name];
@@ -547,51 +533,36 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
     }
 
     /**
-     * @param string $file_path
-     * @param string $file_name
-     *
      * @return void
      */
-    public function setRootFilePath($file_path, $file_name)
+    public function setRootFilePath(string $file_path, string $file_name)
     {
         $this->root_file_name = $file_name;
         $this->root_file_path = $file_path;
     }
 
     /**
-     * @param string $file_path
-     *
      * @return void
      */
-    public function addRequiredFilePath($file_path)
+    public function addRequiredFilePath(string $file_path)
     {
         $this->required_file_paths[$file_path] = true;
     }
 
     /**
-     * @param string $file_path
-     *
      * @return void
      */
-    public function addParentFilePath($file_path)
+    public function addParentFilePath(string $file_path)
     {
         $this->parent_file_paths[$file_path] = true;
     }
 
-    /**
-     * @param string $file_path
-     *
-     */
-    public function hasParentFilePath($file_path): bool
+    public function hasParentFilePath(string $file_path): bool
     {
         return $this->file_path === $file_path || isset($this->parent_file_paths[$file_path]);
     }
 
-    /**
-     * @param string $file_path
-     *
-     */
-    public function hasAlreadyRequiredFilePath($file_path): bool
+    public function hasAlreadyRequiredFilePath(string $file_path): bool
     {
         return isset($this->required_file_paths[$file_path]);
     }

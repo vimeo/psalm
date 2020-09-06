@@ -30,9 +30,9 @@ class FooPropertyProvider implements
         string $fq_classlike_name,
         string $property_name,
         bool $read_mode,
-        StatementsSource $source = null,
-        Context $context = null,
-        CodeLocation $code_location = null
+        ?StatementsSource $source = null,
+        ?Context $context = null,
+        ?CodeLocation $code_location = null
     ) {
         return $property_name === 'magic_property';
     }
@@ -45,8 +45,8 @@ class FooPropertyProvider implements
         string $fq_classlike_name,
         string $property_name,
         bool $read_mode,
-        Context $context = null,
-        CodeLocation $code_location = null
+        ?Context $context = null,
+        ?CodeLocation $code_location = null
     ) {
         return true;
     }
@@ -60,8 +60,8 @@ class FooPropertyProvider implements
         string $fq_classlike_name,
         string $property_name,
         bool $read_mode,
-        StatementsSource $source = null,
-        Context $context = null
+        ?StatementsSource $source = null,
+        ?Context $context = null
     ) {
         return Type::getString();
     }

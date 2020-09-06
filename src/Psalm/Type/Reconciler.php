@@ -66,7 +66,6 @@ class Reconciler
      * @param  array<string, Type\Union> $existing_types
      * @param  array<string, bool>       $changed_var_ids
      * @param  array<string, bool>       $referenced_var_ids
-     * @param  CodeLocation|null         $code_location
      * @param  array<string, array<string, array{Type\Union}>> $template_type_map
      *
      * @return array<string, Type\Union>
@@ -80,7 +79,7 @@ class Reconciler
         StatementsAnalyzer $statements_analyzer,
         array $template_type_map = [],
         bool $inside_loop = false,
-        CodeLocation $code_location = null
+        ?CodeLocation $code_location = null
     ): array {
         if (!$new_types) {
             return $existing_types;
@@ -376,11 +375,9 @@ class Reconciler
     }
 
     /**
-     * @param  string $path
-     *
      * @return array<int, string>
      */
-    public static function breakUpPathIntoParts($path): array
+    public static function breakUpPathIntoParts(string $path): array
     {
         if (isset(self::$broken_paths[$path])) {
             return self::$broken_paths[$path];

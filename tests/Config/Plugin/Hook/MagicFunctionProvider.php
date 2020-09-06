@@ -29,7 +29,7 @@ class MagicFunctionProvider implements
     public static function doesFunctionExist(
         StatementsSource $statements_source,
         string $function_id,
-        CodeLocation $code_location = null
+        ?CodeLocation $code_location = null
     ) {
         return $function_id === 'magicfunction';
     }
@@ -43,8 +43,8 @@ class MagicFunctionProvider implements
         StatementsSource $statements_source,
         string $function_id,
         array $call_args,
-        Context $context = null,
-        CodeLocation $code_location = null
+        ?Context $context = null,
+        ?CodeLocation $code_location = null
     ) {
         return [new \Psalm\Storage\FunctionLikeParameter('first', false, Type::getString())];
     }

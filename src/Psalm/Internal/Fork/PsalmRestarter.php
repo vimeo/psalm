@@ -24,11 +24,9 @@ class PsalmRestarter extends \Composer\XdebugHandler\XdebugHandler
     private $disabledExtensions = [];
 
     /**
-     * @param string $disabledExtension
-     *
      * @return void
      */
-    public function disableExtension($disabledExtension)
+    public function disableExtension(string $disabledExtension)
     {
         $this->disabledExtensions[] = $disabledExtension;
     }
@@ -40,11 +38,7 @@ class PsalmRestarter extends \Composer\XdebugHandler\XdebugHandler
     {
         $this->required = (bool) array_filter(
             $this->disabledExtensions,
-            /**
-             * @param string $extension
-             *
-             */
-            function ($extension): bool {
+            function (string $extension): bool {
                 return extension_loaded($extension);
             }
         );

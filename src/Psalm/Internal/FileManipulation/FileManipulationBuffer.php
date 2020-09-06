@@ -23,12 +23,11 @@ class FileManipulationBuffer
     private static $code_migrations = [];
 
     /**
-     * @param string $file_path
      * @param FileManipulation[] $file_manipulations
      *
      * @return void
      */
-    public static function add($file_path, array $file_manipulations)
+    public static function add(string $file_path, array $file_manipulations)
     {
         if (!isset(self::$file_manipulations[$file_path])) {
             self::$file_manipulations[$file_path] = [];
@@ -172,11 +171,9 @@ class FileManipulationBuffer
     }
 
     /**
-     * @param string $file_path
-     *
      * @return FileManipulation[]
      */
-    public static function getManipulationsForFile($file_path): array
+    public static function getManipulationsForFile(string $file_path): array
     {
         if (!isset(self::$file_manipulations[$file_path])) {
             return [];

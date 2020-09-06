@@ -55,8 +55,7 @@ class ShowCommand extends Command
         $available = $plugin_list->getAvailable();
 
         $formatRow =
-            /** @param null|string $package */
-            function (string $class, $package): array {
+            function (string $class, ?string $package): array {
                 return [$package, $class];
             };
 
