@@ -244,6 +244,9 @@ class TextDocument
         $this->server->doAnalysis();
 
         $file_path = LanguageServer::uriToPath($textDocument->uri);
+        if (!$this->codebase->config->isInProjectDirs($file_path)) {
+            return new Success([]);
+        }
 
         try {
             $completion_data = $this->codebase->getCompletionDataAtPosition($file_path, $position);
