@@ -92,6 +92,7 @@ class TextDocument
     /**
      * The document change notification is sent from the client to the server to signal changes to a text document.
      *
+     * @param \LanguageServerProtocol\VersionedTextDocumentIdentifier $textDocument
      * @param \LanguageServerProtocol\TextDocumentContentChangeEvent[] $contentChanges
      *
      * @return void
@@ -243,6 +244,9 @@ class TextDocument
         $this->server->doAnalysis();
 
         $file_path = LanguageServer::uriToPath($textDocument->uri);
+        if (!$this->codebase->config->isInProjectDirs($file_path)) {
+            return new Success([]);
+        }
 
         try {
             $completion_data = $this->codebase->getCompletionDataAtPosition($file_path, $position);
