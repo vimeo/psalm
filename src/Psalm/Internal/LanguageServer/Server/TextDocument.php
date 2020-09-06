@@ -92,6 +92,7 @@ class TextDocument
     /**
      * The document change notification is sent from the client to the server to signal changes to a text document.
      *
+     * @param \LanguageServerProtocol\VersionedTextDocumentIdentifier $textDocument
      * @param \LanguageServerProtocol\TextDocumentContentChangeEvent[] $contentChanges
      *
      * @return void
