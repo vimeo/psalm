@@ -12,15 +12,12 @@ class ErrorLevelFileFilter extends FileFilter
     private $error_level = '';
 
     /**
-     * @param  string           $base_dir
-     * @param  bool             $inclusive
-     *
      * @return static
      */
     public static function loadFromXMLElement(
         SimpleXMLElement $e,
-        $base_dir,
-        $inclusive
+        string $base_dir,
+        bool $inclusive
     ): ErrorLevelFileFilter {
         $filter = parent::loadFromXMLElement($e, $base_dir, $inclusive);
 

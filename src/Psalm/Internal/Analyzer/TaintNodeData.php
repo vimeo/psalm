@@ -82,39 +82,22 @@ class TaintNodeData
      */
     public $column_to;
 
-    /**
-     * @param string $label
-     * @param string $entry_path_type
-     * @param ?string $entry_path_description
-     * @param int $line_from
-     * @param int $line_to
-     * @param string $file_name
-     * @param string $file_path
-     * @param string $snippet
-     * @param string $selected_text
-     * @param int $from
-     * @param int $to
-     * @param int $snippet_from
-     * @param int $snippet_to
-     * @param int $column_from
-     * @param int $column_to
-     */
     public function __construct(
-        $label,
-        $entry_path_type,
-        $entry_path_description,
-        $line_from,
-        $line_to,
-        $file_name,
-        $file_path,
-        $snippet,
-        $selected_text,
-        $from,
-        $to,
-        $snippet_from,
-        $snippet_to,
-        $column_from,
-        $column_to
+        string $label,
+        string $entry_path_type,
+        ?string $entry_path_description,
+        int $line_from,
+        int $line_to,
+        string $file_name,
+        string $file_path,
+        string $snippet,
+        string $selected_text,
+        int $from,
+        int $to,
+        int $snippet_from,
+        int $snippet_to,
+        int $column_from,
+        int $column_to
     ) {
         $this->label = $label;
         $this->entry_path_type = $entry_path_type;

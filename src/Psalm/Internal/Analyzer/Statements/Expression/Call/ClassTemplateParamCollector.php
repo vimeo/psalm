@@ -23,9 +23,9 @@ class ClassTemplateParamCollector
         Codebase $codebase,
         ClassLikeStorage $class_storage,
         ClassLikeStorage $static_class_storage,
-        string $method_name = null,
-        Type\Atomic $lhs_type_part = null,
-        string $lhs_var_id = null
+        ?string $method_name = null,
+        ?Type\Atomic $lhs_type_part = null,
+        ?string $lhs_var_id = null
     ): ?array {
         $static_fq_class_name = $static_class_storage->name;
 

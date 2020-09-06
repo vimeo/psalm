@@ -45,7 +45,6 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
 {
     /**
      * @param  Type\Atomic\TNamedObject|Type\Atomic\TTemplateParam  $static_type
-     * @param  ?string                        $lhs_var_id
      */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
@@ -55,7 +54,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
         Type\Atomic $lhs_type_part,
         ?Type\Atomic $static_type,
         bool $is_intersection,
-        $lhs_var_id,
+        ?string $lhs_var_id,
         AtomicMethodCallAnalysisResult $result
     ) : void {
         $config = $codebase->config;
@@ -1051,14 +1050,12 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
      * If `@psalm-seal-properties` is set, they must be defined.
      * If an `@property` annotation is specified, the setter must set something with the correct
      * type.
-     *
-     * @param string $fq_class_name
      */
     private static function getMagicGetterOrSetterProperty(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\MethodCall $stmt,
         Context $context,
-        $fq_class_name
+        string $fq_class_name
     ) : ?Type\Union {
         if (!$stmt->name instanceof PhpParser\Node\Identifier) {
             return null;

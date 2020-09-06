@@ -27,7 +27,7 @@ use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type;
-use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\ObjectLike;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TList;
 use function strtolower;
@@ -1134,11 +1134,11 @@ class ArgumentsAnalyzer
             ) {
                 /**
                  * @psalm-suppress PossiblyUndefinedStringArrayOffset
-                 * @var TArray|TList|TKeyedArray
+                 * @var TArray|TList|ObjectLike
                  */
                 $array_type = $arg_value_type->getAtomicTypes()['array'];
 
-                if ($array_type instanceof TKeyedArray) {
+                if ($array_type instanceof ObjectLike) {
                     $array_type = $array_type->getGenericArrayType();
                 }
 

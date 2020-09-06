@@ -72,8 +72,8 @@ class StatementsProvider
 
     public function __construct(
         FileProvider $file_provider,
-        ParserCacheProvider $parser_cache_provider = null,
-        FileStorageCacheProvider $file_storage_cache_provider = null
+        ?ParserCacheProvider $parser_cache_provider = null,
+        ?FileStorageCacheProvider $file_storage_cache_provider = null
     ) {
         $this->file_provider = $file_provider;
         $this->parser_cache_provider = $parser_cache_provider;
@@ -84,7 +84,7 @@ class StatementsProvider
     /**
      * @return list<\PhpParser\Node\Stmt>
      */
-    public function getStatementsForFile(string $file_path, string $php_version, Progress $progress = null)
+    public function getStatementsForFile(string $file_path, string $php_version, ?Progress $progress = null)
     {
         if ($progress === null) {
             $progress = new VoidProgress();
@@ -316,11 +316,9 @@ class StatementsProvider
     }
 
     /**
-     * @param string $file_path
-     *
      * @return void
      */
-    public function setUnchangedFile($file_path)
+    public function setUnchangedFile(string $file_path)
     {
         if (!isset($this->diff_map[$file_path])) {
             $this->diff_map[$file_path] = [];
@@ -357,20 +355,18 @@ class StatementsProvider
     }
 
     /**
-     * @param  string  $file_contents
-     * @param  string   $file_path
      * @param  list<\PhpParser\Node\Stmt> $existing_statements
      * @param  array<int, array{0:int, 1:int, 2: int, 3: int, 4: int, 5:string}> $file_changes
      *
      * @return list<\PhpParser\Node\Stmt>
      */
     public static function parseStatements(
-        $file_contents,
+        string $file_contents,
         string $php_version,
-        $file_path = null,
-        string $existing_file_contents = null,
-        array $existing_statements = null,
-        array $file_changes = null
+        ?string $file_path = null,
+        ?string $existing_file_contents = null,
+        ?array $existing_statements = null,
+        ?array $file_changes = null
     ) {
         $attributes = [
             'comments', 'startLine', 'startFilePos', 'endFilePos',

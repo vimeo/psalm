@@ -35,13 +35,12 @@ trait CallableTrait
     /**
      * Constructs a new instance of a generic type
      *
-     * @param string                            $value
      * @param array<int, FunctionLikeParameter> $params
      */
     public function __construct(
-        $value = 'callable',
-        array $params = null,
-        Union $return_type = null,
+        string $value = 'callable',
+        ?array $params = null,
+        ?Union $return_type = null,
         ?bool $is_pure = null
     ) {
         $this->value = $value;
@@ -68,7 +67,6 @@ trait CallableTrait
 
     /**
      * @param  array<string, string> $aliased_classes
-     *
      */
     public function toNamespacedString(
         ?string $namespace,
@@ -133,19 +131,14 @@ trait CallableTrait
     }
 
     /**
-     * @param  string|null   $namespace
      * @param  array<string, string> $aliased_classes
-     * @param  string|null   $this_class
-     * @param  int           $php_major_version
-     * @param  int           $php_minor_version
-     *
      */
     public function toPhpString(
-        $namespace,
+        ?string $namespace,
         array $aliased_classes,
-        $this_class,
-        $php_major_version,
-        $php_minor_version
+        ?string $this_class,
+        int $php_major_version,
+        int $php_minor_version
     ): string {
         if ($this instanceof TNamedObject) {
             return parent::toNamespacedString($namespace, $aliased_classes, $this_class, true);
@@ -189,9 +182,9 @@ trait CallableTrait
 
     public function replaceTemplateTypesWithStandins(
         TemplateResult $template_result,
-        Codebase $codebase = null,
+        ?Codebase $codebase = null,
         ?StatementsAnalyzer $statements_analyzer = null,
-        Atomic $input_type = null,
+        ?Atomic $input_type = null,
         ?int $input_arg_offset = null,
         ?string $calling_class = null,
         ?string $calling_function = null,

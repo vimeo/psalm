@@ -350,8 +350,6 @@ class ForeachAnalyzer
     }
 
     /**
-     * @param  ?Type\Union  $key_type
-     * @param  ?Type\Union  $value_type
      * @return false|null
      */
     public static function checkIteratorType(
@@ -360,8 +358,8 @@ class ForeachAnalyzer
         Type\Union $iterator_type,
         Codebase $codebase,
         Context $context,
-        &$key_type,
-        &$value_type,
+        ?Type\Union &$key_type,
+        ?Type\Union &$value_type,
         bool &$always_non_empty_array
     ) {
         if ($iterator_type->isNull()) {
@@ -708,8 +706,6 @@ class ForeachAnalyzer
     }
 
     /**
-     * @param  ?Type\Union  $key_type
-     * @param  ?Type\Union  $value_type
      * @return void
      */
     public static function handleIterable(
@@ -718,8 +714,8 @@ class ForeachAnalyzer
         PhpParser\Node\Expr $foreach_expr,
         Codebase $codebase,
         Context $context,
-        &$key_type,
-        &$value_type,
+        ?Type\Union &$key_type,
+        ?Type\Union &$value_type,
         bool &$has_valid_iterator
     ) {
         if ($iterator_atomic_type->extra_types) {
@@ -973,15 +969,13 @@ class ForeachAnalyzer
     }
 
     /**
-     * @param  ?Type\Union  $key_type
-     * @param  ?Type\Union  $value_type
      * @return void
      */
     public static function getKeyValueParamsForTraversableObject(
         Type\Atomic $iterator_atomic_type,
         Codebase $codebase,
-        &$key_type,
-        &$value_type
+        ?Type\Union &$key_type,
+        ?Type\Union &$value_type
     ) {
         if ($iterator_atomic_type instanceof Type\Atomic\TIterable
             || ($iterator_atomic_type instanceof Type\Atomic\TGenericObject
@@ -1133,8 +1127,8 @@ class ForeachAnalyzer
         string $template_class,
         string $calling_class,
         array $template_type_extends,
-        array $class_template_types = null,
-        array $calling_type_params = null
+        ?array $class_template_types = null,
+        ?array $calling_type_params = null
     ): ?Type\Union {
         if ($calling_class === $template_class) {
             if (isset($class_template_types[$template_name]) && $calling_type_params) {

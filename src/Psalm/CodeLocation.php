@@ -101,19 +101,13 @@ class CodeLocation
     const CATCH_VAR = 6;
     const FUNCTION_PHPDOC_METHOD = 7;
 
-    /**
-     * @param bool                 $single_line
-     * @param null|CodeLocation    $previous_location
-     * @param null|int             $regex_type
-     * @param null|string          $selected_text
-     */
     public function __construct(
         FileSource $file_source,
         PhpParser\Node $stmt,
-        CodeLocation $previous_location = null,
-        $single_line = false,
-        $regex_type = null,
-        $selected_text = null
+        ?CodeLocation $previous_location = null,
+        bool $single_line = false,
+        ?int $regex_type = null,
+        ?string $selected_text = null
     ) {
         $this->file_start = (int)$stmt->getAttribute('startFilePos');
         $this->file_end = (int)$stmt->getAttribute('endFilePos');
@@ -138,11 +132,9 @@ class CodeLocation
     }
 
     /**
-     * @param int $line
-     *
      * @return void
      */
-    public function setCommentLine($line)
+    public function setCommentLine(int $line)
     {
         $this->docblock_line_number = $line;
     }

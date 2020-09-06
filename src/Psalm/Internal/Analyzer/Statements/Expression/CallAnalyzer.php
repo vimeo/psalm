@@ -537,7 +537,7 @@ class CallAnalyzer
         StatementsAnalyzer $statements_analyzer,
         &$function_id,
         CodeLocation $code_location,
-        $can_be_in_root_scope
+        bool $can_be_in_root_scope
     ): bool {
         $cased_function_id = $function_id;
         $function_id = strtolower($function_id);

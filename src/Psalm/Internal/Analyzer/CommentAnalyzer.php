@@ -60,7 +60,7 @@ class CommentAnalyzer
         PhpParser\Comment\Doc $comment,
         FileSource $source,
         Aliases $aliases,
-        array $template_type_map = null,
+        ?array $template_type_map = null,
         ?array $type_aliases = null
     ): array {
         $parsed_docblock = DocComment::parsePreservingLength($comment);
@@ -88,7 +88,7 @@ class CommentAnalyzer
         ParsedDocblock $parsed_docblock,
         FileSource $source,
         Aliases $aliases,
-        array $template_type_map = null,
+        ?array $template_type_map = null,
         ?array $type_aliases = null
     ) : array {
         $var_id = null;
@@ -1235,15 +1235,13 @@ class CommentAnalyzer
     }
 
     /**
-     * @param string $return_block
-     *
      * @throws DocblockParseException if an invalid string is found
      *
      * @return list<string>
      *
      * @psalm-pure
      */
-    public static function splitDocLine($return_block)
+    public static function splitDocLine(string $return_block)
     {
         $brackets = '';
 

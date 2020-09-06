@@ -79,12 +79,9 @@ class TypeTokenizer
     private static $memoized_tokens = [];
 
     /**
-     * @param  string $string_type
-     * @param  bool   $ignore_space
-     *
      * @return list<array{0: string, 1: int}>
      */
-    public static function tokenize($string_type, $ignore_space = true)
+    public static function tokenize(string $string_type, bool $ignore_space = true)
     {
         $type_tokens = [['', 0]];
         $was_char = false;
@@ -334,8 +331,8 @@ class TypeTokenizer
     public static function getFullyQualifiedTokens(
         string $string_type,
         Aliases $aliases,
-        array $template_type_map = null,
-        array $type_aliases = null,
+        ?array $template_type_map = null,
+        ?array $type_aliases = null,
         ?string $self_fqcln = null,
         ?string $parent_fqcln = null,
         bool $allow_assertions = false

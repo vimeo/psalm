@@ -65,15 +65,11 @@ class ParserCacheProvider
     }
 
     /**
-     * @param  int      $file_modified_time
-     * @param  string   $file_content_hash
-     * @param  string   $file_path
-     *
      * @return list<PhpParser\Node\Stmt>|null
      *
      * @psalm-suppress UndefinedFunction
      */
-    public function loadStatementsFromCache($file_path, $file_modified_time, $file_content_hash)
+    public function loadStatementsFromCache(string $file_path, int $file_modified_time, string $file_content_hash)
     {
         $root_cache_directory = Config::getInstance()->getCacheDirectory();
 
@@ -109,13 +105,11 @@ class ParserCacheProvider
     }
 
     /**
-     * @param  string   $file_path
-     *
      * @return list<PhpParser\Node\Stmt>|null
      *
      * @psalm-suppress UndefinedFunction
      */
-    public function loadExistingStatementsFromCache($file_path)
+    public function loadExistingStatementsFromCache(string $file_path)
     {
         $root_cache_directory = Config::getInstance()->getCacheDirectory();
 
@@ -143,11 +137,9 @@ class ParserCacheProvider
     }
 
     /**
-     * @param  string   $file_path
-     *
      * @return string|null
      */
-    public function loadExistingFileContentsFromCache($file_path)
+    public function loadExistingFileContentsFromCache(string $file_path)
     {
         if (!$this->use_file_cache) {
             return null;
@@ -214,16 +206,13 @@ class ParserCacheProvider
     }
 
     /**
-     * @param  string                           $file_path
-     * @param  string                           $file_content_hash
      * @param  list<PhpParser\Node\Stmt>        $stmts
-     * @param  bool                             $touch_only
      *
      * @return void
      *
      * @psalm-suppress UndefinedFunction
      */
-    public function saveStatementsToCache($file_path, $file_content_hash, array $stmts, $touch_only)
+    public function saveStatementsToCache(string $file_path, string $file_content_hash, array $stmts, bool $touch_only)
     {
         $root_cache_directory = Config::getInstance()->getCacheDirectory();
 
@@ -296,12 +285,9 @@ class ParserCacheProvider
     }
 
     /**
-     * @param  string  $file_path
-     * @param  string  $file_contents
-     *
      * @return void
      */
-    public function cacheFileContents($file_path, $file_contents)
+    public function cacheFileContents(string $file_path, string $file_contents)
     {
         if (!$this->use_file_cache) {
             return;
@@ -328,11 +314,7 @@ class ParserCacheProvider
         file_put_contents($cache_location, $file_contents);
     }
 
-    /**
-     * @param  float $time_before
-     *
-     */
-    public function deleteOldParserCaches($time_before): int
+    public function deleteOldParserCaches(float $time_before): int
     {
         $cache_directory = Config::getInstance()->getCacheDirectory();
 
@@ -396,11 +378,10 @@ class ParserCacheProvider
 
     /**
      * @param  array<string>    $file_names
-     * @param  int              $min_time
      *
      * @return void
      */
-    public function touchParserCaches(array $file_names, $min_time)
+    public function touchParserCaches(array $file_names, int $min_time)
     {
         $cache_directory = Config::getInstance()->getCacheDirectory();
 
@@ -423,11 +404,7 @@ class ParserCacheProvider
         }
     }
 
-    /**
-     * @param  string  $file_name
-     *
-     */
-    private function getParserCacheKey($file_name): string
+    private function getParserCacheKey(string $file_name): string
     {
         return md5($file_name) . ($this->use_igbinary ? '-igbinary' : '') . '-r';
     }

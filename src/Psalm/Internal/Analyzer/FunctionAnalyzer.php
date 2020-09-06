@@ -44,13 +44,11 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
     }
 
     /**
-     * @param  string                      $function_id
      * @param  array<PhpParser\Node\Arg>   $call_args
-     *
      */
     public static function getReturnTypeFromCallMapWithArgs(
         StatementsAnalyzer $statements_analyzer,
-        $function_id,
+        string $function_id,
         array $call_args,
         Context $context
     ): Type\Union {

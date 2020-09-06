@@ -52,14 +52,12 @@ abstract class Type
     /**
      * Parses a string type representation
      *
-     * @param  string $type_string
      * @param  array{int,int}|null   $php_version
      * @param  array<string, array<string, array{Type\Union}>> $template_type_map
-     *
      */
     public static function parseString(
-        $type_string,
-        array $php_version = null,
+        string $type_string,
+        ?array $php_version = null,
         array $template_type_map = []
     ): Union {
         return TypeParser::parseTokens(
@@ -193,11 +191,7 @@ abstract class Type
         return new Union([$type]);
     }
 
-    /**
-     * @param string|null $value
-     *
-     */
-    public static function getString($value = null): Union
+    public static function getString(?string $value = null): Union
     {
         $type = null;
 
@@ -251,11 +245,7 @@ abstract class Type
         ]);
     }
 
-    /**
-     * @param string $class_type
-     *
-     */
-    public static function getLiteralClassString($class_type): Union
+    public static function getLiteralClassString(string $class_type): Union
     {
         $type = new TLiteralClassString($class_type);
 
@@ -301,11 +291,7 @@ abstract class Type
         return new Union([$type]);
     }
 
-    /**
-     * @param float|null $value
-     *
-     */
-    public static function getFloat($value = null): Union
+    public static function getFloat(?float $value = null): Union
     {
         if ($value !== null) {
             $type = new TLiteralFloat($value);
@@ -427,7 +413,7 @@ abstract class Type
     public static function combineUnionTypes(
         Union $type_1,
         Union $type_2,
-        Codebase $codebase = null,
+        ?Codebase $codebase = null,
         bool $overwrite_empty_array = false,
         bool $allow_mixed_union = true,
         int $literal_limit = 500

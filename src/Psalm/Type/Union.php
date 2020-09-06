@@ -445,19 +445,14 @@ class Union implements TypeNode
     }
 
     /**
-     * @param  string|null   $namespace
      * @param  array<string, string> $aliased_classes
-     * @param  string|null   $this_class
-     * @param  int           $php_major_version
-     * @param  int           $php_minor_version
-     *
      */
     public function toPhpString(
-        $namespace,
+        ?string $namespace,
         array $aliased_classes,
-        $this_class,
-        $php_major_version,
-        $php_minor_version
+        ?string $this_class,
+        int $php_major_version,
+        int $php_minor_version
     ): ?string {
         $nullable = false;
 
@@ -518,11 +513,7 @@ class Union implements TypeNode
         return $atomic_type->canBeFullyExpressedInPhp();
     }
 
-    /**
-     * @param  string $type_string
-     *
-     */
-    public function removeType($type_string): bool
+    public function removeType(string $type_string): bool
     {
         if (isset($this->types[$type_string])) {
             unset($this->types[$type_string]);
@@ -579,11 +570,7 @@ class Union implements TypeNode
         $this->id = null;
     }
 
-    /**
-     * @param  string  $type_string
-     *
-     */
-    public function hasType($type_string): bool
+    public function hasType(string $type_string): bool
     {
         return isset($this->types[$type_string]);
     }
@@ -977,7 +964,7 @@ class Union implements TypeNode
     /**
      * @return void
      */
-    public function substitute(Union $old_type, Union $new_type = null)
+    public function substitute(Union $old_type, ?Union $new_type = null)
     {
         if ($this->hasMixed() && !$this->isEmptyMixed()) {
             return;
@@ -1566,7 +1553,7 @@ class Union implements TypeNode
      */
     public function queueClassLikesForScanning(
         Codebase $codebase,
-        FileStorage $file_storage = null,
+        ?FileStorage $file_storage = null,
         array $phantom_classes = []
     ) {
         $scanner_visitor = new \Psalm\Internal\TypeVisitor\TypeScanner(

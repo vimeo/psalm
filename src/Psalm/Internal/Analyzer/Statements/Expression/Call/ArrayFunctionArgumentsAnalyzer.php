@@ -44,15 +44,13 @@ class ArrayFunctionArgumentsAnalyzer
 {
     /**
      * @param   array<int, PhpParser\Node\Arg> $args
-     * @param   string                         $method_id
-     *
      * @return  false|null
      */
     public static function checkArgumentsMatch(
         StatementsAnalyzer $statements_analyzer,
         Context $context,
         array $args,
-        $method_id,
+        string $method_id,
         bool $check_functions
     ) {
         $closure_index = $method_id === 'array_map' ? 0 : 1;
@@ -563,9 +561,6 @@ class ArrayFunctionArgumentsAnalyzer
     }
 
     /**
-     * @param  string   $method_id
-     * @param  int      $min_closure_param_count
-     * @param  int      $max_closure_param_count [description]
      * @param  (TArray|null)[] $array_arg_types
      *
      * @return void
@@ -573,11 +568,11 @@ class ArrayFunctionArgumentsAnalyzer
     private static function checkClosureType(
         StatementsAnalyzer $statements_analyzer,
         Context $context,
-        $method_id,
+        string $method_id,
         Type\Atomic $closure_type,
         PhpParser\Node\Arg $closure_arg,
-        $min_closure_param_count,
-        $max_closure_param_count,
+        int $min_closure_param_count,
+        int $max_closure_param_count,
         array $array_arg_types,
         bool $check_functions
     ) {
@@ -733,9 +728,6 @@ class ArrayFunctionArgumentsAnalyzer
 
     /**
      * @param  Type\Atomic\TFn|Type\Atomic\TCallable $closure_type
-     * @param  string   $method_id
-     * @param  int      $min_closure_param_count
-     * @param  int      $max_closure_param_count
      * @param  (TArray|null)[] $array_arg_types
      *
      * @return void
@@ -743,11 +735,11 @@ class ArrayFunctionArgumentsAnalyzer
     private static function checkClosureTypeArgs(
         StatementsAnalyzer $statements_analyzer,
         Context $context,
-        $method_id,
+        string $method_id,
         Type\Atomic $closure_type,
         PhpParser\Node\Arg $closure_arg,
-        $min_closure_param_count,
-        $max_closure_param_count,
+        int $min_closure_param_count,
+        int $max_closure_param_count,
         array $array_arg_types
     ) {
         $codebase = $statements_analyzer->getCodebase();

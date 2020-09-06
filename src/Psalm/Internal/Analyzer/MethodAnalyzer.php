@@ -29,7 +29,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
     public function __construct(
         PhpParser\Node\Stmt\ClassMethod $function,
         SourceAnalyzer $source,
-        MethodStorage $storage = null
+        ?MethodStorage $storage = null
     ) {
         $codebase = $source->getCodebase();
 
@@ -67,21 +67,16 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
 
     /**
      * Determines whether a given method is static or not
-     *
-     * @param  bool            $self_call
-     * @param  bool            $is_context_dynamic
      * @param  array<string>   $suppressed_issues
-     * @param  bool            $is_dynamic_this_method
-     *
      */
     public static function checkStatic(
         \Psalm\Internal\MethodIdentifier $method_id,
-        $self_call,
-        $is_context_dynamic,
+        bool $self_call,
+        bool $is_context_dynamic,
         Codebase $codebase,
         CodeLocation $code_location,
         array $suppressed_issues,
-        &$is_dynamic_this_method = false
+        ?bool &$is_dynamic_this_method = false
     ): bool {
         $codebase_methods = $codebase->methods;
 
@@ -283,11 +278,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
         return null;
     }
 
-    /**
-     * @param string|null $context_self
-     *
-     */
-    public function getMethodId($context_self = null): \Psalm\Internal\MethodIdentifier
+    public function getMethodId(?string $context_self = null): \Psalm\Internal\MethodIdentifier
     {
         $function_name = (string)$this->function->name;
 

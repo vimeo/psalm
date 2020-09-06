@@ -161,7 +161,7 @@ class TypeCombination
      */
     public static function combineTypes(
         array $types,
-        Codebase $codebase = null,
+        ?Codebase $codebase = null,
         bool $overwrite_empty_array = false,
         bool $allow_mixed_union = true,
         int $literal_limit = 500
@@ -612,14 +612,12 @@ class TypeCombination
     }
 
     /**
-     * @param  Codebase|null   $codebase
-     *
      * @return null|Union
      */
     private static function scrapeTypeProperties(
         Atomic $type,
         TypeCombination $combination,
-        $codebase,
+        ?Codebase $codebase,
         bool $overwrite_empty_array,
         bool $allow_mixed_union,
         int $literal_limit

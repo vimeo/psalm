@@ -52,10 +52,9 @@ class NodeDataProvider implements \Psalm\NodeTypeProvider
     }
 
     /**
-     * @param PhpParser\Node\Expr $node
      * @param array<string, non-empty-list<non-empty-list<string>>>|null $assertions
      */
-    public function setAssertions($node, ?array $assertions) : void
+    public function setAssertions(PhpParser\Node\Expr $node, ?array $assertions) : void
     {
         if (!$this->cache_assertions) {
             return;
@@ -65,10 +64,9 @@ class NodeDataProvider implements \Psalm\NodeTypeProvider
     }
 
     /**
-     * @param PhpParser\Node\Expr $node
      * @return array<string, non-empty-list<non-empty-list<string>>>|null
      */
-    public function getAssertions($node) : ?array
+    public function getAssertions(PhpParser\Node\Expr $node) : ?array
     {
         if (!$this->cache_assertions) {
             return null;
@@ -113,20 +111,14 @@ class NodeDataProvider implements \Psalm\NodeTypeProvider
         return $this->node_if_false_assertions[$node] ?? null;
     }
 
-    /**
-     * @param PhpParser\Node\Expr $node
-     */
-    public function isPureCompatible($node) : bool
+    public function isPureCompatible(PhpParser\Node\Expr $node) : bool
     {
         $node_type = self::getType($node);
 
         return ($node_type && $node_type->reference_free) || isset($node->pure);
     }
 
-    /**
-     * @param PhpParser\Node\Expr $node
-     */
-    public function clearNodeOfTypeAndAssertions($node) : void
+    public function clearNodeOfTypeAndAssertions(PhpParser\Node\Expr $node) : void
     {
         unset($this->node_types[$node], $this->node_assertions[$node]);
     }

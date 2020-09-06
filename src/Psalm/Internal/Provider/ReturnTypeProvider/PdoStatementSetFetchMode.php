@@ -22,10 +22,10 @@ class PdoStatementSetFetchMode implements \Psalm\Plugin\Hook\MethodParamsProvide
     public static function getMethodParams(
         string $fq_classlike_name,
         string $method_name_lowercase,
-        array $call_args = null,
-        StatementsSource $statements_source = null,
-        Context $context = null,
-        CodeLocation $code_location = null
+        ?array $call_args = null,
+        ?StatementsSource $statements_source = null,
+        ?Context $context = null,
+        ?CodeLocation $code_location = null
     ) {
         if (!$statements_source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
             return null;

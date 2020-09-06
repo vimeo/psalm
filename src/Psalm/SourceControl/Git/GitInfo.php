@@ -56,7 +56,7 @@ class GitInfo extends SourceControlInfo
      * @param CommitInfo $head    hEAD commit
      * @param RemoteInfo[]  $remotes remote repositories
      */
-    public function __construct($branch, CommitInfo $head, array $remotes)
+    public function __construct(string $branch, CommitInfo $head, array $remotes)
     {
         $this->branch = $branch;
         $this->head = $head;
