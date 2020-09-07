@@ -1123,8 +1123,6 @@ class Config
     }
 
     /**
-     * @param  SimpleXMLElement<SimpleXMLElement> $extensions
-     *
      * @throws ConfigException if a Config file could not be found
      *
      * @return void
