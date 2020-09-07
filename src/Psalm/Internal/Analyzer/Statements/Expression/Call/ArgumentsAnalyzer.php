@@ -232,11 +232,15 @@ class ArgumentsAnalyzer
                     continue;
                 }
 
-                foreach ($replaced_type->getAtomicTypes() as $replaced_type_part) {
-                    if ($replaced_type_part instanceof Type\Atomic\TCallable
-                        || $replaced_type_part instanceof Type\Atomic\TFn
-                    ) {
-                        foreach ($closure_storage->params as $closure_param_offset => $param_storage) {
+                foreach ($closure_storage->params as $closure_param_offset => $param_storage) {
+                    $param_type_inferred = $param_storage->type_inferred;
+
+                    $newly_inferred_type = null;
+
+                    foreach ($replaced_type->getAtomicTypes() as $replaced_type_part) {
+                        if ($replaced_type_part instanceof Type\Atomic\TCallable
+                            || $replaced_type_part instanceof Type\Atomic\TFn
+                        ) {
                             if (isset($replaced_type_part->params[$closure_param_offset]->type)
                                 && !$replaced_type_part->params[$closure_param_offset]->type->hasTemplate()
                             ) {
@@ -251,9 +255,9 @@ class ArgumentsAnalyzer
                                         );
                                     }
 
-                                    if (!$param_storage->type_inferred) {
+                                    if (!$param_type_inferred) {
                                         if ($param_storage->type !== $param_storage->signature_type) {
-                                            continue;
+                                            continue 2;
                                         }
 
                                         $type_match_found = UnionTypeComparator::isContainedBy(
@@ -263,12 +267,22 @@ class ArgumentsAnalyzer
                                         );
 
                                         if (!$type_match_found) {
-                                            continue;
+                                            continue 2;
                                         }
                                     }
                                 }
 
-                                $param_storage->type = $replaced_type_part->params[$closure_param_offset]->type;
+                                if (!$newly_inferred_type) {
+                                    $newly_inferred_type = $replaced_type_part->params[$closure_param_offset]->type;
+                                } else {
+                                    $newly_inferred_type = Type::combineUnionTypes(
+                                        $newly_inferred_type,
+                                        $replaced_type_part->params[$closure_param_offset]->type,
+                                        $codebase
+                                    );
+                                }
+
+                                $param_storage->type = clone $replaced_type_part->params[$closure_param_offset]->type;
                                 $param_storage->type_inferred = true;
 
                                 if ($method_id === 'array_map' || $method_id === 'array_filter') {
@@ -282,6 +296,11 @@ class ArgumentsAnalyzer
                                 }
                             }
                         }
+                    }
+
+                    if (!$param_type_inferred && $newly_inferred_type) {
+                        $param_storage->type = $newly_inferred_type;
+                        $param_storage->type_inferred = true;
                     }
                 }
             }
