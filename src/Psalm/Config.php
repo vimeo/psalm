@@ -1123,13 +1123,13 @@ class Config
     }
 
     /**
-     * @param  array<SimpleXMLElement> $extensions
+     * @param  SimpleXMLElement<SimpleXMLElement> $extensions
      *
      * @throws ConfigException if a Config file could not be found
      *
      * @return void
      */
-    private function loadFileExtensions(array $extensions)
+    private function loadFileExtensions(SimpleXMLElement $extensions)
     {
         foreach ($extensions as $extension) {
             $extension_name = preg_replace('/^\.?/', '', (string)$extension['name']);
@@ -1771,12 +1771,12 @@ class Config
 
         $codebase->register_stub_files = false;
     }
-    
+
     public function getCacheDirectory(): ?string
     {
         return $this->cache_directory;
     }
-    
+
     public function getGlobalCacheDirectory(): ?string
     {
         return $this->global_cache_directory;
