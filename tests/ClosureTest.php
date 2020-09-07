@@ -846,7 +846,7 @@ class ClosureTest extends TestCase
                     }',
                 'error_message' => 'InvalidReturnStatement',
                 [],
-                [],
+                false,
                 '7.4',
             ],
         ];

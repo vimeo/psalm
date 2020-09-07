@@ -107,6 +107,20 @@ class MethodCallReturnTypeFetcher
                 $return_type_candidate = $callmap_callables[0]->return_type;
             }
 
+            if (($call_map_id->fq_class_name === 'Iterator'
+                    || $call_map_id->fq_class_name === 'IteratorIterator'
+                    || $call_map_id->fq_class_name === 'Generator'
+                    || $call_map_id->fq_class_name === 'SplDoublyLinkedList'
+                    || $call_map_id->fq_class_name === 'SplObjectStorage'
+                )
+                && $method_name === 'current'
+            ) {
+                if ($stmt->getAttributes()) {
+                    $return_type_candidate->addType(new Type\Atomic\TNull());
+                    $return_type_candidate->ignore_nullable_issues = true;
+                }
+            }
+
             if ($return_type_candidate->isFalsable()) {
                 $return_type_candidate->ignore_falsable_issues = true;
             }
