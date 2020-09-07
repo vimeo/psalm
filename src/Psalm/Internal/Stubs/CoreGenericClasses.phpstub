@@ -48,7 +48,7 @@ interface Iterator extends Traversable {
      * Return the current element
      * @link http://php.net/manual/en/iterator.current.php
      *
-     * @return TValue Can return any type.
+     * @return TValue|null Can return any type or null if iterator is either empty or consumed.
      *
      * @since 5.0.0
      */
@@ -133,7 +133,7 @@ class IteratorIterator implements OuterIterator {
      * Return the current element
      * @link http://php.net/manual/en/iterator.current.php
      *
-     * @return TValue Can return any type.
+     * @return TValue|null Can return any type or null if iterator is either empty or consumed.
      *
      * @since 5.0.0
      */
@@ -215,7 +215,7 @@ class FilterIterator extends IteratorIterator {
  */
 class Generator implements Traversable {
     /**
-     * @return TValue Can return any type.
+     * @return TValue|null Can return any type or null if Generator is either empty or consumed.
      */
     public function current() {}
 
@@ -1152,7 +1152,7 @@ class SplDoublyLinkedList implements Iterator, Countable, ArrayAccess, Serializa
      * Return current array entry
      * @link https://php.net/manual/en/spldoublylinkedlist.current.php
      *
-     * @return TValue The current node value.
+     * @return TValue|null The current node value or null if iterator is either empty or consumed.
      *
      * @since 5.3.0
      */
@@ -1345,7 +1345,7 @@ class SplObjectStorage implements Countable, Iterator, Serializable, ArrayAccess
      * Returns the current storage entry
      * @link https://php.net/manual/en/splobjectstorage.current.php
      *
-     * @return TObject The object at the current iterator position.
+     * @return TObject|null The object at the current iterator position or null if iterator is either empty or consumed.
      *
      * @since 5.1.0
      */
