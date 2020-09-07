@@ -35,5 +35,7 @@ class GetClassMethodsReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionRe
         ) {
             return Type::parseString('array<string>');
         }
+
+        return null;
     }
 }

@@ -1427,6 +1427,18 @@ class MethodSignatureTest extends TestCase
                     }',
                 'error_message' => 'ConstructorSignatureMismatch',
             ],
+            'inheritDocblockReturnFromInterface' => [
+                '<?php
+                    interface A {
+                        /** @return ?string */
+                        function foo();
+                    }
+
+                    class C implements A {
+                        public function foo() : ?string {}
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
         ];
     }
 }

@@ -361,14 +361,15 @@ class Populator
                                         $declaring_method_storage->signature_return_type
                                     )
                                 ) {
-                                    $method_storage->return_type = $declaring_method_storage->return_type;
+                                    $method_storage->return_type = clone $declaring_method_storage->return_type;
                                     $method_storage->inherited_return_type = true;
                                 } elseif (UnionTypeComparator::isSimplyContainedBy(
                                     $declaring_method_storage->return_type,
                                     $method_storage->signature_return_type
                                 )) {
-                                    $method_storage->return_type = $declaring_method_storage->return_type;
+                                    $method_storage->return_type = clone $declaring_method_storage->return_type;
                                     $method_storage->inherited_return_type = true;
+                                    $method_storage->return_type->from_docblock = false;
                                 }
                             }
                         }
