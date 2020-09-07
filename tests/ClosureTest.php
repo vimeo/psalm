@@ -837,6 +837,18 @@ class ClosureTest extends TestCase
                     }',
                 'error_message' => 'MixedReturnStatement'
             ],
+            'noCrashWhenComparingIllegitimateCallable' => [
+                '<?php
+                    class C {}
+
+                    function foo() : C {
+                        return fn (int $i) => "";
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+                [],
+                [],
+                '7.4',
+            ],
         ];
     }
 }
