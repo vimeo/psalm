@@ -405,7 +405,7 @@ class ArgumentsAnalyzer
                 }
             }
 
-            if (!$param_type_inferred && $newly_inferred_type) {
+            if ($newly_inferred_type) {
                 $param_storage->type = $newly_inferred_type;
                 $param_storage->type_inferred = true;
             }
