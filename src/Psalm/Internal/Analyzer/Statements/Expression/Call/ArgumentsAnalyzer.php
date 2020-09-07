@@ -386,8 +386,9 @@ class ArgumentsAnalyzer
                                 );
 
                                 if (!$type_match_found) {
-                                    $newly_inferred_type = clone $param_storage->type;
-                                    continue;
+                                    $newly_inferred_type = null;
+
+                                    break;
                                 }
                             }
 
