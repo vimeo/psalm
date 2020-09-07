@@ -8,10 +8,7 @@ class TString extends Scalar
         return 'string';
     }
 
-    /**
-     * @return string
-     */
-    public function getKey(bool $include_extra = true)
+    public function getKey(bool $include_extra = true) : string
     {
         return 'string';
     }

@@ -286,10 +286,7 @@ abstract class Atomic implements TypeNode
         return new TNamedObject($value);
     }
 
-    /**
-     * @return string
-     */
-    abstract public function getKey(bool $include_extra = true);
+    abstract public function getKey(bool $include_extra = true) : string;
 
     public function isNumericType(): bool
     {
