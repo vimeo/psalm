@@ -1033,6 +1033,12 @@ class TypeAlgebraTest extends \Psalm\Tests\TestCase
                         if ((!$b || rand(0, 1)) && (!$c || rand(0, 1))) {}
                     }'
             ],
+            'noParadoxInTernary' => [
+                '<?php
+                    function foo(?bool $b) : string {
+                        return $b ? "a" : ($b === null ? "foo" : "b");
+                    }',
+            ],
         ];
     }
 
@@ -1233,6 +1239,13 @@ class TypeAlgebraTest extends \Psalm\Tests\TestCase
                     } elseif ($from !== null) {
                     } elseif ($to !== null) {}',
                 'error_message' => 'RedundantCondition',
+            ],
+            'paradoxInTernary' => [
+                '<?php
+                    function foo(string $input) : string {
+                        return $input === "a" ? "bar" : ($input === "a" ? "foo" : "b");
+                    }',
+                'error_message' => 'ParadoxicalCondition',
             ],
         ];
     }
