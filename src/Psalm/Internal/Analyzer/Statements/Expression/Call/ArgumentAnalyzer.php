@@ -121,8 +121,9 @@ class ArgumentAnalyzer
         }
 
         if ($function_param->expect_variable
-            && $arg_value_type->hasLiteralString()
+            && $arg_value_type->isSingleStringLiteral()
             && !$arg->value instanceof PhpParser\Node\Scalar
+            && !$arg->value instanceof PhpParser\Node\Expr\ConstFetch
         ) {
             if (IssueBuffer::accepts(
                 new InvalidArgument(
