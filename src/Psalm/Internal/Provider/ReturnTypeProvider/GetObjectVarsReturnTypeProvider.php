@@ -35,5 +35,7 @@ class GetObjectVarsReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionRetu
         ) {
             return Type::parseString('array<string, mixed>');
         }
+
+        return null;
     }
 }
