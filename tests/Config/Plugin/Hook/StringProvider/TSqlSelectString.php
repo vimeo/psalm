@@ -3,10 +3,7 @@ namespace Psalm\Test\Config\Plugin\Hook\StringProvider;
 
 class TSqlSelectString extends \Psalm\Type\Atomic\TLiteralString
 {
-    /**
-     * @return string
-     */
-    public function getKey(bool $include_extra = true)
+    public function getKey(bool $include_extra = true) : string
     {
         return 'sql-select-string';
     }

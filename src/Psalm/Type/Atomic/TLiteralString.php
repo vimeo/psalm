@@ -15,10 +15,7 @@ class TLiteralString extends TString
         $this->value = $value;
     }
 
-    /**
-     * @return string
-     */
-    public function getKey(bool $include_extra = true)
+    public function getKey(bool $include_extra = true) : string
     {
         return $this->getId();
     }
