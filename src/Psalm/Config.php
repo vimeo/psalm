@@ -550,7 +550,7 @@ class Config
     public $after_functionlike_checks = [];
 
     /** @var array<string, mixed> */
-    private $predefined_constants;
+    private $predefined_constants = [];
 
     /** @var array<callable-string, bool> */
     private $predefined_functions = [];
