@@ -330,7 +330,9 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
             $this->registerFunctionLike($node);
 
-            if ($node instanceof PhpParser\Node\Expr\Closure) {
+            if ($node instanceof PhpParser\Node\Expr\Closure
+                || $node instanceof PhpParser\Node\Expr\ArrowFunction
+            ) {
                 $this->codebase->scanner->queueClassLikeForScanning('Closure');
             }
 
