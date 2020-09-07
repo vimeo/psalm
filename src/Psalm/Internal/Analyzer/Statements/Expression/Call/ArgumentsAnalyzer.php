@@ -362,30 +362,23 @@ class ArgumentsAnalyzer
             $param_type_inferred = $param_storage->type_inferred;
 
             $newly_inferred_type = null;
+            $has_different_docblock_type = false;
 
-            foreach ($replaced_type->getAtomicTypes() as $replaced_type_part) {
-                if ($replaced_type_part instanceof Type\Atomic\TCallable
-                    || $replaced_type_part instanceof Type\Atomic\TFn
-                ) {
-                    if (isset($replaced_type_part->params[$closure_param_offset]->type)
-                        && !$replaced_type_part->params[$closure_param_offset]->type->hasTemplate()
+            if ($param_storage->type && !$param_type_inferred) {
+                if ($param_storage->type !== $param_storage->signature_type) {
+                    $has_different_docblock_type = true;
+                }
+            }
+
+            if (!$has_different_docblock_type) {
+                foreach ($replaced_type->getAtomicTypes() as $replaced_type_part) {
+                    if ($replaced_type_part instanceof Type\Atomic\TCallable
+                        || $replaced_type_part instanceof Type\Atomic\TFn
                     ) {
-                        if ($param_storage->type) {
-                            if ($method_id === 'array_map' || $method_id === 'array_filter') {
-                                ArrayFetchAnalyzer::taintArrayFetch(
-                                    $statements_analyzer,
-                                    $args[1 - $argument_offset]->value,
-                                    null,
-                                    $param_storage->type,
-                                    Type::getMixed()
-                                );
-                            }
-
-                            if (!$param_type_inferred) {
-                                if ($param_storage->type !== $param_storage->signature_type) {
-                                    continue 2;
-                                }
-
+                        if (isset($replaced_type_part->params[$closure_param_offset]->type)
+                            && !$replaced_type_part->params[$closure_param_offset]->type->hasTemplate()
+                        ) {
+                            if ($param_storage->type && !$param_type_inferred) {
                                 $type_match_found = UnionTypeComparator::isContainedBy(
                                     $codebase,
                                     $replaced_type_part->params[$closure_param_offset]->type,
@@ -393,32 +386,20 @@ class ArgumentsAnalyzer
                                 );
 
                                 if (!$type_match_found) {
-                                    continue 2;
+                                    $newly_inferred_type = clone $param_storage->type;
+                                    continue;
                                 }
                             }
-                        }
 
-                        if (!$newly_inferred_type) {
-                            $newly_inferred_type = $replaced_type_part->params[$closure_param_offset]->type;
-                        } else {
-                            $newly_inferred_type = Type::combineUnionTypes(
-                                $newly_inferred_type,
-                                $replaced_type_part->params[$closure_param_offset]->type,
-                                $codebase
-                            );
-                        }
-
-                        $param_storage->type = clone $replaced_type_part->params[$closure_param_offset]->type;
-                        $param_storage->type_inferred = true;
-
-                        if ($method_id === 'array_map' || $method_id === 'array_filter') {
-                            ArrayFetchAnalyzer::taintArrayFetch(
-                                $statements_analyzer,
-                                $args[1 - $argument_offset]->value,
-                                null,
-                                $param_storage->type,
-                                Type::getMixed()
-                            );
+                            if (!$newly_inferred_type) {
+                                $newly_inferred_type = $replaced_type_part->params[$closure_param_offset]->type;
+                            } else {
+                                $newly_inferred_type = Type::combineUnionTypes(
+                                    $newly_inferred_type,
+                                    $replaced_type_part->params[$closure_param_offset]->type,
+                                    $codebase
+                                );
+                            }
                         }
                     }
                 }
@@ -427,6 +408,16 @@ class ArgumentsAnalyzer
             if (!$param_type_inferred && $newly_inferred_type) {
                 $param_storage->type = $newly_inferred_type;
                 $param_storage->type_inferred = true;
+            }
+
+            if ($param_storage->type && ($method_id === 'array_map' || $method_id === 'array_filter')) {
+                ArrayFetchAnalyzer::taintArrayFetch(
+                    $statements_analyzer,
+                    $args[1 - $argument_offset]->value,
+                    null,
+                    $param_storage->type,
+                    Type::getMixed()
+                );
             }
         }
     }
