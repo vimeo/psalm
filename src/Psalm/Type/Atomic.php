@@ -45,6 +45,7 @@ use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralClassString;
+use Psalm\Type\Atomic\TliteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
@@ -293,7 +294,8 @@ abstract class Atomic implements TypeNode
         return $this instanceof TInt
             || $this instanceof TFloat
             || $this instanceof TNumericString
-            || $this instanceof TNumeric;
+            || $this instanceof TNumeric
+            || ($this instanceof TLiteralString && \is_numeric($this->value));
     }
 
     public function isObjectType(): bool
