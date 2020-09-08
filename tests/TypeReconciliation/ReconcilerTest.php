@@ -166,6 +166,14 @@ class ReconcilerTest extends \Psalm\Tests\TestCase
                 'array<empty, empty>',
                 'array{a?: string, b?: string}',
             ],
+            'literalNumericStringInt' => [
+                '"0"',
+                'numeric',
+            ],
+            'literalNumericString' => [
+                '"10.03"',
+                'numeric',
+            ],
         ];
     }
 }
