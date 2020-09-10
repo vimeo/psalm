@@ -1819,6 +1819,13 @@ class FunctionCallTest extends TestCase
                     }',
                 'error_message' => 'RedundantCondition',
             ],
+            'strposNoSetFirstParam' => [
+                '<?php
+                    function sayHello(string $format): void {
+                        if (strpos("u", $format)) {}
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
         ];
     }
 }
