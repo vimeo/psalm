@@ -6,5 +6,5 @@ Emitted when `--find-unused-psalm-suppress` is turned on and Psalm cannot find a
 <?php
 
 /** @psalm-suppress InvalidArgument */
-echo strpos("hello", "e");
+echo strlen("hello");
 ```

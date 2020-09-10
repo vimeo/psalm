@@ -583,7 +583,7 @@ class FunctionTemplateTest extends TestCase
                          * @param int|false $x
                          */
                         function($x): void {},
-                        [strpos("str", "str")]
+                        [rand(0, 1) ? 5 : false]
                     );',
             ],
             'ignoreTooManyArrayArgs' => [
