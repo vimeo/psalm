@@ -219,7 +219,10 @@ class IssueBuffer
             fwrite(STDERR, "\nEmitting {$e->getShortLocation()} $issue_type {$e->getMessage()}\n$trace\n");
         }
 
-        $emitted_key = $issue_type . '-' . $e->getShortLocation() . ':' . $e->getLocation()->getColumn();
+        $emitted_key = $issue_type
+            . '-' . $e->getShortLocation()
+            . ':' . $e->getLocation()->getColumn()
+            . ' ' . $e->getMessage();
 
         if ($reporting_level === Config::REPORT_INFO) {
             if ($issue_type === 'TaintedInput' || !self::alreadyEmitted($emitted_key)) {
@@ -411,7 +414,8 @@ class IssueBuffer
                 $emitted_key = $issue->type
                     . '-' . $issue->file_name
                     . ':' . $issue->line_from
-                    . ':' . $issue->column_from;
+                    . ':' . $issue->column_from
+                    . ' ' . $issue->message;
 
                 if (!self::alreadyEmitted($emitted_key)) {
                     self::$issues_data[$file_path][] = $issue;
