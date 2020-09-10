@@ -49,7 +49,7 @@ class IssueSuppressionTest extends TestCase
             'somefile.php',
             '<?php
                 /** @psalm-suppress InvalidArgument */
-                echo strpos("hello", "e");'
+                echo strlen("hello");'
         );
 
         $this->analyzeFile('somefile.php', new \Psalm\Context());
