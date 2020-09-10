@@ -408,6 +408,63 @@ class ErrorFixTest extends \Psalm\Tests\TestCase
                 ],
                 'error_counts' => [0, 0, 0, 0],
             ],
+            'missingConstructorForTwoVars' => [
+                'files' => [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            class A {
+                                protected int $x;
+                                protected int $y;
+                            }'
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            class A {
+                                protected int $x = 0;
+                                protected int $y;
+                            }'
+                    ],
+                ],
+                'error_counts' => [2, 1],
+            ],
+            'missingConstructorForInheritedProperties' => [
+                'files' => [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            abstract class A {
+                                public int $x;
+                                public int $y;
+                            }
+
+                            class B extends A {
+                                public function __construct() {}
+                            }'
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            abstract class A {
+                                public int $x = 0;
+                                public int $y;
+                            }
+
+                            class B extends A {
+                                public function __construct() {}
+                            }'
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            abstract class A {
+                                public int $x = 0;
+                                public int $y = 0;
+                            }
+
+                            class B extends A {
+                                public function __construct() {}
+                            }'
+                    ],
+                ],
+                'error_counts' => [2, 1, 0],
+            ],
         ];
     }
 }

@@ -1457,18 +1457,18 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         }
 
         if (!$storage->abstract && $uninitialized_typed_properties) {
-            $first_uninitialized_property = array_shift($uninitialized_typed_properties);
-
-            if ($first_uninitialized_property->location) {
-                if (IssueBuffer::accepts(
-                    new MissingConstructor(
-                        $class_storage->name . ' has an uninitialized variable ' . $uninitialized_variables[0] .
-                            ', but no constructor',
-                        $first_uninitialized_property->location
-                    ),
-                    $storage->suppressed_issues + $this->getSuppressedIssues()
-                )) {
-                    // fall through
+            foreach ($uninitialized_typed_properties as $uninitialized_property) {
+                if ($uninitialized_property->location) {
+                    if (IssueBuffer::accepts(
+                        new MissingConstructor(
+                            $class_storage->name . ' has an uninitialized variable ' . $uninitialized_variables[0] .
+                                ', but no constructor',
+                            $uninitialized_property->location
+                        ),
+                        $storage->suppressed_issues + $this->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
                 }
             }
         }
