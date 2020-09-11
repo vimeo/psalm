@@ -1,6 +1,6 @@
 # InvalidLiteralArgument
 
-Emitted when a scalar value is passed to a method that expected another scalar type
+Emitted when a literal argument is passed where a variable is expected, such as the first argument of `strpos`, where an explicit `$haystack` is almost always unintended.
 
 ```php
 <?php
