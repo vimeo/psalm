@@ -25,10 +25,6 @@ use function array_pop;
  */
 class ConstFetchAnalyzer
 {
-    /**
-     *
-     * @return  void
-     */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ConstFetch $stmt,
@@ -223,10 +219,6 @@ class ConstFetchAnalyzer
             ?? ConstFetchAnalyzer::getGlobalConstType($codebase, $const_name, $const_name);
     }
 
-    /**
-     *
-     * @return  void
-     */
     public static function setConstType(
         StatementsAnalyzer $statements_analyzer,
         string $const_name,
@@ -268,10 +260,6 @@ class ConstFetchAnalyzer
         return $const_name;
     }
 
-    /**
-     *
-     * @return  void
-     */
     public static function analyzeConstAssignment(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Const_ $stmt,

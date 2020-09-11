@@ -30,7 +30,6 @@ class MethodExistenceProvider
     /**
      * @param  class-string<MethodExistenceProviderInterface> $class
      *
-     * @return void
      */
     public function registerClass(string $class): void
     {
@@ -50,7 +49,6 @@ class MethodExistenceProvider
      *     ?CodeLocation
      *   ) : ?bool $c
      *
-     * @return void
      */
     public function registerClosure(string $fq_classlike_name, \Closure $c): void
     {

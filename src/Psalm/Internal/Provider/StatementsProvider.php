@@ -290,7 +290,6 @@ class StatementsProvider
     /**
      * @param array<string, array<string, bool>> $more_changed_members
      *
-     * @return void
      */
     public function addChangedMembers(array $more_changed_members): void
     {
@@ -308,16 +307,12 @@ class StatementsProvider
     /**
      * @param array<string, array<string, bool>> $more_unchanged_members
      *
-     * @return void
      */
     public function addUnchangedSignatureMembers(array $more_unchanged_members): void
     {
         $this->unchanged_signature_members = array_merge($more_unchanged_members, $this->unchanged_signature_members);
     }
 
-    /**
-     * @return void
-     */
     public function setUnchangedFile(string $file_path): void
     {
         if (!isset($this->diff_map[$file_path])) {
@@ -336,16 +331,12 @@ class StatementsProvider
     /**
      * @param array<string, array<int, array{0: int, 1: int, 2: int, 3: int}>> $diff_map
      *
-     * @return void
      */
     public function addDiffMap(array $diff_map): void
     {
         $this->diff_map = array_merge($diff_map, $this->diff_map);
     }
 
-    /**
-     * @return void
-     */
     public function resetDiffs(): void
     {
         $this->changed_members = [];

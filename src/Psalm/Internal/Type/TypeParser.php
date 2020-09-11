@@ -56,7 +56,6 @@ class TypeParser
      * @param  array<string, array<string, array{Union}>> $template_type_map
      * @param  array<string, TypeAlias> $type_aliases
      *
-     * @return Union
      */
     public static function parseTokens(
         array $type_tokens,
@@ -626,7 +625,11 @@ class TypeParser
                 /**
                  * @return FunctionLikeParameter
                  */
-                function (ParseTree $child_tree) use ($codebase, $template_type_map, $type_aliases): FunctionLikeParameter {
+                function (ParseTree $child_tree) use (
+                    $codebase,
+                    $template_type_map,
+                    $type_aliases
+                ): FunctionLikeParameter {
                     $is_variadic = false;
                     $is_optional = false;
 

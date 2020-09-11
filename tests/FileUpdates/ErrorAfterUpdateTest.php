@@ -44,7 +44,6 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
      * @param array<int, array<string, string>> $file_stages
      * @param array<string, string> $error_levels
      *
-     * @return void
      */
     public function testErrorAfterUpdate(
         array $file_stages,

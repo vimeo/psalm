@@ -226,9 +226,6 @@ class Union implements TypeNode
         return $this->types;
     }
 
-    /**
-     * @return void
-     */
     public function addType(Atomic $type): void
     {
         $this->types[$type->getKey()] = $type;
@@ -562,9 +559,6 @@ class Union implements TypeNode
         return false;
     }
 
-    /**
-     * @return void
-     */
     public function bustCache(): void
     {
         $this->id = null;
@@ -1549,7 +1543,6 @@ class Union implements TypeNode
     /**
      * @param  array<string, mixed> $phantom_classes
      *
-     * @return void
      */
     public function queueClassLikesForScanning(
         Codebase $codebase,
@@ -1589,9 +1582,6 @@ class Union implements TypeNode
         return $template_type_collector->getTemplateTypes();
     }
 
-    /**
-     * @return void
-     */
     public function setFromDocblock(): void
     {
         $this->from_docblock = true;

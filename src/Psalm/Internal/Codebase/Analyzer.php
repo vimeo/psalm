@@ -191,7 +191,6 @@ class Analyzer
     /**
      * @param array<string, string> $files_to_analyze
      *
-     * @return void
      */
     public function addFilesToAnalyze(array $files_to_analyze): void
     {
@@ -202,7 +201,6 @@ class Analyzer
     /**
      * @param array<string, string> $files_to_analyze
      *
-     * @return void
      */
     public function addFilesToShowResults(array $files_to_analyze): void
     {
@@ -212,7 +210,6 @@ class Analyzer
     /**
      * @param array<string> $files_to_update
      *
-     * @return void
      */
     public function setFilesToUpdate(array $files_to_update): void
     {
@@ -247,9 +244,6 @@ class Analyzer
         return $file_analyzer;
     }
 
-    /**
-     * @return void
-     */
     public function analyzeFiles(
         ProjectAnalyzer $project_analyzer,
         int $pool_size,
@@ -334,9 +328,6 @@ class Analyzer
         $filetype_analyzers = $this->config->getFiletypeAnalyzers();
 
         $analysis_worker =
-            /**
-             * @return array
-             */
             function (int $_, string $file_path) use ($project_analyzer, $filetype_analyzers): array {
                 $file_analyzer = $this->getFileAnalyzer($project_analyzer, $file_path, $filetype_analyzers);
 
@@ -591,9 +582,6 @@ class Analyzer
         }
     }
 
-    /**
-     * @return void
-     */
     public function loadCachedResults(ProjectAnalyzer $project_analyzer): void
     {
         $codebase = $project_analyzer->getCodebase();
@@ -875,7 +863,6 @@ class Analyzer
     /**
      * @param array<string, array<int, array{int, int, int, int}>> $diff_map
      *
-     * @return void
      */
     public function shiftFileOffsets(array $diff_map): void
     {
@@ -1028,9 +1015,6 @@ class Analyzer
         return $this->mixed_member_names;
     }
 
-    /**
-     * @return void
-     */
     public function addMixedMemberName(string $member_id, string $reference): void
     {
         $this->mixed_member_names[$member_id][$reference] = true;
@@ -1044,7 +1028,6 @@ class Analyzer
     /**
      * @param array<string, array<string, bool>> $names
      *
-     * @return void
      */
     public function addMixedMemberNames(array $names): void
     {
@@ -1075,7 +1058,6 @@ class Analyzer
     /**
      * @param  array{0:int, 1:int} $mixed_counts
      *
-     * @return void
      */
     public function setMixedCountsForFile(string $file_path, array $mixed_counts): void
     {
@@ -1157,9 +1139,6 @@ class Analyzer
         $this->function_timings[$function_id] = $time_per_node;
     }
 
-    /**
-     * @return void
-     */
     public function addNodeType(
         string $file_path,
         PhpParser\Node $node,
@@ -1194,9 +1173,6 @@ class Analyzer
         ];
     }
 
-    /**
-     * @return void
-     */
     public function addNodeReference(string $file_path, PhpParser\Node $node, string $reference): void
     {
         if (!$reference) {
@@ -1209,9 +1185,6 @@ class Analyzer
         ];
     }
 
-    /**
-     * @return void
-     */
     public function addOffsetReference(string $file_path, int $start, int $end, string $reference): void
     {
         if (!$reference) {
@@ -1313,17 +1286,11 @@ class Analyzer
         return $stats;
     }
 
-    /**
-     * @return void
-     */
     public function disableMixedCounts(): void
     {
         $this->count_mixed = false;
     }
 
-    /**
-     * @return void
-     */
     public function enableMixedCounts(): void
     {
         $this->count_mixed = true;
@@ -1422,9 +1389,6 @@ class Analyzer
         return $applicable_issues;
     }
 
-    /**
-     * @return void
-     */
     public function removeExistingDataForFile(string $file_path, int $start, int $end, ?string $issue_type = null): void
     {
         if (isset($this->existing_issues[$file_path])) {
@@ -1525,9 +1489,6 @@ class Analyzer
         $this->mutable_classes[\strtolower($fqcln)] = true;
     }
 
-    /**
-     * @return void
-     */
     public function setAnalyzedMethod(string $file_path, string $method_id, bool $is_constructor = false): void
     {
         $this->analyzed_methods[$file_path][$method_id] = $is_constructor ? 2 : 1;

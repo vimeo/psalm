@@ -91,7 +91,6 @@ class PhpStormMetaScanner
                     $meta_fq_classlike_name,
                     /**
                      * @param array<PhpParser\Node\Arg> $call_args
-                     * @return ?Type\Union
                      */
                     function (
                         \Psalm\StatementsSource $statements_analyzer,
@@ -149,7 +148,6 @@ class PhpStormMetaScanner
                     $meta_fq_classlike_name,
                     /**
                      * @param array<PhpParser\Node\Arg> $call_args
-                     * @return ?Type\Union
                      */
                     function (
                         \Psalm\StatementsSource $statements_analyzer,
@@ -189,7 +187,6 @@ class PhpStormMetaScanner
                     $meta_fq_classlike_name,
                     /**
                      * @param array<PhpParser\Node\Arg> $call_args
-                     * @return ?Type\Union
                      */
                     function (
                         \Psalm\StatementsSource $statements_analyzer,

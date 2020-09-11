@@ -257,7 +257,6 @@ class FunctionDocblockManipulator
     /**
      * Sets the new return type
      *
-     * @return  void
      */
     public function setReturnType(
         ?string $php_type,
@@ -280,7 +279,6 @@ class FunctionDocblockManipulator
      *
      * @param   bool        $is_php_compatible
      *
-     * @return  void
      */
     public function setParamType(
         string $param_name,
@@ -481,9 +479,6 @@ class FunctionDocblockManipulator
         $this->is_pure = true;
     }
 
-    /**
-     * @return void
-     */
     public static function clearCache(): void
     {
         self::$manipulators = [];

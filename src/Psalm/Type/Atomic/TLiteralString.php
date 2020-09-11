@@ -25,9 +25,6 @@ class TLiteralString extends TString
         return 'string';
     }
 
-    /**
-     * @return string
-     */
     public function getId(bool $nested = false): string
     {
         $no_newline_value = preg_replace("/\n/m", '\n', $this->value);

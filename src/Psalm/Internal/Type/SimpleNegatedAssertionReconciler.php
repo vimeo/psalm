@@ -1406,9 +1406,6 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         return Type::getMixed();
     }
 
-    /**
-     * @return void
-     */
     private static function removeFalsyNegatedLiteralTypes(
         Type\Union $existing_var_type,
         bool &$did_remove_type

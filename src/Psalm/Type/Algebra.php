@@ -452,9 +452,6 @@ class Algebra
                     $clause_var_possibilities = array_values(
                         array_filter(
                             $clause_b->possibilities[$clause_var],
-                            /**
-                             * @return bool
-                             */
                             function (string $possible_type) use ($negated_clause_type): bool {
                                 return $possible_type !== $negated_clause_type;
                             }

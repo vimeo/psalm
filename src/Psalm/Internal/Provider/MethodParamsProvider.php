@@ -35,7 +35,6 @@ class MethodParamsProvider
     /**
      * @param  class-string<MethodParamsProviderInterface> $class
      *
-     * @return void
      */
     public function registerClass(string $class): void
     {
@@ -56,7 +55,6 @@ class MethodParamsProvider
      *     ?CodeLocation=
      *   ) : ?array<int, \Psalm\Storage\FunctionLikeParameter> $c
      *
-     * @return void
      */
     public function registerClosure(string $fq_classlike_name, \Closure $c): void
     {

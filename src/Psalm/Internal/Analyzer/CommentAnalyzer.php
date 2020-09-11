@@ -1350,9 +1350,6 @@ class CommentAnalyzer
     }
 
     /**
-     *
-     * @return void
-     *
      * @throws DocblockParseException if a duplicate is found
      */
     private static function checkDuplicatedTags(ParsedDocblock $parsed_docblock): void
@@ -1372,7 +1369,6 @@ class CommentAnalyzer
     /**
      * @param array<int, string> $param
      *
-     * @return void
      *
      * @throws DocblockParseException  if a duplicate is found
      */

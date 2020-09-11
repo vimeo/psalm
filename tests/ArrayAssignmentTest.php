@@ -8,9 +8,6 @@ class ArrayAssignmentTest extends TestCase
     use Traits\InvalidCodeAnalysisTestTrait;
     use Traits\ValidCodeAnalysisTestTrait;
 
-    /**
-     * @return void
-     */
     public function testConditionalAssignment(): void
     {
         $this->addFile(

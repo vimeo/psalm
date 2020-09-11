@@ -80,9 +80,6 @@ class Populator
         $this->file_reference_provider = $file_reference_provider;
     }
 
-    /**
-     * @return void
-     */
     public function populateCodebase(): void
     {
         $this->progress->debug('ClassLikeStorage is populating' . "\n");
@@ -152,7 +149,6 @@ class Populator
     }
 
     /**
-     *
      * @return void
      */
     private function populateClassLikeStorage(ClassLikeStorage $storage, array $dependent_classlikes = [])
@@ -279,7 +275,6 @@ class Populator
         }
     }
 
-    /** @return void */
     private function populateOverriddenMethods(
         ClassLikeStorage $storage
     ): void {
@@ -379,9 +374,6 @@ class Populator
         }
     }
 
-    /**
-     * @return void
-     */
     private function populateDataFromTraits(
         ClassLikeStorage $storage,
         ClassLikeStorageProvider $storage_provider,
@@ -626,9 +618,6 @@ class Populator
         $storage->pseudo_methods += $parent_storage->pseudo_methods;
     }
 
-    /**
-     * @return void
-     */
     private function populateInterfaceDataFromParentInterfaces(
         ClassLikeStorage $storage,
         ClassLikeStorageProvider $storage_provider,
@@ -725,9 +714,6 @@ class Populator
         $storage->parent_interfaces = array_merge($parent_interfaces, $storage->parent_interfaces);
     }
 
-    /**
-     * @return void
-     */
     private function populateDataFromImplementedInterfaces(
         ClassLikeStorage $storage,
         ClassLikeStorageProvider $storage_provider,
@@ -1025,7 +1011,6 @@ class Populator
     /**
      * @param  bool       $is_property
      *
-     * @return void
      */
     private function convertPhpStormGenericToPsalmGeneric(Type\Union $candidate, $is_property = false): void
     {
@@ -1081,10 +1066,6 @@ class Populator
         }
     }
 
-    /**
-     *
-     * @return void
-     */
     protected function inheritMethodsFromParent(
         ClassLikeStorage $storage,
         ClassLikeStorage $parent_storage
@@ -1202,10 +1183,6 @@ class Populator
         }
     }
 
-    /**
-     *
-     * @return void
-     */
     private function inheritPropertiesFromParent(
         ClassLikeStorage $storage,
         ClassLikeStorage $parent_storage

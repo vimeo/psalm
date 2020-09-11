@@ -28,9 +28,7 @@ abstract class FileManipulationTest extends \Psalm\Tests\TestCase
      * @param string $php_version
      * @param string[] $issues_to_fix
      * @param bool $safe_types
-     * @param bool $allow_backwards_incompatible_changes
      *
-     * @return void
      */
     public function testValidCode(
         $input_code,

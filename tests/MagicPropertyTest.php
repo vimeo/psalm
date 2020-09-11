@@ -10,9 +10,6 @@ class MagicPropertyTest extends TestCase
     use Traits\InvalidCodeAnalysisTestTrait;
     use Traits\ValidCodeAnalysisTestTrait;
 
-    /**
-     * @return void
-     */
     public function testPhpDocPropertyWithoutGet(): void
     {
         Config::getInstance()->use_phpdoc_property_without_magic_or_parent = true;

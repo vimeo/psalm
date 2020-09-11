@@ -8,9 +8,6 @@ class ArrayAccessTest extends TestCase
     use Traits\InvalidCodeAnalysisTestTrait;
     use Traits\ValidCodeAnalysisTestTrait;
 
-    /**
-     * @return void
-     */
     public function testEnsureArrayOffsetsExist(): void
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
@@ -32,9 +29,6 @@ class ArrayAccessTest extends TestCase
         $this->analyzeFile('somefile.php', new \Psalm\Context());
     }
 
-    /**
-     * @return void
-     */
     public function testEnsureArrayOffsetsExistWithIssetCheck(): void
     {
         \Psalm\Config::getInstance()->ensure_array_string_offsets_exist = true;
@@ -55,9 +49,6 @@ class ArrayAccessTest extends TestCase
         $this->analyzeFile('somefile.php', new \Psalm\Context());
     }
 
-    /**
-     * @return void
-     */
     public function testDontEnsureArrayOffsetsExist(): void
     {
         \Psalm\Config::getInstance()->ensure_array_string_offsets_exist = false;
@@ -76,9 +67,6 @@ class ArrayAccessTest extends TestCase
         $this->analyzeFile('somefile.php', new \Psalm\Context());
     }
 
-    /**
-     * @return void
-     */
     public function testEnsureArrayOffsetsExistWithIssetCheckFollowedByIsArray(): void
     {
         \Psalm\Config::getInstance()->ensure_array_string_offsets_exist = true;
@@ -95,9 +83,6 @@ class ArrayAccessTest extends TestCase
         $this->analyzeFile('somefile.php', new \Psalm\Context());
     }
 
-    /**
-     * @return void
-     */
     public function testComplainAfterFirstIsset(): void
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
@@ -116,9 +101,6 @@ class ArrayAccessTest extends TestCase
         $this->analyzeFile('somefile.php', new \Psalm\Context());
     }
 
-    /**
-     * @return void
-     */
     public function testEnsureArrayIntOffsetsExist(): void
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
@@ -140,9 +122,6 @@ class ArrayAccessTest extends TestCase
         $this->analyzeFile('somefile.php', new \Psalm\Context());
     }
 
-    /**
-     * @return void
-     */
     public function testNoIssueWhenUsingArrayValuesOnNonEmptyArray(): void
     {
         \Psalm\Config::getInstance()->ensure_array_int_offsets_exist = true;
@@ -182,9 +161,6 @@ class ArrayAccessTest extends TestCase
         $this->analyzeFile('somefile.php', new \Psalm\Context());
     }
 
-    /**
-     * @return void
-     */
     public function testEnsureListOffsetExistsNotEmpty(): void
     {
         \Psalm\Config::getInstance()->ensure_array_int_offsets_exist = true;
@@ -203,9 +179,6 @@ class ArrayAccessTest extends TestCase
         $this->analyzeFile('somefile.php', new \Psalm\Context());
     }
 
-    /**
-     * @return void
-     */
     public function testEnsureListOffsetExistsAfterArrayPop(): void
     {
         \Psalm\Config::getInstance()->ensure_array_int_offsets_exist = true;
@@ -243,9 +216,6 @@ class ArrayAccessTest extends TestCase
         $this->analyzeFile('somefile.php', new \Psalm\Context());
     }
 
-    /**
-     * @return void
-     */
     public function testEnsureListOffsetExistsAfterCountValueInRange(): void
     {
         \Psalm\Config::getInstance()->ensure_array_int_offsets_exist = true;
@@ -296,9 +266,6 @@ class ArrayAccessTest extends TestCase
         $this->analyzeFile('somefile.php', new \Psalm\Context());
     }
 
-    /**
-     * @return void
-     */
     public function testEnsureListOffsetExistsAfterCountValueOutOfRange(): void
     {
         \Psalm\Config::getInstance()->ensure_array_int_offsets_exist = true;
@@ -322,9 +289,6 @@ class ArrayAccessTest extends TestCase
         $this->analyzeFile('somefile.php', new \Psalm\Context());
     }
 
-    /**
-     * @return void
-     */
     public function testEnsureListOffsetExistsAfterCountValueOutOfRangeSmallerThan(): void
     {
         \Psalm\Config::getInstance()->ensure_array_int_offsets_exist = true;

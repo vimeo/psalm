@@ -172,7 +172,6 @@ class Scanner
     /**
      * @param array<string, string> $files_to_scan
      *
-     * @return void
      */
     public function addFilesToShallowScan(array $files_to_scan): void
     {
@@ -181,8 +180,6 @@ class Scanner
 
     /**
      * @param array<string, string> $files_to_scan
-     *
-     * @return void
      */
     public function addFilesToDeepScan(array $files_to_scan): void
     {
@@ -190,34 +187,22 @@ class Scanner
         $this->files_to_deep_scan += $files_to_scan;
     }
 
-    /**
-     * @return void
-     */
     public function addFileToShallowScan(string $file_path): void
     {
         $this->files_to_scan[$file_path] = $file_path;
     }
 
-    /**
-     * @return void
-     */
     public function addFileToDeepScan(string $file_path): void
     {
         $this->files_to_scan[$file_path] = $file_path;
         $this->files_to_deep_scan[$file_path] = $file_path;
     }
 
-    /**
-     * @return void
-     */
     public function removeFile(string $file_path): void
     {
         unset($this->scanned_files[$file_path]);
     }
 
-    /**
-     * @return void
-     */
     public function removeClassLike(string $fq_classlike_name_lc): void
     {
         unset(
@@ -226,9 +211,6 @@ class Scanner
         );
     }
 
-    /**
-     * @return void
-     */
     public function setClassLikeFilePath(string $fq_classlike_name_lc, string $file_path): void
     {
         $this->classlike_files[$fq_classlike_name_lc] = $file_path;
@@ -489,9 +471,6 @@ class Scanner
         return true;
     }
 
-    /**
-     * @return void
-     */
     private function convertClassesToFilePaths(ClassLikes $classlikes): void
     {
         $classes_to_scan = $this->classes_to_scan;
@@ -772,7 +751,6 @@ class Scanner
     /**
      * @param ThreadData $thread_data
      *
-     * @return void
      */
     public function addThreadData(array $thread_data): void
     {
@@ -802,9 +780,6 @@ class Scanner
         $this->reflected_classlikes_lc = array_merge($reflected_classlikes_lc, $this->reflected_classlikes_lc);
     }
 
-    /**
-     * @return void
-     */
     public function isForked(): void
     {
         $this->is_forked = true;

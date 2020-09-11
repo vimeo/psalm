@@ -111,9 +111,6 @@ class MethodSignatureTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
     public function testMismatchingCovariantReturnIn73(): void
     {
         $this->expectExceptionMessage('MethodSignatureMismatch');
@@ -141,9 +138,6 @@ class MethodSignatureTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
     public function testMismatchingCovariantReturnIn74(): void
     {
         $this->project_analyzer->setPhpVersion('7.4');
@@ -168,9 +162,6 @@ class MethodSignatureTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
     public function testMismatchingCovariantReturnIn73WithSelf(): void
     {
         $this->expectExceptionMessage('MethodSignatureMismatch');
@@ -196,9 +187,6 @@ class MethodSignatureTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
     public function testMismatchingCovariantReturnIn74WithSelf(): void
     {
         $this->project_analyzer->setPhpVersion('7.4');
@@ -221,9 +209,6 @@ class MethodSignatureTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
     public function testMismatchingCovariantParamIn73(): void
     {
         $this->expectExceptionMessage('MethodSignatureMismatch');
@@ -248,9 +233,6 @@ class MethodSignatureTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
     public function testMismatchingCovariantParamIn74(): void
     {
         $this->project_analyzer->setPhpVersion('7.4');

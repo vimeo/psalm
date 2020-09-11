@@ -59,7 +59,6 @@ class FooMethodProvider implements
     /**
      * @param  array<PhpParser\Node\Arg>    $call_args
      *
-     * @return ?Type\Union
      */
     public static function getMethodReturnType(
         StatementsSource $source,

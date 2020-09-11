@@ -45,7 +45,6 @@ class ReconcilerTest extends \Psalm\Tests\TestCase
      * @param string $type
      * @param string $string
      *
-     * @return void
      */
     public function testReconcilation($expected, $type, $string): void
     {
@@ -72,7 +71,6 @@ class ReconcilerTest extends \Psalm\Tests\TestCase
      * @param string $input
      * @param string $container
      *
-     * @return void
      */
     public function testTypeIsContainedBy($input, $container): void
     {

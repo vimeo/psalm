@@ -17,7 +17,6 @@ class IncludeTest extends TestCase
      * @param bool $hoist_constants
      * @param array<string, string> $error_levels
      *
-     * @return void
      */
     public function testValidInclude(
         array $files,
@@ -61,7 +60,6 @@ class IncludeTest extends TestCase
      * @param string $error_message
      * @param bool $hoist_constants
      *
-     * @return void
      */
     public function testInvalidInclude(
         array $files,

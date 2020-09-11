@@ -42,7 +42,6 @@ class MethodReturnTypeProvider
     /**
      * @param  class-string<MethodReturnTypeProviderInterface> $class
      *
-     * @return void
      */
     public function registerClass(string $class): void
     {
@@ -66,7 +65,6 @@ class MethodReturnTypeProvider
      *     ?lowercase-string=
      *   ) : ?Type\Union $c
      *
-     * @return void
      */
     public function registerClosure(string $fq_classlike_name, \Closure $c): void
     {

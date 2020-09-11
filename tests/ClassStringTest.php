@@ -9,9 +9,6 @@ class ClassStringTest extends TestCase
     use Traits\InvalidCodeAnalysisTestTrait;
     use Traits\ValidCodeAnalysisTestTrait;
 
-    /**
-     * @return void
-     */
     public function testDontAllowStringStandInForNewClass(): void
     {
         $this->expectExceptionMessage('InvalidStringClass');
@@ -31,9 +28,6 @@ class ClassStringTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
     public function testDontAllowStringStandInForStaticMethodCall(): void
     {
         $this->expectExceptionMessage('InvalidStringClass');

@@ -38,7 +38,6 @@ class PluginListTest extends \Psalm\Tests\TestCase
     }
 
     /**
-     * @return void
      * @test
      */
     public function pluginsPresentInConfigAreEnabled(): void
@@ -57,7 +56,6 @@ class PluginListTest extends \Psalm\Tests\TestCase
     }
 
     /**
-     * @return void
      * @test
      */
     public function pluginsPresentInPackageLockOnlyAreAvailable(): void
@@ -79,7 +77,6 @@ class PluginListTest extends \Psalm\Tests\TestCase
     }
 
     /**
-     * @return void
      * @test
      */
     public function pluginsPresentInPackageLockAndConfigHavePluginPackageName(): void
@@ -100,7 +97,6 @@ class PluginListTest extends \Psalm\Tests\TestCase
     }
 
     /**
-     * @return void
      * @test
      */
     public function canFindPluginClassByClassName(): void
@@ -110,7 +106,6 @@ class PluginListTest extends \Psalm\Tests\TestCase
     }
 
     /**
-     * @return void
      * @test
      */
     public function canFindPluginClassByPackageName(): void
@@ -124,7 +119,6 @@ class PluginListTest extends \Psalm\Tests\TestCase
     }
 
     /**
-     * @return void
      * @test
      */
     public function enabledPackageIsEnabled(): void
@@ -139,7 +133,6 @@ class PluginListTest extends \Psalm\Tests\TestCase
     }
 
     /**
-     * @return void
      * @test
      */
     public function errorsOutWhenTryingToResolveUnknownPlugin(): void
@@ -151,7 +144,6 @@ class PluginListTest extends \Psalm\Tests\TestCase
     }
 
     /**
-     * @return void
      * @test
      */
     public function pluginsAreEnabledInConfigFile(): void
@@ -164,7 +156,6 @@ class PluginListTest extends \Psalm\Tests\TestCase
     }
 
     /**
-     * @return void
      * @test
      */
     public function pluginsAreDisabledInConfigFile(): void

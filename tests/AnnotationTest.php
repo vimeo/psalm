@@ -10,9 +10,6 @@ class AnnotationTest extends TestCase
     use Traits\InvalidCodeAnalysisTestTrait;
     use Traits\ValidCodeAnalysisTestTrait;
 
-    /**
-     * @return void
-     */
     public function testPhpStormGenericsWithValidArrayIteratorArgument(): void
     {
         Config::getInstance()->allow_phpstorm_generics = true;
@@ -36,9 +33,6 @@ class AnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
     public function testPhpStormGenericsWithValidTraversableArgument(): void
     {
         Config::getInstance()->allow_phpstorm_generics = true;
@@ -59,9 +53,6 @@ class AnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
     public function testPhpStormGenericsWithClassProperty(): void
     {
         Config::getInstance()->allow_phpstorm_generics = true;
@@ -86,9 +77,6 @@ class AnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
     public function testPhpStormGenericsWithGeneratorArray(): void
     {
         Config::getInstance()->allow_phpstorm_generics = true;
@@ -110,9 +98,6 @@ class AnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
     public function testPhpStormGenericsWithValidIterableArgument(): void
     {
         Config::getInstance()->allow_phpstorm_generics = true;
@@ -133,9 +118,6 @@ class AnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
     public function testPhpStormGenericsInvalidArgument(): void
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
@@ -158,9 +140,6 @@ class AnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
     public function testPhpStormGenericsNoTypehint(): void
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
@@ -180,9 +159,6 @@ class AnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
     public function testInvalidParamDefault(): void
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
@@ -201,9 +177,6 @@ class AnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
     public function testInvalidParamDefaultButAllowedInConfig(): void
     {
         Config::getInstance()->add_param_default_to_docblock_type = true;
@@ -223,9 +196,6 @@ class AnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
     public function testInvalidTypehintParamDefaultButAllowedInConfig(): void
     {
         $this->expectException(\Psalm\Exception\CodeException::class);

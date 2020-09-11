@@ -340,9 +340,6 @@ class Codebase
         $this->loadAnalyzer();
     }
 
-    /**
-     * @return void
-     */
     private function loadAnalyzer(): void
     {
         $this->analyzer = new Internal\Codebase\Analyzer(
@@ -356,7 +353,6 @@ class Codebase
     /**
      * @param array<string> $candidate_files
      *
-     * @return void
      */
     public function reloadFiles(ProjectAnalyzer $project_analyzer, array $candidate_files): void
     {
@@ -416,16 +412,12 @@ class Codebase
         $this->populator->populateCodebase();
     }
 
-    /** @return void */
     public function enterServerMode(): void
     {
         $this->server_mode = true;
         $this->store_node_types = true;
     }
 
-    /**
-     * @return void
-     */
     public function collectLocations(): void
     {
         $this->collect_locations = true;
@@ -437,7 +429,6 @@ class Codebase
     /**
      * @param 'always'|'auto' $find_unused_code
      *
-     * @return void
      */
     public function reportUnusedCode(string $find_unused_code = 'auto'): void
     {
@@ -447,9 +438,6 @@ class Codebase
         $this->find_unused_variables = true;
     }
 
-    /**
-     * @return void
-     */
     public function reportUnusedVariables(): void
     {
         $this->collect_references = true;
@@ -459,7 +447,6 @@ class Codebase
     /**
      * @param array<string, string> $files_to_analyze
      *
-     * @return void
      */
     public function addFilesToAnalyze(array $files_to_analyze): void
     {
@@ -470,7 +457,6 @@ class Codebase
     /**
      * Scans all files their related files
      *
-     * @return void
      */
     public function scanFiles(int $threads = 1): void
     {
@@ -503,9 +489,6 @@ class Codebase
         return $this->classlike_storage_provider->create($fq_classlike_name);
     }
 
-    /**
-     * @return void
-     */
     public function cacheClassLikeStorage(ClassLikeStorage $classlike_storage, string $file_path): void
     {
         $file_contents = $this->file_provider->getContents($file_path);
@@ -515,9 +498,6 @@ class Codebase
         }
     }
 
-    /**
-     * @return void
-     */
     public function exhumeClassLikeStorage(string $fq_classlike_name, string $file_path): void
     {
         $file_contents = $this->file_provider->getContents($file_path);
@@ -615,9 +595,6 @@ class Codebase
         );
     }
 
-    /**
-     * @return  void
-     */
     public function addGlobalConstantType(string $const_id, Type\Union $type): void
     {
         self::$stubbed_constants[$const_id] = $type;
@@ -897,7 +874,6 @@ class Codebase
     }
 
     /**
-     *
      * @return void
      */
     public function invalidateInformationForFile(string $file_path)
@@ -1522,17 +1498,11 @@ class Codebase
         );
     }
 
-    /**
-     * @return void
-     */
     public function addTemporaryFileChanges(string $file_path, string $new_content): void
     {
         $this->file_provider->addTemporaryFileChanges($file_path, $new_content);
     }
 
-    /**
-     * @return void
-     */
     public function removeTemporaryFileChanges(string $file_path): void
     {
         $this->file_provider->removeTemporaryFileChanges($file_path);

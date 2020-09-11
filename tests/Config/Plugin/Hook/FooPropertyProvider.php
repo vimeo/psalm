@@ -23,9 +23,6 @@ class FooPropertyProvider implements
         return ['Ns\Foo'];
     }
 
-    /**
-     * @return ?bool
-     */
     public static function doesPropertyExist(
         string $fq_classlike_name,
         string $property_name,
@@ -37,9 +34,6 @@ class FooPropertyProvider implements
         return $property_name === 'magic_property';
     }
 
-    /**
-     * @return ?bool
-     */
     public static function isPropertyVisible(
         StatementsSource $source,
         string $fq_classlike_name,
@@ -54,7 +48,6 @@ class FooPropertyProvider implements
     /**
      * @param  array<PhpParser\Node\Arg>    $call_args
      *
-     * @return ?Type\Union
      */
     public static function getPropertyType(
         string $fq_classlike_name,

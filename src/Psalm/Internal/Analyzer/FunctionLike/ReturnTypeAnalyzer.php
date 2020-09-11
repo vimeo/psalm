@@ -832,7 +832,6 @@ class ReturnTypeAnalyzer
     /**
      * @param Closure|Function_|ClassMethod|ArrowFunction $function
      *
-     * @return void
      */
     private static function addOrUpdateReturnType(
         FunctionLike $function,

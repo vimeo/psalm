@@ -25,7 +25,6 @@ class FileManipulationBuffer
     /**
      * @param FileManipulation[] $file_manipulations
      *
-     * @return void
      */
     public static function add(string $file_path, array $file_manipulations): void
     {
@@ -75,9 +74,6 @@ class FileManipulationBuffer
         return [$start_offset, $middle_offset];
     }
 
-    /**
-     * @return void
-     */
     public static function addForCodeLocation(
         CodeLocation $code_location,
         string $replacement_text,
@@ -245,9 +241,6 @@ class FileManipulationBuffer
         return self::$file_manipulations;
     }
 
-    /**
-     * @return void
-     */
     public static function clearCache(): void
     {
         self::$file_manipulations = [];

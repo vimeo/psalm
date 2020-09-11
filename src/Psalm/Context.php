@@ -396,7 +396,6 @@ class Context
      *                                               $start_context and $end_context
      * @param  array<string, bool>  $updated_vars
      *
-     * @return void
      */
     public function update(
         Context $start_context,
@@ -478,7 +477,6 @@ class Context
     }
 
     /**
-     *
      * @return array<int, string>
      */
     public static function getNewOrUpdatedVarIds(Context $original_context, Context $new_context): array
@@ -496,9 +494,6 @@ class Context
         return $redefined_var_ids;
     }
 
-    /**
-     * @return void
-     */
     public function remove(string $remove_var_id): void
     {
         unset(
@@ -626,9 +621,6 @@ class Context
         return $clauses_to_keep;
     }
 
-    /**
-     * @return void
-     */
     public function removeVarFromConflictingClauses(
         string $remove_var_id,
         ?Union $new_type = null,
@@ -715,10 +707,6 @@ class Context
         $this->clauses = $clauses_to_keep;
     }
 
-    /**
-     *
-     * @return  void
-     */
     public function updateChecks(Context $op_context): void
     {
         $this->check_classes = $this->check_classes && $op_context->check_classes;
@@ -775,9 +763,6 @@ class Context
         return json_encode($summary);
     }
 
-    /**
-     * @return void
-     */
     public function defineGlobals(): void
     {
         $globals = [
@@ -799,9 +784,6 @@ class Context
         }
     }
 
-    /**
-     * @return void
-     */
     public function mergeExceptions(Context $other_context): void
     {
         foreach ($other_context->possibly_thrown_exceptions as $possibly_thrown_exception => $codelocations) {
@@ -833,9 +815,6 @@ class Context
         return false;
     }
 
-    /**
-     * @return void
-     */
     public function mergeFunctionExceptions(
         FunctionLikeStorage $function_storage,
         CodeLocation $codelocation

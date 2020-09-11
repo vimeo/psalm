@@ -16,7 +16,6 @@ interface PropertyTypeProviderInterface
     /**
      * @param  array<PhpParser\Node\Arg>    $call_args
      *
-     * @return ?Type\Union
      */
     public static function getPropertyType(
         string $fq_classlike_name,

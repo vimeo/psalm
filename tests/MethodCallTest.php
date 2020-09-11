@@ -29,9 +29,6 @@ class MethodCallTest extends TestCase
         $this->analyzeFile('somefile.php', new \Psalm\Context());
     }
 
-    /**
-     * @return void
-     */
     public function testMethodCallMemoize(): void
     {
         $this->project_analyzer->getConfig()->memoize_method_calls = true;
@@ -65,9 +62,6 @@ class MethodCallTest extends TestCase
         $this->analyzeFile('somefile.php', new \Psalm\Context());
     }
 
-    /**
-     * @return void
-     */
     public function testPropertyMethodCallMemoize(): void
     {
         $this->project_analyzer->getConfig()->memoize_method_calls = true;
@@ -100,9 +94,6 @@ class MethodCallTest extends TestCase
         $this->analyzeFile('somefile.php', new \Psalm\Context());
     }
 
-    /**
-     * @return void
-     */
     public function testPropertyMethodCallMutationFreeMemoize(): void
     {
         $this->project_analyzer->getConfig()->memoize_method_calls = true;
@@ -138,9 +129,6 @@ class MethodCallTest extends TestCase
         $this->analyzeFile('somefile.php', new \Psalm\Context());
     }
 
-    /**
-     * @return void
-     */
     public function testUnchainedMethodCallMemoize(): void
     {
         $this->project_analyzer->getConfig()->memoize_method_calls = true;
@@ -174,9 +162,6 @@ class MethodCallTest extends TestCase
         $this->analyzeFile('somefile.php', new \Psalm\Context());
     }
 
-    /**
-     * @return void
-     */
     public function testUnchainedMutationFreeMethodCallMemoize(): void
     {
         $this->project_analyzer->getConfig()->memoize_method_calls = true;

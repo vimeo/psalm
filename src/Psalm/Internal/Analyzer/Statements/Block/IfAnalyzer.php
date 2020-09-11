@@ -507,9 +507,6 @@ class IfAnalyzer
         return null;
     }
 
-    /**
-     * @return \Psalm\Internal\Scope\IfConditionalScope
-     */
     public static function analyzeIfConditional(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $cond,
@@ -553,7 +550,6 @@ class IfAnalyzer
                     $entry_clauses = array_values(
                         array_filter(
                             $entry_clauses,
-                            /** @return bool */
                             function (Clause $c) use ($changed_var_ids): bool {
                                 return count($c->possibilities) > 1
                                     || $c->wedge

@@ -139,9 +139,6 @@ class SimpleNameResolver extends NodeVisitorAbstract
         return null;
     }
 
-    /**
-     * @return void
-     */
     private function addAlias(Stmt\UseUse $use, int $type, ?Name $prefix = null): void
     {
         // Add prefix for group uses
@@ -161,7 +158,6 @@ class SimpleNameResolver extends NodeVisitorAbstract
     /**
      * @param Stmt\Function_|Stmt\ClassMethod|Expr\Closure $node
      *
-     * @return void
      */
     private function resolveSignature($node): void
     {
@@ -216,9 +212,6 @@ class SimpleNameResolver extends NodeVisitorAbstract
         return $this->resolveName($name, Stmt\Use_::TYPE_NORMAL);
     }
 
-    /**
-     * @return void
-     */
     protected function resolveTrait(Stmt\Trait_ $node): void
     {
         $resolvedName = Name::concat($this->nameContext->getNamespace(), (string) $node->name);

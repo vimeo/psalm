@@ -28,7 +28,6 @@ use const PHP_VERSION;
 class TryAnalyzer
 {
     /**
-     *
      * @return  false|null
      */
     public static function analyze(

@@ -55,7 +55,6 @@ class PsalmPluginTest extends TestCase
     }
 
     /**
-     * @return void
      * @test
      */
     public function showsNoticesWhenTheresNoPlugins(): void
@@ -69,7 +68,6 @@ class PsalmPluginTest extends TestCase
     }
 
     /**
-     * @return void
      * @test
      */
     public function showsEnabledPlugins(): void
@@ -85,7 +83,6 @@ class PsalmPluginTest extends TestCase
     }
 
     /**
-     * @return void
      * @test
      */
     public function showsAvailablePlugins(): void
@@ -101,7 +98,6 @@ class PsalmPluginTest extends TestCase
     }
 
     /**
-     * @return void
      * @test
      */
     public function passesExplicitConfigToPluginListFactory(): void
@@ -115,7 +111,6 @@ class PsalmPluginTest extends TestCase
     }
 
     /**
-     * @return void
      * @test
      */
     public function showsColumnHeaders(): void
@@ -133,7 +128,6 @@ class PsalmPluginTest extends TestCase
     }
 
     /**
-     * @return void
      * @dataProvider commands
      * @test
      */
@@ -146,7 +140,6 @@ class PsalmPluginTest extends TestCase
     }
 
     /**
-     * @return void
      * @dataProvider commands
      * @test
      */
@@ -159,7 +152,6 @@ class PsalmPluginTest extends TestCase
     }
 
     /**
-     * @return void
      * @test
      */
     public function requiresPluginNameToEnable(): void
@@ -170,7 +162,6 @@ class PsalmPluginTest extends TestCase
     }
 
     /**
-     * @return void
      * @test
      */
     public function enableComplainsWhenPassedUnresolvablePlugin(): void
@@ -188,7 +179,6 @@ class PsalmPluginTest extends TestCase
     }
 
     /**
-     * @return void
      * @test
      */
     public function enableComplainsWhenPassedAlreadyEnabledPlugin(): void
@@ -210,7 +200,6 @@ class PsalmPluginTest extends TestCase
     }
 
     /**
-     * @return void
      * @test
      */
     public function enableReportsSuccessWhenItEnablesPlugin(): void
@@ -234,7 +223,6 @@ class PsalmPluginTest extends TestCase
     }
 
     /**
-     * @return void
      * @test
      */
     public function requiresPluginNameToDisable(): void
@@ -245,7 +233,6 @@ class PsalmPluginTest extends TestCase
     }
 
     /**
-     * @return void
      * @test
      */
     public function disableComplainsWhenPassedUnresolvablePlugin(): void
@@ -263,7 +250,6 @@ class PsalmPluginTest extends TestCase
     }
 
     /**
-     * @return void
      * @test
      */
     public function disableComplainsWhenPassedNotEnabledPlugin(): void
@@ -285,7 +271,6 @@ class PsalmPluginTest extends TestCase
     }
 
     /**
-     * @return void
      * @test
      */
     public function disableReportsSuccessWhenItDisablesPlugin(): void

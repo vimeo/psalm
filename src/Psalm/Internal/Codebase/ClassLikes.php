@@ -144,9 +144,6 @@ class ClassLikes
         $this->collectPredefinedClassLikes();
     }
 
-    /**
-     * @return void
-     */
     private function collectPredefinedClassLikes(): void
     {
         /** @var array<int, string> */
@@ -182,9 +179,6 @@ class ClassLikes
         }
     }
 
-    /**
-     * @return void
-     */
     public function addFullyQualifiedClassName(string $fq_class_name, ?string $file_path = null): void
     {
         $fq_class_name_lc = strtolower($fq_class_name);
@@ -199,9 +193,6 @@ class ClassLikes
         }
     }
 
-    /**
-     * @return void
-     */
     public function addFullyQualifiedInterfaceName(string $fq_class_name, ?string $file_path = null): void
     {
         $fq_class_name_lc = strtolower($fq_class_name);
@@ -216,9 +207,6 @@ class ClassLikes
         }
     }
 
-    /**
-     * @return void
-     */
     public function addFullyQualifiedTraitName(string $fq_class_name, ?string $file_path = null): void
     {
         $fq_class_name_lc = strtolower($fq_class_name);
@@ -233,9 +221,6 @@ class ClassLikes
         }
     }
 
-    /**
-     * @return void
-     */
     public function addFullyQualifiedClassLikeName(string $fq_class_name_lc, ?string $file_path = null): void
     {
         if ($file_path) {
@@ -670,7 +655,6 @@ class ClassLikes
 
     /**
      * @param lowercase-string $alias_name
-     * @return void
      */
     public function addClassAlias(string $fq_class_name, string $alias_name): void
     {
@@ -687,9 +671,6 @@ class ClassLikes
         return $this->classlike_aliases[$alias_name_lc] ?? $alias_name;
     }
 
-    /**
-     * @return void
-     */
     public function consolidateAnalyzedData(Methods $methods, ?Progress $progress, bool $find_unused_code): void
     {
         if ($progress === null) {
@@ -1755,9 +1736,6 @@ class ClassLikes
         return new Type\Atomic\TMixed;
     }
 
-    /**
-     * @return  void
-     */
     public function setConstantType(
         string $class_name,
         string $const_name,
@@ -1775,9 +1753,6 @@ class ClassLikes
         }
     }
 
-    /**
-     * @return void
-     */
     private function checkMethodReferences(ClassLikeStorage $classlike_storage, Methods $methods): void
     {
         $project_analyzer = \Psalm\Internal\Analyzer\ProjectAnalyzer::getInstance();
@@ -2016,9 +1991,6 @@ class ClassLikes
         }
     }
 
-    /**
-     * @return void
-     */
     private function findPossibleMethodParamTypes(ClassLikeStorage $classlike_storage): void
     {
         $project_analyzer = \Psalm\Internal\Analyzer\ProjectAnalyzer::getInstance();
@@ -2128,9 +2100,6 @@ class ClassLikes
         }
     }
 
-    /**
-     * @return void
-     */
     private function checkPropertyReferences(ClassLikeStorage $classlike_storage): void
     {
         $project_analyzer = \Psalm\Internal\Analyzer\ProjectAnalyzer::getInstance();
@@ -2254,7 +2223,6 @@ class ClassLikes
     /**
      * @param  lowercase-string $fq_classlike_name_lc
      *
-     * @return void
      */
     public function registerMissingClassLike($fq_classlike_name_lc): void
     {
@@ -2286,9 +2254,6 @@ class ClassLikes
         $this->existing_classlikes_lc = \array_filter($this->existing_classlikes_lc);
     }
 
-    /**
-     * @return void
-     */
     public function removeClassLike(string $fq_class_name): void
     {
         $fq_class_name_lc = strtolower($fq_class_name);
@@ -2342,7 +2307,6 @@ class ClassLikes
      *     6: array<string, bool>,
      * } $thread_data
      *
-     * @return void
      */
     public function addThreadData(array $thread_data): void
     {

@@ -47,11 +47,6 @@ class ProjectCheckerTest extends TestCase
         $this->file_provider = new Provider\FakeFileProvider();
     }
 
-    /**
-     * @param  Config $config
-     *
-     * @return \Psalm\Internal\Analyzer\ProjectAnalyzer
-     */
     private function getProjectAnalyzerWithConfig(Config $config): \Psalm\Internal\Analyzer\ProjectAnalyzer
     {
         $config->setIncludeCollector(new IncludeCollector());
@@ -69,9 +64,6 @@ class ProjectCheckerTest extends TestCase
         );
     }
 
-    /**
-     * @return void
-     */
     public function testCheck(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -108,9 +100,6 @@ class ProjectCheckerTest extends TestCase
         );
     }
 
-    /**
-     * @return void
-     */
     public function testAfterCodebasePopulatedIsInvoked(): void
     {
         $hook = new class implements AfterCodebasePopulatedInterface {
@@ -147,9 +136,6 @@ class ProjectCheckerTest extends TestCase
         $this->assertTrue($hook::$called);
     }
 
-    /**
-     * @return void
-     */
     public function testCheckAfterNoChange(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -194,9 +180,6 @@ class ProjectCheckerTest extends TestCase
         );
     }
 
-    /**
-     * @return void
-     */
     public function testCheckAfterFileChange(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -262,9 +245,6 @@ class Bat
         );
     }
 
-    /**
-     * @return void
-     */
     public function testCheckDir(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -297,9 +277,6 @@ class Bat
         );
     }
 
-    /**
-     * @return void
-     */
     public function testCheckPaths(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -337,9 +314,6 @@ class Bat
         );
     }
 
-    /**
-     * @return void
-     */
     public function testCheckFile(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(

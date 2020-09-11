@@ -810,7 +810,6 @@ class Reconciler
     /**
      * @param  string[]     $suppressed_issues
      *
-     * @return void
      */
     protected static function triggerIssueForImpossible(
         Union $existing_var_type,

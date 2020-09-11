@@ -94,13 +94,11 @@ class PluginList
         return array_key_exists($class, $this->getEnabled());
     }
 
-    /** @return void */
     public function enable(string $class): void
     {
         $this->config_file->addPlugin($class);
     }
 
-    /** @return void */
     public function disable(string $class): void
     {
         $this->config_file->removePlugin($class);

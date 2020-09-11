@@ -60,7 +60,6 @@ class FunctionReturnTypeProvider
     /**
      * @param  class-string<FunctionReturnTypeProviderInterface> $class
      *
-     * @return void
      */
     public function registerClass(string $class): void
     {
@@ -81,7 +80,6 @@ class FunctionReturnTypeProvider
      *     CodeLocation
      *   ) : ?Type\Union $c
      *
-     * @return void
      */
     public function registerClosure(string $function_id, \Closure $c): void
     {

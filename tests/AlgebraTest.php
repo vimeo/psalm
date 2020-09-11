@@ -15,9 +15,6 @@ use Psalm\Type\Reconciler;
 
 class AlgebraTest extends TestCase
 {
-    /**
-     * @return void
-     */
     public function testNegateFormula(): void
     {
         $formula = [
@@ -61,9 +58,6 @@ class AlgebraTest extends TestCase
         $this->assertSame(['$b' => ['falsy']], $negated_formula[2]->possibilities);
     }
 
-    /**
-     * @return void
-     */
     public function testCombinatorialExpansion(): void
     {
         $dnf = '<?php ($b0 === true && $b4 === true && $b8 === true)
@@ -98,9 +92,6 @@ class AlgebraTest extends TestCase
         $this->assertCount(23, $simplified_dnf_clauses);
     }
 
-    /**
-     * @return void
-     */
     public function testContainsClause(): void
     {
         $this->assertTrue(
@@ -142,9 +133,6 @@ class AlgebraTest extends TestCase
         );
     }
 
-    /**
-     * @return void
-     */
     public function testSimplifyCNF(): void
     {
         $formula = [

@@ -7,14 +7,8 @@ interface FileSource
 
     public function getFilePath(): string;
 
-    /**
-     * @return string
-     */
     public function getRootFileName(): string;
 
-    /**
-     * @return string
-     */
     public function getRootFilePath(): string;
 
     public function getAliases(): Aliases;

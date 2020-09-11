@@ -66,9 +66,6 @@ class ThrowsAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
-    /**
-     * @return void
-     */
     public function testUndocumentedThrow(): void
     {
         $this->expectExceptionMessage('MissingThrowsDocblock');
@@ -96,9 +93,6 @@ class ThrowsAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
-    /**
-     * @return void
-     */
     public function testDocumentedThrow(): void
     {
         Config::getInstance()->check_for_throws_docblock = true;
@@ -128,9 +122,6 @@ class ThrowsAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
-    /**
-     * @return void
-     */
     public function testDocumentedParentThrow(): void
     {
         Config::getInstance()->check_for_throws_docblock = true;
@@ -159,9 +150,6 @@ class ThrowsAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
-    /**
-     * @return void
-     */
     public function testThrowableInherited(): void
     {
         Config::getInstance()->check_for_throws_docblock = true;
@@ -186,9 +174,6 @@ class ThrowsAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
-    /**
-     * @return void
-     */
     public function testUndocumentedThrowInFunctionCall(): void
     {
         $this->expectExceptionMessage('MissingThrowsDocblock');
@@ -224,9 +209,6 @@ class ThrowsAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
-    /**
-     * @return void
-     */
     public function testDocumentedThrowInFunctionCallWithThrow(): void
     {
         Config::getInstance()->check_for_throws_docblock = true;
@@ -264,9 +246,6 @@ class ThrowsAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
-    /**
-     * @return void
-     */
     public function testDocumentedThrowInFunctionCallWithoutThrow(): void
     {
         Config::getInstance()->check_for_throws_docblock = true;
@@ -304,9 +283,6 @@ class ThrowsAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
-    /**
-     * @return void
-     */
     public function testCaughtThrowInFunctionCall(): void
     {
         Config::getInstance()->check_for_throws_docblock = true;
@@ -344,9 +320,6 @@ class ThrowsAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
-    /**
-     * @return void
-     */
     public function testUncaughtThrowInFunctionCall(): void
     {
         $this->expectExceptionMessage('MissingThrowsDocblock');
@@ -386,9 +359,6 @@ class ThrowsAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
-    /**
-     * @return void
-     */
     public function testEmptyThrows(): void
     {
         $this->expectExceptionMessage('MissingDocblockType');
@@ -409,9 +379,6 @@ class ThrowsAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
-    /**
-     * @return void
-     */
     public function testCaughtAllThrowInFunctionCall(): void
     {
         Config::getInstance()->check_for_throws_docblock = true;
@@ -447,9 +414,6 @@ class ThrowsAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
-    /**
-     * @return void
-     */
     public function testDocumentedThrowInInterfaceWithInheritDocblock(): void
     {
         Config::getInstance()->check_for_throws_docblock = true;
@@ -483,9 +447,6 @@ class ThrowsAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
-    /**
-     * @return void
-     */
     public function testDocumentedThrowInInterfaceWithoutInheritDocblock(): void
     {
         Config::getInstance()->check_for_throws_docblock = true;
@@ -516,9 +477,6 @@ class ThrowsAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
-    /**
-     * @return void
-     */
     public function testDocumentedThrowInSubclassWithExtendedInheritDocblock(): void
     {
         Config::getInstance()->check_for_throws_docblock = true;
@@ -553,9 +511,6 @@ class ThrowsAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
-    /**
-     * @return void
-     */
     public function testDocumentedThrowInInterfaceWithExtendedInheritDocblock(): void
     {
         Config::getInstance()->check_for_throws_docblock = true;
@@ -590,9 +545,6 @@ class ThrowsAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
-    /**
-     * @return void
-     */
     public function testDocumentedThrowInInterfaceWithOverriddenDocblock(): void
     {
         $this->expectExceptionMessage('MissingThrowsDocblock');
@@ -628,9 +580,6 @@ class ThrowsAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
-    /**
-     * @return void
-     */
     public function testDocumentedThrowInsideCatch(): void
     {
         $this->expectExceptionMessage('MissingThrowsDocblock');

@@ -37,9 +37,6 @@ class CachedStorageTest extends \Psalm\Tests\TestCase
         $this->project_analyzer->setPhpVersion('7.3');
     }
 
-    /**
-     * @return void
-     */
     public function testValidInclude(): void
     {
         $test_name = $this->getTestName();

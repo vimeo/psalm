@@ -10,9 +10,6 @@ class PropertyTypeTest extends TestCase
     use Traits\InvalidCodeAnalysisTestTrait;
     use Traits\ValidCodeAnalysisTestTrait;
 
-    /**
-     * @return void
-     */
     public function testForgetPropertyAssignments(): void
     {
         $this->expectExceptionMessage('NullableReturnStatement');
@@ -50,9 +47,6 @@ class PropertyTypeTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
     public function testForgetPropertyAssignmentsPassesNormally(): void
     {
         $this->addFile(
@@ -86,9 +80,6 @@ class PropertyTypeTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
     public function testForgetPropertyAssignmentsInBranchWithThrow(): void
     {
         Config::getInstance()->remember_property_assignments_after_call = false;
@@ -127,9 +118,6 @@ class PropertyTypeTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
     public function testForgetPropertyAssignmentsInBranchWithThrowNormally(): void
     {
         $this->addFile(

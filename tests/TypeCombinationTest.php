@@ -15,7 +15,6 @@ class TypeCombinationTest extends TestCase
      * @param string $expected
      * @param non-empty-list<string> $types
      *
-     * @return void
      */
     public function testValidTypeCombination($expected, $types): void
     {
@@ -636,7 +635,6 @@ class TypeCombinationTest extends TestCase
     /**
      * @param  string $string
      *
-     * @return Type\Atomic
      */
     private static function getAtomic($string): Type\Atomic
     {

@@ -48,9 +48,6 @@ class NamespaceAnalyzer extends SourceAnalyzer implements StatementsSource
         $this->namespace_name = $this->namespace->name ? implode('\\', $this->namespace->name->parts) : '';
     }
 
-    /**
-     * @return  void
-     */
     public function collectAnalyzableInformation(): void
     {
         $leftover_stmts = [];
@@ -94,10 +91,6 @@ class NamespaceAnalyzer extends SourceAnalyzer implements StatementsSource
         }
     }
 
-    /**
-     *
-     * @return void
-     */
     public function collectAnalyzableClassLike(PhpParser\Node\Stmt\ClassLike $stmt): void
     {
         if (!$stmt->name) {
@@ -124,9 +117,6 @@ class NamespaceAnalyzer extends SourceAnalyzer implements StatementsSource
         return $this->namespace_name;
     }
 
-    /**
-     * @return void
-     */
     public function setConstType(string $const_name, Type\Union $const_type): void
     {
         self::$public_namespace_constants[$this->namespace_name][$const_name] = $const_type;

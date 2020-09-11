@@ -30,9 +30,6 @@ use function array_pop;
  */
 class ArrayAssignmentAnalyzer
 {
-    /**
-     * @return  void
-     */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
@@ -62,7 +59,6 @@ class ArrayAssignmentAnalyzer
     }
 
     /**
-     *
      * @return false|null
      */
     public static function updateArrayType(

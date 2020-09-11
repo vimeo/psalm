@@ -12,9 +12,6 @@ class VariadicTest extends TestCase
 {
     use Traits\ValidCodeAnalysisTestTrait;
 
-    /**
-     * @return                   void
-     */
     public function testVariadicArrayBadParam(): void
     {
         $this->expectExceptionMessage('InvalidScalarArgument');
@@ -36,7 +33,6 @@ class VariadicTest extends TestCase
 
     /**
      * @throws \Psalm\Exception\ConfigException
-     * @return void
      * @runInSeparateProcess
      */
     public function testVariadicFunctionFromAutoloadFile(): void
@@ -130,11 +126,6 @@ class VariadicTest extends TestCase
         ];
     }
 
-    /**
-     * @param  Config $config
-     *
-     * @return \Psalm\Internal\Analyzer\ProjectAnalyzer
-     */
     private function getProjectAnalyzerWithConfig(Config $config): \Psalm\Internal\Analyzer\ProjectAnalyzer
     {
         $project_analyzer = new \Psalm\Internal\Analyzer\ProjectAnalyzer(

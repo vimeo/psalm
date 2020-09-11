@@ -162,7 +162,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
     }
 
     /**
-     *
      * @return null|int
      */
     public function enterNode(PhpParser\Node $node)
@@ -824,9 +823,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         return null;
     }
 
-    /**
-     * @return void
-     */
     private function registerClassMapFunctionCall(
         string $function_id,
         PhpParser\Node\Expr\FuncCall $node
@@ -3292,7 +3288,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
     /**
      * @param  array<int, array{type:string,name:string,line_number:int,start:int,end:int}>  $docblock_params
      *
-     * @return void
      */
     private function improveParamsFromDocblock(
         FunctionLikeStorage $storage,
@@ -3509,9 +3504,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         }
     }
 
-    /**
-     * @return  void
-     */
     private function visitPropertyDeclaration(
         PhpParser\Node\Stmt\Property $stmt,
         Config $config,
@@ -3696,9 +3688,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         }
     }
 
-    /**
-     * @return  void
-     */
     private function visitClassConstDeclaration(
         PhpParser\Node\Stmt\ClassConst $stmt,
         ClassLikeStorage $storage,
@@ -3974,7 +3963,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
     }
 
     /**
-     *
      * @return void
      */
     public function visitInclude(PhpParser\Node\Expr\Include_ $stmt)

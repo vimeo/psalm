@@ -33,7 +33,6 @@ class PropertyExistenceProvider
     /**
      * @param  class-string<PropertyExistenceProviderInterface> $class
      *
-     * @return void
      */
     public function registerClass(string $class): void
     {
@@ -54,7 +53,6 @@ class PropertyExistenceProvider
      *     ?CodeLocation=
      *   ) : ?bool $c
      *
-     * @return void
      */
     public function registerClosure(string $fq_classlike_name, \Closure $c): void
     {

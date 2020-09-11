@@ -261,9 +261,6 @@ class PropertyDocblockManipulator
         return $file_manipulations;
     }
 
-    /**
-     * @return void
-     */
     public static function clearCache(): void
     {
         self::$manipulators = [];

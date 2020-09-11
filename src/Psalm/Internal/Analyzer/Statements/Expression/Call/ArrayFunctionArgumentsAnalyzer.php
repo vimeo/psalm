@@ -468,9 +468,6 @@ class ArrayFunctionArgumentsAnalyzer
         );
     }
 
-    /**
-     * @return void
-     */
     public static function handleByRefArrayAdjustment(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Arg $arg,
@@ -563,7 +560,6 @@ class ArrayFunctionArgumentsAnalyzer
     /**
      * @param  (TArray|null)[] $array_arg_types
      *
-     * @return void
      */
     private static function checkClosureType(
         StatementsAnalyzer $statements_analyzer,

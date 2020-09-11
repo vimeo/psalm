@@ -6,9 +6,6 @@ use Psalm\Internal\Analyzer\FileAnalyzer;
 
 class MethodMutationTest extends TestCase
 {
-    /**
-     * @return void
-     */
     public function testControllerMutation(): void
     {
         $this->addFile(
@@ -105,9 +102,6 @@ class MethodMutationTest extends TestCase
         $this->assertTrue($method_context->vars_possibly_in_scope['$this->title']);
     }
 
-    /**
-     * @return void
-     */
     public function testNotSettingUser(): void
     {
         $this->addFile(
@@ -150,9 +144,6 @@ class MethodMutationTest extends TestCase
         $this->assertSame('User|null', (string)$method_context->vars_in_scope['$this->user']);
     }
 
-    /**
-     * @return void
-     */
     public function testParentControllerSet(): void
     {
         $this->addFile(
@@ -190,9 +181,6 @@ class MethodMutationTest extends TestCase
         $this->assertSame('Foo', (string)$method_context->vars_in_scope['$this->foo']);
     }
 
-    /**
-     * @return void
-     */
     public function testTraitMethod(): void
     {
         $this->addFile(

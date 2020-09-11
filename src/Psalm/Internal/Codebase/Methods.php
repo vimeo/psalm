@@ -856,7 +856,6 @@ class Methods
      * @param lowercase-string $method_name_lc
      * @param lowercase-string $declaring_method_name_lc
      *
-     * @return void
      */
     public function setDeclaringMethodId(
         string $fq_class_name,
@@ -876,7 +875,6 @@ class Methods
      * @param lowercase-string $method_name_lc
      * @param lowercase-string $appearing_method_name_lc
      *
-     * @return void
      */
     public function setAppearingMethodId(
         string $fq_class_name,

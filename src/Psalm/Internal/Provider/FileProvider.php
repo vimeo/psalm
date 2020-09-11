@@ -58,9 +58,6 @@ class FileProvider
         file_put_contents($file_path, $file_contents);
     }
 
-    /**
-     * @return void
-     */
     public function setOpenContents(string $file_path, string $file_contents): void
     {
         if (isset($this->open_files[strtolower($file_path)])) {
@@ -77,25 +74,16 @@ class FileProvider
         return (int)filemtime($file_path);
     }
 
-    /**
-     * @return void
-     */
     public function addTemporaryFileChanges(string $file_path, string $new_content): void
     {
         $this->temp_files[strtolower($file_path)] = $new_content;
     }
 
-    /**
-     * @return void
-     */
     public function removeTemporaryFileChanges(string $file_path): void
     {
         unset($this->temp_files[strtolower($file_path)]);
     }
 
-    /**
-     * @return  void
-     */
     public function openFile(string $file_path): void
     {
         $this->open_files[strtolower($file_path)] = $this->getContents($file_path, true);
@@ -106,9 +94,6 @@ class FileProvider
         return isset($this->temp_files[strtolower($file_path)]) || isset($this->open_files[strtolower($file_path)]);
     }
 
-    /**
-     * @return  void
-     */
     public function closeFile(string $file_path): void
     {
         unset($this->temp_files[strtolower($file_path)], $this->open_files[strtolower($file_path)]);

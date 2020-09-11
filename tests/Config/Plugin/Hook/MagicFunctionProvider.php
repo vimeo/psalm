@@ -23,9 +23,6 @@ class MagicFunctionProvider implements
         return ['magicfunction'];
     }
 
-    /**
-     * @return ?bool
-     */
     public static function doesFunctionExist(
         StatementsSource $statements_source,
         string $function_id,
@@ -52,7 +49,6 @@ class MagicFunctionProvider implements
     /**
      * @param  array<PhpParser\Node\Arg>    $call_args
      *
-     * @return ?Type\Union
      */
     public static function getFunctionReturnType(
         StatementsSource $statements_source,

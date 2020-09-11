@@ -133,9 +133,6 @@ class ClassDocblockManipulator
         return $file_manipulations;
     }
 
-    /**
-     * @return void
-     */
     public static function clearCache(): void
     {
         self::$manipulators = [];

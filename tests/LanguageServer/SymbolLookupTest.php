@@ -38,9 +38,6 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
         $this->project_analyzer->getCodebase()->store_node_types = true;
     }
 
-    /**
-     * @return void
-     */
     public function testSimpleSymbolLookup(): void
     {
         $this->addFile(
@@ -87,9 +84,6 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
         $this->assertSame("<?php function B\qux(\n    int \$a,\n    int \$b\n) : int", $codebase->getSymbolInformation('somefile.php', 'B\qux()'));
     }
 
-    /**
-     * @return void
-     */
     public function testSimpleSymbolLocation(): void
     {
         $this->addFile(
@@ -151,9 +145,6 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
         $this->assertSame(25, $function_symbol_location->getColumn());
     }
 
-    /**
-     * @return void
-     */
     public function testSymbolLookupAfterAlteration(): void
     {
         $codebase = $this->project_analyzer->getCodebase();
@@ -235,9 +226,6 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
         $this->assertSame('425-426:int(2)', $symbol_at_position[0]);
     }
 
-    /**
-     * @return void
-     */
     public function testGetSymbolPositionMissingArg(): void
     {
         $codebase = $this->project_analyzer->getCodebase();
@@ -271,9 +259,6 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
         $this->assertSame('B\A::foo()', $symbol_at_position[0]);
     }
 
-    /**
-     * @return void
-     */
     public function testGetSymbolPositionNullableArg(): void
     {
         $codebase = $this->project_analyzer->getCodebase();
@@ -300,9 +285,6 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
         $this->assertSame('B\AClass', $symbol_at_position[0]);
     }
 
-    /**
-     * @return void
-     */
     public function testGetSymbolPositionMethodWrongReturnType(): void
     {
         $codebase = $this->project_analyzer->getCodebase();
@@ -333,9 +315,6 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
         $this->assertSame('B\AClass', $symbol_at_position[0]);
     }
 
-    /**
-     * @return void
-     */
     public function testGetSymbolPositionUseStatement(): void
     {
         $codebase = $this->project_analyzer->getCodebase();
@@ -360,9 +339,6 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
         $this->assertSame('StreamWrapper', $symbol_at_position[0]);
     }
 
-    /**
-     * @return void
-     */
     public function testGetSymbolPositionRange(): void
     {
         $codebase = $this->project_analyzer->getCodebase();
@@ -393,9 +369,6 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
         $this->assertSame(30, $symbol_at_position[1]->end->character);
     }
 
-    /**
-     * @return void
-     */
     public function testGetTypeInDocblock(): void
     {
         $codebase = $this->project_analyzer->getCodebase();

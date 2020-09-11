@@ -27,7 +27,6 @@ class FunctionExistenceProvider
     /**
      * @param  class-string<FunctionExistenceProviderInterface> $class
      *
-     * @return void
      */
     public function registerClass(string $class): void
     {
@@ -45,7 +44,6 @@ class FunctionExistenceProvider
      *     string
      *   ) : ?bool $c
      *
-     * @return void
      */
     public function registerClosure(string $function_id, \Closure $c): void
     {

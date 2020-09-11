@@ -57,7 +57,6 @@ class GetMemoryLimitInBytesTest extends \Psalm\Tests\TestCase
      * @param int|string $setting
      * @param int|string $expectedBytes
      *
-     * @return void
      */
     public function testGetMemoryLimitInBytes(
         $setting,

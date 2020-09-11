@@ -8,7 +8,6 @@ use Psalm\Internal\PluginManager\ComposerLock;
 class ComposerLockTest extends TestCase
 {
     /**
-     * @return void
      * @test
      */
     public function pluginIsPackageOfTypePsalmPlugin(): void
@@ -31,7 +30,6 @@ class ComposerLockTest extends TestCase
     }
 
     /**
-     * @return void
      * @test
      */
     public function seesNonDevPlugins(): void
@@ -49,7 +47,6 @@ class ComposerLockTest extends TestCase
     }
 
     /**
-     * @return void
      * @test
      */
     public function seesDevPlugins(): void
@@ -67,7 +64,6 @@ class ComposerLockTest extends TestCase
     }
 
     /**
-     * @return void
      * @test
      */
     public function skipsNonPlugins(): void
@@ -85,7 +81,6 @@ class ComposerLockTest extends TestCase
     }
 
     /**
-     * @return void
      * @test
      */
     public function failsOnInvalidJson(): void
@@ -97,7 +92,6 @@ class ComposerLockTest extends TestCase
     }
 
     /**
-     * @return void
      * @test
      */
     public function failsOnNonObjectJson(): void
@@ -109,7 +103,6 @@ class ComposerLockTest extends TestCase
     }
 
     /**
-     * @return void
      * @test
      */
     public function failsOnMissingPackagesEntry(): void
@@ -123,7 +116,6 @@ class ComposerLockTest extends TestCase
     }
 
     /**
-     * @return void
      * @test
      */
     public function failsOnMissingPackagesDevEntry(): void

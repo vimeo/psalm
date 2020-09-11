@@ -32,7 +32,6 @@ class PropertyTypeProvider
     /**
      * @param  class-string<PropertyTypeProviderInterface> $class
      *
-     * @return void
      */
     public function registerClass(string $class): void
     {
@@ -53,7 +52,6 @@ class PropertyTypeProvider
      *     ?Context=
      *   ) : ?Type\Union $c
      *
-     * @return void
      */
     public function registerClosure(string $fq_classlike_name, \Closure $c): void
     {

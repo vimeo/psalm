@@ -53,11 +53,6 @@ class PluginTest extends \Psalm\Tests\TestCase
         $this->file_provider = new Provider\FakeFileProvider();
     }
 
-    /**
-     * @param  Config $config
-     *
-     * @return \Psalm\Internal\Analyzer\ProjectAnalyzer
-     */
     private function getProjectAnalyzerWithConfig(Config $config): \Psalm\Internal\Analyzer\ProjectAnalyzer
     {
         $config->setIncludeCollector(new IncludeCollector());
@@ -71,9 +66,6 @@ class PluginTest extends \Psalm\Tests\TestCase
         );
     }
 
-    /**
-     * @return void
-     */
     public function testStringAnalyzerPlugin(): void
     {
         $this->expectExceptionMessage('InvalidClass');
@@ -108,9 +100,6 @@ class PluginTest extends \Psalm\Tests\TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @return void
-     */
     public function testStringAnalyzerPluginWithClassConstant(): void
     {
         $this->expectExceptionMessage('InvalidClass');
@@ -149,9 +138,6 @@ class PluginTest extends \Psalm\Tests\TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @return void
-     */
     public function testStringAnalyzerPluginWithClassConstantConcat(): void
     {
         $this->expectExceptionMessage('UndefinedMethod');
@@ -192,9 +178,6 @@ class PluginTest extends \Psalm\Tests\TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @return void
-     */
     public function testEchoAnalyzerPluginWithJustHtml(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -226,9 +209,6 @@ class PluginTest extends \Psalm\Tests\TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @return void
-     */
     public function testEchoAnalyzerPluginWithUnescapedConcatenatedString(): void
     {
         $this->expectExceptionMessage('TypeCoercion');
@@ -267,9 +247,6 @@ class PluginTest extends \Psalm\Tests\TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @return void
-     */
     public function testEchoAnalyzerPluginWithUnescapedString(): void
     {
         $this->expectExceptionMessage('TypeCoercion');
@@ -307,9 +284,6 @@ class PluginTest extends \Psalm\Tests\TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @return void
-     */
     public function testEchoAnalyzerPluginWithEscapedString(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -359,9 +333,6 @@ class PluginTest extends \Psalm\Tests\TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @return void
-     */
     public function testFileAnalyzerPlugin(): void
     {
         require_once __DIR__ . '/Plugin/FilePlugin.php';
@@ -410,9 +381,6 @@ class PluginTest extends \Psalm\Tests\TestCase
         );
     }
 
-    /**
-     * @return void
-     */
     public function testFloatCheckerPlugin(): void
     {
         $this->expectExceptionMessage('NoFloatAssignment');
@@ -448,9 +416,6 @@ class PluginTest extends \Psalm\Tests\TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @return void
-     */
     public function testFloatCheckerPluginIssueSuppressionByConfig(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -489,9 +454,6 @@ class PluginTest extends \Psalm\Tests\TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @return void
-     */
     public function testFloatCheckerPluginIssueSuppressionByDocblock(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -526,7 +488,6 @@ class PluginTest extends \Psalm\Tests\TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /** @return void */
     public function testInheritedHookHandlersAreCalled(): void
     {
         require_once dirname(__DIR__) . '/fixtures/stubs/extending_plugin_entrypoint.php';
@@ -555,7 +516,6 @@ class PluginTest extends \Psalm\Tests\TestCase
         );
     }
 
-    /** @return void */
     public function testAfterCodebasePopulatedHookIsLoaded(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -591,7 +551,6 @@ class PluginTest extends \Psalm\Tests\TestCase
         );
     }
 
-    /** @return void */
     public function testPropertyProviderHooks(): void
     {
         require_once __DIR__ . '/Plugin/PropertyPlugin.php';
@@ -631,7 +590,6 @@ class PluginTest extends \Psalm\Tests\TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /** @return void */
     public function testMethodProviderHooksValidArg(): void
     {
         require_once __DIR__ . '/Plugin/MethodPlugin.php';
@@ -693,7 +651,6 @@ class PluginTest extends \Psalm\Tests\TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /** @return void */
     public function testFunctionProviderHooks(): void
     {
         require_once __DIR__ . '/Plugin/FunctionPlugin.php';
@@ -728,7 +685,6 @@ class PluginTest extends \Psalm\Tests\TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /** @return void */
     public function testSqlStringProviderHooks(): void
     {
         require_once __DIR__ . '/Plugin/SqlStringProviderPlugin.php';
@@ -770,9 +726,6 @@ class PluginTest extends \Psalm\Tests\TestCase
         }
     }
 
-    /**
-     * @return void
-     */
     public function testPropertyProviderHooksInvalidAssignment(): void
     {
         $this->expectExceptionMessage('InvalidPropertyAssignmentValue');
@@ -814,9 +767,6 @@ class PluginTest extends \Psalm\Tests\TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @return void
-     */
     public function testMethodProviderHooksInvalidArg(): void
     {
         $this->expectExceptionMessage('InvalidScalarArgument');
@@ -860,9 +810,6 @@ class PluginTest extends \Psalm\Tests\TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @return void
-     */
     public function testFunctionProviderHooksInvalidArg(): void
     {
         $this->expectExceptionMessage('InvalidScalarArgument');
@@ -899,9 +846,6 @@ class PluginTest extends \Psalm\Tests\TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @return void
-     */
     public function testAfterAnalysisHooks(): void
     {
         require_once __DIR__ . '/Plugin/AfterAnalysisPlugin.php';
@@ -935,9 +879,6 @@ class PluginTest extends \Psalm\Tests\TestCase
         ob_end_clean();
     }
 
-    /**
-     * @return void
-     */
     public function testPluginFilenameCanBeAbsolute(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(

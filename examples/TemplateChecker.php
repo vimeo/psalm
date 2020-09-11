@@ -72,9 +72,6 @@ class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
     }
 
     /**
-     * @param  \Psalm\Internal\MethodIdentifier         $method_id
-     * @param  PhpParser\Node $stmt
-     *
      * @return Context|false
      */
     private function checkMethod(\Psalm\Internal\MethodIdentifier $method_id, PhpParser\Node $stmt, Codebase $codebase)
@@ -132,10 +129,8 @@ class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
     }
 
     /**
-     * @param  Context $context
      * @param  array<PhpParser\Node\Stmt> $stmts
      *
-     * @return void
      */
     protected function checkWithViewClass(Context $context, array $stmts): void
     {

@@ -21,7 +21,6 @@ class OffsetShifterVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
     }
 
     /**
-     *
      * @return null|int
      */
     public function enterNode(PhpParser\Node $node)

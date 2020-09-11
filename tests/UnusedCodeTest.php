@@ -36,7 +36,6 @@ class UnusedCodeTest extends TestCase
      * @param string $code
      * @param array<string> $error_levels
      *
-     * @return void
      */
     public function testValidCode($code, array $error_levels = []): void
     {
@@ -70,7 +69,6 @@ class UnusedCodeTest extends TestCase
      * @param string $error_message
      * @param array<string> $error_levels
      *
-     * @return void
      */
     public function testInvalidCode($code, $error_message, $error_levels = []): void
     {

@@ -83,9 +83,6 @@ class BinaryOperationTest extends TestCase
         $this->assertSame($assertions, $actual_vars);
     }
 
-    /**
-     * @return void
-     */
     public function testStrictTrueEquivalence(): void
     {
         $config = \Psalm\Config::getInstance();

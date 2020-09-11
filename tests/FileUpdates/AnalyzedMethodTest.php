@@ -44,7 +44,6 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
      * @param array<string, string> $end_files
      * @param array<string, string> $error_levels
      *
-     * @return void
      */
     public function testValidInclude(
         array $start_files,

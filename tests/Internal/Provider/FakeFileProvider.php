@@ -53,7 +53,6 @@ class FakeFileProvider extends \Psalm\Internal\Provider\FileProvider
     }
 
     /**
-     * @return void
      * @psalm-suppress InvalidPropertyAssignmentValue because microtime is needed for cache busting
      */
     public function registerFile(string $file_path, string $file_contents): void

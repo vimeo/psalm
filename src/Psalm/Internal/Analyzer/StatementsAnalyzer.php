@@ -654,7 +654,6 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
 
     /**
      * @param  array<PhpParser\Node\Stmt>   $stmts
-     * @return void
      */
     public function checkUnreferencedVars(array $stmts): void
     {
@@ -717,9 +716,6 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
         return isset($this->all_vars[$var_name]);
     }
 
-    /**
-     * @return void
-     */
     public function registerVariable(string $var_id, CodeLocation $location, ?int $branch_point): void
     {
         $this->all_vars[$var_id] = $location;
@@ -731,9 +727,6 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
         $this->registerVariableAssignment($var_id, $location);
     }
 
-    /**
-     * @return void
-     */
     public function registerVariableAssignment(string $var_id, CodeLocation $location): void
     {
         $this->unused_var_locations[$location->getHash()] = [$var_id, $location];
@@ -741,7 +734,6 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
 
     /**
      * @param array<string, CodeLocation> $locations
-     * @return void
      */
     public function registerVariableUses(array $locations): void
     {
@@ -772,9 +764,6 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
         return isset($this->var_branch_points[$var_id]) ? $this->var_branch_points[$var_id] : null;
     }
 
-    /**
-     * @return void
-     */
     public function addVariableInitialization(string $var_id, int $branch_point): void
     {
         $this->vars_to_initialize[$var_id] = $branch_point;
@@ -800,7 +789,6 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
 
     /**
      * @param array<string, bool> $byref_uses
-     * @return void
      */
     public function setByRefUses(array $byref_uses): void
     {

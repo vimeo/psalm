@@ -57,7 +57,6 @@ class ParserInstanceCacheProvider extends \Psalm\Internal\Provider\ParserCachePr
     /**
      * @param  list<PhpParser\Node\Stmt>        $stmts
      *
-     * @return void
      */
     public function saveStatementsToCache(string $file_path, string $file_content_hash, array $stmts, bool $touch_only): void
     {
@@ -66,9 +65,6 @@ class ParserInstanceCacheProvider extends \Psalm\Internal\Provider\ParserCachePr
         $this->file_content_hash[$file_path] = $file_content_hash;
     }
 
-    /**
-     * @return string|null
-     */
     public function loadExistingFileContentsFromCache(string $file_path): ?string
     {
         if (isset($this->file_contents_cache[$file_path])) {
@@ -78,9 +74,6 @@ class ParserInstanceCacheProvider extends \Psalm\Internal\Provider\ParserCachePr
         return null;
     }
 
-    /**
-     * @return void
-     */
     public function cacheFileContents(string $file_path, string $file_contents): void
     {
         $this->file_contents_cache[$file_path] = $file_contents;

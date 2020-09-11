@@ -17,7 +17,6 @@ interface PropertyExistenceProviderInterface
      * not exist, return false. If you aren't sure if it exists or not, return null and the default analysis will
      * continue to determine if the property actually exists.
      *
-     * @return ?bool
      */
     public static function doesPropertyExist(
         string $fq_classlike_name,

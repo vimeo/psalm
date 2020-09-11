@@ -45,7 +45,6 @@ class ErrorFixTest extends \Psalm\Tests\TestCase
      * @param array<int, int> $error_counts
      * @param array<string, string> $error_levels
      *
-     * @return void
      */
     public function testErrorFix(
         array $files,

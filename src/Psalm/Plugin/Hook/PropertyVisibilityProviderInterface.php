@@ -12,9 +12,6 @@ interface PropertyVisibilityProviderInterface
      */
     public static function getClassLikeNames() : array;
 
-    /**
-     * @return ?bool
-     */
     public static function isPropertyVisible(
         StatementsSource $source,
         string $fq_classlike_name,

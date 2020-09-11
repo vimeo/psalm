@@ -185,9 +185,7 @@ class IssueBuffer
     }
 
     /**
-     *
      * @throws  Exception\CodeException
-     *
      */
     public static function add(CodeIssue $e, bool $is_fixable = false): bool
     {
@@ -405,7 +403,6 @@ class IssueBuffer
     /**
      * @param array<string, list<IssueData>> $issues_data
      *
-     * @return void
      */
     public static function addIssues(array $issues_data): void
     {
@@ -427,7 +424,6 @@ class IssueBuffer
     /**
      * @param  array<string,array<string,array{o:int, s:array<int, string>}>>  $issue_baseline
      *
-     * @return void
      */
     public static function finish(
         ProjectAnalyzer $project_analyzer,
@@ -765,9 +761,6 @@ class IssueBuffer
         return false;
     }
 
-    /**
-     * @return void
-     */
     public static function clearCache(): void
     {
         self::$issues_data = [];
@@ -797,18 +790,12 @@ class IssueBuffer
         return self::$recording_level > 0;
     }
 
-    /**
-     * @return void
-     */
     public static function startRecording(): void
     {
         ++self::$recording_level;
         self::$recorded_issues[self::$recording_level] = [];
     }
 
-    /**
-     * @return void
-     */
     public static function stopRecording(): void
     {
         if (self::$recording_level === 0) {

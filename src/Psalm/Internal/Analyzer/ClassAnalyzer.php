@@ -1606,7 +1606,6 @@ class ClassAnalyzer extends ClassLikeAnalyzer
     }
 
     /**
-     *
      * @return  void
      */
     private function checkForMissingPropertyType(
@@ -2072,9 +2071,6 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         );
     }
 
-    /**
-     * @return void
-     */
     private function checkTemplateParams(
         Codebase $codebase,
         ClassLikeStorage $storage,

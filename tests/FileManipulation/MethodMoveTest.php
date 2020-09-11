@@ -23,12 +23,9 @@ class MethodMoveTest extends \Psalm\Tests\TestCase
     /**
      * @dataProvider providerValidCodeParse
      *
-     * @param string $input_code
-     * @param string $output_code
      * @param array<string, string> $methods_to_move
      * @param array<string, string> $call_transforms
      *
-     * @return void
      */
     public function testValidCode(
         string $input_code,

@@ -272,24 +272,17 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
     /**
      * @psalm-suppress PossiblyUnusedMethod
      *
-     * @return void
      */
     public function initialized(): void
     {
         $this->clientStatus('running');
     }
 
-    /**
-     * @return void
-     */
     public function queueTemporaryFileAnalysis(string $file_path, string $uri): void
     {
         $this->onchange_paths_to_analyze[$file_path] = $uri;
     }
 
-    /**
-     * @return void
-     */
     public function queueFileAnalysis(string $file_path, string $uri): void
     {
         $this->onsave_paths_to_analyze[$file_path] = $uri;
@@ -338,7 +331,6 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
     /**
      * @param array<string, string> $uris
      *
-     * @return void
      */
     public function emitIssues(array $uris): void
     {
@@ -430,7 +422,6 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
     /**
      * A notification to ask the server to exit its process.
      *
-     * @return void
      */
     public function exit(): void
     {

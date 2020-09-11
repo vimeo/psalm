@@ -603,10 +603,6 @@ class LoopAnalyzer
         }
     }
 
-    /**
-     *
-     * @return void
-     */
     private static function updateLoopScopeContexts(
         LoopScope $loop_scope,
         Context $pre_outer_context

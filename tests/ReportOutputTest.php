@@ -46,9 +46,6 @@ class ReportOutputTest extends TestCase
         );
     }
 
-    /**
-     * @return void
-     */
     public function testReportFormatValid(): void
     {
         $config = new TestConfig();
@@ -60,9 +57,6 @@ class ReportOutputTest extends TestCase
         }
     }
 
-    /**
-     * @return void
-     */
     public function testReportFormatException(): void
     {
         $this->expectException(\UnexpectedValueException::class);
@@ -98,9 +92,6 @@ echo $a;';
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
     public function testJsonReport(): void
     {
         $this->analyzeFileForReport();
@@ -254,9 +245,6 @@ echo $a;';
         $this->assertIsArray(json_decode($report->create()));
     }
 
-    /**
-     * @return void
-     */
     public function testSonarqubeReport(): void
     {
         $this->analyzeFileForReport();
@@ -355,9 +343,6 @@ echo $a;';
         );
     }
 
-    /**
-     * @return void
-     */
     public function testEmacsReport(): void
     {
         $this->analyzeFileForReport();
@@ -375,9 +360,6 @@ somefile.php:15:6:warning - Possibly undefined global variable $a, first seen on
         );
     }
 
-    /**
-     * @return void
-     */
     public function testPylintReport(): void
     {
         $this->analyzeFileForReport();
@@ -395,9 +377,6 @@ somefile.php:15: [W0001] PossiblyUndefinedGlobalVariable: Possibly undefined glo
         );
     }
 
-    /**
-     * @return void
-     */
     public function testConsoleReport(): void
     {
         $this->analyzeFileForReport();
@@ -426,9 +405,6 @@ echo $a
         );
     }
 
-    /**
-     * @return void
-     */
     public function testConsoleReportNoInfo(): void
     {
         $this->analyzeFileForReport();
@@ -455,9 +431,6 @@ echo CHANGE_ME;
         );
     }
 
-    /**
-     * @return void
-     */
     public function testConsoleReportNoSnippet(): void
     {
         $this->analyzeFileForReport();
@@ -487,9 +460,6 @@ INFO: PossiblyUndefinedGlobalVariable - somefile.php:15:6 - Possibly undefined g
         );
     }
 
-    /**
-     * @return void
-     */
     public function testCompactReport(): void
     {
         $this->analyzeFileForReport();
@@ -514,9 +484,6 @@ INFO: PossiblyUndefinedGlobalVariable - somefile.php:15:6 - Possibly undefined g
         );
     }
 
-    /**
-     * @return void
-     */
     public function testCheckstyleReport(): void
     {
         $this->analyzeFileForReport();
@@ -553,9 +520,6 @@ INFO: PossiblyUndefinedGlobalVariable - somefile.php:15:6 - Possibly undefined g
         //);
     }
 
-    /**
-     * @return void
-     */
     public function testJunitReport(): void
     {
         $this->analyzeFileForReport();
@@ -640,9 +604,6 @@ column_to: 8
         //);
     }
 
-    /**
-     * @return void
-     */
     public function testEmptyReportIfNotError(): void
     {
         $this->addFile(

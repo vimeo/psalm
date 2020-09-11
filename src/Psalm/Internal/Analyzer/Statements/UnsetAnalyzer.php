@@ -9,9 +9,6 @@ use Psalm\Type;
 
 class UnsetAnalyzer
 {
-    /**
-     * @return void
-     */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Unset_ $stmt,

@@ -1483,7 +1483,7 @@ class StaticCallAnalyzer extends CallAnalyzer
         \Psalm\Storage\ClassLikeStorage $class_storage,
         \Psalm\Storage\MethodStorage $pseudo_method_storage,
         Context $context
-    ): ?bool {
+    ) {
         if (ArgumentsAnalyzer::analyze(
             $statements_analyzer,
             $args,

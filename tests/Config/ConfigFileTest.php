@@ -32,7 +32,6 @@ class ConfigFileTest extends \Psalm\Tests\TestCase
     }
 
     /**
-     * @return void
      * @test
      */
     public function canCreateConfigObject(): void
@@ -47,7 +46,6 @@ class ConfigFileTest extends \Psalm\Tests\TestCase
     }
 
     /**
-     * @return void
      * @test
      */
     public function addCanAddPluginClassToExistingPluginsNode(): void
@@ -77,7 +75,6 @@ class ConfigFileTest extends \Psalm\Tests\TestCase
     }
 
     /**
-     * @return void
      * @test
      */
     public function addCanCreateMissingPluginsNode(): void
@@ -99,7 +96,6 @@ class ConfigFileTest extends \Psalm\Tests\TestCase
     }
 
     /**
-     * @return void
      * @test
      */
     public function removeDoesNothingWhenThereIsNoPluginsNode(): void
@@ -119,7 +115,6 @@ class ConfigFileTest extends \Psalm\Tests\TestCase
     }
 
     /**
-     * @return void
      * @test
      */
     public function removeKillsEmptyPluginsNode(): void
@@ -144,7 +139,6 @@ class ConfigFileTest extends \Psalm\Tests\TestCase
     }
 
     /**
-     * @return void
      * @test
      */
     public function removeKillsSpecifiedPlugin(): void
@@ -171,7 +165,6 @@ class ConfigFileTest extends \Psalm\Tests\TestCase
     }
 
     /**
-     * @return void
      * @test
      */
     public function removeKillsSpecifiedPluginWithOneRemaining(): void
@@ -214,7 +207,6 @@ class ConfigFileTest extends \Psalm\Tests\TestCase
      * @param string $expected_template
      * @param string $contents
      *
-     * @return bool
      *
      * @psalm-pure
      */

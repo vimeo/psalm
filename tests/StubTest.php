@@ -39,11 +39,6 @@ class StubTest extends TestCase
         $this->file_provider = new Provider\FakeFileProvider();
     }
 
-    /**
-     * @param  Config $config
-     *
-     * @return \Psalm\Internal\Analyzer\ProjectAnalyzer
-     */
     private function getProjectAnalyzerWithConfig(Config $config): \Psalm\Internal\Analyzer\ProjectAnalyzer
     {
         $project_analyzer = new \Psalm\Internal\Analyzer\ProjectAnalyzer(
@@ -61,9 +56,6 @@ class StubTest extends TestCase
         return $project_analyzer;
     }
 
-    /**
-     * @return void
-     */
     public function testNonexistentStubFile(): void
     {
         $this->expectException(\Psalm\Exception\ConfigException::class);
@@ -87,9 +79,6 @@ class StubTest extends TestCase
         );
     }
 
-    /**
-     * @return void
-     */
     public function testStubFileClass(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -127,10 +116,6 @@ class StubTest extends TestCase
     }
 
     /**
-     * @param string $file
-     *
-     * @return string
-     *
      * @psalm-pure
      */
     private function getOperatingSystemStyledPath(string $file): string
@@ -138,9 +123,6 @@ class StubTest extends TestCase
         return implode(DIRECTORY_SEPARATOR, explode('/', $file));
     }
 
-    /**
-     * @return void
-     */
     public function testLoadStubFileWithRelativePath(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -162,9 +144,6 @@ class StubTest extends TestCase
         $this->assertStringContainsString($path, \reset($stub_files));
     }
 
-    /**
-     * @return void
-     */
     public function testLoadStubFileWithAbsolutePath(): void
     {
         $runDir = dirname(__DIR__);
@@ -187,9 +166,6 @@ class StubTest extends TestCase
         $this->assertStringContainsString($path, \reset($stub_files));
     }
 
-    /**
-     * @return void
-     */
     public function testStubFileConstant(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -226,9 +202,6 @@ class StubTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @return void
-     */
     public function testPhpStormMetaParsingFile(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -316,9 +289,6 @@ class StubTest extends TestCase
         $this->analyzeFile($file_path, $context);
     }
 
-    /**
-     * @return void
-     */
     public function testNamespacedStubClass(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -356,9 +326,6 @@ class StubTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @return void
-     */
     public function testStubRegularFunction(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -390,9 +357,6 @@ class StubTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @return void
-     */
     public function testStubVariadicFunction(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -424,9 +388,6 @@ class StubTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @return void
-     */
     public function testStubVariadicFunctionWrongArgType(): void
     {
         $this->expectExceptionMessage('InvalidScalarArgument');
@@ -460,9 +421,6 @@ class StubTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @return void
-     */
     public function testUserVariadicWithFalseVariadic(): void
     {
         $this->expectExceptionMessage('TooManyArguments');
@@ -497,7 +455,6 @@ class StubTest extends TestCase
     }
 
     /**
-     * @return void
      * @runInSeparateProcess
      */
     public function testPolyfilledFunction(): void
@@ -530,7 +487,6 @@ class StubTest extends TestCase
     }
 
     /**
-     * @return void
      * @runInSeparateProcess
      */
     public function testConditionalConstantDefined(): void
@@ -562,7 +518,6 @@ class StubTest extends TestCase
     }
 
     /**
-     * @return void
      * @runInSeparateProcess
      */
     public function testClassAlias(): void
@@ -623,9 +578,6 @@ class StubTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @return void
-     */
     public function testStubFunctionWithFunctionExists(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -658,9 +610,6 @@ class StubTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @return void
-     */
     public function testNamespacedStubFunctionWithFunctionExists(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -694,9 +643,6 @@ class StubTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @return void
-     */
     public function testNoStubFunction(): void
     {
         $this->expectExceptionMessage('UndefinedFunction - /src/somefile.php:2:22 - Function barBar does not exist');
@@ -726,9 +672,6 @@ class StubTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @return void
-     */
     public function testNamespacedStubFunction(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -760,9 +703,6 @@ class StubTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @return void
-     */
     public function testConditionalNamespacedStubFunction(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -794,9 +734,6 @@ class StubTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @return void
-     */
     public function testConditionallyExtendingInterface(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -844,9 +781,6 @@ class StubTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @return void
-     */
     public function testStubFileWithExistingClassDefinition(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -878,9 +812,6 @@ class StubTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @return void
-     */
     public function testStubFileWithPartialClassDefinitionWithMoreMethods(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -929,9 +860,6 @@ class StubTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @return void
-     */
     public function testExtendOnlyStubbedClass(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -967,9 +895,6 @@ class StubTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @return void
-     */
     public function testStubFileWithExtendedStubbedClass(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -1005,9 +930,6 @@ class StubTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @return void
-     */
     public function testStubFileWithPartialClassDefinitionWithCoercion(): void
     {
         $this->expectExceptionMessage('TypeCoercion');
@@ -1053,9 +975,6 @@ class StubTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @return void
-     */
     public function testStubFileWithPartialClassDefinitionGeneralReturnType(): void
     {
         $this->expectExceptionMessage('InvalidReturnStatement');
@@ -1099,9 +1018,6 @@ class StubTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @return void
-     */
     public function testStubFileWithTemplatedClassDefinitionAndMagicMethodOverride(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(

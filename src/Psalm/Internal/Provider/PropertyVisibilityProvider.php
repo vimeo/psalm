@@ -33,7 +33,6 @@ class PropertyVisibilityProvider
     /**
      * @param  class-string<PropertyVisibilityProviderInterface> $class
      *
-     * @return void
      */
     public function registerClass(string $class): void
     {
@@ -55,7 +54,6 @@ class PropertyVisibilityProvider
      *     CodeLocation
      *   ) : ?bool $c
      *
-     * @return void
      */
     public function registerClosure(string $fq_classlike_name, \Closure $c): void
     {

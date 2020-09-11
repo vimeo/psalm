@@ -6,9 +6,6 @@ use Psalm\Context;
 
 class ThrowsInGlobalScopeTest extends TestCase
 {
-    /**
-     * @return void
-     */
     public function testUncaughtDocumentedThrowCall(): void
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
@@ -42,9 +39,6 @@ class ThrowsInGlobalScopeTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
-    /**
-     * @return void
-     */
     public function testCaughtDocumentedThrowCall(): void
     {
         Config::getInstance()->check_for_throws_docblock = true;
@@ -79,9 +73,6 @@ class ThrowsInGlobalScopeTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
-    /**
-     * @return void
-     */
     public function testUncaughtUndocumentedThrowCall(): void
     {
         Config::getInstance()->check_for_throws_in_global_scope = true;
@@ -109,9 +100,6 @@ class ThrowsInGlobalScopeTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
-    /**
-     * @return void
-     */
     public function testUncaughtDocumentedThrowCallInNamespace(): void
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
@@ -146,9 +134,6 @@ class ThrowsInGlobalScopeTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
-    /**
-     * @return void
-     */
     public function testUncaughtThrow(): void
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
@@ -167,9 +152,6 @@ class ThrowsInGlobalScopeTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
-    /**
-     * @return void
-     */
     public function testCaughtThrow(): void
     {
         Config::getInstance()->check_for_throws_in_global_scope = true;
@@ -187,9 +169,6 @@ class ThrowsInGlobalScopeTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
-    /**
-     * @return void
-     */
     public function testUncaughtThrowWhenSuppressing(): void
     {
         Config::getInstance()->check_for_throws_in_global_scope = true;
@@ -206,9 +185,6 @@ class ThrowsInGlobalScopeTest extends TestCase
         $this->analyzeFile('somefile.php', $context, false);
     }
 
-    /**
-     * @return void
-     */
     public function testUncaughtThrowInNamespaceWhenSuppressing(): void
     {
         Config::getInstance()->check_for_throws_in_global_scope = true;
@@ -226,9 +202,6 @@ class ThrowsInGlobalScopeTest extends TestCase
         $this->analyzeFile('somefile.php', $context, false);
     }
 
-    /**
-     * @return void
-     */
     public function testUncaughtDocumentedThrowCallWhenSuppressing(): void
     {
         Config::getInstance()->check_for_throws_in_global_scope = true;
@@ -261,9 +234,6 @@ class ThrowsInGlobalScopeTest extends TestCase
         $this->analyzeFile('somefile.php', $context, false);
     }
 
-    /**
-     * @return void
-     */
     public function testUncaughtDocumentedThrowCallInNamespaceWhenSuppressing(): void
     {
         Config::getInstance()->check_for_throws_in_global_scope = true;
@@ -297,9 +267,6 @@ class ThrowsInGlobalScopeTest extends TestCase
         $this->analyzeFile('somefile.php', $context, false);
     }
 
-    /**
-     * @return void
-     */
     public function testUncaughtDocumentedThrowCallWhenSuppressingFirst(): void
     {
         $this->expectExceptionMessage('UncaughtThrowInGlobalScope');

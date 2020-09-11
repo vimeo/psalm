@@ -273,7 +273,6 @@ class ReturnTypeCollector
     }
 
     /**
-     *
      * @return  list<Type\Union>
      */
     protected static function getYieldTypeFromExpression(

@@ -22,9 +22,6 @@ use function array_merge;
  */
 class DoAnalyzer
 {
-    /**
-     * @return void
-     */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Do_ $stmt,
@@ -66,7 +63,6 @@ class DoAnalyzer
         $while_clauses = array_values(
             array_filter(
                 $while_clauses,
-                /** @return bool */
                 function (Clause $c) use ($mixed_var_ids): bool {
                     $keys = array_keys($c->possibilities);
 

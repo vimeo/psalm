@@ -11,7 +11,6 @@ class SystemClass
      * @param int       $a
      * @param string    $b
      *
-     * @return string
      */
     public function foo($a, $b): string
     {
@@ -21,7 +20,6 @@ class SystemClass
      * @param int       $a
      * @param string    $b
      *
-     * @return string
      */
     public static function bar($a, $b): string
     {

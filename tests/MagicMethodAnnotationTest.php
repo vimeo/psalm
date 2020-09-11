@@ -10,9 +10,6 @@ class MagicMethodAnnotationTest extends TestCase
     use Traits\InvalidCodeAnalysisTestTrait;
     use Traits\ValidCodeAnalysisTestTrait;
 
-    /**
-     * @return void
-     */
     public function testPhpDocMethodWhenUndefined(): void
     {
         Config::getInstance()->use_phpdoc_method_without_magic_or_parent = true;
@@ -44,9 +41,6 @@ class MagicMethodAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
     public function testPhpDocMethodWhenTemplated(): void
     {
         Config::getInstance()->use_phpdoc_method_without_magic_or_parent = true;
@@ -73,9 +67,6 @@ class MagicMethodAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
     public function testAnnotationWithoutCallConfig(): void
     {
         $this->expectExceptionMessage('UndefinedMethod');
@@ -100,9 +91,6 @@ class MagicMethodAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
-    /**
-     * @return void
-     */
     public function testOverrideParentClassRetunType(): void
     {
         Config::getInstance()->use_phpdoc_method_without_magic_or_parent = true;
@@ -892,9 +880,6 @@ class MagicMethodAnnotationTest extends TestCase
         ];
     }
 
-    /**
-     * @return void
-     */
     public function testSealAllMethodsWithoutFoo(): void
     {
         Config::getInstance()->seal_all_methods = true;
@@ -919,9 +904,6 @@ class MagicMethodAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
     public function testSealAllMethodsWithFoo(): void
     {
         Config::getInstance()->seal_all_methods = true;
@@ -944,9 +926,6 @@ class MagicMethodAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
     public function testSealAllMethodsWithFooInSubclass(): void
     {
         Config::getInstance()->seal_all_methods = true;
@@ -970,9 +949,6 @@ class MagicMethodAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
     public function testSealAllMethodsWithFooAnnotated(): void
     {
         Config::getInstance()->seal_all_methods = true;
@@ -995,9 +971,6 @@ class MagicMethodAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
     public function testSealAllMethodsSetToFalse(): void
     {
         Config::getInstance()->seal_all_methods = false;

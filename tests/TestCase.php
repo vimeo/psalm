@@ -82,7 +82,6 @@ class TestCase extends BaseTestCase
      * @param string $file_path
      * @param string $contents
      *
-     * @return void
      */
     public function addFile($file_path, $contents): void
     {
@@ -92,9 +91,7 @@ class TestCase extends BaseTestCase
 
     /**
      * @param  string         $file_path
-     * @param  \Psalm\Context $context
      *
-     * @return void
      */
     public function analyzeFile($file_path, \Psalm\Context $context, bool $track_unused_suppressions = true): void
     {
@@ -130,7 +127,6 @@ class TestCase extends BaseTestCase
     /**
      * @param  bool $withDataSet
      *
-     * @return string
      */
     protected function getTestName($withDataSet = true): string
     {

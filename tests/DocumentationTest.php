@@ -117,9 +117,6 @@ class DocumentationTest extends TestCase
         $this->assertSame(implode("\n", $all_issues), implode("\n", $handler_types));
     }
 
-    /**
-     * @return void
-     */
     public function testAllIssuesCovered(): void
     {
         $all_issues = \Psalm\Config\IssueHandler::getAllIssueTypes();
@@ -151,7 +148,6 @@ class DocumentationTest extends TestCase
      * @param array<string> $error_levels
      * @param bool $check_references
      *
-     * @return void
      */
     public function testInvalidCode($code, $error_message, $error_levels = [], $check_references = false): void
     {

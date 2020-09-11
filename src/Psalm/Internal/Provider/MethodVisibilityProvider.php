@@ -32,7 +32,6 @@ class MethodVisibilityProvider
     /**
      * @param  class-string<MethodVisibilityProviderInterface> $class
      *
-     * @return void
      */
     public function registerClass(string $class): void
     {
@@ -53,7 +52,6 @@ class MethodVisibilityProvider
      *     ?CodeLocation
      *   ) : ?bool $c
      *
-     * @return void
      */
     public function registerClosure(string $fq_classlike_name, \Closure $c): void
     {

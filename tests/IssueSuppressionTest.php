@@ -10,9 +10,6 @@ class IssueSuppressionTest extends TestCase
     use Traits\ValidCodeAnalysisTestTrait;
     use Traits\InvalidCodeAnalysisTestTrait;
 
-    /**
-     * @return void
-     */
     public function testIssueSuppressedOnFunction(): void
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
@@ -37,9 +34,6 @@ class IssueSuppressionTest extends TestCase
         $this->analyzeFile('somefile.php', new \Psalm\Context());
     }
 
-    /**
-     * @return void
-     */
     public function testIssueSuppressedOnStatement(): void
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
@@ -55,9 +49,6 @@ class IssueSuppressionTest extends TestCase
         $this->analyzeFile('somefile.php', new \Psalm\Context());
     }
 
-    /**
-     * @return void
-     */
     public function testUnusedSuppressAllOnFunction(): void
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
@@ -75,9 +66,6 @@ class IssueSuppressionTest extends TestCase
         $this->analyzeFile('somefile.php', new \Psalm\Context());
     }
 
-    /**
-     * @return void
-     */
     public function testUnusedSuppressAllOnStatement(): void
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
@@ -93,9 +81,6 @@ class IssueSuppressionTest extends TestCase
         $this->analyzeFile('somefile.php', new \Psalm\Context());
     }
 
-    /**
-     * @return void
-     */
     public function testMissingThrowsDocblockSuppressed(): void
     {
         Config::getInstance()->check_for_throws_docblock = true;
@@ -121,9 +106,6 @@ class IssueSuppressionTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
-    /**
-     * @return void
-     */
     public function testMissingThrowsDocblockSuppressedWithoutThrow(): void
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
@@ -144,9 +126,6 @@ class IssueSuppressionTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
-    /**
-     * @return void
-     */
     public function testMissingThrowsDocblockSuppressedDuplicate(): void
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
@@ -168,9 +147,6 @@ class IssueSuppressionTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
-    /**
-     * @return void
-     */
     public function testUncaughtThrowInGlobalScopeSuppressed(): void
     {
         Config::getInstance()->check_for_throws_in_global_scope = true;
@@ -197,9 +173,6 @@ class IssueSuppressionTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
-    /**
-     * @return void
-     */
     public function testUncaughtThrowInGlobalScopeSuppressedWithoutThrow(): void
     {
         $this->expectException(\Psalm\Exception\CodeException::class);

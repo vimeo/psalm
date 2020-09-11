@@ -21,7 +21,6 @@ use function array_merge;
 class SwitchAnalyzer
 {
     /**
-     *
      * @return  false|null
      */
     public static function analyze(

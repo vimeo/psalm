@@ -1504,9 +1504,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         );
     }
 
-    /**
-     * @return void
-     */
     public function addOrUpdateParamType(
         ProjectAnalyzer $project_analyzer,
         string $param_name,
@@ -1566,7 +1563,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
      *
      * @param   string  $return_type
      *
-     * @return  void
      */
     public function addReturnTypes(Context $context): void
     {
@@ -1589,9 +1585,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         }
     }
 
-    /**
-     * @return void
-     */
     public function examineParamTypes(
         StatementsAnalyzer $statements_analyzer,
         Context $context,
@@ -1836,16 +1829,12 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     /**
      * Adds a suppressed issue, useful when creating a method checker from scratch
      *
-     * @return void
      */
     public function addSuppressedIssue(string $issue_name): void
     {
         $this->suppressed_issues[] = $issue_name;
     }
 
-    /**
-     * @return void
-     */
     public static function clearCache(): void
     {
         self::$no_effects_hashes = [];

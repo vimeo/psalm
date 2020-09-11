@@ -10,9 +10,7 @@ class TaintTest extends TestCase
     /**
      * @dataProvider providerValidCodeParse
      *
-     * @param string $code
      *
-     * @return void
      */
     public function testValidCode(string $code): void
     {
@@ -40,10 +38,7 @@ class TaintTest extends TestCase
     /**
      * @dataProvider providerInvalidCodeParse
      *
-     * @param string $code
-     * @param string $error_message
      *
-     * @return void
      */
     public function testInvalidCode(string $code, string $error_message): void
     {

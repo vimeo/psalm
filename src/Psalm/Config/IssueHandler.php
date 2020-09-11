@@ -43,9 +43,6 @@ class IssueHandler
         return $handler;
     }
 
-    /**
-     * @return void
-     */
     public function setErrorLevel(string $error_level): void
     {
         if (!in_array($error_level, \Psalm\Config::$ERROR_LEVELS, true)) {

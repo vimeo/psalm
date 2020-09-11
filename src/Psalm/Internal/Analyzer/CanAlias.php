@@ -40,10 +40,6 @@ trait CanAlias
      */
     private $aliased_constants = [];
 
-    /**
-     *
-     * @return void
-     */
     public function visitUse(PhpParser\Node\Stmt\Use_ $stmt): void
     {
         $codebase = $this->getCodebase();
@@ -102,10 +98,6 @@ trait CanAlias
         }
     }
 
-    /**
-     *
-     * @return void
-     */
     public function visitGroupUse(PhpParser\Node\Stmt\GroupUse $stmt): void
     {
         $use_prefix = implode('\\', $stmt->prefix->parts);

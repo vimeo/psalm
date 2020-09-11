@@ -44,7 +44,6 @@ class JsonOutputTest extends TestCase
      * @param int $line_number
      * @param string $error
      *
-     * @return void
      */
     public function testJsonOutputErrors($code, $message, $line_number, $error): void
     {
