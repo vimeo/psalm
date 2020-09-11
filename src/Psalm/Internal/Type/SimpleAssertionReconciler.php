@@ -75,7 +75,8 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                     if (IssueBuffer::accepts(
                         new TypeDoesNotContainType(
                             'Cannot resolve types for ' . $key . ' on null var',
-                            $code_location
+                            $code_location,
+                            null
                         ),
                         $suppressed_issues
                     )) {
@@ -1981,7 +1982,8 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                             'Found a redundant condition when evaluating ' . $key
                                 . ' of type ' . $existing_var_type->getId()
                                 . ' and trying to reconcile it with a ' . $assertion . ' assertion',
-                            $code_location
+                            $code_location,
+                            $existing_var_type->getId() . ' ' . $assertion
                         ),
                         $suppressed_issues
                     )
@@ -2032,7 +2034,8 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                             'Found a redundant condition when evaluating ' . $key
                                 . ' of type ' . $existing_var_type->getId()
                                 . ' and trying to reconcile it with a ' . $assertion . ' assertion',
-                            $code_location
+                            $code_location,
+                            $existing_var_type->getId() . ' ' . $assertion
                         ),
                         $suppressed_issues
                     )

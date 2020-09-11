@@ -1824,7 +1824,7 @@ class FunctionCallTest extends TestCase
                     function sayHello(string $format): void {
                         if (strpos("u", $format)) {}
                     }',
-                'error_message' => 'InvalidArgument',
+                'error_message' => 'InvalidLiteralArgument',
             ],
         ];
     }

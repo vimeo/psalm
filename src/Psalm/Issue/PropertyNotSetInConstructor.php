@@ -5,4 +5,13 @@ class PropertyNotSetInConstructor extends PropertyIssue
 {
     const ERROR_LEVEL = 2;
     const SHORTCODE = 74;
+
+    public function __construct(
+        string $message,
+        \Psalm\CodeLocation $code_location,
+        string $property_id
+    ) {
+        parent::__construct($message, $code_location, $property_id);
+        $this->dupe_key = $property_id;
+    }
 }

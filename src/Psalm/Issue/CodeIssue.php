@@ -14,13 +14,20 @@ abstract class CodeIssue
 
     /**
      * @var CodeLocation
+     * @readonly
      */
-    protected $code_location;
+    public $code_location;
 
     /**
      * @var string
+     * @readonly
      */
-    protected $message;
+    public $message;
+
+    /**
+     * @var ?string
+     */
+    public $dupe_key;
 
     public function __construct(
         string $message,
@@ -30,6 +37,10 @@ abstract class CodeIssue
         $this->message = $message;
     }
 
+    /**
+     * @deprecated
+     * @psalm-suppress PossiblyUnusedMethod
+     */
     public function getLocation(): CodeLocation
     {
         return $this->code_location;
@@ -58,7 +69,7 @@ abstract class CodeIssue
     }
 
     /**
-     *
+     * @deprecated
      * @psalm-suppress PossiblyUnusedMethod for convenience
      */
     public function getFileName(): string
@@ -66,6 +77,10 @@ abstract class CodeIssue
         return $this->code_location->file_name;
     }
 
+    /**
+     * @deprecated
+     * @psalm-suppress PossiblyUnusedMethod
+     */
     public function getMessage(): string
     {
         return $this->message;
@@ -77,7 +92,7 @@ abstract class CodeIssue
      */
     public function toIssueData($severity = Config::REPORT_ERROR): \Psalm\Internal\Analyzer\IssueData
     {
-        $location = $this->getLocation();
+        $location = $this->code_location;
         $selection_bounds = $location->getSelectionBounds();
         $snippet_bounds = $location->getSnippetBounds();
 
@@ -89,7 +104,7 @@ abstract class CodeIssue
             $location->getLineNumber(),
             $location->getEndLineNumber(),
             $issue_type,
-            $this->getMessage(),
+            $this->message,
             $location->file_name,
             $location->file_path,
             $location->getSnippet(),
@@ -102,7 +117,8 @@ abstract class CodeIssue
             $location->getEndColumn(),
             (int) static::SHORTCODE,
             (int) static::ERROR_LEVEL,
-            $this instanceof TaintedInput ? $this->getTaintTrace() : null
+            $this instanceof TaintedInput ? $this->getTaintTrace() : null,
+            $this->dupe_key
         );
     }
 }

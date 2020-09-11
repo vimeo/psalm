@@ -821,7 +821,11 @@ class Reconciler
         CodeLocation $code_location,
         array $suppressed_issues
     ) {
-        $reconciliation = ' and trying to reconcile type \'' . $old_var_type_string . '\' to ' . $assertion;
+        $never = $assertion[0] === '!';
+
+        if ($never) {
+            $assertion = substr($assertion, 1);
+        }
 
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
@@ -833,9 +837,11 @@ class Reconciler
             if ($from_docblock) {
                 if (IssueBuffer::accepts(
                     new RedundantConditionGivenDocblockType(
-                        'Found a redundant condition when evaluating docblock-defined type '
-                            . $key . $reconciliation,
-                        $code_location
+                        'Docblock-defined type ' . $old_var_type_string
+                            . ' for ' . $key
+                            . ' is ' . ($never ? 'never ' : 'always ') . $assertion,
+                        $code_location,
+                        $old_var_type_string . ' ' . $assertion
                     ),
                     $suppressed_issues
                 )) {
@@ -844,8 +850,11 @@ class Reconciler
             } else {
                 if (IssueBuffer::accepts(
                     new RedundantCondition(
-                        'Found a redundant condition when evaluating ' . $key . $reconciliation,
-                        $code_location
+                        'Type ' . $old_var_type_string
+                            . ' for ' . $key
+                            . ' is ' . ($never ? 'never ' : 'always ') . $assertion,
+                        $code_location,
+                        $old_var_type_string . ' ' . $assertion
                     ),
                     $suppressed_issues
                 )) {
@@ -856,9 +865,11 @@ class Reconciler
             if ($from_docblock) {
                 if (IssueBuffer::accepts(
                     new DocblockTypeContradiction(
-                        'Found a contradiction with a docblock-defined type '
-                            . 'when evaluating ' . $key . $reconciliation,
-                        $code_location
+                        'Docblock-defined type ' . $old_var_type_string
+                            . ' for ' . $key
+                            . ' is ' . ($never ? 'always ' : 'never ') . $assertion,
+                        $code_location,
+                        $old_var_type_string . ' ' . $assertion
                     ),
                     $suppressed_issues
                 )) {
@@ -867,8 +878,11 @@ class Reconciler
             } else {
                 if (IssueBuffer::accepts(
                     new TypeDoesNotContainType(
-                        'Found a contradiction when evaluating ' . $key . $reconciliation,
-                        $code_location
+                        'Type ' . $old_var_type_string
+                            . ' for ' . $key
+                            . ' is ' . ($never ? 'always ' : 'never ') . $assertion,
+                        $code_location,
+                        $old_var_type_string . ' ' . $assertion
                     ),
                     $suppressed_issues
                 )) {

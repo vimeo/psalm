@@ -706,7 +706,8 @@ class IfAnalyzer
                     if (IssueBuffer::accepts(
                         new DocblockTypeContradiction(
                             'if (false) is impossible',
-                            new CodeLocation($statements_analyzer, $cond)
+                            new CodeLocation($statements_analyzer, $cond),
+                            'false falsy',
                         ),
                         $statements_analyzer->getSuppressedIssues()
                     )) {
@@ -716,7 +717,8 @@ class IfAnalyzer
                     if (IssueBuffer::accepts(
                         new TypeDoesNotContainType(
                             'if (false) is impossible',
-                            new CodeLocation($statements_analyzer, $cond)
+                            new CodeLocation($statements_analyzer, $cond),
+                            'false falsy',
                         ),
                         $statements_analyzer->getSuppressedIssues()
                     )) {
@@ -728,7 +730,8 @@ class IfAnalyzer
                     if (IssueBuffer::accepts(
                         new RedundantConditionGivenDocblockType(
                             'if (true) is redundant',
-                            new CodeLocation($statements_analyzer, $cond)
+                            new CodeLocation($statements_analyzer, $cond),
+                            'true falsy',
                         ),
                         $statements_analyzer->getSuppressedIssues()
                     )) {
@@ -738,7 +741,8 @@ class IfAnalyzer
                     if (IssueBuffer::accepts(
                         new RedundantCondition(
                             'if (true) is redundant',
-                            new CodeLocation($statements_analyzer, $cond)
+                            new CodeLocation($statements_analyzer, $cond),
+                            'true falsy',
                         ),
                         $statements_analyzer->getSuppressedIssues()
                     )) {

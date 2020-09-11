@@ -88,7 +88,8 @@ class NegatedAssertionReconciler extends Reconciler
                                         new DocblockTypeContradiction(
                                             'Cannot resolve types for ' . $key . ' with docblock-defined type '
                                                 . $existing_var_type . ' and !isset assertion',
-                                            $code_location
+                                            $code_location,
+                                            null
                                         ),
                                         $suppressed_issues
                                     )) {
@@ -99,7 +100,8 @@ class NegatedAssertionReconciler extends Reconciler
                                         new TypeDoesNotContainType(
                                             'Cannot resolve types for ' . $key . ' with type '
                                                 . $existing_var_type . ' and !isset assertion',
-                                            $code_location
+                                            $code_location,
+                                            null
                                         ),
                                         $suppressed_issues
                                     )) {

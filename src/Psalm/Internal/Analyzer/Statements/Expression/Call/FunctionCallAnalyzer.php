@@ -1593,7 +1593,8 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     if (IssueBuffer::accepts(
                         new \Psalm\Issue\RedundantConditionGivenDocblockType(
                             'The call to strtolower is unnecessary given the docblock type',
-                            new CodeLocation($statements_analyzer, $function_name)
+                            new CodeLocation($statements_analyzer, $function_name),
+                            null
                         ),
                         $statements_analyzer->getSuppressedIssues()
                     )) {
@@ -1603,7 +1604,8 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     if (IssueBuffer::accepts(
                         new \Psalm\Issue\RedundantCondition(
                             'The call to strtolower is unnecessary',
-                            new CodeLocation($statements_analyzer, $function_name)
+                            new CodeLocation($statements_analyzer, $function_name),
+                            null
                         ),
                         $statements_analyzer->getSuppressedIssues()
                     )) {

@@ -64,7 +64,8 @@ class AlgebraAnalyzer
                 if (IssueBuffer::accepts(
                     new RedundantCondition(
                         $formula2_clause . ' has already been asserted',
-                        new CodeLocation($statements_analyzer, $stmt)
+                        new CodeLocation($statements_analyzer, $stmt),
+                        null
                     ),
                     $statements_analyzer->getSuppressedIssues()
                 )) {
@@ -104,7 +105,8 @@ class AlgebraAnalyzer
                         if (IssueBuffer::accepts(
                             new RedundantCondition(
                                 'Found a redundant condition when evaluating ' . $key,
-                                new CodeLocation($statements_analyzer, $stmt)
+                                new CodeLocation($statements_analyzer, $stmt),
+                                null
                             ),
                             $statements_analyzer->getSuppressedIssues()
                         )) {

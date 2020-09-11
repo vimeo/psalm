@@ -121,7 +121,7 @@ class JsonOutputTest extends TestCase
                     $a = $_GET["hello"];
                     assert(is_int($a));
                     if (is_int($a)) {}',
-                'message' => "Found a redundant condition when evaluating docblock-defined type \$a and trying to reconcile type 'int' to int",
+                'message' => 'Docblock-defined type int for $a is always int',
                 'line' => 4,
                 'error' => 'is_int($a)',
             ],
