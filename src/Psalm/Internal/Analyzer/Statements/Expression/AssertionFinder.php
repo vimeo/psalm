@@ -97,7 +97,8 @@ class AssertionFinder
                                         new RedundantConditionGivenDocblockType(
                                             $var_type->getId() . ' does not contain '
                                                 . $instanceof_type->getId(),
-                                            new CodeLocation($source, $conditional)
+                                            new CodeLocation($source, $conditional),
+                                            $var_type->getId() . ' ' . $instanceof_type->getId()
                                         ),
                                         $source->getSuppressedIssues()
                                     )) {
@@ -108,7 +109,8 @@ class AssertionFinder
                                         new RedundantCondition(
                                             $var_type->getId() . ' cannot be identical to '
                                                 . $instanceof_type->getId(),
-                                            new CodeLocation($source, $conditional)
+                                            new CodeLocation($source, $conditional),
+                                            $var_type->getId() . ' ' . $instanceof_type->getId()
                                         ),
                                         $source->getSuppressedIssues()
                                     )) {
@@ -303,7 +305,8 @@ class AssertionFinder
                         if (IssueBuffer::accepts(
                             new DocblockTypeContradiction(
                                 $var_type . ' cannot be greater than ' . $min_comparison,
-                                new CodeLocation($source, $conditional)
+                                new CodeLocation($source, $conditional),
+                                null
                             ),
                             $source->getSuppressedIssues()
                         )) {
@@ -313,7 +316,8 @@ class AssertionFinder
                         if (IssueBuffer::accepts(
                             new TypeDoesNotContainType(
                                 $var_type . ' cannot be greater than ' . $min_comparison,
-                                new CodeLocation($source, $conditional)
+                                new CodeLocation($source, $conditional),
+                                null
                             ),
                             $source->getSuppressedIssues()
                         )) {
@@ -591,7 +595,8 @@ class AssertionFinder
                         if (IssueBuffer::accepts(
                             new DocblockTypeContradiction(
                                 $var_type . ' does not contain null',
-                                new CodeLocation($source, $conditional)
+                                new CodeLocation($source, $conditional),
+                                $var_type . ' null'
                             ),
                             $source->getSuppressedIssues()
                         )) {
@@ -601,7 +606,8 @@ class AssertionFinder
                         if (IssueBuffer::accepts(
                             new TypeDoesNotContainNull(
                                 $var_type . ' does not contain null',
-                                new CodeLocation($source, $conditional)
+                                new CodeLocation($source, $conditional),
+                                $var_type->getId()
                             ),
                             $source->getSuppressedIssues()
                         )) {
@@ -708,7 +714,8 @@ class AssertionFinder
                             if (IssueBuffer::accepts(
                                 new DocblockTypeContradiction(
                                     $var_type . ' does not contain true',
-                                    new CodeLocation($source, $conditional)
+                                    new CodeLocation($source, $conditional),
+                                    $var_type . ' true'
                                 ),
                                 $source->getSuppressedIssues()
                             )) {
@@ -718,7 +725,8 @@ class AssertionFinder
                             if (IssueBuffer::accepts(
                                 new TypeDoesNotContainType(
                                     $var_type . ' does not contain true',
-                                    new CodeLocation($source, $conditional)
+                                    new CodeLocation($source, $conditional),
+                                    $var_type . ' true'
                                 ),
                                 $source->getSuppressedIssues()
                             )) {
@@ -813,7 +821,8 @@ class AssertionFinder
                             if (IssueBuffer::accepts(
                                 new DocblockTypeContradiction(
                                     $var_type . ' does not contain false',
-                                    new CodeLocation($source, $conditional)
+                                    new CodeLocation($source, $conditional),
+                                    $var_type . ' false'
                                 ),
                                 $source->getSuppressedIssues()
                             )) {
@@ -823,7 +832,8 @@ class AssertionFinder
                             if (IssueBuffer::accepts(
                                 new TypeDoesNotContainType(
                                     $var_type . ' does not contain false',
-                                    new CodeLocation($source, $conditional)
+                                    new CodeLocation($source, $conditional),
+                                    $var_type . ' false'
                                 ),
                                 $source->getSuppressedIssues()
                             )) {
@@ -876,7 +886,8 @@ class AssertionFinder
                         if (IssueBuffer::accepts(
                             new DocblockTypeContradiction(
                                 $var_type . ' does not contain an empty array',
-                                new CodeLocation($source, $conditional)
+                                new CodeLocation($source, $conditional),
+                                null
                             ),
                             $source->getSuppressedIssues()
                         )) {
@@ -886,7 +897,8 @@ class AssertionFinder
                         if (IssueBuffer::accepts(
                             new TypeDoesNotContainType(
                                 $var_type . ' does not contain empty array',
-                                new CodeLocation($source, $conditional)
+                                new CodeLocation($source, $conditional),
+                                null
                             ),
                             $source->getSuppressedIssues()
                         )) {
@@ -1108,7 +1120,8 @@ class AssertionFinder
                         if (IssueBuffer::accepts(
                             new DocblockTypeContradiction(
                                 $var_type->getId() . ' does not contain ' . $other_type->getId(),
-                                new CodeLocation($source, $conditional)
+                                new CodeLocation($source, $conditional),
+                                $var_type->getId() . ' ' . $other_type->getId()
                             ),
                             $source->getSuppressedIssues()
                         )) {
@@ -1118,7 +1131,8 @@ class AssertionFinder
                         if (IssueBuffer::accepts(
                             new TypeDoesNotContainType(
                                 $var_type->getId() . ' cannot be identical to ' . $other_type->getId(),
-                                new CodeLocation($source, $conditional)
+                                new CodeLocation($source, $conditional),
+                                $var_type->getId() . ' ' . $other_type->getId()
                             ),
                             $source->getSuppressedIssues()
                         )) {
@@ -1143,7 +1157,8 @@ class AssertionFinder
                 if (IssueBuffer::accepts(
                     new TypeDoesNotContainType(
                         $var_type->getId() . ' cannot be identical to ' . $other_type->getId(),
-                        new CodeLocation($source, $conditional)
+                        new CodeLocation($source, $conditional),
+                        $var_type->getId() . ' ' . $other_type->getId()
                     ),
                     $source->getSuppressedIssues()
                 )) {
@@ -1225,8 +1240,9 @@ class AssertionFinder
                         if ($var_type->from_docblock) {
                             if (IssueBuffer::accepts(
                                 new RedundantConditionGivenDocblockType(
-                                    'Docblock-asserted type ' . $var_type . ' can never contain null',
-                                    new CodeLocation($source, $conditional)
+                                    'Docblock-defined type ' . $var_type . ' can never contain null',
+                                    new CodeLocation($source, $conditional),
+                                    $var_type->getId() . ' null'
                                 ),
                                 $source->getSuppressedIssues()
                             )) {
@@ -1236,7 +1252,8 @@ class AssertionFinder
                             if (IssueBuffer::accepts(
                                 new RedundantCondition(
                                     $var_type . ' can never contain null',
-                                    new CodeLocation($source, $conditional)
+                                    new CodeLocation($source, $conditional),
+                                    $var_type->getId() . ' null'
                                 ),
                                 $source->getSuppressedIssues()
                             )) {
@@ -1324,8 +1341,9 @@ class AssertionFinder
                         if ($var_type->from_docblock) {
                             if (IssueBuffer::accepts(
                                 new RedundantConditionGivenDocblockType(
-                                    'Docblock-asserted type ' . $var_type . ' can never contain false',
-                                    new CodeLocation($source, $conditional)
+                                    'Docblock-defined type ' . $var_type . ' can never contain false',
+                                    new CodeLocation($source, $conditional),
+                                    $var_type->getId() . ' false'
                                 ),
                                 $source->getSuppressedIssues()
                             )) {
@@ -1335,7 +1353,8 @@ class AssertionFinder
                             if (IssueBuffer::accepts(
                                 new RedundantCondition(
                                     $var_type . ' can never contain false',
-                                    new CodeLocation($source, $conditional)
+                                    new CodeLocation($source, $conditional),
+                                    $var_type->getId() . ' false'
                                 ),
                                 $source->getSuppressedIssues()
                             )) {
@@ -1433,8 +1452,9 @@ class AssertionFinder
                         if ($var_type->from_docblock) {
                             if (IssueBuffer::accepts(
                                 new RedundantConditionGivenDocblockType(
-                                    'Docblock-asserted type ' . $var_type . ' can never contain true',
-                                    new CodeLocation($source, $conditional)
+                                    'Docblock-defined type ' . $var_type . ' can never contain true',
+                                    new CodeLocation($source, $conditional),
+                                    $var_type->getId() . ' true'
                                 ),
                                 $source->getSuppressedIssues()
                             )) {
@@ -1444,7 +1464,8 @@ class AssertionFinder
                             if (IssueBuffer::accepts(
                                 new RedundantCondition(
                                     $var_type . ' can never contain ' . $true_type,
-                                    new CodeLocation($source, $conditional)
+                                    new CodeLocation($source, $conditional),
+                                    $var_type->getId() . ' true'
                                 ),
                                 $source->getSuppressedIssues()
                             )) {
@@ -1527,8 +1548,9 @@ class AssertionFinder
                         if ($var_type->from_docblock) {
                             if (IssueBuffer::accepts(
                                 new RedundantConditionGivenDocblockType(
-                                    'Docblock-asserted type ' . $var_type . ' can never contain null',
-                                    new CodeLocation($source, $conditional)
+                                    'Docblock-defined type ' . $var_type->getId() . ' can never contain null',
+                                    new CodeLocation($source, $conditional),
+                                    $var_type->getId() . ' null'
                                 ),
                                 $source->getSuppressedIssues()
                             )) {
@@ -1537,8 +1559,9 @@ class AssertionFinder
                         } else {
                             if (IssueBuffer::accepts(
                                 new RedundantCondition(
-                                    $var_type . ' can never contain null',
-                                    new CodeLocation($source, $conditional)
+                                    $var_type->getId() . ' can never contain null',
+                                    new CodeLocation($source, $conditional),
+                                    $var_type->getId() . ' null'
                                 ),
                                 $source->getSuppressedIssues()
                             )) {
@@ -1743,7 +1766,8 @@ class AssertionFinder
                             if (IssueBuffer::accepts(
                                 new DocblockTypeContradiction(
                                     $var_type . ' can never contain ' . $other_type,
-                                    new CodeLocation($source, $conditional)
+                                    new CodeLocation($source, $conditional),
+                                    $var_type . ' ' . $other_type
                                 ),
                                 $source->getSuppressedIssues()
                             )) {
@@ -1753,7 +1777,8 @@ class AssertionFinder
                             if (IssueBuffer::accepts(
                                 new RedundantCondition(
                                     $var_type->getId() . ' can never contain ' . $other_type->getId(),
-                                    new CodeLocation($source, $conditional)
+                                    new CodeLocation($source, $conditional),
+                                    $var_type->getId() . ' ' . $other_type->getId()
                                 ),
                                 $source->getSuppressedIssues()
                             )) {
@@ -2215,7 +2240,8 @@ class AssertionFinder
                 if (IssueBuffer::accepts(
                     new RedundantConditionGivenDocblockType(
                         'Docblock type ' . $first_var_type . ' always contains ' . $expected_type,
-                        new CodeLocation($source, $expr)
+                        new CodeLocation($source, $expr),
+                        $first_var_type . ' ' . $expected_type
                     ),
                     $source->getSuppressedIssues()
                 )) {
@@ -2225,7 +2251,8 @@ class AssertionFinder
                 if (IssueBuffer::accepts(
                     new RedundantCondition(
                         $first_var_type . ' always contains ' . $expected_type,
-                        new CodeLocation($source, $expr)
+                        new CodeLocation($source, $expr),
+                        $first_var_type . ' ' . $expected_type
                     ),
                     $source->getSuppressedIssues()
                 )) {
@@ -2237,7 +2264,8 @@ class AssertionFinder
                 if (IssueBuffer::accepts(
                     new DocblockTypeContradiction(
                         $first_var_type . ' does not contain ' . $expected_type,
-                        new CodeLocation($source, $expr)
+                        new CodeLocation($source, $expr),
+                        $first_var_type . ' ' . $expected_type
                     ),
                     $source->getSuppressedIssues()
                 )) {
@@ -2247,7 +2275,8 @@ class AssertionFinder
                 if (IssueBuffer::accepts(
                     new TypeDoesNotContainType(
                         $first_var_type . ' does not contain ' . $expected_type,
-                        new CodeLocation($source, $expr)
+                        new CodeLocation($source, $expr),
+                        $first_var_type . ' ' . $expected_type
                     ),
                     $source->getSuppressedIssues()
                 )) {
@@ -2474,7 +2503,7 @@ class AssertionFinder
 
         return [];
     }
-    
+
     protected static function hasNullVariable(
         PhpParser\Node\Expr\BinaryOp $conditional,
         FileSource $source
@@ -2946,7 +2975,7 @@ class AssertionFinder
 
         return false;
     }
-    
+
     protected static function hasIsACheck(
         PhpParser\Node\Expr\FuncCall $stmt,
         StatementsAnalyzer $source

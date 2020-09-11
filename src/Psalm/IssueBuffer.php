@@ -171,7 +171,7 @@ class IssueBuffer
             return true;
         }
 
-        if ($e->getLocation()->getLineNumber() === -1) {
+        if ($e->code_location->getLineNumber() === -1) {
             return true;
         }
 
@@ -216,13 +216,13 @@ class IssueBuffer
             ob_start();
             debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
             $trace = ob_get_clean();
-            fwrite(STDERR, "\nEmitting {$e->getShortLocation()} $issue_type {$e->getMessage()}\n$trace\n");
+            fwrite(STDERR, "\nEmitting {$e->getShortLocation()} $issue_type {$e->message}\n$trace\n");
         }
 
         $emitted_key = $issue_type
             . '-' . $e->getShortLocation()
-            . ':' . $e->getLocation()->getColumn()
-            . ' ' . $e->getMessage();
+            . ':' . $e->code_location->getColumn()
+            . ' ' . $e->dupe_key;
 
         if ($reporting_level === Config::REPORT_INFO) {
             if ($issue_type === 'TaintedInput' || !self::alreadyEmitted($emitted_key)) {
@@ -237,12 +237,12 @@ class IssueBuffer
 
             $message = $e instanceof \Psalm\Issue\TaintedInput
                 ? $e->getJourneyMessage()
-                : $e->getMessage();
+                : $e->message;
 
             throw new Exception\CodeException(
                 $issue_type
                     . ' - ' . $e->getShortLocationWithPrevious()
-                    . ':' . $e->getLocation()->getColumn()
+                    . ':' . $e->code_location->getColumn()
                     . ' - ' . $message
             );
         }
@@ -415,7 +415,7 @@ class IssueBuffer
                     . '-' . $issue->file_name
                     . ':' . $issue->line_from
                     . ':' . $issue->column_from
-                    . ' ' . $issue->message;
+                    . ' ' . $issue->getDupeKey();
 
                 if (!self::alreadyEmitted($emitted_key)) {
                     self::$issues_data[$file_path][] = $issue;

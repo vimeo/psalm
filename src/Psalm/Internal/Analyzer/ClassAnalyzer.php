@@ -1461,9 +1461,10 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 if ($uninitialized_property->location) {
                     if (IssueBuffer::accepts(
                         new MissingConstructor(
-                            $class_storage->name . ' has an uninitialized variable ' . $uninitialized_variables[0] .
+                            $class_storage->name . ' has an uninitialized property ' . $uninitialized_variables[0] .
                                 ', but no constructor',
-                            $uninitialized_property->location
+                            $uninitialized_property->location,
+                            $class_storage->name . '::' . $uninitialized_variables[0]
                         ),
                         $storage->suppressed_issues + $this->getSuppressedIssues()
                     )) {

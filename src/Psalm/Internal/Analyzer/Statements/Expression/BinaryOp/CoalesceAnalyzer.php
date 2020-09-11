@@ -139,7 +139,8 @@ class CoalesceAnalyzer
                         if (IssueBuffer::accepts(
                             new \Psalm\Issue\DocblockTypeContradiction(
                                 $naive_type->getId() . ' does not contain null',
-                                new CodeLocation($statements_analyzer, $stmt->left)
+                                new CodeLocation($statements_analyzer, $stmt->left),
+                                $naive_type->getId() . ' null'
                             ),
                             $statements_analyzer->getSuppressedIssues()
                         )) {
@@ -149,7 +150,8 @@ class CoalesceAnalyzer
                         if (IssueBuffer::accepts(
                             new \Psalm\Issue\TypeDoesNotContainType(
                                 $naive_type->getId() . ' is always defined and non-null',
-                                new CodeLocation($statements_analyzer, $stmt->left)
+                                new CodeLocation($statements_analyzer, $stmt->left),
+                                null
                             ),
                             $statements_analyzer->getSuppressedIssues()
                         )) {

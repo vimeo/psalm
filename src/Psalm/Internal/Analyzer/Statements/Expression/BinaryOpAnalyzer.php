@@ -215,7 +215,8 @@ class BinaryOpAnalyzer
                                         if (IssueBuffer::accepts(
                                             new \Psalm\Issue\DocblockTypeContradiction(
                                                 $atomic_right_type . ' string length is not ' . $string_length,
-                                                new CodeLocation($statements_analyzer, $stmt)
+                                                new CodeLocation($statements_analyzer, $stmt),
+                                                null
                                             ),
                                             $statements_analyzer->getSuppressedIssues()
                                         )) {
@@ -225,7 +226,8 @@ class BinaryOpAnalyzer
                                         if (IssueBuffer::accepts(
                                             new \Psalm\Issue\TypeDoesNotContainType(
                                                 $atomic_right_type . ' string length is not ' . $string_length,
-                                                new CodeLocation($statements_analyzer, $stmt)
+                                                new CodeLocation($statements_analyzer, $stmt),
+                                                null
                                             ),
                                             $statements_analyzer->getSuppressedIssues()
                                         )) {
@@ -237,7 +239,8 @@ class BinaryOpAnalyzer
                                         if (IssueBuffer::accepts(
                                             new \Psalm\Issue\RedundantConditionGivenDocblockType(
                                                 $atomic_right_type . ' string length is never ' . $string_length,
-                                                new CodeLocation($statements_analyzer, $stmt)
+                                                new CodeLocation($statements_analyzer, $stmt),
+                                                null
                                             ),
                                             $statements_analyzer->getSuppressedIssues()
                                         )) {
@@ -247,7 +250,8 @@ class BinaryOpAnalyzer
                                         if (IssueBuffer::accepts(
                                             new \Psalm\Issue\RedundantCondition(
                                                 $atomic_right_type . ' string length is never ' . $string_length,
-                                                new CodeLocation($statements_analyzer, $stmt)
+                                                new CodeLocation($statements_analyzer, $stmt),
+                                                null
                                             ),
                                             $statements_analyzer->getSuppressedIssues()
                                         )) {

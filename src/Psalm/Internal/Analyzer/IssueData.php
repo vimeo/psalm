@@ -116,6 +116,12 @@ class IssueData
     public $taint_trace;
 
     /**
+     * @var ?string
+     * @readonly
+     */
+    private $dupe_key;
+
+    /**
      * @param ?list<TaintNodeData|array{label: string, entry_path_type: string}> $taint_trace
      */
     public function __construct(
@@ -136,7 +142,8 @@ class IssueData
         int $column_to,
         int $shortcode = 0,
         int $error_level = -1,
-        ?array $taint_trace = null
+        ?array $taint_trace = null,
+        ?string $dupe_key = null
     ) {
         $this->severity = $severity;
         $this->line_from = $line_from;
@@ -157,5 +164,11 @@ class IssueData
         $this->error_level = $error_level;
         $this->link = 'https://psalm.dev/' . \str_pad((string) $shortcode, 3, "0", \STR_PAD_LEFT);
         $this->taint_trace = $taint_trace;
+        $this->dupe_key = $dupe_key;
+    }
+
+    public function getDupeKey() : ?string
+    {
+        return $this->dupe_key;
     }
 }
