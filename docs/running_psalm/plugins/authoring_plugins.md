@@ -105,10 +105,10 @@ You can also specify an absolute path to your plugin:
 
 ### Using Xdebug
 
-As Psalm disables _Xdebug_ at runtime, if you need to debug your code step-by-step when authoring a plugin, you can allow the extension by doing :
+As Psalm disables _Xdebug_ at runtime, if you need to debug your code step-by-step when authoring a plugin, you can allow the extension by running Psalm as following:
 
-```bash
-$ export PSALM_ALLOW_XDEBUG=1
+```console
+$ PSALM_ALLOW_XDEBUG=1 path/to/psalm
 ```
 
 ## Type system
