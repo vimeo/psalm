@@ -40,7 +40,7 @@ class CachedStorageTest extends \Psalm\Tests\TestCase
     /**
      * @return void
      */
-    public function testValidInclude()
+    public function testValidInclude(): void
     {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'SKIPPED-') !== false) {

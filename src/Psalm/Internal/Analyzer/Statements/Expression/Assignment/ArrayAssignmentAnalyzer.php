@@ -39,7 +39,7 @@ class ArrayAssignmentAnalyzer
         Context $context,
         ?PhpParser\Node\Expr $assign_value,
         Type\Union $assignment_value_type
-    ) {
+    ): void {
         $nesting = 0;
         $var_id = ExpressionIdentifier::getVarId(
             $stmt->var,

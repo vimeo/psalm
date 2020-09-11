@@ -589,7 +589,7 @@ class CallAnalyzer
         array $template_type_map,
         Context $context,
         StatementsAnalyzer $statements_analyzer
-    ) {
+    ): void {
         $type_assertions = [];
 
         $asserted_keys = [];

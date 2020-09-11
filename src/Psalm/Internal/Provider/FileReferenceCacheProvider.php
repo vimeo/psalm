@@ -672,7 +672,7 @@ class FileReferenceCacheProvider
     /**
      * @return void
      */
-    public function setConfigHashCache(string $hash)
+    public function setConfigHashCache(string $hash): void
     {
         $cache_directory = Config::getInstance()->getCacheDirectory();
 

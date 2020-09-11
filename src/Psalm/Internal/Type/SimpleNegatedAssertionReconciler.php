@@ -1412,7 +1412,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
     private static function removeFalsyNegatedLiteralTypes(
         Type\Union $existing_var_type,
         bool &$did_remove_type
-    ) {
+    ): void {
         if ($existing_var_type->hasString()) {
             $existing_string_types = $existing_var_type->getLiteralStrings();
 

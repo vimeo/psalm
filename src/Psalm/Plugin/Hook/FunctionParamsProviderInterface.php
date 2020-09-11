@@ -24,5 +24,5 @@ interface FunctionParamsProviderInterface
         array $call_args,
         ?Context $context = null,
         ?CodeLocation $code_location = null
-    );
+    ): ?array;
 }

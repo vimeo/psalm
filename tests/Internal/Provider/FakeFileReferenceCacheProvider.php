@@ -206,7 +206,7 @@ class FakeFileReferenceCacheProvider extends \Psalm\Internal\Provider\FileRefere
     /**
      * @return array<string, array<string, int>>
      */
-    public function getAnalyzedMethodCache()
+    public function getAnalyzedMethodCache(): array
     {
         return $this->cached_correct_methods;
     }
@@ -231,7 +231,7 @@ class FakeFileReferenceCacheProvider extends \Psalm\Internal\Provider\FileRefere
      *      }
      *  >
      */
-    public function getFileMapCache()
+    public function getFileMapCache(): array
     {
         return $this->cached_file_maps;
     }

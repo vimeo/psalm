@@ -52,7 +52,7 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
         array $initial_analyzed_methods,
         array $unaffected_analyzed_methods,
         array $error_levels = []
-    ) {
+    ): void {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'SKIPPED-') !== false) {
             $this->markTestSkipped('Skipped due to a bug.');
@@ -104,7 +104,7 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
     /**
      * @return array<string,array{start_files:array<string,string>,end_files:array<string,string>,initial_analyzed_methods:array<string,array<string,int>>,unaffected_analyzed_methods:array<string,array<string,int>>,4?:array<string,string>}>
      */
-    public function providerTestValidUpdates()
+    public function providerTestValidUpdates(): array
     {
         return [
             'basicRequire' => [

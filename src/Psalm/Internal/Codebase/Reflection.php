@@ -423,7 +423,7 @@ class Reflection
     private function registerInheritedMethods(
         string $fq_class_name,
         string $parent_class
-    ) {
+    ): void {
         $parent_storage = $this->storage_provider->get($parent_class);
         $storage = $this->storage_provider->get($fq_class_name);
 
@@ -451,7 +451,7 @@ class Reflection
     private function registerInheritedProperties(
         string $fq_class_name,
         string $parent_class
-    ) {
+    ): void {
         $parent_storage = $this->storage_provider->get($parent_class);
         $storage = $this->storage_provider->get($fq_class_name);
 

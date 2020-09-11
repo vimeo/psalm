@@ -343,7 +343,7 @@ class Codebase
     /**
      * @return void
      */
-    private function loadAnalyzer()
+    private function loadAnalyzer(): void
     {
         $this->analyzer = new Internal\Codebase\Analyzer(
             $this->config,
@@ -358,7 +358,7 @@ class Codebase
      *
      * @return void
      */
-    public function reloadFiles(ProjectAnalyzer $project_analyzer, array $candidate_files)
+    public function reloadFiles(ProjectAnalyzer $project_analyzer, array $candidate_files): void
     {
         $this->loadAnalyzer();
 
@@ -417,7 +417,7 @@ class Codebase
     }
 
     /** @return void */
-    public function enterServerMode()
+    public function enterServerMode(): void
     {
         $this->server_mode = true;
         $this->store_node_types = true;
@@ -426,7 +426,7 @@ class Codebase
     /**
      * @return void
      */
-    public function collectLocations()
+    public function collectLocations(): void
     {
         $this->collect_locations = true;
         $this->classlikes->collect_locations = true;
@@ -439,7 +439,7 @@ class Codebase
      *
      * @return void
      */
-    public function reportUnusedCode(string $find_unused_code = 'auto')
+    public function reportUnusedCode(string $find_unused_code = 'auto'): void
     {
         $this->collect_references = true;
         $this->classlikes->collect_references = true;
@@ -450,7 +450,7 @@ class Codebase
     /**
      * @return void
      */
-    public function reportUnusedVariables()
+    public function reportUnusedVariables(): void
     {
         $this->collect_references = true;
         $this->find_unused_variables = true;
@@ -461,7 +461,7 @@ class Codebase
      *
      * @return void
      */
-    public function addFilesToAnalyze(array $files_to_analyze)
+    public function addFilesToAnalyze(array $files_to_analyze): void
     {
         $this->scanner->addFilesToDeepScan($files_to_analyze);
         $this->analyzer->addFilesToAnalyze($files_to_analyze);
@@ -472,7 +472,7 @@ class Codebase
      *
      * @return void
      */
-    public function scanFiles(int $threads = 1)
+    public function scanFiles(int $threads = 1): void
     {
         $has_changes = $this->scanner->scanFiles($this->classlikes, $threads);
 
@@ -489,7 +489,7 @@ class Codebase
     /**
      * @return list<PhpParser\Node\Stmt>
      */
-    public function getStatementsForFile(string $file_path)
+    public function getStatementsForFile(string $file_path): array
     {
         return $this->statements_provider->getStatementsForFile(
             $file_path,
@@ -506,7 +506,7 @@ class Codebase
     /**
      * @return void
      */
-    public function cacheClassLikeStorage(ClassLikeStorage $classlike_storage, string $file_path)
+    public function cacheClassLikeStorage(ClassLikeStorage $classlike_storage, string $file_path): void
     {
         $file_contents = $this->file_provider->getContents($file_path);
 
@@ -518,7 +518,7 @@ class Codebase
     /**
      * @return void
      */
-    public function exhumeClassLikeStorage(string $fq_classlike_name, string $file_path)
+    public function exhumeClassLikeStorage(string $fq_classlike_name, string $file_path): void
     {
         $file_contents = $this->file_provider->getContents($file_path);
         $storage = $this->classlike_storage_provider->exhume(
@@ -618,7 +618,7 @@ class Codebase
     /**
      * @return  void
      */
-    public function addGlobalConstantType(string $const_id, Type\Union $type)
+    public function addGlobalConstantType(string $const_id, Type\Union $type): void
     {
         self::$stubbed_constants[$const_id] = $type;
     }
@@ -1525,7 +1525,7 @@ class Codebase
     /**
      * @return void
      */
-    public function addTemporaryFileChanges(string $file_path, string $new_content)
+    public function addTemporaryFileChanges(string $file_path, string $new_content): void
     {
         $this->file_provider->addTemporaryFileChanges($file_path, $new_content);
     }
@@ -1533,7 +1533,7 @@ class Codebase
     /**
      * @return void
      */
-    public function removeTemporaryFileChanges(string $file_path)
+    public function removeTemporaryFileChanges(string $file_path): void
     {
         $this->file_provider->removeTemporaryFileChanges($file_path);
     }

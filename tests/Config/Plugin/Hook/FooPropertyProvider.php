@@ -33,7 +33,7 @@ class FooPropertyProvider implements
         ?StatementsSource $source = null,
         ?Context $context = null,
         ?CodeLocation $code_location = null
-    ) {
+    ): ?bool {
         return $property_name === 'magic_property';
     }
 
@@ -47,7 +47,7 @@ class FooPropertyProvider implements
         bool $read_mode,
         ?Context $context = null,
         ?CodeLocation $code_location = null
-    ) {
+    ): ?bool {
         return true;
     }
 
@@ -62,7 +62,7 @@ class FooPropertyProvider implements
         bool $read_mode,
         ?StatementsSource $source = null,
         ?Context $context = null
-    ) {
+    ): ?Type\Union {
         return Type::getString();
     }
 }

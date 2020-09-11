@@ -107,7 +107,7 @@ class ParamReplacementVisitor extends PhpParser\NodeVisitorAbstract implements P
     /**
      * @return list<FileManipulation>
      */
-    public function getReplacements()
+    public function getReplacements(): array
     {
         return $this->replacements;
     }

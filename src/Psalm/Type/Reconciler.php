@@ -820,7 +820,7 @@ class Reconciler
         bool $redundant,
         CodeLocation $code_location,
         array $suppressed_issues
-    ) {
+    ): void {
         $never = $assertion[0] === '!';
 
         if ($never) {

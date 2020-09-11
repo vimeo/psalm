@@ -229,7 +229,7 @@ class Union implements TypeNode
     /**
      * @return void
      */
-    public function addType(Atomic $type)
+    public function addType(Atomic $type): void
     {
         $this->types[$type->getKey()] = $type;
 
@@ -565,7 +565,7 @@ class Union implements TypeNode
     /**
      * @return void
      */
-    public function bustCache()
+    public function bustCache(): void
     {
         $this->id = null;
     }
@@ -1393,7 +1393,7 @@ class Union implements TypeNode
         return count(
             array_filter(
                 $this->types,
-                function ($type) use ($check_templates) {
+                function ($type) use ($check_templates): bool {
                     return $type instanceof TInt
                         || ($check_templates
                             && $type instanceof TTemplateParam
@@ -1424,7 +1424,7 @@ class Union implements TypeNode
         return count(
             array_filter(
                 $this->types,
-                function ($type) use ($check_templates) {
+                function ($type) use ($check_templates): bool {
                     return $type instanceof TString
                         || ($check_templates
                             && $type instanceof TTemplateParam
@@ -1448,7 +1448,7 @@ class Union implements TypeNode
      *
      * @return TLiteralString the only string literal represented by this union type
      */
-    public function getSingleStringLiteral()
+    public function getSingleStringLiteral(): TLiteralString
     {
         if (count($this->types) !== 1 || count($this->literal_string_types) !== 1) {
             throw new \InvalidArgumentException('Not a string literal');
@@ -1500,7 +1500,7 @@ class Union implements TypeNode
      *
      * @return TLiteralInt the only int literal represented by this union type
      */
-    public function getSingleIntLiteral()
+    public function getSingleIntLiteral(): TLiteralInt
     {
         if (count($this->types) !== 1 || count($this->literal_int_types) !== 1) {
             throw new \InvalidArgumentException('Not an int literal');
@@ -1555,7 +1555,7 @@ class Union implements TypeNode
         Codebase $codebase,
         ?FileStorage $file_storage = null,
         array $phantom_classes = []
-    ) {
+    ): void {
         $scanner_visitor = new \Psalm\Internal\TypeVisitor\TypeScanner(
             $codebase->scanner,
             $file_storage,
@@ -1580,7 +1580,7 @@ class Union implements TypeNode
     /**
      * @return list<TTemplateParam>
      */
-    public function getTemplateTypes()
+    public function getTemplateTypes(): array
     {
         $template_type_collector = new \Psalm\Internal\TypeVisitor\TemplateTypeCollector();
 
@@ -1592,7 +1592,7 @@ class Union implements TypeNode
     /**
      * @return void
      */
-    public function setFromDocblock()
+    public function setFromDocblock(): void
     {
         $this->from_docblock = true;
 

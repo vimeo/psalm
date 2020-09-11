@@ -10,12 +10,12 @@ interface FileSource
     /**
      * @return string
      */
-    public function getRootFileName();
+    public function getRootFileName(): string;
 
     /**
      * @return string
      */
-    public function getRootFilePath();
+    public function getRootFilePath(): string;
 
     public function getAliases(): Aliases;
 }

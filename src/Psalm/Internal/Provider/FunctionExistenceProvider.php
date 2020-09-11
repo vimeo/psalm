@@ -29,7 +29,7 @@ class FunctionExistenceProvider
      *
      * @return void
      */
-    public function registerClass(string $class)
+    public function registerClass(string $class): void
     {
         $callable = \Closure::fromCallable([$class, 'doesFunctionExist']);
 
@@ -47,7 +47,7 @@ class FunctionExistenceProvider
      *
      * @return void
      */
-    public function registerClosure(string $function_id, \Closure $c)
+    public function registerClosure(string $function_id, \Closure $c): void
     {
         self::$handlers[$function_id][] = $c;
     }

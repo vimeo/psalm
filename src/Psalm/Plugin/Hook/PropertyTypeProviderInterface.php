@@ -24,5 +24,5 @@ interface PropertyTypeProviderInterface
         bool $read_mode,
         ?StatementsSource $source = null,
         ?Context $context = null
-    );
+    ): ?Type\Union;
 }

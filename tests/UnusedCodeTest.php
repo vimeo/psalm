@@ -38,7 +38,7 @@ class UnusedCodeTest extends TestCase
      *
      * @return void
      */
-    public function testValidCode($code, array $error_levels = [])
+    public function testValidCode($code, array $error_levels = []): void
     {
         $test_name = $this->getTestName();
         if (\strpos($test_name, 'SKIPPED-') !== false) {
@@ -72,7 +72,7 @@ class UnusedCodeTest extends TestCase
      *
      * @return void
      */
-    public function testInvalidCode($code, $error_message, $error_levels = [])
+    public function testInvalidCode($code, $error_message, $error_levels = []): void
     {
         if (\strpos($this->getTestName(), 'SKIPPED-') !== false) {
             $this->markTestSkipped();
@@ -102,7 +102,7 @@ class UnusedCodeTest extends TestCase
     /**
      * @return array<string, array{string}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): array
     {
         return [
             'magicCall' => [
@@ -734,7 +734,7 @@ class UnusedCodeTest extends TestCase
     /**
      * @return array<string,array{string,error_message:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): array
     {
         return [
             'unusedClass' => [

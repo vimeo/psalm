@@ -13,7 +13,7 @@ class MagicMethodAnnotationTest extends TestCase
     /**
      * @return void
      */
-    public function testPhpDocMethodWhenUndefined()
+    public function testPhpDocMethodWhenUndefined(): void
     {
         Config::getInstance()->use_phpdoc_method_without_magic_or_parent = true;
 
@@ -47,7 +47,7 @@ class MagicMethodAnnotationTest extends TestCase
     /**
      * @return void
      */
-    public function testPhpDocMethodWhenTemplated()
+    public function testPhpDocMethodWhenTemplated(): void
     {
         Config::getInstance()->use_phpdoc_method_without_magic_or_parent = true;
 
@@ -76,7 +76,7 @@ class MagicMethodAnnotationTest extends TestCase
     /**
      * @return void
      */
-    public function testAnnotationWithoutCallConfig()
+    public function testAnnotationWithoutCallConfig(): void
     {
         $this->expectExceptionMessage('UndefinedMethod');
         $this->expectException(\Psalm\Exception\CodeException::class);
@@ -103,7 +103,7 @@ class MagicMethodAnnotationTest extends TestCase
     /**
      * @return void
      */
-    public function testOverrideParentClassRetunType()
+    public function testOverrideParentClassRetunType(): void
     {
         Config::getInstance()->use_phpdoc_method_without_magic_or_parent = true;
 
@@ -156,7 +156,7 @@ class MagicMethodAnnotationTest extends TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'validSimpleAnnotations' => [
@@ -715,7 +715,7 @@ class MagicMethodAnnotationTest extends TestCase
     /**
      * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'annotationWithBadDocblock' => [
@@ -895,7 +895,7 @@ class MagicMethodAnnotationTest extends TestCase
     /**
      * @return void
      */
-    public function testSealAllMethodsWithoutFoo()
+    public function testSealAllMethodsWithoutFoo(): void
     {
         Config::getInstance()->seal_all_methods = true;
 
@@ -922,7 +922,7 @@ class MagicMethodAnnotationTest extends TestCase
     /**
      * @return void
      */
-    public function testSealAllMethodsWithFoo()
+    public function testSealAllMethodsWithFoo(): void
     {
         Config::getInstance()->seal_all_methods = true;
 
@@ -947,7 +947,7 @@ class MagicMethodAnnotationTest extends TestCase
     /**
      * @return void
      */
-    public function testSealAllMethodsWithFooInSubclass()
+    public function testSealAllMethodsWithFooInSubclass(): void
     {
         Config::getInstance()->seal_all_methods = true;
 
@@ -973,7 +973,7 @@ class MagicMethodAnnotationTest extends TestCase
     /**
      * @return void
      */
-    public function testSealAllMethodsWithFooAnnotated()
+    public function testSealAllMethodsWithFooAnnotated(): void
     {
         Config::getInstance()->seal_all_methods = true;
 
@@ -998,7 +998,7 @@ class MagicMethodAnnotationTest extends TestCase
     /**
      * @return void
      */
-    public function testSealAllMethodsSetToFalse()
+    public function testSealAllMethodsSetToFalse(): void
     {
         Config::getInstance()->seal_all_methods = false;
 

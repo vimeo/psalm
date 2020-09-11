@@ -134,7 +134,7 @@ class CodeLocation
     /**
      * @return void
      */
-    public function setCommentLine(int $line)
+    public function setCommentLine(int $line): void
     {
         $this->docblock_line_number = $line;
     }

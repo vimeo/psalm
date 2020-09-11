@@ -26,5 +26,5 @@ interface PropertyExistenceProviderInterface
         ?StatementsSource $source = null,
         ?Context $context = null,
         ?CodeLocation $code_location = null
-    );
+    ): ?bool;
 }

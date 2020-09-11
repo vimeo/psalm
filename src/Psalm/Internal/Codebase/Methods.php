@@ -863,7 +863,7 @@ class Methods
         string $method_name_lc,
         string $declaring_fq_class_name,
         string $declaring_method_name_lc
-    ) {
+    ): void {
         $class_storage = $this->classlike_storage_provider->get($fq_class_name);
 
         $class_storage->declaring_method_ids[$method_name_lc] = new MethodIdentifier(
@@ -883,7 +883,7 @@ class Methods
         string $method_name_lc,
         string $appearing_fq_class_name,
         string $appearing_method_name_lc
-    ) {
+    ): void {
         $class_storage = $this->classlike_storage_provider->get($fq_class_name);
 
         $class_storage->appearing_method_ids[$method_name_lc] = new MethodIdentifier(

@@ -31,7 +31,7 @@ class CodebaseTest extends TestCase
      *
      * @return void
      */
-    public function isTypeContainedByType(string $input, string $container, bool $expected)
+    public function isTypeContainedByType(string $input, string $container, bool $expected): void
     {
         $input = Type::parseString($input);
         $container = Type::parseString($container);
@@ -62,7 +62,7 @@ class CodebaseTest extends TestCase
      *
      * @return void
      */
-    public function canTypeBeContainedByType(string $input, string $container, bool $expected)
+    public function canTypeBeContainedByType(string $input, string $container, bool $expected): void
     {
         $input = Type::parseString($input);
         $container = Type::parseString($container);
@@ -93,7 +93,7 @@ class CodebaseTest extends TestCase
      *
      * @return void
      */
-    public function getKeyValueParamsForTraversableObject(string $input, array $expected)
+    public function getKeyValueParamsForTraversableObject(string $input, array $expected): void
     {
         [$input] = array_values(Type::parseString($input)->getAtomicTypes());
 
@@ -127,7 +127,7 @@ class CodebaseTest extends TestCase
      *
      * @return void
      */
-    public function customMetadataIsPersisted()
+    public function customMetadataIsPersisted(): void
     {
         $this->addFile(
             'somefile.php',
@@ -187,7 +187,7 @@ class CodebaseTest extends TestCase
      *
      * @return void
      */
-    public function classExtendsRejectsUnpopulatedClasslikes()
+    public function classExtendsRejectsUnpopulatedClasslikes(): void
     {
         $this->codebase->classlike_storage_provider->create('A');
         $this->codebase->classlike_storage_provider->create('B');

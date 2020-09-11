@@ -33,7 +33,7 @@ class ConstFetchAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ConstFetch $stmt,
         Context $context
-    ) {
+    ): void {
         $const_name = implode('\\', $stmt->name->parts);
 
         switch (strtolower($const_name)) {
@@ -232,7 +232,7 @@ class ConstFetchAnalyzer
         string $const_name,
         Type\Union $const_type,
         Context $context
-    ) {
+    ): void {
         $context->vars_in_scope[$const_name] = $const_type;
         $context->constants[$const_name] = $const_type;
 
@@ -276,7 +276,7 @@ class ConstFetchAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Const_ $stmt,
         Context $context
-    ) {
+    ): void {
         foreach ($stmt->consts as $const) {
             ExpressionAnalyzer::analyze($statements_analyzer, $const->value, $context);
 

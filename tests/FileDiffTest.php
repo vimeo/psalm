@@ -26,7 +26,7 @@ class FileDiffTest extends TestCase
         array $same_signatures,
         array $changed_methods,
         array $diff_map_offsets
-    ) {
+    ): void {
         if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
             $this->markTestSkipped();
         }
@@ -59,7 +59,7 @@ class FileDiffTest extends TestCase
              *
              * @return array{0: int, 1: int}
              */
-            function (array $arr) {
+            function (array $arr): array {
                 return [$arr[2], $arr[3]];
             },
             $diff[3]
@@ -87,7 +87,7 @@ class FileDiffTest extends TestCase
         array $same_signatures,
         array $changed_methods,
         array $diff_map_offsets
-    ) {
+    ): void {
         if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
             $this->markTestSkipped();
         }
@@ -134,7 +134,7 @@ class FileDiffTest extends TestCase
              *
              * @return array{0: int, 1: int}
              */
-            function (array $arr) {
+            function (array $arr): array {
                 return [$arr[2], $arr[3]];
             },
             $diff[3]
@@ -149,7 +149,7 @@ class FileDiffTest extends TestCase
      *
      * @return void
      */
-    private function assertTreesEqual(array $a, array $b)
+    private function assertTreesEqual(array $a, array $b): void
     {
         $this->assertSame(count($a), count($b));
 
@@ -204,7 +204,7 @@ class FileDiffTest extends TestCase
     /**
      * @return array<string,array{string,string,string[],string[],string[],array<array-key,array{int,int}>}>
      */
-    public function getChanges()
+    public function getChanges(): array
     {
         return [
             'sameFile' => [

@@ -32,7 +32,7 @@ class MethodCallTest extends TestCase
     /**
      * @return void
      */
-    public function testMethodCallMemoize()
+    public function testMethodCallMemoize(): void
     {
         $this->project_analyzer->getConfig()->memoize_method_calls = true;
 
@@ -68,7 +68,7 @@ class MethodCallTest extends TestCase
     /**
      * @return void
      */
-    public function testPropertyMethodCallMemoize()
+    public function testPropertyMethodCallMemoize(): void
     {
         $this->project_analyzer->getConfig()->memoize_method_calls = true;
 
@@ -103,7 +103,7 @@ class MethodCallTest extends TestCase
     /**
      * @return void
      */
-    public function testPropertyMethodCallMutationFreeMemoize()
+    public function testPropertyMethodCallMutationFreeMemoize(): void
     {
         $this->project_analyzer->getConfig()->memoize_method_calls = true;
 
@@ -141,7 +141,7 @@ class MethodCallTest extends TestCase
     /**
      * @return void
      */
-    public function testUnchainedMethodCallMemoize()
+    public function testUnchainedMethodCallMemoize(): void
     {
         $this->project_analyzer->getConfig()->memoize_method_calls = true;
 
@@ -177,7 +177,7 @@ class MethodCallTest extends TestCase
     /**
      * @return void
      */
-    public function testUnchainedMutationFreeMethodCallMemoize()
+    public function testUnchainedMutationFreeMethodCallMemoize(): void
     {
         $this->project_analyzer->getConfig()->memoize_method_calls = true;
 
@@ -216,7 +216,7 @@ class MethodCallTest extends TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'notInCallMapTest' => [
@@ -942,7 +942,7 @@ class MethodCallTest extends TestCase
     /**
      * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'staticInvocation' => [

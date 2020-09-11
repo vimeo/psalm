@@ -71,7 +71,7 @@ class FooMethodProvider implements
         ?array $template_type_parameters = null,
         ?string $called_fq_classlike_name = null,
         ?string $called_method_name_lowercase = null
-    ) {
+    ): ?Type\Union {
         if ($method_name_lowercase == 'magicmethod') {
             return Type::getString();
         } else {

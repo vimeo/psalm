@@ -50,7 +50,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
         array $file_stages,
         string $error_message,
         array $error_levels = []
-    ) {
+    ): void {
         $this->project_analyzer->getCodebase()->diff_methods = true;
         $this->project_analyzer->getCodebase()->reportUnusedCode();
 
@@ -97,7 +97,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
     /**
      * @return array<string,array{file_stages:array<int,array<string,string>>,error_message:string}>
      */
-    public function providerTestInvalidUpdates()
+    public function providerTestInvalidUpdates(): array
     {
         return [
             'invalidateParentCaller' => [

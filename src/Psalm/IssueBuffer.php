@@ -300,7 +300,7 @@ class IssueBuffer
     /**
      * @return list<IssueData>
      */
-    public static function getIssuesDataForFile(string $file_path)
+    public static function getIssuesDataForFile(string $file_path): array
     {
         return self::$issues_data[$file_path] ?? [];
     }
@@ -407,7 +407,7 @@ class IssueBuffer
      *
      * @return void
      */
-    public static function addIssues(array $issues_data)
+    public static function addIssues(array $issues_data): void
     {
         foreach ($issues_data as $file_path => $file_issues) {
             foreach ($file_issues as $issue) {
@@ -435,7 +435,7 @@ class IssueBuffer
         float $start_time,
         bool $add_stats = false,
         array $issue_baseline = []
-    ) {
+    ): void {
         if (!$project_analyzer->stdout_report_options) {
             throw new \UnexpectedValueException('Cannot finish without stdout report options');
         }
@@ -768,7 +768,7 @@ class IssueBuffer
     /**
      * @return void
      */
-    public static function clearCache()
+    public static function clearCache(): void
     {
         self::$issues_data = [];
         self::$emitted = [];
@@ -800,7 +800,7 @@ class IssueBuffer
     /**
      * @return void
      */
-    public static function startRecording()
+    public static function startRecording(): void
     {
         ++self::$recording_level;
         self::$recorded_issues[self::$recording_level] = [];
@@ -809,7 +809,7 @@ class IssueBuffer
     /**
      * @return void
      */
-    public static function stopRecording()
+    public static function stopRecording(): void
     {
         if (self::$recording_level === 0) {
             throw new \UnexpectedValueException('Cannot stop recording - already at base level');

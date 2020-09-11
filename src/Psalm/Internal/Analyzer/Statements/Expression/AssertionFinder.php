@@ -2460,7 +2460,7 @@ class AssertionFinder
         PhpParser\Node\Expr\Instanceof_ $stmt,
         ?string $this_class_name,
         FileSource $source
-    ) {
+    ): array {
         if ($stmt->class instanceof PhpParser\Node\Name) {
             if (!in_array(strtolower($stmt->class->parts[0]), ['self', 'static', 'parent'], true)) {
                 $instanceof_class = ClassLikeAnalyzer::getFQCLNFromNameObject(

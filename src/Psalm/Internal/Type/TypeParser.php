@@ -63,7 +63,7 @@ class TypeParser
         ?array $php_version = null,
         array $template_type_map = [],
         array $type_aliases = []
-    ) {
+    ): Union {
         if (count($type_tokens) === 1) {
             $only_token = $type_tokens[0];
 
@@ -626,7 +626,7 @@ class TypeParser
                 /**
                  * @return FunctionLikeParameter
                  */
-                function (ParseTree $child_tree) use ($codebase, $template_type_map, $type_aliases) {
+                function (ParseTree $child_tree) use ($codebase, $template_type_map, $type_aliases): FunctionLikeParameter {
                     $is_variadic = false;
                     $is_optional = false;
 

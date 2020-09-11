@@ -40,7 +40,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
     /**
      * @return void
      */
-    public function testCompletionOnThisWithNoAssignment()
+    public function testCompletionOnThisWithNoAssignment(): void
     {
         $codebase = $this->project_analyzer->getCodebase();
         $config = $codebase->config;
@@ -71,7 +71,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
     /**
      * @return void
      */
-    public function testCompletionOnThisWithAssignmentBelow()
+    public function testCompletionOnThisWithAssignmentBelow(): void
     {
         $codebase = $this->project_analyzer->getCodebase();
         $config = $codebase->config;
@@ -104,7 +104,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
     /**
      * @return void
      */
-    public function testCompletionOnThisWithIfBelow()
+    public function testCompletionOnThisWithIfBelow(): void
     {
         $codebase = $this->project_analyzer->getCodebase();
         $config = $codebase->config;
@@ -156,7 +156,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
     /**
      * @return void
      */
-    public function testCompletionOnThisProperty()
+    public function testCompletionOnThisProperty(): void
     {
         $codebase = $this->project_analyzer->getCodebase();
         $config = $codebase->config;
@@ -197,7 +197,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
     /**
      * @return void
      */
-    public function testCompletionOnThisPropertyWithCharacter()
+    public function testCompletionOnThisPropertyWithCharacter(): void
     {
         $codebase = $this->project_analyzer->getCodebase();
         $config = $codebase->config;
@@ -238,7 +238,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
     /**
      * @return void
      */
-    public function testCompletionOnThisPropertyWithAnotherCharacter()
+    public function testCompletionOnThisPropertyWithAnotherCharacter(): void
     {
         $codebase = $this->project_analyzer->getCodebase();
         $config = $codebase->config;
@@ -279,7 +279,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
     /**
      * @return void
      */
-    public function testCompletionOnTemplatedThisProperty()
+    public function testCompletionOnTemplatedThisProperty(): void
     {
         $codebase = $this->project_analyzer->getCodebase();
         $config = $codebase->config;
@@ -335,7 +335,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
     /**
      * @return void
      */
-    public function testCompletionOnMethodReturnValue()
+    public function testCompletionOnMethodReturnValue(): void
     {
         $codebase = $this->project_analyzer->getCodebase();
         $config = $codebase->config;
@@ -367,7 +367,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
     /**
      * @return void
      */
-    public function testCompletionOnMethodArgument()
+    public function testCompletionOnMethodArgument(): void
     {
         $codebase = $this->project_analyzer->getCodebase();
         $config = $codebase->config;
@@ -401,7 +401,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
     /**
      * @return void
      */
-    public function testCompletionOnMethodReturnValueWithArgument()
+    public function testCompletionOnMethodReturnValueWithArgument(): void
     {
         $codebase = $this->project_analyzer->getCodebase();
         $config = $codebase->config;
@@ -435,7 +435,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
     /**
      * @return void
      */
-    public function testCompletionOnVariableWithWhitespace()
+    public function testCompletionOnVariableWithWhitespace(): void
     {
         $codebase = $this->project_analyzer->getCodebase();
         $config = $codebase->config;
@@ -463,7 +463,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
     /**
      * @return void
      */
-    public function testCompletionOnVariableWithWhitespaceAndReturn()
+    public function testCompletionOnVariableWithWhitespaceAndReturn(): void
     {
         $codebase = $this->project_analyzer->getCodebase();
         $config = $codebase->config;
@@ -493,7 +493,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
     /**
      * @return void
      */
-    public function testCompletionOnMethodReturnValueWithWhitespace()
+    public function testCompletionOnMethodReturnValueWithWhitespace(): void
     {
         $codebase = $this->project_analyzer->getCodebase();
         $config = $codebase->config;
@@ -526,7 +526,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
     /**
      * @return void
      */
-    public function testCompletionOnMethodReturnValueWithWhitespaceAndReturn()
+    public function testCompletionOnMethodReturnValueWithWhitespaceAndReturn(): void
     {
         $codebase = $this->project_analyzer->getCodebase();
         $config = $codebase->config;
@@ -560,7 +560,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
     /**
      * @return void
      */
-    public function testCompletionOnMethodReturnValueWhereParamIsClosure()
+    public function testCompletionOnMethodReturnValueWhereParamIsClosure(): void
     {
         $codebase = $this->project_analyzer->getCodebase();
         $config = $codebase->config;
@@ -592,7 +592,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
     /**
      * @return void
      */
-    public function testCompletionOnMethodReturnValueWhereParamIsClosureWithStmt()
+    public function testCompletionOnMethodReturnValueWhereParamIsClosureWithStmt(): void
     {
         $codebase = $this->project_analyzer->getCodebase();
         $config = $codebase->config;
@@ -661,7 +661,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
     /**
      * @return void
      */
-    public function testCompletionOnNewExceptionWithoutNamespace()
+    public function testCompletionOnNewExceptionWithoutNamespace(): void
     {
         $codebase = $this->project_analyzer->getCodebase();
         $config = $codebase->config;
@@ -685,7 +685,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
     /**
      * @return void
      */
-    public function testCompletionOnNewExceptionWithNamespaceNoUse()
+    public function testCompletionOnNewExceptionWithNamespaceNoUse(): void
     {
         $codebase = $this->project_analyzer->getCodebase();
         $config = $codebase->config;
@@ -735,7 +735,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
     /**
      * @return void
      */
-    public function testCompletionOnNewExceptionWithNamespaceAndUse()
+    public function testCompletionOnNewExceptionWithNamespaceAndUse(): void
     {
         $codebase = $this->project_analyzer->getCodebase();
         $config = $codebase->config;
@@ -787,7 +787,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
     /**
      * @return void
      */
-    public function testCompletionOnInstanceofWithNamespaceAndUse()
+    public function testCompletionOnInstanceofWithNamespaceAndUse(): void
     {
         $codebase = $this->project_analyzer->getCodebase();
         $config = $codebase->config;

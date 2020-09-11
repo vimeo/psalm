@@ -31,7 +31,7 @@ class PreventFloatAssignmentChecker implements AfterExpressionAnalysisInterface
         StatementsSource $statements_source,
         Codebase $codebase,
         array &$file_replacements = []
-    ) {
+    ): ?bool {
         if ($expr instanceof PhpParser\Node\Expr\Assign
             && ($expr_type = $statements_source->getNodeTypeProvider()->getType($expr->expr))
             && $expr_type->hasFloat()

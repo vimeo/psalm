@@ -34,7 +34,7 @@ class MethodMoveTest extends \Psalm\Tests\TestCase
         string $input_code,
         string $output_code,
         array $methods_to_move
-    ) {
+    ): void {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'SKIPPED-') !== false) {
             $this->markTestSkipped('Skipped due to a bug.');
@@ -77,7 +77,7 @@ class MethodMoveTest extends \Psalm\Tests\TestCase
     /**
      * @return array<string,array{string,string,array<string, string>}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): array
     {
         return [
             'moveSimpleStaticMethodWithForeachIterator' => [

@@ -46,7 +46,7 @@ class JsonOutputTest extends TestCase
      *
      * @return void
      */
-    public function testJsonOutputErrors($code, $message, $line_number, $error)
+    public function testJsonOutputErrors($code, $message, $line_number, $error): void
     {
         $this->addFile('somefile.php', $code);
         $this->analyzeFile('somefile.php', new Context());
@@ -65,7 +65,7 @@ class JsonOutputTest extends TestCase
     /**
      * @return array<string,array{string,message:string,line:int,error:string}>
      */
-    public function providerTestJsonOutputErrors()
+    public function providerTestJsonOutputErrors(): array
     {
         return [
             'returnTypeError' => [

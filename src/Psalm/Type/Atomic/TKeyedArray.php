@@ -162,7 +162,7 @@ class TKeyedArray extends \Psalm\Type\Atomic
                             $aliased_classes,
                             $this_class,
                             $use_phpdoc_format
-                        ) {
+                        ): string{
                             if (\is_string($name) && \preg_match('/[ "\'\\\\.\n:]/', $name)) {
                                 $name = '\'' . \str_replace("\n", '\n', \addslashes($name)) . '\'';
                             }
@@ -248,7 +248,7 @@ class TKeyedArray extends \Psalm\Type\Atomic
     /**
      * @return Type\Atomic\TArray
      */
-    public function getGenericArrayType()
+    public function getGenericArrayType(): TArray
     {
         $key_types = [];
         $value_type = null;

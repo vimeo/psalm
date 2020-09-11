@@ -17,7 +17,7 @@ class IssetAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Isset_ $stmt,
         Context $context
-    ) {
+    ): void {
         foreach ($stmt->vars as $isset_var) {
             if ($isset_var instanceof PhpParser\Node\Expr\PropertyFetch
                 && $isset_var->var instanceof PhpParser\Node\Expr\Variable

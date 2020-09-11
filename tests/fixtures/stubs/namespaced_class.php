@@ -13,7 +13,7 @@ class SystemClass
      *
      * @return string
      */
-    public function foo($a, $b)
+    public function foo($a, $b): string
     {
     }
 
@@ -23,7 +23,7 @@ class SystemClass
      *
      * @return string
      */
-    public static function bar($a, $b)
+    public static function bar($a, $b): string
     {
     }
 }

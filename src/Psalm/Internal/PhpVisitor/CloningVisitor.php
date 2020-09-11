@@ -13,7 +13,7 @@ use PhpParser\NodeVisitorAbstract;
  */
 class CloningVisitor extends NodeVisitorAbstract
 {
-    public function enterNode(Node $node)
+    public function enterNode(Node $node): Node
     {
         $node = clone $node;
         if ($cs = $node->getComments()) {

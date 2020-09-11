@@ -51,7 +51,7 @@ class ErrorFixTest extends \Psalm\Tests\TestCase
         array $files,
         array $error_counts,
         array $error_levels = []
-    ) {
+    ): void {
         $this->project_analyzer->getCodebase()->diff_methods = true;
 
         $codebase = $this->project_analyzer->getCodebase();
@@ -99,7 +99,7 @@ class ErrorFixTest extends \Psalm\Tests\TestCase
     /**
      * @return array<string,array{files: array<int, array<string,string>>,error_counts:array<int,int>,error_levels?:array<string,string>}>
      */
-    public function providerTestErrorFix()
+    public function providerTestErrorFix(): array
     {
         return [
             'fixMissingColonSyntaxError' => [

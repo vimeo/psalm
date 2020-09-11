@@ -62,7 +62,7 @@ class ErrorBaseline
         string $baselineFile,
         array $issues,
         bool $include_php_versions
-    ) {
+    ): void {
         $groupedIssues = self::countIssueTypesByFile($issues);
 
         self::writeToFile($fileProvider, $baselineFile, $groupedIssues, $include_php_versions);
@@ -238,7 +238,7 @@ class ErrorBaseline
         string $baselineFile,
         array $groupedIssues,
         bool $include_php_versions
-    ) {
+    ): void {
         $baselineDoc = new \DOMDocument('1.0', 'UTF-8');
         $filesNode = $baselineDoc->createElement('files');
         $filesNode->setAttribute('psalm-version', PSALM_VERSION);

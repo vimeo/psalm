@@ -13,7 +13,7 @@ class AnnotationTest extends TestCase
     /**
      * @return void
      */
-    public function testPhpStormGenericsWithValidArrayIteratorArgument()
+    public function testPhpStormGenericsWithValidArrayIteratorArgument(): void
     {
         Config::getInstance()->allow_phpstorm_generics = true;
 
@@ -39,7 +39,7 @@ class AnnotationTest extends TestCase
     /**
      * @return void
      */
-    public function testPhpStormGenericsWithValidTraversableArgument()
+    public function testPhpStormGenericsWithValidTraversableArgument(): void
     {
         Config::getInstance()->allow_phpstorm_generics = true;
 
@@ -62,7 +62,7 @@ class AnnotationTest extends TestCase
     /**
      * @return void
      */
-    public function testPhpStormGenericsWithClassProperty()
+    public function testPhpStormGenericsWithClassProperty(): void
     {
         Config::getInstance()->allow_phpstorm_generics = true;
 
@@ -89,7 +89,7 @@ class AnnotationTest extends TestCase
     /**
      * @return void
      */
-    public function testPhpStormGenericsWithGeneratorArray()
+    public function testPhpStormGenericsWithGeneratorArray(): void
     {
         Config::getInstance()->allow_phpstorm_generics = true;
 
@@ -113,7 +113,7 @@ class AnnotationTest extends TestCase
     /**
      * @return void
      */
-    public function testPhpStormGenericsWithValidIterableArgument()
+    public function testPhpStormGenericsWithValidIterableArgument(): void
     {
         Config::getInstance()->allow_phpstorm_generics = true;
 
@@ -136,7 +136,7 @@ class AnnotationTest extends TestCase
     /**
      * @return void
      */
-    public function testPhpStormGenericsInvalidArgument()
+    public function testPhpStormGenericsInvalidArgument(): void
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
         $this->expectExceptionMessage('InvalidScalarArgument');
@@ -161,7 +161,7 @@ class AnnotationTest extends TestCase
     /**
      * @return void
      */
-    public function testPhpStormGenericsNoTypehint()
+    public function testPhpStormGenericsNoTypehint(): void
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
         $this->expectExceptionMessage('PossiblyInvalidMethodCall');
@@ -183,7 +183,7 @@ class AnnotationTest extends TestCase
     /**
      * @return void
      */
-    public function testInvalidParamDefault()
+    public function testInvalidParamDefault(): void
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
         $this->expectExceptionMessage('InvalidParamDefault');
@@ -204,7 +204,7 @@ class AnnotationTest extends TestCase
     /**
      * @return void
      */
-    public function testInvalidParamDefaultButAllowedInConfig()
+    public function testInvalidParamDefaultButAllowedInConfig(): void
     {
         Config::getInstance()->add_param_default_to_docblock_type = true;
 
@@ -226,7 +226,7 @@ class AnnotationTest extends TestCase
     /**
      * @return void
      */
-    public function testInvalidTypehintParamDefaultButAllowedInConfig()
+    public function testInvalidTypehintParamDefaultButAllowedInConfig(): void
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
         $this->expectExceptionMessage('InvalidParamDefault');
@@ -245,7 +245,7 @@ class AnnotationTest extends TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'nopType' => [
@@ -1179,7 +1179,7 @@ class AnnotationTest extends TestCase
     /**
      * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'invalidClassMethodReturn' => [

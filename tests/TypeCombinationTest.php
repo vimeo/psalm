@@ -17,7 +17,7 @@ class TypeCombinationTest extends TestCase
      *
      * @return void
      */
-    public function testValidTypeCombination($expected, $types)
+    public function testValidTypeCombination($expected, $types): void
     {
         $converted_types = [];
 
@@ -36,7 +36,7 @@ class TypeCombinationTest extends TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'multipleValuedArray' => [
@@ -62,7 +62,7 @@ class TypeCombinationTest extends TestCase
     /**
      * @return array<string,array{string,non-empty-list<string>}>
      */
-    public function providerTestValidTypeCombination()
+    public function providerTestValidTypeCombination(): array
     {
         return [
             'intOrString' => [
@@ -638,7 +638,7 @@ class TypeCombinationTest extends TestCase
      *
      * @return Type\Atomic
      */
-    private static function getAtomic($string)
+    private static function getAtomic($string): Type\Atomic
     {
         return array_values(Type::parseString($string)->getAtomicTypes())[0];
     }

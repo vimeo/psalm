@@ -9,7 +9,7 @@ class MethodMutationTest extends TestCase
     /**
      * @return void
      */
-    public function testControllerMutation()
+    public function testControllerMutation(): void
     {
         $this->addFile(
             'somefile.php',
@@ -108,7 +108,7 @@ class MethodMutationTest extends TestCase
     /**
      * @return void
      */
-    public function testNotSettingUser()
+    public function testNotSettingUser(): void
     {
         $this->addFile(
             'somefile.php',
@@ -153,7 +153,7 @@ class MethodMutationTest extends TestCase
     /**
      * @return void
      */
-    public function testParentControllerSet()
+    public function testParentControllerSet(): void
     {
         $this->addFile(
             'somefile.php',
@@ -193,7 +193,7 @@ class MethodMutationTest extends TestCase
     /**
      * @return void
      */
-    public function testTraitMethod()
+    public function testTraitMethod(): void
     {
         $this->addFile(
             'somefile.php',

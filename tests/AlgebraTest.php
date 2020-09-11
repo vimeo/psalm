@@ -18,7 +18,7 @@ class AlgebraTest extends TestCase
     /**
      * @return void
      */
-    public function testNegateFormula()
+    public function testNegateFormula(): void
     {
         $formula = [
             new Clause(['$a' => ['!falsy']], 1, 1),
@@ -64,7 +64,7 @@ class AlgebraTest extends TestCase
     /**
      * @return void
      */
-    public function testCombinatorialExpansion()
+    public function testCombinatorialExpansion(): void
     {
         $dnf = '<?php ($b0 === true && $b4 === true && $b8 === true)
                   || ($b0 === true && $b1 === true && $b2 === true)
@@ -101,7 +101,7 @@ class AlgebraTest extends TestCase
     /**
      * @return void
      */
-    public function testContainsClause()
+    public function testContainsClause(): void
     {
         $this->assertTrue(
             (new Clause(
@@ -145,7 +145,7 @@ class AlgebraTest extends TestCase
     /**
      * @return void
      */
-    public function testSimplifyCNF()
+    public function testSimplifyCNF(): void
     {
         $formula = [
             new Clause(['$a' => ['!falsy']], 1, 1),

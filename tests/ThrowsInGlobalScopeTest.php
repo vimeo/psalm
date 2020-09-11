@@ -9,7 +9,7 @@ class ThrowsInGlobalScopeTest extends TestCase
     /**
      * @return void
      */
-    public function testUncaughtDocumentedThrowCall()
+    public function testUncaughtDocumentedThrowCall(): void
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
         $this->expectExceptionMessage('UncaughtThrowInGlobalScope');
@@ -45,7 +45,7 @@ class ThrowsInGlobalScopeTest extends TestCase
     /**
      * @return void
      */
-    public function testCaughtDocumentedThrowCall()
+    public function testCaughtDocumentedThrowCall(): void
     {
         Config::getInstance()->check_for_throws_docblock = true;
         Config::getInstance()->check_for_throws_in_global_scope = true;
@@ -82,7 +82,7 @@ class ThrowsInGlobalScopeTest extends TestCase
     /**
      * @return void
      */
-    public function testUncaughtUndocumentedThrowCall()
+    public function testUncaughtUndocumentedThrowCall(): void
     {
         Config::getInstance()->check_for_throws_in_global_scope = true;
 
@@ -112,7 +112,7 @@ class ThrowsInGlobalScopeTest extends TestCase
     /**
      * @return void
      */
-    public function testUncaughtDocumentedThrowCallInNamespace()
+    public function testUncaughtDocumentedThrowCallInNamespace(): void
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
         $this->expectExceptionMessage('UncaughtThrowInGlobalScope');
@@ -149,7 +149,7 @@ class ThrowsInGlobalScopeTest extends TestCase
     /**
      * @return void
      */
-    public function testUncaughtThrow()
+    public function testUncaughtThrow(): void
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
         $this->expectExceptionMessage('UncaughtThrowInGlobalScope');
@@ -170,7 +170,7 @@ class ThrowsInGlobalScopeTest extends TestCase
     /**
      * @return void
      */
-    public function testCaughtThrow()
+    public function testCaughtThrow(): void
     {
         Config::getInstance()->check_for_throws_in_global_scope = true;
 
@@ -190,7 +190,7 @@ class ThrowsInGlobalScopeTest extends TestCase
     /**
      * @return void
      */
-    public function testUncaughtThrowWhenSuppressing()
+    public function testUncaughtThrowWhenSuppressing(): void
     {
         Config::getInstance()->check_for_throws_in_global_scope = true;
 
@@ -209,7 +209,7 @@ class ThrowsInGlobalScopeTest extends TestCase
     /**
      * @return void
      */
-    public function testUncaughtThrowInNamespaceWhenSuppressing()
+    public function testUncaughtThrowInNamespaceWhenSuppressing(): void
     {
         Config::getInstance()->check_for_throws_in_global_scope = true;
 
@@ -229,7 +229,7 @@ class ThrowsInGlobalScopeTest extends TestCase
     /**
      * @return void
      */
-    public function testUncaughtDocumentedThrowCallWhenSuppressing()
+    public function testUncaughtDocumentedThrowCallWhenSuppressing(): void
     {
         Config::getInstance()->check_for_throws_in_global_scope = true;
 
@@ -264,7 +264,7 @@ class ThrowsInGlobalScopeTest extends TestCase
     /**
      * @return void
      */
-    public function testUncaughtDocumentedThrowCallInNamespaceWhenSuppressing()
+    public function testUncaughtDocumentedThrowCallInNamespaceWhenSuppressing(): void
     {
         Config::getInstance()->check_for_throws_in_global_scope = true;
 
@@ -300,7 +300,7 @@ class ThrowsInGlobalScopeTest extends TestCase
     /**
      * @return void
      */
-    public function testUncaughtDocumentedThrowCallWhenSuppressingFirst()
+    public function testUncaughtDocumentedThrowCallWhenSuppressingFirst(): void
     {
         $this->expectExceptionMessage('UncaughtThrowInGlobalScope');
         $this->expectException(\Psalm\Exception\CodeException::class);

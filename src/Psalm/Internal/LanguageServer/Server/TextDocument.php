@@ -134,7 +134,7 @@ class TextDocument
      *
      * @return void
      */
-    public function didClose(TextDocumentIdentifier $textDocument)
+    public function didClose(TextDocumentIdentifier $textDocument): void
     {
         $file_path = LanguageServer::uriToPath($textDocument->uri);
 

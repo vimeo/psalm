@@ -26,7 +26,7 @@ class PsalmRestarter extends \Composer\XdebugHandler\XdebugHandler
     /**
      * @return void
      */
-    public function disableExtension(string $disabledExtension)
+    public function disableExtension(string $disabledExtension): void
     {
         $this->disabledExtensions[] = $disabledExtension;
     }

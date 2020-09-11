@@ -105,7 +105,7 @@ class PhpStormMetaScanner
                         $offset,
                         $meta_fq_classlike_name,
                         $meta_method_name
-                    ) {
+                    ): ?Type\Union {
                         if (!$statements_analyzer instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
                             return Type::getMixed();
                         }
@@ -163,7 +163,7 @@ class PhpStormMetaScanner
                         $type_offset,
                         $meta_fq_classlike_name,
                         $meta_method_name
-                    ) {
+                    ): ?Type\Union {
                         if (!$statements_analyzer instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
                             return Type::getMixed();
                         }
@@ -203,7 +203,7 @@ class PhpStormMetaScanner
                         $element_type_offset,
                         $meta_fq_classlike_name,
                         $meta_method_name
-                    ) {
+                    ): ?Type\Union {
                         if (!$statements_analyzer instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
                             return Type::getMixed();
                         }

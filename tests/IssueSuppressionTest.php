@@ -13,7 +13,7 @@ class IssueSuppressionTest extends TestCase
     /**
      * @return void
      */
-    public function testIssueSuppressedOnFunction()
+    public function testIssueSuppressedOnFunction(): void
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
         $this->expectExceptionMessage('UnusedPsalmSuppress');
@@ -40,7 +40,7 @@ class IssueSuppressionTest extends TestCase
     /**
      * @return void
      */
-    public function testIssueSuppressedOnStatement()
+    public function testIssueSuppressedOnStatement(): void
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
         $this->expectExceptionMessage('UnusedPsalmSuppress');
@@ -58,7 +58,7 @@ class IssueSuppressionTest extends TestCase
     /**
      * @return void
      */
-    public function testUnusedSuppressAllOnFunction()
+    public function testUnusedSuppressAllOnFunction(): void
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
         $this->expectExceptionMessage('UnusedPsalmSuppress');
@@ -78,7 +78,7 @@ class IssueSuppressionTest extends TestCase
     /**
      * @return void
      */
-    public function testUnusedSuppressAllOnStatement()
+    public function testUnusedSuppressAllOnStatement(): void
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
         $this->expectExceptionMessage('UnusedPsalmSuppress');
@@ -96,7 +96,7 @@ class IssueSuppressionTest extends TestCase
     /**
      * @return void
      */
-    public function testMissingThrowsDocblockSuppressed()
+    public function testMissingThrowsDocblockSuppressed(): void
     {
         Config::getInstance()->check_for_throws_docblock = true;
 
@@ -124,7 +124,7 @@ class IssueSuppressionTest extends TestCase
     /**
      * @return void
      */
-    public function testMissingThrowsDocblockSuppressedWithoutThrow()
+    public function testMissingThrowsDocblockSuppressedWithoutThrow(): void
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
         $this->expectExceptionMessage('UnusedPsalmSuppress');
@@ -147,7 +147,7 @@ class IssueSuppressionTest extends TestCase
     /**
      * @return void
      */
-    public function testMissingThrowsDocblockSuppressedDuplicate()
+    public function testMissingThrowsDocblockSuppressedDuplicate(): void
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
         $this->expectExceptionMessage('UnusedPsalmSuppress');
@@ -171,7 +171,7 @@ class IssueSuppressionTest extends TestCase
     /**
      * @return void
      */
-    public function testUncaughtThrowInGlobalScopeSuppressed()
+    public function testUncaughtThrowInGlobalScopeSuppressed(): void
     {
         Config::getInstance()->check_for_throws_in_global_scope = true;
 
@@ -200,7 +200,7 @@ class IssueSuppressionTest extends TestCase
     /**
      * @return void
      */
-    public function testUncaughtThrowInGlobalScopeSuppressedWithoutThrow()
+    public function testUncaughtThrowInGlobalScopeSuppressedWithoutThrow(): void
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
         $this->expectExceptionMessage('UnusedPsalmSuppress');
@@ -221,7 +221,7 @@ class IssueSuppressionTest extends TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'undefinedClassSimple' => [
@@ -299,7 +299,7 @@ class IssueSuppressionTest extends TestCase
     /**
      * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'undefinedClassOneLineWithLineAfter' => [

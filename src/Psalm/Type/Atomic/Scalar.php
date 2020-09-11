@@ -19,7 +19,7 @@ abstract class Scalar extends \Psalm\Type\Atomic
     /**
      * @return bool
      */
-    public function canBeFullyExpressedInPhp()
+    public function canBeFullyExpressedInPhp(): bool
     {
         return true;
     }

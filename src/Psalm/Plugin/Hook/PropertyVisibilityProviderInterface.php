@@ -22,5 +22,5 @@ interface PropertyVisibilityProviderInterface
         bool $read_mode,
         Context $context,
         CodeLocation $code_location
-    );
+    ): ?bool;
 }

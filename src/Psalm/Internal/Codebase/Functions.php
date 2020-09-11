@@ -144,7 +144,7 @@ class Functions
     /**
      * @return void
      */
-    public function addGlobalFunction(string $function_id, FunctionStorage $storage)
+    public function addGlobalFunction(string $function_id, FunctionStorage $storage): void
     {
         self::$stubbed_functions[strtolower($function_id)] = $storage;
     }

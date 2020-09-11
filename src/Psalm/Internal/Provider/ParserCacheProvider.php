@@ -212,7 +212,7 @@ class ParserCacheProvider
      *
      * @psalm-suppress UndefinedFunction
      */
-    public function saveStatementsToCache(string $file_path, string $file_content_hash, array $stmts, bool $touch_only)
+    public function saveStatementsToCache(string $file_path, string $file_content_hash, array $stmts, bool $touch_only): void
     {
         $root_cache_directory = Config::getInstance()->getCacheDirectory();
 
@@ -258,7 +258,7 @@ class ParserCacheProvider
      *
      * @return void
      */
-    public function addNewFileContentHashes(array $file_content_hashes)
+    public function addNewFileContentHashes(array $file_content_hashes): void
     {
         $this->new_file_content_hashes = $file_content_hashes + $this->new_file_content_hashes;
     }
@@ -266,7 +266,7 @@ class ParserCacheProvider
     /**
      * @return void
      */
-    public function saveFileContentHashes()
+    public function saveFileContentHashes(): void
     {
         $root_cache_directory = Config::getInstance()->getCacheDirectory();
 
@@ -287,7 +287,7 @@ class ParserCacheProvider
     /**
      * @return void
      */
-    public function cacheFileContents(string $file_path, string $file_contents)
+    public function cacheFileContents(string $file_path, string $file_contents): void
     {
         if (!$this->use_file_cache) {
             return;

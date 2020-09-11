@@ -30,7 +30,7 @@ class MagicFunctionProvider implements
         StatementsSource $statements_source,
         string $function_id,
         ?CodeLocation $code_location = null
-    ) {
+    ): ?bool {
         return $function_id === 'magicfunction';
     }
 
@@ -45,7 +45,7 @@ class MagicFunctionProvider implements
         array $call_args,
         ?Context $context = null,
         ?CodeLocation $code_location = null
-    ) {
+    ): ?array {
         return [new \Psalm\Storage\FunctionLikeParameter('first', false, Type::getString())];
     }
 
@@ -60,7 +60,7 @@ class MagicFunctionProvider implements
         array $call_args,
         Context $context,
         CodeLocation $code_location
-    ) {
+    ): ?Type\Union {
         return Type::getString();
     }
 }

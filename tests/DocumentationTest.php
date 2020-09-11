@@ -38,7 +38,7 @@ class DocumentationTest extends TestCase
     /**
      * @return array<string, array<int, string>>
      */
-    private static function getCodeBlocksFromDocs()
+    private static function getCodeBlocksFromDocs(): array
     {
         $issues_dir = dirname(dirname(__FILE__)) . DIRECTORY_SEPARATOR . 'docs' . DIRECTORY_SEPARATOR . 'running_psalm' . DIRECTORY_SEPARATOR . 'issues';
 
@@ -120,7 +120,7 @@ class DocumentationTest extends TestCase
     /**
      * @return void
      */
-    public function testAllIssuesCovered()
+    public function testAllIssuesCovered(): void
     {
         $all_issues = \Psalm\Config\IssueHandler::getAllIssueTypes();
         $all_issues[] = 'ParseError';
@@ -153,7 +153,7 @@ class DocumentationTest extends TestCase
      *
      * @return void
      */
-    public function testInvalidCode($code, $error_message, $error_levels = [], $check_references = false)
+    public function testInvalidCode($code, $error_message, $error_levels = [], $check_references = false): void
     {
         if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
             $this->markTestSkipped();
@@ -190,7 +190,7 @@ class DocumentationTest extends TestCase
     /**
      * @return array<string,array{string,string,string[],bool}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): array
     {
         $invalid_code_data = [];
 
@@ -274,7 +274,7 @@ class DocumentationTest extends TestCase
 
         $duplicate_shortcodes = array_filter(
             $all_shortcodes,
-            function ($issues) {
+            function ($issues): bool {
                 return count($issues) > 1;
             }
         );

@@ -656,7 +656,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
      * @param  array<PhpParser\Node\Stmt>   $stmts
      * @return void
      */
-    public function checkUnreferencedVars(array $stmts)
+    public function checkUnreferencedVars(array $stmts): void
     {
         $source = $this->getSource();
         $codebase = $source->getCodebase();
@@ -720,7 +720,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
     /**
      * @return void
      */
-    public function registerVariable(string $var_id, CodeLocation $location, ?int $branch_point)
+    public function registerVariable(string $var_id, CodeLocation $location, ?int $branch_point): void
     {
         $this->all_vars[$var_id] = $location;
 
@@ -734,7 +734,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
     /**
      * @return void
      */
-    public function registerVariableAssignment(string $var_id, CodeLocation $location)
+    public function registerVariableAssignment(string $var_id, CodeLocation $location): void
     {
         $this->unused_var_locations[$location->getHash()] = [$var_id, $location];
     }
@@ -743,7 +743,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
      * @param array<string, CodeLocation> $locations
      * @return void
      */
-    public function registerVariableUses(array $locations)
+    public function registerVariableUses(array $locations): void
     {
         foreach ($locations as $hash => $_) {
             unset($this->unused_var_locations[$hash]);
@@ -775,7 +775,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
     /**
      * @return void
      */
-    public function addVariableInitialization(string $var_id, int $branch_point)
+    public function addVariableInitialization(string $var_id, int $branch_point): void
     {
         $this->vars_to_initialize[$var_id] = $branch_point;
     }
@@ -802,7 +802,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
      * @param array<string, bool> $byref_uses
      * @return void
      */
-    public function setByRefUses(array $byref_uses)
+    public function setByRefUses(array $byref_uses): void
     {
         $this->byref_uses = $byref_uses;
     }

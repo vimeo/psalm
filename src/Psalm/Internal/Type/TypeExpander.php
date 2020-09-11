@@ -234,7 +234,7 @@ class TypeExpander
                     if ($const_name_part) {
                         $matching_constants = \array_filter(
                             $matching_constants,
-                            function ($constant_name) use ($const_name_part) {
+                            function ($constant_name) use ($const_name_part): bool {
                                 return $constant_name !== $const_name_part
                                     && \strpos($constant_name, $const_name_part) === 0;
                             }

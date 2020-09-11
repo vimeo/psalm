@@ -17,16 +17,16 @@ class FakeParserCacheProvider extends \Psalm\Internal\Provider\ParserCacheProvid
         return null;
     }
 
-    public function saveStatementsToCache(string $file_path, string $file_content_hash, array $stmts, bool $touch_only)
+    public function saveStatementsToCache(string $file_path, string $file_content_hash, array $stmts, bool $touch_only): void
     {
     }
 
-    public function loadExistingFileContentsFromCache(string $file_path)
+    public function loadExistingFileContentsFromCache(string $file_path): ?string
     {
         return null;
     }
 
-    public function cacheFileContents(string $file_path, string $file_contents)
+    public function cacheFileContents(string $file_path, string $file_contents): void
     {
     }
 }

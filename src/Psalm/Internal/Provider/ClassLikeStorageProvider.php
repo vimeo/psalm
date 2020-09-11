@@ -93,7 +93,7 @@ class ClassLikeStorageProvider
      *
      * @return void
      */
-    public function addMore(array $more)
+    public function addMore(array $more): void
     {
         self::$new_storage = array_merge(self::$new_storage, $more);
         self::$storage = array_merge(self::$storage, $more);
@@ -102,7 +102,7 @@ class ClassLikeStorageProvider
     /**
      * @return void
      */
-    public function makeNew(string $fq_classlike_name_lc)
+    public function makeNew(string $fq_classlike_name_lc): void
     {
         self::$new_storage[$fq_classlike_name_lc] = self::$storage[$fq_classlike_name_lc];
     }
@@ -121,7 +121,7 @@ class ClassLikeStorageProvider
     /**
      * @return void
      */
-    public function remove(string $fq_classlike_name)
+    public function remove(string $fq_classlike_name): void
     {
         $fq_classlike_name_lc = strtolower($fq_classlike_name);
 
@@ -131,7 +131,7 @@ class ClassLikeStorageProvider
     /**
      * @return void
      */
-    public static function deleteAll()
+    public static function deleteAll(): void
     {
         self::$storage = [];
         self::$new_storage = [];
@@ -140,7 +140,7 @@ class ClassLikeStorageProvider
     /**
      * @return void
      */
-    public static function populated()
+    public static function populated(): void
     {
         self::$new_storage = [];
     }

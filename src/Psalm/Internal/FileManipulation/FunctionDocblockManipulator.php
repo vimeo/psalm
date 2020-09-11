@@ -265,7 +265,7 @@ class FunctionDocblockManipulator
         string $phpdoc_type,
         bool $is_php_compatible,
         ?string $description
-    ) {
+    ): void {
         $new_type = str_replace(['<mixed, mixed>', '<array-key, mixed>'], '', $new_type);
 
         $this->new_php_return_type = $php_type;
@@ -287,7 +287,7 @@ class FunctionDocblockManipulator
         ?string $php_type,
         string $new_type,
         string $phpdoc_type
-    ) {
+    ): void {
         $new_type = str_replace(['<mixed, mixed>', '<array-key, mixed>', '<empty, empty>'], '', $new_type);
 
         if ($php_type) {
@@ -484,7 +484,7 @@ class FunctionDocblockManipulator
     /**
      * @return void
      */
-    public static function clearCache()
+    public static function clearCache(): void
     {
         self::$manipulators = [];
     }

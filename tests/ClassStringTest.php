@@ -12,7 +12,7 @@ class ClassStringTest extends TestCase
     /**
      * @return void
      */
-    public function testDontAllowStringStandInForNewClass()
+    public function testDontAllowStringStandInForNewClass(): void
     {
         $this->expectExceptionMessage('InvalidStringClass');
         $this->expectException(\Psalm\Exception\CodeException::class);
@@ -34,7 +34,7 @@ class ClassStringTest extends TestCase
     /**
      * @return void
      */
-    public function testDontAllowStringStandInForStaticMethodCall()
+    public function testDontAllowStringStandInForStaticMethodCall(): void
     {
         $this->expectExceptionMessage('InvalidStringClass');
         $this->expectException(\Psalm\Exception\CodeException::class);
@@ -58,7 +58,7 @@ class ClassStringTest extends TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'arrayOfClassConstants' => [
@@ -779,7 +779,7 @@ class ClassStringTest extends TestCase
     /**
      * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'arrayOfStringClasses' => [

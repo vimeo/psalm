@@ -16,7 +16,7 @@ class UnsetAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Unset_ $stmt,
         Context $context
-    ) {
+    ): void {
         $context->inside_unset = true;
 
         foreach ($stmt->vars as $var) {

@@ -27,7 +27,7 @@ class FileManipulationBuffer
      *
      * @return void
      */
-    public static function add(string $file_path, array $file_manipulations)
+    public static function add(string $file_path, array $file_manipulations): void
     {
         if (!isset(self::$file_manipulations[$file_path])) {
             self::$file_manipulations[$file_path] = [];
@@ -82,7 +82,7 @@ class FileManipulationBuffer
         CodeLocation $code_location,
         string $replacement_text,
         bool $swallow_newlines = false
-    ) {
+    ): void {
         $bounds = $code_location->getSnippetBounds();
 
         if ($swallow_newlines) {
@@ -187,7 +187,7 @@ class FileManipulationBuffer
      *
      * @return array<string, FileManipulation[]>
      */
-    public static function getMigrationManipulations(FileProvider $file_provider)
+    public static function getMigrationManipulations(FileProvider $file_provider): array
     {
         $code_migration_manipulations = [];
 
@@ -240,7 +240,7 @@ class FileManipulationBuffer
     /**
      * @return array<string, FileManipulation[]>
      */
-    public static function getAll()
+    public static function getAll(): array
     {
         return self::$file_manipulations;
     }
@@ -248,7 +248,7 @@ class FileManipulationBuffer
     /**
      * @return void
      */
-    public static function clearCache()
+    public static function clearCache(): void
     {
         self::$file_manipulations = [];
         self::$code_migrations = [];

@@ -6,7 +6,7 @@ class UnnecessaryVarAnnotationManipulationTest extends FileManipulationTest
     /**
      * @return array<string,array{string,string,string,string[],bool}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): array
     {
         return [
             'removeSingleLineVarAnnotation' => [

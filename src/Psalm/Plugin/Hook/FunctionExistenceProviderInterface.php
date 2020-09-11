@@ -20,5 +20,5 @@ interface FunctionExistenceProviderInterface
     public static function doesFunctionExist(
         StatementsSource $statements_source,
         string $function_id
-    );
+    ): ?bool;
 }

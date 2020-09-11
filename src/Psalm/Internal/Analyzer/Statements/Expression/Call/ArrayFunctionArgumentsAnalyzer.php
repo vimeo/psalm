@@ -476,7 +476,7 @@ class ArrayFunctionArgumentsAnalyzer
         PhpParser\Node\Arg $arg,
         Context $context,
         bool $is_array_shift
-    ) {
+    ): void {
         $var_id = ExpressionIdentifier::getVarId(
             $arg->value,
             $statements_analyzer->getFQCLN(),
@@ -575,7 +575,7 @@ class ArrayFunctionArgumentsAnalyzer
         int $max_closure_param_count,
         array $array_arg_types,
         bool $check_functions
-    ) {
+    ): void {
         $codebase = $statements_analyzer->getCodebase();
 
         if (!$closure_type instanceof Type\Atomic\TFn) {

@@ -41,7 +41,7 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
     /**
      * @return void
      */
-    public function testSimpleSymbolLookup()
+    public function testSimpleSymbolLookup(): void
     {
         $this->addFile(
             'somefile.php',
@@ -90,7 +90,7 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
     /**
      * @return void
      */
-    public function testSimpleSymbolLocation()
+    public function testSimpleSymbolLocation(): void
     {
         $this->addFile(
             'somefile.php',
@@ -154,7 +154,7 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
     /**
      * @return void
      */
-    public function testSymbolLookupAfterAlteration()
+    public function testSymbolLookupAfterAlteration(): void
     {
         $codebase = $this->project_analyzer->getCodebase();
         $config = $codebase->config;
@@ -238,7 +238,7 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
     /**
      * @return void
      */
-    public function testGetSymbolPositionMissingArg()
+    public function testGetSymbolPositionMissingArg(): void
     {
         $codebase = $this->project_analyzer->getCodebase();
         $config = $codebase->config;
@@ -274,7 +274,7 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
     /**
      * @return void
      */
-    public function testGetSymbolPositionNullableArg()
+    public function testGetSymbolPositionNullableArg(): void
     {
         $codebase = $this->project_analyzer->getCodebase();
         $config = $codebase->config;
@@ -303,7 +303,7 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
     /**
      * @return void
      */
-    public function testGetSymbolPositionMethodWrongReturnType()
+    public function testGetSymbolPositionMethodWrongReturnType(): void
     {
         $codebase = $this->project_analyzer->getCodebase();
         $config = $codebase->config;
@@ -336,7 +336,7 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
     /**
      * @return void
      */
-    public function testGetSymbolPositionUseStatement()
+    public function testGetSymbolPositionUseStatement(): void
     {
         $codebase = $this->project_analyzer->getCodebase();
         $config = $codebase->config;
@@ -363,7 +363,7 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
     /**
      * @return void
      */
-    public function testGetSymbolPositionRange()
+    public function testGetSymbolPositionRange(): void
     {
         $codebase = $this->project_analyzer->getCodebase();
         $config = $codebase->config;
@@ -396,7 +396,7 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
     /**
      * @return void
      */
-    public function testGetTypeInDocblock()
+    public function testGetTypeInDocblock(): void
     {
         $codebase = $this->project_analyzer->getCodebase();
         $config = $codebase->config;

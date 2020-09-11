@@ -8,7 +8,7 @@ class PartiallyStubbedClass
      *
      * @return PartiallyStubbedClass
      */
-    public function foo($a)
+    public function foo($a): PartiallyStubbedClass
     {
     }
 }

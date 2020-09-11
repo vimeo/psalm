@@ -404,7 +404,7 @@ class Context
         bool $has_leaving_statements,
         array $vars_to_update,
         array &$updated_vars
-    ) {
+    ): void {
         foreach ($start_context->vars_in_scope as $var_id => $old_type) {
             // this is only true if there was some sort of type negation
             if (in_array($var_id, $vars_to_update, true)) {
@@ -499,7 +499,7 @@ class Context
     /**
      * @return void
      */
-    public function remove(string $remove_var_id)
+    public function remove(string $remove_var_id): void
     {
         unset(
             $this->referenced_var_ids[$remove_var_id],
@@ -556,7 +556,7 @@ class Context
         array $clauses,
         ?Union $new_type = null,
         ?StatementsAnalyzer $statements_analyzer = null
-    ) {
+    ): array {
         $new_type_string = $new_type ? $new_type->getId() : '';
 
         $clauses_to_keep = [];
@@ -633,7 +633,7 @@ class Context
         string $remove_var_id,
         ?Union $new_type = null,
         ?StatementsAnalyzer $statements_analyzer = null
-    ) {
+    ): void {
         $this->clauses = self::filterClauses($remove_var_id, $this->clauses, $new_type, $statements_analyzer);
 
         if ($this->parent_context) {
@@ -719,7 +719,7 @@ class Context
      *
      * @return  void
      */
-    public function updateChecks(Context $op_context)
+    public function updateChecks(Context $op_context): void
     {
         $this->check_classes = $this->check_classes && $op_context->check_classes;
         $this->check_variables = $this->check_variables && $op_context->check_variables;
@@ -778,7 +778,7 @@ class Context
     /**
      * @return void
      */
-    public function defineGlobals()
+    public function defineGlobals(): void
     {
         $globals = [
             '$argv' => new Type\Union([
@@ -802,7 +802,7 @@ class Context
     /**
      * @return void
      */
-    public function mergeExceptions(Context $other_context)
+    public function mergeExceptions(Context $other_context): void
     {
         foreach ($other_context->possibly_thrown_exceptions as $possibly_thrown_exception => $codelocations) {
             foreach ($codelocations as $hash => $codelocation) {
@@ -839,7 +839,7 @@ class Context
     public function mergeFunctionExceptions(
         FunctionLikeStorage $function_storage,
         CodeLocation $codelocation
-    ) {
+    ): void {
         $hash = $codelocation->getHash();
         foreach ($function_storage->throws as $possibly_thrown_exception => $_) {
             $this->possibly_thrown_exceptions[$possibly_thrown_exception][$hash] = $codelocation;

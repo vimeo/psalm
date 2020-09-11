@@ -610,7 +610,7 @@ class LoopAnalyzer
     private static function updateLoopScopeContexts(
         LoopScope $loop_scope,
         Context $pre_outer_context
-    ) {
+    ): void {
         $updated_loop_vars = [];
 
         if (!in_array(ScopeAnalyzer::ACTION_CONTINUE, $loop_scope->final_actions, true)) {

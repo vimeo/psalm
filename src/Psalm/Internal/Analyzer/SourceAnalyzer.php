@@ -70,7 +70,7 @@ abstract class SourceAnalyzer implements StatementsSource
     /**
      * @return string
      */
-    public function getRootFileName()
+    public function getRootFileName(): string
     {
         return $this->source->getRootFileName();
     }
@@ -78,7 +78,7 @@ abstract class SourceAnalyzer implements StatementsSource
     /**
      * @return string
      */
-    public function getRootFilePath()
+    public function getRootFilePath(): string
     {
         return $this->source->getRootFilePath();
     }

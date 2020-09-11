@@ -40,7 +40,7 @@ class FileReferenceTest extends TestCase
      *
      * @return void
      */
-    public function testReferenceLocations($input_code, $symbol, $expected_locations)
+    public function testReferenceLocations($input_code, $symbol, $expected_locations): void
     {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'SKIPPED-') !== false) {
@@ -91,7 +91,7 @@ class FileReferenceTest extends TestCase
         array $expected_method_references_to_missing_members,
         array $expected_file_references_to_members,
         array $expected_file_references_to_missing_members
-    ) {
+    ): void {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'SKIPPED-') !== false) {
             $this->markTestSkipped('Skipped due to a bug.');
@@ -125,7 +125,7 @@ class FileReferenceTest extends TestCase
     /**
      * @return array<string,array{string,string,array<int,string>}>
      */
-    public function providerReferenceLocations()
+    public function providerReferenceLocations(): array
     {
         return [
             'getClassLocation' => [
@@ -158,7 +158,7 @@ class FileReferenceTest extends TestCase
      *              4: array<string,array<string,bool>>
      * }>
      */
-    public function providerReferencedMethods()
+    public function providerReferencedMethods(): array
     {
         return [
             'getClassReferences' => [

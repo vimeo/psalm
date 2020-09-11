@@ -24,7 +24,7 @@ class IncludeTest extends TestCase
         array $files_to_check,
         $hoist_constants = false,
         array $error_levels = []
-    ) {
+    ): void {
         $codebase = $this->project_analyzer->getCodebase();
 
         foreach ($files as $file_path => $contents) {
@@ -67,7 +67,7 @@ class IncludeTest extends TestCase
         array $files,
         array $files_to_check,
         $error_message
-    ) {
+    ): void {
         if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
             $this->markTestSkipped();
         }
@@ -100,7 +100,7 @@ class IncludeTest extends TestCase
     /**
      * @return array<string,array{files:array<string,string>,files_to_check:array<int,string>}>
      */
-    public function providerTestValidIncludes()
+    public function providerTestValidIncludes(): array
     {
         return [
             'basicRequire' => [
@@ -607,7 +607,7 @@ class IncludeTest extends TestCase
     /**
      * @return array<string,array{files:array<string,string>,files_to_check:array<int,string>,error_message:string}>
      */
-    public function providerTestInvalidIncludes()
+    public function providerTestInvalidIncludes(): array
     {
         return [
             'undefinedMethodInRequire' => [

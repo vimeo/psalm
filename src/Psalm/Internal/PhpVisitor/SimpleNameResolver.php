@@ -61,7 +61,7 @@ class SimpleNameResolver extends NodeVisitorAbstract
         return null;
     }
 
-    public function enterNode(Node $node)
+    public function enterNode(Node $node): ?int
     {
         if ($node instanceof Stmt\Namespace_) {
             $this->nameContext->startNamespace($node->name);
@@ -142,7 +142,7 @@ class SimpleNameResolver extends NodeVisitorAbstract
     /**
      * @return void
      */
-    private function addAlias(Stmt\UseUse $use, int $type, ?Name $prefix = null)
+    private function addAlias(Stmt\UseUse $use, int $type, ?Name $prefix = null): void
     {
         // Add prefix for group uses
         /** @var Name $name */
@@ -163,7 +163,7 @@ class SimpleNameResolver extends NodeVisitorAbstract
      *
      * @return void
      */
-    private function resolveSignature($node)
+    private function resolveSignature($node): void
     {
         foreach ($node->params as $param) {
             $param->type = $this->resolveType($param->type);
@@ -219,7 +219,7 @@ class SimpleNameResolver extends NodeVisitorAbstract
     /**
      * @return void
      */
-    protected function resolveTrait(Stmt\Trait_ $node)
+    protected function resolveTrait(Stmt\Trait_ $node): void
     {
         $resolvedName = Name::concat($this->nameContext->getNamespace(), (string) $node->name);
 

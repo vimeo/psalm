@@ -291,7 +291,7 @@ class TryAnalyzer
                          *
                          * @return Type\Atomic
                          */
-                        function ($fq_catch_class) use ($codebase) {
+                        function ($fq_catch_class) use ($codebase): Type\Atomic {
                             $catch_class_type = new TNamedObject($fq_catch_class);
 
                             if (version_compare(PHP_VERSION, '7.0.0dev', '>=')

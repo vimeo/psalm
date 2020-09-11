@@ -841,7 +841,7 @@ class ReturnTypeAnalyzer
         StatementsSource $source,
         bool $docblock_only = false,
         ?FunctionLikeStorage $function_like_storage = null
-    ) {
+    ): void {
         $manipulator = FunctionDocblockManipulator::getForFunction(
             $project_analyzer,
             $source->getFilePath(),
