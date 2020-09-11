@@ -1505,6 +1505,10 @@ class Config
             return 'InvalidOperand';
         }
 
+        if ($issue_type === 'InvalidLiteralArgument') {
+            return 'InvalidArgument';
+        }
+
         if ($issue_type === 'TraitMethodSignatureMismatch') {
             return 'MethodSignatureMismatch';
         }

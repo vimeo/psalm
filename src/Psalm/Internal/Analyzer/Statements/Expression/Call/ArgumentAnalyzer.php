@@ -21,6 +21,7 @@ use Psalm\Context;
 use Psalm\Issue\ImplicitToStringCast;
 use Psalm\Issue\InvalidArgument;
 use Psalm\Issue\InvalidScalarArgument;
+use Psalm\Issue\InvalidLiteralArgument;
 use Psalm\Issue\MixedArgument;
 use Psalm\Issue\MixedArgumentTypeCoercion;
 use Psalm\Issue\NoValue;
@@ -126,7 +127,7 @@ class ArgumentAnalyzer
             && !$arg->value instanceof PhpParser\Node\Expr\ConstFetch
         ) {
             if (IssueBuffer::accepts(
-                new InvalidArgument(
+                new InvalidLiteralArgument(
                     'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id
                         . ' expects a non-literal value, ' . $arg_value_type->getId() . ' provided',
                     new CodeLocation($statements_analyzer->getSource(), $arg->value),
