@@ -28,7 +28,7 @@ class UnusedVariableTest extends TestCase
             )
         );
 
-        $this->project_analyzer->setPhpVersion('7.3');
+        $this->project_analyzer->setPhpVersion('7.4');
         $this->project_analyzer->getCodebase()->reportUnusedVariables();
     }
 
@@ -2210,6 +2210,32 @@ class UnusedVariableTest extends TestCase
                         echo $s;
                     }',
                 'error_message' => 'UnnecessaryVarAnnotation',
+            ],
+            'arrowFunctionUnusedVariable' => [
+                '<?php
+                    function f(callable $c): void {
+                        $c(22);
+                    }
+
+                    f(
+                        fn(int $p)
+                            =>
+                            ++$p
+                    );',
+                'error_message' => 'UnusedVariable',
+            ],
+            'arrowFunctionUnusedParam' => [
+                '<?php
+                    function f(callable $c): void {
+                        $c(22);
+                    }
+
+                    f(
+                        fn(int $p)
+                            =>
+                            0
+                    );',
+                'error_message' => 'UnusedClosureParam',
             ],
         ];
     }

@@ -123,7 +123,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
 
     /** @var \Psalm\Internal\Provider\NodeDataProvider */
     public $node_data;
-    
+
     public function __construct(SourceAnalyzer $source, \Psalm\Internal\Provider\NodeDataProvider $node_data)
     {
         $this->source = $source;
@@ -676,9 +676,18 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                 continue;
             }
 
-            if ((!$function_storage
-                || !array_key_exists(substr($var_id, 1), $function_storage->param_lookup))
-                && !isset($this->byref_uses[$var_id])
+            if ($function_storage) {
+                $param_index = \array_search(substr($var_id, 1), array_keys($function_storage->param_lookup));
+                if ($param_index !== false) {
+                    $param = $function_storage->params[$param_index];
+
+                    if ($param->location && $original_location->raw_file_end === $param->location->raw_file_end) {
+                        continue;
+                    }
+                }
+            }
+
+            if (!isset($this->byref_uses[$var_id])
                 && !VariableFetchAnalyzer::isSuperGlobal($var_id)
             ) {
                 $issue = new UnusedVariable(
