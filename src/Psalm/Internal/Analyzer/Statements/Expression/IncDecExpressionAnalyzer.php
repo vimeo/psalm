@@ -2,7 +2,10 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
-use PhpParser\Node\Expr\{PostInc, PostDec, PreInc, PreDec};
+use PhpParser\Node\Expr\PostInc;
+use PhpParser\Node\Expr\PostDec;
+use PhpParser\Node\Expr\PreInc;
+use PhpParser\Node\Expr\PreDec;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\CodeLocation;
