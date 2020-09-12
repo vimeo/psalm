@@ -419,14 +419,109 @@ class ArrayFunctionCallTest extends TestCase
                     '$b' => 'int',
                 ],
             ],
-            'arrayPopNonEmptyAfterCountLessThanEqualToOne' => [
+            'arrayNotEmptyArrayAfterCountLessThanEqualToOne' => [
                 '<?php
                     /** @var list<int> */
-                    $a = [1, 2, 3];
-                    $b = 5;
-                    if (count($a) <= 1) {
-                        echo $a[0];
+                    $leftCount = [1, 2, 3];
+                    if (count($leftCount) <= 1) {
+                        echo $leftCount[0];
+                    }
+                    /** @var list<int> */
+                    $rightCount = [1, 2, 3];
+                    if (1 >= count($rightCount)) {
+                        echo $rightCount[0];
                     }',
+            ],
+            'arrayNotEmptyArrayAfterCountLessThanTwo' => [
+                '<?php
+                    /** @var list<int> */
+                    $leftCount = [1, 2, 3];
+                    if (count($leftCount) < 2) {
+                        echo $leftCount[0];
+                    }
+                    /** @var list<int> */
+                    $rightCount = [1, 2, 3];
+                    if (2 > count($rightCount)) {
+                        echo $rightCount[0];
+                    }',
+            ],
+            'arrayEmptyArrayAfterCountLessThanOne' => [
+                '<?php
+                    /** @var list<int> */
+                    $leftCount = [1, 2, 3];
+                    assert (count($leftCount) < 1);
+                    /** @var list<int> */
+                    $rightCount = [1, 2, 3];
+                    assert (1 > count($rightCount));',
+                'assertions' => [
+                    '$leftCount' => 'array<empty, empty>',
+                    '$rightCount' => 'array<empty, empty>',
+                ],
+            ],
+            'arrayEmptyArrayAfterCountLessThanEqualToZero' => [
+                '<?php
+                    /** @var list<int> */
+                    $leftCount = [1, 2, 3];
+                    assert (count($leftCount) <= 0);
+                    /** @var list<int> */
+                    $rightCount = [1, 2, 3];
+                    assert (0 >= count($rightCount));',
+                'assertions' => [
+                    '$leftCount' => 'array<empty, empty>',
+                    '$rightCount' => 'array<empty, empty>',
+                ],
+            ],
+            'arrayNotNonEmptyArrayAfterCountGreaterThanEqualToZero' => [
+                '<?php
+                    /** @var list<int> */
+                    $leftCount = [1, 2, 3];
+                    assert(count($leftCount) >= 0);
+                    /** @var list<int> */
+                    $rightCount = [1, 2, 3];
+                    assert(0 <= count($rightCount));',
+                'assertions' => [
+                    '$leftCount' => 'list<int>',
+                    '$rightCount' => 'list<int>',
+                ],
+            ],
+            'arrayNotNonEmptyArrayAfterCountGreaterThanMinusOne' => [
+                '<?php
+                    /** @var list<int> */
+                    $leftCount = [1, 2, 3];
+                    assert (count($leftCount) > -1);
+                    /** @var list<int> */
+                    $rightCount = [1, 2, 3];
+                    assert (-1 < count($rightCount));',
+                'assertions' => [
+                    '$leftCount' => 'list<int>',
+                    '$rightCount' => 'list<int>',
+                ],
+            ],
+            'arrayNonEmptyArrayAfterCountGreaterThanEqualToOne' => [
+                '<?php
+                    /** @var list<int> */
+                    $leftCount = [1, 2, 3];
+                    assert(count($leftCount) >= 1);
+                    /** @var list<int> */
+                    $rightCount = [1, 2, 3];
+                    assert(1 <= count($rightCount));',
+                'assertions' => [
+                    '$leftCount' => 'non-empty-list<int>',
+                    '$rightCount' => 'non-empty-list<int>',
+                ],
+            ],
+            'arrayNonEmptyArrayAfterCountGreaterThanZero' => [
+                '<?php
+                    /** @var list<int> */
+                    $leftCount = [1, 2, 3];
+                    assert (count($leftCount) > 0);
+                    /** @var list<int> */
+                    $rightCount = [1, 2, 3];
+                    assert (0 < count($rightCount));',
+                'assertions' => [
+                    '$leftCount' => 'non-empty-list<int>',
+                    '$rightCount' => 'non-empty-list<int>',
+                ],
             ],
             'arrayPopNonEmptyAfterArrayAddition' => [
                 '<?php
