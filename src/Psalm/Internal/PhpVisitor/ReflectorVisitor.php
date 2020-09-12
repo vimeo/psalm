@@ -161,10 +161,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         $this->php_minor_version = $codebase->php_minor_version;
     }
 
-    /**
-     * @return null|int
-     */
-    public function enterNode(PhpParser\Node $node)
+    public function enterNode(PhpParser\Node $node): ?int
     {
         foreach ($node->getComments() as $comment) {
             if ($comment instanceof PhpParser\Comment\Doc && !$node instanceof PhpParser\Node\Stmt\ClassLike) {
@@ -282,7 +279,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $this->aliases->uses_end = (int) $node->getAttribute('endFilePos') + 1;
         } elseif ($node instanceof PhpParser\Node\Stmt\ClassLike) {
             if ($this->skip_if_descendants) {
-                return;
+                return null;
             }
 
             if ($this->registerClassLike($node) === false) {
@@ -323,7 +320,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 || $node instanceof PhpParser\Node\Stmt\ClassMethod
             ) {
                 if ($this->skip_if_descendants) {
-                    return;
+                    return null;
                 }
             }
 
@@ -359,7 +356,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\TraitUse) {
             if ($this->skip_if_descendants) {
-                return;
+                return null;
             }
 
             if (!$this->classlike_storages) {
@@ -540,6 +537,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $this->codebase->scanner->queueClassLikeForScanning('stdClass', false, false);
             $this->file_storage->referenced_classlikes['stdclass'] = 'stdClass';
         }
+        
+        return null;
     }
 
     /**
@@ -571,7 +570,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\ClassLike) {
             if ($this->skip_if_descendants) {
-                return;
+                return null;
             }
 
             if (!$this->fq_classlike_names) {
@@ -675,12 +674,12 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             }
 
             if ($this->skip_if_descendants) {
-                return;
+                return null;
             }
 
             if (!$this->functionlike_storages) {
                 if ($this->file_storage->has_visitor_issues) {
-                    return;
+                    return null;
                 }
 
                 throw new \UnexpectedValueException(
@@ -993,7 +992,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
     /**
      * @return false|null
      */
-    private function registerClassLike(PhpParser\Node\Stmt\ClassLike $node)
+    private function registerClassLike(PhpParser\Node\Stmt\ClassLike $node): ?bool
     {
         $class_location = new CodeLocation($this->file_scanner, $node);
         $name_location = null;
@@ -1523,6 +1522,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 $this->visitPropertyDeclaration($node_stmt, $this->config, $storage, $fq_classlike_name);
             }
         }
+        
+        return null;
     }
 
     /**

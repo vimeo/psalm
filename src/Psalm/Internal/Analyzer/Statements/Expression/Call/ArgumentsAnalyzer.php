@@ -56,7 +56,7 @@ class ArgumentsAnalyzer
         ?string $method_id,
         Context $context,
         ?TemplateResult $template_result = null
-    ) {
+    ): ?bool {
         $last_param = $function_params
             ? $function_params[count($function_params) - 1]
             : null;
@@ -78,7 +78,7 @@ class ArgumentsAnalyzer
                 return false;
             }
 
-            return;
+            return null;
         }
 
         if ($method_id && $method_id === 'array_splice' && $function_params && count($args) > 1) {
@@ -86,7 +86,7 @@ class ArgumentsAnalyzer
                 return false;
             }
 
-            return;
+            return null;
         }
 
         if ($method_id === 'array_map') {
@@ -222,6 +222,8 @@ class ArgumentsAnalyzer
                 $context->inside_class_exists = false;
             }
         }
+
+        return null;
     }
 
     private static function handleArrayMapFilterArrayArg(
@@ -440,7 +442,7 @@ class ArgumentsAnalyzer
         ?TemplateResult $class_template_result,
         CodeLocation $code_location,
         Context $context
-    ) {
+    ): ?bool {
         $in_call_map = $method_id ? InternalCallMapHandler::inCallMap((string) $method_id) : false;
 
         $cased_method_id = (string) $method_id;
@@ -633,7 +635,7 @@ class ArgumentsAnalyzer
                     $context,
                     $template_result
                 ) === false) {
-                    return;
+                    return null;
                 }
             }
 
@@ -802,6 +804,8 @@ class ArgumentsAnalyzer
                 }
             }
         }
+
+        return null;
     }
 
     /**
@@ -819,7 +823,7 @@ class ArgumentsAnalyzer
         PhpParser\Node\Arg $arg,
         Context $context,
         ?TemplateResult $template_result
-    ) {
+    ): ?bool {
         if ($arg->value instanceof PhpParser\Node\Scalar
             || $arg->value instanceof PhpParser\Node\Expr\Cast
             || $arg->value instanceof PhpParser\Node\Expr\Array_
@@ -947,6 +951,8 @@ class ArgumentsAnalyzer
                 $check_null_ref
             );
         }
+
+        return null;
     }
 
     /**
@@ -956,7 +962,7 @@ class ArgumentsAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Arg $arg,
         Context $context
-    ) {
+    ): ?bool {
         // there are a bunch of things we want to evaluate even when we don't
         // know what function/method is being called
         if ($arg->value instanceof PhpParser\Node\Expr\Closure
@@ -1058,6 +1064,8 @@ class ArgumentsAnalyzer
                 }
             }
         }
+
+        return null;
     }
 
     /**
@@ -1069,7 +1077,7 @@ class ArgumentsAnalyzer
         int $argument_offset,
         PhpParser\Node\Arg $arg,
         Context $context
-    ) {
+    ): ?bool {
         $var_id = ExpressionIdentifier::getVarId(
             $arg->value,
             $statements_analyzer->getFQCLN(),
@@ -1122,12 +1130,12 @@ class ArgumentsAnalyzer
                     $method_id === 'array_shift'
                 );
 
-                return;
+                return null;
             }
 
             // noops
             if (in_array($method_id, ['reset', 'end', 'next', 'prev', 'ksort'], true)) {
-                return;
+                return null;
             }
 
             if (($arg_value_type = $statements_analyzer->node_data->getType($arg->value))
@@ -1158,7 +1166,7 @@ class ArgumentsAnalyzer
                     false
                 );
 
-                return;
+                return null;
             }
         }
 
@@ -1187,5 +1195,7 @@ class ArgumentsAnalyzer
                 $statements_analyzer->removeSuppressedIssues(['EmptyArrayAccess']);
             }
         }
+
+        return null;
     }
 }

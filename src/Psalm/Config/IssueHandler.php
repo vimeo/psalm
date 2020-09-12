@@ -63,76 +63,70 @@ class IssueHandler
         return $this->error_level;
     }
 
-    /**
-     * @return string|null
-     */
-    public function getReportingLevelForClass(string $fq_classlike_name)
+    public function getReportingLevelForClass(string $fq_classlike_name): ?string
     {
         foreach ($this->custom_levels as $custom_level) {
             if ($custom_level->allowsClass($fq_classlike_name)) {
                 return $custom_level->getErrorLevel();
             }
         }
+
+        return null;
     }
 
-    /**
-     * @return string|null
-     */
-    public function getReportingLevelForMethod(string $method_id)
+    public function getReportingLevelForMethod(string $method_id): ?string
     {
         foreach ($this->custom_levels as $custom_level) {
             if ($custom_level->allowsMethod(strtolower($method_id))) {
                 return $custom_level->getErrorLevel();
             }
         }
+
+        return null;
     }
 
-    /**
-     * @return string|null
-     */
-    public function getReportingLevelForFunction(string $function_id)
+    public function getReportingLevelForFunction(string $function_id): ?string
     {
         foreach ($this->custom_levels as $custom_level) {
             if ($custom_level->allowsMethod(strtolower($function_id))) {
                 return $custom_level->getErrorLevel();
             }
         }
+
+        return null;
     }
 
-    /**
-     * @return string|null
-     */
-    public function getReportingLevelForArgument(string $function_id)
+    public function getReportingLevelForArgument(string $function_id): ?string
     {
         foreach ($this->custom_levels as $custom_level) {
             if ($custom_level->allowsMethod(strtolower($function_id))) {
                 return $custom_level->getErrorLevel();
             }
         }
+
+        return null;
     }
 
-    /**
-     * @return string|null
-     */
-    public function getReportingLevelForProperty(string $property_id)
+    public function getReportingLevelForProperty(string $property_id): ?string
     {
         foreach ($this->custom_levels as $custom_level) {
             if ($custom_level->allowsProperty($property_id)) {
                 return $custom_level->getErrorLevel();
             }
         }
+
+        return null;
     }
 
-    /**
-     * @return string|null
-     */
-    public function getReportingLevelForVariable(string $var_name)
+    public function getReportingLevelForVariable(string $var_name): ?string
     {
         foreach ($this->custom_levels as $custom_level) {
             if ($custom_level->allowsVariable($var_name)) {
                 return $custom_level->getErrorLevel();
             }
         }
+
+        return null;
     }
 
     /**

@@ -144,9 +144,9 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
         Context $context,
         ?Context $global_context = null,
         bool $root_scope = false
-    ) {
+    ): ?bool {
         if (!$stmts) {
-            return;
+            return null;
         }
 
         // hoist functions to the top
@@ -278,7 +278,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
         PhpParser\Node\Stmt $stmt,
         Context $context,
         ?Context $global_context
-    ) {
+    ): ?bool {
         $ignore_variable_property = false;
         $ignore_variable_method = false;
 
@@ -302,7 +302,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                 }
             }
 
-            return;
+            return null;
         }
 
         if ($statements_analyzer->getProjectAnalyzer()->debug_lines) {
@@ -604,6 +604,8 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                 }
             }
         }
+
+        return null;
     }
 
     private function parseStatementDocblock(

@@ -22,5 +22,5 @@ interface AfterExpressionAnalysisInterface
         StatementsSource $statements_source,
         Codebase $codebase,
         array &$file_replacements = []
-    );
+    ): ?bool;
 }

@@ -611,9 +611,6 @@ class TypeCombination
         return $union_type;
     }
 
-    /**
-     * @return null|Union
-     */
     private static function scrapeTypeProperties(
         Atomic $type,
         TypeCombination $combination,
@@ -621,7 +618,7 @@ class TypeCombination
         bool $overwrite_empty_array,
         bool $allow_mixed_union,
         int $literal_limit
-    ) {
+    ): ?Union {
         if ($type instanceof TMixed) {
             $combination->has_mixed = true;
             if ($type->from_loop_isset) {
@@ -758,7 +755,7 @@ class TypeCombination
 
         if ($type instanceof TArray && $type_key === 'array') {
             if ($type instanceof TCallableArray && isset($combination->value_types['callable'])) {
-                return;
+                return null;
             }
 
             foreach ($type->type_params as $i => $type_param) {
@@ -915,7 +912,7 @@ class TypeCombination
 
         if ($type instanceof TKeyedArray) {
             if ($type instanceof TCallableKeyedArray && isset($combination->value_types['callable'])) {
-                return;
+                return null;
             }
 
             $existing_objectlike_entries = (bool) $combination->objectlike_entries;
@@ -1007,7 +1004,7 @@ class TypeCombination
 
         if ($type instanceof TObject) {
             if ($type instanceof TCallableObject && isset($combination->value_types['callable'])) {
-                return;
+                return null;
             }
 
             $combination->named_object_types = null;
@@ -1116,7 +1113,7 @@ class TypeCombination
 
         if ($type instanceof TString) {
             if ($type instanceof TCallableString && isset($combination->value_types['callable'])) {
-                return;
+                return null;
             }
 
             if (isset($combination->value_types['array-key'])) {
@@ -1374,6 +1371,7 @@ class TypeCombination
         }
 
         $combination->value_types[$type_key] = $type;
+        return null;
     }
 
     /**

@@ -109,7 +109,7 @@ class TConditional extends \Psalm\Type\Atomic
         ?string $this_class,
         int $php_major_version,
         int $php_minor_version
-    ) {
+    ): ?string {
         return null;
     }
 

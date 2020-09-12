@@ -344,7 +344,7 @@ class Reflection
      *
      * @return false|null
      */
-    public function registerFunction($function_id)
+    public function registerFunction($function_id): ?bool
     {
         try {
             $reflection_function = new \ReflectionFunction($function_id);
@@ -352,7 +352,7 @@ class Reflection
             $callmap_callable = null;
 
             if (isset(self::$builtin_functions[$function_id])) {
-                return;
+                return null;
             }
 
             $storage = self::$builtin_functions[$function_id] = new FunctionStorage();
@@ -399,6 +399,8 @@ class Reflection
         } catch (\ReflectionException $e) {
             return false;
         }
+
+        return null;
     }
 
     public static function getPsalmTypeFromReflectionType(?\ReflectionType $reflection_type = null) : Type\Union

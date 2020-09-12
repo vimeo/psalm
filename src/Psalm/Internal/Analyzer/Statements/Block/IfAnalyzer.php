@@ -775,7 +775,7 @@ class IfAnalyzer
         Context $old_if_context,
         Context $outer_context,
         array $pre_assignment_else_redefined_vars
-    ) {
+    ): ?bool {
         $codebase = $statements_analyzer->getCodebase();
 
         $if_context->parent_context = $outer_context;
@@ -1032,6 +1032,8 @@ class IfAnalyzer
         if ($outer_context->collect_exceptions) {
             $outer_context->mergeExceptions($if_context);
         }
+
+        return null;
     }
 
     /**
@@ -1047,7 +1049,7 @@ class IfAnalyzer
         Context $outer_context,
         Codebase $codebase,
         ?int $branch_point
-    ) {
+    ): ?bool {
         $pre_conditional_context = clone $else_context;
 
         try {
@@ -1517,6 +1519,8 @@ class IfAnalyzer
         } catch (\Psalm\Exception\ComplicatedExpressionException $e) {
             $if_scope->negated_clauses = [];
         }
+
+        return null;
     }
 
     /**
@@ -1528,7 +1532,7 @@ class IfAnalyzer
         IfScope $if_scope,
         Context $else_context,
         Context $outer_context
-    ) {
+    ): ?bool {
         $codebase = $statements_analyzer->getCodebase();
 
         if (!$else && !$if_scope->negated_clauses && !$else_context->clauses) {
@@ -1538,7 +1542,7 @@ class IfAnalyzer
             $if_scope->redefined_vars = [];
             $if_scope->reasonable_clauses = [];
 
-            return;
+            return null;
         }
 
         $else_context->clauses = Algebra::simplifyCNF(
@@ -1557,7 +1561,7 @@ class IfAnalyzer
             $if_scope->redefined_vars = [];
             $if_scope->reasonable_clauses = [];
 
-            return;
+            return null;
         }
 
         $original_context = clone $else_context;
@@ -1798,6 +1802,8 @@ class IfAnalyzer
         if ($outer_context->collect_exceptions) {
             $outer_context->mergeExceptions($else_context);
         }
+
+        return null;
     }
 
     /**

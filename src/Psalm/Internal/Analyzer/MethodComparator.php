@@ -49,7 +49,7 @@ class MethodComparator
         array $suppressed_issues,
         bool $prevent_abstract_override = true,
         bool $prevent_method_signature_mismatch = true
-    ) {
+    ): ?bool {
         $implementer_declaring_method_id = $codebase->methods->getDeclaringMethodId(
             new MethodIdentifier(
                 $implementer_classlike_storage->name,
@@ -185,6 +185,8 @@ class MethodComparator
 
             return null;
         }
+
+        return null;
     }
 
     /**

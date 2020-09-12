@@ -670,11 +670,11 @@ class ReturnTypeAnalyzer
         FunctionLikeAnalyzer $function_like_analyzer,
         FunctionLikeStorage $storage,
         Context $context
-    ) {
+    ): ?bool {
         $codebase = $project_analyzer->getCodebase();
 
         if (!$storage->return_type || !$storage->return_type_location) {
-            return;
+            return null;
         }
 
         $parent_class = null;
@@ -721,7 +721,7 @@ class ReturnTypeAnalyzer
                 false
             );
 
-            return;
+            return null;
         }
 
         $fleshed_out_signature_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
@@ -743,7 +743,7 @@ class ReturnTypeAnalyzer
         }
 
         if ($function instanceof Closure || $function instanceof ArrowFunction) {
-            return;
+            return null;
         }
 
         $fleshed_out_return_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
@@ -827,6 +827,8 @@ class ReturnTypeAnalyzer
                 return false;
             }
         }
+
+        return null;
     }
 
     /**

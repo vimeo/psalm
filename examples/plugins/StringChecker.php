@@ -27,7 +27,7 @@ class StringChecker implements AfterExpressionAnalysisInterface
         StatementsSource $statements_source,
         Codebase $codebase,
         array &$file_replacements = []
-    ) {
+    ): ?bool {
         if ($expr instanceof PhpParser\Node\Scalar\String_) {
             $class_or_class_method = '/^\\\?Psalm(\\\[A-Z][A-Za-z0-9]+)+(::[A-Za-z0-9]+)?$/';
 
@@ -73,8 +73,10 @@ class StringChecker implements AfterExpressionAnalysisInterface
                     return false;
                 }
 
-                return;
+                return null;
             }
         }
+
+        return null;
     }
 }

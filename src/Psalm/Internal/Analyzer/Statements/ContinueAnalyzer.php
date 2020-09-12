@@ -19,7 +19,7 @@ class ContinueAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Continue_ $stmt,
         Context $context
-    ) {
+    ): ?bool {
         $loop_scope = $context->loop_scope;
 
         $leaving_switch = true;
@@ -113,5 +113,7 @@ class ContinueAnalyzer
         }
 
         $context->has_returned = true;
+
+        return null;
     }
 }
