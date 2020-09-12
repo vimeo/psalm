@@ -30,6 +30,8 @@ use Psalm\DocComment;
 use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\FileIncludeException;
 use Psalm\Exception\IncorrectDocblockException;
+use Psalm\Exception\InvalidClasslikeOverrideException;
+use Psalm\Exception\InvalidMethodOverrideException;
 use Psalm\Exception\TypeParseTreeException;
 use Psalm\FileSource;
 use Psalm\Internal\Analyzer\ClassAnalyzer;
@@ -1002,6 +1004,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
         $class_name = null;
 
+        $is_classlike_overridden = false;
+
         if ($node->name === null) {
             if (!$node instanceof PhpParser\Node\Stmt\Class_) {
                 throw new \LogicException('Anonymous classes are always classes');
@@ -1047,6 +1051,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     || $duplicate_storage->location->file_path !== $this->file_path
                     || $class_location->getHash() !== $duplicate_storage->location->getHash()
                 ) {
+                    $is_classlike_overridden = true;
                     // we're overwriting some methods
                     $storage = $duplicate_storage;
                     $this->codebase->classlike_storage_provider->makeNew(strtolower($fq_classlike_name));
@@ -1099,7 +1104,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         $storage->stubbed = $this->codebase->register_stub_files;
         $storage->aliases = $this->aliases;
 
-        $doc_comment = $node->getDocComment();
 
         $this->classlike_storages[] = $storage;
 
@@ -1147,6 +1151,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $this->codebase->classlikes->addFullyQualifiedTraitName($fq_classlike_name, $this->file_path);
         }
 
+        $doc_comment = $node->getDocComment();
         if ($doc_comment) {
             $docblock_info = null;
             try {
@@ -1163,6 +1168,13 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             }
 
             if ($docblock_info) {
+                if ($docblock_info->stub_override && !$is_classlike_overridden) {
+                    throw new InvalidClasslikeOverrideException(
+                        'Class/interface/trait ' . $fq_classlike_name . ' is marked as stub override,'
+                        . ' but no original counterpart found'
+                    );
+                }
+
                 if ($docblock_info->templates) {
                     $storage->template_types = [];
 
@@ -1829,6 +1841,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
     {
         $class_storage = null;
         $fq_classlike_name = null;
+        $is_functionlike_override = false;
 
         if ($fake_method && $stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
             $cased_function_id = '@method ' . $stmt->name->name;
@@ -1962,6 +1975,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     $duplicate_method_storage->has_visitor_issues = true;
 
                     return false;
+                } else {
+                    $is_functionlike_override = true;
                 }
 
                 $storage = $class_storage->methods[$method_name_lc];
@@ -2398,6 +2413,13 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
         if ($docblock_info->ignore_falsable_return && $storage->return_type) {
             $storage->return_type->ignore_falsable_issues = true;
+        }
+
+        if ($docblock_info->stub_override && !$is_functionlike_override) {
+            throw new InvalidMethodOverrideException(
+                'Method ' . $cased_function_id . ' is marked as stub override,'
+                . ' but no original counterpart found'
+            );
         }
 
         $storage->suppressed_issues = $docblock_info->suppressed_issues;
