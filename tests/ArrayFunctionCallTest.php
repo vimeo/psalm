@@ -419,6 +419,15 @@ class ArrayFunctionCallTest extends TestCase
                     '$b' => 'int',
                 ],
             ],
+            'arrayPopNonEmptyAfterCountLessThanEqualToOne' => [
+                '<?php
+                    /** @var list<int> */
+                    $a = [1, 2, 3];
+                    $b = 5;
+                    if (count($a) <= 1) {
+                        echo $a[0];
+                    }',
+            ],
             'arrayPopNonEmptyAfterArrayAddition' => [
                 '<?php
                     /** @var array<string, int> */
