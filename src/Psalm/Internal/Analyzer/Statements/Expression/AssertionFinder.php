@@ -2767,7 +2767,7 @@ class AssertionFinder
             )
         ) {
             $max_count = $conditional->right->value -
-                ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller ? 0 : 1);
+                ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller ? 1 : 0);
 
             return self::ASSIGNMENT_TO_RIGHT;
         }
@@ -2789,7 +2789,7 @@ class AssertionFinder
             )
         ) {
             $max_count = $conditional->left->value -
-                ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater ? 0 : 1);
+                ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater ? 1 : 0);
 
             return self::ASSIGNMENT_TO_LEFT;
         }
