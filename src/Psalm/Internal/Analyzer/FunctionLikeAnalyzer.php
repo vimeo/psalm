@@ -964,6 +964,19 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 continue;
             }
 
+            $did_match_param = false;
+
+            foreach ($this->function->params as $param) {
+                if ($param->var->getAttribute('endFilePos') === $original_location->raw_file_end) {
+                    $did_match_param = true;
+                    break;
+                }
+            }
+
+            if (!$did_match_param) {
+                continue;
+            }
+
             if (!($storage instanceof MethodStorage)
                 || !$storage->cased_name
                 || $storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
@@ -1658,7 +1671,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
         return $this->getClosureId();
     }
-    
+
     public function getFunctionLikeStorage(?StatementsAnalyzer $statements_analyzer = null): FunctionLikeStorage
     {
         $codebase = $this->codebase;
