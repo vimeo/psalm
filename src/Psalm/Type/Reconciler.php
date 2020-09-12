@@ -810,7 +810,6 @@ class Reconciler
     /**
      * @param  string[]     $suppressed_issues
      *
-     * @return void
      */
     protected static function triggerIssueForImpossible(
         Union $existing_var_type,
@@ -820,7 +819,7 @@ class Reconciler
         bool $redundant,
         CodeLocation $code_location,
         array $suppressed_issues
-    ) {
+    ): void {
         $never = $assertion[0] === '!';
 
         if ($never) {

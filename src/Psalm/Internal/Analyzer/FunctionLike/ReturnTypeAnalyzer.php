@@ -832,7 +832,6 @@ class ReturnTypeAnalyzer
     /**
      * @param Closure|Function_|ClassMethod|ArrowFunction $function
      *
-     * @return void
      */
     private static function addOrUpdateReturnType(
         FunctionLike $function,
@@ -841,7 +840,7 @@ class ReturnTypeAnalyzer
         StatementsSource $source,
         bool $docblock_only = false,
         ?FunctionLikeStorage $function_like_storage = null
-    ) {
+    ): void {
         $manipulator = FunctionDocblockManipulator::getForFunction(
             $project_analyzer,
             $source->getFilePath(),

@@ -12,7 +12,6 @@ use Psalm\Type;
 class ClassUnqualifier implements AfterClassLikeExistenceCheckInterface
 {
     /**
-     * @param  string             $fq_class_name
      * @param  FileManipulation[] $file_replacements
      *
      * @return void

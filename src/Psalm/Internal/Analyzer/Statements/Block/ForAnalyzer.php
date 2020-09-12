@@ -18,7 +18,6 @@ use function array_intersect_key;
 class ForAnalyzer
 {
     /**
-     *
      * @return  false|null
      */
     public static function analyze(

@@ -122,14 +122,11 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
         $this->codebase = $project_analyzer->getCodebase();
     }
 
-    /**
-     * @return void
-     */
     public function analyze(
         ?Context $file_context = null,
         bool $preserve_analyzers = false,
         ?Context $global_context = null
-    ) {
+    ): void {
         $codebase = $this->project_analyzer->getCodebase();
 
         $file_storage = $codebase->file_storage_provider->get($this->file_path);
@@ -365,18 +362,12 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
         }
     }
 
-    /**
-     * @return  void
-     */
-    public function addNamespacedClassAnalyzer(string $fq_class_name, ClassAnalyzer $class_analyzer)
+    public function addNamespacedClassAnalyzer(string $fq_class_name, ClassAnalyzer $class_analyzer): void
     {
         $this->class_analyzers_to_analyze[strtolower($fq_class_name)] = $class_analyzer;
     }
 
-    /**
-     * @return  void
-     */
-    public function addNamespacedInterfaceAnalyzer(string $fq_class_name, InterfaceAnalyzer $interface_analyzer)
+    public function addNamespacedInterfaceAnalyzer(string $fq_class_name, InterfaceAnalyzer $interface_analyzer): void
     {
         $this->interface_analyzers_to_analyze[strtolower($fq_class_name)] = $interface_analyzer;
     }
@@ -490,10 +481,7 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
         return $this->aliased_classes_flipped_replaceable;
     }
 
-    /**
-     * @return void
-     */
-    public static function clearCache()
+    public static function clearCache(): void
     {
         \Psalm\Internal\Type\TypeTokenizer::clearCache();
         \Psalm\Internal\Codebase\Reflection::clearCache();
@@ -516,18 +504,12 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
         return $this->file_path;
     }
 
-    /**
-     * @return string
-     */
-    public function getRootFileName()
+    public function getRootFileName(): string
     {
         return $this->root_file_name ?: $this->file_name;
     }
 
-    /**
-     * @return string
-     */
-    public function getRootFilePath()
+    public function getRootFilePath(): string
     {
         return $this->root_file_path ?: $this->file_path;
     }
@@ -541,18 +523,12 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
         $this->root_file_path = $file_path;
     }
 
-    /**
-     * @return void
-     */
-    public function addRequiredFilePath(string $file_path)
+    public function addRequiredFilePath(string $file_path): void
     {
         $this->required_file_paths[$file_path] = true;
     }
 
-    /**
-     * @return void
-     */
-    public function addParentFilePath(string $file_path)
+    public function addParentFilePath(string $file_path): void
     {
         $this->parent_file_paths[$file_path] = true;
     }

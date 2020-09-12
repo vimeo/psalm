@@ -46,10 +46,7 @@ class ReportOutputTest extends TestCase
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testReportFormatValid()
+    public function testReportFormatValid(): void
     {
         $config = new TestConfig();
         $config->throw_exception = false;
@@ -60,10 +57,7 @@ class ReportOutputTest extends TestCase
         }
     }
 
-    /**
-     * @return void
-     */
-    public function testReportFormatException()
+    public function testReportFormatException(): void
     {
         $this->expectException(\UnexpectedValueException::class);
         $config = new TestConfig();
@@ -98,10 +92,7 @@ echo $a;';
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testJsonReport()
+    public function testJsonReport(): void
     {
         $this->analyzeFileForReport();
 
@@ -254,10 +245,7 @@ echo $a;';
         $this->assertIsArray(json_decode($report->create()));
     }
 
-    /**
-     * @return void
-     */
-    public function testSonarqubeReport()
+    public function testSonarqubeReport(): void
     {
         $this->analyzeFileForReport();
 
@@ -355,10 +343,7 @@ echo $a;';
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testEmacsReport()
+    public function testEmacsReport(): void
     {
         $this->analyzeFileForReport();
 
@@ -375,10 +360,7 @@ somefile.php:15:6:warning - Possibly undefined global variable $a, first seen on
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testPylintReport()
+    public function testPylintReport(): void
     {
         $this->analyzeFileForReport();
 
@@ -395,10 +377,7 @@ somefile.php:15: [W0001] PossiblyUndefinedGlobalVariable: Possibly undefined glo
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testConsoleReport()
+    public function testConsoleReport(): void
     {
         $this->analyzeFileForReport();
 
@@ -426,10 +405,7 @@ echo $a
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testConsoleReportNoInfo()
+    public function testConsoleReportNoInfo(): void
     {
         $this->analyzeFileForReport();
 
@@ -455,10 +431,7 @@ echo CHANGE_ME;
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testConsoleReportNoSnippet()
+    public function testConsoleReportNoSnippet(): void
     {
         $this->analyzeFileForReport();
 
@@ -487,10 +460,7 @@ INFO: PossiblyUndefinedGlobalVariable - somefile.php:15:6 - Possibly undefined g
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testCompactReport()
+    public function testCompactReport(): void
     {
         $this->analyzeFileForReport();
 
@@ -514,10 +484,7 @@ INFO: PossiblyUndefinedGlobalVariable - somefile.php:15:6 - Possibly undefined g
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testCheckstyleReport()
+    public function testCheckstyleReport(): void
     {
         $this->analyzeFileForReport();
 
@@ -553,10 +520,7 @@ INFO: PossiblyUndefinedGlobalVariable - somefile.php:15:6 - Possibly undefined g
         //);
     }
 
-    /**
-     * @return void
-     */
-    public function testJunitReport()
+    public function testJunitReport(): void
     {
         $this->analyzeFileForReport();
 
@@ -640,10 +604,7 @@ column_to: 8
         //);
     }
 
-    /**
-     * @return void
-     */
-    public function testEmptyReportIfNotError()
+    public function testEmptyReportIfNotError(): void
     {
         $this->addFile(
             'somefile.php',

@@ -1226,7 +1226,7 @@ class CommentAnalyzer
      *
      * @psalm-pure
      */
-    public static function splitDocLine(string $return_block)
+    public static function splitDocLine(string $return_block): array
     {
         $brackets = '';
 
@@ -1350,12 +1350,9 @@ class CommentAnalyzer
     }
 
     /**
-     *
-     * @return void
-     *
      * @throws DocblockParseException if a duplicate is found
      */
-    private static function checkDuplicatedTags(ParsedDocblock $parsed_docblock)
+    private static function checkDuplicatedTags(ParsedDocblock $parsed_docblock): void
     {
         if (count($parsed_docblock->tags['return'] ?? []) > 1
             || count($parsed_docblock->tags['psalm-return'] ?? []) > 1
@@ -1372,11 +1369,10 @@ class CommentAnalyzer
     /**
      * @param array<int, string> $param
      *
-     * @return void
      *
      * @throws DocblockParseException  if a duplicate is found
      */
-    private static function checkDuplicatedParams(array $param)
+    private static function checkDuplicatedParams(array $param): void
     {
         $list_names = self::extractAllParamNames($param);
 
@@ -1392,7 +1388,7 @@ class CommentAnalyzer
      *
      * @psalm-pure
      */
-    private static function extractAllParamNames(array $lines)
+    private static function extractAllParamNames(array $lines): array
     {
         $names = [];
 

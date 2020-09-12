@@ -39,7 +39,7 @@ class TaintedInput extends CodeIssue
     /**
      * @return list<TaintNodeData|array{label: string, entry_path_type: string}>
      */
-    public function getTaintTrace()
+    public function getTaintTrace(): array
     {
         $nodes = [];
 

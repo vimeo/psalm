@@ -468,19 +468,13 @@ class FileFilter
         return $this->files;
     }
 
-    /**
-     * @return  void
-     */
-    public function addFile(string $file_name)
+    public function addFile(string $file_name): void
     {
         $this->files[] = $file_name;
         $this->files_lowercase[] = strtolower($file_name);
     }
 
-    /**
-     * @return void
-     */
-    public function addDirectory(string $dir_name)
+    public function addDirectory(string $dir_name): void
     {
         $this->directories[] = self::slashify($dir_name);
     }

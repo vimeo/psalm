@@ -223,7 +223,7 @@ class ClassLikeStubGenerator
     /**
      * @return list<PhpParser\Node\Stmt\ClassMethod>
      */
-    private static function getMethodNodes(ClassLikeStorage $storage) {
+    private static function getMethodNodes(ClassLikeStorage $storage): array {
         $namespace_name = implode('\\', array_slice(explode('\\', $storage->name), 0, -1));
         $method_nodes = [];
 

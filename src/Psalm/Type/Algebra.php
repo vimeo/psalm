@@ -91,7 +91,7 @@ class Algebra
         ?Codebase $codebase = null,
         bool $inside_negation = false,
         bool $cache = true
-    ) {
+    ): array {
         if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd ||
             $conditional instanceof PhpParser\Node\Expr\BinaryOp\LogicalAnd
         ) {
@@ -417,7 +417,7 @@ class Algebra
      *
      * @psalm-pure
      */
-    public static function simplifyCNF(array $clauses)
+    public static function simplifyCNF(array $clauses): array
     {
         $cloned_clauses = [];
 
@@ -452,10 +452,7 @@ class Algebra
                     $clause_var_possibilities = array_values(
                         array_filter(
                             $clause_b->possibilities[$clause_var],
-                            /**
-                             * @return bool
-                             */
-                            function (string $possible_type) use ($negated_clause_type) {
+                            function (string $possible_type) use ($negated_clause_type): bool {
                                 return $possible_type !== $negated_clause_type;
                             }
                         )
@@ -803,7 +800,7 @@ class Algebra
      *
      * @return non-empty-list<Clause>
      */
-    public static function negateFormula(array $clauses)
+    public static function negateFormula(array $clauses): array
     {
         if (!$clauses) {
             $cond_id = \mt_rand(0, 100000000);

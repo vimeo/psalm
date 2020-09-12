@@ -81,7 +81,7 @@ class TypeTokenizer
     /**
      * @return list<array{0: string, 1: int}>
      */
-    public static function tokenize(string $string_type, bool $ignore_space = true)
+    public static function tokenize(string $string_type, bool $ignore_space = true): array
     {
         $type_tokens = [['', 0]];
         $was_char = false;
@@ -336,7 +336,7 @@ class TypeTokenizer
         ?string $self_fqcln = null,
         ?string $parent_fqcln = null,
         bool $allow_assertions = false
-    ) {
+    ): array {
         $type_tokens = self::tokenize($string_type);
 
         for ($i = 0, $l = count($type_tokens); $i < $l; ++$i) {

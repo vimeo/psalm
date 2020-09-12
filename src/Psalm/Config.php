@@ -1093,9 +1093,6 @@ class Config
         return $config;
     }
 
-    /**
-     * @return $this
-     */
     public static function getInstance(): Config
     {
         if (self::$instance) {
@@ -1105,18 +1102,12 @@ class Config
         throw new \UnexpectedValueException('No config initialized');
     }
 
-    /**
-     * @return void
-     */
-    public function setComposerClassLoader(?ClassLoader $loader = null)
+    public function setComposerClassLoader(?ClassLoader $loader = null): void
     {
         $this->composer_class_loader = $loader;
     }
 
-    /**
-     * @return void
-     */
-    public function setCustomErrorLevel(string $issue_key, string $error_level)
+    public function setCustomErrorLevel(string $issue_key, string $error_level): void
     {
         $this->issue_handlers[$issue_key] = new IssueHandler();
         $this->issue_handlers[$issue_key]->setErrorLevel($error_level);
@@ -1125,9 +1116,8 @@ class Config
     /**
      * @throws ConfigException if a Config file could not be found
      *
-     * @return void
      */
-    private function loadFileExtensions(SimpleXMLElement $extensions)
+    private function loadFileExtensions(SimpleXMLElement $extensions): void
     {
         foreach ($extensions as $extension) {
             $extension_name = preg_replace('/^\.?/', '', (string)$extension['name']);
@@ -1155,10 +1145,7 @@ class Config
         }
     }
 
-    /**
-     * @return void
-     */
-    public function addPluginPath(string $path)
+    public function addPluginPath(string $path): void
     {
         if (!file_exists($path)) {
             throw new \InvalidArgumentException('Cannot find plugin file ' . $path);
@@ -1167,8 +1154,7 @@ class Config
         $this->plugin_paths[] = $path;
     }
 
-    /** @return void */
-    public function addPluginClass(string $class_name, ?SimpleXMLElement $plugin_config = null)
+    public function addPluginClass(string $class_name, ?SimpleXMLElement $plugin_config = null): void
     {
         $this->plugin_classes[] = ['class' => $class_name, 'config' => $plugin_config];
     }
@@ -1182,10 +1168,9 @@ class Config
     /**
      * Initialises all the plugins (done once the config is fully loaded)
      *
-     * @return void
      * @psalm-suppress MixedAssignment
      */
-    public function initializePlugins(ProjectAnalyzer $project_analyzer)
+    public function initializePlugins(ProjectAnalyzer $project_analyzer): void
     {
         $codebase = $project_analyzer->getCodebase();
 
@@ -1278,7 +1263,7 @@ class Config
      *
      * @return class-string<T>
      */
-    private function getPluginClassForPath(Codebase $codebase, string $path, string $must_extend)
+    private function getPluginClassForPath(Codebase $codebase, string $path, string $must_extend): string
     {
         $file_storage = $codebase->createFileStorageForPath($path);
         $file_to_scan = new FileScanner($path, $this->shortenFileName($path), true);
@@ -1598,7 +1583,6 @@ class Config
     }
 
     /**
-     *
      * @return  string|null
      */
     public function getReportingLevelForVariable(string $issue_type, string $var_name)
@@ -1688,10 +1672,7 @@ class Config
         return $this->mock_classes;
     }
 
-    /**
-     * @return void
-     */
-    public function visitStubFiles(Codebase $codebase, ?Progress $progress = null)
+    public function visitStubFiles(Codebase $codebase, ?Progress $progress = null): void
     {
         if ($progress === null) {
             $progress = new VoidProgress();
@@ -1792,10 +1773,7 @@ class Config
         return $this->predefined_constants;
     }
 
-    /**
-     * @return void
-     */
-    public function collectPredefinedConstants()
+    public function collectPredefinedConstants(): void
     {
         $this->predefined_constants = get_defined_constants();
     }
@@ -1808,10 +1786,7 @@ class Config
         return $this->predefined_functions;
     }
 
-    /**
-     * @return void
-     */
-    public function collectPredefinedFunctions()
+    public function collectPredefinedFunctions(): void
     {
         $defined_functions = get_defined_functions();
 
@@ -1834,12 +1809,10 @@ class Config
     }
 
     /**
-     * @return void
-     *
      * @psalm-suppress MixedAssignment
      * @psalm-suppress MixedArrayAccess
      */
-    public function visitComposerAutoloadFiles(ProjectAnalyzer $project_analyzer, ?Progress $progress = null)
+    public function visitComposerAutoloadFiles(ProjectAnalyzer $project_analyzer, ?Progress $progress = null): void
     {
         if ($progress === null) {
             $progress = new VoidProgress();
@@ -1958,10 +1931,7 @@ class Config
         return $candidate_path;
     }
 
-    /**
-     * @return void
-     */
-    public static function removeCacheDirectory(string $dir)
+    public static function removeCacheDirectory(string $dir): void
     {
         if (is_dir($dir)) {
             $objects = scandir($dir, SCANDIR_SORT_NONE);
@@ -1985,16 +1955,12 @@ class Config
         }
     }
 
-    /**
-     * @return void
-     */
-    public function setServerMode()
+    public function setServerMode(): void
     {
         $this->cache_directory .= '-s';
     }
 
-    /** @return void */
-    public function addStubFile(string $stub_file)
+    public function addStubFile(string $stub_file): void
     {
         $this->stub_files[$stub_file] = $stub_file;
     }

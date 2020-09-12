@@ -14,7 +14,6 @@ class ShortClosureVisitor extends PhpParser\NodeVisitorAbstract implements PhpPa
     protected $used_variables = [];
 
     /**
-     *
      * @return null|int
      */
     public function enterNode(PhpParser\Node $node)

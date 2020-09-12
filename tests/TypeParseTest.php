@@ -28,197 +28,125 @@ class TypeParseTest extends TestCase
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testThisToStatic()
+    public function testThisToStatic(): void
     {
         $this->assertSame('static', (string) Type::parseString('$this'));
     }
 
-    /**
-     * @return void
-     */
-    public function testThisToStaticUnion()
+    public function testThisToStaticUnion(): void
     {
         $this->assertSame('A|static', (string) Type::parseString('$this|A'));
     }
 
-    /**
-     * @return void
-     */
-    public function testIntOrString()
+    public function testIntOrString(): void
     {
         $this->assertSame('int|string', (string) Type::parseString('int|string'));
     }
 
-    /**
-     * @return void
-     */
-    public function testBracketedIntOrString()
+    public function testBracketedIntOrString(): void
     {
         $this->assertSame('int|string', (string) Type::parseString('(int|string)'));
     }
 
-    /**
-     * @return void
-     */
-    public function testBoolOrIntOrString()
+    public function testBoolOrIntOrString(): void
     {
         $this->assertSame('bool|int|string', (string) Type::parseString('bool|int|string'));
     }
 
-    /**
-     * @return void
-     */
-    public function testNullable()
+    public function testNullable(): void
     {
         $this->assertSame('null|string', (string) Type::parseString('?string'));
     }
 
-    /**
-     * @return void
-     */
-    public function testNullableUnion()
+    public function testNullableUnion(): void
     {
         $this->assertSame('int|null|string', (string) Type::parseString('?(string|int)'));
     }
 
-    /**
-     * @return void
-     */
-    public function testNullableFullyQualified()
+    public function testNullableFullyQualified(): void
     {
         $this->assertSame('null|stdClass', (string) Type::parseString('?\\stdClass'));
     }
 
-    /**
-     * @return void
-     */
-    public function testNullableOrNullable()
+    public function testNullableOrNullable(): void
     {
         $this->assertSame('int|null|string', (string) Type::parseString('?string|?int'));
     }
 
-    /**
-     * @return void
-     */
-    public function testBadNullableCharacterInUnion()
+    public function testBadNullableCharacterInUnion(): void
     {
         $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
         Type::parseString('int|array|?');
     }
 
-    /**
-     * @return void
-     */
-    public function testBadNullableCharacterInUnionWithFollowing()
+    public function testBadNullableCharacterInUnionWithFollowing(): void
     {
         $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
         Type::parseString('int|array|?|bool');
     }
 
-    /**
-     * @return void
-     */
-    public function testArrayWithClosingBracket()
+    public function testArrayWithClosingBracket(): void
     {
         $this->assertSame('array<int, int>', (string) Type::parseString('array<int, int>'));
     }
 
-    /**
-     * @return void
-     */
-    public function testArrayWithoutClosingBracket()
+    public function testArrayWithoutClosingBracket(): void
     {
         $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
         Type::parseString('array<int, int');
     }
 
-    /**
-     * @return void
-     */
-    public function testArrayWithSingleArg()
+    public function testArrayWithSingleArg(): void
     {
         $this->assertSame('array<array-key, int>', (string) Type::parseString('array<int>'));
     }
 
-    /**
-     * @return void
-     */
-    public function testArrayWithNestedSingleArg()
+    public function testArrayWithNestedSingleArg(): void
     {
         $this->assertSame('array<array-key, array<array-key, int>>', (string) Type::parseString('array<array<int>>'));
     }
 
-    /**
-     * @return void
-     */
-    public function testArrayWithUnion()
+    public function testArrayWithUnion(): void
     {
         $this->assertSame('array<int|string, string>', (string) Type::parseString('array<int|string, string>'));
     }
 
-    /**
-     * @return void
-     */
-    public function testNonEmptyArrray()
+    public function testNonEmptyArrray(): void
     {
         $this->assertSame('non-empty-array<array-key, int>', (string) Type::parseString('non-empty-array<int>'));
     }
 
-    /**
-     * @return void
-     */
-    public function testGeneric()
+    public function testGeneric(): void
     {
         $this->assertSame('B<int>', (string) Type::parseString('B<int>'));
     }
 
-    /**
-     * @return void
-     */
-    public function testIntersection()
+    public function testIntersection(): void
     {
         $this->assertSame('I1&I2&I3', (string) Type::parseString('I1&I2&I3'));
     }
 
-    /**
-     * @return void
-     */
-    public function testIntersectionOrNull()
+    public function testIntersectionOrNull(): void
     {
         $this->assertSame('I1&I2|null', (string) Type::parseString('I1&I2|null'));
     }
 
-    /**
-     * @return void
-     */
-    public function testNullOrIntersection()
+    public function testNullOrIntersection(): void
     {
         $this->assertSame('I1&I2|null', (string) Type::parseString('null|I1&I2'));
     }
 
-    /**
-     * @return void
-     */
-    public function testInteratorAndTraversable()
+    public function testInteratorAndTraversable(): void
     {
         $this->assertSame('Iterator<mixed, int>&Traversable', (string) Type::parseString('Iterator<int>&Traversable'));
     }
 
-    /**
-     * @return void
-     */
-    public function testStaticAndStatic()
+    public function testStaticAndStatic(): void
     {
         $this->assertSame('static', (string) Type::parseString('static&static'));
     }
 
-    /**
-     * @return void
-     */
-    public function testTraversableAndIteratorOrNull()
+    public function testTraversableAndIteratorOrNull(): void
     {
         $this->assertSame(
             'Traversable&Iterator<mixed, int>|null',
@@ -226,10 +154,7 @@ class TypeParseTest extends TestCase
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testIteratorAndTraversableOrNull()
+    public function testIteratorAndTraversableOrNull(): void
     {
         $this->assertSame(
             'Iterator<mixed, int>&Traversable|null',
@@ -237,77 +162,50 @@ class TypeParseTest extends TestCase
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testIntersectionAfterGeneric()
+    public function testIntersectionAfterGeneric(): void
     {
         $this->assertSame('Countable&iterable<mixed, int>&I', (string) Type::parseString('Countable&iterable<int>&I'));
     }
 
-    /**
-     * @return void
-     */
-    public function testIntersectionOfIterables()
+    public function testIntersectionOfIterables(): void
     {
         $this->assertSame('iterable<mixed, A>&iterable<mixed, B>', (string) Type::parseString('iterable<A>&iterable<B>'));
     }
 
-    /**
-     * @return void
-     */
-    public function testIntersectionOfTKeyedArray()
+    public function testIntersectionOfTKeyedArray(): void
     {
         $this->assertSame('array{a: int, b: int}', (string) Type::parseString('array{a: int}&array{b: int}'));
     }
 
-    /**
-     * @return void
-     */
-    public function testIntersectionOfTKeyedArrayWithMergedProperties()
+    public function testIntersectionOfTKeyedArrayWithMergedProperties(): void
     {
         $this->assertSame('array{a: int}', (string) Type::parseString('array{a: int}&array{a: mixed}'));
     }
 
-    /**
-     * @return void
-     */
-    public function testIntersectionOfTKeyedArrayWithPossiblyUndefinedMergedProperties()
+    public function testIntersectionOfTKeyedArrayWithPossiblyUndefinedMergedProperties(): void
     {
         $this->assertSame('array{a: int}', (string) Type::parseString('array{a: int}&array{a?: int}'));
     }
 
-    /**
-     * @return void
-     */
-    public function testIntersectionOfTKeyedArrayWithConflictingProperties()
+    public function testIntersectionOfTKeyedArrayWithConflictingProperties(): void
     {
         $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
         Type::parseString('array{a: string}&array{a: int}');
     }
 
-    /**
-     * @return void
-     */
-    public function testUnionOfIntersectionOfTKeyedArray()
+    public function testUnionOfIntersectionOfTKeyedArray(): void
     {
         $this->assertSame('array{a: int|string, b?: int}', (string) Type::parseString('array{a: int}|array{a: string}&array{b: int}'));
         $this->assertSame('array{a: int|string, b?: int}', (string) Type::parseString('array{b: int}&array{a: string}|array{a: int}'));
     }
 
-    /**
-     * @return void
-     */
-    public function testIntersectionOfUnionOfTKeyedArray()
+    public function testIntersectionOfUnionOfTKeyedArray(): void
     {
         $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
         Type::parseString('array{a: int}&array{a: string}|array{b: int}');
     }
 
-    /**
-     * @return void
-     */
-    public function testIntersectionOfTKeyedArrayAndObject()
+    public function testIntersectionOfTKeyedArrayAndObject(): void
     {
         $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
         Type::parseString('array{a: int}&T1');
@@ -318,42 +216,27 @@ class TypeParseTest extends TestCase
         $this->assertSame('iterable<string, array{int}>', Type::parseString('iterable<string, array{int}>')->getId());
     }
 
-    /**
-     * @return void
-     */
-    public function testPhpDocSimpleArray()
+    public function testPhpDocSimpleArray(): void
     {
         $this->assertSame('array<array-key, A>', (string) Type::parseString('A[]'));
     }
 
-    /**
-     * @return void
-     */
-    public function testPhpDocUnionArray()
+    public function testPhpDocUnionArray(): void
     {
         $this->assertSame('array<array-key, A|B>', (string) Type::parseString('(A|B)[]'));
     }
 
-    /**
-     * @return void
-     */
-    public function testPhpDocMultiDimensionalArray()
+    public function testPhpDocMultiDimensionalArray(): void
     {
         $this->assertSame('array<array-key, array<array-key, A>>', (string) Type::parseString('A[][]'));
     }
 
-    /**
-     * @return void
-     */
-    public function testPhpDocMultidimensionalUnionArray()
+    public function testPhpDocMultidimensionalUnionArray(): void
     {
         $this->assertSame('array<array-key, array<array-key, A|B>>', (string) Type::parseString('(A|B)[][]'));
     }
 
-    /**
-     * @return void
-     */
-    public function testPhpDocTKeyedArray()
+    public function testPhpDocTKeyedArray(): void
     {
         $this->assertSame(
             'array<array-key, array{b: bool, d: string}>',
@@ -361,152 +244,98 @@ class TypeParseTest extends TestCase
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testPhpDocUnionOfArrays()
+    public function testPhpDocUnionOfArrays(): void
     {
         $this->assertSame('array<array-key, A|B>', (string) Type::parseString('A[]|B[]'));
     }
 
-    /**
-     * @return void
-     */
-    public function testPhpDocUnionOfArraysOrObject()
+    public function testPhpDocUnionOfArraysOrObject(): void
     {
         $this->assertSame('C|array<array-key, A|B>', (string) Type::parseString('A[]|B[]|C'));
     }
 
-    /**
-     * @return void
-     */
-    public function testPsalmOnlyAtomic()
+    public function testPsalmOnlyAtomic(): void
     {
         $this->assertSame('class-string', (string) Type::parseString('class-string'));
     }
 
-    /**
-     * @return void
-     */
-    public function testParameterizedClassString()
+    public function testParameterizedClassString(): void
     {
         $this->assertSame('class-string<A>', (string) Type::parseString('class-string<A>'));
     }
 
-    /**
-     * @return void
-     */
-    public function testParameterizedClassStringUnion()
+    public function testParameterizedClassStringUnion(): void
     {
         $this->assertSame('class-string<A>|class-string<B>', (string) Type::parseString('class-string<A>|class-string<B>'));
     }
 
-    /**
-     * @return void
-     */
-    public function testInvalidType()
+    public function testInvalidType(): void
     {
         $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
         Type::parseString('array(A)');
     }
 
-    /**
-     * @return void
-     */
-    public function testBracketedUnionAndIntersection()
+    public function testBracketedUnionAndIntersection(): void
     {
         $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
         Type::parseString('(A|B)&C');
     }
 
-    /**
-     * @return void
-     */
-    public function testBracketInUnion()
+    public function testBracketInUnion(): void
     {
         Type::parseString('null|(scalar|array|object)');
     }
 
-    /**
-     * @return void
-     */
-    public function testTKeyedArrayWithSimpleArgs()
+    public function testTKeyedArrayWithSimpleArgs(): void
     {
         $this->assertSame('array{a: int, b: string}', (string) Type:: parseString('array{a: int, b: string}'));
     }
 
-    /**
-     * @return void
-     */
-    public function testTKeyedArrayWithSpace()
+    public function testTKeyedArrayWithSpace(): void
     {
         $this->assertSame('array{\'a \': int, \'b  \': string}', (string) Type:: parseString('array{\'a \': int, \'b  \': string}'));
     }
 
-    /**
-     * @return void
-     */
-    public function testTKeyedArrayWithQuotedKeys()
+    public function testTKeyedArrayWithQuotedKeys(): void
     {
         $this->assertSame('array{\'\\"\': int, \'\\\'\': string}', (string) Type:: parseString('array{\'"\': int, \'\\\'\': string}'));
         $this->assertSame('array{\'\\"\': int, \'\\\'\': string}', (string) Type:: parseString('array{"\\"": int, "\\\'": string}'));
     }
 
-    /**
-     * @return void
-     */
-    public function testTKeyedArrayWithClassConstantKey()
+    public function testTKeyedArrayWithClassConstantKey(): void
     {
         $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
         Type::parseString('array{self::FOO: string}');
     }
 
-    /**
-     * @return void
-     */
-    public function testTKeyedArrayWithQuotedClassConstantKey()
+    public function testTKeyedArrayWithQuotedClassConstantKey(): void
     {
         $this->assertSame('array{\'self::FOO\': string}', (string) Type:: parseString('array{"self::FOO": string}'));
     }
 
-    /**
-     * @return void
-     */
-    public function testTKeyedArrayWithoutClosingBracket()
+    public function testTKeyedArrayWithoutClosingBracket(): void
     {
         $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
         Type::parseString('array{a: int, b: string');
     }
 
-    /**
-     * @return void
-     */
-    public function testTKeyedArrayInType()
+    public function testTKeyedArrayInType(): void
     {
         $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
         Type::parseString('array{a:[]}');
     }
 
-    /**
-     * @return void
-     */
-    public function testObjectWithSimpleArgs()
+    public function testObjectWithSimpleArgs(): void
     {
         $this->assertSame('object{a:int, b:string}', (string) Type::parseString('object{a:int, b:string}'));
     }
 
-    /**
-     * @return void
-     */
-    public function testObjectWithDollarArgs()
+    public function testObjectWithDollarArgs(): void
     {
         $this->assertSame('object{a:int, $b:string}', (string) Type::parseString('object{a:int, $b:string}'));
     }
 
-    /**
-     * @return void
-     */
-    public function testTKeyedArrayWithUnionArgs()
+    public function testTKeyedArrayWithUnionArgs(): void
     {
         $this->assertSame(
             'array{a: int|string, b: string}',
@@ -514,10 +343,7 @@ class TypeParseTest extends TestCase
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testTKeyedArrayWithGenericArgs()
+    public function testTKeyedArrayWithGenericArgs(): void
     {
         $this->assertSame(
             'array{a: array<int, int|string>, b: string}',
@@ -525,10 +351,7 @@ class TypeParseTest extends TestCase
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testTKeyedArrayWithIntKeysAndUnionArgs()
+    public function testTKeyedArrayWithIntKeysAndUnionArgs(): void
     {
         $this->assertSame(
             'array{null|stdClass}',
@@ -536,10 +359,7 @@ class TypeParseTest extends TestCase
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testTKeyedArrayWithIntKeysAndGenericArgs()
+    public function testTKeyedArrayWithIntKeysAndGenericArgs(): void
     {
         $this->assertSame(
             'array{array<array-key, mixed>}',
@@ -552,10 +372,7 @@ class TypeParseTest extends TestCase
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testTKeyedArrayOptional()
+    public function testTKeyedArrayOptional(): void
     {
         $this->assertSame(
             'array{a: int, b?: int}',
@@ -563,10 +380,7 @@ class TypeParseTest extends TestCase
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testSimpleCallable()
+    public function testSimpleCallable(): void
     {
         $this->assertSame(
             'callable(int, string):void',
@@ -574,19 +388,13 @@ class TypeParseTest extends TestCase
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testCallableWithoutClosingBracket()
+    public function testCallableWithoutClosingBracket(): void
     {
         $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
         Type::parseString('callable(int, string');
     }
 
-    /**
-     * @return void
-     */
-    public function testCallableWithParamNames()
+    public function testCallableWithParamNames(): void
     {
         $this->assertSame(
             'callable(int, string):void',
@@ -594,10 +402,7 @@ class TypeParseTest extends TestCase
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testCallableReturningIntersection()
+    public function testCallableReturningIntersection(): void
     {
         $this->assertSame(
             'callable(int, string):I1&I2',
@@ -605,10 +410,7 @@ class TypeParseTest extends TestCase
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testEmptyCallable()
+    public function testEmptyCallable(): void
     {
         $this->assertSame(
             'callable():void',
@@ -616,10 +418,7 @@ class TypeParseTest extends TestCase
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testCallableWithUnionLastType()
+    public function testCallableWithUnionLastType(): void
     {
         $this->assertSame(
             'callable(int, int|string):void',
@@ -627,10 +426,7 @@ class TypeParseTest extends TestCase
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testCallableWithVariadic()
+    public function testCallableWithVariadic(): void
     {
         $this->assertSame(
             'callable(int, string...):void',
@@ -638,10 +434,7 @@ class TypeParseTest extends TestCase
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testCallableThatReturnsACallable()
+    public function testCallableThatReturnsACallable(): void
     {
         $this->assertSame(
             'callable():callable():string',
@@ -649,10 +442,7 @@ class TypeParseTest extends TestCase
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testCallableThatReturnsACallableThatReturnsACallable()
+    public function testCallableThatReturnsACallableThatReturnsACallable(): void
     {
         $this->assertSame(
             'callable():callable():callable():string',
@@ -660,10 +450,7 @@ class TypeParseTest extends TestCase
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testCallableOrInt()
+    public function testCallableOrInt(): void
     {
         $this->assertSame(
             'callable(string):void|int',
@@ -671,19 +458,13 @@ class TypeParseTest extends TestCase
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testCallableWithGoodVariadic()
+    public function testCallableWithGoodVariadic(): void
     {
         Type::parseString('callable(int, string...) : void');
         Type::parseString('callable(int,string...) : void');
     }
 
-    /**
-     * @return void
-     */
-    public function testCallableWithSpreadBefore()
+    public function testCallableWithSpreadBefore(): void
     {
         $this->assertSame(
             'callable(int, string...):void',
@@ -691,10 +472,7 @@ class TypeParseTest extends TestCase
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testConditionalTypeWithSpaces()
+    public function testConditionalTypeWithSpaces(): void
     {
         $this->assertSame(
             '(T is string ? string : int)',
@@ -702,10 +480,7 @@ class TypeParseTest extends TestCase
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testConditionalTypeWithUnion()
+    public function testConditionalTypeWithUnion(): void
     {
         $this->assertSame(
             '(T is string|true ? int|string : int)',
@@ -713,10 +488,7 @@ class TypeParseTest extends TestCase
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testConditionalTypeWithTKeyedArray()
+    public function testConditionalTypeWithTKeyedArray(): void
     {
         $this->assertSame(
             '(T is array{a: string} ? string : int)',
@@ -724,10 +496,7 @@ class TypeParseTest extends TestCase
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testConditionalTypeWithGenericIs()
+    public function testConditionalTypeWithGenericIs(): void
     {
         $this->assertSame(
             '(T is array<array-key, string> ? string : int)',
@@ -735,10 +504,7 @@ class TypeParseTest extends TestCase
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testConditionalTypeWithIntersection()
+    public function testConditionalTypeWithIntersection(): void
     {
         $this->assertSame(
             '(T is A&B ? string : int)',
@@ -746,10 +512,7 @@ class TypeParseTest extends TestCase
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testConditionalTypeWithoutSpaces()
+    public function testConditionalTypeWithoutSpaces(): void
     {
         $this->assertSame(
             '(T is string ? string : int)',
@@ -757,19 +520,13 @@ class TypeParseTest extends TestCase
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testConditionalTypeWithCallableElseBool()
+    public function testConditionalTypeWithCallableElseBool(): void
     {
         $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
         Type::parseString('(T is string ? callable() : bool)', null, ['T' => ['' => [Type::getArray()]]]);
     }
 
-    /**
-     * @return void
-     */
-    public function testConditionalTypeWithCallableReturningBoolElseBool()
+    public function testConditionalTypeWithCallableReturningBoolElseBool(): void
     {
         $this->assertSame(
             '(T is string ? callable():bool : bool)',
@@ -813,154 +570,103 @@ class TypeParseTest extends TestCase
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testCallableWithTrailingColon()
+    public function testCallableWithTrailingColon(): void
     {
         $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
         Type::parseString('callable(int):');
     }
 
-    /**
-     * @return void
-     */
-    public function testCallableWithAnotherBadVariadic()
+    public function testCallableWithAnotherBadVariadic(): void
     {
         $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
         Type::parseString('callable(int, string..) : void');
     }
 
-    /**
-     * @return void
-     */
-    public function testCallableWithVariadicAndDefault()
+    public function testCallableWithVariadicAndDefault(): void
     {
         $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
         Type::parseString('callable(int, string...=) : void');
     }
 
-    /**
-     * @return void
-     */
-    public function testBadVariadic()
+    public function testBadVariadic(): void
     {
         $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
         Type::parseString('string...');
     }
 
-    /**
-     * @return void
-     */
-    public function testBadFullStop()
+    public function testBadFullStop(): void
     {
         $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
         Type::parseString('string.');
     }
 
-    /**
-     * @return void
-     */
-    public function testBadSemicolon()
+    public function testBadSemicolon(): void
     {
         $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
         Type::parseString('string;');
     }
 
-    /**
-     * @return void
-     */
-    public function testBadGenericString()
+    public function testBadGenericString(): void
     {
         $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
         Type::parseString('string<T>');
     }
 
-    /**
-     * @return void
-     */
-    public function testBadAmpersand()
+    public function testBadAmpersand(): void
     {
         $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
         Type::parseString('&array');
     }
 
-    /**
-     * @return void
-     */
-    public function testBadColon()
+    public function testBadColon(): void
     {
         $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
         Type::parseString(':array');
     }
 
-    /**
-     * @return void
-     */
-    public function testBadBrackets()
+    public function testBadBrackets(): void
     {
         $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
         Type::parseString('max(a)');
     }
 
-    /**
-     * @return void
-     */
-    public function testMoreBadBrackets()
+    public function testMoreBadBrackets(): void
     {
         $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
         Type::parseString('max(a):void');
     }
 
-    /**
-     * @return void
-     */
-    public function testGeneratorWithWBadBrackets()
+    public function testGeneratorWithWBadBrackets(): void
     {
         $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
         Type::parseString('Generator{string, A}');
     }
 
-    /**
-     * @return void
-     */
-    public function testBadEquals()
+    public function testBadEquals(): void
     {
         $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
         Type::parseString('=array');
     }
 
-    /**
-     * @return void
-     */
-    public function testBadBar()
+    public function testBadBar(): void
     {
         $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
         Type::parseString('|array');
     }
 
-    /**
-     * @return void
-     */
-    public function testBadColonDash()
+    public function testBadColonDash(): void
     {
         $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
         Type::parseString('array|string:-');
     }
 
-    /**
-     * @return void
-     */
-    public function testDoubleBar()
+    public function testDoubleBar(): void
     {
         $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
         Type::parseString('PDO||Closure|numeric');
     }
 
-    /**
-     * @return void
-     */
-    public function testCallableWithDefault()
+    public function testCallableWithDefault(): void
     {
         $this->assertSame(
             'callable(int, string=):void',
@@ -968,10 +674,7 @@ class TypeParseTest extends TestCase
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testNestedCallable()
+    public function testNestedCallable(): void
     {
         $this->assertSame(
             'callable(callable(A):B):C',
@@ -979,10 +682,7 @@ class TypeParseTest extends TestCase
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testCallableWithoutReturn()
+    public function testCallableWithoutReturn(): void
     {
         $this->assertSame(
             'callable(int, string)',
@@ -990,10 +690,7 @@ class TypeParseTest extends TestCase
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testCombineLiteralStringWithClassString()
+    public function testCombineLiteralStringWithClassString(): void
     {
         $this->assertSame(
             'class-string|string(array)',
@@ -1001,10 +698,7 @@ class TypeParseTest extends TestCase
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testCombineLiteralClassStringWithClassString()
+    public function testCombineLiteralClassStringWithClassString(): void
     {
         $this->assertSame(
             'class-string',
@@ -1012,10 +706,7 @@ class TypeParseTest extends TestCase
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testKeyOfClassConstant()
+    public function testKeyOfClassConstant(): void
     {
         $this->assertSame(
             'key-of<Foo\Baz::BAR>',
@@ -1023,10 +714,7 @@ class TypeParseTest extends TestCase
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testKeyOfTemplate()
+    public function testKeyOfTemplate(): void
     {
         $this->assertSame(
             'key-of<T>',
@@ -1034,10 +722,7 @@ class TypeParseTest extends TestCase
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testIndexedAccess()
+    public function testIndexedAccess(): void
     {
         $this->assertSame(
             'T[K]',
@@ -1054,10 +739,7 @@ class TypeParseTest extends TestCase
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testValueOfClassConstant()
+    public function testValueOfClassConstant(): void
     {
         $this->assertSame(
             'value-of<Foo\Baz::BAR>',
@@ -1073,10 +755,7 @@ class TypeParseTest extends TestCase
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testVeryLargeType()
+    public function testVeryLargeType(): void
     {
         $very_large_type = 'array{a: Closure():(array<array-key, mixed>|null), b?: Closure():array<array-key, mixed>, c?: Closure():array<array-key, mixed>, d?: Closure():array<array-key, mixed>, e?: Closure():(array{f: null|string, g: null|string, h: null|string, i: string, j: mixed, k: mixed, l: mixed, m: mixed, n: bool, o?: array{0: string}}|null), p?: Closure():(array{f: null|string, g: null|string, h: null|string, i: string, j: mixed, k: mixed, l: mixed, m: mixed, n: bool, o?: array{0: string}}|null), q: string, r?: Closure():(array<array-key, mixed>|null), s: array<array-key, mixed>}|null';
 
@@ -1086,10 +765,7 @@ class TypeParseTest extends TestCase
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testEnum()
+    public function testEnum(): void
     {
         $docblock_type = Type::parseString('( \'foo\\\'with\' | "bar\"bar" | "baz" | "bat\\\\" | \'bang bang\' | 1 | 2 | 3 | 4.5)');
 
@@ -1141,10 +817,7 @@ class TypeParseTest extends TestCase
         $this->assertSame($resolved_type->getId(), $docblock_type->getId());
     }
 
-    /**
-     * @return void
-     */
-    public function testEnumWithoutSpaces()
+    public function testEnumWithoutSpaces(): void
     {
         $docblock_type = Type::parseString('\'foo\\\'with\'|"bar\"bar"|"baz"|"bat\\\\"|\'bang bang\'|1|2|3|4.5');
 
@@ -1163,10 +836,7 @@ class TypeParseTest extends TestCase
         $this->assertSame($resolved_type->getId(), $docblock_type->getId());
     }
 
-    /**
-     * @return void
-     */
-    public function testSingleLiteralString()
+    public function testSingleLiteralString(): void
     {
         $this->assertSame(
             'string',
@@ -1174,10 +844,7 @@ class TypeParseTest extends TestCase
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testSingleLiteralInt()
+    public function testSingleLiteralInt(): void
     {
         $this->assertSame(
             'int',
@@ -1185,10 +852,7 @@ class TypeParseTest extends TestCase
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testSingleLiteralFloat()
+    public function testSingleLiteralFloat(): void
     {
         $this->assertSame(
             'float',
@@ -1196,10 +860,7 @@ class TypeParseTest extends TestCase
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testEnumWithClassConstants()
+    public function testEnumWithClassConstants(): void
     {
         $docblock_type = Type::parseString('("baz" | One2::TWO_THREE | Foo::BAR_BAR | Bat\Bar::BAZ_BAM)');
 
@@ -1213,10 +874,7 @@ class TypeParseTest extends TestCase
         $this->assertSame($resolved_type->getId(), $docblock_type->getId());
     }
 
-    /**
-     * @return void
-     */
-    public function testReflectionTypeParse()
+    public function testReflectionTypeParse(): void
     {
         if (!function_exists('Psalm\Tests\someFunction')) {
             /** @psalm-suppress UnusedParam */
@@ -1250,10 +908,7 @@ class TypeParseTest extends TestCase
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testValidCallMapType()
+    public function testValidCallMapType(): void
     {
         $callmap_types = \Psalm\Internal\Codebase\InternalCallMapHandler::getCallMap();
 

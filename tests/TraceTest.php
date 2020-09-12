@@ -8,7 +8,7 @@ class TraceTest extends TestCase
     /**
      * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'traceVariable' => [

@@ -8,10 +8,9 @@ use Psalm\Internal\PluginManager\ComposerLock;
 class ComposerLockTest extends TestCase
 {
     /**
-     * @return void
      * @test
      */
-    public function pluginIsPackageOfTypePsalmPlugin()
+    public function pluginIsPackageOfTypePsalmPlugin(): void
     {
         $lock = new ComposerLock([$this->jsonFile((object)[])]);
         $this->assertTrue($lock->isPlugin($this->pluginEntry('vendor/package', 'Some\Class')));
@@ -31,10 +30,9 @@ class ComposerLockTest extends TestCase
     }
 
     /**
-     * @return void
      * @test
      */
-    public function seesNonDevPlugins()
+    public function seesNonDevPlugins(): void
     {
         $lock = new ComposerLock([$this->jsonFile((object)[
             'packages' => [
@@ -49,10 +47,9 @@ class ComposerLockTest extends TestCase
     }
 
     /**
-     * @return void
      * @test
      */
-    public function seesDevPlugins()
+    public function seesDevPlugins(): void
     {
         $lock = new ComposerLock([$this->jsonFile((object)[
             'packages' => [],
@@ -67,10 +64,9 @@ class ComposerLockTest extends TestCase
     }
 
     /**
-     * @return void
      * @test
      */
-    public function skipsNonPlugins()
+    public function skipsNonPlugins(): void
     {
         $nonPlugin = (object)[
             'name' => 'vendor/package',
@@ -85,10 +81,9 @@ class ComposerLockTest extends TestCase
     }
 
     /**
-     * @return void
      * @test
      */
-    public function failsOnInvalidJson()
+    public function failsOnInvalidJson(): void
     {
         $lock = new ComposerLock(['data:application/json,[']);
 
@@ -97,10 +92,9 @@ class ComposerLockTest extends TestCase
     }
 
     /**
-     * @return void
      * @test
      */
-    public function failsOnNonObjectJson()
+    public function failsOnNonObjectJson(): void
     {
         $lock = new ComposerLock(['data:application/json,null']);
 
@@ -109,10 +103,9 @@ class ComposerLockTest extends TestCase
     }
 
     /**
-     * @return void
      * @test
      */
-    public function failsOnMissingPackagesEntry()
+    public function failsOnMissingPackagesEntry(): void
     {
         $noPackagesFile = $this->jsonFile((object)[
             'packages-dev' => [],
@@ -123,10 +116,9 @@ class ComposerLockTest extends TestCase
     }
 
     /**
-     * @return void
      * @test
      */
-    public function failsOnMissingPackagesDevEntry()
+    public function failsOnMissingPackagesDevEntry(): void
     {
         $noPackagesDevFile = $this->jsonFile((object)[
             'packages' => [],

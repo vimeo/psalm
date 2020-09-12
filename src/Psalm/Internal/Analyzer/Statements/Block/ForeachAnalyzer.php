@@ -45,7 +45,6 @@ use function array_keys;
 class ForeachAnalyzer
 {
     /**
-     *
      * @return  false|null
      */
     public static function analyze(

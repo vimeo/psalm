@@ -76,8 +76,7 @@ class ConfigFile
         $this->saveXml($config_xml);
     }
 
-    /** @return void */
-    public function addPlugin(string $plugin_class)
+    public function addPlugin(string $plugin_class): void
     {
         $config_xml = $this->readXml();
         /** @var \DomElement */
@@ -125,8 +124,7 @@ class ConfigFile
         return $doc;
     }
 
-    /** @return void */
-    private function saveXml(DOMDocument $config_xml)
+    private function saveXml(DOMDocument $config_xml): void
     {
         $new_file_contents = $config_xml->saveXML($config_xml);
 

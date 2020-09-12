@@ -15,10 +15,7 @@ class CreatorTest extends \Psalm\Tests\TestCase
     {
     }
 
-    /**
-     * @return void
-     */
-    public function testDiscoverLibDirectory()
+    public function testDiscoverLibDirectory(): void
     {
         $lib_contents = Creator::getContents(
             dirname(__DIR__, 1)

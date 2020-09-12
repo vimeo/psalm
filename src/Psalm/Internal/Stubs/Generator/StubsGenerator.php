@@ -244,7 +244,7 @@ class StubsGenerator
     /**
      * @return list<PhpParser\Node\Param>
      */
-    public static function getFunctionParamNodes(\Psalm\Storage\FunctionLikeStorage $method_storage)
+    public static function getFunctionParamNodes(\Psalm\Storage\FunctionLikeStorage $method_storage): array
     {
         $param_nodes = [];
 

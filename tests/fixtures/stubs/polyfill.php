@@ -15,9 +15,8 @@ if (!function_exists('new_random_bytes')) {
     /**
      * @param int $bytes
      *
-     * @return int
      */
-    function new_random_bytes($bytes)
+    function new_random_bytes($bytes): int
     {
         return 5;
     }

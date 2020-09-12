@@ -82,9 +82,8 @@ class TestCase extends BaseTestCase
      * @param string $file_path
      * @param string $contents
      *
-     * @return void
      */
-    public function addFile($file_path, $contents)
+    public function addFile($file_path, $contents): void
     {
         $this->file_provider->registerFile($file_path, $contents);
         $this->project_analyzer->getCodebase()->scanner->addFileToShallowScan($file_path);
@@ -92,11 +91,9 @@ class TestCase extends BaseTestCase
 
     /**
      * @param  string         $file_path
-     * @param  \Psalm\Context $context
      *
-     * @return void
      */
-    public function analyzeFile($file_path, \Psalm\Context $context, bool $track_unused_suppressions = true)
+    public function analyzeFile($file_path, \Psalm\Context $context, bool $track_unused_suppressions = true): void
     {
         $codebase = $this->project_analyzer->getCodebase();
         $codebase->addFilesToAnalyze([$file_path => $file_path]);
@@ -130,9 +127,8 @@ class TestCase extends BaseTestCase
     /**
      * @param  bool $withDataSet
      *
-     * @return string
      */
-    protected function getTestName($withDataSet = true)
+    protected function getTestName($withDataSet = true): string
     {
         $name = parent::getName($withDataSet);
         /**

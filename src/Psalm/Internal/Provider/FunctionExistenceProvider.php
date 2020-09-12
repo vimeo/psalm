@@ -27,9 +27,8 @@ class FunctionExistenceProvider
     /**
      * @param  class-string<FunctionExistenceProviderInterface> $class
      *
-     * @return void
      */
-    public function registerClass(string $class)
+    public function registerClass(string $class): void
     {
         $callable = \Closure::fromCallable([$class, 'doesFunctionExist']);
 
@@ -45,9 +44,8 @@ class FunctionExistenceProvider
      *     string
      *   ) : ?bool $c
      *
-     * @return void
      */
-    public function registerClosure(string $function_id, \Closure $c)
+    public function registerClosure(string $function_id, \Closure $c): void
     {
         self::$handlers[$function_id][] = $c;
     }

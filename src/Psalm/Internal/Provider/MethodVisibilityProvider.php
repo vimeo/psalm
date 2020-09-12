@@ -32,9 +32,8 @@ class MethodVisibilityProvider
     /**
      * @param  class-string<MethodVisibilityProviderInterface> $class
      *
-     * @return void
      */
-    public function registerClass(string $class)
+    public function registerClass(string $class): void
     {
         $callable = \Closure::fromCallable([$class, 'isMethodVisible']);
 
@@ -53,9 +52,8 @@ class MethodVisibilityProvider
      *     ?CodeLocation
      *   ) : ?bool $c
      *
-     * @return void
      */
-    public function registerClosure(string $fq_classlike_name, \Closure $c)
+    public function registerClosure(string $fq_classlike_name, \Closure $c): void
     {
         self::$handlers[strtolower($fq_classlike_name)][] = $c;
     }

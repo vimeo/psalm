@@ -131,10 +131,7 @@ class CodeLocation
         $this->raw_line_number = $stmt->getLine();
     }
 
-    /**
-     * @return void
-     */
-    public function setCommentLine(int $line)
+    public function setCommentLine(int $line): void
     {
         $this->docblock_line_number = $line;
     }

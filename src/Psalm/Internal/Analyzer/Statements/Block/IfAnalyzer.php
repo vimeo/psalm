@@ -124,7 +124,7 @@ class IfAnalyzer
                 /**
                  * @return Clause
                  */
-                function (Clause $c) use ($mixed_var_ids, $cond_object_id) {
+                function (Clause $c) use ($mixed_var_ids, $cond_object_id): Clause {
                     $keys = array_keys($c->possibilities);
 
                     $mixed_var_ids = \array_diff($mixed_var_ids, $keys);
@@ -169,7 +169,7 @@ class IfAnalyzer
             $if_context->clauses = array_values(
                 array_filter(
                     $if_context->clauses,
-                    function ($c) use ($reconciled_expression_clauses) {
+                    function ($c) use ($reconciled_expression_clauses): bool {
                         return !in_array($c->hash, $reconciled_expression_clauses);
                     }
                 )
@@ -507,9 +507,6 @@ class IfAnalyzer
         return null;
     }
 
-    /**
-     * @return \Psalm\Internal\Scope\IfConditionalScope
-     */
     public static function analyzeIfConditional(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $cond,
@@ -517,7 +514,7 @@ class IfAnalyzer
         Codebase $codebase,
         IfScope $if_scope,
         ?int $branch_point
-    ) {
+    ): \Psalm\Internal\Scope\IfConditionalScope {
         $entry_clauses = [];
 
         // used when evaluating elseifs
@@ -553,8 +550,7 @@ class IfAnalyzer
                     $entry_clauses = array_values(
                         array_filter(
                             $entry_clauses,
-                            /** @return bool */
-                            function (Clause $c) use ($changed_var_ids) {
+                            function (Clause $c) use ($changed_var_ids): bool {
                                 return count($c->possibilities) > 1
                                     || $c->wedge
                                     || !isset($changed_var_ids[array_keys($c->possibilities)[0]]);
@@ -1095,7 +1091,7 @@ class IfAnalyzer
             /**
              * @return Clause
              */
-            function (Clause $c) use ($mixed_var_ids, $elseif_cond_id) {
+            function (Clause $c) use ($mixed_var_ids, $elseif_cond_id): Clause {
                 $keys = array_keys($c->possibilities);
 
                 $mixed_var_ids = \array_diff($mixed_var_ids, $keys);
@@ -1117,7 +1113,7 @@ class IfAnalyzer
             /**
              * @return Clause
              */
-            function (Clause $c) use ($cond_assigned_var_ids, $elseif_cond_id) {
+            function (Clause $c) use ($cond_assigned_var_ids, $elseif_cond_id): Clause {
                 $keys = array_keys($c->possibilities);
 
                 foreach ($keys as $key) {
@@ -1150,7 +1146,7 @@ class IfAnalyzer
             $elseif_context_clauses = array_values(
                 array_filter(
                     $elseif_context_clauses,
-                    function ($c) use ($reconciled_expression_clauses) {
+                    function ($c) use ($reconciled_expression_clauses): bool {
                         return !in_array($c->hash, $reconciled_expression_clauses);
                     }
                 )

@@ -114,13 +114,10 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
         $this->file_analyzer = null;
     }
 
-    /**
-     * @return void
-     */
     public function getMethodMutations(
         string $method_name,
         Context $context
-    ) {
+    ): void {
         $project_analyzer = $this->getFileAnalyzer()->project_analyzer;
         $codebase = $project_analyzer->getCodebase();
 

@@ -10,11 +10,9 @@ class TaintTest extends TestCase
     /**
      * @dataProvider providerValidCodeParse
      *
-     * @param string $code
      *
-     * @return void
      */
-    public function testValidCode(string $code)
+    public function testValidCode(string $code): void
     {
         $test_name = $this->getTestName();
         if (\strpos($test_name, 'SKIPPED-') !== false) {
@@ -40,12 +38,9 @@ class TaintTest extends TestCase
     /**
      * @dataProvider providerInvalidCodeParse
      *
-     * @param string $code
-     * @param string $error_message
      *
-     * @return void
      */
-    public function testInvalidCode(string $code, string $error_message)
+    public function testInvalidCode(string $code, string $error_message): void
     {
         if (\strpos($this->getTestName(), 'SKIPPED-') !== false) {
             $this->markTestSkipped();
@@ -73,7 +68,7 @@ class TaintTest extends TestCase
     /**
      * @return array<string, array{string}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): array
     {
         return [
             'taintedInputInCreatedArrayNotEchoed' => [
@@ -493,7 +488,7 @@ class TaintTest extends TestCase
     /**
      * @return array<string, array{0: string, error_message: string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): array
     {
         return [
             'taintedInputFromMethodReturnTypeSimple' => [

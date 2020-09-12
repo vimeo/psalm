@@ -12,7 +12,7 @@ class ConditionalReturnTypeTest extends TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'conditionalReturnType' => [

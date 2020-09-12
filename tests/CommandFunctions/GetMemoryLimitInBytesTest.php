@@ -57,12 +57,11 @@ class GetMemoryLimitInBytesTest extends \Psalm\Tests\TestCase
      * @param int|string $setting
      * @param int|string $expectedBytes
      *
-     * @return void
      */
     public function testGetMemoryLimitInBytes(
         $setting,
         $expectedBytes
-    ) {
+    ): void {
         ini_set('memory_limit', (string)$setting);
         $this->assertSame($expectedBytes, getMemoryLimitInBytes(), 'Memory limit in bytes does not fit setting');
     }

@@ -47,12 +47,7 @@ class ProjectCheckerTest extends TestCase
         $this->file_provider = new Provider\FakeFileProvider();
     }
 
-    /**
-     * @param  Config $config
-     *
-     * @return \Psalm\Internal\Analyzer\ProjectAnalyzer
-     */
-    private function getProjectAnalyzerWithConfig(Config $config)
+    private function getProjectAnalyzerWithConfig(Config $config): \Psalm\Internal\Analyzer\ProjectAnalyzer
     {
         $config->setIncludeCollector(new IncludeCollector());
         return new \Psalm\Internal\Analyzer\ProjectAnalyzer(
@@ -69,10 +64,7 @@ class ProjectCheckerTest extends TestCase
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testCheck()
+    public function testCheck(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(
@@ -108,10 +100,7 @@ class ProjectCheckerTest extends TestCase
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testAfterCodebasePopulatedIsInvoked()
+    public function testAfterCodebasePopulatedIsInvoked(): void
     {
         $hook = new class implements AfterCodebasePopulatedInterface {
             /** @var bool */
@@ -147,10 +136,7 @@ class ProjectCheckerTest extends TestCase
         $this->assertTrue($hook::$called);
     }
 
-    /**
-     * @return void
-     */
-    public function testCheckAfterNoChange()
+    public function testCheckAfterNoChange(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(
@@ -194,10 +180,7 @@ class ProjectCheckerTest extends TestCase
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testCheckAfterFileChange()
+    public function testCheckAfterFileChange(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(
@@ -262,10 +245,7 @@ class Bat
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testCheckDir()
+    public function testCheckDir(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(
@@ -297,10 +277,7 @@ class Bat
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testCheckPaths()
+    public function testCheckPaths(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(
@@ -337,10 +314,7 @@ class Bat
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testCheckFile()
+    public function testCheckFile(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(

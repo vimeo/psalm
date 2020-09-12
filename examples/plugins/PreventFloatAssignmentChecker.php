@@ -19,8 +19,6 @@ class PreventFloatAssignmentChecker implements AfterExpressionAnalysisInterface
     /**
      * Called after an expression has been checked
      *
-     * @param  PhpParser\Node\Expr  $expr
-     * @param  Context              $context
      * @param  FileManipulation[]   $file_replacements
      *
      * @return null|false

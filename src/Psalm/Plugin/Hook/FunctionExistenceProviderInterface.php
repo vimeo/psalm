@@ -15,10 +15,9 @@ interface FunctionExistenceProviderInterface
      * not exist, return false. If you aren't sure if it exists or not, return null and the default analysis
      * will continue to determine if the function actually exists.
      *
-     * @return ?bool
      */
     public static function doesFunctionExist(
         StatementsSource $statements_source,
         string $function_id
-    );
+    ): ?bool;
 }

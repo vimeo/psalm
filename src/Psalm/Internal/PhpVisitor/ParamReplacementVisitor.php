@@ -31,7 +31,6 @@ class ParamReplacementVisitor extends PhpParser\NodeVisitorAbstract implements P
     }
 
     /**
-     *
      * @return null|int
      */
     public function enterNode(PhpParser\Node $node)
@@ -107,7 +106,7 @@ class ParamReplacementVisitor extends PhpParser\NodeVisitorAbstract implements P
     /**
      * @return list<FileManipulation>
      */
-    public function getReplacements()
+    public function getReplacements(): array
     {
         return $this->replacements;
     }

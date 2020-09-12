@@ -45,9 +45,8 @@ class ReconcilerTest extends \Psalm\Tests\TestCase
      * @param string $type
      * @param string $string
      *
-     * @return void
      */
-    public function testReconcilation($expected, $type, $string)
+    public function testReconcilation($expected, $type, $string): void
     {
         $reconciled = \Psalm\Internal\Type\AssertionReconciler::reconcile(
             $type,
@@ -72,9 +71,8 @@ class ReconcilerTest extends \Psalm\Tests\TestCase
      * @param string $input
      * @param string $container
      *
-     * @return void
      */
-    public function testTypeIsContainedBy($input, $container)
+    public function testTypeIsContainedBy($input, $container): void
     {
         $this->assertTrue(
             UnionTypeComparator::isContainedBy(
@@ -88,7 +86,7 @@ class ReconcilerTest extends \Psalm\Tests\TestCase
     /**
      * @return array<string,array{string,string,string}>
      */
-    public function providerTestReconcilation()
+    public function providerTestReconcilation(): array
     {
         return [
             'notNullWithObject' => ['MyObject', '!null', 'MyObject'],
@@ -146,7 +144,7 @@ class ReconcilerTest extends \Psalm\Tests\TestCase
     /**
      * @return array<string,array{string,string}>
      */
-    public function providerTestTypeIsContainedBy()
+    public function providerTestTypeIsContainedBy(): array
     {
         return [
             'arrayContainsWithArrayOfStrings' => ['array<string>', 'array'],

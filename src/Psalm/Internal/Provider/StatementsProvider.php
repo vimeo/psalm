@@ -84,7 +84,7 @@ class StatementsProvider
     /**
      * @return list<\PhpParser\Node\Stmt>
      */
-    public function getStatementsForFile(string $file_path, string $php_version, ?Progress $progress = null)
+    public function getStatementsForFile(string $file_path, string $php_version, ?Progress $progress = null): array
     {
         if ($progress === null) {
             $progress = new VoidProgress();
@@ -290,9 +290,8 @@ class StatementsProvider
     /**
      * @param array<string, array<string, bool>> $more_changed_members
      *
-     * @return void
      */
-    public function addChangedMembers(array $more_changed_members)
+    public function addChangedMembers(array $more_changed_members): void
     {
         $this->changed_members = array_merge($more_changed_members, $this->changed_members);
     }
@@ -308,17 +307,13 @@ class StatementsProvider
     /**
      * @param array<string, array<string, bool>> $more_unchanged_members
      *
-     * @return void
      */
-    public function addUnchangedSignatureMembers(array $more_unchanged_members)
+    public function addUnchangedSignatureMembers(array $more_unchanged_members): void
     {
         $this->unchanged_signature_members = array_merge($more_unchanged_members, $this->unchanged_signature_members);
     }
 
-    /**
-     * @return void
-     */
-    public function setUnchangedFile(string $file_path)
+    public function setUnchangedFile(string $file_path): void
     {
         if (!isset($this->diff_map[$file_path])) {
             $this->diff_map[$file_path] = [];
@@ -336,17 +331,13 @@ class StatementsProvider
     /**
      * @param array<string, array<int, array{0: int, 1: int, 2: int, 3: int}>> $diff_map
      *
-     * @return void
      */
-    public function addDiffMap(array $diff_map)
+    public function addDiffMap(array $diff_map): void
     {
         $this->diff_map = array_merge($diff_map, $this->diff_map);
     }
 
-    /**
-     * @return void
-     */
-    public function resetDiffs()
+    public function resetDiffs(): void
     {
         $this->changed_members = [];
         $this->unchanged_members = [];
@@ -367,7 +358,7 @@ class StatementsProvider
         ?string $existing_file_contents = null,
         ?array $existing_statements = null,
         ?array $file_changes = null
-    ) {
+    ): array {
         $attributes = [
             'comments', 'startLine', 'startFilePos', 'endFilePos',
         ];

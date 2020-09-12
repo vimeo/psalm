@@ -35,7 +35,6 @@ use function strtolower;
 class ReturnAnalyzer
 {
     /**
-     *
      * @return false|null
      */
     public static function analyze(

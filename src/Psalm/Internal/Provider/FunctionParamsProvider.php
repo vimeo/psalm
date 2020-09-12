@@ -32,9 +32,8 @@ class FunctionParamsProvider
     /**
      * @param  class-string<FunctionParamsProviderInterface> $class
      *
-     * @return void
      */
-    public function registerClass(string $class)
+    public function registerClass(string $class): void
     {
         $callable = \Closure::fromCallable([$class, 'getFunctionParams']);
 
@@ -52,9 +51,8 @@ class FunctionParamsProvider
      *     ?CodeLocation=
      *   ) : ?array<int, \Psalm\Storage\FunctionLikeParameter> $c
      *
-     * @return void
      */
-    public function registerClosure(string $fq_classlike_name, \Closure $c)
+    public function registerClosure(string $fq_classlike_name, \Closure $c): void
     {
         self::$handlers[strtolower($fq_classlike_name)][] = $c;
     }

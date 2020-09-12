@@ -93,7 +93,7 @@ class AndAnalyzer
             $context_clauses = array_values(
                 array_filter(
                     $context_clauses,
-                    function ($c) use ($reconciled_expression_clauses) {
+                    function ($c) use ($reconciled_expression_clauses): bool {
                         return !\in_array($c->hash, $reconciled_expression_clauses);
                     }
                 )

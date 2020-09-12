@@ -10,10 +10,7 @@ class PropertyTypeTest extends TestCase
     use Traits\InvalidCodeAnalysisTestTrait;
     use Traits\ValidCodeAnalysisTestTrait;
 
-    /**
-     * @return void
-     */
-    public function testForgetPropertyAssignments()
+    public function testForgetPropertyAssignments(): void
     {
         $this->expectExceptionMessage('NullableReturnStatement');
         $this->expectException(\Psalm\Exception\CodeException::class);
@@ -50,10 +47,7 @@ class PropertyTypeTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testForgetPropertyAssignmentsPassesNormally()
+    public function testForgetPropertyAssignmentsPassesNormally(): void
     {
         $this->addFile(
             'somefile.php',
@@ -86,10 +80,7 @@ class PropertyTypeTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testForgetPropertyAssignmentsInBranchWithThrow()
+    public function testForgetPropertyAssignmentsInBranchWithThrow(): void
     {
         Config::getInstance()->remember_property_assignments_after_call = false;
 
@@ -127,10 +118,7 @@ class PropertyTypeTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testForgetPropertyAssignmentsInBranchWithThrowNormally()
+    public function testForgetPropertyAssignmentsInBranchWithThrowNormally(): void
     {
         $this->addFile(
             'somefile.php',
@@ -169,7 +157,7 @@ class PropertyTypeTest extends TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'newVarInIf' => [
@@ -2081,7 +2069,7 @@ class PropertyTypeTest extends TestCase
     /**
      * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'undefinedPropertyAssignment' => [

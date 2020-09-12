@@ -41,10 +41,7 @@ class FileStorageInstanceCacheProvider extends \Psalm\Internal\Provider\FileStor
         unset($this->cache[strtolower($file_path)]);
     }
 
-    /**
-     * @return FileStorage|null
-     */
-    private function loadFromCache(string $file_path)
+    private function loadFromCache(string $file_path): ?FileStorage
     {
         return $this->cache[strtolower($file_path)] ?? null;
     }
