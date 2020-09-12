@@ -247,6 +247,8 @@ class AssertionFinder
             $count_equality_position = self::hasNonEmptyCountEqualityCheck($conditional, $min_count);
             $min_comparison = null;
             $positive_number_position = self::hasPositiveNumberCheck($conditional, $min_comparison);
+            $max_count = null;
+            $count_inequality_position = self::hasLessThanCountEqualityCheck($conditional, $max_count);
 
             if ($count_equality_position) {
                 if ($count_equality_position === self::ASSIGNMENT_TO_RIGHT) {
@@ -271,6 +273,31 @@ class AssertionFinder
                         } else {
                             $if_types[$var_name] = [['=non-empty-countable']];
                         }
+                    }
+                }
+
+                return $if_types;
+            }
+
+            if ($count_inequality_position) {
+                if ($count_inequality_position === self::ASSIGNMENT_TO_LEFT) {
+                    $count_expr = $conditional->right;
+                } else {
+                    throw new \UnexpectedValueException('$count_inequality_position value');
+                }
+
+                /** @var PhpParser\Node\Expr\FuncCall $count_expr */
+                $var_name = ExpressionIdentifier::getArrayVarId(
+                    $count_expr->args[0]->value,
+                    $this_class_name,
+                    $source
+                );
+
+                if ($var_name) {
+                    if ($max_count) {
+                        $if_types[$var_name] = [['!has-at-least-' . ($max_count + 1)]];
+                    } else {
+                        $if_types[$var_name] = [['!non-empty-countable']];
                     }
                 }
 
@@ -2755,16 +2782,13 @@ class AssertionFinder
             && strtolower($conditional->left->name->parts[0]) === 'count'
             && $conditional->left->args;
 
-        $operator_greater_than_or_equal =
+        $operator_less_than_or_equal =
             $conditional instanceof PhpParser\Node\Expr\BinaryOp\SmallerOrEqual
             || $conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller;
 
         if ($left_count
             && $conditional->right instanceof PhpParser\Node\Scalar\LNumber
-            && $operator_greater_than_or_equal
-            && $conditional->right->value >= (
-                $conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller ? 0 : 1
-            )
+            && $operator_less_than_or_equal
         ) {
             $max_count = $conditional->right->value -
                 ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller ? 1 : 0);
@@ -2777,16 +2801,13 @@ class AssertionFinder
             && strtolower($conditional->right->name->parts[0]) === 'count'
             && $conditional->right->args;
 
-        $operator_less_than_or_equal =
+        $operator_greater_than_or_equal =
             $conditional instanceof PhpParser\Node\Expr\BinaryOp\GreaterOrEqual
             || $conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater;
 
         if ($right_count
             && $conditional->left instanceof PhpParser\Node\Scalar\LNumber
-            && $operator_less_than_or_equal
-            && $conditional->left->value >= (
-                $conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater ? 0 : 1
-            )
+            && $operator_greater_than_or_equal
         ) {
             $max_count = $conditional->left->value -
                 ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater ? 1 : 0);
