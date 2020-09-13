@@ -269,8 +269,6 @@ class NonDivArithmeticOpAnalyzer
     /**
      * @param  string[]        &$invalid_left_messages
      * @param  string[]        &$invalid_right_messages
-     *
-     * @return Type\Union|null
      */
     private static function analyzeNonDivOperands(
         ?StatementsSource $statements_source,
@@ -288,15 +286,15 @@ class NonDivArithmeticOpAnalyzer
         bool &$has_valid_right_operand,
         bool &$has_string_increment,
         Type\Union &$result_type = null
-    ) {
+    ): ?Type\Union {
         if ($left_type_part instanceof TNull || $right_type_part instanceof TNull) {
             // null case is handled above
-            return;
+            return null;
         }
 
         if ($left_type_part instanceof TFalse || $right_type_part instanceof TFalse) {
             // null case is handled above
-            return;
+            return null;
         }
 
         if ($left_type_part instanceof Type\Atomic\TString
@@ -314,7 +312,7 @@ class NonDivArithmeticOpAnalyzer
             $has_valid_left_operand = true;
             $has_valid_right_operand = true;
 
-            return;
+            return null;
         }
 
         if ($left_type_part instanceof TTemplateParam
@@ -385,7 +383,7 @@ class NonDivArithmeticOpAnalyzer
                     $result_type = Type::combineUnionTypes($result_type_member, $result_type);
                 }
 
-                return;
+                return null;
             }
 
             $from_loop_isset = (!($left_type_part instanceof TMixed) || $left_type_part->from_loop_isset)
@@ -445,7 +443,7 @@ class NonDivArithmeticOpAnalyzer
 
                 $result_type = Type::getArray();
 
-                return;
+                return null;
             }
 
             $has_valid_right_operand = true;
@@ -509,7 +507,7 @@ class NonDivArithmeticOpAnalyzer
                 );
             }
 
-            return;
+            return null;
         }
 
         if (($left_type_part instanceof TNamedObject && strtolower($left_type_part->value) === 'gmp')
@@ -546,7 +544,7 @@ class NonDivArithmeticOpAnalyzer
                 }
             }
 
-            return;
+            return null;
         }
 
         if ($left_type_part->isNumericType() || $right_type_part->isNumericType()) {
@@ -564,7 +562,7 @@ class NonDivArithmeticOpAnalyzer
                 $has_valid_right_operand = true;
                 $has_valid_left_operand = true;
 
-                return;
+                return null;
             }
 
             if ($left_type_part instanceof TInt && $right_type_part instanceof TInt) {
@@ -608,7 +606,7 @@ class NonDivArithmeticOpAnalyzer
                 $has_valid_right_operand = true;
                 $has_valid_left_operand = true;
 
-                return;
+                return null;
             }
 
             if ($left_type_part instanceof TFloat && $right_type_part instanceof TFloat) {
@@ -623,7 +621,7 @@ class NonDivArithmeticOpAnalyzer
                 $has_valid_right_operand = true;
                 $has_valid_left_operand = true;
 
-                return;
+                return null;
             }
 
             if (($left_type_part instanceof TFloat && $right_type_part instanceof TInt)
@@ -652,7 +650,7 @@ class NonDivArithmeticOpAnalyzer
                 $has_valid_right_operand = true;
                 $has_valid_left_operand = true;
 
-                return;
+                return null;
             }
 
             if ($left_type_part->isNumericType() && $right_type_part->isNumericType()) {
@@ -679,7 +677,7 @@ class NonDivArithmeticOpAnalyzer
                 $has_valid_right_operand = true;
                 $has_valid_left_operand = true;
 
-                return;
+                return null;
             }
 
             if (!$left_type_part->isNumericType()) {
@@ -696,5 +694,7 @@ class NonDivArithmeticOpAnalyzer
                 'Cannot perform a numeric operation with non-numeric types ' . $left_type_part
                     . ' and ' . $right_type_part;
         }
+
+        return null;
     }
 }

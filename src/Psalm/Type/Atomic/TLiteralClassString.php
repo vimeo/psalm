@@ -30,8 +30,6 @@ class TLiteralClassString extends TLiteralString
 
     /**
      * @param  array<string> $aliased_classes
-     *
-     * @return string
      */
     public function toPhpString(
         ?string $namespace,

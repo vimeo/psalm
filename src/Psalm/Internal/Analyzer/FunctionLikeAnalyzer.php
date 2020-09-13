@@ -1641,14 +1641,13 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         }
     }
 
-    /**
-     * @return null|string
-     */
-    public function getMethodName()
+    public function getMethodName(): ?string
     {
         if ($this->function instanceof ClassMethod) {
             return (string)$this->function->name;
         }
+
+        return null;
     }
 
     public function getCorrectlyCasedMethodId(?string $context_self = null): string

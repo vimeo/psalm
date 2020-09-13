@@ -360,7 +360,7 @@ class ForeachAnalyzer
         ?Type\Union &$key_type,
         ?Type\Union &$value_type,
         bool &$always_non_empty_array
-    ) {
+    ): ?bool {
         if ($iterator_type->isNull()) {
             if (IssueBuffer::accepts(
                 new NullIterator(
@@ -702,6 +702,8 @@ class ForeachAnalyzer
                 }
             }
         }
+
+        return null;
     }
 
     /**

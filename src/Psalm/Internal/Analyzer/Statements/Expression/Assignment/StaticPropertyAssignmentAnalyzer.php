@@ -36,7 +36,7 @@ class StaticPropertyAssignmentAnalyzer
         ?PhpParser\Node\Expr $assignment_value,
         Type\Union $assignment_value_type,
         Context $context
-    ) {
+    ): ?bool {
         $var_id = ExpressionIdentifier::getArrayVarId(
             $stmt,
             $context->self,
@@ -61,7 +61,7 @@ class StaticPropertyAssignmentAnalyzer
                 );
             }
 
-            return;
+            return null;
         }
 
         $property_id = $fq_class_name . '::$' . $prop_name;
@@ -78,7 +78,7 @@ class StaticPropertyAssignmentAnalyzer
                 // fall through
             }
 
-            return;
+            return null;
         }
 
         if (ClassLikeAnalyzer::checkPropertyVisibility(

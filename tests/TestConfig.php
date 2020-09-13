@@ -51,7 +51,10 @@ class TestConfig extends Config
                 </projectFiles>';
     }
 
-    public function getComposerFilePathForClassLike(string $fq_classlike_name)
+    /**
+     * @return false
+     */
+    public function getComposerFilePathForClassLike(string $fq_classlike_name): bool
     {
         return false;
     }

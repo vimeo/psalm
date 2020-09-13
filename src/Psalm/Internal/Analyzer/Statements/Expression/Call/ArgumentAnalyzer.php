@@ -65,7 +65,7 @@ class ArgumentAnalyzer
         ?TemplateResult $template_result,
         bool $specialize_taint,
         bool $in_call_map
-    ) {
+    ): ?bool {
         $codebase = $statements_analyzer->getCodebase();
 
         if (!$arg_value_type) {
@@ -114,11 +114,11 @@ class ArgumentAnalyzer
                 }
             }
 
-            return;
+            return null;
         }
 
         if (!$function_param) {
-            return;
+            return null;
         }
 
         if ($function_param->expect_variable
@@ -158,6 +158,8 @@ class ArgumentAnalyzer
         ) === false) {
             return false;
         }
+
+        return null;
     }
 
     /**
@@ -182,10 +184,10 @@ class ArgumentAnalyzer
         ?TemplateResult $template_result,
         bool $specialize_taint,
         bool $in_call_map
-    ) {
+    ): ?bool {
         if (!$function_param->type) {
             if (!$codebase->infer_types_from_usage && !$codebase->taint) {
-                return;
+                return null;
             }
 
             $param_type = Type::getMixed();
@@ -294,7 +296,7 @@ class ArgumentAnalyzer
         }
 
         if (!$context->check_variables) {
-            return;
+            return null;
         }
 
         $parent_class = null;
@@ -376,7 +378,7 @@ class ArgumentAnalyzer
                     );
                 }
 
-                return;
+                return null;
             }
 
             if ($arg_type->hasArray()) {
@@ -418,7 +420,7 @@ class ArgumentAnalyzer
                     }
                 }
 
-                return;
+                return null;
             }
         }
 
@@ -441,6 +443,8 @@ class ArgumentAnalyzer
         ) === false) {
             return false;
         }
+
+        return null;
     }
 
     /**
@@ -463,7 +467,7 @@ class ArgumentAnalyzer
         bool $specialize_taint,
         bool $in_call_map,
         CodeLocation $function_call_location
-    ) {
+    ): ?bool {
         $codebase = $statements_analyzer->getCodebase();
 
         if ($param_type->hasMixed()) {
@@ -812,7 +816,7 @@ class ArgumentAnalyzer
                 }
             }
 
-            return;
+            return null;
         }
 
         if ($input_expr instanceof PhpParser\Node\Scalar\String_
@@ -833,7 +837,7 @@ class ArgumentAnalyzer
                         $statements_analyzer->getSuppressedIssues()
                     ) === false
                     ) {
-                        return;
+                        return null;
                     }
                 } elseif ($param_type_part instanceof TArray
                     && $input_expr instanceof PhpParser\Node\Expr\Array_
@@ -851,7 +855,7 @@ class ArgumentAnalyzer
                                         $statements_analyzer->getSuppressedIssues()
                                     ) === false
                                     ) {
-                                        return;
+                                        return null;
                                     }
                                 }
                             }
@@ -927,7 +931,7 @@ class ArgumentAnalyzer
                                         $statements_analyzer->getSuppressedIssues()
                                     ) === false
                                     ) {
-                                        return;
+                                        return null;
                                     }
 
                                     $function_id_part = new \Psalm\Internal\MethodIdentifier(
@@ -941,7 +945,7 @@ class ArgumentAnalyzer
                                     );
 
                                     if (!$codebase->classOrInterfaceExists($callable_fq_class_name)) {
-                                        return;
+                                        return null;
                                     }
 
                                     if (!$codebase->methods->methodExists($function_id_part)
@@ -961,7 +965,7 @@ class ArgumentAnalyzer
                                         $statements_analyzer->getSuppressedIssues()
                                     ) === false
                                     ) {
-                                        return;
+                                        return null;
                                     }
                                 }
                             } else {
@@ -974,7 +978,7 @@ class ArgumentAnalyzer
                                         false
                                     ) === false
                                 ) {
-                                    return;
+                                    return null;
                                 }
                             }
                         }

@@ -201,8 +201,6 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
     /**
      * @param  array<string>    $suppressed_issues
      * @param  bool             $inferred - whether or not the type was inferred
-     *
-     * @return bool|null
      */
     public static function checkFullyQualifiedClassLikeName(
         StatementsSource $statements_source,
@@ -215,7 +213,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
         bool $allow_trait = false,
         bool $allow_interface = true,
         bool $from_docblock = false
-    ) {
+    ): ?bool {
         $codebase = $statements_source->getCodebase();
         if (empty($fq_class_name)) {
             if (IssueBuffer::accepts(
@@ -229,7 +227,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
                 return false;
             }
 
-            return;
+            return null;
         }
 
         $fq_class_name = preg_replace('/^\\\/', '', $fq_class_name);

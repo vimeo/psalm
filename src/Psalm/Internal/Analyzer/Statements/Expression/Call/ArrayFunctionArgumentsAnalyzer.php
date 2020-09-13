@@ -128,7 +128,7 @@ class ArrayFunctionArgumentsAnalyzer
         array $args,
         Context $context,
         bool $is_push
-    ) {
+    ): ?bool {
         $array_arg = $args[0]->value;
 
         $unpacked_args = array_filter(
@@ -173,7 +173,7 @@ class ArrayFunctionArgumentsAnalyzer
                 $statements_analyzer->node_data = $old_node_data;
             }
 
-            return;
+            return null;
         }
 
         $context->inside_call = true;
@@ -314,7 +314,7 @@ class ArrayFunctionArgumentsAnalyzer
 
         $context->inside_call = false;
 
-        return;
+        return null;
     }
 
     /**
@@ -326,7 +326,7 @@ class ArrayFunctionArgumentsAnalyzer
         StatementsAnalyzer $statements_analyzer,
         array $args,
         Context $context
-    ) {
+    ): ?bool {
         $context->inside_call = true;
         $array_arg = $args[0]->value;
 
@@ -349,7 +349,7 @@ class ArrayFunctionArgumentsAnalyzer
         }
 
         if (!isset($args[2])) {
-            return;
+            return null;
         }
 
         $length_arg = $args[2]->value;
@@ -363,7 +363,7 @@ class ArrayFunctionArgumentsAnalyzer
         }
 
         if (!isset($args[3])) {
-            return;
+            return null;
         }
 
         $replacement_arg = $args[3]->value;
@@ -453,7 +453,7 @@ class ArrayFunctionArgumentsAnalyzer
                 false
             );
 
-            return;
+            return null;
         }
 
         $array_type = Type::getArray();

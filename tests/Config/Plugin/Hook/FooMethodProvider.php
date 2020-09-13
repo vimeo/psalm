@@ -32,10 +32,12 @@ class FooMethodProvider implements
         string $method_name_lowercase,
         ?StatementsSource $source = null,
         ?CodeLocation $code_location = null
-    ) {
+    ): ?bool {
         if ($method_name_lowercase === 'magicmethod' || $method_name_lowercase === 'magicmethod2') {
             return true;
         }
+
+        return null;
     }
 
     /**
@@ -50,10 +52,12 @@ class FooMethodProvider implements
         ?StatementsSource $statements_source = null,
         ?Context $context = null,
         ?CodeLocation $code_location = null
-    ) {
+    ): ?array {
         if ($method_name_lowercase === 'magicmethod' || $method_name_lowercase === 'magicmethod2') {
             return [new \Psalm\Storage\FunctionLikeParameter('first', false, Type::getString())];
         }
+
+        return null;
     }
 
     /**
