@@ -1617,97 +1617,93 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         PhpParser\Node\Stmt\Property $stmt,
         Context $context
     ) {
-        $comment = $stmt->getDocComment();
+        $fq_class_name = $source->getFQCLN();
+        $property_name = $stmt->props[0]->name->name;
 
-        if (!$comment || !$comment->getText()) {
-            $fq_class_name = $source->getFQCLN();
-            $property_name = $stmt->props[0]->name->name;
+        $codebase = $this->getCodebase();
 
-            $codebase = $this->getCodebase();
+        $property_id = $fq_class_name . '::$' . $property_name;
 
-            $property_id = $fq_class_name . '::$' . $property_name;
+        $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
+            $property_id,
+            true
+        );
 
-            $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
-                $property_id,
-                true
+        if (!$declaring_property_class) {
+            return;
+        }
+
+        $fq_class_name = $declaring_property_class;
+
+        // gets inherited property type
+        $class_property_type = $codebase->properties->getPropertyType($property_id, false, $source, $context);
+
+        $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+
+        $property_storage = $class_storage->properties[$property_name];
+
+        if ($class_property_type && ($property_storage->type_location || !$codebase->alter_code)) {
+            return;
+        }
+
+        $message = 'Property ' . $property_id . ' does not have a declared type';
+
+        $suggested_type = $property_storage->suggested_type;
+
+        if (isset($this->inferred_property_types[$property_name])) {
+            $suggested_type = $suggested_type
+                ? Type::combineUnionTypes(
+                    $suggested_type,
+                    $this->inferred_property_types[$property_name],
+                    $codebase
+                )
+                : $this->inferred_property_types[$property_name];
+        }
+
+        if ($suggested_type && !$property_storage->has_default && $property_storage->is_static) {
+            $suggested_type->addType(new Type\Atomic\TNull());
+        }
+
+        if ($suggested_type && !$suggested_type->isNull()) {
+            $message .= ' - consider ' . str_replace(
+                ['<array-key, mixed>', '<empty, empty>'],
+                '',
+                (string)$suggested_type
+            );
+        }
+
+        $project_analyzer = ProjectAnalyzer::getInstance();
+
+        if ($codebase->alter_code
+            && $source === $this
+            && isset($project_analyzer->getIssuesToFix()['MissingPropertyType'])
+            && !\in_array('MissingPropertyType', $this->getSuppressedIssues())
+            && $suggested_type
+        ) {
+            if ($suggested_type->hasMixed() || $suggested_type->isNull()) {
+                return;
+            }
+
+            self::addOrUpdatePropertyType(
+                $project_analyzer,
+                $stmt,
+                $suggested_type,
+                $this,
+                $suggested_type->from_docblock
             );
 
-            if (!$declaring_property_class) {
-                return;
-            }
+            return;
+        }
 
-            $fq_class_name = $declaring_property_class;
-
-            // gets inherited property type
-            $class_property_type = $codebase->properties->getPropertyType($property_id, false, $source, $context);
-
-            $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
-
-            $property_storage = $class_storage->properties[$property_name];
-
-            if ($class_property_type && ($property_storage->type_location || !$codebase->alter_code)) {
-                return;
-            }
-
-            $message = 'Property ' . $property_id . ' does not have a declared type';
-
-            $suggested_type = $property_storage->suggested_type;
-
-            if (isset($this->inferred_property_types[$property_name])) {
-                $suggested_type = $suggested_type
-                    ? Type::combineUnionTypes(
-                        $suggested_type,
-                        $this->inferred_property_types[$property_name],
-                        $codebase
-                    )
-                    : $this->inferred_property_types[$property_name];
-            }
-
-            if ($suggested_type && !$property_storage->has_default && $property_storage->is_static) {
-                $suggested_type->addType(new Type\Atomic\TNull());
-            }
-
-            if ($suggested_type && !$suggested_type->isNull()) {
-                $message .= ' - consider ' . str_replace(
-                    ['<array-key, mixed>', '<empty, empty>'],
-                    '',
-                    (string)$suggested_type
-                );
-            }
-
-            $project_analyzer = ProjectAnalyzer::getInstance();
-
-            if ($codebase->alter_code
-                && $source === $this
-                && isset($project_analyzer->getIssuesToFix()['MissingPropertyType'])
-                && !\in_array('MissingPropertyType', $this->getSuppressedIssues())
-                && $suggested_type
-            ) {
-                if ($suggested_type->hasMixed() || $suggested_type->isNull()) {
-                    return;
-                }
-
-                self::addOrUpdatePropertyType(
-                    $project_analyzer,
-                    $stmt,
-                    $suggested_type,
-                    $this,
-                    $suggested_type->from_docblock
-                );
-
-                return;
-            }
-
-            if (IssueBuffer::accepts(
-                new MissingPropertyType(
-                    $message,
-                    new CodeLocation($source, $stmt->props[0]->name),
-                    $property_id
-                ),
-                $this->source->getSuppressedIssues()
-            )) {
-                // fall through
-            }
+        if (IssueBuffer::accepts(
+            new MissingPropertyType(
+                $message,
+                new CodeLocation($source, $stmt->props[0]->name),
+                $property_id
+            ),
+            $this->source->getSuppressedIssues()
+        )) {
+            // fall through
         }
     }
 
