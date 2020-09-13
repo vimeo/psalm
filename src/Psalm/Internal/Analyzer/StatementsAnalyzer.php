@@ -681,7 +681,10 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                 if ($param_index !== false) {
                     $param = $function_storage->params[$param_index];
 
-                    if ($param->location && $original_location->raw_file_end === $param->location->raw_file_end) {
+                    if ($param->location
+                        && ($original_location->raw_file_end === $param->location->raw_file_end
+                            || $param->by_ref)
+                    ) {
                         continue;
                     }
                 }
