@@ -626,7 +626,7 @@ class CommentAnalyzer
 
         if (isset($parsed_docblock->tags['psalm-suppress'])) {
             foreach ($parsed_docblock->tags['psalm-suppress'] as $offset => $suppress_entry) {
-                foreach (self::parseSuppressList($suppress_entry) as $issue_offset => $suppressed_issue) {
+                foreach (DocComment::parseSuppressList($suppress_entry) as $issue_offset => $suppressed_issue) {
                     $info->suppressed_issues[$issue_offset + $offset + $comment->getFilePos()] = $suppressed_issue;
                 }
             }
@@ -968,7 +968,7 @@ class CommentAnalyzer
 
         if (isset($parsed_docblock->tags['psalm-suppress'])) {
             foreach ($parsed_docblock->tags['psalm-suppress'] as $offset => $suppress_entry) {
-                foreach (self::parseSuppressList($suppress_entry) as $issue_offset => $suppressed_issue) {
+                foreach (DocComment::parseSuppressList($suppress_entry) as $issue_offset => $suppressed_issue) {
                     $info->suppressed_issues[$issue_offset + $offset + $comment->getFilePos()] = $suppressed_issue;
                 }
             }
@@ -1402,44 +1402,5 @@ class CommentAnalyzer
         }
 
         return $names;
-    }
-
-    /**
-     * @psalm-pure
-     * @return array<int,string>
-     */
-    private static function parseSuppressList(string $suppress_entry): array
-    {
-        preg_match(
-            '/(?(DEFINE)
-                # either a single issue or comma separated list of issues
-                (?<issue_list> (?&issue) \s* , \s* (?&issue_list) | (?&issue) )
-
-                # definition of a single issue
-                (?<issue> [A-Za-z0-9_-]+ )
-            )
-            ^ (?P<issues> (?&issue_list) ) (?P<description> .* ) $
-            /x',
-            $suppress_entry,
-            $matches
-        );
-
-        if (!isset($matches['issues'])) {
-            return [];
-        }
-
-        $issue_offset = 0;
-        $suppressed_issue = strtok($matches['issues'], ',');
-        $ret = [];
-        do {
-            $ret[$issue_offset] = trim($suppressed_issue);
-            $issue_offset += strlen($suppressed_issue) + 1;
-            $suppressed_issue = strtok(',');
-        } while (false !== $suppressed_issue);
-
-        // var_dump($matches, $info->suppressed_issues);
-        // var_dump(__METHOD__); while(ob_get_level()) ob_end_flush();die;
-
-        return $ret;
     }
 }
