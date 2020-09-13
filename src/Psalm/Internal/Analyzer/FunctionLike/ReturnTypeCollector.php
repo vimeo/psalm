@@ -31,15 +31,12 @@ class ReturnTypeCollector
 
         foreach ($stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\Return_) {
-                if ($stmt->expr instanceof PhpParser\Node\Expr\Yield_ ||
-                    $stmt->expr instanceof PhpParser\Node\Expr\YieldFrom) {
-                    $yield_types = array_merge($yield_types, self::getYieldTypeFromExpression($stmt->expr, $nodes));
-                }
-
                 if (!$stmt->expr) {
                     $return_types[] = Type::getVoid();
                 } elseif ($stmt_type = $nodes->getType($stmt)) {
                     $return_types[] = $stmt_type;
+
+                    $yield_types = array_merge($yield_types, self::getYieldTypeFromExpression($stmt->expr, $nodes));
                 } else {
                     $return_types[] = Type::getMixed();
                 }
@@ -54,36 +51,20 @@ class ReturnTypeCollector
                 break;
             }
 
-            if ($stmt instanceof PhpParser\Node\Stmt\Expression
-                && ($stmt->expr instanceof PhpParser\Node\Expr\Yield_
-                    || $stmt->expr instanceof PhpParser\Node\Expr\YieldFrom)
-            ) {
-                $yield_types = array_merge($yield_types, self::getYieldTypeFromExpression($stmt->expr, $nodes));
-            } elseif ($stmt instanceof PhpParser\Node\Expr\Yield_
-                || $stmt instanceof PhpParser\Node\Expr\YieldFrom
-            ) {
-                $yield_types = array_merge($yield_types, self::getYieldTypeFromExpression($stmt, $nodes));
-            } elseif ($stmt instanceof PhpParser\Node\Stmt\Expression
-                && $stmt->expr instanceof PhpParser\Node\Expr\Assign
-            ) {
-                $return_types = array_merge(
-                    $return_types,
-                    self::getReturnTypes(
-                        $codebase,
-                        $nodes,
-                        [$stmt->expr->expr],
-                        $yield_types
-                    )
-                );
-            } elseif ($stmt instanceof PhpParser\Node\Stmt\Expression
-                && ($stmt->expr instanceof PhpParser\Node\Expr\MethodCall
-                    || $stmt->expr instanceof PhpParser\Node\Expr\FuncCall
-                    || $stmt->expr instanceof PhpParser\Node\Expr\StaticCall
-                )
-            ) {
-                foreach ($stmt->expr->args as $arg) {
-                    $yield_types = array_merge($yield_types, self::getYieldTypeFromExpression($arg->value, $nodes));
+            if ($stmt instanceof PhpParser\Node\Stmt\Expression) {
+                if ($stmt->expr instanceof PhpParser\Node\Expr\Assign) {
+                    $return_types = array_merge(
+                        $return_types,
+                        self::getReturnTypes(
+                            $codebase,
+                            $nodes,
+                            [$stmt->expr->expr],
+                            $yield_types
+                        )
+                    );
                 }
+
+                $yield_types = array_merge($yield_types, self::getYieldTypeFromExpression($stmt->expr, $nodes));
             } elseif ($stmt instanceof PhpParser\Node\Stmt\If_) {
                 $return_types = array_merge(
                     $return_types,
@@ -316,6 +297,17 @@ class ReturnTypeCollector
             );
         } elseif ($stmt instanceof PhpParser\Node\Expr\Assign) {
             return self::getYieldTypeFromExpression($stmt->expr, $nodes);
+        } elseif ($stmt instanceof PhpParser\Node\Expr\MethodCall
+            || $stmt instanceof PhpParser\Node\Expr\FuncCall
+            || $stmt instanceof PhpParser\Node\Expr\StaticCall
+        ) {
+            $yield_types = [];
+
+            foreach ($stmt->args as $arg) {
+                $yield_types = array_merge($yield_types, self::getYieldTypeFromExpression($arg->value, $nodes));
+            }
+
+            return $yield_types;
         }
 
         return [];
