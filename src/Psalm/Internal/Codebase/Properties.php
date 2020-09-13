@@ -155,11 +155,11 @@ class Properties
         return false;
     }
 
-    /**
-     * @return string|null
-     */
-    public function getDeclaringClassForProperty(string $property_id, bool $read_mode, ?StatementsSource $source = null)
-    {
+    public function getDeclaringClassForProperty(
+        string $property_id,
+        bool $read_mode,
+        ?StatementsSource $source = null
+    ): ?string {
         [$fq_class_name, $property_name] = explode('::$', $property_id);
 
         if ($this->property_existence_provider->has($fq_class_name)) {
@@ -179,14 +179,18 @@ class Properties
         if (isset($class_storage->declaring_property_ids[$property_name])) {
             return $class_storage->declaring_property_ids[$property_name];
         }
+
+        return null;
     }
 
     /**
      * Get the class this property appears in (vs is declared in, which could give a trait)
-     * @return string|null
      */
-    public function getAppearingClassForProperty(string $property_id, bool $read_mode, ?StatementsSource $source = null)
-    {
+    public function getAppearingClassForProperty(
+        string $property_id,
+        bool $read_mode,
+        ?StatementsSource $source = null
+    ): ?string {
         [$fq_class_name, $property_name] = explode('::$', $property_id);
 
         if ($this->property_existence_provider->has($fq_class_name)) {
@@ -208,6 +212,8 @@ class Properties
 
             return explode('::$', $appearing_property_id)[0];
         }
+
+        return null;
     }
 
     public function getStorage(string $property_id): \Psalm\Storage\PropertyStorage

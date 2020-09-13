@@ -23,5 +23,5 @@ interface MethodExistenceProviderInterface
         string $method_name_lowercase,
         ?StatementsSource $source = null,
         ?CodeLocation $code_location = null
-    );
+    ): ?bool;
 }

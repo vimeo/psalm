@@ -23,7 +23,6 @@ interface MethodReturnTypeProviderInterface
      * @param  ?array<Type\Union> $template_type_parameters
      * @param lowercase-string $method_name_lowercase
      * @param lowercase-string $called_method_name_lowercase
-     * @return ?Type\Union
      */
     public static function getMethodReturnType(
         StatementsSource $source,
@@ -35,5 +34,5 @@ interface MethodReturnTypeProviderInterface
         ?array $template_type_parameters = null,
         ?string $called_fq_classlike_name = null,
         ?string $called_method_name_lowercase = null
-    );
+    ): ?Type\Union;
 }

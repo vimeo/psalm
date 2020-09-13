@@ -1532,64 +1532,58 @@ class Config
         return self::REPORT_ERROR;
     }
 
-    /**
-     * @return  string|null
-     */
-    public function getReportingLevelForClass(string $issue_type, string $fq_classlike_name)
+    public function getReportingLevelForClass(string $issue_type, string $fq_classlike_name): ?string
     {
         if (isset($this->issue_handlers[$issue_type])) {
             return $this->issue_handlers[$issue_type]->getReportingLevelForClass($fq_classlike_name);
         }
+
+        return null;
     }
 
-    /**
-     * @return  string|null
-     */
-    public function getReportingLevelForMethod(string $issue_type, string $method_id)
+    public function getReportingLevelForMethod(string $issue_type, string $method_id): ?string
     {
         if (isset($this->issue_handlers[$issue_type])) {
             return $this->issue_handlers[$issue_type]->getReportingLevelForMethod($method_id);
         }
+
+        return null;
     }
 
-    /**
-     * @return  string|null
-     */
-    public function getReportingLevelForFunction(string $issue_type, string $function_id)
+    public function getReportingLevelForFunction(string $issue_type, string $function_id): ?string
     {
         if (isset($this->issue_handlers[$issue_type])) {
             return $this->issue_handlers[$issue_type]->getReportingLevelForFunction($function_id);
         }
+
+        return null;
     }
 
-    /**
-     * @return  string|null
-     */
-    public function getReportingLevelForArgument(string $issue_type, string $function_id)
+    public function getReportingLevelForArgument(string $issue_type, string $function_id): ?string
     {
         if (isset($this->issue_handlers[$issue_type])) {
             return $this->issue_handlers[$issue_type]->getReportingLevelForArgument($function_id);
         }
+
+        return null;
     }
 
-    /**
-     * @return  string|null
-     */
-    public function getReportingLevelForProperty(string $issue_type, string $property_id)
+    public function getReportingLevelForProperty(string $issue_type, string $property_id): ?string
     {
         if (isset($this->issue_handlers[$issue_type])) {
             return $this->issue_handlers[$issue_type]->getReportingLevelForProperty($property_id);
         }
+
+        return null;
     }
 
-    /**
-     * @return  string|null
-     */
-    public function getReportingLevelForVariable(string $issue_type, string $var_name)
+    public function getReportingLevelForVariable(string $issue_type, string $var_name): ?string
     {
         if (isset($this->issue_handlers[$issue_type])) {
             return $this->issue_handlers[$issue_type]->getReportingLevelForVariable($var_name);
         }
+
+        return null;
     }
 
     /**

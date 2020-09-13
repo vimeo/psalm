@@ -98,7 +98,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
     public function analyze(
         ?Context $class_context = null,
         ?Context $global_context = null
-    ) {
+    ): ?bool {
         $class = $this->class;
 
         if (!$class instanceof PhpParser\Node\Stmt\Class_) {
@@ -110,7 +110,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         $storage = $this->storage;
 
         if ($storage->has_visitor_issues) {
-            return;
+            return null;
         }
 
         if ($class->name
@@ -511,7 +511,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         }
 
         if ($storage->invalid_dependencies) {
-            return;
+            return null;
         }
 
         $class_interfaces = $storage->class_implements;
@@ -965,6 +965,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 );
             }
         }
+
+        return null;
     }
 
     public static function addContextProperties(
@@ -1487,7 +1489,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         ?Context $global_context = null,
         ?MethodAnalyzer &$constructor_analyzer = null,
         ?TraitAnalyzer $previous_trait_analyzer = null
-    ) {
+    ): ?bool {
         $codebase = $this->getCodebase();
 
         $previous_context_include_location = $class_context->include_location;
@@ -1603,6 +1605,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         }
 
         $class_context->include_location = $previous_context_include_location;
+
+        return null;
     }
 
     /**
@@ -1752,9 +1756,6 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         );
     }
 
-    /**
-     * @return MethodAnalyzer|null
-     */
     private function analyzeClassMethod(
         PhpParser\Node\Stmt\ClassMethod $stmt,
         ClassLikeStorage $class_storage,
@@ -1762,7 +1763,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         Context $class_context,
         ?Context $global_context = null,
         bool $is_fake = false
-    ) {
+    ): ?MethodAnalyzer {
         $config = Config::getInstance();
 
         if ($stmt->stmts === null && !$stmt->isAbstract()) {
@@ -1833,7 +1834,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     );
                 }
 
-                return;
+                return null;
             }
         }
 

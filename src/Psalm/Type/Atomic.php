@@ -566,8 +566,6 @@ abstract class Atomic implements TypeNode
 
     /**
      * @param  array<string, string> $aliased_classes
-     *
-     * @return null|string
      */
     abstract public function toPhpString(
         ?string $namespace,
@@ -575,7 +573,7 @@ abstract class Atomic implements TypeNode
         ?string $this_class,
         int $php_major_version,
         int $php_minor_version
-    );
+    ): ?string;
 
     abstract public function canBeFullyExpressedInPhp(): bool;
 

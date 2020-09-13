@@ -25,5 +25,5 @@ interface MethodParamsProviderInterface
         ?StatementsSource $statements_source = null,
         ?Context $context = null,
         ?CodeLocation $code_location = null
-    );
+    ): ?array;
 }

@@ -69,12 +69,15 @@ class ParserCacheProvider
      *
      * @psalm-suppress UndefinedFunction
      */
-    public function loadStatementsFromCache(string $file_path, int $file_modified_time, string $file_content_hash)
-    {
+    public function loadStatementsFromCache(
+        string $file_path,
+        int $file_modified_time,
+        string $file_content_hash
+    ): ?array {
         $root_cache_directory = Config::getInstance()->getCacheDirectory();
 
         if (!$root_cache_directory) {
-            return;
+            return null;
         }
 
         $file_cache_key = $this->getParserCacheKey(
@@ -102,6 +105,8 @@ class ParserCacheProvider
 
             return $stmts;
         }
+
+        return null;
     }
 
     /**
@@ -109,12 +114,12 @@ class ParserCacheProvider
      *
      * @psalm-suppress UndefinedFunction
      */
-    public function loadExistingStatementsFromCache(string $file_path)
+    public function loadExistingStatementsFromCache(string $file_path): ?array
     {
         $root_cache_directory = Config::getInstance()->getCacheDirectory();
 
         if (!$root_cache_directory) {
-            return;
+            return null;
         }
 
         $file_cache_key = $this->getParserCacheKey(
@@ -134,12 +139,11 @@ class ParserCacheProvider
             /** @var list<\PhpParser\Node\Stmt> */
             return unserialize((string)file_get_contents($cache_location)) ?: null;
         }
+
+        return null;
     }
 
-    /**
-     * @return string|null
-     */
-    public function loadExistingFileContentsFromCache(string $file_path)
+    public function loadExistingFileContentsFromCache(string $file_path): ?string
     {
         if (!$this->use_file_cache) {
             return null;
@@ -148,7 +152,7 @@ class ParserCacheProvider
         $root_cache_directory = Config::getInstance()->getCacheDirectory();
 
         if (!$root_cache_directory) {
-            return;
+            return null;
         }
 
         $file_cache_key = $this->getParserCacheKey(
@@ -162,6 +166,8 @@ class ParserCacheProvider
         if (is_readable($cache_location)) {
             return file_get_contents($cache_location);
         }
+
+        return null;
     }
 
     /**

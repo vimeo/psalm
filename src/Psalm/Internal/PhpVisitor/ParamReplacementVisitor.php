@@ -30,10 +30,7 @@ class ParamReplacementVisitor extends PhpParser\NodeVisitorAbstract implements P
         $this->new_name = $new_name;
     }
 
-    /**
-     * @return null|int
-     */
-    public function enterNode(PhpParser\Node $node)
+    public function enterNode(PhpParser\Node $node): ?int
     {
         if ($node instanceof PhpParser\Node\Expr\Variable) {
             if ($node->name === $this->old_name) {
@@ -101,6 +98,8 @@ class ParamReplacementVisitor extends PhpParser\NodeVisitorAbstract implements P
                 );
             }
         }
+
+        return null;
     }
 
     /**

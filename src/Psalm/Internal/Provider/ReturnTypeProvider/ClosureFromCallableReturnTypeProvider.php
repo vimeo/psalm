@@ -18,8 +18,6 @@ class ClosureFromCallableReturnTypeProvider implements \Psalm\Plugin\Hook\Method
 
     /**
      * @param  array<PhpParser\Node\Arg>    $call_args
-     *
-     * @return ?Type\Union
      */
     public static function getMethodReturnType(
         StatementsSource $source,
@@ -31,9 +29,9 @@ class ClosureFromCallableReturnTypeProvider implements \Psalm\Plugin\Hook\Method
         ?array $template_type_parameters = null,
         ?string $called_fq_classlike_name = null,
         ?string $called_method_name_lowercase = null
-    ) {
+    ): ?Type\Union {
         if (!$source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
-            return;
+            return null;
         }
 
         $type_provider = $source->getNodeTypeProvider();
@@ -72,5 +70,7 @@ class ClosureFromCallableReturnTypeProvider implements \Psalm\Plugin\Hook\Method
 
             return Type::getClosure();
         }
+
+        return null;
     }
 }
