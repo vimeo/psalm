@@ -1116,4 +1116,64 @@ class StubTest extends TestCase
 
         $this->project_analyzer->consolidateAnalyzedData();
     }
+
+    public function testStubOverridingMissingClass(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <stubs>
+                        <file name="tests/fixtures/stubs/MissingClass.php" />
+                    </stubs>
+                </psalm>'
+            )
+        );
+
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php'
+        );
+
+        $this->expectException(\Psalm\Exception\InvalidClasslikeOverrideException::class);
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testStubOverridingMissingMethod(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <stubs>
+                        <file name="tests/fixtures/stubs/MissingMethod.php" />
+                    </stubs>
+                </psalm>'
+            )
+        );
+
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php'
+        );
+
+        $this->expectException(\Psalm\Exception\InvalidMethodOverrideException::class);
+
+        $this->analyzeFile($file_path, new Context());
+    }
 }

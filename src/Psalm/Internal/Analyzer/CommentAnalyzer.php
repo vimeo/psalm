@@ -762,6 +762,7 @@ class CommentAnalyzer
 
         $info->ignore_nullable_return = isset($parsed_docblock->tags['psalm-ignore-nullable-return']);
         $info->ignore_falsable_return = isset($parsed_docblock->tags['psalm-ignore-falsable-return']);
+        $info->stub_override = isset($parsed_docblock->tags['psalm-stub-override']);
 
         return $info;
     }
@@ -1158,6 +1159,10 @@ class CommentAnalyzer
 
                 $info->methods[] = $statements[0]->stmts[0];
             }
+        }
+
+        if (isset($parsed_docblock->tags['psalm-stub-override'])) {
+            $info->stub_override = true;
         }
 
         self::addMagicPropertyToInfo($comment, $info, $parsed_docblock->tags, 'property');
