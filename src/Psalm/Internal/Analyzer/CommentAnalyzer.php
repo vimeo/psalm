@@ -357,10 +357,7 @@ class CommentAnalyzer
     }
 
     /**
-     * @param  int     $line_number
-     *
      * @throws DocblockParseException if there was a problem parsing the docblock
-     *
      */
     public static function extractFunctionDocblockInfo(PhpParser\Comment\Doc $comment): FunctionDocblockComment
     {
@@ -629,7 +626,9 @@ class CommentAnalyzer
 
         if (isset($parsed_docblock->tags['psalm-suppress'])) {
             foreach ($parsed_docblock->tags['psalm-suppress'] as $offset => $suppress_entry) {
-                $info->suppressed_issues[$offset + $comment->getFilePos()] = preg_split('/[\s]+/', $suppress_entry)[0];
+                foreach (DocComment::parseSuppressList($suppress_entry) as $issue_offset => $suppressed_issue) {
+                    $info->suppressed_issues[$issue_offset + $offset + $comment->getFilePos()] = $suppressed_issue;
+                }
             }
         }
 
@@ -985,7 +984,9 @@ class CommentAnalyzer
 
         if (isset($parsed_docblock->tags['psalm-suppress'])) {
             foreach ($parsed_docblock->tags['psalm-suppress'] as $offset => $suppress_entry) {
-                $info->suppressed_issues[$offset + $comment->getFilePos()] = preg_split('/[\s]+/', $suppress_entry)[0];
+                foreach (DocComment::parseSuppressList($suppress_entry) as $issue_offset => $suppressed_issue) {
+                    $info->suppressed_issues[$issue_offset + $offset + $comment->getFilePos()] = $suppressed_issue;
+                }
             }
         }
 

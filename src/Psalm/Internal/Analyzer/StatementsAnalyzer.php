@@ -342,37 +342,25 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
             }
 
             if (isset($statements_analyzer->parsed_docblock->tags['psalm-suppress'])) {
-                $suppressed = array_filter(
-                    array_map(
-                        /**
-                         * @param string $line
-                         *
-                         * @return string
-                         */
-                        function ($line): string {
-                            return preg_split('/[\s]+/', $line)[0];
-                        },
-                        $statements_analyzer->parsed_docblock->tags['psalm-suppress']
-                    )
-                );
-
+                $suppressed = $statements_analyzer->parsed_docblock->tags['psalm-suppress'];
                 if ($suppressed) {
                     $new_issues = [];
 
-                    foreach ($suppressed as $offset => $issue_type) {
-                        $offset += $docblock->getFilePos();
-                        $new_issues[$offset] = $issue_type;
+                    foreach ($suppressed as $offset => $suppress_entry) {
+                        foreach (DocComment::parseSuppressList($suppress_entry) as $issue_offset => $issue_type) {
+                            $new_issues[$issue_offset + $offset + $docblock->getFilePos()] = $issue_type;
 
-                        if ($issue_type === 'InaccessibleMethod') {
-                            continue;
-                        }
+                            if ($issue_type === 'InaccessibleMethod') {
+                                continue;
+                            }
 
-                        if ($codebase->track_unused_suppressions) {
-                            IssueBuffer::addUnusedSuppression(
-                                $statements_analyzer->getFilePath(),
-                                $offset,
-                                $issue_type
-                            );
+                            if ($codebase->track_unused_suppressions) {
+                                IssueBuffer::addUnusedSuppression(
+                                    $statements_analyzer->getFilePath(),
+                                    $issue_offset + $offset + $docblock->getFilePos(),
+                                    $issue_type
+                                );
+                            }
                         }
                     }
 
