@@ -1,45 +1,11 @@
 <?php
+
 namespace Psalm;
 
-use Composer\Semver\Semver;
-use Psalm\Issue\VariableIssue;
-use Webmozart\PathUtil\Path;
-use function array_merge;
-use function array_pop;
-use function class_exists;
 use Composer\Autoload\ClassLoader;
+use Composer\Semver\Semver;
 use DOMDocument;
 use LogicException;
-
-use function count;
-use const DIRECTORY_SEPARATOR;
-use function dirname;
-use const E_USER_ERROR;
-use function explode;
-use function file_exists;
-use function file_get_contents;
-use function filetype;
-use function get_class;
-use function get_defined_constants;
-use function get_defined_functions;
-use function glob;
-use function in_array;
-use function intval;
-use function is_dir;
-use function is_file;
-use function json_decode;
-use function libxml_clear_errors;
-use const GLOB_NOSORT;
-use const LIBXML_ERR_ERROR;
-use const LIBXML_ERR_FATAL;
-use function libxml_get_errors;
-use function libxml_use_internal_errors;
-use function mkdir;
-use const PHP_EOL;
-use function phpversion;
-use function preg_match;
-use function preg_quote;
-use function preg_replace;
 use Psalm\Config\IssueHandler;
 use Psalm\Config\ProjectFileFilter;
 use Psalm\Config\TaintAnalysisFileFilter;
@@ -55,17 +21,49 @@ use Psalm\Issue\CodeIssue;
 use Psalm\Issue\FunctionIssue;
 use Psalm\Issue\MethodIssue;
 use Psalm\Issue\PropertyIssue;
+use Psalm\Issue\VariableIssue;
 use Psalm\Plugin\Hook;
 use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
+use SimpleXMLElement;
+use Webmozart\PathUtil\Path;
+use XdgBaseDir\Xdg;
+
+use function array_merge;
+use function array_pop;
+use function chdir;
+use function class_exists;
+use function count;
+use function dirname;
+use function explode;
+use function file_exists;
+use function file_get_contents;
+use function filetype;
+use function get_class;
+use function getcwd;
+use function get_defined_constants;
+use function get_defined_functions;
+use function glob;
+use function in_array;
+use function intval;
+use function is_a;
+use function is_dir;
+use function is_file;
+use function json_decode;
+use function libxml_clear_errors;
+use function libxml_get_errors;
+use function libxml_use_internal_errors;
+use function mkdir;
+use function phpversion;
+use function preg_match;
+use function preg_quote;
+use function preg_replace;
 use function realpath;
 use function reset;
 use function rmdir;
 use function scandir;
 use function sha1;
-use SimpleXMLElement;
-use XdgBaseDir\Xdg;
-
+use function simplexml_import_dom;
 use function strpos;
 use function strrpos;
 use function strtolower;
@@ -76,11 +74,14 @@ use function sys_get_temp_dir;
 use function trigger_error;
 use function unlink;
 use function version_compare;
-use function getcwd;
-use function chdir;
-use function simplexml_import_dom;
+
+use const DIRECTORY_SEPARATOR;
+use const E_USER_ERROR;
+use const GLOB_NOSORT;
+use const LIBXML_ERR_ERROR;
+use const LIBXML_ERR_FATAL;
 use const LIBXML_NONET;
-use function is_a;
+use const PHP_EOL;
 use const SCANDIR_SORT_NONE;
 
 /**
@@ -1192,7 +1193,7 @@ class Config
                     && ($plugin_class_path = $this->composer_class_loader->findFile($plugin_class_name))
                 ) {
                     $project_analyzer->progress->debug(
-                        'Loading plugin ' . $plugin_class_name . ' via require'. PHP_EOL
+                        'Loading plugin ' . $plugin_class_name . ' via require' . PHP_EOL
                     );
 
                     self::requirePath($plugin_class_path);
@@ -1213,7 +1214,7 @@ class Config
                 throw new ConfigException('Failed to load plugin ' . $plugin_class_name, 0, $e);
             }
 
-            $project_analyzer->progress->debug('Loaded plugin ' . $plugin_class_name . ' successfully'. PHP_EOL);
+            $project_analyzer->progress->debug('Loaded plugin ' . $plugin_class_name . ' successfully' . PHP_EOL);
         }
 
         foreach ($this->filetype_scanner_paths as $extension => $path) {
@@ -1250,7 +1251,7 @@ class Config
         }
     }
 
-    private static function requirePath(string $path) : void
+    private static function requirePath(string $path): void
     {
         /** @psalm-suppress UnresolvableInclude */
         require_once($path);
@@ -1369,13 +1370,13 @@ class Config
         return $this->project_files && $this->project_files->forbids($file_path);
     }
 
-    public function trackTaintsInPath(string $file_path) : bool
+    public function trackTaintsInPath(string $file_path): bool
     {
         return !$this->taint_analysis_ignored_files
             || $this->taint_analysis_ignored_files->allows($file_path);
     }
 
-    public function getReportingLevelForIssue(CodeIssue $e) : string
+    public function getReportingLevelForIssue(CodeIssue $e): string
     {
         $fqcn_parts = explode('\\', get_class($e));
         $issue_type = array_pop($fqcn_parts);
@@ -1884,7 +1885,7 @@ class Config
         return $this->composer_class_loader->findFile($fq_classlike_name);
     }
 
-    public function getPotentialComposerFilePathForClassLike(string $class) : ?string
+    public function getPotentialComposerFilePathForClassLike(string $class): ?string
     {
         if (!$this->composer_class_loader) {
             return null;
@@ -1959,7 +1960,7 @@ class Config
         $this->stub_files[$stub_file] = $stub_file;
     }
 
-    public function hasStubFile(string $stub_file) : bool
+    public function hasStubFile(string $stub_file): bool
     {
         return isset($this->stub_files[$stub_file]);
     }
@@ -1992,7 +1993,7 @@ class Config
      */
     private function getPHPVersionFromComposerJson(): ?string
     {
-        $composer_json_path = $this->base_dir . DIRECTORY_SEPARATOR. 'composer.json';
+        $composer_json_path = $this->base_dir . DIRECTORY_SEPARATOR . 'composer.json';
 
         if (file_exists($composer_json_path)) {
             if (!$composer_json = json_decode(file_get_contents($composer_json_path), true)) {
