@@ -3177,6 +3177,16 @@ class PropertyTypeTest extends TestCase
                     }',
                 'error_message' => 'UndefinedPropertyFetch',
             ],
+            'missingPropertyTypeWithDocblock' => [
+                '<?php
+                    class C {
+                        /**
+                         * @varr int
+                         */
+                        public $var;
+                    }',
+                'error_message' => 'MissingPropertyType',
+            ],
         ];
     }
 }

@@ -539,7 +539,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $this->codebase->scanner->queueClassLikeForScanning('stdClass', false, false);
             $this->file_storage->referenced_classlikes['stdclass'] = 'stdClass';
         }
-        
+
         return null;
     }
 
@@ -1534,7 +1534,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 $this->visitPropertyDeclaration($node_stmt, $this->config, $storage, $fq_classlike_name);
             }
         }
-        
+
         return null;
     }
 
