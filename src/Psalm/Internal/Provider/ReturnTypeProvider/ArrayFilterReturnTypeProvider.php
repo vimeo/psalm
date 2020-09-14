@@ -64,6 +64,52 @@ class ArrayFilterReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
         } else {
             $inner_type = $first_arg_array->getGenericValueType();
             $key_type = $first_arg_array->getGenericKeyType();
+
+            if (!isset($call_args[1]) && !$first_arg_array->previous_value_type) {
+                $had_one = count($first_arg_array->properties) === 1;
+
+                $first_arg_array = clone $first_arg_array;
+
+                $new_properties = \array_filter(
+                    array_map(
+                        function ($keyed_type) use ($statements_source, $context) {
+                            $prev_keyed_type = $keyed_type;
+
+                            $keyed_type = \Psalm\Internal\Type\AssertionReconciler::reconcile(
+                                '!falsy',
+                                clone $keyed_type,
+                                '',
+                                $statements_source,
+                                $context->inside_loop,
+                                [],
+                                null,
+                                $statements_source->getSuppressedIssues()
+                            );
+
+                            $keyed_type->possibly_undefined = ($prev_keyed_type->hasInt()
+                                    && !$prev_keyed_type->hasLiteralInt())
+                                || $prev_keyed_type->hasFloat()
+                                || $prev_keyed_type->getId() !== $keyed_type->getId();
+
+                            return $keyed_type;
+                        },
+                        $first_arg_array->properties
+                    ),
+                    function ($keyed_type) {
+                        return !$keyed_type->isEmpty();
+                    }
+                );
+
+                if (!$new_properties) {
+                    return Type::getEmptyArray();
+                }
+
+                $first_arg_array->properties = $new_properties;
+
+                $first_arg_array->is_list = $first_arg_array->is_list && $had_one;
+
+                return new Type\Union([$first_arg_array]);
+            }
         }
 
         if (!isset($call_args[1])) {
@@ -97,7 +143,20 @@ class ArrayFilterReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
             if ($key_type->getLiteralInts()) {
                 $key_type->addType(new Type\Atomic\TInt);
             }
-        } elseif (!isset($call_args[2])) {
+
+            if (!$inner_type->getAtomicTypes()) {
+                return Type::getEmptyArray();
+            }
+
+            return new Type\Union([
+                new Type\Atomic\TArray([
+                    $key_type,
+                    $inner_type,
+                ]),
+            ]);
+        }
+
+        if (!isset($call_args[2])) {
             $function_call_arg = $call_args[1];
 
             if ($function_call_arg->value instanceof PhpParser\Node\Scalar\String_
