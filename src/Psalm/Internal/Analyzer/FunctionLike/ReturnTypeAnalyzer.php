@@ -156,10 +156,10 @@ class ReturnTypeAnalyzer
             }
         }
 
-        /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
         if ($return_type
             && (!$return_type->from_docblock
                 || ($return_type->isNullable()
+                    && !$return_type->hasTemplate()
                     && !$return_type->getAtomicTypes()['null']->from_docblock
                 )
             )
