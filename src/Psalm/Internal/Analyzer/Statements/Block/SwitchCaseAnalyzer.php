@@ -447,7 +447,7 @@ class SwitchCaseAnalyzer
             $case_context->referenced_var_ids
         );
 
-        if ($case_exit_type === 'return') {
+        if ($case_exit_type === 'return' || $case_exit_type === 'throw') {
             if (self::checkImpossibleDefault(
                 $statements_analyzer,
                 $switch_var_id,
@@ -461,24 +461,22 @@ class SwitchCaseAnalyzer
 
                 return false;
             }
-        } elseif ($case_exit_type !== 'throw') {
-            if (self::handleNonReturningCase(
-                $statements_analyzer,
-                $switch_var_id,
-                $case,
-                $context,
-                $case_context,
-                $original_context,
-                $case_exit_type,
-                $switch_scope
-            ) === false) {
-                /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
-                $case_scope->parent_context = null;
-                $case_context->case_scope = null;
-                $case_context->parent_context = null;
+        } elseif (self::handleNonReturningCase(
+            $statements_analyzer,
+            $switch_var_id,
+            $case,
+            $context,
+            $case_context,
+            $original_context,
+            $case_exit_type,
+            $switch_scope
+        ) === false) {
+            /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
+            $case_scope->parent_context = null;
+            $case_context->case_scope = null;
+            $case_context->parent_context = null;
 
-                return false;
-            }
+            return false;
         }
 
         // augment the information with data from break statements
