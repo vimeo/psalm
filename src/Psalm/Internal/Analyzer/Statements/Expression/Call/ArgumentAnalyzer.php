@@ -40,6 +40,7 @@ use Psalm\Type\Atomic\TList;
 use function strtolower;
 use function strpos;
 use function explode;
+use function count;
 
 /**
  * @internal

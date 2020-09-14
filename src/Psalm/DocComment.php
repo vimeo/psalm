@@ -20,6 +20,7 @@ use function strlen;
 use function strpos;
 use function substr;
 use function trim;
+use function strspn;
 
 class DocComment
 {
