@@ -1224,6 +1224,23 @@ class SwitchTypeTest extends TestCase
                     }',
                 'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:11',
             ],
+            'impossibleCaseDefaultWithReturn' => [
+                '<?php
+                    $a = rand(0, 1) ? "a" : "b";
+
+                    switch ($a) {
+                        case "a":
+                            break;
+
+                        case "b":
+                            break;
+
+                        default:
+                            echo "impossible";
+                            return;
+                    }',
+                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:11',
+            ],
             'breakWithoutSettingVar' => [
                 '<?php
                     function foo(int $i) : void {

@@ -465,6 +465,18 @@ class SwitchCaseAnalyzer
 
                 return false;
             }
+        } elseif (self::checkImpossibleDefault(
+            $statements_analyzer,
+            $switch_var_id,
+            $case,
+            $case_context
+        ) === false) {
+            /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
+            $case_scope->parent_context = null;
+            $case_context->case_scope = null;
+            $case_context->parent_context = null;
+
+            return false;
         }
 
         // augment the information with data from break statements
@@ -529,19 +541,17 @@ class SwitchCaseAnalyzer
     }
 
     /**
-     * @param array<string, bool> $new_case_assigned_var_ids
-     * @param array<string, bool> $new_case_possibly_assigned_var_ids
-     * @return null|false
+     * @param StatementsAnalyzer $statements_analyzer
+     * @param string|null $switch_var_id
+     * @param PhpParser\Node\Stmt\Case_ $case
+     * @param Context $case_context
+     * @return bool|null
      */
-    private static function handleNonReturningCase(
+    private static function checkImpossibleDefault(
         StatementsAnalyzer $statements_analyzer,
         ?string $switch_var_id,
         PhpParser\Node\Stmt\Case_ $case,
-        Context $context,
-        Context $case_context,
-        Context $original_context,
-        string $case_exit_type,
-        SwitchScope $switch_scope
+        Context $case_context
     ): ?bool {
         if (!$case->cond
             && $switch_var_id
@@ -557,6 +567,27 @@ class SwitchCaseAnalyzer
             )) {
                 return false;
             }
+        }
+        return null;
+    }
+
+    /**
+     * @param array<string, bool> $new_case_assigned_var_ids
+     * @param array<string, bool> $new_case_possibly_assigned_var_ids
+     * @return null|false
+     */
+    private static function handleNonReturningCase(
+        StatementsAnalyzer $statements_analyzer,
+        ?string $switch_var_id,
+        PhpParser\Node\Stmt\Case_ $case,
+        Context $context,
+        Context $case_context,
+        Context $original_context,
+        string $case_exit_type,
+        SwitchScope $switch_scope
+    ): ?bool {
+        if (self::checkImpossibleDefault($statements_analyzer, $switch_var_id, $case, $case_context) === false) {
+            return false;
         }
 
         // if we're leaving this block, add vars to outer for loop scope
