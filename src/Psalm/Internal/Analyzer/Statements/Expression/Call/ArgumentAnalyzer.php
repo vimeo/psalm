@@ -126,16 +126,34 @@ class ArgumentAnalyzer
             && !$arg->value instanceof PhpParser\Node\Scalar\MagicConst
             && !$arg->value instanceof PhpParser\Node\Expr\ConstFetch
         ) {
-            if (IssueBuffer::accepts(
-                new InvalidLiteralArgument(
-                    'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id
-                        . ' expects a non-literal value, ' . $arg_value_type->getId() . ' provided',
-                    new CodeLocation($statements_analyzer->getSource(), $arg->value),
-                    $cased_method_id
-                ),
-                $statements_analyzer->getSuppressedIssues()
-            )) {
-                // fall through
+            $values = \preg_split('//u', $arg_value_type->getSingleStringLiteral()->value, null, \PREG_SPLIT_NO_EMPTY);
+
+            $prev_ord = 0;
+
+            $gt_count = 0;
+
+            foreach ($values as $value) {
+                $ord = \mb_ord($value);
+
+                if ($ord > $prev_ord) {
+                    $gt_count++;
+                }
+
+                $prev_ord = $ord;
+            }
+
+            if (count($values) < 12 || ($gt_count / count($values)) < 0.8) {
+                if (IssueBuffer::accepts(
+                    new InvalidLiteralArgument(
+                        'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id
+                            . ' expects a non-literal value, ' . $arg_value_type->getId() . ' provided',
+                        new CodeLocation($statements_analyzer->getSource(), $arg->value),
+                        $cased_method_id
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
             }
         }
 
