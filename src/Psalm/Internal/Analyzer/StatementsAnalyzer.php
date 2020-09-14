@@ -53,6 +53,7 @@ use function array_reverse;
 use function trim;
 use function array_column;
 use function array_combine;
+use function array_keys;
 
 /**
  * @internal
