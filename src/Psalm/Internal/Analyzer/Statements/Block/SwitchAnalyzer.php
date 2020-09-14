@@ -76,12 +76,15 @@ class SwitchAnalyzer
                 $case->stmts,
                 $statements_analyzer->node_data,
                 $config->exit_functions,
-                ['switch']
+                ['switch'],
+                false
             );
 
             if (!in_array(ScopeAnalyzer::ACTION_NONE, $case_actions, true)) {
-                if ($case_actions === [ScopeAnalyzer::ACTION_END]) {
-                    $last_case_exit_type = 'return_throw';
+                if ($case_actions === [ScopeAnalyzer::ACTION_RETURN]) {
+                    $last_case_exit_type = 'return';
+                } elseif ($case_actions === [ScopeAnalyzer::ACTION_END]) {
+                        $last_case_exit_type = 'throw';
                 } elseif ($case_actions === [ScopeAnalyzer::ACTION_CONTINUE]) {
                     $last_case_exit_type = 'continue';
                 } elseif (in_array(ScopeAnalyzer::ACTION_LEAVE_SWITCH, $case_actions, true)) {
