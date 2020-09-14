@@ -1341,6 +1341,12 @@ class FunctionCallTest extends TestCase
                         return $matches[0];
                     }'
             ],
+            'strposAllowDictionary' => [
+                '<?php
+                    function sayHello(string $format): void {
+                        if (strpos("abcdefghijklmno", $format)) {}
+                    }',
+            ],
         ];
     }
 
