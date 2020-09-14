@@ -268,6 +268,9 @@ class ErrorBaseline
                 $issueNode = $baselineDoc->createElement($issueType);
 
                 $issueNode->setAttribute('occurrences', (string)$existingIssueType['o']);
+
+                \sort($existingIssueType['s']);
+
                 foreach ($existingIssueType['s'] as $selection) {
                     $codeNode = $baselineDoc->createElement('code');
 
