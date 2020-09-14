@@ -412,8 +412,17 @@ class TypeParser
             );
 
             $onlyTKeyedArray = true;
+
+            $first_type = reset($intersection_types);
+            $last_type = end($intersection_types);
+
             foreach ($intersection_types as $intersection_type) {
-                if (!$intersection_type instanceof TKeyedArray) {
+                if (!$intersection_type instanceof TKeyedArray
+                    && ($intersection_type !== $first_type
+                        || !$first_type instanceof TArray)
+                    && ($intersection_type !== $last_type
+                        || !$last_type instanceof TArray)
+                ) {
                     $onlyTKeyedArray = false;
                     break;
                 }
@@ -422,6 +431,13 @@ class TypeParser
             if ($onlyTKeyedArray) {
                 /** @var non-empty-array<string|int, Union> */
                 $properties = [];
+
+                if ($first_type instanceof TArray) {
+                    array_shift($intersection_types);
+                } elseif ($last_type instanceof TArray) {
+                    array_pop($intersection_types);
+                }
+
                 /** @var TKeyedArray $intersection_type */
                 foreach ($intersection_types as $intersection_type) {
                     foreach ($intersection_type->properties as $property => $property_type) {
@@ -445,7 +461,18 @@ class TypeParser
                         $properties[$property] = $intersection_type;
                     }
                 }
-                return new TKeyedArray($properties);
+
+                $keyed_array = new TKeyedArray($properties);
+
+                if ($first_type instanceof TArray) {
+                    $keyed_array->previous_key_type = $first_type->type_params[0];
+                    $keyed_array->previous_value_type = $first_type->type_params[1];
+                } elseif ($last_type instanceof TArray) {
+                    $keyed_array->previous_key_type = $last_type->type_params[0];
+                    $keyed_array->previous_value_type = $last_type->type_params[1];
+                }
+
+                return $keyed_array;
             }
 
             $keyed_intersection_types = [];
