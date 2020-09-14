@@ -1134,6 +1134,7 @@ class StubTest extends TestCase
             )
         );
 
+        $this->project_analyzer->setPhpVersion('7.4');
 
         $file_path = getcwd() . '/src/somefile.php';
 
@@ -1164,6 +1165,7 @@ class StubTest extends TestCase
             )
         );
 
+        $this->project_analyzer->setPhpVersion('7.4');
 
         $file_path = getcwd() . '/src/somefile.php';
 
