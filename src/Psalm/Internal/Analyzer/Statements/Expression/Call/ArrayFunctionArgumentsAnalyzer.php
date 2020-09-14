@@ -466,6 +466,8 @@ class ArrayFunctionArgumentsAnalyzer
             $context,
             false
         );
+
+        return null;
     }
 
     public static function handleByRefArrayAdjustment(
