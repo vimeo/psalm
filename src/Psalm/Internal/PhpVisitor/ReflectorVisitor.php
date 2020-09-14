@@ -3265,7 +3265,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $param_type,
             new CodeLocation(
                 $this->file_scanner,
-                $fake_method ? $stmt : $param,
+                $fake_method ? $stmt : $param->var,
                 null,
                 false,
                 !$fake_method

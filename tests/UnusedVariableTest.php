@@ -2238,6 +2238,11 @@ class UnusedVariableTest extends TestCase
                     );',
                 'error_message' => 'UnusedClosureParam',
             ],
+            'unusedFunctionParamWithDefault' => [
+                '<?php
+                    function foo(bool $b = false) : void {}',
+                'error_message' => 'UnusedParam',
+            ],
         ];
     }
 }
