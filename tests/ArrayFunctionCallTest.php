@@ -184,21 +184,23 @@ class ArrayFunctionCallTest extends TestCase
                         return array_merge(["host" => 5], $opts);
                     }',
             ],
-            'arrayMergeListResult' => [
+            'arrayMergeListResultWithArray' => [
+                '<?php
+                    /**
+                     * @param array<int, string> $list
+                     * @return list<string>
+                     */
+                    function bar(array $list) : array {
+                        return array_merge($list, ["test"]);
+                    }',
+            ],
+            'arrayMergeListResultWithList' => [
                 '<?php
                     /**
                      * @param list<string> $list
                      * @return list<string>
                      */
                     function foo(array $list) : array {
-                        return array_merge($list, ["test"]);
-                    }
-
-                    /**
-                     * @param array<int, string> $list
-                     * @return list<string>
-                     */
-                    function bar(array $list) : array {
                         return array_merge($list, ["test"]);
                     }',
             ],
@@ -589,7 +591,7 @@ class ArrayFunctionCallTest extends TestCase
 
                   foo($a3);',
                 'assertions' => [
-                    '$a3' => 'array{bye: int, hi: int}',
+                    '$a3' => 'array{hi: int, bye: int}',
                 ],
             ],
             'arrayRand' => [
@@ -1805,6 +1807,30 @@ class ArrayFunctionCallTest extends TestCase
                         if (!empty($slugParts)) {}
                     }'
             ],
+            'arrayMergeKeepLastKeysAndType' => [
+                '<?php
+                    /**
+                     * @param array{A: int} $a
+                     * @param array<string, string> $b
+                     *
+                     * @return array{A: int}
+                     */
+                    function merger(array $a, array $b) : array {
+                        return array_merge($b, $a);
+                    }'
+            ],
+            'arrayMergeKeepFirstKeysSameType' => [
+                '<?php
+                    /**
+                     * @param array{A: int} $a
+                     * @param array<string, int> $b
+                     *
+                     * @return array{A: int}
+                     */
+                    function merger(array $a, array $b) : array {
+                        return array_merge($a, $b);
+                    }'
+            ],
         ];
     }
 
@@ -2006,6 +2032,19 @@ class ArrayFunctionCallTest extends TestCase
                         }
                     );',
                 'error_message' => 'InvalidArgument',
+            ],
+            'arrayMergeKeepFirstKeysButNotType' => [
+                '<?php
+                    /**
+                     * @param array{A: int} $a
+                     * @param array<string, string> $b
+                     *
+                     * @return array{A: int}
+                     */
+                    function merger(array $a, array $b) : array {
+                        return array_merge($a, $b);
+                    }',
+                'error_message' => 'LessSpecificReturnStatement - src/somefile.php:9:32 - The type \'array{A: int|string}<string, string>\' is more general',
             ],
         ];
     }
