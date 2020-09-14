@@ -48,7 +48,7 @@ class StubTest extends TestCase
                 new Provider\FakeParserCacheProvider()
             )
         );
-        $project_analyzer->setPhpVersion('7.3');
+        $project_analyzer->setPhpVersion('7.4');
 
         $config->setIncludeCollector(new IncludeCollector());
         $config->visitComposerAutoloadFiles($project_analyzer, null);
@@ -1134,13 +1134,13 @@ class StubTest extends TestCase
             )
         );
 
-        $this->project_analyzer->setPhpVersion('7.4');
-
         $file_path = getcwd() . '/src/somefile.php';
 
         $this->addFile(
             $file_path,
-            '<?php'
+            '<?php
+
+                echo "hello";'
         );
 
         $this->expectException(\Psalm\Exception\InvalidClasslikeOverrideException::class);
@@ -1165,13 +1165,13 @@ class StubTest extends TestCase
             )
         );
 
-        $this->project_analyzer->setPhpVersion('7.4');
-
         $file_path = getcwd() . '/src/somefile.php';
 
         $this->addFile(
             $file_path,
-            '<?php'
+            '<?php
+
+                echo "hello";'
         );
 
         $this->expectException(\Psalm\Exception\InvalidMethodOverrideException::class);
