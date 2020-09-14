@@ -703,7 +703,7 @@ class IfAnalyzer
                         new DocblockTypeContradiction(
                             'if (false) is impossible',
                             new CodeLocation($statements_analyzer, $cond),
-                            'false falsy',
+                            'false falsy'
                         ),
                         $statements_analyzer->getSuppressedIssues()
                     )) {
@@ -714,7 +714,7 @@ class IfAnalyzer
                         new TypeDoesNotContainType(
                             'if (false) is impossible',
                             new CodeLocation($statements_analyzer, $cond),
-                            'false falsy',
+                            'false falsy'
                         ),
                         $statements_analyzer->getSuppressedIssues()
                     )) {
@@ -727,7 +727,7 @@ class IfAnalyzer
                         new RedundantConditionGivenDocblockType(
                             'if (true) is redundant',
                             new CodeLocation($statements_analyzer, $cond),
-                            'true falsy',
+                            'true falsy'
                         ),
                         $statements_analyzer->getSuppressedIssues()
                     )) {
@@ -738,7 +738,7 @@ class IfAnalyzer
                         new RedundantCondition(
                             'if (true) is redundant',
                             new CodeLocation($statements_analyzer, $cond),
-                            'true falsy',
+                            'true falsy'
                         ),
                         $statements_analyzer->getSuppressedIssues()
                     )) {

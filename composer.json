@@ -20,6 +20,7 @@
         "ext-json": "*",
         "ext-libxml": "*",
         "ext-tokenizer": "*",
+        "ext-mbstring": "*",
         "amphp/amp": "^2.1",
         "amphp/byte-stream": "^1.5",
         "composer/package-versions-deprecated": "^1.8.0",
