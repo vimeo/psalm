@@ -156,8 +156,13 @@ class ReturnTypeAnalyzer
             }
         }
 
+        /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
         if ($return_type
-            && !$return_type->from_docblock
+            && (!$return_type->from_docblock
+                || ($return_type->isNullable()
+                    && !$return_type->getAtomicTypes()['null']->from_docblock
+                )
+            )
             && !$return_type->isVoid()
             && !$inferred_yield_types
             && (!$function_like_storage || !$function_like_storage->has_yield)

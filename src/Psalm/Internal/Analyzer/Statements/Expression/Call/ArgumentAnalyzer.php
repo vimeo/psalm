@@ -134,6 +134,10 @@ class ArgumentAnalyzer
             $gt_count = 0;
 
             foreach ($values as $value) {
+                /**
+                 * @var int
+                 * @psalm-suppress UnnecessaryVarAnnotation
+                 */
                 $ord = \mb_ord($value);
 
                 if ($ord > $prev_ord) {
