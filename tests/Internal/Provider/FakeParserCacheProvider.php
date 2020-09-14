@@ -29,4 +29,8 @@ class FakeParserCacheProvider extends \Psalm\Internal\Provider\ParserCacheProvid
     public function cacheFileContents(string $file_path, string $file_contents): void
     {
     }
+
+    public function saveFileContentHashes(): void
+    {
+    }
 }
