@@ -45,6 +45,9 @@ use function strlen;
 use function strpos;
 use function strtolower;
 use function substr;
+use function reset;
+use function end;
+use function array_pop;
 
 class TypeParser
 {
@@ -411,17 +414,33 @@ class TypeParser
                 $parse_tree->children
             );
 
-            $onlyObjectLike = true;
+            $onlyTKeyedArray = true;
+
+            $first_type = \reset($intersection_types);
+            $last_type = \end($intersection_types);
+
             foreach ($intersection_types as $intersection_type) {
-                if (!$intersection_type instanceof ObjectLike) {
-                    $onlyObjectLike = false;
+                if (!$intersection_type instanceof ObjectLike
+                    && ($intersection_type !== $first_type
+                        || !$first_type instanceof TArray)
+                    && ($intersection_type !== $last_type
+                        || !$last_type instanceof TArray)
+                ) {
+                    $onlyTKeyedArray = false;
                     break;
                 }
             }
 
-            if ($onlyObjectLike) {
+            if ($onlyTKeyedArray) {
                 /** @var non-empty-array<string|int, Union> */
                 $properties = [];
+
+                if ($first_type instanceof TArray) {
+                    \array_shift($intersection_types);
+                } elseif ($last_type instanceof TArray) {
+                    \array_pop($intersection_types);
+                }
+
                 /** @var ObjectLike $intersection_type */
                 foreach ($intersection_types as $intersection_type) {
                     foreach ($intersection_type->properties as $property => $property_type) {
@@ -445,7 +464,18 @@ class TypeParser
                         $properties[$property] = $intersection_type;
                     }
                 }
-                return new ObjectLike($properties);
+
+                $keyed_array = new ObjectLike($properties);
+
+                if ($first_type instanceof TArray) {
+                    $keyed_array->previous_key_type = $first_type->type_params[0];
+                    $keyed_array->previous_value_type = $first_type->type_params[1];
+                } elseif ($last_type instanceof TArray) {
+                    $keyed_array->previous_key_type = $last_type->type_params[0];
+                    $keyed_array->previous_value_type = $last_type->type_params[1];
+                }
+
+                return $keyed_array;
             }
 
             $keyed_intersection_types = [];
