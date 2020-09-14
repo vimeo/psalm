@@ -55,14 +55,13 @@ class ErrorBaseline
     /**
      * @param array<string, list<IssueData>> $issues
      *
-     * @return void
      */
     public static function create(
         FileProvider $fileProvider,
         string $baselineFile,
         array $issues,
         bool $include_php_versions
-    ) {
+    ): void {
         $groupedIssues = self::countIssueTypesByFile($issues);
 
         self::writeToFile($fileProvider, $baselineFile, $groupedIssues, $include_php_versions);
@@ -231,14 +230,13 @@ class ErrorBaseline
     /**
      * @param array<string,array<string,array{o:int, s:array<int, string>}>> $groupedIssues
      *
-     * @return void
      */
     private static function writeToFile(
         FileProvider $fileProvider,
         string $baselineFile,
         array $groupedIssues,
         bool $include_php_versions
-    ) {
+    ): void {
         $baselineDoc = new \DOMDocument('1.0', 'UTF-8');
         $filesNode = $baselineDoc->createElement('files');
         $filesNode->setAttribute('psalm-version', PSALM_VERSION);

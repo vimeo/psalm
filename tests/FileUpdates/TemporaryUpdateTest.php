@@ -48,7 +48,6 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
      * @param array<int, array<int>> $error_positions
      * @param array<string, string> $error_levels
      *
-     * @return void
      */
     public function testErrorFix(
         array $file_stages,
@@ -56,7 +55,7 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
         array $error_levels = [],
         bool $test_save = true,
         bool $check_unused_code = false
-    ) {
+    ): void {
         $codebase = $this->project_analyzer->getCodebase();
         $codebase->diff_methods = true;
 
@@ -157,7 +156,7 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
     /**
      * @return array<string,array{array<int, array<string, string>>,error_positions:array<int, array<int>>, error_levels?:array<string, string>, test_save?:bool}>
      */
-    public function providerTestErrorFix()
+    public function providerTestErrorFix(): array
     {
         return [
             'fixMissingColonSyntaxError' => [

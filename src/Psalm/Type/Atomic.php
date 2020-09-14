@@ -537,10 +537,7 @@ abstract class Atomic implements TypeNode
         }
     }
 
-    /**
-     * @return string
-     */
-    public function getId(bool $nested = false)
+    public function getId(bool $nested = false): string
     {
         return $this->__toString();
     }
@@ -576,10 +573,7 @@ abstract class Atomic implements TypeNode
         int $php_minor_version
     );
 
-    /**
-     * @return bool
-     */
-    abstract public function canBeFullyExpressedInPhp();
+    abstract public function canBeFullyExpressedInPhp(): bool;
 
     public function replaceTemplateTypesWithStandins(
         TemplateResult $template_result,

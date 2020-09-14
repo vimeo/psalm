@@ -1075,7 +1075,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             }
 
             if ($property_type_location && !$fleshed_out_type->isMixed()) {
-                $stmt = array_filter($stmts, function ($stmt) use ($property_name) {
+                $stmt = array_filter($stmts, function ($stmt) use ($property_name): bool {
                     return $stmt instanceof PhpParser\Node\Stmt\Property
                         && isset($stmt->props[0]->name->name)
                         && $stmt->props[0]->name->name === $property_name;
@@ -1606,7 +1606,6 @@ class ClassAnalyzer extends ClassLikeAnalyzer
     }
 
     /**
-     *
      * @return  void
      */
     private function checkForMissingPropertyType(
@@ -2072,16 +2071,13 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         );
     }
 
-    /**
-     * @return void
-     */
     private function checkTemplateParams(
         Codebase $codebase,
         ClassLikeStorage $storage,
         ClassLikeStorage $parent_storage,
         CodeLocation $code_location,
         int $expected_param_count
-    ) {
+    ): void {
         $template_type_count = $parent_storage->template_types === null
             ? 0
             : count($parent_storage->template_types);

@@ -60,9 +60,8 @@ class FunctionReturnTypeProvider
     /**
      * @param  class-string<FunctionReturnTypeProviderInterface> $class
      *
-     * @return void
      */
-    public function registerClass(string $class)
+    public function registerClass(string $class): void
     {
         $callable = \Closure::fromCallable([$class, 'getFunctionReturnType']);
 
@@ -81,9 +80,8 @@ class FunctionReturnTypeProvider
      *     CodeLocation
      *   ) : ?Type\Union $c
      *
-     * @return void
      */
-    public function registerClosure(string $function_id, \Closure $c)
+    public function registerClosure(string $function_id, \Closure $c): void
     {
         self::$handlers[$function_id][] = $c;
     }

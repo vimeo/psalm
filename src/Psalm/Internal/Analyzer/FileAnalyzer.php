@@ -516,18 +516,12 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
         return $this->file_path;
     }
 
-    /**
-     * @return string
-     */
-    public function getRootFileName()
+    public function getRootFileName(): string
     {
         return $this->root_file_name ?: $this->file_name;
     }
 
-    /**
-     * @return string
-     */
-    public function getRootFilePath()
+    public function getRootFilePath(): string
     {
         return $this->root_file_path ?: $this->file_path;
     }

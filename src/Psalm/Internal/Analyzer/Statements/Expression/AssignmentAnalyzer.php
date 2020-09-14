@@ -1340,7 +1340,6 @@ class AssignmentAnalyzer
     }
 
     /**
-     *
      * @return void
      */
     public static function assignByRefParam(

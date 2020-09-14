@@ -26,7 +26,7 @@ class ReturnTypeCollector
         array $stmts,
         array &$yield_types,
         bool $collapse_types = false
-    ) {
+    ): array {
         $return_types = [];
 
         foreach ($stmts as $stmt) {
@@ -273,7 +273,6 @@ class ReturnTypeCollector
     }
 
     /**
-     *
      * @return  list<Type\Union>
      */
     protected static function getYieldTypeFromExpression(

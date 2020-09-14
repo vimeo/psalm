@@ -147,7 +147,7 @@ class Clause
                              *
                              * @return string
                              */
-                            function ($value) use ($var_id) {
+                            function ($value) use ($var_id): string {
                                 if ($value === 'falsy') {
                                     return '!' . $var_id;
                                 }

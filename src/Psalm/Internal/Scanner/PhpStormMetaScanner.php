@@ -91,7 +91,6 @@ class PhpStormMetaScanner
                     $meta_fq_classlike_name,
                     /**
                      * @param array<PhpParser\Node\Arg> $call_args
-                     * @return ?Type\Union
                      */
                     function (
                         \Psalm\StatementsSource $statements_analyzer,
@@ -105,7 +104,7 @@ class PhpStormMetaScanner
                         $offset,
                         $meta_fq_classlike_name,
                         $meta_method_name
-                    ) {
+                    ): ?Type\Union {
                         if (!$statements_analyzer instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
                             return Type::getMixed();
                         }
@@ -149,7 +148,6 @@ class PhpStormMetaScanner
                     $meta_fq_classlike_name,
                     /**
                      * @param array<PhpParser\Node\Arg> $call_args
-                     * @return ?Type\Union
                      */
                     function (
                         \Psalm\StatementsSource $statements_analyzer,
@@ -163,7 +161,7 @@ class PhpStormMetaScanner
                         $type_offset,
                         $meta_fq_classlike_name,
                         $meta_method_name
-                    ) {
+                    ): ?Type\Union {
                         if (!$statements_analyzer instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
                             return Type::getMixed();
                         }
@@ -189,7 +187,6 @@ class PhpStormMetaScanner
                     $meta_fq_classlike_name,
                     /**
                      * @param array<PhpParser\Node\Arg> $call_args
-                     * @return ?Type\Union
                      */
                     function (
                         \Psalm\StatementsSource $statements_analyzer,
@@ -203,7 +200,7 @@ class PhpStormMetaScanner
                         $element_type_offset,
                         $meta_fq_classlike_name,
                         $meta_method_name
-                    ) {
+                    ): ?Type\Union {
                         if (!$statements_analyzer instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
                             return Type::getMixed();
                         }

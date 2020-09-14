@@ -158,7 +158,7 @@ class TObjectWithProperties extends TObject
                             $aliased_classes,
                             $this_class,
                             $use_phpdoc_format
-                        ) {
+                        ): string {
                             return $name . ($type->possibly_undefined ? '?' : '') . ':' . $type->toNamespacedString(
                                 $namespace,
                                 $aliased_classes,

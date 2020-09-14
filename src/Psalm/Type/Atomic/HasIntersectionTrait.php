@@ -43,7 +43,7 @@ trait HasIntersectionTrait
                     $aliased_classes,
                     $this_class,
                     $use_phpdoc_format
-                ) {
+                ): string {
                     return $extra_type->toNamespacedString(
                         $namespace,
                         $aliased_classes,

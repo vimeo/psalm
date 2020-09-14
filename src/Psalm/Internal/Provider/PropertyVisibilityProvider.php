@@ -33,9 +33,8 @@ class PropertyVisibilityProvider
     /**
      * @param  class-string<PropertyVisibilityProviderInterface> $class
      *
-     * @return void
      */
-    public function registerClass(string $class)
+    public function registerClass(string $class): void
     {
         $callable = \Closure::fromCallable([$class, 'isPropertyVisible']);
 
@@ -55,9 +54,8 @@ class PropertyVisibilityProvider
      *     CodeLocation
      *   ) : ?bool $c
      *
-     * @return void
      */
-    public function registerClosure(string $fq_classlike_name, \Closure $c)
+    public function registerClosure(string $fq_classlike_name, \Closure $c): void
     {
         self::$handlers[strtolower($fq_classlike_name)][] = $c;
     }

@@ -8,18 +8,12 @@ class TSqlSelectString extends \Psalm\Type\Atomic\TLiteralString
         return 'sql-select-string';
     }
 
-    /**
-     * @return string
-     */
-    public function getId(bool $nested = true)
+    public function getId(bool $nested = true): string
     {
         return 'sql-select-string(' . $this->value . ')';
     }
 
-    /**
-     * @return bool
-     */
-    public function canBeFullyExpressedInPhp()
+    public function canBeFullyExpressedInPhp(): bool
     {
         return false;
     }

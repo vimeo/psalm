@@ -27,7 +27,7 @@ class ClassStatementsDiffer extends AstDiffer
      *      3: array<int, array{0: int, 1: int, 2: int, 3: int}>
      * }
      */
-    public static function diff(string $name, array $a, array $b, string $a_code, string $b_code)
+    public static function diff(string $name, array $a, array $b, string $a_code, string $b_code): array
     {
         $diff_map = [];
 
@@ -45,7 +45,7 @@ class ClassStatementsDiffer extends AstDiffer
                 $a_code,
                 $b_code,
                 &$body_change = false
-            ) use (&$diff_map) {
+            ) use (&$diff_map): bool {
                 if (get_class($a) !== get_class($b)) {
                     return false;
                 }

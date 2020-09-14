@@ -12,7 +12,7 @@ class ForeachTest extends \Psalm\Tests\TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'switchVariableWithContinue' => [
@@ -1063,7 +1063,7 @@ class ForeachTest extends \Psalm\Tests\TestCase
     /**
      * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'switchVariableWithContinueOnce' => [

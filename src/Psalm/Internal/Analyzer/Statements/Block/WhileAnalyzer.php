@@ -17,7 +17,6 @@ use function array_merge;
 class WhileAnalyzer
 {
     /**
-     *
      * @return  false|null
      */
     public static function analyze(

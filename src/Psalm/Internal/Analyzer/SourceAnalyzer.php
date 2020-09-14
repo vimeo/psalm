@@ -67,18 +67,12 @@ abstract class SourceAnalyzer implements StatementsSource
         return $this->source->getFilePath();
     }
 
-    /**
-     * @return string
-     */
-    public function getRootFileName()
+    public function getRootFileName(): string
     {
         return $this->source->getRootFileName();
     }
 
-    /**
-     * @return string
-     */
-    public function getRootFilePath()
+    public function getRootFilePath(): string
     {
         return $this->source->getRootFilePath();
     }

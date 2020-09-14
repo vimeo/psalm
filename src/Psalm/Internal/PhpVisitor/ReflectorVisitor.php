@@ -162,7 +162,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
     }
 
     /**
-     *
      * @return null|int
      */
     public function enterNode(PhpParser\Node $node)
@@ -824,13 +823,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         return null;
     }
 
-    /**
-     * @return void
-     */
     private function registerClassMapFunctionCall(
         string $function_id,
         PhpParser\Node\Expr\FuncCall $node
-    ) {
+    ): void {
         $callables = InternalCallMapHandler::getCallablesFromCallMap($function_id);
 
         if ($callables) {
@@ -3282,7 +3278,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
     /**
      * @param  array<int, array{type:string,name:string,line_number:int,start:int,end:int}>  $docblock_params
      *
-     * @return void
      */
     private function improveParamsFromDocblock(
         FunctionLikeStorage $storage,
@@ -3290,7 +3285,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         PhpParser\Node\FunctionLike $function,
         bool $fake_method,
         ?string $fq_classlike_name
-    ) {
+    ): void {
         $base = $this->fq_classlike_names
             ? $this->fq_classlike_names[count($this->fq_classlike_names) - 1] . '::'
             : '';
@@ -3499,15 +3494,12 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         }
     }
 
-    /**
-     * @return  void
-     */
     private function visitPropertyDeclaration(
         PhpParser\Node\Stmt\Property $stmt,
         Config $config,
         ClassLikeStorage $storage,
         string $fq_classlike_name
-    ) {
+    ): void {
         if (!$this->fq_classlike_names) {
             throw new \LogicException('$this->fq_classlike_names should not be empty');
         }
@@ -3711,14 +3703,11 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         }
     }
 
-    /**
-     * @return  void
-     */
     private function visitClassConstDeclaration(
         PhpParser\Node\Stmt\ClassConst $stmt,
         ClassLikeStorage $storage,
         string $fq_classlike_name
-    ) {
+    ): void {
         $existing_constants = $storage->protected_class_constants
             + $storage->private_class_constants
             + $storage->public_class_constants;
@@ -3989,7 +3978,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
     }
 
     /**
-     *
      * @return void
      */
     public function visitInclude(PhpParser\Node\Expr\Include_ $stmt)
@@ -4074,7 +4062,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         return $this->aliases;
     }
 
-    public function afterTraverse(array $nodes)
+    public function afterTraverse(array $nodes): void
     {
         $this->file_storage->type_aliases = $this->type_aliases;
     }

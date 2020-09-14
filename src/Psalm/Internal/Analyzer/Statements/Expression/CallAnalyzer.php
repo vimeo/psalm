@@ -37,7 +37,6 @@ use function array_merge;
 class CallAnalyzer
 {
     /**
-     *
      * @return  void
      */
     public static function collectSpecialInformation(
@@ -579,7 +578,6 @@ class CallAnalyzer
      * @param  array<int, PhpParser\Node\Arg> $args
      * @param  array<string, array<string, array{Type\Union}>> $template_type_map,
      *
-     * @return void
      */
     protected static function applyAssertionsToContext(
         $expr,
@@ -589,7 +587,7 @@ class CallAnalyzer
         array $template_type_map,
         Context $context,
         StatementsAnalyzer $statements_analyzer
-    ) {
+    ): void {
         $type_assertions = [];
 
         $asserted_keys = [];

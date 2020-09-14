@@ -16,7 +16,6 @@ use function is_string;
 class StaticAnalyzer
 {
     /**
-     *
      * @return  false|null
      */
     public static function analyze(

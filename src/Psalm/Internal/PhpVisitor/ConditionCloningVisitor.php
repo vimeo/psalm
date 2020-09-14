@@ -14,7 +14,7 @@ class ConditionCloningVisitor extends NodeVisitorAbstract
         $this->type_provider = $old_type_provider;
     }
 
-    public function enterNode(Node $node)
+    public function enterNode(Node $node): Node
     {
         /** @var \PhpParser\Node\Expr $node */
         $origNode = $node;

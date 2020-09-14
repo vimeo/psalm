@@ -23,9 +23,6 @@ class FooPropertyProvider implements
         return ['Ns\Foo'];
     }
 
-    /**
-     * @return ?bool
-     */
     public static function doesPropertyExist(
         string $fq_classlike_name,
         string $property_name,
@@ -33,13 +30,10 @@ class FooPropertyProvider implements
         ?StatementsSource $source = null,
         ?Context $context = null,
         ?CodeLocation $code_location = null
-    ) {
+    ): ?bool {
         return $property_name === 'magic_property';
     }
 
-    /**
-     * @return ?bool
-     */
     public static function isPropertyVisible(
         StatementsSource $source,
         string $fq_classlike_name,
@@ -47,14 +41,13 @@ class FooPropertyProvider implements
         bool $read_mode,
         ?Context $context = null,
         ?CodeLocation $code_location = null
-    ) {
+    ): ?bool {
         return true;
     }
 
     /**
      * @param  array<PhpParser\Node\Arg>    $call_args
      *
-     * @return ?Type\Union
      */
     public static function getPropertyType(
         string $fq_classlike_name,
@@ -62,7 +55,7 @@ class FooPropertyProvider implements
         bool $read_mode,
         ?StatementsSource $source = null,
         ?Context $context = null
-    ) {
+    ): ?Type\Union {
         return Type::getString();
     }
 }

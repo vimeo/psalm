@@ -115,7 +115,7 @@ trait GenericTrait
                     /**
                      * @return string
                      */
-                    function (Atomic $extra_type) use ($namespace, $aliased_classes, $this_class) {
+                    function (Atomic $extra_type) use ($namespace, $aliased_classes, $this_class): string {
                         return $extra_type->toNamespacedString($namespace, $aliased_classes, $this_class, false);
                     },
                     $this->extra_types
@@ -131,7 +131,7 @@ trait GenericTrait
                         /**
                          * @return string
                          */
-                        function (Union $type_param) use ($namespace, $aliased_classes, $this_class) {
+                        function (Union $type_param) use ($namespace, $aliased_classes, $this_class): string {
                             return $type_param->toNamespacedString($namespace, $aliased_classes, $this_class, false);
                         },
                         $this->type_params

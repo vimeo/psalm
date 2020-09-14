@@ -53,7 +53,6 @@ class FileReferenceCacheProvider
     }
 
     /**
-     *
      * @psalm-suppress MixedAssignment
      */
     public function getCachedFileReferences(): ?array
@@ -80,7 +79,6 @@ class FileReferenceCacheProvider
     }
 
     /**
-     *
      * @psalm-suppress MixedAssignment
      */
     public function getCachedClassLikeFiles(): ?array
@@ -107,7 +105,6 @@ class FileReferenceCacheProvider
     }
 
     /**
-     *
      * @psalm-suppress MixedAssignment
      */
     public function getCachedNonMethodClassReferences(): ?array
@@ -134,7 +131,6 @@ class FileReferenceCacheProvider
     }
 
     /**
-     *
      * @psalm-suppress MixedAssignment
      */
     public function getCachedMethodClassReferences(): ?array
@@ -161,7 +157,6 @@ class FileReferenceCacheProvider
     }
 
     /**
-     *
      * @psalm-suppress MixedAssignment
      */
     public function getCachedMethodMemberReferences(): ?array
@@ -188,7 +183,6 @@ class FileReferenceCacheProvider
     }
 
     /**
-     *
      * @psalm-suppress MixedAssignment
      */
     public function getCachedMethodMissingMemberReferences(): ?array
@@ -215,7 +209,6 @@ class FileReferenceCacheProvider
     }
 
     /**
-     *
      * @psalm-suppress MixedAssignment
      */
     public function getCachedFileMemberReferences(): ?array
@@ -242,7 +235,6 @@ class FileReferenceCacheProvider
     }
 
     /**
-     *
      * @psalm-suppress MixedAssignment
      */
     public function getCachedFileMissingMemberReferences(): ?array
@@ -270,7 +262,6 @@ class FileReferenceCacheProvider
     }
 
     /**
-     *
      * @psalm-suppress MixedAssignment
      */
     public function getCachedMixedMemberNameReferences(): ?array
@@ -297,7 +288,6 @@ class FileReferenceCacheProvider
     }
 
     /**
-     *
      * @psalm-suppress MixedAssignment
      */
     public function getCachedMethodParamUses(): ?array
@@ -324,7 +314,6 @@ class FileReferenceCacheProvider
     }
 
     /**
-     *
      * @psalm-suppress MixedAssignment
      */
     public function getCachedIssues(): ?array
@@ -669,10 +658,7 @@ class FileReferenceCacheProvider
         return false;
     }
 
-    /**
-     * @return void
-     */
-    public function setConfigHashCache(string $hash)
+    public function setConfigHashCache(string $hash): void
     {
         $cache_directory = Config::getInstance()->getCacheDirectory();
 

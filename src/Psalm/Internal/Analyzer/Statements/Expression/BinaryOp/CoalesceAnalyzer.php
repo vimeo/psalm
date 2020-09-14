@@ -64,7 +64,7 @@ class CoalesceAnalyzer
                 /**
                  * @return \Psalm\Internal\Clause
                  */
-                function (\Psalm\Internal\Clause $c) use ($mixed_var_ids, $stmt_id) {
+                function (\Psalm\Internal\Clause $c) use ($mixed_var_ids, $stmt_id): \Psalm\Internal\Clause {
                     $keys = array_keys($c->possibilities);
 
                     $mixed_var_ids = \array_diff($mixed_var_ids, $keys);

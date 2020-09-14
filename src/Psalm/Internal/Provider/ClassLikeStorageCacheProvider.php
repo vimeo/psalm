@@ -83,11 +83,11 @@ class ClassLikeStorageCacheProvider
         }
     }
 
-    /**
-     * @return ClassLikeStorage
-     */
-    public function getLatestFromCache(string $fq_classlike_name_lc, ?string $file_path, ?string $file_contents)
-    {
+    public function getLatestFromCache(
+        string $fq_classlike_name_lc,
+        ?string $file_path,
+        ?string $file_contents
+    ): ClassLikeStorage {
         $cached_value = $this->loadFromCache($fq_classlike_name_lc, $file_path);
 
         if (!$cached_value) {

@@ -1504,15 +1504,12 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         );
     }
 
-    /**
-     * @return void
-     */
     public function addOrUpdateParamType(
         ProjectAnalyzer $project_analyzer,
         string $param_name,
         Type\Union $inferred_return_type,
         bool $docblock_only = false
-    ) {
+    ): void {
         $manipulator = FunctionDocblockManipulator::getForFunction(
             $project_analyzer,
             $this->source->getFilePath(),
@@ -1566,9 +1563,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
      *
      * @param   string  $return_type
      *
-     * @return  void
      */
-    public function addReturnTypes(Context $context)
+    public function addReturnTypes(Context $context): void
     {
         if ($this->return_vars_in_scope !== null) {
             $this->return_vars_in_scope = TypeAnalyzer::combineKeyedTypes(
@@ -1589,15 +1585,12 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         }
     }
 
-    /**
-     * @return void
-     */
     public function examineParamTypes(
         StatementsAnalyzer $statements_analyzer,
         Context $context,
         Codebase $codebase,
         PhpParser\Node $stmt = null
-    ) {
+    ): void {
         $storage = $this->getFunctionLikeStorage($statements_analyzer);
 
         foreach ($storage->params as $param) {
@@ -1836,17 +1829,13 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     /**
      * Adds a suppressed issue, useful when creating a method checker from scratch
      *
-     * @return void
      */
-    public function addSuppressedIssue(string $issue_name)
+    public function addSuppressedIssue(string $issue_name): void
     {
         $this->suppressed_issues[] = $issue_name;
     }
 
-    /**
-     * @return void
-     */
-    public static function clearCache()
+    public static function clearCache(): void
     {
         self::$no_effects_hashes = [];
     }

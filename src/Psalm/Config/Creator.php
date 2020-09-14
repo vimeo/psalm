@@ -148,7 +148,7 @@ class Creator
     /**
      * @return non-empty-list<string>
      */
-    public static function getPaths(string $current_dir, ?string $suggested_dir)
+    public static function getPaths(string $current_dir, ?string $suggested_dir): array
     {
         $replacements = [];
 

@@ -191,7 +191,6 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
     }
 
     /**
-     *
      * @return  false|null
      */
     public static function analyzeClosureUses(

@@ -141,10 +141,7 @@ class Functions
         return $declaring_file_storage->functions[$function_id];
     }
 
-    /**
-     * @return void
-     */
-    public function addGlobalFunction(string $function_id, FunctionStorage $storage)
+    public function addGlobalFunction(string $function_id, FunctionStorage $storage): void
     {
         self::$stubbed_functions[strtolower($function_id)] = $storage;
     }

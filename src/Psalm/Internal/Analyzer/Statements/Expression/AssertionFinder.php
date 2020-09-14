@@ -2460,7 +2460,7 @@ class AssertionFinder
         PhpParser\Node\Expr\Instanceof_ $stmt,
         ?string $this_class_name,
         FileSource $source
-    ) {
+    ): array {
         if ($stmt->class instanceof PhpParser\Node\Name) {
             if (!in_array(strtolower($stmt->class->parts[0]), ['self', 'static', 'parent'], true)) {
                 $instanceof_class = ClassLikeAnalyzer::getFQCLNFromNameObject(
@@ -2582,7 +2582,6 @@ class AssertionFinder
     }
 
     /**
-     *
      * @return  false|int
      */
     protected static function hasGetTypeCheck(PhpParser\Node\Expr\BinaryOp $conditional)
@@ -2609,7 +2608,6 @@ class AssertionFinder
     }
 
     /**
-     *
      * @return  false|int
      */
     protected static function hasGetClassCheck(
@@ -2686,7 +2684,6 @@ class AssertionFinder
     }
 
     /**
-     *
      * @return  false|int
      */
     protected static function hasNonEmptyCountEqualityCheck(
@@ -2747,7 +2744,6 @@ class AssertionFinder
     }
 
     /**
-     *
      * @return  false|int
      */
     protected static function hasLessThanCountEqualityCheck(
@@ -2836,7 +2832,6 @@ class AssertionFinder
     }
 
     /**
-     *
      * @return  false|int
      */
     protected static function hasPositiveNumberCheck(
@@ -2885,7 +2880,6 @@ class AssertionFinder
     }
 
     /**
-     *
      * @return  false|int
      */
     protected static function hasReconcilableNonEmptyCountEqualityCheck(PhpParser\Node\Expr\BinaryOp $conditional)
@@ -2930,7 +2924,6 @@ class AssertionFinder
     }
 
     /**
-     *
      * @return  false|int
      */
     protected static function hasTypedValueComparison(
@@ -3068,7 +3061,6 @@ class AssertionFinder
     }
 
     /**
-     *
      * @return  0|1|2
      */
     protected static function hasClassExistsCheck(PhpParser\Node\Expr\FuncCall $stmt): int
@@ -3095,7 +3087,6 @@ class AssertionFinder
     }
 
     /**
-     *
      * @return  0|1|2
      */
     protected static function hasTraitExistsCheck(PhpParser\Node\Expr\FuncCall $stmt): int

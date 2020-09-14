@@ -220,7 +220,6 @@ class Reflection
     }
 
     /**
-     *
      * @return void
      */
     public function extractReflectionMethodInfo(\ReflectionMethod $method)
@@ -417,13 +416,10 @@ class Reflection
         return Type::parseString($reflection_type->getName() . $suffix);
     }
 
-    /**
-     * @return void
-     */
     private function registerInheritedMethods(
         string $fq_class_name,
         string $parent_class
-    ) {
+    ): void {
         $parent_storage = $this->storage_provider->get($parent_class);
         $storage = $this->storage_provider->get($fq_class_name);
 
@@ -446,12 +442,11 @@ class Reflection
      * @param lowercase-string $fq_class_name
      * @param lowercase-string $parent_class
      *
-     * @return void
      */
     private function registerInheritedProperties(
         string $fq_class_name,
         string $parent_class
-    ) {
+    ): void {
         $parent_storage = $this->storage_provider->get($parent_class);
         $storage = $this->storage_provider->get($fq_class_name);
 

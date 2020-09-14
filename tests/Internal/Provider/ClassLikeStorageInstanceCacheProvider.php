@@ -14,9 +14,6 @@ class ClassLikeStorageInstanceCacheProvider extends \Psalm\Internal\Provider\Cla
     }
 
     /**
-     * @param  string|null $file_path
-     * @param  string|null $file_contents
-     *
      * @return void
      */
     public function writeToCache(ClassLikeStorage $storage, ?string $file_path, ?string $file_contents)
@@ -25,14 +22,7 @@ class ClassLikeStorageInstanceCacheProvider extends \Psalm\Internal\Provider\Cla
         $this->cache[$fq_classlike_name_lc] = $storage;
     }
 
-    /**
-     * @param  string  $fq_classlike_name_lc
-     * @param  string|null $file_path
-     * @param  string|null $file_contents
-     *
-     * @return ClassLikeStorage
-     */
-    public function getLatestFromCache(string $fq_classlike_name_lc, ?string $file_path, ?string $file_contents)
+    public function getLatestFromCache(string $fq_classlike_name_lc, ?string $file_path, ?string $file_contents): ClassLikeStorage
     {
         $cached_value = $this->loadFromCache($fq_classlike_name_lc);
 
@@ -46,9 +36,8 @@ class ClassLikeStorageInstanceCacheProvider extends \Psalm\Internal\Provider\Cla
     /**
      * @param  string  $fq_classlike_name_lc
      *
-     * @return ClassLikeStorage|null
      */
-    private function loadFromCache($fq_classlike_name_lc)
+    private function loadFromCache($fq_classlike_name_lc): ?ClassLikeStorage
     {
         return $this->cache[$fq_classlike_name_lc] ?? null;
     }

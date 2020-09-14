@@ -47,10 +47,7 @@ class FileStorageProvider
         return self::$storage[$file_path];
     }
 
-    /**
-     * @return void
-     */
-    public function remove(string $file_path)
+    public function remove(string $file_path): void
     {
         unset(self::$storage[strtolower($file_path)]);
     }
@@ -102,9 +99,8 @@ class FileStorageProvider
     /**
      * @param array<string, FileStorage> $more
      *
-     * @return void
      */
-    public function addMore(array $more)
+    public function addMore(array $more): void
     {
         self::$new_storage = array_merge(self::$new_storage, $more);
         self::$storage = array_merge(self::$storage, $more);
@@ -121,18 +117,12 @@ class FileStorageProvider
         return $storage;
     }
 
-    /**
-     * @return void
-     */
-    public static function deleteAll()
+    public static function deleteAll(): void
     {
         self::$storage = [];
     }
 
-    /**
-     * @return void
-     */
-    public static function populated()
+    public static function populated(): void
     {
         self::$new_storage = [];
     }

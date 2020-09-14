@@ -6,7 +6,7 @@ class ReturnTypeManipulationTest extends FileManipulationTest
     /**
      * @return array<string,array{string,string,string,string[],bool,5?:bool}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): array
     {
         return [
             'addMissingClosureStringReturnType56' => [

@@ -43,10 +43,7 @@ class IssueHandler
         return $handler;
     }
 
-    /**
-     * @return void
-     */
-    public function setErrorLevel(string $error_level)
+    public function setErrorLevel(string $error_level): void
     {
         if (!in_array($error_level, \Psalm\Config::$ERROR_LEVELS, true)) {
             throw new \Psalm\Exception\ConfigException('Unexpected error level ' . $error_level);

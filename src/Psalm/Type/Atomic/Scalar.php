@@ -16,10 +16,7 @@ abstract class Scalar extends \Psalm\Type\Atomic
         return $php_major_version >= 7 ? $this->getKey() : null;
     }
 
-    /**
-     * @return bool
-     */
-    public function canBeFullyExpressedInPhp()
+    public function canBeFullyExpressedInPhp(): bool
     {
         return true;
     }

@@ -12,10 +12,7 @@ use Psalm\Report\ReportOptions;
 class IssueBufferTest extends TestCase
 {
 
-    /**
-     * @return void
-     */
-    public function testFinishDoesNotCorruptInternalState()
+    public function testFinishDoesNotCorruptInternalState(): void
     {
         IssueBuffer::clear();
         IssueBuffer::addIssues([

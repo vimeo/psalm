@@ -15,7 +15,7 @@ trait InvalidCodeAnalysisTestTrait
     /**
      * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
      */
-    abstract public function providerInvalidCodeParse();
+    abstract public function providerInvalidCodeParse(): iterable;
 
     /**
      * @dataProvider providerInvalidCodeParse

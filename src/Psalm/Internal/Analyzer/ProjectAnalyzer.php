@@ -404,9 +404,8 @@ class ProjectAnalyzer
 
     /**
      * @param  string|null $address
-     * @return void
      */
-    public function server($address = '127.0.0.1:12345', bool $socket_server_mode = false)
+    public function server($address = '127.0.0.1:12345', bool $socket_server_mode = false): void
     {
         $this->visitAutoloadFiles();
         $this->codebase->diff_methods = true;
@@ -540,10 +539,7 @@ class ProjectAnalyzer
         return isset($this->project_files[$file_path]);
     }
 
-    /**
-     * @return void
-     */
-    public function check(string $base_dir, bool $is_diff = false)
+    public function check(string $base_dir, bool $is_diff = false): void
     {
         $start_checks = (int)microtime(true);
 
@@ -656,10 +652,7 @@ class ProjectAnalyzer
         }
     }
 
-    /**
-     * @return void
-     */
-    public function consolidateAnalyzedData()
+    public function consolidateAnalyzedData(): void
     {
         $this->codebase->classlikes->consolidateAnalyzedData(
             $this->codebase->methods,
@@ -668,18 +661,12 @@ class ProjectAnalyzer
         );
     }
 
-    /**
-     * @return void
-     */
-    public function trackTaintedInputs()
+    public function trackTaintedInputs(): void
     {
         $this->codebase->taint = new Taint();
     }
 
-    /**
-     * @return void
-     */
-    public function trackUnusedSuppressions()
+    public function trackUnusedSuppressions(): void
     {
         $this->codebase->track_unused_suppressions = true;
     }
@@ -967,10 +954,7 @@ class ProjectAnalyzer
         }
     }
 
-    /**
-     * @return void
-     */
-    public function findReferencesTo(string $symbol)
+    public function findReferencesTo(string $symbol): void
     {
         if (!$this->stdout_report_options) {
             throw new \UnexpectedValueException('Not expecting to emit output');
@@ -998,10 +982,7 @@ class ProjectAnalyzer
         }
     }
 
-    /**
-     * @return void
-     */
-    public function checkDir(string $dir_name)
+    public function checkDir(string $dir_name): void
     {
         $this->file_reference_provider->loadReferenceCache();
 
@@ -1025,10 +1006,7 @@ class ProjectAnalyzer
         );
     }
 
-    /**
-     * @return void
-     */
-    private function checkDirWithConfig(string $dir_name, Config $config, bool $allow_non_project_files = false)
+    private function checkDirWithConfig(string $dir_name, Config $config, bool $allow_non_project_files = false): void
     {
         $file_extensions = $config->getFileExtensions();
 
@@ -1046,7 +1024,6 @@ class ProjectAnalyzer
     }
 
     /**
-     *
      * @return array<int, string>
      */
     private function getAllFiles(Config $config): array
@@ -1067,9 +1044,8 @@ class ProjectAnalyzer
     /**
      * @param  string  $dir_name
      *
-     * @return void
      */
-    public function addProjectFile(string $file_path)
+    public function addProjectFile(string $file_path): void
     {
         $this->project_files[$file_path] = $file_path;
     }
@@ -1113,9 +1089,8 @@ class ProjectAnalyzer
     /**
      * @param  array<string>    $file_list
      *
-     * @return void
      */
-    private function checkDiffFilesWithConfig(Config $config, array $file_list = [])
+    private function checkDiffFilesWithConfig(Config $config, array $file_list = []): void
     {
         $files_to_scan = [];
 
@@ -1136,10 +1111,7 @@ class ProjectAnalyzer
         $this->codebase->addFilesToAnalyze($files_to_scan);
     }
 
-    /**
-     * @return void
-     */
-    public function checkFile(string $file_path)
+    public function checkFile(string $file_path): void
     {
         $this->progress->debug('Checking ' . $file_path . "\n");
 
@@ -1169,9 +1141,8 @@ class ProjectAnalyzer
 
     /**
      * @param string[] $paths_to_check
-     * @return void
      */
-    public function checkPaths(array $paths_to_check)
+    public function checkPaths(array $paths_to_check): void
     {
         $this->visitAutoloadFiles();
 
@@ -1269,12 +1240,11 @@ class ProjectAnalyzer
      * @param bool $dry_run
      * @param bool $safe_types
      *
-     * @return void
      */
     public function alterCodeAfterCompletion(
         $dry_run = false,
         $safe_types = false
-    ) {
+    ): void {
         $this->codebase->alter_code = true;
         $this->codebase->infer_types_from_usage = true;
         $this->show_issues = false;
@@ -1285,19 +1255,15 @@ class ProjectAnalyzer
     /**
      * @param array<string, string> $to_refactor
      *
-     * @return void
      */
-    public function refactorCodeAfterCompletion(array $to_refactor)
+    public function refactorCodeAfterCompletion(array $to_refactor): void
     {
         $this->to_refactor = $to_refactor;
         $this->codebase->alter_code = true;
         $this->show_issues = false;
     }
 
-    /**
-     * @return void
-     */
-    public function setPhpVersion(string $version)
+    public function setPhpVersion(string $version): void
     {
         if (!preg_match('/^(5\.[456]|7\.[01234]|8\.[0])(\..*)?$/', $version)) {
             throw new \UnexpectedValueException('Expecting a version number in the format x.y');
@@ -1324,9 +1290,8 @@ class ProjectAnalyzer
      * @param array<string, bool> $issues
      * @throws UnsupportedIssueToFixException
      *
-     * @return void
      */
-    public function setIssuesToFix(array $issues)
+    public function setIssuesToFix(array $issues): void
     {
         $supported_issues_to_fix = static::getSupportedIssuesToFix();
 
@@ -1381,7 +1346,6 @@ class ProjectAnalyzer
     }
 
     /**
-     *
      * @return void
      */
     public function getMethodMutations(

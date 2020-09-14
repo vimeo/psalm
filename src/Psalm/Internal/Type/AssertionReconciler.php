@@ -896,7 +896,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                         && !$codebase->classExists($new_type_part->value)
                         && !array_filter(
                             $existing_type_part->extra_types,
-                            function ($extra_type) use ($codebase) {
+                            function ($extra_type) use ($codebase): bool {
                                 return $extra_type instanceof TNamedObject
                                     && $codebase->classExists($extra_type->value);
                             }
