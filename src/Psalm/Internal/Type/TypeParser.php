@@ -413,8 +413,8 @@ class TypeParser
 
             $onlyTKeyedArray = true;
 
-            $first_type = reset($intersection_types);
-            $last_type = end($intersection_types);
+            $first_type = \reset($intersection_types);
+            $last_type = \end($intersection_types);
 
             foreach ($intersection_types as $intersection_type) {
                 if (!$intersection_type instanceof TKeyedArray
@@ -433,9 +433,9 @@ class TypeParser
                 $properties = [];
 
                 if ($first_type instanceof TArray) {
-                    array_shift($intersection_types);
+                    \array_shift($intersection_types);
                 } elseif ($last_type instanceof TArray) {
-                    array_pop($intersection_types);
+                    \array_pop($intersection_types);
                 }
 
                 /** @var TKeyedArray $intersection_type */
