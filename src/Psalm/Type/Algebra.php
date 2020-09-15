@@ -201,37 +201,35 @@ class Algebra
                     }
                 }
 
-                if ($assertions !== null) {
-                    $clauses = [];
+                $clauses = [];
 
-                    foreach ($assertions as $var => $anded_types) {
-                        $redefined = false;
+                foreach ($assertions as $var => $anded_types) {
+                    $redefined = false;
 
-                        if ($var[0] === '=') {
-                            /** @var string */
-                            $var = substr($var, 1);
-                            $redefined = true;
-                        }
-
-                        foreach ($anded_types as $orred_types) {
-                            $clauses[] = new Clause(
-                                [$var => $orred_types],
-                                $conditional_object_id,
-                                \spl_object_id($conditional->expr),
-                                false,
-                                true,
-                                $orred_types[0][0] === '='
-                                    || $orred_types[0][0] === '~'
-                                    || (strlen($orred_types[0]) > 1
-                                        && ($orred_types[0][1] === '='
-                                            || $orred_types[0][1] === '~')),
-                                $redefined ? [$var => true] : []
-                            );
-                        }
+                    if ($var[0] === '=') {
+                        /** @var string */
+                        $var = substr($var, 1);
+                        $redefined = true;
                     }
 
-                    return self::negateFormula($clauses);
+                    foreach ($anded_types as $orred_types) {
+                        $clauses[] = new Clause(
+                            [$var => $orred_types],
+                            $conditional_object_id,
+                            \spl_object_id($conditional->expr),
+                            false,
+                            true,
+                            $orred_types[0][0] === '='
+                                || $orred_types[0][0] === '~'
+                                || (strlen($orred_types[0]) > 1
+                                    && ($orred_types[0][1] === '='
+                                        || $orred_types[0][1] === '~')),
+                            $redefined ? [$var => true] : []
+                        );
+                    }
                 }
+
+                return self::negateFormula($clauses);
             }
 
             if ($conditional->expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd) {
