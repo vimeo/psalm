@@ -705,16 +705,13 @@ class ArgumentsAnalyzer
                 }
             }
 
-            if (ArrayFunctionArgumentsAnalyzer::checkArgumentsMatch(
+            ArrayFunctionArgumentsAnalyzer::checkArgumentsMatch(
                 $statements_analyzer,
                 $context,
                 $args,
                 $method_id,
                 $context->check_functions
-            ) === false
-            ) {
-                return false;
-            }
+            );
 
             return null;
         }
