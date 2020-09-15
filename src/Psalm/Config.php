@@ -146,7 +146,7 @@ class Config
      *
      * @var bool
      */
-    public $use_docblock_property_types = true;
+    public $use_docblock_property_types = false;
 
     /**
      * Whether or not to throw an exception on first error
