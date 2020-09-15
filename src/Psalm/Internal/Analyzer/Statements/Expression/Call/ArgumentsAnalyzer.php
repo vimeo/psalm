@@ -388,9 +388,7 @@ class ArgumentsAnalyzer
                                 );
 
                                 if (!$type_match_found) {
-                                    $newly_inferred_type = null;
-
-                                    break;
+                                    continue;
                                 }
                             }
 
