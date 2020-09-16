@@ -44,7 +44,6 @@ class ArrayFunctionArgumentsAnalyzer
 {
     /**
      * @param   array<int, PhpParser\Node\Arg> $args
-     * @return  false|null
      */
     public static function checkArgumentsMatch(
         StatementsAnalyzer $statements_analyzer,
@@ -52,7 +51,7 @@ class ArrayFunctionArgumentsAnalyzer
         array $args,
         string $method_id,
         bool $check_functions
-    ) {
+    ): void {
         $closure_index = $method_id === 'array_map' ? 0 : 1;
 
         $array_arg_types = [];

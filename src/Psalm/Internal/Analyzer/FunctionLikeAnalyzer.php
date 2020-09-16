@@ -1490,8 +1490,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
     /**
      * @param array<PhpParser\Node\Stmt> $function_stmts
-     *
-     * @return  false|null
      */
     public function verifyReturnType(
         array $function_stmts,
@@ -1501,7 +1499,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         ?CodeLocation $return_type_location = null,
         bool $did_explicitly_return = false,
         bool $closure_inside_call = false
-    ) {
+    ): void {
         ReturnTypeAnalyzer::verifyReturnType(
             $this->function,
             $function_stmts,
