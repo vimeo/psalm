@@ -37,7 +37,7 @@ class AssertionFinder
     /**
      * Gets all the type assertions in a conditional
      *
-     * @return array<string, non-empty-list<non-empty-list<string>>>|null
+     * @return array<string, non-empty-list<non-empty-list<string>>>
      */
     public static function scrapeAssertions(
         PhpParser\Node\Expr $conditional,
@@ -47,7 +47,7 @@ class AssertionFinder
         bool $inside_negation = false,
         bool $cache = true,
         bool $inside_conditional = true
-    ) {
+    ): array {
         $if_types = [];
 
         if ($conditional instanceof PhpParser\Node\Expr\Instanceof_) {
@@ -193,10 +193,6 @@ class AssertionFinder
                 if ($cache && $source instanceof StatementsAnalyzer) {
                     $source->node_data->setAssertions($conditional->expr, $expr_assertions);
                 }
-            }
-
-            if ($expr_assertions === null) {
-                throw new \UnexpectedValueException('Assertions should be set');
             }
 
             if (count($expr_assertions) !== 1) {
@@ -699,10 +695,6 @@ class AssertionFinder
                         }
                     }
 
-                    if ($base_assertions === null) {
-                        throw new \UnexpectedValueException('Assertions should be set');
-                    }
-
                     $if_types = $base_assertions;
                 }
             }
@@ -818,10 +810,6 @@ class AssertionFinder
                         if ($source instanceof StatementsAnalyzer && $cache) {
                             $source->node_data->setAssertions($base_conditional, $base_assertions);
                         }
-                    }
-
-                    if ($base_assertions === null) {
-                        throw new \UnexpectedValueException('Assertions should be set');
                     }
 
                     $notif_types = $base_assertions;
@@ -1338,10 +1326,6 @@ class AssertionFinder
                     }
                 }
 
-                if ($base_assertions === null) {
-                    throw new \UnexpectedValueException('Assertions should be set');
-                }
-
                 $notif_types = $base_assertions;
 
                 if (count($notif_types) === 1) {
@@ -1446,10 +1430,6 @@ class AssertionFinder
                         if ($source instanceof StatementsAnalyzer && $cache) {
                             $source->node_data->setAssertions($base_conditional, $base_assertions);
                         }
-                    }
-
-                    if ($base_assertions === null) {
-                        throw new \UnexpectedValueException('Assertions should be set');
                     }
 
                     $notif_types = $base_assertions;
