@@ -731,3 +731,8 @@ function strval ($var): string {}
 function str_getcsv(string $input, string $delimiter = ',', string $enclosure = '"', string $escape = '\\\\')
 {
 }
+
+/**
+ * @return ($min is positive-int ? positive-int : int)
+ */
+function random_int(int $min, int $max): int {}
