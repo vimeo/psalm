@@ -345,6 +345,19 @@ class Algebra
             }
         }
 
+        if ($conditional instanceof PhpParser\Node\Expr\Cast\Bool_) {
+            return self::getFormula(
+                $conditional_object_id,
+                \spl_object_id($conditional->expr),
+                $conditional->expr,
+                $this_class_name,
+                $source,
+                $codebase,
+                $inside_negation,
+                $cache
+            );
+        }
+
         $assertions = null;
 
         if ($cache && $source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
