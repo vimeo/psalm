@@ -107,6 +107,7 @@ class ArrayFilterReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
                 $first_arg_array->properties = $new_properties;
 
                 $first_arg_array->is_list = $first_arg_array->is_list && $had_one;
+                $first_arg_array->sealed = false;
 
                 return new Type\Union([$first_arg_array]);
             }
