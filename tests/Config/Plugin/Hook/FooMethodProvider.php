@@ -75,7 +75,7 @@ class FooMethodProvider implements
         ?string $called_fq_classlike_name = null,
         ?string $called_method_name_lowercase = null
     ): ?Type\Union {
-        if ($method_name_lowercase == 'magicmethod') {
+        if ($method_name_lowercase === 'magicmethod') {
             return Type::getString();
         } else {
             return new \Psalm\Type\Union([new \Psalm\Type\Atomic\TNamedObject('NS\\Foo2')]);
