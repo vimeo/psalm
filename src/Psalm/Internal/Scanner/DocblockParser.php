@@ -95,7 +95,7 @@ class DocblockParser
         $min_indent = 80;
         foreach ($lines as $k => $line) {
             $indent = strspn($line, ' ');
-            if ($indent == strlen($line)) {
+            if ($indent === strlen($line)) {
                 // This line consists of only spaces. Trim it completely.
                 $lines[$k] = '';
                 continue;

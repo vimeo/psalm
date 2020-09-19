@@ -356,12 +356,12 @@ class IncludeAnalyzer
             return $file_name;
         }
 
-        $paths = PATH_SEPARATOR == ':'
+        $paths = PATH_SEPARATOR === ':'
             ? preg_split('#(?<!phar):#', get_include_path())
             : explode(PATH_SEPARATOR, get_include_path());
 
         foreach ($paths as $prefix) {
-            $ds = substr($prefix, -1) == DIRECTORY_SEPARATOR ? '' : DIRECTORY_SEPARATOR;
+            $ds = substr($prefix, -1) === DIRECTORY_SEPARATOR ? '' : DIRECTORY_SEPARATOR;
 
             if ($prefix === '.') {
                 $prefix = $current_directory;

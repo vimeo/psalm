@@ -1082,7 +1082,7 @@ class ConfigTest extends \Psalm\Tests\TestCase
     {
         parent::tearDown();
 
-        if ($this->getName() == 'testTemplatedFiles') {
+        if ($this->getName() === 'testTemplatedFiles') {
             $project_root = dirname(__DIR__, 2);
             foreach (['1.xml', '2.xml', '3.xml', '4.xml', '5.xml', '6.xml', '7.xml', '8.xml'] as $file_name) {
                 @unlink($project_root . DIRECTORY_SEPARATOR . $file_name);

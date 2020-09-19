@@ -535,7 +535,7 @@ class Algebra
         $truths = [];
         $active_truths = [];
 
-        if (empty($clauses)) {
+        if ($clauses === []) {
             return [];
         }
 

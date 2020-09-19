@@ -22,7 +22,6 @@ use function strtolower;
 use function strpos;
 use function count;
 use function in_array;
-use function is_null;
 use function is_string;
 use function preg_match;
 use function preg_replace;
@@ -609,9 +608,9 @@ class CallAnalyzer
                 if ($arg_var_id) {
                     $assertion_var_id = $arg_var_id;
                 }
-            } elseif ($assertion->var_id === '$this' && !is_null($thisName)) {
+            } elseif ($assertion->var_id === '$this' && $thisName !== null) {
                 $assertion_var_id = $thisName;
-            } elseif (strpos($assertion->var_id, '$this->') === 0 && !is_null($thisName)) {
+            } elseif (strpos($assertion->var_id, '$this->') === 0 && $thisName !== null) {
                 $assertion_var_id = $thisName . str_replace('$this->', '->', $assertion->var_id);
             } elseif (isset($context->vars_in_scope[$assertion->var_id])) {
                 $assertion_var_id = $assertion->var_id;
