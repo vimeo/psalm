@@ -327,7 +327,7 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
     /**
      * @psalm-pure
      */
-    private function balanceBrackets(string $fake_class) : string
+    private static function balanceBrackets(string $fake_class) : string
     {
         $tokens = \token_get_all($fake_class);
 

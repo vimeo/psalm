@@ -115,8 +115,8 @@ class UnusedAssignmentRemover
             $this->removed_unref_vars[$var_id] = $original_location;
         }
     }
-    
-    private function getPartialRemovalBounds(
+
+    private static function getPartialRemovalBounds(
         Codebase $codebase,
         CodeLocation $var_loc,
         int $end_bound,
@@ -350,7 +350,7 @@ class UnusedAssignmentRemover
             return [null, $search_level];
         }
     }
-    
+
     public function checkIfVarRemoved(string $var_id, CodeLocation $var_loc): bool
     {
         return array_key_exists($var_id, $this->removed_unref_vars)
