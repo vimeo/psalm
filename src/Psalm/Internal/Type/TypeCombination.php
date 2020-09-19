@@ -945,6 +945,8 @@ class TypeCombination
                 }
             }
 
+            $has_defined_keys = false;
+
             foreach ($type->properties as $candidate_property_name => $candidate_property_type) {
                 $value_type = isset($combination->objectlike_entries[$candidate_property_name])
                     ? $combination->objectlike_entries[$candidate_property_name]
@@ -973,6 +975,14 @@ class TypeCombination
                 if (!$type->previous_value_type) {
                     unset($possibly_undefined_entries[$candidate_property_name]);
                 }
+
+                if (!$candidate_property_type->possibly_undefined) {
+                    $has_defined_keys = true;
+                }
+            }
+
+            if (!$has_defined_keys) {
+                $combination->array_always_filled = false;
             }
 
             if ($combination->array_counts !== null) {

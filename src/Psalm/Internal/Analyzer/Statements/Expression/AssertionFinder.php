@@ -2151,6 +2151,14 @@ class AssertionFinder
                                 $literal_assertions[] = '=' . $array_literal_type->getId();
                             }
 
+                            if ($atomic_type->type_params[1]->isFalsable()) {
+                                $literal_assertions[] = 'false';
+                            }
+
+                            if ($atomic_type->type_params[1]->isNullable()) {
+                                $literal_assertions[] = 'null';
+                            }
+
                             if ($negate) {
                                 $if_types = \Psalm\Type\Algebra::negateTypes([
                                     $first_var_name => [$literal_assertions]
