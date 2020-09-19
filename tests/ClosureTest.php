@@ -510,6 +510,15 @@ class ClosureTest extends TestCase
                 'error_levels' => [],
                 '7.4'
             ],
+            'annotateShortClosureReturn' => [
+                '<?php
+                    /** @psalm-suppress MissingReturnType */
+                    function returnsBool() { return true; }
+                    $a = fn() : bool => /** @var bool */ returnsBool();',
+                [],
+                [],
+                '7.4'
+            ],
         ];
     }
 
