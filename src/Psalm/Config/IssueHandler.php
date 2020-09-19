@@ -148,7 +148,7 @@ class IssueHandler
                 scandir(dirname(__DIR__) . '/Issue', SCANDIR_SORT_NONE)
             ),
             function (string $issue_name): bool {
-                return !empty($issue_name)
+                return $issue_name !== ''
                     && $issue_name !== 'MethodIssue'
                     && $issue_name !== 'PropertyIssue'
                     && $issue_name !== 'FunctionIssue'

@@ -16,7 +16,6 @@ use function token_get_all;
 use function array_slice;
 use function is_array;
 use function trim;
-use function is_null;
 
 class UnusedAssignmentRemover
 {
@@ -42,7 +41,7 @@ class UnusedAssignmentRemover
         $assign_exp = $search_result[1];
         $chain_assignment = false;
 
-        if (!is_null($assign_stmt) && !is_null($assign_exp)) {
+        if ($assign_stmt !== null && $assign_exp !== null) {
             // Check if we have to remove assignment statemnt as expression (i.e. just "$var = ")
 
             // Consider chain of assignments
@@ -63,7 +62,7 @@ class UnusedAssignmentRemover
                 $traverser->addVisitor($visitor);
                 $traverser->traverse([$rhs_exp]);
 
-                $rhs_exp_trivial = (count($visitor->getNonTrivialExpr()) == 0);
+                $rhs_exp_trivial = (count($visitor->getNonTrivialExpr()) === 0);
 
                 if ($rhs_exp_trivial) {
                     $treat_as_expr = false;
@@ -102,7 +101,7 @@ class UnusedAssignmentRemover
             }
 
             FileManipulationBuffer::add($original_location->file_path, [$new_file_manipulation]);
-        } elseif (!is_null($assign_exp)) {
+        } elseif ($assign_exp !== null) {
             $is_assign_ref = $assign_exp instanceof PhpParser\Node\Expr\AssignRef;
             $new_file_manipulation = self::getPartialRemovalBounds(
                 $codebase,
@@ -133,7 +132,7 @@ class UnusedAssignmentRemover
         $iter = 1;
 
         // Check if second token is just whitespace
-        if (is_array($token_list[$iter]) && strlen(trim($token_list[$iter][1])) == 0) {
+        if (is_array($token_list[$iter]) && strlen(trim($token_list[$iter][1])) === 0) {
             $offset_count += strlen($token_list[1][1]);
             $iter++;
         }
@@ -147,7 +146,7 @@ class UnusedAssignmentRemover
         $iter++;
 
         // Remove any whitespace following assignment operator token (e.g "=", "+=")
-        if (is_array($token_list[$iter]) && strlen(trim($token_list[$iter][1])) == 0) {
+        if (is_array($token_list[$iter]) && strlen(trim($token_list[$iter][1])) === 0) {
             $offset_count += strlen($token_list[$iter][1]);
             $iter++;
         }
@@ -157,7 +156,7 @@ class UnusedAssignmentRemover
             $offset_count += 1;
             $iter++;
             // Handle any whitespace after "&"
-            if (is_array($token_list[$iter]) && strlen(trim($token_list[$iter][1])) == 0) {
+            if (is_array($token_list[$iter]) && strlen(trim($token_list[$iter][1])) === 0) {
                 $offset_count += strlen($token_list[$iter][1]);
             }
         }
@@ -249,7 +248,7 @@ class UnusedAssignmentRemover
                 $target_exp = $search_result[0];
                 $levels_taken = $search_result[1];
 
-                if (!is_null($target_exp)) {
+                if ($target_exp !== null) {
                     $assign_exp_found = true;
                     $assign_exp = $target_exp;
                     $assign_stmt = $levels_taken === 1 ? $stmt : null;

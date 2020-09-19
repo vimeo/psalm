@@ -1953,8 +1953,8 @@ class Config
             }
 
             foreach ($objects as $object) {
-                if ($object != '.' && $object != '..') {
-                    if (filetype($dir . '/' . $object) == 'dir') {
+                if ($object !== '.' && $object !== '..') {
+                    if (filetype($dir . '/' . $object) === 'dir') {
                         self::removeCacheDirectory($dir . '/' . $object);
                     } else {
                         unlink($dir . '/' . $object);

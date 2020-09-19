@@ -54,7 +54,6 @@ use function ini_get;
 use const PHP_OS;
 use function version_compare;
 use const PHP_VERSION;
-use function is_null;
 use function setlocale;
 use const LC_CTYPE;
 use function microtime;
@@ -453,7 +452,7 @@ if (isset($options['generate-stubs']) && is_string($options['generate-stubs'])) 
 // If Xdebug is enabled, restart without it
 $ini_handler->check();
 
-if (is_null($config->load_xdebug_stub) && '' !== $ini_handler->getSkippedVersion()) {
+if ($config->load_xdebug_stub === null && '' !== $ini_handler->getSkippedVersion()) {
     $config->load_xdebug_stub = true;
 }
 
