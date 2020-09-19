@@ -74,7 +74,7 @@ trait EmitterTrait
         array $arguments = [],
         ?callable $continueCallBack = null
     ) : bool {
-        if (\is_null($continueCallBack)) {
+        if ($continueCallBack === null) {
             foreach ($this->listeners($eventName) as $listener) {
                 /** @psalm-suppress MixedAssignment */
                 $result = \call_user_func_array($listener, $arguments);

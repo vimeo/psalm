@@ -16,7 +16,6 @@ use function token_get_all;
 use function array_slice;
 use function is_array;
 use function trim;
-use function is_null;
 
 class UnusedAssignmentRemover
 {
@@ -42,7 +41,7 @@ class UnusedAssignmentRemover
         $assign_exp = $search_result[1];
         $chain_assignment = false;
 
-        if (!is_null($assign_stmt) && !is_null($assign_exp)) {
+        if ($assign_stmt !== null && $assign_exp !== null) {
             // Check if we have to remove assignment statemnt as expression (i.e. just "$var = ")
 
             // Consider chain of assignments
@@ -102,7 +101,7 @@ class UnusedAssignmentRemover
             }
 
             FileManipulationBuffer::add($original_location->file_path, [$new_file_manipulation]);
-        } elseif (!is_null($assign_exp)) {
+        } elseif ($assign_exp !== null) {
             $is_assign_ref = $assign_exp instanceof PhpParser\Node\Expr\AssignRef;
             $new_file_manipulation = self::getPartialRemovalBounds(
                 $codebase,
@@ -249,7 +248,7 @@ class UnusedAssignmentRemover
                 $target_exp = $search_result[0];
                 $levels_taken = $search_result[1];
 
-                if (!is_null($target_exp)) {
+                if ($target_exp !== null) {
                     $assign_exp_found = true;
                     $assign_exp = $target_exp;
                     $assign_stmt = $levels_taken === 1 ? $stmt : null;
