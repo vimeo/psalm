@@ -215,7 +215,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
         bool $from_docblock = false
     ): ?bool {
         $codebase = $statements_source->getCodebase();
-        if (empty($fq_class_name)) {
+        if ($fq_class_name === '') {
             if (IssueBuffer::accepts(
                 new UndefinedClass(
                     'Class or interface <empty string> does not exist',

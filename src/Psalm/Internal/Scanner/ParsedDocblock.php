@@ -38,7 +38,7 @@ class ParsedDocblock
 
         $trimmed_description = trim($this->description);
 
-        if (!empty($trimmed_description)) {
+        if ($trimmed_description !== '') {
             $description_lines = explode("\n", $this->description);
 
             foreach ($description_lines as $line) {
@@ -47,7 +47,7 @@ class ParsedDocblock
         }
 
         if ($this->tags) {
-            if (!empty($trimmed_description)) {
+            if ($trimmed_description !== '') {
                 $doc_comment_text .= $left_padding . ' *' . "\n";
             }
 
