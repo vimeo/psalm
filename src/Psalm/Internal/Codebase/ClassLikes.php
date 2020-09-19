@@ -660,7 +660,7 @@ class ClassLikes
     {
         $this->classlike_aliases[$alias_name] = $fq_class_name;
     }
-    
+
     public function getUnAliasedName(string $alias_name): string
     {
         $alias_name_lc = strtolower($alias_name);
@@ -753,7 +753,7 @@ class ClassLikes
         }
     }
 
-    public function makeImmutable(
+    public static function makeImmutable(
         PhpParser\Node\Stmt\Class_ $class_stmt,
         \Psalm\Internal\Analyzer\ProjectAnalyzer $project_analyzer,
         string $file_path
