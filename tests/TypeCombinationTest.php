@@ -629,6 +629,13 @@ class TypeCombinationTest extends TestCase
                     'positive-int',
                 ],
             ],
+            'combinNonEmptyArrayAndKeyedArray' => [
+                'array<int, int>',
+                [
+                    'non-empty-array<int, int>',
+                    'array{0?:int}',
+                ]
+            ],
         ];
     }
 
