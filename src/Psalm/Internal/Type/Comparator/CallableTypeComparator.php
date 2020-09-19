@@ -324,25 +324,29 @@ class CallableTypeComparator
             );
 
             if ($codebase->methods->methodExists($invoke_id)) {
-                $method_storage = $codebase->methods->getStorage($invoke_id);
-                $method_fqcln = $invoke_id->fq_class_name;
-                $converted_return_type = null;
-                if ($method_storage->return_type) {
-                    $converted_return_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
-                        $codebase,
-                        $method_storage->return_type,
-                        $method_fqcln,
-                        $method_fqcln,
-                        null
+                $declaring_method_id = $codebase->methods->getDeclaringMethodId($invoke_id);
+
+                if ($declaring_method_id) {
+                    $method_storage = $codebase->methods->getStorage($declaring_method_id);
+                    $method_fqcln = $invoke_id->fq_class_name;
+                    $converted_return_type = null;
+                    if ($method_storage->return_type) {
+                        $converted_return_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                            $codebase,
+                            $method_storage->return_type,
+                            $method_fqcln,
+                            $method_fqcln,
+                            null
+                        );
+                    }
+
+                    return new TCallable(
+                        'callable',
+                        $method_storage->params,
+                        $converted_return_type,
+                        $method_storage->pure
                     );
                 }
-
-                return new TCallable(
-                    'callable',
-                    $method_storage->params,
-                    $converted_return_type,
-                    $method_storage->pure
-                );
             }
         }
 
