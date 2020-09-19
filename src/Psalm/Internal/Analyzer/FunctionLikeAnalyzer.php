@@ -144,6 +144,14 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
         $function_stmts = $this->function->getStmts() ?: [];
 
+        if ($this->function instanceof ArrowFunction
+            && isset($function_stmts[0])
+            && $function_stmts[0] instanceof PhpParser\Node\Stmt\Return_
+            && $function_stmts[0]->expr
+        ) {
+            $function_stmts[0]->setAttributes($function_stmts[0]->expr->getAttributes());
+        }
+
         $hash = null;
         $real_method_id = null;
         $method_id = null;
