@@ -1181,8 +1181,7 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
                         namespace Foo;
 
                         class A {
-                            /** @var string|null */
-                            private $foo;
+                            private ?string $foo;
 
                             public function __construct() {}
 
@@ -1196,8 +1195,7 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
                         namespace Foo;
 
                         class A {
-                            /** @var string|null */
-                            private $foo
+                            private ?string $foo
 
                             public function __construct() {}
 
@@ -1208,13 +1206,13 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
                 ],
                 'initial_analyzed_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
-                        'foo\a::__construct' => 1,
+                        'foo\a::__construct' => 2,
                         'foo\a::bar' => 1,
                     ],
                 ],
                 'unaffected_analyzed_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
-                        'foo\a::__construct' => 1,
+                        'foo\a::__construct' => 2,
                     ],
                 ],
             ],
@@ -1224,8 +1222,7 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
                         namespace Foo;
 
                         class A {
-                            /** @var string|null */
-                            private $foo
+                            private ?string $foo
 
                             public function __construct() {}
 
@@ -1239,8 +1236,7 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
                         namespace Foo;
 
                         class A {
-                            /** @var string|null */
-                            private $foo;
+                            private ?string $foo;
 
                             public function __construct() {}
 
