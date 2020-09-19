@@ -731,7 +731,7 @@ class ClassLikes
                                     && \strtolower((string) $stmt->name . '\\' . (string) $namespace_stmt->name)
                                         === $fq_class_name_lc
                                 ) {
-                                    self::makeImmutable(
+                                    $this->makeImmutable(
                                         $namespace_stmt,
                                         $project_analyzer,
                                         $classlike_storage->location->file_path
@@ -741,7 +741,7 @@ class ClassLikes
                         } elseif ($stmt instanceof PhpParser\Node\Stmt\Class_
                             && \strtolower((string) $stmt->name) === $fq_class_name_lc
                         ) {
-                            self::makeImmutable(
+                            $this->makeImmutable(
                                 $stmt,
                                 $project_analyzer,
                                 $classlike_storage->location->file_path

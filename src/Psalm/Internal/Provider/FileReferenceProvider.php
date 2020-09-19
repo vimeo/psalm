@@ -335,7 +335,7 @@ class FileReferenceProvider
 
     public function removeDeletedFilesFromReferences(): void
     {
-        $deleted_files = self::getDeletedReferencedFiles();
+        $deleted_files = $this->getDeletedReferencedFiles();
 
         if ($deleted_files) {
             foreach ($deleted_files as $file) {

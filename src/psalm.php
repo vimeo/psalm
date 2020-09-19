@@ -453,7 +453,7 @@ if (isset($options['generate-stubs']) && is_string($options['generate-stubs'])) 
 // If Xdebug is enabled, restart without it
 $ini_handler->check();
 
-if (is_null($config->load_xdebug_stub) && '' !== $ini_handler->getSkippedVersion()) {
+if (is_null($config->load_xdebug_stub) && '' !== $ini_handler::getSkippedVersion()) {
     $config->load_xdebug_stub = true;
 }
 

@@ -167,7 +167,7 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
                             || !$replacement_stmts[0] instanceof PhpParser\Node\Stmt\ClassLike
                             || count($replacement_stmts[0]->stmts) !== 1
                         ) {
-                            $hacky_class_fix = self::balanceBrackets($fake_class);
+                            $hacky_class_fix = $this->balanceBrackets($fake_class);
 
                             if ($replacement_stmts
                                 && $replacement_stmts[0] instanceof PhpParser\Node\Stmt\ClassLike

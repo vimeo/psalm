@@ -3764,7 +3764,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     $const
                 );
             } else {
-                $unresolved_const_expr = self::getUnresolvedClassConstExpr(
+                $unresolved_const_expr = $this->getUnresolvedClassConstExpr(
                     $const->value,
                     $this->aliases,
                     $fq_classlike_name

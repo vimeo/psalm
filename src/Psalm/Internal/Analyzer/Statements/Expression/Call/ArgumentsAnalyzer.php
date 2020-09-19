@@ -459,7 +459,7 @@ class ArgumentsAnalyzer
             if ($function_storage) {
                 $is_variadic = $function_storage->variadic;
             } elseif (is_string($method_id)) {
-                $is_variadic = $codebase->functions->isVariadic(
+                $is_variadic = $codebase->functions::isVariadic(
                     $codebase,
                     strtolower($method_id),
                     $statements_analyzer->getRootFilePath()

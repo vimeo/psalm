@@ -76,7 +76,7 @@ class UnusedAssignmentRemover
 
             if ($treat_as_expr) {
                 $is_assign_ref = $assign_exp instanceof PhpParser\Node\Expr\AssignRef;
-                $new_file_manipulation = self::getPartialRemovalBounds(
+                $new_file_manipulation = $this->getPartialRemovalBounds(
                     $codebase,
                     $original_location,
                     $assign_stmt->getEndFilePos(),
@@ -104,7 +104,7 @@ class UnusedAssignmentRemover
             FileManipulationBuffer::add($original_location->file_path, [$new_file_manipulation]);
         } elseif (!is_null($assign_exp)) {
             $is_assign_ref = $assign_exp instanceof PhpParser\Node\Expr\AssignRef;
-            $new_file_manipulation = self::getPartialRemovalBounds(
+            $new_file_manipulation = $this->getPartialRemovalBounds(
                 $codebase,
                 $original_location,
                 $assign_exp->getEndFilePos(),

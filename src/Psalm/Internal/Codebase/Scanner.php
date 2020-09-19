@@ -358,8 +358,8 @@ class Scanner
                     $statements_provider = $codebase->statements_provider;
 
                     $codebase->scanner->isForked();
-                    $codebase->file_storage_provider->deleteAll();
-                    $codebase->classlike_storage_provider->deleteAll();
+                    $codebase->file_storage_provider::deleteAll();
+                    $codebase->classlike_storage_provider::deleteAll();
 
                     $statements_provider->resetDiffs();
 
