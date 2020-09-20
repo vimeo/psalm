@@ -119,7 +119,7 @@ class FunctionDocblockManipulator
     {
         $this->stmt = $stmt;
         $docblock = $stmt->getDocComment();
-        $this->docblock_start = $docblock ? $docblock->getFilePos() : (int)$stmt->getAttribute('startFilePos');
+        $this->docblock_start = $docblock ? $docblock->getStartFilePos() : (int)$stmt->getAttribute('startFilePos');
         $this->docblock_end = $function_start = (int)$stmt->getAttribute('startFilePos');
         $function_end = (int)$stmt->getAttribute('endFilePos');
 

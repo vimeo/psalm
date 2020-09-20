@@ -69,7 +69,7 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
         $attrs = $node->getAttributes();
 
         if ($cs = $node->getComments()) {
-            $stmt_start_pos = $cs[0]->getFilePos();
+            $stmt_start_pos = $cs[0]->getStartFilePos();
         } else {
             $stmt_start_pos = $attrs['startFilePos'];
         }
@@ -283,14 +283,14 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
                         if ($c instanceof PhpParser\Comment\Doc) {
                             $new_comments[] = new PhpParser\Comment\Doc(
                                 $c->getText(),
-                                $c->getLine() + $line_offset,
-                                $c->getFilePos() + $start_offset
+                                $c->getStartLine() + $line_offset,
+                                $c->getStartFilePos() + $start_offset
                             );
                         } else {
                             $new_comments[] = new PhpParser\Comment(
                                 $c->getText(),
-                                $c->getLine() + $line_offset,
-                                $c->getFilePos() + $start_offset
+                                $c->getStartLine() + $line_offset,
+                                $c->getStartFilePos() + $start_offset
                             );
                         }
                     }

@@ -72,7 +72,7 @@ class ClassStatementsDiffer extends AstDiffer
                         $signature_change = true;
                     }
 
-                    $a_start = $a_comments[0]->getFilePos();
+                    $a_start = $a_comments[0]->getStartFilePos();
                 }
 
                 if ($b_comments) {
@@ -80,7 +80,7 @@ class ClassStatementsDiffer extends AstDiffer
                         $signature_change = true;
                     }
 
-                    $b_start = $b_comments[0]->getFilePos();
+                    $b_start = $b_comments[0]->getStartFilePos();
                 }
 
                 $a_size = $a_end - $a_start;
@@ -115,7 +115,7 @@ class ClassStatementsDiffer extends AstDiffer
                         $a_stmts_start = (int) $first_stmt->getAttribute('startFilePos');
 
                         if ($a_stmt_comments = $first_stmt->getComments()) {
-                            $a_stmts_start = $a_stmt_comments[0]->getFilePos();
+                            $a_stmts_start = $a_stmt_comments[0]->getStartFilePos();
                         }
                     } else {
                         $a_stmts_start = $a_end;
@@ -126,7 +126,7 @@ class ClassStatementsDiffer extends AstDiffer
                         $b_stmts_start = (int) $first_stmt->getAttribute('startFilePos');
 
                         if ($b_stmt_comments = $first_stmt->getComments()) {
-                            $b_stmts_start = $b_stmt_comments[0]->getFilePos();
+                            $b_stmts_start = $b_stmt_comments[0]->getStartFilePos();
                         }
                     } else {
                         $b_stmts_start = $b_end;

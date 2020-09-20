@@ -61,7 +61,7 @@ class ClassDocblockManipulator
     ) {
         $this->stmt = $stmt;
         $docblock = $stmt->getDocComment();
-        $this->docblock_start = $docblock ? $docblock->getFilePos() : (int)$stmt->getAttribute('startFilePos');
+        $this->docblock_start = $docblock ? $docblock->getStartFilePos() : (int)$stmt->getAttribute('startFilePos');
         $this->docblock_end = (int)$stmt->getAttribute('startFilePos');
 
         $codebase = $project_analyzer->getCodebase();

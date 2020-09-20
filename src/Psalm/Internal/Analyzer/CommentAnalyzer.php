@@ -100,7 +100,7 @@ class CommentAnalyzer
 
         $comment_text = $comment->getText();
 
-        $var_line_number = $comment->getLine();
+        $var_line_number = $comment->getStartLine();
 
         if (isset($parsed_docblock->combined_tags['var'])) {
             foreach ($parsed_docblock->combined_tags['var'] as $offset => $var_line) {
@@ -115,10 +115,10 @@ class CommentAnalyzer
 
                 $line_parts = self::splitDocLine($var_line);
 
-                $line_number = $comment->getLine() + substr_count($comment_text, "\n", 0, $offset);
+                $line_number = $comment->getStartLine() + substr_count($comment_text, "\n", 0, $offset);
 
                 if ($line_parts && $line_parts[0]) {
-                    $type_start = $offset + $comment->getFilePos();
+                    $type_start = $offset + $comment->getStartFilePos();
                     $type_end = $type_start + strlen($line_parts[0]);
 
                     $line_parts[0] = self::sanitizeDocblockType($line_parts[0]);
@@ -168,7 +168,7 @@ class CommentAnalyzer
                         ' (from ' .
                         $source->getFilePath() .
                         ':' .
-                        $comment->getLine() .
+                        $comment->getStartLine() .
                         ')'
                     );
                 }
@@ -393,7 +393,7 @@ class CommentAnalyzer
 
                         $line_parts[1] = preg_replace('/,$/', '', $line_parts[1]);
 
-                        $start = $offset + $comment->getFilePos();
+                        $start = $offset + $comment->getStartFilePos();
                         $end = $start + strlen($line_parts[0]);
 
                         $line_parts[0] = self::sanitizeDocblockType($line_parts[0]);
@@ -408,7 +408,7 @@ class CommentAnalyzer
                         $info->params[] = [
                             'name' => trim($line_parts[1]),
                             'type' => $line_parts[0],
-                            'line_number' => $comment->getLine() + substr_count($comment_text, "\n", 0, $offset),
+                            'line_number' => $comment->getStartLine() + substr_count($comment_text, "\n", 0, $offset),
                             'start' => $start,
                             'end' => $end,
                         ];
@@ -450,7 +450,7 @@ class CommentAnalyzer
                         $info->params_out[] = [
                             'name' => trim($line_parts[1]),
                             'type' => str_replace("\n", '', $line_parts[0]),
-                            'line_number' => $comment->getLine() + substr_count($comment_text, "\n", 0, $offset),
+                            'line_number' => $comment->getStartLine() + substr_count($comment_text, "\n", 0, $offset),
                         ];
                     }
                 } else {
@@ -468,7 +468,7 @@ class CommentAnalyzer
 
                     $info->self_out = [
                         'type' => str_replace("\n", '', $line_parts[0]),
-                        'line_number' => $comment->getLine() + substr_count($comment_text, "\n", 0, $offset),
+                        'line_number' => $comment->getStartLine() + substr_count($comment_text, "\n", 0, $offset),
                     ];
                 }
             }
@@ -596,7 +596,7 @@ class CommentAnalyzer
                         $info->globals[] = [
                             'name' => $line_parts[1],
                             'type' => $line_parts[0],
-                            'line_number' => $comment->getLine() + substr_count($comment_text, "\n", 0, $offset),
+                            'line_number' => $comment->getStartLine() + substr_count($comment_text, "\n", 0, $offset),
                         ];
                     }
                 } else {
@@ -627,7 +627,7 @@ class CommentAnalyzer
         if (isset($parsed_docblock->tags['psalm-suppress'])) {
             foreach ($parsed_docblock->tags['psalm-suppress'] as $offset => $suppress_entry) {
                 foreach (DocComment::parseSuppressList($suppress_entry) as $issue_offset => $suppressed_issue) {
-                    $info->suppressed_issues[$issue_offset + $offset + $comment->getFilePos()] = $suppressed_issue;
+                    $info->suppressed_issues[$issue_offset + $offset + $comment->getStartFilePos()] = $suppressed_issue;
                 }
             }
         }
@@ -642,8 +642,8 @@ class CommentAnalyzer
 
                 $info->throws[] = [
                     $throws_class,
-                    $offset + $comment->getFilePos(),
-                    $comment->getLine() + substr_count($comment->getText(), "\n", 0, $offset)
+                    $offset + $comment->getStartFilePos(),
+                    $comment->getStartLine() + substr_count($comment->getText(), "\n", 0, $offset)
                 ];
             }
         }
@@ -780,7 +780,7 @@ class CommentAnalyzer
                     throw new IncorrectDocblockException('Misplaced variable');
                 }
 
-                $start = $offset + $comment->getFilePos();
+                $start = $offset + $comment->getStartFilePos();
                 $end = $start + strlen($line_parts[0]);
 
                 $line_parts[0] = self::sanitizeDocblockType($line_parts[0]);
@@ -789,7 +789,7 @@ class CommentAnalyzer
                 $info->return_type_description = $line_parts ? implode(' ', $line_parts) : null;
 
                 $info->return_type_line_number
-                    = $comment->getLine() + substr_count($comment->getText(), "\n", 0, $offset);
+                    = $comment->getStartLine() + substr_count($comment->getText(), "\n", 0, $offset);
                 $info->return_type_start = $start;
                 $info->return_type_end = $end;
             } else {
@@ -970,7 +970,7 @@ class CommentAnalyzer
         if (isset($parsed_docblock->tags['psalm-suppress'])) {
             foreach ($parsed_docblock->tags['psalm-suppress'] as $offset => $suppress_entry) {
                 foreach (DocComment::parseSuppressList($suppress_entry) as $issue_offset => $suppressed_issue) {
-                    $info->suppressed_issues[$issue_offset + $offset + $comment->getFilePos()] = $suppressed_issue;
+                    $info->suppressed_issues[$issue_offset + $offset + $comment->getStartFilePos()] = $suppressed_issue;
                 }
             }
         }
@@ -978,9 +978,9 @@ class CommentAnalyzer
         if (isset($parsed_docblock->tags['psalm-import-type'])) {
             foreach ($parsed_docblock->tags['psalm-import-type'] as $offset => $imported_type_entry) {
                 $info->imported_types[] = [
-                    'line_number' => $comment->getLine() + substr_count($comment->getText(), "\n", 0, $offset),
-                    'start_offset' => $comment->getFilePos() + $offset,
-                    'end_offset' => $comment->getFilePos() + $offset + strlen($imported_type_entry),
+                    'line_number' => $comment->getStartLine() + substr_count($comment->getText(), "\n", 0, $offset),
+                    'start_offset' => $comment->getStartFilePos() + $offset,
+                    'end_offset' => $comment->getStartFilePos() + $offset + strlen($imported_type_entry),
                     'parts' => self::splitDocLine($imported_type_entry) ?: []
                 ];
             }
@@ -1129,16 +1129,16 @@ class CommentAnalyzer
                 /** @var \PhpParser\Comment\Doc */
                 $node_doc_comment = $node->getDocComment();
 
-                $statements[0]->stmts[0]->setAttribute('startLine', $node_doc_comment->getLine());
-                $statements[0]->stmts[0]->setAttribute('startFilePos', $node_doc_comment->getFilePos());
+                $statements[0]->stmts[0]->setAttribute('startLine', $node_doc_comment->getStartLine());
+                $statements[0]->stmts[0]->setAttribute('startFilePos', $node_doc_comment->getStartFilePos());
                 $statements[0]->stmts[0]->setAttribute('endFilePos', $node->getAttribute('startFilePos'));
 
                 if ($doc_comment = $statements[0]->stmts[0]->getDocComment()) {
                     $statements[0]->stmts[0]->setDocComment(
                         new \PhpParser\Comment\Doc(
                             $doc_comment->getText(),
-                            $comment->getLine() + substr_count($comment->getText(), "\n", 0, $offset),
-                            $node_doc_comment->getFilePos()
+                            $comment->getStartLine() + substr_count($comment->getText(), "\n", 0, $offset),
+                            $node_doc_comment->getStartFilePos()
                         )
                     );
                 }
@@ -1192,7 +1192,7 @@ class CommentAnalyzer
 
                     $line_parts[1] = preg_replace('/,$/', '', $line_parts[1]);
 
-                    $start = $offset + $comment->getFilePos();
+                    $start = $offset + $comment->getStartFilePos();
                     $end = $start + strlen($line_parts[0]);
 
                     $line_parts[0] = str_replace("\n", '', preg_replace('@^[ \t]*\*@m', '', $line_parts[0]));
@@ -1213,7 +1213,7 @@ class CommentAnalyzer
                     $info->properties[] = [
                         'name' => $name,
                         'type' => $line_parts[0],
-                        'line_number' => $comment->getLine() + substr_count($comment->getText(), "\n", 0, $offset),
+                        'line_number' => $comment->getStartLine() + substr_count($comment->getText(), "\n", 0, $offset),
                         'tag' => $property_tag,
                         'start' => $start,
                         'end' => $end,
