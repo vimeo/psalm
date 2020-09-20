@@ -293,8 +293,8 @@ class ErrorBaselineTest extends TestCase
         /** @var \DOMElement[] $files */
         $files = $baselineDocument->getElementsByTagName('files')[0]->childNodes;
 
-        $file1 = $files[0];
-        $file2 = $files[1];
+        [$file1, $file2] = $files;
+
         $this->assertSame('sample/sample-file.php', $file1->getAttribute('src'));
         $this->assertSame('sample/sample-file2.php', $file2->getAttribute('src'));
 

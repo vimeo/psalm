@@ -561,8 +561,7 @@ class ArrayFetchAnalyzer
                     if (count($key_values) === 1) {
                         $from_mixed_array = $type->type_params[1]->isMixed();
 
-                        $previous_key_type = $type->type_params[0];
-                        $previous_value_type = $type->type_params[1];
+                        [$previous_key_type, $previous_value_type] = $type->type_params;
 
                         // ok, type becomes an TKeyedArray
                         $array_type->removeType($type_string);

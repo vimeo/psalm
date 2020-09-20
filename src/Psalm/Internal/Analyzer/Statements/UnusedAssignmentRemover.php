@@ -37,8 +37,7 @@ class UnusedAssignmentRemover
         CodeLocation $original_location
     ): void {
         $search_result = $this->findAssignStmt($stmts, $var_id, $original_location);
-        $assign_stmt = $search_result[0];
-        $assign_exp = $search_result[1];
+        [$assign_stmt, $assign_exp] = $search_result;
         $chain_assignment = false;
 
         if ($assign_stmt !== null && $assign_exp !== null) {
@@ -245,8 +244,7 @@ class UnusedAssignmentRemover
             if ($stmt instanceof PhpParser\Node\Stmt\Expression) {
                 $search_result = $this->findAssignExp($stmt->expr, $var_id, $original_location->raw_file_start);
 
-                $target_exp = $search_result[0];
-                $levels_taken = $search_result[1];
+                [$target_exp, $levels_taken] = $search_result;
 
                 if ($target_exp !== null) {
                     $assign_exp_found = true;
