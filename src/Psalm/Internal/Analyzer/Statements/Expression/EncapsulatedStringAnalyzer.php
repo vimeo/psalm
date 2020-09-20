@@ -15,8 +15,6 @@ class EncapsulatedStringAnalyzer
         PhpParser\Node\Scalar\Encapsed $stmt,
         Context $context
     ) : bool {
-        $codebase = $statements_analyzer->getCodebase();
-
         $stmt_type = Type::getString();
 
         foreach ($stmt->parts as $part) {
@@ -35,7 +33,6 @@ class EncapsulatedStringAnalyzer
                 );
 
                 if ($statements_analyzer->taint_graph
-                    && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
                     && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
                 ) {
                     $var_location = new CodeLocation($statements_analyzer, $part);

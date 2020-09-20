@@ -135,7 +135,9 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
         $this->file_analyzer = $source->getFileAnalyzer();
         $this->codebase = $source->getCodebase();
         $this->node_data = $node_data;
-        $this->taint_graph = $this->codebase->taint_graph ? new TaintGraph() : null;
+        $this->taint_graph = $this->codebase->taint_graph
+            ? new TaintGraph()
+            : null;
     }
 
     /**
@@ -191,7 +193,11 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
             }
         }
 
-        if ($root_scope && $this->taint_graph && $this->codebase->taint_graph) {
+        if ($root_scope
+            && $this->taint_graph
+            && $this->codebase->taint_graph
+            && $codebase->config->trackTaintsInPath($this->getFilePath())
+        ) {
             $this->codebase->taint_graph->addGraph($this->taint_graph);
         }
 

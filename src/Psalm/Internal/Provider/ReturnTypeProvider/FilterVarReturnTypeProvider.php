@@ -118,10 +118,7 @@ class FilterVarReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTy
             $filter_type = Type::getMixed();
         }
 
-        $codebase = $statements_source->getCodebase();
-
         if ($statements_source->taint_graph
-            && $codebase->config->trackTaintsInPath($statements_source->getFilePath())
             && !\in_array('TaintedInput', $statements_source->getSuppressedIssues())
         ) {
             $function_return_sink = TaintNode::getForMethodReturn(

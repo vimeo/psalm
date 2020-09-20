@@ -189,9 +189,7 @@ class ReturnAnalyzer
                     $source->getParentFQCLN()
                 );
 
-                if ($statements_analyzer->taint_graph
-                    && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
-                ) {
+                if ($statements_analyzer->taint_graph) {
                     self::handleTaints(
                         $statements_analyzer,
                         $stmt,

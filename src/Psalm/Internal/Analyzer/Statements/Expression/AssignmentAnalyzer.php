@@ -878,9 +878,7 @@ class AssignmentAnalyzer
                 return $context->vars_in_scope[$var_id];
             }
 
-            if ($statements_analyzer->taint_graph
-                && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
-            ) {
+            if ($statements_analyzer->taint_graph) {
                 $taint_graph = $statements_analyzer->taint_graph;
 
                 if ($context->vars_in_scope[$var_id]->parent_nodes) {
@@ -1200,7 +1198,6 @@ class AssignmentAnalyzer
                 $statements_analyzer->node_data->setType($stmt, clone $context->vars_in_scope[$array_var_id]);
 
                 if ($statements_analyzer->taint_graph
-                    && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
                     && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
                 ) {
                     $stmt_left_type = $statements_analyzer->node_data->getType($stmt->var);

@@ -312,12 +312,9 @@ class ArrayFetchAnalyzer
         Type\Union $stmt_type,
         Type\Union $offset_type
     ) : void {
-        $codebase = $statements_analyzer->getCodebase();
-
         if ($statements_analyzer->taint_graph
             && ($stmt_var_type = $statements_analyzer->node_data->getType($var))
             && $stmt_var_type->parent_nodes
-            && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
         ) {
             if (\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())) {
                 $stmt_var_type->parent_nodes = [];

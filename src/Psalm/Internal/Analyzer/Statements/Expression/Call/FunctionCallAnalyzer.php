@@ -1059,10 +1059,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
         FunctionLikeStorage $function_storage,
         Type\Union $stmt_type
     ) : void {
-        $codebase = $statements_analyzer->getCodebase();
-
         if (!$statements_analyzer->taint_graph
-            || !$codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
             || \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
         ) {
             return;

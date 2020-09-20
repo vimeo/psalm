@@ -1147,11 +1147,7 @@ class InstancePropertyAssignmentAnalyzer
         Type\Union $assignment_value_type,
         Context $context
     ) : void {
-        $codebase = $statements_analyzer->getCodebase();
-
-        if (!$statements_analyzer->taint_graph
-            || !$codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
-        ) {
+        if (!$statements_analyzer->taint_graph) {
             return;
         }
 
