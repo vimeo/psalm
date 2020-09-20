@@ -537,8 +537,7 @@ class ForeachAnalyzer
                         continue;
                     }
 
-                    $value_type_part = $iat->type_params[1];
-                    $key_type_part = $iat->type_params[0];
+                    [$key_type_part, $value_type_part] = $iat->type_params;
 
                     if (!$intersection_value_type) {
                         $intersection_value_type = $value_type_part;
@@ -835,8 +834,7 @@ class ForeachAnalyzer
                                     $array_atomic_type = $array_atomic_type->getGenericArrayType();
                                 }
 
-                                $key_type_part = $array_atomic_type->type_params[0];
-                                $value_type_part = $array_atomic_type->type_params[1];
+                                [$key_type_part, $value_type_part] = $array_atomic_type->type_params;
                             } else {
                                 if ($array_atomic_type instanceof Type\Atomic\TNamedObject
                                     && $codebase->classExists($array_atomic_type->value)

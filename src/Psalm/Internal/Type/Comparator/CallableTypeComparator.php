@@ -366,8 +366,7 @@ class CallableTypeComparator
             return 'not-callable';
         }
 
-        $lhs = $input_type_part->properties[0];
-        $rhs = $input_type_part->properties[1];
+        [$lhs, $rhs] = $input_type_part->properties;
 
         $rhs_low_info = $rhs->hasMixed() || $rhs->hasScalar();
 

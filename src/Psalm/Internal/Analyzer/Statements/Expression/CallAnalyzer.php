@@ -837,8 +837,8 @@ class CallAnalyzer
                         $union_comparison_result = new \Psalm\Internal\Type\Comparator\TypeComparisonResult();
 
                         if (count($template_result->lower_bounds_unintersectable_types) > 1) {
-                            $upper_bound_type = $template_result->lower_bounds_unintersectable_types[0];
-                            $lower_bound_type = $template_result->lower_bounds_unintersectable_types[1];
+                            [$upper_bound_type, $lower_bound_type]
+                                = $template_result->lower_bounds_unintersectable_types;
                         }
 
                         if (!UnionTypeComparator::isContainedBy(
