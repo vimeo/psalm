@@ -8,9 +8,6 @@ use function substr;
 
 class PhpStormReport extends Report
 {
-    /**
-     * {@inheritdoc}
-     */
     public function create(): string
     {
         $output = '';

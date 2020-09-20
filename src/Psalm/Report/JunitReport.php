@@ -20,9 +20,6 @@ use function trim;
  */
 class JunitReport extends Report
 {
-    /**
-     * {@inheritdoc}
-     */
     public function create(): string
     {
         $errors = 0;

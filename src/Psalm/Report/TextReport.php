@@ -7,9 +7,6 @@ use function sprintf;
 
 class TextReport extends Report
 {
-    /**
-     * {@inheritdoc}
-     */
     public function create(): string
     {
         $output = '';
