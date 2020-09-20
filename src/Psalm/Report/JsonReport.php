@@ -9,9 +9,6 @@ use function array_values;
 
 class JsonReport extends Report
 {
-    /**
-     * {@inheritdoc}
-     */
     public function create(): string
     {
         $options = $this->pretty ? Json::PRETTY : Json::DEFAULT;

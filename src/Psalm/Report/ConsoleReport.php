@@ -8,9 +8,6 @@ use function substr;
 
 class ConsoleReport extends Report
 {
-    /**
-     * {@inheritdoc}
-     */
     public function create(): string
     {
         $output = '';

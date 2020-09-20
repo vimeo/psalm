@@ -8,9 +8,6 @@ use function array_map;
 
 class XmlReport extends Report
 {
-    /**
-     * {@inheritdoc}
-     */
     public function create(): string
     {
         $xml = Array2XML::createXML(
