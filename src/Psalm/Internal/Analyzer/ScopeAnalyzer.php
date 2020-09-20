@@ -15,12 +15,12 @@ use function array_unique;
  */
 class ScopeAnalyzer
 {
-    const ACTION_END = 'END';
-    const ACTION_BREAK = 'BREAK';
-    const ACTION_CONTINUE = 'CONTINUE';
-    const ACTION_LEAVE_SWITCH = 'LEAVE_SWITCH';
-    const ACTION_NONE = 'NONE';
-    const ACTION_RETURN = 'RETURN';
+    public const ACTION_END = 'END';
+    public const ACTION_BREAK = 'BREAK';
+    public const ACTION_CONTINUE = 'CONTINUE';
+    public const ACTION_LEAVE_SWITCH = 'LEAVE_SWITCH';
+    public const ACTION_NONE = 'NONE';
+    public const ACTION_RETURN = 'RETURN';
 
     private const ACTIONS = [
         self::ACTION_END,

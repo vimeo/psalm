@@ -3,6 +3,6 @@ namespace Psalm\Issue;
 
 class DeprecatedFunction extends FunctionIssue
 {
-    const ERROR_LEVEL = 2;
-    const SHORTCODE = 201;
+    public const ERROR_LEVEL = 2;
+    public const SHORTCODE = 201;
 }

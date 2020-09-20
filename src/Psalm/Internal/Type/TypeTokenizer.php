@@ -21,7 +21,7 @@ class TypeTokenizer
     /**
      * @var array<string, bool>
      */
-    const PSALM_RESERVED_WORDS = [
+    public const PSALM_RESERVED_WORDS = [
         'int' => true,
         'string' => true,
         'float' => true,

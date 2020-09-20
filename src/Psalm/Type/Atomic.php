@@ -72,7 +72,7 @@ use function substr;
 
 abstract class Atomic implements TypeNode
 {
-    const KEY = 'atomic';
+    public const KEY = 'atomic';
 
     /**
      * Whether or not the type has been checked yet

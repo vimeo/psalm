@@ -58,7 +58,7 @@ class TKeyedArray extends \Psalm\Type\Atomic
      */
     public $is_list = false;
 
-    const KEY = 'array';
+    public const KEY = 'array';
 
     /**
      * Constructs a new instance of a generic type

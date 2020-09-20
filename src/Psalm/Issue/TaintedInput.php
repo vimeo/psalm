@@ -6,8 +6,8 @@ use Psalm\CodeLocation;
 
 class TaintedInput extends CodeIssue
 {
-    const ERROR_LEVEL = -2;
-    const SHORTCODE = 205;
+    public const ERROR_LEVEL = -2;
+    public const SHORTCODE = 205;
 
     /**
      * @var string

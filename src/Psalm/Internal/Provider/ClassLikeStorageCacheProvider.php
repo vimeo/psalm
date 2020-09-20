@@ -36,7 +36,7 @@ class ClassLikeStorageCacheProvider
      */
     private $modified_timestamps = '';
 
-    const CLASS_CACHE_DIRECTORY = 'class_cache';
+    private const CLASS_CACHE_DIRECTORY = 'class_cache';
 
     public function __construct(Config $config)
     {

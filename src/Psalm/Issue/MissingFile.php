@@ -3,5 +3,5 @@ namespace Psalm\Issue;
 
 class MissingFile extends CodeIssue
 {
-    const SHORTCODE = 107;
+    public const SHORTCODE = 107;
 }

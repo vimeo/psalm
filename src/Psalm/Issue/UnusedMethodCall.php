@@ -3,6 +3,6 @@ namespace Psalm\Issue;
 
 class UnusedMethodCall extends MethodIssue
 {
-    const ERROR_LEVEL = -1;
-    const SHORTCODE = 209;
+    public const ERROR_LEVEL = -1;
+    public const SHORTCODE = 209;
 }

@@ -3,6 +3,6 @@ namespace Psalm\Issue;
 
 class PossiblyInvalidMethodCall extends CodeIssue
 {
-    const ERROR_LEVEL = 3;
-    const SHORTCODE = 113;
+    public const ERROR_LEVEL = 3;
+    public const SHORTCODE = 113;
 }

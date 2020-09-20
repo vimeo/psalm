@@ -25,7 +25,7 @@ use function in_array;
  */
 class VariableFetchAnalyzer
 {
-    const SUPER_GLOBALS = [
+    private const SUPER_GLOBALS = [
         '$GLOBALS',
         '$_SERVER',
         '$_GET',

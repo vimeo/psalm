@@ -3,6 +3,6 @@ namespace Psalm\Issue;
 
 class ImpureFunctionCall extends CodeIssue
 {
-    const ERROR_LEVEL = -1;
-    const SHORTCODE = 202;
+    public const ERROR_LEVEL = -1;
+    public const SHORTCODE = 202;
 }
