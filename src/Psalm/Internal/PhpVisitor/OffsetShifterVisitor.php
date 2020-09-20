@@ -35,14 +35,14 @@ class OffsetShifterVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
                 if ($c instanceof PhpParser\Comment\Doc) {
                     $new_comments[] = new PhpParser\Comment\Doc(
                         $c->getText(),
-                        $c->getLine() + $this->line_offset,
-                        $c->getFilePos() + $this->file_offset
+                        $c->getStartLine() + $this->line_offset,
+                        $c->getStartFilePos() + $this->file_offset
                     );
                 } else {
                     $new_comments[] = new PhpParser\Comment(
                         $c->getText(),
-                        $c->getLine() + $this->line_offset,
-                        $c->getFilePos() + $this->file_offset
+                        $c->getStartLine() + $this->line_offset,
+                        $c->getStartFilePos() + $this->file_offset
                     );
                 }
             }

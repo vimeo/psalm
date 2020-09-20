@@ -166,7 +166,7 @@ class FileDiffTest extends TestCase
 
                 $this->assertNotSame($a_doc, $b_doc);
 
-                $this->assertSame($a_doc->getLine(), $b_doc->getLine());
+                $this->assertSame($a_doc->getStartLine(), $b_doc->getStartLine());
             }
 
             $this->assertSame(

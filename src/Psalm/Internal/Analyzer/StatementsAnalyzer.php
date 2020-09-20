@@ -349,7 +349,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
 
                     foreach ($suppressed as $offset => $suppress_entry) {
                         foreach (DocComment::parseSuppressList($suppress_entry) as $issue_offset => $issue_type) {
-                            $new_issues[$issue_offset + $offset + $docblock->getFilePos()] = $issue_type;
+                            $new_issues[$issue_offset + $offset + $docblock->getStartFilePos()] = $issue_type;
 
                             if ($issue_type === 'InaccessibleMethod') {
                                 continue;
@@ -358,7 +358,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                             if ($codebase->track_unused_suppressions) {
                                 IssueBuffer::addUnusedSuppression(
                                     $statements_analyzer->getFilePath(),
-                                    $issue_offset + $offset + $docblock->getFilePos(),
+                                    $issue_offset + $offset + $docblock->getStartFilePos(),
                                     $issue_type
                                 );
                             }

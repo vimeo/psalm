@@ -1281,8 +1281,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     function (FunctionLikeParameter $param) : PhpParser\Node\Param {
                         $fake_param = (new PhpParser\Builder\Param($param->name));
                         if ($param->signature_type) {
-                            /** @psalm-suppress DeprecatedMethod */
-                            $fake_param->setTypeHint((string)$param->signature_type);
+                            $fake_param->setType((string)$param->signature_type);
                         }
 
                         return $fake_param->getNode();
@@ -1853,7 +1852,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         $comments = $stmt->getComments();
 
         if ($comments) {
-            $start = $comments[0]->getFilePos();
+            $start = $comments[0]->getStartFilePos();
         }
 
         if ($codebase->diff_methods

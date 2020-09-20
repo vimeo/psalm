@@ -90,8 +90,8 @@ class ParamReplacementVisitor extends PhpParser\NodeVisitorAbstract implements P
 
             if ($replaced) {
                 $this->replacements[] = new FileManipulation(
-                    $docblock->getFilePos(),
-                    $docblock->getFilePos() + \strlen($docblock->getText()),
+                    $docblock->getStartFilePos(),
+                    $docblock->getStartFilePos() + \strlen($docblock->getText()),
                     \rtrim($parsed_docblock->render($parsed_docblock->first_line_padding)),
                     false,
                     false
