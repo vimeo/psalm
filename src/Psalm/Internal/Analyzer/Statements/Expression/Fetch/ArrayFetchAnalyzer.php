@@ -314,7 +314,7 @@ class ArrayFetchAnalyzer
     ) : void {
         $codebase = $statements_analyzer->getCodebase();
 
-        if ($codebase->taint_graph
+        if ($statements_analyzer->taint_graph
             && ($stmt_var_type = $statements_analyzer->node_data->getType($var))
             && $stmt_var_type->parent_nodes
             && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
@@ -331,7 +331,7 @@ class ArrayFetchAnalyzer
                 $var_location
             );
 
-            $codebase->taint_graph->addTaintNode($new_parent_node);
+            $statements_analyzer->taint_graph->addTaintNode($new_parent_node);
 
             $dim_value = $offset_type->isSingleStringLiteral()
                 ? $offset_type->getSingleStringLiteral()->value
@@ -340,7 +340,7 @@ class ArrayFetchAnalyzer
                     : null);
 
             foreach ($stmt_var_type->parent_nodes as $parent_node) {
-                $codebase->taint_graph->addPath(
+                $statements_analyzer->taint_graph->addPath(
                     $parent_node,
                     $new_parent_node,
                     'array-fetch' . ($dim_value !== null ? '-\'' . $dim_value . '\'' : '')

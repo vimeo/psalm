@@ -640,7 +640,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                     }
                 }
 
-                if ($codebase->taint_graph
+                if ($statements_analyzer->taint_graph
                     && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
                     && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
                     && ($stmt_type = $statements_analyzer->node_data->getType($stmt))
@@ -672,7 +672,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                         );
                     }
 
-                    $codebase->taint_graph->addTaintNode($method_source);
+                    $statements_analyzer->taint_graph->addTaintNode($method_source);
 
                     $stmt_type->parent_nodes = [$method_source];
                 }

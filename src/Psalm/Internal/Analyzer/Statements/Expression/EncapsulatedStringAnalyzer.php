@@ -34,20 +34,20 @@ class EncapsulatedStringAnalyzer
                     $part
                 );
 
-                if ($codebase->taint_graph
+                if ($statements_analyzer->taint_graph
                     && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
                     && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
                 ) {
                     $var_location = new CodeLocation($statements_analyzer, $part);
 
                     $new_parent_node = \Psalm\Internal\Taint\TaintNode::getForAssignment('concat', $var_location);
-                    $codebase->taint_graph->addTaintNode($new_parent_node);
+                    $statements_analyzer->taint_graph->addTaintNode($new_parent_node);
 
                     $stmt_type->parent_nodes[] = $new_parent_node;
 
                     if ($casted_part_type->parent_nodes) {
                         foreach ($casted_part_type->parent_nodes as $parent_node) {
-                            $codebase->taint_graph->addPath($parent_node, $new_parent_node, 'concat');
+                            $statements_analyzer->taint_graph->addPath($parent_node, $new_parent_node, 'concat');
                         }
                     }
                 }

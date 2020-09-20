@@ -189,11 +189,11 @@ class ReturnAnalyzer
                     $source->getParentFQCLN()
                 );
 
-                if ($codebase->taint_graph
+                if ($statements_analyzer->taint_graph
                     && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
                 ) {
                     self::handleTaints(
-                        $codebase,
+                        $statements_analyzer,
                         $stmt,
                         $cased_method_id,
                         $inferred_type,
@@ -492,13 +492,13 @@ class ReturnAnalyzer
     }
 
     private static function handleTaints(
-        \Psalm\Codebase $codebase,
+        StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Return_ $stmt,
         string $cased_method_id,
         Type\Union $inferred_type,
         \Psalm\Storage\FunctionLikeStorage $storage
     ) : void {
-        if (!$codebase->taint_graph || !$stmt->expr || !$storage->location) {
+        if (!$statements_analyzer->taint_graph || !$stmt->expr || !$storage->location) {
             return;
         }
 
@@ -508,11 +508,11 @@ class ReturnAnalyzer
             $storage->location
         );
 
-        $codebase->taint_graph->addTaintNode($method_node);
+        $statements_analyzer->taint_graph->addTaintNode($method_node);
 
         if ($inferred_type->parent_nodes) {
             foreach ($inferred_type->parent_nodes as $parent_node) {
-                $codebase->taint_graph->addPath(
+                $statements_analyzer->taint_graph->addPath(
                     $parent_node,
                     $method_node,
                     'return',

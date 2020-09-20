@@ -25,7 +25,7 @@ class PrintAnalyzer
             return false;
         }
 
-        if ($codebase->taint_graph
+        if ($statements_analyzer->taint_graph
             && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
         ) {
             $call_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
@@ -44,7 +44,7 @@ class PrintAnalyzer
                 Type\TaintKind::SYSTEM_SECRET
             ];
 
-            $codebase->taint_graph->addSink($print_param_sink);
+            $statements_analyzer->taint_graph->addSink($print_param_sink);
         }
 
         if ($stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr)) {
