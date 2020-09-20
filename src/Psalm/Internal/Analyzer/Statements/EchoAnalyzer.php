@@ -36,7 +36,7 @@ class EchoAnalyzer
 
             $expr_type = $statements_analyzer->node_data->getType($expr);
 
-            if ($codebase->taint && $expr_type) {
+            if ($codebase->taint_graph && $expr_type) {
                 $expr_type = CastAnalyzer::castStringAttempt(
                     $statements_analyzer,
                     $context,
@@ -46,7 +46,7 @@ class EchoAnalyzer
                 );
             }
 
-            if ($codebase->taint
+            if ($codebase->taint_graph
                 && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
             ) {
                 $call_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
@@ -65,7 +65,7 @@ class EchoAnalyzer
                     Type\TaintKind::SYSTEM_SECRET
                 ];
 
-                $codebase->taint->addSink($echo_param_sink);
+                $codebase->taint_graph->addSink($echo_param_sink);
             }
 
             if ($expr_type) {

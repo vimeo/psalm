@@ -1425,7 +1425,7 @@ class StaticCallAnalyzer extends CallAnalyzer
     ) : void {
         $codebase = $statements_analyzer->getCodebase();
 
-        if (!$codebase->taint
+        if (!$codebase->taint_graph
             || !$codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
             || \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
         ) {
@@ -1453,7 +1453,7 @@ class StaticCallAnalyzer extends CallAnalyzer
             );
         }
 
-        $codebase->taint->addTaintNode($method_source);
+        $codebase->taint_graph->addTaintNode($method_source);
 
         $return_type_candidate->parent_nodes = [$method_source];
 
@@ -1466,7 +1466,7 @@ class StaticCallAnalyzer extends CallAnalyzer
 
             $method_node->taints = $method_storage->taint_source_types;
 
-            $codebase->taint->addSource($method_node);
+            $codebase->taint_graph->addSource($method_node);
         }
     }
 
@@ -1512,7 +1512,7 @@ class StaticCallAnalyzer extends CallAnalyzer
 
         $method_storage = null;
 
-        if ($codebase->taint) {
+        if ($codebase->taint_graph) {
             try {
                 $method_storage = $codebase->methods->getStorage($method_id);
 

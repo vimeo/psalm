@@ -314,7 +314,7 @@ class ArrayFetchAnalyzer
     ) : void {
         $codebase = $statements_analyzer->getCodebase();
 
-        if ($codebase->taint
+        if ($codebase->taint_graph
             && ($stmt_var_type = $statements_analyzer->node_data->getType($var))
             && $stmt_var_type->parent_nodes
             && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
@@ -331,7 +331,7 @@ class ArrayFetchAnalyzer
                 $var_location
             );
 
-            $codebase->taint->addTaintNode($new_parent_node);
+            $codebase->taint_graph->addTaintNode($new_parent_node);
 
             $dim_value = $offset_type->isSingleStringLiteral()
                 ? $offset_type->getSingleStringLiteral()->value
@@ -340,7 +340,7 @@ class ArrayFetchAnalyzer
                     : null);
 
             foreach ($stmt_var_type->parent_nodes as $parent_node) {
-                $codebase->taint->addPath(
+                $codebase->taint_graph->addPath(
                     $parent_node,
                     $new_parent_node,
                     'array-fetch' . ($dim_value !== null ? '-\'' . $dim_value . '\'' : '')
@@ -350,7 +350,7 @@ class ArrayFetchAnalyzer
             $stmt_type->parent_nodes = [$new_parent_node];
         }
     }
-    
+
     public static function getArrayAccessTypeGivenOffset(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
@@ -1576,7 +1576,7 @@ class ArrayFetchAnalyzer
             }
         }
     }
-    
+
     public static function replaceOffsetTypeWithInts(Type\Union $offset_type): Type\Union
     {
         $offset_types = $offset_type->getAtomicTypes();

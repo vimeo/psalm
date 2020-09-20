@@ -87,7 +87,7 @@ use function file_get_contents;
 use function substr_count;
 use function array_map;
 use function end;
-use Psalm\Internal\Codebase\Taint;
+use Psalm\Internal\Codebase\TaintGraph;
 use function ini_get;
 use function in_array;
 
@@ -665,7 +665,7 @@ class ProjectAnalyzer
 
     public function trackTaintedInputs(): void
     {
-        $this->codebase->taint = new Taint();
+        $this->codebase->taint_graph = new TaintGraph();
     }
 
     public function trackUnusedSuppressions(): void

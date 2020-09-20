@@ -202,7 +202,7 @@ class ArrayAnalyzer
                 $array_keys[$item_key_value] = true;
             }
 
-            if ($codebase->taint
+            if ($codebase->taint_graph
                 && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
                 && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
             ) {
@@ -216,10 +216,10 @@ class ArrayAnalyzer
                             $var_location
                         );
 
-                        $codebase->taint->addTaintNode($new_parent_node);
+                        $codebase->taint_graph->addTaintNode($new_parent_node);
 
                         foreach ($item_value_type->parent_nodes as $parent_node) {
-                            $codebase->taint->addPath(
+                            $codebase->taint_graph->addPath(
                                 $parent_node,
                                 $new_parent_node,
                                 'array-assignment'

@@ -29,7 +29,7 @@ class ExitAnalyzer
 
             $codebase = $statements_analyzer->getCodebase();
 
-            if ($codebase->taint
+            if ($codebase->taint_graph
                 && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
             ) {
                 $call_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
@@ -48,7 +48,7 @@ class ExitAnalyzer
                     Type\TaintKind::SYSTEM_SECRET
                 ];
 
-                $codebase->taint->addSink($echo_param_sink);
+                $codebase->taint_graph->addSink($echo_param_sink);
             }
 
             if ($expr_type = $statements_analyzer->node_data->getType($stmt->expr)) {

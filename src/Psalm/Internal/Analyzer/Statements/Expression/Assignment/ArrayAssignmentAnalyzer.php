@@ -408,7 +408,7 @@ class ArrayAssignmentAnalyzer
                 $context->possibly_assigned_var_ids[$array_var_id] = true;
             }
 
-            if ($codebase->taint) {
+            if ($codebase->taint_graph) {
                 self::taintArrayAssignment(
                     $statements_analyzer,
                     $child_stmt->var,
@@ -775,7 +775,7 @@ class ArrayAssignmentAnalyzer
     ) : void {
         $codebase = $statements_analyzer->getCodebase();
 
-        if ($codebase->taint
+        if ($codebase->taint_graph
             && $child_stmt_type->parent_nodes
             && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
         ) {
@@ -786,19 +786,19 @@ class ArrayAssignmentAnalyzer
                 $var_location
             );
 
-            $codebase->taint->addTaintNode($new_parent_node);
+            $codebase->taint_graph->addTaintNode($new_parent_node);
 
             foreach ($child_stmt_type->parent_nodes as $parent_node) {
                 if ($key_values) {
                     foreach ($key_values as $key_value) {
-                        $codebase->taint->addPath(
+                        $codebase->taint_graph->addPath(
                             $parent_node,
                             $new_parent_node,
                             'array-assignment-\'' . $key_value->value . '\''
                         );
                     }
                 } else {
-                    $codebase->taint->addPath(
+                    $codebase->taint_graph->addPath(
                         $parent_node,
                         $new_parent_node,
                         'array-assignment'

@@ -524,7 +524,7 @@ class InstancePropertyAssignmentAnalyzer
                     }
                 }
 
-                if ($codebase->taint && !$context->collect_initializations) {
+                if ($codebase->taint_graph && !$context->collect_initializations) {
                     $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
                     self::taintProperty(
@@ -1149,7 +1149,7 @@ class InstancePropertyAssignmentAnalyzer
     ) : void {
         $codebase = $statements_analyzer->getCodebase();
 
-        if (!$codebase->taint
+        if (!$codebase->taint_graph
             || !$codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
         ) {
             return;
@@ -1182,16 +1182,16 @@ class InstancePropertyAssignmentAnalyzer
                     $var_location
                 );
 
-                $codebase->taint->addTaintNode($var_node);
+                $codebase->taint_graph->addTaintNode($var_node);
 
                 $property_node = TaintNode::getForAssignment(
                     $var_property_id ?: $var_id . '->$property',
                     $property_location
                 );
 
-                $codebase->taint->addTaintNode($property_node);
+                $codebase->taint_graph->addTaintNode($property_node);
 
-                $codebase->taint->addPath(
+                $codebase->taint_graph->addPath(
                     $property_node,
                     $var_node,
                     'property-assignment'
@@ -1200,7 +1200,7 @@ class InstancePropertyAssignmentAnalyzer
 
                 if ($assignment_value_type->parent_nodes) {
                     foreach ($assignment_value_type->parent_nodes as $parent_node) {
-                        $codebase->taint->addPath($parent_node, $property_node, '=');
+                        $codebase->taint_graph->addPath($parent_node, $property_node, '=');
                     }
                 }
 
@@ -1208,7 +1208,7 @@ class InstancePropertyAssignmentAnalyzer
 
                 if ($context->vars_in_scope[$var_id]->parent_nodes) {
                     foreach ($context->vars_in_scope[$var_id]->parent_nodes as $parent_node) {
-                        $codebase->taint->addPath($parent_node, $var_node, '=');
+                        $codebase->taint_graph->addPath($parent_node, $var_node, '=');
                     }
                 }
 
@@ -1232,7 +1232,7 @@ class InstancePropertyAssignmentAnalyzer
                 null
             );
 
-            $codebase->taint->addTaintNode($localized_property_node);
+            $codebase->taint_graph->addTaintNode($localized_property_node);
 
             $property_node = new TaintNode(
                 $property_id,
@@ -1241,13 +1241,13 @@ class InstancePropertyAssignmentAnalyzer
                 null
             );
 
-            $codebase->taint->addTaintNode($property_node);
+            $codebase->taint_graph->addTaintNode($property_node);
 
-            $codebase->taint->addPath($localized_property_node, $property_node, 'property-assignment');
+            $codebase->taint_graph->addPath($localized_property_node, $property_node, 'property-assignment');
 
             if ($assignment_value_type->parent_nodes) {
                 foreach ($assignment_value_type->parent_nodes as $parent_node) {
-                    $codebase->taint->addPath($parent_node, $localized_property_node, '=');
+                    $codebase->taint_graph->addPath($parent_node, $localized_property_node, '=');
                 }
             }
         }

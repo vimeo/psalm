@@ -226,7 +226,7 @@ class MethodCallReturnTypeFetcher
     ) : void {
         $codebase = $statements_analyzer->getCodebase();
 
-        if ($codebase->taint
+        if ($codebase->taint_graph
             && $declaring_method_id
             && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
             && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
@@ -244,7 +244,7 @@ class MethodCallReturnTypeFetcher
                 $method_storage->specialize_call ? $node_location : null
             );
 
-            $codebase->taint->addTaintNode($method_call_node);
+            $codebase->taint_graph->addTaintNode($method_call_node);
 
             $return_type_candidate->parent_nodes = [
                 $method_call_node
@@ -263,9 +263,9 @@ class MethodCallReturnTypeFetcher
                         new CodeLocation($statements_analyzer, $var_expr)
                     );
 
-                    $codebase->taint->addTaintNode($var_node);
+                    $codebase->taint_graph->addTaintNode($var_node);
 
-                    $codebase->taint->addPath(
+                    $codebase->taint_graph->addPath(
                         $method_call_node,
                         $var_node,
                         'method-call-' . $method_id->method_name
@@ -275,7 +275,7 @@ class MethodCallReturnTypeFetcher
 
                     if ($context->vars_in_scope[$var_id]->parent_nodes) {
                         foreach ($context->vars_in_scope[$var_id]->parent_nodes as $parent_node) {
-                            $codebase->taint->addPath($parent_node, $var_node, '=');
+                            $codebase->taint_graph->addPath($parent_node, $var_node, '=');
                         }
                     }
 
@@ -294,7 +294,7 @@ class MethodCallReturnTypeFetcher
 
                 $method_node->taints = $method_storage->taint_source_types;
 
-                $codebase->taint->addSource($method_node);
+                $codebase->taint_graph->addSource($method_node);
             }
         }
     }
