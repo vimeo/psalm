@@ -120,7 +120,7 @@ class FilterVarReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTy
 
         $codebase = $statements_source->getCodebase();
 
-        if ($codebase->taint_graph
+        if ($statements_source->taint_graph
             && $codebase->config->trackTaintsInPath($statements_source->getFilePath())
             && !\in_array('TaintedInput', $statements_source->getSuppressedIssues())
         ) {
@@ -131,7 +131,7 @@ class FilterVarReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTy
                 $code_location
             );
 
-            $codebase->taint_graph->addTaintNode($function_return_sink);
+            $statements_source->taint_graph->addTaintNode($function_return_sink);
 
             $function_param_sink = TaintNode::getForMethodArgument(
                 $function_id,
@@ -141,9 +141,9 @@ class FilterVarReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTy
                 $code_location
             );
 
-            $codebase->taint_graph->addTaintNode($function_param_sink);
+            $statements_source->taint_graph->addTaintNode($function_param_sink);
 
-            $codebase->taint_graph->addPath(
+            $statements_source->taint_graph->addPath(
                 $function_param_sink,
                 $function_return_sink,
                 'arg'

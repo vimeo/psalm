@@ -395,7 +395,7 @@ class VariableFetchAnalyzer
     ) : void {
         $codebase = $statements_analyzer->getCodebase();
 
-        if ($codebase->taint_graph
+        if ($statements_analyzer->taint_graph
             && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
             && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
         ) {
@@ -414,7 +414,7 @@ class VariableFetchAnalyzer
                     Type\TaintKindGroup::ALL_INPUT
                 );
 
-                $codebase->taint_graph->addSource($server_taint_source);
+                $statements_analyzer->taint_graph->addSource($server_taint_source);
 
                 $type->parent_nodes = [
                     $server_taint_source

@@ -1061,7 +1061,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
     ) : void {
         $codebase = $statements_analyzer->getCodebase();
 
-        if (!$codebase->taint_graph
+        if (!$statements_analyzer->taint_graph
             || !$codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
             || \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
         ) {
@@ -1077,7 +1077,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
             $function_storage->specialize_call ? $return_location : null
         );
 
-        $codebase->taint_graph->addTaintNode($function_return_sink);
+        $statements_analyzer->taint_graph->addTaintNode($function_return_sink);
 
         $stmt_type->parent_nodes[] = $function_return_sink;
 
@@ -1129,9 +1129,9 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     $function_storage->specialize_call ? $return_location : null
                 );
 
-                $codebase->taint_graph->addTaintNode($function_param_sink);
+                $statements_analyzer->taint_graph->addTaintNode($function_param_sink);
 
-                $codebase->taint_graph->addPath(
+                $statements_analyzer->taint_graph->addPath(
                     $function_param_sink,
                     $function_return_sink,
                     $path_type,
@@ -1150,7 +1150,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
 
             $method_node->taints = $function_storage->taint_source_types;
 
-            $codebase->taint_graph->addSource($method_node);
+            $statements_analyzer->taint_graph->addSource($method_node);
         }
     }
 

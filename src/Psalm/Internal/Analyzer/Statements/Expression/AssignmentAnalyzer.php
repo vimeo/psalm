@@ -878,9 +878,11 @@ class AssignmentAnalyzer
                 return $context->vars_in_scope[$var_id];
             }
 
-            if ($codebase->taint_graph
+            if ($statements_analyzer->taint_graph
                 && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
             ) {
+                $taint_graph = $statements_analyzer->taint_graph;
+
                 if ($context->vars_in_scope[$var_id]->parent_nodes) {
                     if (\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())) {
                         $context->vars_in_scope[$var_id]->parent_nodes = [];
@@ -889,10 +891,10 @@ class AssignmentAnalyzer
 
                         $new_parent_node = \Psalm\Internal\Taint\TaintNode::getForAssignment($var_id, $var_location);
 
-                        $codebase->taint_graph->addTaintNode($new_parent_node);
+                        $statements_analyzer->taint_graph->addTaintNode($new_parent_node);
 
                         foreach ($context->vars_in_scope[$var_id]->parent_nodes as $parent_node) {
-                            $codebase->taint_graph->addPath($parent_node, $new_parent_node, '=', [], $removed_taints);
+                            $taint_graph->addPath($parent_node, $new_parent_node, '=', [], $removed_taints);
                         }
 
                         $context->vars_in_scope[$var_id]->parent_nodes = [$new_parent_node];
@@ -1197,7 +1199,7 @@ class AssignmentAnalyzer
                 $context->vars_in_scope[$array_var_id] = $result_type;
                 $statements_analyzer->node_data->setType($stmt, clone $context->vars_in_scope[$array_var_id]);
 
-                if ($codebase->taint_graph
+                if ($statements_analyzer->taint_graph
                     && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
                     && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
                 ) {
@@ -1207,19 +1209,19 @@ class AssignmentAnalyzer
                     $var_location = new CodeLocation($statements_analyzer, $stmt);
 
                     $new_parent_node = \Psalm\Internal\Taint\TaintNode::getForAssignment($array_var_id, $var_location);
-                    $codebase->taint_graph->addTaintNode($new_parent_node);
+                    $statements_analyzer->taint_graph->addTaintNode($new_parent_node);
 
                     $result_type->parent_nodes = [$new_parent_node];
 
                     if ($stmt_left_type && $stmt_left_type->parent_nodes) {
                         foreach ($stmt_left_type->parent_nodes as $parent_node) {
-                            $codebase->taint_graph->addPath($parent_node, $new_parent_node, 'concat');
+                            $statements_analyzer->taint_graph->addPath($parent_node, $new_parent_node, 'concat');
                         }
                     }
 
                     if ($stmt_right_type && $stmt_right_type->parent_nodes) {
                         foreach ($stmt_right_type->parent_nodes as $parent_node) {
-                            $codebase->taint_graph->addPath($parent_node, $new_parent_node, 'concat');
+                            $statements_analyzer->taint_graph->addPath($parent_node, $new_parent_node, 'concat');
                         }
                     }
                 }

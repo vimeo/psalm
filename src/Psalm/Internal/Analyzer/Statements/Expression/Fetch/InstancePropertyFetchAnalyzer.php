@@ -1195,11 +1195,13 @@ class InstancePropertyFetchAnalyzer
     ) : void {
         $codebase = $statements_analyzer->getCodebase();
 
-        if (!$codebase->taint_graph
+        if (!$statements_analyzer->taint_graph
             || !$codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
         ) {
             return;
         }
+
+        $taint_graph = $statements_analyzer->taint_graph;
 
         $var_location = new CodeLocation($statements_analyzer->getSource(), $stmt->var);
         $property_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
@@ -1230,16 +1232,16 @@ class InstancePropertyFetchAnalyzer
                     $var_location
                 );
 
-                $codebase->taint_graph->addTaintNode($var_node);
+                $taint_graph->addTaintNode($var_node);
 
                 $property_node = TaintNode::getForAssignment(
                     $var_property_id ?: $var_id . '->$property',
                     $property_location
                 );
 
-                $codebase->taint_graph->addTaintNode($property_node);
+                $taint_graph->addTaintNode($property_node);
 
-                $codebase->taint_graph->addPath(
+                $taint_graph->addPath(
                     $var_node,
                     $property_node,
                     'property-fetch'
@@ -1248,7 +1250,7 @@ class InstancePropertyFetchAnalyzer
 
                 if ($var_type && $var_type->parent_nodes) {
                     foreach ($var_type->parent_nodes as $parent_node) {
-                        $codebase->taint_graph->addPath(
+                        $taint_graph->addPath(
                             $parent_node,
                             $var_node,
                             '='
@@ -1268,7 +1270,7 @@ class InstancePropertyFetchAnalyzer
                 null
             );
 
-            $codebase->taint_graph->addTaintNode($localized_property_node);
+            $taint_graph->addTaintNode($localized_property_node);
 
             $property_node = new TaintNode(
                 $property_id,
@@ -1277,12 +1279,12 @@ class InstancePropertyFetchAnalyzer
                 null
             );
 
-            $codebase->taint_graph->addTaintNode($property_node);
+            $taint_graph->addTaintNode($property_node);
 
             if ($in_assignment) {
-                $codebase->taint_graph->addPath($localized_property_node, $property_node, 'property-assignment');
+                $taint_graph->addPath($localized_property_node, $property_node, 'property-assignment');
             } else {
-                $codebase->taint_graph->addPath($property_node, $localized_property_node, 'property-fetch');
+                $taint_graph->addPath($property_node, $localized_property_node, 'property-fetch');
             }
 
             $type->parent_nodes[] = $localized_property_node;
