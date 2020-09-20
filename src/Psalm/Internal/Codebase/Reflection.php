@@ -85,7 +85,6 @@ class Reflection
 
             $storage->public_class_constants = $parent_storage->public_class_constants;
             $storage->protected_class_constants = $parent_storage->protected_class_constants;
-            $parent_class_name_lc = $parent_class_name_lc;
             $storage->parent_classes = array_merge(
                 [$parent_class_name_lc => $parent_class_name],
                 $parent_storage->parent_classes
