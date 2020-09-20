@@ -14,8 +14,6 @@ use Symfony\Component\Console\Output\BufferedOutput;
 class CompactReport extends Report
 {
     /**
-     * {@inheritdoc}
-     *
      * @psalm-suppress PossiblyNullReference
      */
     public function create(): string

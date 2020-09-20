@@ -14,9 +14,6 @@ use Psalm\Report;
  */
 class SonarqubeReport extends Report
 {
-    /**
-     * {@inheritdoc}
-     */
     public function create(): string
     {
         $report = ['issues' => []];
