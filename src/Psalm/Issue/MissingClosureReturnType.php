@@ -3,6 +3,6 @@ namespace Psalm\Issue;
 
 class MissingClosureReturnType extends CodeIssue
 {
-    const ERROR_LEVEL = 2;
-    const SHORTCODE = 68;
+    public const ERROR_LEVEL = 2;
+    public const SHORTCODE = 68;
 }

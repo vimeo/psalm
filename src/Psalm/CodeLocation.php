@@ -92,14 +92,14 @@ class CodeLocation
     /** @var null|CodeLocation */
     public $previous_location;
 
-    const VAR_TYPE = 0;
-    const FUNCTION_RETURN_TYPE = 1;
-    const FUNCTION_PARAM_TYPE = 2;
-    const FUNCTION_PHPDOC_RETURN_TYPE = 3;
-    const FUNCTION_PHPDOC_PARAM_TYPE = 4;
-    const FUNCTION_PARAM_VAR = 5;
-    const CATCH_VAR = 6;
-    const FUNCTION_PHPDOC_METHOD = 7;
+    public const VAR_TYPE = 0;
+    public const FUNCTION_RETURN_TYPE = 1;
+    public const FUNCTION_PARAM_TYPE = 2;
+    public const FUNCTION_PHPDOC_RETURN_TYPE = 3;
+    public const FUNCTION_PHPDOC_PARAM_TYPE = 4;
+    public const FUNCTION_PARAM_VAR = 5;
+    public const CATCH_VAR = 6;
+    public const FUNCTION_PHPDOC_METHOD = 7;
 
     public function __construct(
         FileSource $file_source,

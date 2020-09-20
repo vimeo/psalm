@@ -3,6 +3,6 @@ namespace Psalm\Issue;
 
 class InterfaceInstantiation extends CodeIssue
 {
-    const ERROR_LEVEL = -1;
-    const SHORTCODE = 158;
+    public const ERROR_LEVEL = -1;
+    public const SHORTCODE = 158;
 }

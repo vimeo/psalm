@@ -36,7 +36,7 @@ class FileStorageCacheProvider
      */
     private $config;
 
-    const FILE_STORAGE_CACHE_DIRECTORY = 'file_cache';
+    private const FILE_STORAGE_CACHE_DIRECTORY = 'file_cache';
 
     public function __construct(Config $config)
     {

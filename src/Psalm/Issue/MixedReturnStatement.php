@@ -3,6 +3,6 @@ namespace Psalm\Issue;
 
 class MixedReturnStatement extends CodeIssue
 {
-    const ERROR_LEVEL = 1;
-    const SHORTCODE = 138;
+    public const ERROR_LEVEL = 1;
+    public const SHORTCODE = 138;
 }

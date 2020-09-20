@@ -3,6 +3,6 @@ namespace Psalm\Issue;
 
 class PossiblyUnusedParam extends CodeIssue
 {
-    const ERROR_LEVEL = -2;
-    const SHORTCODE = 134;
+    public const ERROR_LEVEL = -2;
+    public const SHORTCODE = 134;
 }

@@ -3,6 +3,6 @@ namespace Psalm\Issue;
 
 class MismatchingDocblockParamType extends CodeIssue
 {
-    const ERROR_LEVEL = 4;
-    const SHORTCODE = 141;
+    public const ERROR_LEVEL = 4;
+    public const SHORTCODE = 141;
 }

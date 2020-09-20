@@ -3,6 +3,6 @@ namespace Psalm\Issue;
 
 class PossiblyNullReference extends CodeIssue
 {
-    const ERROR_LEVEL = 3;
-    const SHORTCODE = 83;
+    public const ERROR_LEVEL = 3;
+    public const SHORTCODE = 83;
 }

@@ -58,8 +58,8 @@ use function in_array;
  */
 class Pool
 {
-    const EXIT_SUCCESS = 0;
-    const EXIT_FAILURE = 1;
+    private const EXIT_SUCCESS = 0;
+    private const EXIT_FAILURE = 1;
 
     /** @var int[] */
     private $child_pid_list = [];

@@ -3,6 +3,6 @@ namespace Psalm\Issue;
 
 class NoInterfaceProperties extends ClassIssue
 {
-    const ERROR_LEVEL = 4;
-    const SHORTCODE = 28;
+    public const ERROR_LEVEL = 4;
+    public const SHORTCODE = 28;
 }

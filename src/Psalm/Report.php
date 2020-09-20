@@ -6,21 +6,21 @@ use Psalm\Internal\Analyzer\IssueData;
 
 abstract class Report
 {
-    const TYPE_COMPACT = 'compact';
-    const TYPE_CONSOLE = 'console';
-    const TYPE_PYLINT = 'pylint';
-    const TYPE_JSON = 'json';
-    const TYPE_JSON_SUMMARY = 'json-summary';
-    const TYPE_SONARQUBE = 'sonarqube';
-    const TYPE_EMACS = 'emacs';
-    const TYPE_XML = 'xml';
-    const TYPE_JUNIT = 'junit';
-    const TYPE_CHECKSTYLE = 'checkstyle';
-    const TYPE_TEXT = 'text';
-    const TYPE_GITHUB_ACTIONS = 'github';
-    const TYPE_PHP_STORM = 'phpstorm';
+    public const TYPE_COMPACT = 'compact';
+    public const TYPE_CONSOLE = 'console';
+    public const TYPE_PYLINT = 'pylint';
+    public const TYPE_JSON = 'json';
+    public const TYPE_JSON_SUMMARY = 'json-summary';
+    public const TYPE_SONARQUBE = 'sonarqube';
+    public const TYPE_EMACS = 'emacs';
+    public const TYPE_XML = 'xml';
+    public const TYPE_JUNIT = 'junit';
+    public const TYPE_CHECKSTYLE = 'checkstyle';
+    public const TYPE_TEXT = 'text';
+    public const TYPE_GITHUB_ACTIONS = 'github';
+    public const TYPE_PHP_STORM = 'phpstorm';
 
-    const SUPPORTED_OUTPUT_TYPES = [
+    public const SUPPORTED_OUTPUT_TYPES = [
         self::TYPE_COMPACT,
         self::TYPE_CONSOLE,
         self::TYPE_PYLINT,

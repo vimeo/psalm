@@ -3,6 +3,6 @@ namespace Psalm\Issue;
 
 class InvalidOperand extends CodeIssue
 {
-    const ERROR_LEVEL = 4;
-    const SHORTCODE = 58;
+    public const ERROR_LEVEL = 4;
+    public const SHORTCODE = 58;
 }

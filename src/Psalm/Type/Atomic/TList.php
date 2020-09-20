@@ -22,7 +22,7 @@ class TList extends \Psalm\Type\Atomic
      */
     public $type_param;
 
-    const KEY = 'list';
+    public const KEY = 'list';
 
     /**
      * Constructs a new instance of a list

@@ -211,7 +211,7 @@ class ProjectAnalyzer
     /**
      * @var array<int, class-string<CodeIssue>>
      */
-    const SUPPORTED_ISSUES_TO_FIX = [
+    private const SUPPORTED_ISSUES_TO_FIX = [
         InvalidFalsableReturnType::class,
         InvalidNullableReturnType::class,
         InvalidReturnType::class,

@@ -3,6 +3,6 @@ namespace Psalm\Issue;
 
 class MixedClone extends CodeIssue
 {
-    const ERROR_LEVEL = 1;
-    const SHORTCODE = 227;
+    public const ERROR_LEVEL = 1;
+    public const SHORTCODE = 227;
 }

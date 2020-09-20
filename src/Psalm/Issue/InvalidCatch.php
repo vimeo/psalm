@@ -3,6 +3,6 @@ namespace Psalm\Issue;
 
 class InvalidCatch extends ClassIssue
 {
-    const ERROR_LEVEL = 6;
-    const SHORTCODE = 132;
+    public const ERROR_LEVEL = 6;
+    public const SHORTCODE = 132;
 }

@@ -33,7 +33,7 @@ class TClassStringMap extends \Psalm\Type\Atomic
      */
     public $value_param;
 
-    const KEY = 'class-string-map';
+    public const KEY = 'class-string-map';
 
     /**
      * Constructs a new instance of a list

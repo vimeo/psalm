@@ -3,5 +3,5 @@ namespace Psalm\Issue;
 
 class MissingThrowsDocblock extends CodeIssue
 {
-    const SHORTCODE = 169;
+    public const SHORTCODE = 169;
 }

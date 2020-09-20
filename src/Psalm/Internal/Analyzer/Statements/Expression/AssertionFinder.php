@@ -31,8 +31,8 @@ use function is_int;
  */
 class AssertionFinder
 {
-    const ASSIGNMENT_TO_RIGHT = 1;
-    const ASSIGNMENT_TO_LEFT = -1;
+    public const ASSIGNMENT_TO_RIGHT = 1;
+    public const ASSIGNMENT_TO_LEFT = -1;
 
     /**
      * Gets all the type assertions in a conditional
