@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
 class TCallable extends \Psalm\Type\Atomic

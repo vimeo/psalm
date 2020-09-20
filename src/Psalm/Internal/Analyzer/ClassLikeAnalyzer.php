@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer;
 
 use PhpParser;
@@ -237,9 +240,9 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
         }
 
         if (preg_match(
-            '/(^|\\\)(int|float|bool|string|void|null|false|true|object|mixed)$/i',
-            $fq_class_name
-        ) || strtolower($fq_class_name) === 'resource'
+                '/(^|\\\)(int|float|bool|string|void|null|false|true|object|mixed)$/i',
+                $fq_class_name
+            ) || strtolower($fq_class_name) === 'resource'
         ) {
             $class_name_parts = explode('\\', $fq_class_name);
             $class_name = array_pop($class_name_parts);
@@ -336,7 +339,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
             if (IssueBuffer::accepts(
                 new MissingDependency(
                     $fq_class_name . ' depends on class or interface '
-                        . $dependency_class_name . ' that does not exist',
+                    . $dependency_class_name . ' that does not exist',
                     $code_location,
                     $fq_class_name
                 ),
@@ -579,12 +582,12 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
             case self::VISIBILITY_PRIVATE:
                 if (!$context->self || $appearing_property_class !== $context->self) {
                     if ($emit_issues && IssueBuffer::accepts(
-                        new InaccessibleProperty(
-                            'Cannot access private property ' . $property_id . ' from context ' . $context->self,
-                            $code_location
-                        ),
-                        $suppressed_issues
-                    )) {
+                            new InaccessibleProperty(
+                                'Cannot access private property ' . $property_id . ' from context ' . $context->self,
+                                $code_location
+                            ),
+                            $suppressed_issues
+                        )) {
                         // fall through
                     }
 
@@ -600,12 +603,12 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
 
                 if (!$context->self) {
                     if ($emit_issues && IssueBuffer::accepts(
-                        new InaccessibleProperty(
-                            'Cannot access protected property ' . $property_id,
-                            $code_location
-                        ),
-                        $suppressed_issues
-                    )) {
+                            new InaccessibleProperty(
+                                'Cannot access protected property ' . $property_id,
+                                $code_location
+                            ),
+                            $suppressed_issues
+                        )) {
                         // fall through
                     }
 
@@ -618,12 +621,12 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
 
                 if (!$codebase->classExtends($context->self, $appearing_property_class)) {
                     if ($emit_issues && IssueBuffer::accepts(
-                        new InaccessibleProperty(
-                            'Cannot access protected property ' . $property_id . ' from context ' . $context->self,
-                            $code_location
-                        ),
-                        $suppressed_issues
-                    )) {
+                            new InaccessibleProperty(
+                                'Cannot access protected property ' . $property_id . ' from context ' . $context->self,
+                                $code_location
+                            ),
+                            $suppressed_issues
+                        )) {
                         // fall through
                     }
 

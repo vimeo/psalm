@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Psalm\CodeLocation;
 
 class DocblockTypeLocation extends \Psalm\CodeLocation

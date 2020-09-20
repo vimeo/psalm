@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Psalm\Internal\Fork;
 
 use function array_fill_keys;

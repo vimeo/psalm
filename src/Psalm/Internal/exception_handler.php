@@ -1,4 +1,6 @@
 <?php
+
+declare(strict_types=1);
 /**
  * If there is an uncaught exception,
  * then print more of the backtrace than is done by default to stderr,

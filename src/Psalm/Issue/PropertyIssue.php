@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Psalm\Issue;
 
 abstract class PropertyIssue extends CodeIssue

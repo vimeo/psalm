@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 // This maps internal function names to sink types that we don’t want to end up there
 
 return [

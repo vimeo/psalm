@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Psalm\Internal\PluginManager;
 
 use function array_diff_key;
