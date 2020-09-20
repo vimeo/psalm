@@ -209,7 +209,7 @@ class ArgumentAnalyzer
         bool $in_call_map
     ): ?bool {
         if (!$function_param->type) {
-            if (!$codebase->infer_types_from_usage && !$codebase->taint) {
+            if (!$codebase->infer_types_from_usage && !$codebase->taint_graph) {
                 return null;
             }
 
@@ -1219,7 +1219,7 @@ class ArgumentAnalyzer
     ) : Type\Union {
         $codebase = $statements_analyzer->getCodebase();
 
-        if (!$codebase->taint
+        if (!$codebase->taint_graph
             || !$codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
             || \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
         ) {
@@ -1269,8 +1269,8 @@ class ArgumentAnalyzer
                         null
                     );
 
-                    $codebase->taint->addTaintNode($new_sink);
-                    $codebase->taint->addPath($method_node, $new_sink, 'arg');
+                    $codebase->taint_graph->addTaintNode($new_sink);
+                    $codebase->taint_graph->addPath($method_node, $new_sink, 'arg');
                 }
 
                 if (isset($class_storage->overridden_method_ids[$method_name])) {
@@ -1283,23 +1283,23 @@ class ArgumentAnalyzer
                             null
                         );
 
-                        $codebase->taint->addTaintNode($new_sink);
-                        $codebase->taint->addPath($method_node, $new_sink, 'arg');
+                        $codebase->taint_graph->addTaintNode($new_sink);
+                        $codebase->taint_graph->addPath($method_node, $new_sink, 'arg');
                     }
                 }
             }
         }
 
-        $codebase->taint->addTaintNode($method_node);
+        $codebase->taint_graph->addTaintNode($method_node);
 
         $argument_value_node = TaintNode::getForAssignment(
             'call to ' . $cased_method_id,
             $arg_location
         );
 
-        $codebase->taint->addTaintNode($argument_value_node);
+        $codebase->taint_graph->addTaintNode($argument_value_node);
 
-        $codebase->taint->addPath($argument_value_node, $method_node, 'arg');
+        $codebase->taint_graph->addPath($argument_value_node, $method_node, 'arg');
 
         if ($function_param->sinks) {
             if ($specialize_taint) {
@@ -1321,13 +1321,13 @@ class ArgumentAnalyzer
 
             $sink->taints = $function_param->sinks;
 
-            $codebase->taint->addSink($sink);
+            $codebase->taint_graph->addSink($sink);
         }
 
         if ($input_type->parent_nodes) {
             foreach ($input_type->parent_nodes as $parent_node) {
-                $codebase->taint->addTaintNode($method_node);
-                $codebase->taint->addPath($parent_node, $argument_value_node, 'arg');
+                $codebase->taint_graph->addTaintNode($method_node);
+                $codebase->taint_graph->addPath($parent_node, $argument_value_node, 'arg');
             }
         }
 

@@ -68,8 +68,6 @@ class TestCase extends BaseTestCase
             $providers
         );
 
-
-
         $this->project_analyzer->setPhpVersion('7.4');
     }
 
@@ -115,8 +113,8 @@ class TestCase extends BaseTestCase
         );
         $file_analyzer->analyze($context);
 
-        if ($codebase->taint) {
-            $codebase->taint->connectSinksAndSources();
+        if ($codebase->taint_graph) {
+            $codebase->taint_graph->connectSinksAndSources();
         }
 
         if ($track_unused_suppressions) {

@@ -189,7 +189,7 @@ class ReturnAnalyzer
                     $source->getParentFQCLN()
                 );
 
-                if ($codebase->taint
+                if ($codebase->taint_graph
                     && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
                 ) {
                     self::handleTaints(
@@ -498,7 +498,7 @@ class ReturnAnalyzer
         Type\Union $inferred_type,
         \Psalm\Storage\FunctionLikeStorage $storage
     ) : void {
-        if (!$codebase->taint || !$stmt->expr || !$storage->location) {
+        if (!$codebase->taint_graph || !$stmt->expr || !$storage->location) {
             return;
         }
 
@@ -508,11 +508,11 @@ class ReturnAnalyzer
             $storage->location
         );
 
-        $codebase->taint->addTaintNode($method_node);
+        $codebase->taint_graph->addTaintNode($method_node);
 
         if ($inferred_type->parent_nodes) {
             foreach ($inferred_type->parent_nodes as $parent_node) {
-                $codebase->taint->addPath(
+                $codebase->taint_graph->addPath(
                     $parent_node,
                     $method_node,
                     'return',

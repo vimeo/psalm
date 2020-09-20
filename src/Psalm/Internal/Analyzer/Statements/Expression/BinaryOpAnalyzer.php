@@ -106,7 +106,7 @@ class BinaryOpAnalyzer
 
             $codebase = $statements_analyzer->getCodebase();
 
-            if ($codebase->taint
+            if ($codebase->taint_graph
                 && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
                 && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
             ) {
@@ -116,19 +116,19 @@ class BinaryOpAnalyzer
                 $var_location = new CodeLocation($statements_analyzer, $stmt);
 
                 $new_parent_node = \Psalm\Internal\Taint\TaintNode::getForAssignment('concat', $var_location);
-                $codebase->taint->addTaintNode($new_parent_node);
+                $codebase->taint_graph->addTaintNode($new_parent_node);
 
                 $stmt_type->parent_nodes = [$new_parent_node];
 
                 if ($stmt_left_type && $stmt_left_type->parent_nodes) {
                     foreach ($stmt_left_type->parent_nodes as $parent_node) {
-                        $codebase->taint->addPath($parent_node, $new_parent_node, 'concat');
+                        $codebase->taint_graph->addPath($parent_node, $new_parent_node, 'concat');
                     }
                 }
 
                 if ($stmt_right_type && $stmt_right_type->parent_nodes) {
                     foreach ($stmt_right_type->parent_nodes as $parent_node) {
-                        $codebase->taint->addPath($parent_node, $new_parent_node, 'concat');
+                        $codebase->taint_graph->addPath($parent_node, $new_parent_node, 'concat');
                     }
                 }
             }

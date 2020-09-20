@@ -851,7 +851,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
         }
 
-        if ($codebase->taint
+        if ($codebase->taint_graph
             && $this->function instanceof ClassMethod
             && $cased_method_id
             && $storage->specialize_call
@@ -864,10 +864,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $storage->location
             );
 
-            $codebase->taint->addTaintNode($method_source);
+            $codebase->taint_graph->addTaintNode($method_source);
 
             foreach ($context->vars_in_scope['$this']->parent_nodes as $parent_node) {
-                $codebase->taint->addPath(
+                $codebase->taint_graph->addPath(
                     $parent_node,
                     $method_source,
                     '$this'
@@ -1191,7 +1191,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 ]);
             }
 
-            if ($cased_method_id && $codebase->taint) {
+            if ($cased_method_id && $codebase->taint_graph) {
                 $type_source = TaintNode::getForMethodArgument(
                     $cased_method_id,
                     $cased_method_id,

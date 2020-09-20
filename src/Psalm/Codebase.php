@@ -168,9 +168,9 @@ class Codebase
     public $populator;
 
     /**
-     * @var ?Internal\Codebase\Taint
+     * @var ?Internal\Codebase\TaintGraph
      */
-    public $taint = null;
+    public $taint_graph = null;
 
     /**
      * @var bool
@@ -676,7 +676,7 @@ class Codebase
     {
         return $this->classlikes->classImplements($fq_class_name, $interface);
     }
-    
+
     public function interfaceExists(
         string $fq_interface_name,
         ?CodeLocation $code_location = null,
@@ -893,7 +893,7 @@ class Codebase
 
         $this->file_storage_provider->remove($file_path);
     }
-    
+
     public function getSymbolInformation(string $file_path, string $symbol): ?string
     {
         if (\is_numeric($symbol[0])) {
@@ -1598,7 +1598,7 @@ class Codebase
         array $taints = \Psalm\Type\TaintKindGroup::ALL_INPUT,
         ?CodeLocation $code_location = null
     ) : void {
-        if (!$this->taint) {
+        if (!$this->taint_graph) {
             return;
         }
 
@@ -1610,7 +1610,7 @@ class Codebase
             $taints
         );
 
-        $this->taint->addSource($source);
+        $this->taint_graph->addSource($source);
 
         $expr_type->parent_nodes = [
             $source,
@@ -1627,7 +1627,7 @@ class Codebase
         array $taints = \Psalm\Type\TaintKindGroup::ALL_INPUT,
         ?CodeLocation $code_location = null
     ) : void {
-        if (!$this->taint) {
+        if (!$this->taint_graph) {
             return;
         }
 
@@ -1639,6 +1639,6 @@ class Codebase
             $taints
         );
 
-        $this->taint->addSink($sink);
+        $this->taint_graph->addSink($sink);
     }
 }

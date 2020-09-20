@@ -25,7 +25,7 @@ class EvalAnalyzer
         if ($expr_type) {
             $codebase = $statements_analyzer->getCodebase();
 
-            if ($codebase->taint
+            if ($codebase->taint_graph
                 && $expr_type->parent_nodes
                 && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
                 && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
@@ -42,10 +42,10 @@ class EvalAnalyzer
 
                 $eval_param_sink->taints = [\Psalm\Type\TaintKind::INPUT_TEXT];
 
-                $codebase->taint->addSink($eval_param_sink);
+                $codebase->taint_graph->addSink($eval_param_sink);
 
                 foreach ($expr_type->parent_nodes as $parent_node) {
-                    $codebase->taint->addPath($parent_node, $eval_param_sink, 'arg');
+                    $codebase->taint_graph->addPath($parent_node, $eval_param_sink, 'arg');
                 }
             }
         }

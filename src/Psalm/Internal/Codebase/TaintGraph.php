@@ -18,7 +18,7 @@ use function strlen;
 use function array_intersect;
 use function array_reverse;
 
-class Taint
+class TaintGraph
 {
     /** @var array<string, Source> */
     private $sources = [];
@@ -151,7 +151,7 @@ class Taint
         return [$node];
     }
 
-    public function addThreadData(self $taint) : void
+    public function addData(self $taint) : void
     {
         $this->sources += $taint->sources;
         $this->sinks += $taint->sinks;
