@@ -2060,7 +2060,7 @@ class ArrayFunctionCallTest extends TestCase
                     function merger(array $a, array $b) : array {
                         return array_merge($a, $b);
                     }',
-                'error_message' => 'LessSpecificReturnStatement - src/somefile.php:9:32 - The type \'array{A: int|string}<string, string>\' is more general',
+                'error_message' => 'LessSpecificReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:32 - The type \'array{A: int|string}<string, string>\' is more general',
             ],
         ];
     }
