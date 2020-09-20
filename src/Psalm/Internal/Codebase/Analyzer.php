@@ -28,6 +28,7 @@ use function strpos;
 use function substr;
 use function usort;
 use function array_values;
+use const PATHINFO_EXTENSION;
 
 /**
  * @psalm-type  TaggedCodeType = array<int, array{0: int, 1: non-empty-string}>
@@ -229,7 +230,7 @@ class Analyzer
         string $file_path,
         array $filetype_analyzers
     ): FileAnalyzer {
-        $extension = (string) (pathinfo($file_path)['extension'] ?? '');
+        $extension = pathinfo($file_path, PATHINFO_EXTENSION);
 
         $file_name = $this->config->shortenFileName($file_path);
 

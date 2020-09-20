@@ -68,8 +68,6 @@ class TypeChecker extends NodeVisitor
     /**
      * @param  array<string>    $suppressed_issues
      * @param  array<string, bool> $phantom_classes
-     *
-     * @return null|false
      */
     public function __construct(
         StatementsSource $source,

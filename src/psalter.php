@@ -451,6 +451,7 @@ foreach ($keyed_issues as $issue_name => $_) {
         || $issue_name === 'all'
     ) {
         $find_unused_code = true;
+        break;
     }
 }
 

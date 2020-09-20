@@ -2656,6 +2656,7 @@ class AssertionFinder
             foreach ($left_type->getAtomicTypes() as $type_part) {
                 if ($type_part instanceof Type\Atomic\TClassString) {
                     $left_class_string_t = true;
+                    break;
                 }
             }
         }
@@ -2687,6 +2688,7 @@ class AssertionFinder
             foreach ($right_type->getAtomicTypes() as $type_part) {
                 if ($type_part instanceof Type\Atomic\TClassString) {
                     $right_class_string_t = true;
+                    break;
                 }
             }
         }

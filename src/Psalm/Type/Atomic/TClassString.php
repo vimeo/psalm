@@ -11,6 +11,7 @@ use Psalm\Type\Atomic;
 use function preg_quote;
 use function preg_replace;
 use function stripos;
+use function strpos;
 use function strtolower;
 
 class TClassString extends TString
@@ -86,7 +87,7 @@ class TClassString extends TString
             ) . '>';
         }
 
-        if (!$namespace && stripos($this->as, '\\') === false) {
+        if (!$namespace && strpos($this->as, '\\') === false) {
             return 'class-string<' . $this->as . '>';
         }
 

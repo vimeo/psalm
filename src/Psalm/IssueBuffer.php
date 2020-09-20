@@ -729,7 +729,7 @@ class IssueBuffer
                 break;
 
             case Report::TYPE_JUNIT:
-                $output = new JUnitReport($normalized_data, self::$fixable_issue_counts, $report_options);
+                $output = new JunitReport($normalized_data, self::$fixable_issue_counts, $report_options);
                 break;
 
             case Report::TYPE_CONSOLE:

@@ -4,6 +4,7 @@ namespace Psalm\Type\Atomic;
 use function preg_quote;
 use function preg_replace;
 use function stripos;
+use function strpos;
 use function strtolower;
 
 class TKeyOfClassConstant extends Scalar
@@ -79,7 +80,7 @@ class TKeyOfClassConstant extends Scalar
             ) . '::' . $this->const_name . '>';
         }
 
-        if (!$namespace && stripos($this->fq_classlike_name, '\\') === false) {
+        if (!$namespace && strpos($this->fq_classlike_name, '\\') === false) {
             return 'key-of<' . $this->fq_classlike_name . '::' . $this->const_name . '>';
         }
 
