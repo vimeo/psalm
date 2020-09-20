@@ -3,6 +3,6 @@ namespace Psalm\Issue;
 
 class InvalidArrayAccess extends CodeIssue
 {
-    const ERROR_LEVEL = 6;
-    const SHORTCODE = 5;
+    public const ERROR_LEVEL = 6;
+    public const SHORTCODE = 5;
 }

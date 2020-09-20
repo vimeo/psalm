@@ -33,11 +33,11 @@ use function gettype;
  */
 abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSource
 {
-    const VISIBILITY_PUBLIC = 1;
-    const VISIBILITY_PROTECTED = 2;
-    const VISIBILITY_PRIVATE = 3;
+    public const VISIBILITY_PUBLIC = 1;
+    public const VISIBILITY_PROTECTED = 2;
+    public const VISIBILITY_PRIVATE = 3;
 
-    const SPECIAL_TYPES = [
+    public const SPECIAL_TYPES = [
         'int' => 'int',
         'string' => 'string',
         'float' => 'float',
@@ -52,7 +52,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
         'mixed' => 'mixed',
     ];
 
-    const GETTYPE_TYPES = [
+    public const GETTYPE_TYPES = [
         'boolean' => true,
         'integer' => true,
         'double' => true,

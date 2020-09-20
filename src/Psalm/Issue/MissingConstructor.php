@@ -3,8 +3,8 @@ namespace Psalm\Issue;
 
 class MissingConstructor extends CodeIssue
 {
-    const ERROR_LEVEL = 2;
-    const SHORTCODE = 73;
+    public const ERROR_LEVEL = 2;
+    public const SHORTCODE = 73;
 
     public function __construct(string $message, \Psalm\CodeLocation $code_location, ?string $dupe_key)
     {

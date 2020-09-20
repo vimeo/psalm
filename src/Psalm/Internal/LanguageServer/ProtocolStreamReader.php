@@ -19,8 +19,8 @@ class ProtocolStreamReader implements ProtocolReader
 {
     use EmitterTrait;
 
-    const PARSE_HEADERS = 1;
-    const PARSE_BODY = 2;
+    private const PARSE_HEADERS = 1;
+    private const PARSE_BODY = 2;
 
     /**
      * This is checked by ProtocolStreamReader so that it will stop reading from streams in the forked process.

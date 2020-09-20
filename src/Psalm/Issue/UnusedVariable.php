@@ -3,6 +3,6 @@ namespace Psalm\Issue;
 
 class UnusedVariable extends CodeIssue
 {
-    const ERROR_LEVEL = -2;
-    const SHORTCODE = 77;
+    public const ERROR_LEVEL = -2;
+    public const SHORTCODE = 77;
 }

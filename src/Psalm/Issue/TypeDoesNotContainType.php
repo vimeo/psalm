@@ -3,8 +3,8 @@ namespace Psalm\Issue;
 
 class TypeDoesNotContainType extends CodeIssue
 {
-    const ERROR_LEVEL = 4;
-    const SHORTCODE = 56;
+    public const ERROR_LEVEL = 4;
+    public const SHORTCODE = 56;
 
     public function __construct(string $message, \Psalm\CodeLocation $code_location, ?string $dupe_key)
     {

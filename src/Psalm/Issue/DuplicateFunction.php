@@ -3,6 +3,6 @@ namespace Psalm\Issue;
 
 class DuplicateFunction extends CodeIssue
 {
-    const ERROR_LEVEL = -1;
-    const SHORTCODE = 180;
+    public const ERROR_LEVEL = -1;
+    public const SHORTCODE = 180;
 }

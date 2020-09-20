@@ -9,11 +9,11 @@ namespace Psalm\Internal\Diff;
  */
 class DiffElem
 {
-    const TYPE_KEEP = 0;
-    const TYPE_REMOVE = 1;
-    const TYPE_ADD = 2;
-    const TYPE_REPLACE = 3;
-    const TYPE_KEEP_SIGNATURE = 4;
+    public const TYPE_KEEP = 0;
+    public const TYPE_REMOVE = 1;
+    public const TYPE_ADD = 2;
+    public const TYPE_REPLACE = 3;
+    public const TYPE_KEEP_SIGNATURE = 4;
 
     /** @var int One of the TYPE_* constants */
     public $type;

@@ -3,6 +3,6 @@ namespace Psalm\Issue;
 
 class MoreSpecificReturnType extends CodeIssue
 {
-    const ERROR_LEVEL = 3;
-    const SHORTCODE = 70;
+    public const ERROR_LEVEL = 3;
+    public const SHORTCODE = 70;
 }

@@ -29,7 +29,7 @@ use const GLOB_NOSORT;
 
 class Creator
 {
-    const TEMPLATE = '<?xml version="1.0"?>
+    private const TEMPLATE = '<?xml version="1.0"?>
 <psalm
     errorLevel="1"
     resolveFromConfigFile="true"

@@ -3,6 +3,6 @@ namespace Psalm\Issue;
 
 class TooManyArguments extends ArgumentIssue
 {
-    const ERROR_LEVEL = 4;
-    const SHORTCODE = 26;
+    public const ERROR_LEVEL = 4;
+    public const SHORTCODE = 26;
 }

@@ -11,7 +11,7 @@ use function substr;
 
 class ConfigFile
 {
-    const NS = 'https://getpsalm.org/schema/config';
+    public const NS = 'https://getpsalm.org/schema/config';
     /** @var string */
     private $path;
 

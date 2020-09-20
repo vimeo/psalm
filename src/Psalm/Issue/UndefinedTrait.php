@@ -3,6 +3,6 @@ namespace Psalm\Issue;
 
 class UndefinedTrait extends CodeIssue
 {
-    const ERROR_LEVEL = -1;
-    const SHORTCODE = 23;
+    public const ERROR_LEVEL = -1;
+    public const SHORTCODE = 23;
 }

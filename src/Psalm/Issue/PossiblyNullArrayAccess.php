@@ -7,6 +7,6 @@ namespace Psalm\Issue;
  */
 class PossiblyNullArrayAccess extends CodeIssue
 {
-    const ERROR_LEVEL = 3;
-    const SHORTCODE = 79;
+    public const ERROR_LEVEL = 3;
+    public const SHORTCODE = 79;
 }

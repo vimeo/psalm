@@ -90,10 +90,10 @@ use const SCANDIR_SORT_NONE;
  */
 class Config
 {
-    const DEFAULT_FILE_NAME = 'psalm.xml';
-    const REPORT_INFO = 'info';
-    const REPORT_ERROR = 'error';
-    const REPORT_SUPPRESS = 'suppress';
+    private const DEFAULT_FILE_NAME = 'psalm.xml';
+    public const REPORT_INFO = 'info';
+    public const REPORT_ERROR = 'error';
+    public const REPORT_SUPPRESS = 'suppress';
 
     /**
      * @var array<string>
@@ -107,7 +107,7 @@ class Config
     /**
      * @var array
      */
-    const MIXED_ISSUES = [
+    private const MIXED_ISSUES = [
         'MixedArgument',
         'MixedArrayAccess',
         'MixedArrayAssignment',

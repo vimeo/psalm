@@ -32,9 +32,9 @@ use const SCANDIR_SORT_NONE;
  */
 class ParserCacheProvider
 {
-    const FILE_HASHES = 'file_hashes_json';
-    const PARSER_CACHE_DIRECTORY = 'php-parser';
-    const FILE_CONTENTS_CACHE_DIRECTORY = 'file-caches';
+    private const FILE_HASHES = 'file_hashes_json';
+    private const PARSER_CACHE_DIRECTORY = 'php-parser';
+    private const FILE_CONTENTS_CACHE_DIRECTORY = 'file-caches';
 
     /**
      * A map of filename hashes to contents hashes

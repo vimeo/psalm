@@ -7,6 +7,6 @@ namespace Psalm\Issue;
  */
 class PossiblyNullPropertyAssignment extends CodeIssue
 {
-    const ERROR_LEVEL = 3;
-    const SHORTCODE = 81;
+    public const ERROR_LEVEL = 3;
+    public const SHORTCODE = 81;
 }

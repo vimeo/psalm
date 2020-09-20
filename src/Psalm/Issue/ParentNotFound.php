@@ -3,6 +3,6 @@ namespace Psalm\Issue;
 
 class ParentNotFound extends CodeIssue
 {
-    const ERROR_LEVEL = -1;
-    const SHORTCODE = 17;
+    public const ERROR_LEVEL = -1;
+    public const SHORTCODE = 17;
 }

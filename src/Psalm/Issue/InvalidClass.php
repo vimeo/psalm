@@ -3,6 +3,6 @@ namespace Psalm\Issue;
 
 class InvalidClass extends ClassIssue
 {
-    const ERROR_LEVEL = 6;
-    const SHORTCODE = 7;
+    public const ERROR_LEVEL = 6;
+    public const SHORTCODE = 7;
 }

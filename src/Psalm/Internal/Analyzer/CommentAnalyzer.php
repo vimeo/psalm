@@ -46,7 +46,7 @@ use function rtrim;
  */
 class CommentAnalyzer
 {
-    const TYPE_REGEX = '(\??\\\?[\(\)A-Za-z0-9_&\<\.=,\>\[\]\-\{\}:|?\\\\]*|\$[a-zA-Z_0-9_]+)';
+    public const TYPE_REGEX = '(\??\\\?[\(\)A-Za-z0-9_&\<\.=,\>\[\]\-\{\}:|?\\\\]*|\$[a-zA-Z_0-9_]+)';
 
     /**
      * @param  array<string, array<string, array{Type\Union}>>|null   $template_type_map

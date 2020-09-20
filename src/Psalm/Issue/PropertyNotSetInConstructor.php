@@ -3,8 +3,8 @@ namespace Psalm\Issue;
 
 class PropertyNotSetInConstructor extends PropertyIssue
 {
-    const ERROR_LEVEL = 2;
-    const SHORTCODE = 74;
+    public const ERROR_LEVEL = 2;
+    public const SHORTCODE = 74;
 
     public function __construct(
         string $message,
