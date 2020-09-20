@@ -457,6 +457,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                 foreach ($array_atomic_type->properties as $property_type) {
                     if ($property_type->possibly_undefined) {
                         $did_remove_type = true;
+                        break;
                     }
                 }
             }

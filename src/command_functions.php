@@ -63,7 +63,7 @@ function requireAutoloaders(string $current_dir, bool $has_explicit_root, string
     foreach ($autoload_roots as $autoload_root) {
         $has_autoloader = false;
 
-        $nested_autoload_file = dirname(dirname($autoload_root)) . DIRECTORY_SEPARATOR . 'autoload.php';
+        $nested_autoload_file = dirname($autoload_root, 2). DIRECTORY_SEPARATOR . 'autoload.php';
 
         // note: don't realpath $nested_autoload_file, or phar version will fail
         if (file_exists($nested_autoload_file)) {

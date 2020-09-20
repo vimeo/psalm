@@ -1857,6 +1857,7 @@ class ClassLikes
                             strtolower($parent_method_fqcln) . '::'
                         )) {
                             $has_variable_calls = true;
+                            break;
                         }
                     }
 

@@ -39,7 +39,7 @@ interface StatementsSource extends FileSource
 
     public function isStatic(): bool;
 
-    public function getSource(): ?StatementsSource;
+    public function getSource(): StatementsSource;
 
     public function getCodebase() : Codebase;
 

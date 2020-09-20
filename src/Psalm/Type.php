@@ -131,7 +131,7 @@ abstract class Type
             if (!isset($aliased_classes[strtolower($candidate_parts[0])])) {
                 return $candidate;
             }
-        } elseif (!$namespace && stripos($value, '\\') === false) {
+        } elseif (!$namespace && strpos($value, '\\') === false) {
             return $value;
         }
 
