@@ -505,7 +505,7 @@ class ReturnAnalyzer
         $method_node = TaintNode::getForMethodReturn(
             strtolower($cased_method_id),
             $cased_method_id,
-            $storage->location
+            $storage->signature_return_type_location ?: $storage->location,
         );
 
         $statements_analyzer->taint_graph->addTaintNode($method_node);

@@ -151,7 +151,7 @@ class TaintGraph
         return [$node];
     }
 
-    public function addData(self $taint) : void
+    public function addGraph(self $taint) : void
     {
         $this->sources += $taint->sources;
         $this->sinks += $taint->sinks;

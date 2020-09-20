@@ -1068,18 +1068,18 @@ class FunctionCallAnalyzer extends CallAnalyzer
             return;
         }
 
-        $return_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
+        $node_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
-        $function_return_sink = TaintNode::getForMethodReturn(
+        $function_call_node = TaintNode::getForMethodReturn(
             $function_id,
             $function_id,
-            $return_location,
-            $function_storage->specialize_call ? $return_location : null
+            $function_storage->signature_return_type_location ?: $function_storage->location,
+            $function_storage->specialize_call ? $node_location : null
         );
 
-        $statements_analyzer->taint_graph->addTaintNode($function_return_sink);
+        $statements_analyzer->taint_graph->addTaintNode($function_call_node);
 
-        $stmt_type->parent_nodes[] = $function_return_sink;
+        $stmt_type->parent_nodes[] = $function_call_node;
 
         if ($function_storage->return_source_params) {
             $removed_taints = $function_storage->removed_taints;
@@ -1126,14 +1126,14 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     $function_id,
                     $i,
                     $arg_location,
-                    $function_storage->specialize_call ? $return_location : null
+                    $function_storage->specialize_call ? $node_location : null
                 );
 
                 $statements_analyzer->taint_graph->addTaintNode($function_param_sink);
 
                 $statements_analyzer->taint_graph->addPath(
                     $function_param_sink,
-                    $function_return_sink,
+                    $function_call_node,
                     $path_type,
                     $function_storage->added_taints,
                     $removed_taints
@@ -1145,7 +1145,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
             $method_node = Source::getForMethodReturn(
                 $function_id,
                 $function_id,
-                $return_location
+                $node_location
             );
 
             $method_node->taints = $function_storage->taint_source_types;
