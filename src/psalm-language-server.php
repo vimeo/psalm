@@ -2,7 +2,6 @@
 
 namespace Psalm;
 
-use Psalm\Config;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\IncludeCollector;
 use function gc_disable;

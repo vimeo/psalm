@@ -1,17 +1,13 @@
 <?php
 namespace Psalm\Tests;
 
-use function is_array;
 use PhpParser;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\TypeAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\Provider\StatementsProvider;
-use Psalm\Type;
 use Psalm\Type\Algebra;
-use Psalm\Type\Reconciler;
 
 class AlgebraTest extends TestCase
 {

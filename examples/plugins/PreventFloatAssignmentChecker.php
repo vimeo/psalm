@@ -7,7 +7,6 @@ use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\FileManipulation;
-use Psalm\IssueBuffer;
 use Psalm\Plugin\Hook\AfterExpressionAnalysisInterface;
 use Psalm\StatementsSource;
 

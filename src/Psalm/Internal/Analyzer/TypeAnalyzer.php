@@ -6,16 +6,8 @@ use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Type;
-use Psalm\Type\Atomic\TArray;
-use Psalm\Type\Atomic\TCallable;
-use Psalm\Type\Atomic\TFloat;
-use Psalm\Type\Atomic\TTemplateParam;
-use Psalm\Type\Atomic\TInt;
-use Psalm\Type\Atomic\TIterable;
-use Psalm\Type\Atomic\TNamedObject;
-use Psalm\Type\Atomic\TString;
+
 use function array_merge;
-use function count;
 use function array_keys;
 use function array_unique;
 

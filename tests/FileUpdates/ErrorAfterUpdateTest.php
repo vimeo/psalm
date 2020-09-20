@@ -6,7 +6,6 @@ use function array_pop;
 use const DIRECTORY_SEPARATOR;
 use function getcwd;
 use function preg_quote;
-use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Tests\Internal\Provider;

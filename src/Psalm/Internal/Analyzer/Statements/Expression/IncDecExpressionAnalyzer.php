@@ -10,10 +10,7 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\Issue\ImpurePropertyAssignment;
-use Psalm\IssueBuffer;
 use Psalm\Type;
-use function strpos;
 
 class IncDecExpressionAnalyzer
 {

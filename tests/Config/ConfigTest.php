@@ -13,7 +13,6 @@ use function is_array;
 use function preg_match;
 use Psalm\Config;
 use Psalm\Context;
-use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\Internal\Provider;
 use Psalm\Tests\TestConfig;

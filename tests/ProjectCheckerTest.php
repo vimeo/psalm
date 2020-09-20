@@ -12,7 +12,6 @@ use function ob_get_clean;
 use function ob_start;
 use Psalm\Codebase;
 use Psalm\Config;
-use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Plugin\Hook\AfterCodebasePopulatedInterface;

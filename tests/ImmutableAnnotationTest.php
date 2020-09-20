@@ -1,8 +1,6 @@
 <?php
 namespace Psalm\Tests;
 
-use const DIRECTORY_SEPARATOR;
-
 class ImmutableAnnotationTest extends TestCase
 {
     use Traits\InvalidCodeAnalysisTestTrait;

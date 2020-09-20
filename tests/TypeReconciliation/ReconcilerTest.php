@@ -1,15 +1,11 @@
 <?php
 namespace Psalm\Tests\TypeReconciliation;
 
-use function is_array;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
-use Psalm\Internal\Clause;
 use Psalm\Type;
-use Psalm\Type\Algebra;
-use Psalm\Type\Reconciler;
 
 class ReconcilerTest extends \Psalm\Tests\TestCase
 {

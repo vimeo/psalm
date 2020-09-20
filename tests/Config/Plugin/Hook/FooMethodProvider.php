@@ -7,7 +7,6 @@ use Psalm\Context;
 use Psalm\Plugin\Hook\MethodExistenceProviderInterface;
 use Psalm\Plugin\Hook\MethodParamsProviderInterface;
 use Psalm\Plugin\Hook\MethodReturnTypeProviderInterface;
-use Psalm\Plugin\Hook\MethodVisibilityProviderInterface;
 use Psalm\StatementsSource;
 use Psalm\Type;
 

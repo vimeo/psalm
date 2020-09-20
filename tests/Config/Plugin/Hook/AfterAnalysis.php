@@ -7,7 +7,6 @@ use Psalm\Plugin\Hook\{
     AfterAnalysisInterface
 };
 use Psalm\SourceControl\SourceControlInfo;
-use Psalm\Type;
 
 class AfterAnalysis implements
     AfterAnalysisInterface

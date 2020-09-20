@@ -1,9 +1,6 @@
 <?php
 namespace Psalm\Tests\Internal\Provider;
 
-use function microtime;
-use PhpParser;
-
 class ProjectCacheProvider extends \Psalm\Internal\Provider\ProjectCacheProvider
 {
     /**

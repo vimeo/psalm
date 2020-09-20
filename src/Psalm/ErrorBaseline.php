@@ -6,7 +6,6 @@ use function array_intersect;
 use function array_map;
 use function array_merge;
 use function array_reduce;
-use function explode;
 use function get_loaded_extensions;
 use function implode;
 use function ksort;
@@ -21,7 +20,6 @@ use RuntimeException;
 use function str_replace;
 use function strpos;
 use function usort;
-use function count;
 use function array_values;
 
 class ErrorBaseline

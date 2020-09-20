@@ -7,7 +7,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Issue\UnhandledMatchCondition;
 use Psalm\Context;
 use Psalm\Type;
-use function strtolower;
+
 use function substr;
 use function array_reverse;
 use function array_shift;

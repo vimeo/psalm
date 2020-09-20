@@ -3,14 +3,11 @@ namespace Psalm\Type\Atomic;
 
 use function implode;
 use Psalm\Codebase;
-use Psalm\CodeLocation;
 use Psalm\Internal\Type\TemplateResult;
-use Psalm\StatementsSource;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use function substr;
 use function array_map;
-use function strtolower;
 
 class TNamedObject extends Atomic
 {

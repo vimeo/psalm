@@ -1,16 +1,6 @@
 <?php
 namespace Psalm\Tests\TypeReconciliation;
 
-use function is_array;
-use Psalm\Context;
-use Psalm\Internal\Analyzer\FileAnalyzer;
-use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\TypeAnalyzer;
-use Psalm\Internal\Clause;
-use Psalm\Type;
-use Psalm\Type\Algebra;
-use Psalm\Type\Reconciler;
-
 class ConditionalTest extends \Psalm\Tests\TestCase
 {
     use \Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;

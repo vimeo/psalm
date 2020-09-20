@@ -3,7 +3,6 @@
 namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
-use Psalm\Type;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TTemplateParamClass;

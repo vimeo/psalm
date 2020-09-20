@@ -3,7 +3,6 @@ namespace Psalm\Tests;
 
 use Psalm\Config;
 use Psalm\Context;
-use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\Internal\Provider;
 

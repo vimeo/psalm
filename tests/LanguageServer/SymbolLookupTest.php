@@ -6,7 +6,6 @@ use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\Providers;
-use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\Internal\Provider;
 use Psalm\Tests\TestConfig;
 

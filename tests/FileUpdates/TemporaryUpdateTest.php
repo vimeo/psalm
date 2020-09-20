@@ -2,13 +2,11 @@
 namespace Psalm\Tests\FileUpdates;
 
 use function array_keys;
-use function array_map;
 use function array_shift;
 use function count;
 use const DIRECTORY_SEPARATOR;
 use function end;
 use function getcwd;
-use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Tests\Internal\Provider;

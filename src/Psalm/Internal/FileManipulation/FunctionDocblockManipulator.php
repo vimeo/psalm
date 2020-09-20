@@ -2,7 +2,6 @@
 namespace Psalm\Internal\FileManipulation;
 
 use PhpParser;
-use function array_shift;
 use function count;
 use function ltrim;
 use PhpParser\Node\Expr\ArrowFunction;
