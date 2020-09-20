@@ -392,7 +392,7 @@ class Analyzer
 
             $i = 0;
 
-            foreach ($file_paths as $file_path) {
+            foreach ($new_file_paths as $file_path) {
                 $process_file_paths[$i % $pool_size][] = $file_path;
                 ++$i;
             }
