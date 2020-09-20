@@ -104,10 +104,7 @@ class BinaryOpAnalyzer
                 $stmt_type = $result_type;
             }
 
-            $codebase = $statements_analyzer->getCodebase();
-
             if ($statements_analyzer->taint_graph
-                && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
                 && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
             ) {
                 $stmt_left_type = $statements_analyzer->node_data->getType($stmt->left);

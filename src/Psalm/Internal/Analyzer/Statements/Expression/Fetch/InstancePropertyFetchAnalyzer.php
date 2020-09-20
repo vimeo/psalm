@@ -1193,11 +1193,7 @@ class InstancePropertyFetchAnalyzer
         \Psalm\Storage\ClassLikeStorage $class_storage,
         bool $in_assignment
     ) : void {
-        $codebase = $statements_analyzer->getCodebase();
-
-        if (!$statements_analyzer->taint_graph
-            || !$codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
-        ) {
+        if (!$statements_analyzer->taint_graph) {
             return;
         }
 

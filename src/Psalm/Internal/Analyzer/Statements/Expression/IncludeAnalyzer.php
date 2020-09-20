@@ -104,7 +104,6 @@ class IncludeAnalyzer
         if ($stmt_expr_type
             && $statements_analyzer->taint_graph
             && $stmt_expr_type->parent_nodes
-            && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
             && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
         ) {
             $arg_location = new CodeLocation($statements_analyzer->getSource(), $stmt->expr);

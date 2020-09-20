@@ -228,7 +228,6 @@ class MethodCallReturnTypeFetcher
 
         if ($statements_analyzer->taint_graph
             && $declaring_method_id
-            && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
             && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
         ) {
             $method_storage = $codebase->methods->getStorage(

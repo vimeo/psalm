@@ -1423,10 +1423,7 @@ class StaticCallAnalyzer extends CallAnalyzer
         Type\Union $return_type_candidate,
         ?\Psalm\Storage\MethodStorage $method_storage
     ) : void {
-        $codebase = $statements_analyzer->getCodebase();
-
         if (!$statements_analyzer->taint_graph
-            || !$codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
             || \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
         ) {
             return;

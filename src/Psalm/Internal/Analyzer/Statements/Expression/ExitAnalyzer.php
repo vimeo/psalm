@@ -27,11 +27,7 @@ class ExitAnalyzer
                 return false;
             }
 
-            $codebase = $statements_analyzer->getCodebase();
-
-            if ($statements_analyzer->taint_graph
-                && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
-            ) {
+            if ($statements_analyzer->taint_graph) {
                 $call_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
                 $echo_param_sink = Sink::getForMethodArgument(

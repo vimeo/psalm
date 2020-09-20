@@ -641,7 +641,6 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                 }
 
                 if ($statements_analyzer->taint_graph
-                    && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
                     && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
                     && ($stmt_type = $statements_analyzer->node_data->getType($stmt))
                 ) {
