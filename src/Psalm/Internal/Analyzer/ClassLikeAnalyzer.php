@@ -519,7 +519,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
         array $suppressed_issues,
         bool $emit_issues = true
     ): ?bool {
-        [$fq_class_name, $property_name] = explode('::$', (string)$property_id);
+        [$fq_class_name, $property_name] = explode('::$', $property_id);
 
         $codebase = $source->getCodebase();
 

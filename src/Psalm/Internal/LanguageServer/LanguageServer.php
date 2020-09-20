@@ -434,7 +434,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
      *
      * @param string $message The log message to send to the client.
      * @psalm-param 1|2|3|4 $type
-     * @param integer $type The log type:
+     * @param int $type The log type:
      *  - 1 = Error
      *  - 2 = Warning
      *  - 3 = Info

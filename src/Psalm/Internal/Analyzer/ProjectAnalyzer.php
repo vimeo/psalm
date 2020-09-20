@@ -716,9 +716,7 @@ class ProjectAnalyzer
 
                 $source_class_storage = $this->codebase->classlike_storage_provider->get($source_parts[0]);
 
-                $destination_parts = explode('\\', $destination);
-
-                array_pop($destination_parts);
+                $destination_parts = explode('\\', $destination, -1);
                 $destination_ns = implode('\\', $destination_parts);
 
                 $this->codebase->classes_to_move[strtolower($source)] = $destination;

@@ -115,7 +115,7 @@ class StaticPropertyAssignmentAnalyzer
                 false
             );
 
-            $declaring_property_id = strtolower((string) $declaring_property_class) . '::$' . $prop_name;
+            $declaring_property_id = strtolower($declaring_property_class) . '::$' . $prop_name;
 
             if ($codebase->alter_code && $stmt->class instanceof PhpParser\Node\Name) {
                 $moved_class = $codebase->classlikes->handleClassLikeReferenceInMigration(
