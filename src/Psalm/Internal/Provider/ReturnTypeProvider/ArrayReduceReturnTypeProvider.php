@@ -118,8 +118,7 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
                     return Type::getMixed();
                 }
 
-                $carry_param = $closure_atomic_type->params[0];
-                $item_param = $closure_atomic_type->params[1];
+                [$carry_param, $item_param] = $closure_atomic_type->params;
 
                 if ($carry_param->type
                     && (

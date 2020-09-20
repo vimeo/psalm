@@ -208,8 +208,7 @@ class ReturnTypeCollector
                     }
 
                     if ($type instanceof Type\Atomic\TArray) {
-                        $key_type_param = $type->type_params[0];
-                        $value_type_param = $type->type_params[1];
+                        [$key_type_param, $value_type_param] = $type->type_params;
 
                         if (!$key_type) {
                             $key_type = clone $key_type_param;
