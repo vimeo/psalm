@@ -6,6 +6,7 @@ use Psalm\StatementsSource;
 use function preg_quote;
 use function preg_replace;
 use function stripos;
+use function strpos;
 use function strtolower;
 
 class TLiteralClassString extends TLiteralString
