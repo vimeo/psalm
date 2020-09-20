@@ -537,7 +537,7 @@ class ForeachAnalyzer
                         continue;
                     }
 
-                    [$value_type_part, $key_type_part] = $iat->type_params;
+                    [$key_type_part, $value_type_part] = $iat->type_params;
 
                     if (!$intersection_value_type) {
                         $intersection_value_type = $value_type_part;
