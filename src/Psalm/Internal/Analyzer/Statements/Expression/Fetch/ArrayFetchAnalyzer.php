@@ -1506,6 +1506,7 @@ class ArrayFetchAnalyzer
                         ]->possibly_undefined
                 ) {
                     $found_match = true;
+                    break;
                 }
             }
 
@@ -1555,6 +1556,7 @@ class ArrayFetchAnalyzer
                         ]->possibly_undefined
                 ) {
                     $found_match = true;
+                    break;
                 }
             }
 

@@ -45,7 +45,7 @@ class LoopAnalyzer
         Context &$inner_context = null,
         bool $is_do = false,
         bool $always_enters_loop = false
-    ) {
+    ): ?bool {
         $traverser = new PhpParser\NodeTraverser;
 
         $assignment_mapper = new \Psalm\Internal\PhpVisitor\AssignmentMapVisitor($loop_scope->loop_context->self);
@@ -601,6 +601,8 @@ class LoopAnalyzer
         if ($inner_do_context) {
             $inner_context = $inner_do_context;
         }
+        
+        return null;
     }
 
     private static function updateLoopScopeContexts(

@@ -11,16 +11,6 @@ class TTemplateParamClass extends TClassString
     /**
      * @var string
      */
-    public $as;
-
-    /**
-     * @var ?TNamedObject
-     */
-    public $as_type;
-
-    /**
-     * @var string
-     */
     public $defining_class;
 
     public function __construct(

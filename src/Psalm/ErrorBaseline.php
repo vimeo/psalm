@@ -299,7 +299,7 @@ class ErrorBaseline
                     "\n" .
                     '  php-version="' .
                     "\n    " .
-                    implode("\n    ", explode('&#10;&#9;', $matches[2])) .
+                    str_replace('&#10;&#9;', "\n    ", $matches[2]).
                     "\n" .
                     '  "' .
                     "\n" .

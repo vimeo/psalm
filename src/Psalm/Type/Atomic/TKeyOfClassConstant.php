@@ -79,7 +79,7 @@ class TKeyOfClassConstant extends Scalar
             ) . '::' . $this->const_name . '>';
         }
 
-        if (!$namespace && stripos($this->fq_classlike_name, '\\') === false) {
+        if (!$namespace && strpos($this->fq_classlike_name, '\\') === false) {
             return 'key-of<' . $this->fq_classlike_name . '::' . $this->const_name . '>';
         }
 

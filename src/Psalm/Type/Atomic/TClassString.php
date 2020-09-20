@@ -86,7 +86,7 @@ class TClassString extends TString
             ) . '>';
         }
 
-        if (!$namespace && stripos($this->as, '\\') === false) {
+        if (!$namespace && strpos($this->as, '\\') === false) {
             return 'class-string<' . $this->as . '>';
         }
 

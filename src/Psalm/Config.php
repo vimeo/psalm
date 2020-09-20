@@ -738,7 +738,7 @@ class Config
      */
     private static function validateXmlConfig(string $base_dir, string $file_contents): void
     {
-        $schema_path = dirname(dirname(__DIR__)) . '/config.xsd';
+        $schema_path = dirname(__DIR__, 2). '/config.xsd';
 
         if (!file_exists($schema_path)) {
             throw new ConfigException('Cannot locate config schema');

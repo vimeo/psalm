@@ -229,7 +229,7 @@ class Analyzer
         string $file_path,
         array $filetype_analyzers
     ): FileAnalyzer {
-        $extension = (string) (pathinfo($file_path)['extension'] ?? '');
+        $extension = pathinfo($file_path, PATHINFO_EXTENSION);
 
         $file_name = $this->config->shortenFileName($file_path);
 

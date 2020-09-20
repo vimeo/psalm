@@ -82,7 +82,7 @@ class TLiteralClassString extends TLiteralString
             ) . '::class';
         }
 
-        if (!$namespace && stripos($this->value, '\\') === false) {
+        if (!$namespace && strpos($this->value, '\\') === false) {
             return $this->value . '::class';
         }
 

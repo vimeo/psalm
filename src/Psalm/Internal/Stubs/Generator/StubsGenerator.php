@@ -268,7 +268,7 @@ class StubsGenerator
     /**
      * @return PhpParser\Node\Identifier|PhpParser\Node\Name|PhpParser\Node\NullableType|null
      */
-    public static function getParserTypeFromPsalmType(Type\Union $type)
+    public static function getParserTypeFromPsalmType(Type\Union $type): ?PhpParser\NodeAbstract
     {
         $nullable = $type->isNullable();
 
@@ -308,6 +308,8 @@ class StubsGenerator
                 return $name_node;
             }
         }
+        
+        return null;
     }
 
     public static function getExpressionFromType(Type\Union $type) : PhpParser\Node\Expr
