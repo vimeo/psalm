@@ -2047,6 +2047,33 @@ class PropertyTypeTest extends TestCase
                         }
                     }'
             ],
+            'unionPropertyType' => [
+                '<?php
+                    class A {
+                        public string|int $i;
+
+                        public function __construct() {
+                            $this->i = 5;
+                            $this->i = "hello";
+                        }
+                    }
+
+                    $a = new A();
+
+                    if ($a->i === 3) {}
+                    if ($a->i === "foo") {}'
+            ],
+            'setClassStringOfStatic' => [
+                '<?php
+                    class A {
+                        public static array $stack = [];
+
+                        public static function foo() : void {
+                            $class = get_called_class();
+                            $class::$stack[] = 1;
+                        }
+                    }'
+            ],
         ];
     }
 
