@@ -413,7 +413,7 @@ class Scanner
                     $pool_data['diff_map']
                 );
                 if ($this->codebase->taint_graph && $pool_data['taint_data']) {
-                    $this->codebase->taint_graph->addData($pool_data['taint_data']);
+                    $this->codebase->taint_graph->addGraph($pool_data['taint_data']);
                 }
 
                 $this->codebase->file_storage_provider->addMore($pool_data['file_storage']);

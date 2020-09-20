@@ -516,7 +516,7 @@ class TaintTest extends TestCase
                     }
 
                     echo getName();',
-                'error_message' => 'TaintedInput - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:26 - Detected tainted html in path: $_GET -> $_GET[\'name\'] (src/somefile.php:3:32) -> getname (src/somefile.php:6:26) -> call to echo (src/somefile.php:6:26) -> echo#1',
+                'error_message' => 'TaintedInput - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:26 - Detected tainted html in path: $_GET -> $_GET[\'name\'] (src/somefile.php:3:32) -> getName (src/somefile.php:2:42) -> call to echo (src/somefile.php:6:26) -> echo#1',
             ],
             'taintedInputFromExplicitTaintSource' => [
                 '<?php
@@ -757,7 +757,7 @@ class TaintTest extends TestCase
                             }
                         }
                     }',
-                'error_message' => 'TaintedInput - src' . DIRECTORY_SEPARATOR . 'somefile.php:23:44 - Detected tainted sql in path: $_GET -> $_GET[\'user_id\'] (src/somefile.php:7:67) -> call to A::getAppendedUserId (src/somefile.php:7:58) -> A::getAppendedUserId#1 (src/somefile.php:11:66) -> concat (src/somefile.php:12:36) -> A::getAppendedUserId (src/somefile.php:11:41) -> call to A::deleteUser (src/somefile.php:7:33) -> A::deleteUser#3 (src/somefile.php:19:85) -> concat (src/somefile.php:23:44) -> call to PDO::exec (src/somefile.php:23:44) -> PDO::exec#1',
+                'error_message' => 'TaintedInput - src' . DIRECTORY_SEPARATOR . 'somefile.php:23:44 - Detected tainted sql in path: $_GET -> $_GET[\'user_id\'] (src/somefile.php:7:67) -> call to A::getAppendedUserId (src/somefile.php:7:58) -> A::getAppendedUserId#1 (src/somefile.php:11:66) -> concat (src/somefile.php:12:36) -> A::getAppendedUserId (src/somefile.php:11:78) -> call to A::deleteUser (src/somefile.php:7:33) -> A::deleteUser#3 (src/somefile.php:19:85) -> concat (src/somefile.php:23:44) -> call to PDO::exec (src/somefile.php:23:44) -> PDO::exec#1',
             ],
             'taintedInParentLoader' => [
                 '<?php

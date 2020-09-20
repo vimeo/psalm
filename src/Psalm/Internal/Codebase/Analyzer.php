@@ -483,7 +483,7 @@ class Analyzer
                 }
 
                 if ($codebase->taint_graph && $pool_data['taint_data']) {
-                    $codebase->taint_graph->addData($pool_data['taint_data']);
+                    $codebase->taint_graph->addGraph($pool_data['taint_data']);
                 }
 
                 $codebase->file_reference_provider->addNonMethodReferencesToClasses(
