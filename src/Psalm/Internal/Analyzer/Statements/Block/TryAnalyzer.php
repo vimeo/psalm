@@ -86,6 +86,22 @@ class TryAnalyzer
             return false;
         }
 
+        if ($try_context->finally_scope) {
+            foreach ($context->vars_in_scope as $var_id => $type) {
+                if (isset($try_context->finally_scope->vars_in_scope[$var_id])) {
+                    if ($try_context->finally_scope->vars_in_scope[$var_id] !== $type) {
+                        $try_context->finally_scope->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                            $try_context->finally_scope->vars_in_scope[$var_id],
+                            $type,
+                            $statements_analyzer->getCodebase()
+                        );
+                    }
+                } else {
+                    $try_context->finally_scope->vars_in_scope[$var_id] = $type;
+                }
+            }
+        }
+
         $context->has_returned = false;
 
         $stmt_control_actions = ScopeAnalyzer::getFinalControlActions(
@@ -502,32 +518,23 @@ class TryAnalyzer
             if ($try_context->finally_scope) {
                 $finally_context = clone $context;
 
-                foreach ($try_context->finally_scope->vars_in_scope as $var_id => $type) {
-                    if (isset($finally_context->vars_in_scope[$var_id])) {
-                        $finally_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
-                            $finally_context->vars_in_scope[$var_id],
-                            $type,
-                            $codebase
-                        );
-                    }
-                }
+                $finally_context->assigned_var_ids = [];
+                $finally_context->possibly_assigned_var_ids = [];
+
+                $finally_context->vars_in_scope = $try_context->finally_scope->vars_in_scope;
 
                 $statements_analyzer->analyze($stmt->finally->stmts, $finally_context);
-            }
 
-            $suppressed_issues = $statements_analyzer->getSuppressedIssues();
-
-            foreach ($issues_to_suppress as $issue_to_suppress) {
-                if (!in_array($issue_to_suppress, $suppressed_issues, true)) {
-                    $statements_analyzer->addSuppressedIssues([$issue_to_suppress]);
-                }
-            }
-
-            $statements_analyzer->analyze($stmt->finally->stmts, $context);
-
-            foreach ($issues_to_suppress as $issue_to_suppress) {
-                if (!in_array($issue_to_suppress, $suppressed_issues, true)) {
-                    $statements_analyzer->removeSuppressedIssues([$issue_to_suppress]);
+                foreach ($finally_context->assigned_var_ids as $var_id => $_) {
+                    if (isset($context->vars_in_scope[$var_id])) {
+                        $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                            $context->vars_in_scope[$var_id],
+                            $finally_context->vars_in_scope[$var_id],
+                            $codebase
+                        );
+                    } else {
+                        $context->vars_in_scope[$var_id] = clone $finally_context->vars_in_scope[$var_id];
+                    }
                 }
             }
         }
