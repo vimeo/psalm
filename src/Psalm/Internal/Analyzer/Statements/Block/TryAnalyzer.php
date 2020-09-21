@@ -70,7 +70,7 @@ class TryAnalyzer
             }
 
             if ($stmt->finally) {
-                $try_context->finally_scope = new FinallyScope();
+                $try_context->finally_scope = new FinallyScope($try_context->vars_in_scope);
             }
         }
 
