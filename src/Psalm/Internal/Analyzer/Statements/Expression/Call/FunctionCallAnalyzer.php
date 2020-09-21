@@ -15,8 +15,8 @@ use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
-use Psalm\Internal\Taint\Source;
-use Psalm\Internal\Taint\TaintNode;
+use Psalm\Internal\ControlFlow\TaintSource;
+use Psalm\Internal\ControlFlow\ControlFlowNode;
 use Psalm\Issue\DeprecatedFunction;
 use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\MixedFunctionCall;
@@ -1059,7 +1059,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
         FunctionLikeStorage $function_storage,
         Type\Union $stmt_type
     ) : void {
-        if (!$statements_analyzer->taint_graph
+        if (!$statements_analyzer->control_flow_graph
             || \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
         ) {
             return;
@@ -1067,14 +1067,14 @@ class FunctionCallAnalyzer extends CallAnalyzer
 
         $node_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
-        $function_call_node = TaintNode::getForMethodReturn(
+        $function_call_node = ControlFlowNode::getForMethodReturn(
             $function_id,
             $function_id,
             $function_storage->signature_return_type_location ?: $function_storage->location,
             $function_storage->specialize_call ? $node_location : null
         );
 
-        $statements_analyzer->taint_graph->addTaintNode($function_call_node);
+        $statements_analyzer->control_flow_graph->addNode($function_call_node);
 
         $stmt_type->parent_nodes[] = $function_call_node;
 
@@ -1118,7 +1118,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     $stmt->args[$i]->value
                 );
 
-                $function_param_sink = TaintNode::getForMethodArgument(
+                $function_param_sink = ControlFlowNode::getForMethodArgument(
                     $function_id,
                     $function_id,
                     $i,
@@ -1126,9 +1126,9 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     $function_storage->specialize_call ? $node_location : null
                 );
 
-                $statements_analyzer->taint_graph->addTaintNode($function_param_sink);
+                $statements_analyzer->control_flow_graph->addNode($function_param_sink);
 
-                $statements_analyzer->taint_graph->addPath(
+                $statements_analyzer->control_flow_graph->addPath(
                     $function_param_sink,
                     $function_call_node,
                     $path_type,
@@ -1139,7 +1139,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
         }
 
         if ($function_storage->taint_source_types) {
-            $method_node = Source::getForMethodReturn(
+            $method_node = TaintSource::getForMethodReturn(
                 $function_id,
                 $function_id,
                 $node_location
@@ -1147,7 +1147,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
 
             $method_node->taints = $function_storage->taint_source_types;
 
-            $statements_analyzer->taint_graph->addSource($method_node);
+            $statements_analyzer->control_flow_graph->addSource($method_node);
         }
     }
 

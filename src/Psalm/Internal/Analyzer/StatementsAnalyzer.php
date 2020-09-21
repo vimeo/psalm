@@ -19,7 +19,7 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ReturnAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ThrowAnalyzer;
 use Psalm\Internal\Scanner\ParsedDocblock;
-use Psalm\Internal\Codebase\TaintGraph;
+use Psalm\Internal\Codebase\ControlFlowGraph;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Context;
@@ -126,8 +126,8 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
     /** @var \Psalm\Internal\Provider\NodeDataProvider */
     public $node_data;
 
-    /** @var ?TaintGraph */
-    public $taint_graph;
+    /** @var ?ControlFlowGraph */
+    public $control_flow_graph;
 
     public function __construct(SourceAnalyzer $source, \Psalm\Internal\Provider\NodeDataProvider $node_data)
     {
@@ -135,8 +135,8 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
         $this->file_analyzer = $source->getFileAnalyzer();
         $this->codebase = $source->getCodebase();
         $this->node_data = $node_data;
-        $this->taint_graph = $this->codebase->taint_graph
-            ? new TaintGraph()
+        $this->control_flow_graph = $this->codebase->control_flow_graph
+            ? new ControlFlowGraph()
             : null;
     }
 
@@ -194,11 +194,11 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
         }
 
         if ($root_scope
-            && $this->taint_graph
-            && $this->codebase->taint_graph
+            && $this->control_flow_graph
+            && $this->codebase->control_flow_graph
             && $codebase->config->trackTaintsInPath($this->getFilePath())
         ) {
-            $this->codebase->taint_graph->addGraph($this->taint_graph);
+            $this->codebase->control_flow_graph->addGraph($this->control_flow_graph);
         }
 
         return null;

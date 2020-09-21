@@ -4,6 +4,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression;
 use PhpParser;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\ControlFlow\ControlFlowNode;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\ImpureMethodCall;
@@ -104,7 +105,7 @@ class BinaryOpAnalyzer
                 $stmt_type = $result_type;
             }
 
-            if ($statements_analyzer->taint_graph
+            if ($statements_analyzer->control_flow_graph
                 && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
             ) {
                 $stmt_left_type = $statements_analyzer->node_data->getType($stmt->left);
@@ -112,20 +113,20 @@ class BinaryOpAnalyzer
 
                 $var_location = new CodeLocation($statements_analyzer, $stmt);
 
-                $new_parent_node = \Psalm\Internal\Taint\TaintNode::getForAssignment('concat', $var_location);
-                $statements_analyzer->taint_graph->addTaintNode($new_parent_node);
+                $new_parent_node = ControlFlowNode::getForAssignment('concat', $var_location);
+                $statements_analyzer->control_flow_graph->addNode($new_parent_node);
 
                 $stmt_type->parent_nodes = [$new_parent_node];
 
                 if ($stmt_left_type && $stmt_left_type->parent_nodes) {
                     foreach ($stmt_left_type->parent_nodes as $parent_node) {
-                        $statements_analyzer->taint_graph->addPath($parent_node, $new_parent_node, 'concat');
+                        $statements_analyzer->control_flow_graph->addPath($parent_node, $new_parent_node, 'concat');
                     }
                 }
 
                 if ($stmt_right_type && $stmt_right_type->parent_nodes) {
                     foreach ($stmt_right_type->parent_nodes as $parent_node) {
-                        $statements_analyzer->taint_graph->addPath($parent_node, $new_parent_node, 'concat');
+                        $statements_analyzer->control_flow_graph->addPath($parent_node, $new_parent_node, 'concat');
                     }
                 }
             }

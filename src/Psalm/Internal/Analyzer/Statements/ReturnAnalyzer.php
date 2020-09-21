@@ -14,7 +14,7 @@ use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Exception\DocblockParseException;
-use Psalm\Internal\Taint\TaintNode;
+use Psalm\Internal\ControlFlow\ControlFlowNode;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Issue\FalsableReturnStatement;
 use Psalm\Issue\InvalidDocblock;
@@ -189,7 +189,7 @@ class ReturnAnalyzer
                     $source->getParentFQCLN()
                 );
 
-                if ($statements_analyzer->taint_graph) {
+                if ($statements_analyzer->control_flow_graph) {
                     self::handleTaints(
                         $statements_analyzer,
                         $stmt,
@@ -496,21 +496,21 @@ class ReturnAnalyzer
         Type\Union $inferred_type,
         \Psalm\Storage\FunctionLikeStorage $storage
     ) : void {
-        if (!$statements_analyzer->taint_graph || !$stmt->expr || !$storage->location) {
+        if (!$statements_analyzer->control_flow_graph || !$stmt->expr || !$storage->location) {
             return;
         }
 
-        $method_node = TaintNode::getForMethodReturn(
+        $method_node = ControlFlowNode::getForMethodReturn(
             strtolower($cased_method_id),
             $cased_method_id,
             $storage->signature_return_type_location ?: $storage->location,
         );
 
-        $statements_analyzer->taint_graph->addTaintNode($method_node);
+        $statements_analyzer->control_flow_graph->addNode($method_node);
 
         if ($inferred_type->parent_nodes) {
             foreach ($inferred_type->parent_nodes as $parent_node) {
-                $statements_analyzer->taint_graph->addPath(
+                $statements_analyzer->control_flow_graph->addPath(
                     $parent_node,
                     $method_node,
                     'return',

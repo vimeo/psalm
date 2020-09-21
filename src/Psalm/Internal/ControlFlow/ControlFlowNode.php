@@ -1,6 +1,6 @@
 <?php
 
-namespace Psalm\Internal\Taint;
+namespace Psalm\Internal\ControlFlow;
 
 use Psalm\CodeLocation;
 use function strtolower;
@@ -8,7 +8,7 @@ use function strtolower;
 /**
  * @psalm-consistent-constructor
  */
-abstract class Taintable
+class ControlFlowNode
 {
     /** @var string */
     public $id;
@@ -28,7 +28,7 @@ abstract class Taintable
     /** @var array<string> */
     public $taints;
 
-    /** @var ?Taintable */
+    /** @var ?self */
     public $previous;
 
     /** @var list<string> */
@@ -71,7 +71,7 @@ abstract class Taintable
         int $argument_offset,
         ?CodeLocation $arg_location,
         ?CodeLocation $code_location = null
-    ): Taintable {
+    ): self {
         $arg_id = strtolower($method_id) . '#' . ($argument_offset + 1);
 
         $label = $cased_method_id . '#' . ($argument_offset + 1);
@@ -96,7 +96,7 @@ abstract class Taintable
     final public static function getForAssignment(
         string $var_id,
         CodeLocation $assignment_location
-    ): Taintable {
+    ): self {
         $id = $var_id
             . '-' . $assignment_location->file_name
             . ':' . $assignment_location->raw_file_start
@@ -113,7 +113,7 @@ abstract class Taintable
         string $cased_method_id,
         ?CodeLocation $code_location,
         ?CodeLocation $function_location = null
-    ): Taintable {
+    ): self {
         $specialization_key = null;
 
         if ($function_location) {

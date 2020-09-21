@@ -5,7 +5,7 @@ use PhpParser;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CastAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Taint\Sink;
+use Psalm\Internal\ControlFlow\TaintSink;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\ForbiddenCode;
@@ -36,7 +36,7 @@ class EchoAnalyzer
 
             $expr_type = $statements_analyzer->node_data->getType($expr);
 
-            if ($statements_analyzer->taint_graph && $expr_type) {
+            if ($statements_analyzer->control_flow_graph && $expr_type) {
                 $expr_type = CastAnalyzer::castStringAttempt(
                     $statements_analyzer,
                     $context,
@@ -46,10 +46,10 @@ class EchoAnalyzer
                 );
             }
 
-            if ($statements_analyzer->taint_graph) {
+            if ($statements_analyzer->control_flow_graph) {
                 $call_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
-                $echo_param_sink = Sink::getForMethodArgument(
+                $echo_param_sink = TaintSink::getForMethodArgument(
                     'echo',
                     'echo',
                     (int) $i,
@@ -63,7 +63,7 @@ class EchoAnalyzer
                     Type\TaintKind::SYSTEM_SECRET
                 ];
 
-                $statements_analyzer->taint_graph->addSink($echo_param_sink);
+                $statements_analyzer->control_flow_graph->addSink($echo_param_sink);
             }
 
             if ($expr_type) {

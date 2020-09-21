@@ -36,8 +36,8 @@ use function strpos;
 use function is_string;
 use function strlen;
 use function substr;
-use Psalm\Internal\Taint\Source;
-use Psalm\Internal\Taint\TaintNode;
+use Psalm\Internal\ControlFlow\TaintSource;
+use Psalm\Internal\ControlFlow\ControlFlowNode;
 use function array_filter;
 
 /**
@@ -1423,7 +1423,7 @@ class StaticCallAnalyzer extends CallAnalyzer
         Type\Union $return_type_candidate,
         ?\Psalm\Storage\MethodStorage $method_storage
     ) : void {
-        if (!$statements_analyzer->taint_graph
+        if (!$statements_analyzer->control_flow_graph
             || \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
         ) {
             return;
@@ -1436,26 +1436,26 @@ class StaticCallAnalyzer extends CallAnalyzer
             : null;
 
         if ($method_storage && $method_storage->specialize_call) {
-            $method_source = TaintNode::getForMethodReturn(
+            $method_source = ControlFlowNode::getForMethodReturn(
                 (string) $method_id,
                 $cased_method_id,
                 $method_location,
                 $code_location
             );
         } else {
-            $method_source = TaintNode::getForMethodReturn(
+            $method_source = ControlFlowNode::getForMethodReturn(
                 (string) $method_id,
                 $cased_method_id,
                 $method_location
             );
         }
 
-        $statements_analyzer->taint_graph->addTaintNode($method_source);
+        $statements_analyzer->control_flow_graph->addNode($method_source);
 
         $return_type_candidate->parent_nodes = [$method_source];
 
         if ($method_storage && $method_storage->taint_source_types) {
-            $method_node = Source::getForMethodReturn(
+            $method_node = TaintSource::getForMethodReturn(
                 (string) $method_id,
                 $cased_method_id,
                 $method_storage->signature_return_type_location ?: $method_storage->location
@@ -1463,7 +1463,7 @@ class StaticCallAnalyzer extends CallAnalyzer
 
             $method_node->taints = $method_storage->taint_source_types;
 
-            $statements_analyzer->taint_graph->addSource($method_node);
+            $statements_analyzer->control_flow_graph->addSource($method_node);
         }
     }
 
@@ -1509,7 +1509,7 @@ class StaticCallAnalyzer extends CallAnalyzer
 
         $method_storage = null;
 
-        if ($statements_analyzer->taint_graph) {
+        if ($statements_analyzer->control_flow_graph) {
             try {
                 $method_storage = $codebase->methods->getStorage($method_id);
 

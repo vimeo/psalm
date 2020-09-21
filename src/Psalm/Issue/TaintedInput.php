@@ -1,7 +1,7 @@
 <?php
 namespace Psalm\Issue;
 
-use Psalm\Internal\Analyzer\TaintNodeData;
+use Psalm\Internal\Analyzer\ControlFlowNodeData;
 use Psalm\CodeLocation;
 
 class TaintedInput extends CodeIssue
@@ -37,7 +37,7 @@ class TaintedInput extends CodeIssue
     }
 
     /**
-     * @return list<TaintNodeData|array{label: string, entry_path_type: string}>
+     * @return list<ControlFlowNodeData|array{label: string, entry_path_type: string}>
      */
     public function getTaintTrace(): array
     {
@@ -45,7 +45,7 @@ class TaintedInput extends CodeIssue
 
         foreach ($this->journey as ['location' => $location, 'label' => $label, 'entry_path_type' => $path_type]) {
             if ($location) {
-                $nodes[] = self::nodeToTaintNodeData($location, $label, $path_type);
+                $nodes[] = self::nodeToControlFlowNodeData($location, $label, $path_type);
             } else {
                 $nodes[] = ['label' => $label, 'entry_path_type' => $path_type];
             }
@@ -54,15 +54,15 @@ class TaintedInput extends CodeIssue
         return $nodes;
     }
 
-    private static function nodeToTaintNodeData(
+    private static function nodeToControlFlowNodeData(
         CodeLocation $location,
         string $label,
         string $entry_path_type
-    ) : TaintNodeData {
+    ) : ControlFlowNodeData {
         $selection_bounds = $location->getSelectionBounds();
         $snippet_bounds = $location->getSnippetBounds();
 
-        return new TaintNodeData(
+        return new ControlFlowNodeData(
             $label,
             $entry_path_type,
             null,

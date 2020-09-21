@@ -7,7 +7,7 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Taint\TaintNode;
+use Psalm\Internal\ControlFlow\ControlFlowNode;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\AbstractInstantiation;
@@ -640,7 +640,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                     }
                 }
 
-                if ($statements_analyzer->taint_graph
+                if ($statements_analyzer->control_flow_graph
                     && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
                     && ($stmt_type = $statements_analyzer->node_data->getType($stmt))
                 ) {
@@ -657,21 +657,21 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                     if ($storage->external_mutation_free
                         || ($method_storage && $method_storage->specialize_call)
                     ) {
-                        $method_source = TaintNode::getForMethodReturn(
+                        $method_source = ControlFlowNode::getForMethodReturn(
                             (string) $method_id,
                             $fq_class_name . '::__construct',
                             $storage->location,
                             $code_location
                         );
                     } else {
-                        $method_source = TaintNode::getForMethodReturn(
+                        $method_source = ControlFlowNode::getForMethodReturn(
                             (string) $method_id,
                             $fq_class_name . '::__construct',
                             $storage->location
                         );
                     }
 
-                    $statements_analyzer->taint_graph->addTaintNode($method_source);
+                    $statements_analyzer->control_flow_graph->addNode($method_source);
 
                     $stmt_type->parent_nodes = [$method_source];
                 }

@@ -12,8 +12,8 @@ use Psalm\Internal\Analyzer\Statements\Expression\CastAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
-use Psalm\Internal\Taint\Sink;
-use Psalm\Internal\Taint\TaintNode;
+use Psalm\Internal\ControlFlow\TaintSink;
+use Psalm\Internal\ControlFlow\ControlFlowNode;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\UnionTemplateHandler;
 use Psalm\CodeLocation;
@@ -209,7 +209,7 @@ class ArgumentAnalyzer
         bool $in_call_map
     ): ?bool {
         if (!$function_param->type) {
-            if (!$codebase->infer_types_from_usage && !$statements_analyzer->taint_graph) {
+            if (!$codebase->infer_types_from_usage && !$statements_analyzer->control_flow_graph) {
                 return null;
             }
 
@@ -1219,7 +1219,7 @@ class ArgumentAnalyzer
     ) : Type\Union {
         $codebase = $statements_analyzer->getCodebase();
 
-        if (!$statements_analyzer->taint_graph
+        if (!$statements_analyzer->control_flow_graph
             || \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
         ) {
             return $input_type;
@@ -1236,7 +1236,7 @@ class ArgumentAnalyzer
         }
 
         if ($specialize_taint) {
-            $method_node = TaintNode::getForMethodArgument(
+            $method_node = ControlFlowNode::getForMethodArgument(
                 $cased_method_id,
                 $cased_method_id,
                 $argument_offset,
@@ -1244,7 +1244,7 @@ class ArgumentAnalyzer
                 $function_call_location
             );
         } else {
-            $method_node = TaintNode::getForMethodArgument(
+            $method_node = ControlFlowNode::getForMethodArgument(
                 $cased_method_id,
                 $cased_method_id,
                 $argument_offset,
@@ -1260,7 +1260,7 @@ class ArgumentAnalyzer
                     $dependent_classlike_storage = $codebase->classlike_storage_provider->get(
                         $dependent_classlike_lc
                     );
-                    $new_sink = TaintNode::getForMethodArgument(
+                    $new_sink = ControlFlowNode::getForMethodArgument(
                         $dependent_classlike_lc . '::' . $method_name,
                         $dependent_classlike_storage->name . '::' . $cased_method_name,
                         $argument_offset,
@@ -1268,13 +1268,13 @@ class ArgumentAnalyzer
                         null
                     );
 
-                    $statements_analyzer->taint_graph->addTaintNode($new_sink);
-                    $statements_analyzer->taint_graph->addPath($method_node, $new_sink, 'arg');
+                    $statements_analyzer->control_flow_graph->addNode($new_sink);
+                    $statements_analyzer->control_flow_graph->addPath($method_node, $new_sink, 'arg');
                 }
 
                 if (isset($class_storage->overridden_method_ids[$method_name])) {
                     foreach ($class_storage->overridden_method_ids[$method_name] as $parent_method_id) {
-                        $new_sink = TaintNode::getForMethodArgument(
+                        $new_sink = ControlFlowNode::getForMethodArgument(
                             (string) $parent_method_id,
                             $codebase->methods->getCasedMethodId($parent_method_id),
                             $argument_offset,
@@ -1282,27 +1282,27 @@ class ArgumentAnalyzer
                             null
                         );
 
-                        $statements_analyzer->taint_graph->addTaintNode($new_sink);
-                        $statements_analyzer->taint_graph->addPath($method_node, $new_sink, 'arg');
+                        $statements_analyzer->control_flow_graph->addNode($new_sink);
+                        $statements_analyzer->control_flow_graph->addPath($method_node, $new_sink, 'arg');
                     }
                 }
             }
         }
 
-        $statements_analyzer->taint_graph->addTaintNode($method_node);
+        $statements_analyzer->control_flow_graph->addNode($method_node);
 
-        $argument_value_node = TaintNode::getForAssignment(
+        $argument_value_node = ControlFlowNode::getForAssignment(
             'call to ' . $cased_method_id,
             $arg_location
         );
 
-        $statements_analyzer->taint_graph->addTaintNode($argument_value_node);
+        $statements_analyzer->control_flow_graph->addNode($argument_value_node);
 
-        $statements_analyzer->taint_graph->addPath($argument_value_node, $method_node, 'arg');
+        $statements_analyzer->control_flow_graph->addPath($argument_value_node, $method_node, 'arg');
 
         if ($function_param->sinks) {
             if ($specialize_taint) {
-                $sink = Sink::getForMethodArgument(
+                $sink = TaintSink::getForMethodArgument(
                     $cased_method_id,
                     $cased_method_id,
                     $argument_offset,
@@ -1310,7 +1310,7 @@ class ArgumentAnalyzer
                     $function_call_location
                 );
             } else {
-                $sink = Sink::getForMethodArgument(
+                $sink = TaintSink::getForMethodArgument(
                     $cased_method_id,
                     $cased_method_id,
                     $argument_offset,
@@ -1320,13 +1320,13 @@ class ArgumentAnalyzer
 
             $sink->taints = $function_param->sinks;
 
-            $statements_analyzer->taint_graph->addSink($sink);
+            $statements_analyzer->control_flow_graph->addSink($sink);
         }
 
         if ($input_type->parent_nodes) {
             foreach ($input_type->parent_nodes as $parent_node) {
-                $statements_analyzer->taint_graph->addTaintNode($method_node);
-                $statements_analyzer->taint_graph->addPath($parent_node, $argument_value_node, 'arg');
+                $statements_analyzer->control_flow_graph->addNode($method_node);
+                $statements_analyzer->control_flow_graph->addPath($parent_node, $argument_value_node, 'arg');
             }
         }
 

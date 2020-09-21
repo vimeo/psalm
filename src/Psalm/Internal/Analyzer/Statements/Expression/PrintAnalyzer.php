@@ -4,7 +4,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression;
 use PhpParser;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Taint\Sink;
+use Psalm\Internal\ControlFlow\TaintSink;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\ForbiddenCode;
@@ -25,10 +25,10 @@ class PrintAnalyzer
             return false;
         }
 
-        if ($statements_analyzer->taint_graph) {
+        if ($statements_analyzer->control_flow_graph) {
             $call_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
-            $print_param_sink = Sink::getForMethodArgument(
+            $print_param_sink = TaintSink::getForMethodArgument(
                 'print',
                 'print',
                 0,
@@ -42,7 +42,7 @@ class PrintAnalyzer
                 Type\TaintKind::SYSTEM_SECRET
             ];
 
-            $statements_analyzer->taint_graph->addSink($print_param_sink);
+            $statements_analyzer->control_flow_graph->addSink($print_param_sink);
         }
 
         if ($stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr)) {

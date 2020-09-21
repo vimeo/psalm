@@ -42,7 +42,7 @@ use function strpos;
 use function array_search;
 use function array_keys;
 use function end;
-use Psalm\Internal\Taint\TaintNode;
+use Psalm\Internal\ControlFlow\ControlFlowNode;
 use Psalm\Storage\FunctionStorage;
 
 /**
@@ -851,23 +851,23 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
         }
 
-        if ($codebase->taint_graph
+        if ($codebase->control_flow_graph
             && $this->function instanceof ClassMethod
             && $cased_method_id
             && $storage->specialize_call
             && isset($context->vars_in_scope['$this'])
             && $context->vars_in_scope['$this']->parent_nodes
         ) {
-            $method_source = TaintNode::getForMethodReturn(
+            $method_source = ControlFlowNode::getForMethodReturn(
                 (string) $method_id,
                 $cased_method_id,
                 $storage->location
             );
 
-            $codebase->taint_graph->addTaintNode($method_source);
+            $codebase->control_flow_graph->addNode($method_source);
 
             foreach ($context->vars_in_scope['$this']->parent_nodes as $parent_node) {
-                $codebase->taint_graph->addPath(
+                $codebase->control_flow_graph->addPath(
                     $parent_node,
                     $method_source,
                     '$this'
@@ -1191,8 +1191,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 ]);
             }
 
-            if ($cased_method_id && $codebase->taint_graph) {
-                $type_source = TaintNode::getForMethodArgument(
+            if ($cased_method_id && $codebase->control_flow_graph) {
+                $type_source = ControlFlowNode::getForMethodArgument(
                     $cased_method_id,
                     $cased_method_id,
                     $offset,

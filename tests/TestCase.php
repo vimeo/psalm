@@ -113,8 +113,8 @@ class TestCase extends BaseTestCase
         );
         $file_analyzer->analyze($context);
 
-        if ($codebase->taint_graph) {
-            $codebase->taint_graph->connectSinksAndSources();
+        if ($codebase->control_flow_graph) {
+            $codebase->control_flow_graph->connectSinksAndSources();
         }
 
         if ($track_unused_suppressions) {

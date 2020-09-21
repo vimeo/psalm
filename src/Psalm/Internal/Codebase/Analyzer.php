@@ -24,7 +24,7 @@ use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\IssueBuffer;
 use Psalm\Progress\Progress;
-use Psalm\Internal\Codebase\TaintGraph;
+use Psalm\Internal\Codebase\ControlFlowGraph;
 use function strpos;
 use function substr;
 use function usort;
@@ -60,7 +60,7 @@ use const PATHINFO_EXTENSION;
  *      class_method_locations: array<string, array<int, \Psalm\CodeLocation>>,
  *      class_property_locations: array<string, array<int, \Psalm\CodeLocation>>,
  *      possible_method_param_types: array<string, array<int, \Psalm\Type\Union>>,
- *      taint_data: ?TaintGraph,
+ *      taint_data: ?ControlFlowGraph,
  *      unused_suppressions: array<string, array<int, int>>,
  *      used_suppressions: array<string, array<int, bool>>,
  *      function_docblock_manipulators: array<string, array<int, FunctionDocblockManipulator>>,
@@ -271,8 +271,8 @@ class Analyzer
 
         $scanned_files = $codebase->scanner->getScannedFiles();
 
-        if ($codebase->taint_graph) {
-            $codebase->taint_graph->connectSinksAndSources();
+        if ($codebase->control_flow_graph) {
+            $codebase->control_flow_graph->connectSinksAndSources();
         }
 
         $this->progress->finish();
@@ -409,8 +409,8 @@ class Analyzer
 
                     $file_reference_provider = $codebase->file_reference_provider;
 
-                    if ($codebase->taint_graph) {
-                        $codebase->taint_graph = new TaintGraph();
+                    if ($codebase->control_flow_graph) {
+                        $codebase->control_flow_graph = new ControlFlowGraph();
                     }
 
                     $file_reference_provider->setNonMethodReferencesToClasses([]);
@@ -452,7 +452,7 @@ class Analyzer
                         'class_method_locations' => $file_reference_provider->getAllClassMethodLocations(),
                         'class_property_locations' => $file_reference_provider->getAllClassPropertyLocations(),
                         'possible_method_param_types' => $analyzer->getPossibleMethodParamTypes(),
-                        'taint_data' => $codebase->taint_graph,
+                        'taint_data' => $codebase->control_flow_graph,
                         'unused_suppressions' => $codebase->track_unused_suppressions ? IssueBuffer::getUnusedSuppressions() : [],
                         'used_suppressions' => $codebase->track_unused_suppressions ? IssueBuffer::getUsedSuppressions() : [],
                         'function_docblock_manipulators' => FunctionDocblockManipulator::getManipulators(),
@@ -482,8 +482,8 @@ class Analyzer
                     IssueBuffer::addUsedSuppressions($pool_data['used_suppressions']);
                 }
 
-                if ($codebase->taint_graph && $pool_data['taint_data']) {
-                    $codebase->taint_graph->addGraph($pool_data['taint_data']);
+                if ($codebase->control_flow_graph && $pool_data['taint_data']) {
+                    $codebase->control_flow_graph->addGraph($pool_data['taint_data']);
                 }
 
                 $codebase->file_reference_provider->addNonMethodReferencesToClasses(
