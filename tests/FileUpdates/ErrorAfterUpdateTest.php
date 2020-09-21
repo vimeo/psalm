@@ -646,7 +646,8 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
 
                             class A {}
 
-                            $a = new A();',
+                            $a = new A();
+                            print_r($a);',
                     ],
                     [
                         getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
@@ -677,7 +678,8 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
                                 public function foo() : void {}
                             }
 
-                            $a = new A();',
+                            $a = new A();
+                            print_r($a);',
                     ],
                 ],
                 'error_message' => 'PossiblyUnusedMethod',
@@ -803,7 +805,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
                                 public $foo = "hello";
                             }
 
-                            $a = new A();',
+                            print_r(new A());',
                     ],
                 ],
                 'error_message' => 'PossiblyUnusedProperty',
