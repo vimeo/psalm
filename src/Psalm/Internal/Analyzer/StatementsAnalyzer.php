@@ -135,7 +135,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
         $this->file_analyzer = $source->getFileAnalyzer();
         $this->codebase = $source->getCodebase();
         $this->node_data = $node_data;
-        $this->taint_graph = $this->codebase->taint_graph || $this->codebase->find_unused_variables
+        $this->taint_graph = $this->codebase->taint_graph
             ? new TaintGraph()
             : null;
     }
