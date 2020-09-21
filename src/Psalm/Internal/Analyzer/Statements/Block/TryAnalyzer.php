@@ -12,6 +12,7 @@ use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
+use Psalm\Internal\Scope\FinallyScope;
 use function in_array;
 use function array_merge;
 use function array_intersect_key;
@@ -66,6 +67,10 @@ class TryAnalyzer
 
             if ($codebase->alter_code) {
                 $try_context->branch_point = $try_context->branch_point ?: (int) $stmt->getAttribute('startFilePos');
+            }
+
+            if ($stmt->finally) {
+                $try_context->finally_scope = new FinallyScope();
             }
         }
 
@@ -432,22 +437,18 @@ class TryAnalyzer
                 }
             }
 
-            if ($stmt->finally) {
-                $suppressed_issues = $statements_analyzer->getSuppressedIssues();
-
-                foreach ($issues_to_suppress as $issue_to_suppress) {
-                    if (!in_array($issue_to_suppress, $suppressed_issues, true)) {
-                        $statements_analyzer->addSuppressedIssues([$issue_to_suppress]);
-                    }
-                }
-
-                $catch_context->has_returned = false;
-
-                $statements_analyzer->analyze($stmt->finally->stmts, $catch_context);
-
-                foreach ($issues_to_suppress as $issue_to_suppress) {
-                    if (!in_array($issue_to_suppress, $suppressed_issues, true)) {
-                        $statements_analyzer->removeSuppressedIssues([$issue_to_suppress]);
+            if ($try_context->finally_scope) {
+                foreach ($catch_context->vars_in_scope as $var_id => $type) {
+                    if (isset($try_context->finally_scope->vars_in_scope[$var_id])) {
+                        if ($try_context->finally_scope->vars_in_scope[$var_id] !== $type) {
+                            $try_context->finally_scope->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                                $try_context->finally_scope->vars_in_scope[$var_id],
+                                $type,
+                                $statements_analyzer->getCodebase()
+                            );
+                        }
+                    } else {
+                        $try_context->finally_scope->vars_in_scope[$var_id] = $type;
                     }
                 }
             }
@@ -498,6 +499,22 @@ class TryAnalyzer
         }
 
         if ($stmt->finally) {
+            if ($try_context->finally_scope) {
+                $finally_context = clone $context;
+
+                foreach ($try_context->finally_scope->vars_in_scope as $var_id => $type) {
+                    if (isset($finally_context->vars_in_scope[$var_id])) {
+                        $finally_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                            $finally_context->vars_in_scope[$var_id],
+                            $type,
+                            $codebase
+                        );
+                    }
+                }
+
+                $statements_analyzer->analyze($stmt->finally->stmts, $finally_context);
+            }
+
             $suppressed_issues = $statements_analyzer->getSuppressedIssues();
 
             foreach ($issues_to_suppress as $issue_to_suppress) {
