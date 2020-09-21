@@ -99,6 +99,22 @@ class ContinueAnalyzer
 
                 $loop_scope->referenced_var_ids += $context->referenced_var_ids;
             }
+
+            if ($context->finally_scope) {
+                foreach ($context->vars_in_scope as $var_id => $type) {
+                    if (isset($context->finally_scope->vars_in_scope[$var_id])) {
+                        if ($context->finally_scope->vars_in_scope[$var_id] !== $type) {
+                            $context->finally_scope->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                                $context->finally_scope->vars_in_scope[$var_id],
+                                $type,
+                                $statements_analyzer->getCodebase()
+                            );
+                        }
+                    } else {
+                        $context->finally_scope->vars_in_scope[$var_id] = $type;
+                    }
+                }
+            }
         }
 
         $case_scope = $context->case_scope;

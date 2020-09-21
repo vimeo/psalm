@@ -162,7 +162,7 @@ class ScopeAnalyzer
                     return array_merge($control_actions, [self::ACTION_LEAVE_SWITCH]);
                 }
 
-                return array_unique(array_merge($control_actions, [self::ACTION_CONTINUE]));
+                return \array_values(array_unique(array_merge($control_actions, [self::ACTION_CONTINUE])));
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\Break_) {
@@ -173,7 +173,7 @@ class ScopeAnalyzer
                     return [self::ACTION_LEAVE_SWITCH];
                 }
 
-                return array_unique(array_merge($control_actions, [self::ACTION_BREAK]));
+                return \array_values(array_unique(array_merge($control_actions, [self::ACTION_BREAK])));
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\If_) {

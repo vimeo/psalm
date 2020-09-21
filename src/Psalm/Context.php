@@ -299,6 +299,11 @@ class Context
     public $case_scope = null;
 
     /**
+     * @var Internal\Scope\FinallyScope|null
+     */
+    public $finally_scope = null;
+
+    /**
      * @var Context|null
      */
     public $if_context = null;
@@ -792,7 +797,7 @@ class Context
             }
         }
     }
-    
+
     public function isSuppressingExceptions(StatementsAnalyzer $statements_analyzer): bool
     {
         if (!$this->collect_exceptions) {

@@ -8,6 +8,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\InvalidThrow;
 use Psalm\IssueBuffer;
+use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
@@ -29,6 +30,22 @@ class ThrowAnalyzer
             return false;
         }
         $context->inside_throw = false;
+
+        if ($context->finally_scope) {
+            foreach ($context->vars_in_scope as $var_id => $type) {
+                if (isset($context->finally_scope->vars_in_scope[$var_id])) {
+                    if ($context->finally_scope->vars_in_scope[$var_id] !== $type) {
+                        $context->finally_scope->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                            $context->finally_scope->vars_in_scope[$var_id],
+                            $type,
+                            $statements_analyzer->getCodebase()
+                        );
+                    }
+                } else {
+                    $context->finally_scope->vars_in_scope[$var_id] = $type;
+                }
+            }
+        }
 
         if ($context->check_classes
             && ($throw_type = $statements_analyzer->node_data->getType($stmt->expr))
