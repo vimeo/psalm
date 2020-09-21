@@ -1213,7 +1213,7 @@ class UnusedVariableTest extends TestCase
                         return "hello";
                     }',
             ],
-            'useTryAndCatchAssignedVariableInsideFinally' => [
+            'SKIPPED-useTryAndCatchAssignedVariableInsideFinally' => [
                 '<?php
                     function foo() : void {
                         try {
