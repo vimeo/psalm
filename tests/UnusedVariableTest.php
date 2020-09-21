@@ -1294,6 +1294,7 @@ class UnusedVariableTest extends TestCase
                      * @psalm-suppress MixedMethodCall
                      * @psalm-suppress MissingParamType
                      * @psalm-suppress MixedArgument
+                     * @psalm-suppress PossiblyNullArgument
                      */
                     function foo($a): void {
                         $m = $_GET["m"] ?? null;
