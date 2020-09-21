@@ -3,11 +3,10 @@
 namespace Psalm\Internal\Codebase;
 
 use Psalm\CodeLocation;
-use Psalm\Internal\Taint\Path;
-use Psalm\Internal\Taint\Sink;
-use Psalm\Internal\Taint\Source;
-use Psalm\Internal\Taint\TaintNode;
-use Psalm\Internal\Taint\Taintable;
+use Psalm\Internal\ControlFlow\Path;
+use Psalm\Internal\ControlFlow\TaintSink;
+use Psalm\Internal\ControlFlow\TaintSource;
+use Psalm\Internal\ControlFlow\ControlFlowNode;
 use Psalm\IssueBuffer;
 use Psalm\Issue\TaintedInput;
 use function array_merge;
@@ -18,15 +17,15 @@ use function strlen;
 use function array_intersect;
 use function array_reverse;
 
-class TaintGraph
+class ControlFlowGraph
 {
-    /** @var array<string, Source> */
+    /** @var array<string, TaintSource> */
     private $sources = [];
 
-    /** @var array<string, Taintable> */
+    /** @var array<string, ControlFlowNode> */
     private $nodes = [];
 
-    /** @var array<string, Sink> */
+    /** @var array<string, TaintSink> */
     private $sinks = [];
 
     /** @var array<string, array<string, Path>> */
@@ -38,19 +37,19 @@ class TaintGraph
     /** @var array<string, array<string, true>> */
     private $specializations = [];
 
-    public function addSource(Source $node) : void
+    public function addSource(TaintSource $node) : void
     {
         $this->sources[$node->id] = $node;
     }
 
-    public function addSink(Sink $node) : void
+    public function addSink(TaintSink $node) : void
     {
         $this->sinks[$node->id] = $node;
         // in the rare case the sink is the _next_ node, this is necessary
         $this->nodes[$node->id] = $node;
     }
 
-    public function addTaintNode(TaintNode $node) : void
+    public function addNode(ControlFlowNode $node) : void
     {
         $this->nodes[$node->id] = $node;
 
@@ -65,8 +64,8 @@ class TaintGraph
      * @param array<string> $removed_taints
      */
     public function addPath(
-        Taintable $from,
-        Taintable $to,
+        ControlFlowNode $from,
+        ControlFlowNode $to,
         string $path_type,
         ?array $added_taints = null,
         ?array $removed_taints = null
@@ -81,7 +80,7 @@ class TaintGraph
         $this->forward_edges[$from_id][$to_id] = new Path($path_type, $added_taints, $removed_taints);
     }
 
-    public function getPredecessorPath(Taintable $source) : string
+    public function getPredecessorPath(ControlFlowNode $source) : string
     {
         $location_summary = '';
 
@@ -104,7 +103,7 @@ class TaintGraph
         return $source_descriptor;
     }
 
-    public function getSuccessorPath(Taintable $sink) : string
+    public function getSuccessorPath(ControlFlowNode $sink) : string
     {
         $location_summary = '';
 
@@ -130,7 +129,7 @@ class TaintGraph
     /**
      * @return list<array{location: ?CodeLocation, label: string, entry_path_type: string}>
      */
-    public function getIssueTrace(Taintable $source) : array
+    public function getIssueTrace(ControlFlowNode $source) : array
     {
         $previous_source = $source->previous;
 
@@ -212,11 +211,11 @@ class TaintGraph
 
     /**
      * @param array<string> $source_taints
-     * @param array<Taintable> $sinks
-     * @return array<Taintable>
+     * @param array<ControlFlowNode> $sinks
+     * @return array<ControlFlowNode>
      */
     private function getChildNodes(
-        Taintable $generated_source,
+        ControlFlowNode $generated_source,
         array $source_taints,
         array $sinks,
         array $visited_source_ids
@@ -345,8 +344,8 @@ class TaintGraph
         return false;
     }
 
-    /** @return array<Taintable> */
-    private function getSpecializedSources(Taintable $source) : array
+    /** @return array<ControlFlowNode> */
+    private function getSpecializedSources(ControlFlowNode $source) : array
     {
         $generated_sources = [];
 

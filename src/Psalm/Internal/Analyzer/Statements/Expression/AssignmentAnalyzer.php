@@ -11,6 +11,7 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Scanner\VarDocblockComment;
+use Psalm\Internal\ControlFlow\ControlFlowNode;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Exception\DocblockParseException;
@@ -878,8 +879,8 @@ class AssignmentAnalyzer
                 return $context->vars_in_scope[$var_id];
             }
 
-            if ($statements_analyzer->taint_graph) {
-                $taint_graph = $statements_analyzer->taint_graph;
+            if ($statements_analyzer->control_flow_graph) {
+                $control_flow_graph = $statements_analyzer->control_flow_graph;
 
                 if ($context->vars_in_scope[$var_id]->parent_nodes) {
                     if (\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())) {
@@ -887,12 +888,12 @@ class AssignmentAnalyzer
                     } else {
                         $var_location = new CodeLocation($statements_analyzer->getSource(), $assign_var);
 
-                        $new_parent_node = \Psalm\Internal\Taint\TaintNode::getForAssignment($var_id, $var_location);
+                        $new_parent_node = ControlFlowNode::getForAssignment($var_id, $var_location);
 
-                        $statements_analyzer->taint_graph->addTaintNode($new_parent_node);
+                        $statements_analyzer->control_flow_graph->addNode($new_parent_node);
 
                         foreach ($context->vars_in_scope[$var_id]->parent_nodes as $parent_node) {
-                            $taint_graph->addPath($parent_node, $new_parent_node, '=', [], $removed_taints);
+                            $control_flow_graph->addPath($parent_node, $new_parent_node, '=', [], $removed_taints);
                         }
 
                         $context->vars_in_scope[$var_id]->parent_nodes = [$new_parent_node];
@@ -1197,7 +1198,7 @@ class AssignmentAnalyzer
                 $context->vars_in_scope[$array_var_id] = $result_type;
                 $statements_analyzer->node_data->setType($stmt, clone $context->vars_in_scope[$array_var_id]);
 
-                if ($statements_analyzer->taint_graph
+                if ($statements_analyzer->control_flow_graph
                     && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
                 ) {
                     $stmt_left_type = $statements_analyzer->node_data->getType($stmt->var);
@@ -1205,20 +1206,20 @@ class AssignmentAnalyzer
 
                     $var_location = new CodeLocation($statements_analyzer, $stmt);
 
-                    $new_parent_node = \Psalm\Internal\Taint\TaintNode::getForAssignment($array_var_id, $var_location);
-                    $statements_analyzer->taint_graph->addTaintNode($new_parent_node);
+                    $new_parent_node = ControlFlowNode::getForAssignment($array_var_id, $var_location);
+                    $statements_analyzer->control_flow_graph->addNode($new_parent_node);
 
                     $result_type->parent_nodes = [$new_parent_node];
 
                     if ($stmt_left_type && $stmt_left_type->parent_nodes) {
                         foreach ($stmt_left_type->parent_nodes as $parent_node) {
-                            $statements_analyzer->taint_graph->addPath($parent_node, $new_parent_node, 'concat');
+                            $statements_analyzer->control_flow_graph->addPath($parent_node, $new_parent_node, 'concat');
                         }
                     }
 
                     if ($stmt_right_type && $stmt_right_type->parent_nodes) {
                         foreach ($stmt_right_type->parent_nodes as $parent_node) {
-                            $statements_analyzer->taint_graph->addPath($parent_node, $new_parent_node, 'concat');
+                            $statements_analyzer->control_flow_graph->addPath($parent_node, $new_parent_node, 'concat');
                         }
                     }
                 }

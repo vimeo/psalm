@@ -20,7 +20,7 @@ use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Progress\Progress;
-use Psalm\Internal\Codebase\TaintGraph;
+use Psalm\Internal\Codebase\ControlFlowGraph;
 use function realpath;
 use function strtolower;
 use function substr;
@@ -56,7 +56,7 @@ use function substr;
  *     classlike_storage:array<string, \Psalm\Storage\ClassLikeStorage>,
  *     file_storage:array<string, \Psalm\Storage\FileStorage>,
  *     new_file_content_hashes: array<string, string>,
- *     taint_data: ?TaintGraph
+ *     taint_data: ?ControlFlowGraph
  * }
  */
 
@@ -389,7 +389,7 @@ class Scanner
                         'new_file_content_hashes' => $statements_provider->parser_cache_provider
                             ? $statements_provider->parser_cache_provider->getNewFileContentHashes()
                             : [],
-                        'taint_data' => $codebase->taint_graph,
+                        'taint_data' => $codebase->control_flow_graph,
                     ];
                 }
             );
@@ -412,8 +412,8 @@ class Scanner
                 $this->codebase->statements_provider->addDiffMap(
                     $pool_data['diff_map']
                 );
-                if ($this->codebase->taint_graph && $pool_data['taint_data']) {
-                    $this->codebase->taint_graph->addGraph($pool_data['taint_data']);
+                if ($this->codebase->control_flow_graph && $pool_data['taint_data']) {
+                    $this->codebase->control_flow_graph->addGraph($pool_data['taint_data']);
                 }
 
                 $this->codebase->file_storage_provider->addMore($pool_data['file_storage']);

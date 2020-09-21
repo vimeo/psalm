@@ -111,7 +111,7 @@ class IssueData
     public $link;
 
     /**
-     * @var ?list<TaintNodeData|array{label: string, entry_path_type: string}>
+     * @var ?list<ControlFlowNodeData|array{label: string, entry_path_type: string}>
      */
     public $taint_trace;
 
@@ -122,7 +122,7 @@ class IssueData
     private $dupe_key;
 
     /**
-     * @param ?list<TaintNodeData|array{label: string, entry_path_type: string}> $taint_trace
+     * @param ?list<ControlFlowNodeData|array{label: string, entry_path_type: string}> $taint_trace
      */
     public function __construct(
         string $severity,

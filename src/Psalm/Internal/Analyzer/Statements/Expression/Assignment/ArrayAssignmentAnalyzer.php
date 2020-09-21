@@ -408,7 +408,7 @@ class ArrayAssignmentAnalyzer
                 $context->possibly_assigned_var_ids[$array_var_id] = true;
             }
 
-            if ($statements_analyzer->taint_graph) {
+            if ($statements_analyzer->control_flow_graph) {
                 self::taintArrayAssignment(
                     $statements_analyzer,
                     $child_stmt->var,
@@ -773,30 +773,30 @@ class ArrayAssignmentAnalyzer
         ?string $array_var_id,
         array $key_values
     ) : void {
-        if ($statements_analyzer->taint_graph
+        if ($statements_analyzer->control_flow_graph
             && $child_stmt_type->parent_nodes
             && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
         ) {
             $var_location = new \Psalm\CodeLocation($statements_analyzer->getSource(), $stmt);
 
-            $new_parent_node = \Psalm\Internal\Taint\TaintNode::getForAssignment(
+            $new_parent_node = \Psalm\Internal\ControlFlow\ControlFlowNode::getForAssignment(
                 $array_var_id ?: 'array-assignment',
                 $var_location
             );
 
-            $statements_analyzer->taint_graph->addTaintNode($new_parent_node);
+            $statements_analyzer->control_flow_graph->addNode($new_parent_node);
 
             foreach ($child_stmt_type->parent_nodes as $parent_node) {
                 if ($key_values) {
                     foreach ($key_values as $key_value) {
-                        $statements_analyzer->taint_graph->addPath(
+                        $statements_analyzer->control_flow_graph->addPath(
                             $parent_node,
                             $new_parent_node,
                             'array-assignment-\'' . $key_value->value . '\''
                         );
                     }
                 } else {
-                    $statements_analyzer->taint_graph->addPath(
+                    $statements_analyzer->control_flow_graph->addPath(
                         $parent_node,
                         $new_parent_node,
                         'array-assignment'

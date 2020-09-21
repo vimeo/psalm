@@ -202,23 +202,23 @@ class ArrayAnalyzer
                 $array_keys[$item_key_value] = true;
             }
 
-            if ($statements_analyzer->taint_graph
+            if ($statements_analyzer->control_flow_graph
                 && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
             ) {
                 if ($item_value_type = $statements_analyzer->node_data->getType($item->value)) {
                     if ($item_value_type->parent_nodes) {
                         $var_location = new CodeLocation($statements_analyzer->getSource(), $item);
 
-                        $new_parent_node = \Psalm\Internal\Taint\TaintNode::getForAssignment(
+                        $new_parent_node = \Psalm\Internal\ControlFlow\ControlFlowNode::getForAssignment(
                             'array'
                                 . ($item_key_value !== null ? '[\'' . $item_key_value . '\']' : ''),
                             $var_location
                         );
 
-                        $statements_analyzer->taint_graph->addTaintNode($new_parent_node);
+                        $statements_analyzer->control_flow_graph->addNode($new_parent_node);
 
                         foreach ($item_value_type->parent_nodes as $parent_node) {
-                            $statements_analyzer->taint_graph->addPath(
+                            $statements_analyzer->control_flow_graph->addPath(
                                 $parent_node,
                                 $new_parent_node,
                                 'array-assignment'

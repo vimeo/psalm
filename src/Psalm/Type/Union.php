@@ -164,7 +164,7 @@ class Union implements TypeNode
     private $id;
 
     /**
-     * @var ?array<\Psalm\Internal\Taint\Taintable>
+     * @var ?array<\Psalm\Internal\ControlFlow\ControlFlowNode>
      */
     public $parent_nodes;
 

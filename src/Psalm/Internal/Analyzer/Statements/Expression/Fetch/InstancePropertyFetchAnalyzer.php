@@ -43,7 +43,7 @@ use function strtolower;
 use function array_values;
 use function in_array;
 use function array_keys;
-use Psalm\Internal\Taint\TaintNode;
+use Psalm\Internal\ControlFlow\ControlFlowNode;
 
 /**
  * @internal
@@ -1193,11 +1193,11 @@ class InstancePropertyFetchAnalyzer
         \Psalm\Storage\ClassLikeStorage $class_storage,
         bool $in_assignment
     ) : void {
-        if (!$statements_analyzer->taint_graph) {
+        if (!$statements_analyzer->control_flow_graph) {
             return;
         }
 
-        $taint_graph = $statements_analyzer->taint_graph;
+        $control_flow_graph = $statements_analyzer->control_flow_graph;
 
         $var_location = new CodeLocation($statements_analyzer->getSource(), $stmt->var);
         $property_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
@@ -1223,21 +1223,21 @@ class InstancePropertyFetchAnalyzer
                     return;
                 }
 
-                $var_node = TaintNode::getForAssignment(
+                $var_node = ControlFlowNode::getForAssignment(
                     $var_id,
                     $var_location
                 );
 
-                $taint_graph->addTaintNode($var_node);
+                $control_flow_graph->addNode($var_node);
 
-                $property_node = TaintNode::getForAssignment(
+                $property_node = ControlFlowNode::getForAssignment(
                     $var_property_id ?: $var_id . '->$property',
                     $property_location
                 );
 
-                $taint_graph->addTaintNode($property_node);
+                $control_flow_graph->addNode($property_node);
 
-                $taint_graph->addPath(
+                $control_flow_graph->addPath(
                     $var_node,
                     $property_node,
                     'property-fetch'
@@ -1246,7 +1246,7 @@ class InstancePropertyFetchAnalyzer
 
                 if ($var_type && $var_type->parent_nodes) {
                     foreach ($var_type->parent_nodes as $parent_node) {
-                        $taint_graph->addPath(
+                        $control_flow_graph->addPath(
                             $parent_node,
                             $var_node,
                             '='
@@ -1259,28 +1259,28 @@ class InstancePropertyFetchAnalyzer
         } else {
             $code_location = new CodeLocation($statements_analyzer, $stmt->name);
 
-            $localized_property_node = new TaintNode(
+            $localized_property_node = new ControlFlowNode(
                 $property_id . '-' . $code_location->file_name . ':' . $code_location->raw_file_start,
                 $property_id,
                 $code_location,
                 null
             );
 
-            $taint_graph->addTaintNode($localized_property_node);
+            $control_flow_graph->addNode($localized_property_node);
 
-            $property_node = new TaintNode(
+            $property_node = new ControlFlowNode(
                 $property_id,
                 $property_id,
                 null,
                 null
             );
 
-            $taint_graph->addTaintNode($property_node);
+            $control_flow_graph->addNode($property_node);
 
             if ($in_assignment) {
-                $taint_graph->addPath($localized_property_node, $property_node, 'property-assignment');
+                $control_flow_graph->addPath($localized_property_node, $property_node, 'property-assignment');
             } else {
-                $taint_graph->addPath($property_node, $localized_property_node, 'property-fetch');
+                $control_flow_graph->addPath($property_node, $localized_property_node, 'property-fetch');
             }
 
             $type->parent_nodes[] = $localized_property_node;

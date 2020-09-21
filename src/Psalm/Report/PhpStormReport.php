@@ -3,7 +3,7 @@ namespace Psalm\Report;
 
 use Psalm\Config;
 use Psalm\Report;
-use Psalm\Internal\Analyzer\TaintNodeData;
+use Psalm\Internal\Analyzer\ControlFlowNodeData;
 use function substr;
 
 class PhpStormReport extends Report
@@ -58,14 +58,14 @@ class PhpStormReport extends Report
     }
 
     /**
-     * @param non-empty-list<TaintNodeData|array{label: string, entry_path_type: string}> $taint_trace
+     * @param non-empty-list<ControlFlowNodeData|array{label: string, entry_path_type: string}> $taint_trace
      */
     private function getTaintSnippets(array $taint_trace) : string
     {
         $snippets = '';
 
         foreach ($taint_trace as $node_data) {
-            if ($node_data instanceof TaintNodeData) {
+            if ($node_data instanceof ControlFlowNodeData) {
                 $snippets .= '  ' . $node_data->label
                     . ' - ' . $node_data->file_name
                     . ':' . $node_data->line_from

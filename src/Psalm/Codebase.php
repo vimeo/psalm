@@ -168,9 +168,9 @@ class Codebase
     public $populator;
 
     /**
-     * @var ?Internal\Codebase\TaintGraph
+     * @var ?Internal\Codebase\ControlFlowGraph
      */
-    public $taint_graph = null;
+    public $control_flow_graph = null;
 
     /**
      * @var bool
@@ -1598,11 +1598,11 @@ class Codebase
         array $taints = \Psalm\Type\TaintKindGroup::ALL_INPUT,
         ?CodeLocation $code_location = null
     ) : void {
-        if (!$this->taint_graph) {
+        if (!$this->control_flow_graph) {
             return;
         }
 
-        $source = new \Psalm\Internal\Taint\Source(
+        $source = new \Psalm\Internal\ControlFlow\TaintSource(
             $taint_id,
             $taint_id,
             $code_location,
@@ -1610,7 +1610,7 @@ class Codebase
             $taints
         );
 
-        $this->taint_graph->addSource($source);
+        $this->control_flow_graph->addSource($source);
 
         $expr_type->parent_nodes = [
             $source,
@@ -1627,11 +1627,11 @@ class Codebase
         array $taints = \Psalm\Type\TaintKindGroup::ALL_INPUT,
         ?CodeLocation $code_location = null
     ) : void {
-        if (!$this->taint_graph) {
+        if (!$this->control_flow_graph) {
             return;
         }
 
-        $sink = new \Psalm\Internal\Taint\Sink(
+        $sink = new \Psalm\Internal\ControlFlow\TaintSink(
             $taint_id,
             $taint_id,
             $code_location,
@@ -1639,6 +1639,6 @@ class Codebase
             $taints
         );
 
-        $this->taint_graph->addSink($sink);
+        $this->control_flow_graph->addSink($sink);
     }
 }

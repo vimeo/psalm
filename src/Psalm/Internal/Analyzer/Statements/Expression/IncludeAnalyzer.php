@@ -4,7 +4,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression;
 use PhpParser;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Taint\Sink;
+use Psalm\Internal\ControlFlow\TaintSink;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
@@ -102,13 +102,13 @@ class IncludeAnalyzer
         }
 
         if ($stmt_expr_type
-            && $statements_analyzer->taint_graph
+            && $statements_analyzer->control_flow_graph
             && $stmt_expr_type->parent_nodes
             && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
         ) {
             $arg_location = new CodeLocation($statements_analyzer->getSource(), $stmt->expr);
 
-            $include_param_sink = Sink::getForMethodArgument(
+            $include_param_sink = TaintSink::getForMethodArgument(
                 'include',
                 'include',
                 0,
@@ -117,10 +117,10 @@ class IncludeAnalyzer
 
             $include_param_sink->taints = [\Psalm\Type\TaintKind::INPUT_TEXT];
 
-            $statements_analyzer->taint_graph->addSink($include_param_sink);
+            $statements_analyzer->control_flow_graph->addSink($include_param_sink);
 
             foreach ($stmt_expr_type->parent_nodes as $parent_node) {
-                $statements_analyzer->taint_graph->addPath($parent_node, $include_param_sink, 'arg');
+                $statements_analyzer->control_flow_graph->addPath($parent_node, $include_param_sink, 'arg');
             }
         }
 

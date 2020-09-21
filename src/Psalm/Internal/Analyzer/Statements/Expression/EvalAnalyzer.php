@@ -4,7 +4,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression;
 use PhpParser;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Taint\Sink;
+use Psalm\Internal\ControlFlow\TaintSink;
 use Psalm\CodeLocation;
 use Psalm\Context;
 
@@ -23,13 +23,13 @@ class EvalAnalyzer
         $expr_type = $statements_analyzer->node_data->getType($stmt->expr);
 
         if ($expr_type) {
-            if ($statements_analyzer->taint_graph
+            if ($statements_analyzer->control_flow_graph
                 && $expr_type->parent_nodes
                 && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
             ) {
                 $arg_location = new CodeLocation($statements_analyzer->getSource(), $stmt->expr);
 
-                $eval_param_sink = Sink::getForMethodArgument(
+                $eval_param_sink = TaintSink::getForMethodArgument(
                     'eval',
                     'eval',
                     0,
@@ -39,10 +39,10 @@ class EvalAnalyzer
 
                 $eval_param_sink->taints = [\Psalm\Type\TaintKind::INPUT_TEXT];
 
-                $statements_analyzer->taint_graph->addSink($eval_param_sink);
+                $statements_analyzer->control_flow_graph->addSink($eval_param_sink);
 
                 foreach ($expr_type->parent_nodes as $parent_node) {
-                    $statements_analyzer->taint_graph->addPath($parent_node, $eval_param_sink, 'arg');
+                    $statements_analyzer->control_flow_graph->addPath($parent_node, $eval_param_sink, 'arg');
                 }
             }
         }

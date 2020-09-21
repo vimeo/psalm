@@ -312,7 +312,7 @@ class ArrayFetchAnalyzer
         Type\Union $stmt_type,
         Type\Union $offset_type
     ) : void {
-        if ($statements_analyzer->taint_graph
+        if ($statements_analyzer->control_flow_graph
             && ($stmt_var_type = $statements_analyzer->node_data->getType($var))
             && $stmt_var_type->parent_nodes
         ) {
@@ -323,12 +323,12 @@ class ArrayFetchAnalyzer
 
             $var_location = new CodeLocation($statements_analyzer->getSource(), $var);
 
-            $new_parent_node = \Psalm\Internal\Taint\TaintNode::getForAssignment(
+            $new_parent_node = \Psalm\Internal\ControlFlow\ControlFlowNode::getForAssignment(
                 $keyed_array_var_id ?: 'array-fetch',
                 $var_location
             );
 
-            $statements_analyzer->taint_graph->addTaintNode($new_parent_node);
+            $statements_analyzer->control_flow_graph->addNode($new_parent_node);
 
             $dim_value = $offset_type->isSingleStringLiteral()
                 ? $offset_type->getSingleStringLiteral()->value
@@ -337,7 +337,7 @@ class ArrayFetchAnalyzer
                     : null);
 
             foreach ($stmt_var_type->parent_nodes as $parent_node) {
-                $statements_analyzer->taint_graph->addPath(
+                $statements_analyzer->control_flow_graph->addPath(
                     $parent_node,
                     $new_parent_node,
                     'array-fetch' . ($dim_value !== null ? '-\'' . $dim_value . '\'' : '')

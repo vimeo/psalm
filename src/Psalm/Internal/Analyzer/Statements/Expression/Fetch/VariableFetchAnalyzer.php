@@ -6,7 +6,7 @@ use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Taint\Source;
+use Psalm\Internal\ControlFlow\TaintSource;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\ImpureVariable;
@@ -393,7 +393,7 @@ class VariableFetchAnalyzer
         Type\Union $type,
         PhpParser\Node\Expr\Variable $stmt
     ) : void {
-        if ($statements_analyzer->taint_graph
+        if ($statements_analyzer->control_flow_graph
             && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
         ) {
             if ($var_name === '$_GET'
@@ -403,7 +403,7 @@ class VariableFetchAnalyzer
             ) {
                 $taint_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
-                $server_taint_source = new Source(
+                $server_taint_source = new TaintSource(
                     $var_name . ':' . $taint_location->file_name . ':' . $taint_location->raw_file_start,
                     $var_name,
                     null,
@@ -411,7 +411,7 @@ class VariableFetchAnalyzer
                     Type\TaintKindGroup::ALL_INPUT
                 );
 
-                $statements_analyzer->taint_graph->addSource($server_taint_source);
+                $statements_analyzer->control_flow_graph->addSource($server_taint_source);
 
                 $type->parent_nodes = [
                     $server_taint_source
