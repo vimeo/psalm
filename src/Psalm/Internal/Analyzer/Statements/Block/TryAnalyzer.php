@@ -525,6 +525,7 @@ class TryAnalyzer
 
                 $statements_analyzer->analyze($stmt->finally->stmts, $finally_context);
 
+                /** @var string $var_id */
                 foreach ($finally_context->assigned_var_ids as $var_id => $_) {
                     if (isset($context->vars_in_scope[$var_id])) {
                         $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
