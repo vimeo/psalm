@@ -127,7 +127,7 @@ class ArgumentAnalyzer
             && !$arg->value instanceof PhpParser\Node\Scalar\MagicConst
             && !$arg->value instanceof PhpParser\Node\Expr\ConstFetch
         ) {
-            $values = \preg_split('//u', $arg_value_type->getSingleStringLiteral()->value, null, \PREG_SPLIT_NO_EMPTY);
+            $values = \preg_split('//u', $arg_value_type->getSingleStringLiteral()->value, -1, \PREG_SPLIT_NO_EMPTY);
 
             $prev_ord = 0;
 
