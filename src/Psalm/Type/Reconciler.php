@@ -242,7 +242,7 @@ class Reconciler
                 ? clone $existing_types[$key]
                 : self::getValueForKey(
                     $codebase,
-                    $key,
+                    (string)$key,
                     $existing_types,
                     $new_types,
                     $code_location,
