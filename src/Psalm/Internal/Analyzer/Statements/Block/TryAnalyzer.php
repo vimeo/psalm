@@ -525,6 +525,10 @@ class TryAnalyzer
 
                 $statements_analyzer->analyze($stmt->finally->stmts, $finally_context);
 
+                if ($finally_context->has_returned) {
+                    $context->has_returned;
+                }
+
                 /** @var string $var_id */
                 foreach ($finally_context->assigned_var_ids as $var_id => $_) {
                     if (isset($context->vars_in_scope[$var_id])) {
