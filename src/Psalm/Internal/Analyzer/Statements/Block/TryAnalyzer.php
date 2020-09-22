@@ -526,7 +526,7 @@ class TryAnalyzer
                 $statements_analyzer->analyze($stmt->finally->stmts, $finally_context);
 
                 if ($finally_context->has_returned) {
-                    $context->has_returned;
+                    $context->has_returned = true;
                 }
 
                 /** @var string $var_id */
