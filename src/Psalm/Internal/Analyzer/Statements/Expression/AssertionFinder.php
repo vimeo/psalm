@@ -17,7 +17,7 @@ use Psalm\Issue\TypeDoesNotContainType;
 use Psalm\Issue\UnevaluatedCode;
 use Psalm\IssueBuffer;
 use Psalm\Type;
-use Psalm\Type\Atomic\TBool;
+
 use function substr;
 use function count;
 use function strtolower;

@@ -11,13 +11,10 @@ error_reporting(-1);
 require_once('command_functions.php');
 require_once __DIR__ . '/Psalm/Internal/exception_handler.php';
 
-use Psalm\ErrorBaseline;
 use Psalm\Exception\ConfigException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider;
-use Psalm\Config;
 use Psalm\Internal\IncludeCollector;
-use Psalm\IssueBuffer;
 use Psalm\Progress\DebugProgress;
 use Psalm\Progress\DefaultProgress;
 use Psalm\Progress\LongProgress;

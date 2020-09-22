@@ -8,7 +8,6 @@ use const E_WARNING;
 use function explode;
 use function glob;
 use function in_array;
-use function is_bool;
 use function is_dir;
 use function preg_match;
 use function preg_replace;

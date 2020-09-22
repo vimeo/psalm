@@ -3,8 +3,6 @@ namespace Psalm\Type\Atomic;
 
 use function get_class;
 use Psalm\Codebase;
-use Psalm\CodeLocation;
-use Psalm\StatementsSource;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\UnionTemplateHandler;

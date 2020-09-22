@@ -1,8 +1,6 @@
 <?php
 namespace Psalm\Tests\EndToEnd;
 
-use function array_merge;
-
 use function closedir;
 use function copy;
 use function getcwd;

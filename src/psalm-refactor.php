@@ -16,7 +16,6 @@ require_once __DIR__ . '/Psalm/Internal/exception_handler.php';
 
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\IncludeCollector;
-use Psalm\IssueBuffer;
 use Psalm\Progress\DebugProgress;
 use Psalm\Progress\DefaultProgress;
 use function error_reporting;

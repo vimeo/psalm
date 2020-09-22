@@ -1,7 +1,6 @@
 <?php
 namespace Psalm;
 
-use function array_filter;
 use function array_keys;
 use function count;
 use function in_array;
@@ -11,7 +10,6 @@ use function preg_quote;
 use function preg_replace;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
-use Psalm\Internal\MethodIdentifier;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Type\Union;

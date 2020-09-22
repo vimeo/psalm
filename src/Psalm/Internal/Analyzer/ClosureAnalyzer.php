@@ -15,7 +15,6 @@ use function is_string;
 use function in_array;
 use function strtolower;
 use function array_map;
-use function current;
 
 /**
  * @internal

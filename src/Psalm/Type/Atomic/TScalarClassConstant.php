@@ -1,9 +1,6 @@
 <?php
 namespace Psalm\Type\Atomic;
 
-use Psalm\CodeLocation;
-use Psalm\StatementsSource;
-
 class TScalarClassConstant extends Scalar
 {
     /** @var string */

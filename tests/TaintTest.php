@@ -1,7 +1,6 @@
 <?php
 namespace Psalm\Tests;
 
-use Psalm\Config;
 use Psalm\Context;
 use const DIRECTORY_SEPARATOR;
 

@@ -6,7 +6,6 @@ use function array_keys;
 use function array_map;
 use function array_merge;
 use function array_pop;
-use function array_shift;
 use function array_unique;
 use function array_values;
 use function count;
@@ -18,7 +17,6 @@ use Psalm\FileSource;
 use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
 use Psalm\Internal\Clause;
 use function strlen;
-use function strpos;
 use function substr;
 
 class Algebra

@@ -4,7 +4,6 @@ namespace Psalm\Internal\Type;
 use function array_filter;
 use function explode;
 use function get_class;
-use function is_string;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;

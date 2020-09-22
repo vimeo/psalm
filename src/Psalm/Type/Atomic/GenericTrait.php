@@ -4,22 +4,13 @@ namespace Psalm\Type\Atomic;
 use function array_map;
 use function implode;
 use Psalm\Codebase;
-use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
-use Psalm\Internal\Analyzer\TypeAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\UnionTemplateHandler;
-use Psalm\IssueBuffer;
-use Psalm\Issue\InvalidTemplateParam;
-use Psalm\Issue\MissingTemplateParam;
-use Psalm\Issue\TooManyTemplateParams;
-use Psalm\StatementsSource;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 use function substr;
-use function strtolower;
 
 trait GenericTrait
 {

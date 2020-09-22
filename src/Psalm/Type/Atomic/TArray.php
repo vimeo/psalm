@@ -4,8 +4,6 @@ namespace Psalm\Type\Atomic;
 use function count;
 use function get_class;
 use Psalm\Type\Atomic;
-use Psalm\CodeLocation;
-use Psalm\StatementsSource;
 
 /**
  * Represents an array with generic type parameters.

@@ -12,7 +12,7 @@ use Psalm\Issue\UndefinedMethod;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Storage\MethodStorage;
-use Psalm\Type;
+
 use function strtolower;
 use function in_array;
 
