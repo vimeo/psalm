@@ -36,9 +36,7 @@ class TTypeAlias extends \Psalm\Type\Atomic
             return $this->getKey() . '&' . implode(
                 '&',
                 array_map(
-                    function ($type): string {
-                        return (string) $type;
-                    },
+                    'strval',
                     $this->extra_types
                 )
             );

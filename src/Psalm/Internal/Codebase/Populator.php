@@ -308,7 +308,6 @@ class Populator
                 foreach ($overridden_method_ids as $declaring_method_id) {
                     $declaring_class = $declaring_method_id->fq_class_name;
                     $declaring_method_name = $declaring_method_id->method_name;
-                    ;
                     $declaring_class_storage = $declaring_class_storages[$declaring_class];
 
                     $declaring_method_storage = $declaring_class_storage->methods[$declaring_method_name];

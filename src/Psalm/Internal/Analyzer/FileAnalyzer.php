@@ -258,7 +258,7 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
                         true
                     ) === false) {
                         continue;
-                    };
+                    }
 
                     $referenced_class_storage = $codebase->classlike_storage_provider->get($fq_source_classlike);
                     if (!isset($referenced_class_storage->type_aliases[$alias->alias_name])) {
