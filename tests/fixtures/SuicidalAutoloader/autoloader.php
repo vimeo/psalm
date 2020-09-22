@@ -1,8 +1,6 @@
 <?php
 
 use React\Promise\PromiseInterface as ReactPromise;
-use ResourceBundle;
-use Transliterator;
 use Composer\InstalledVersions;
 
 spl_autoload_register(function (string $className) {

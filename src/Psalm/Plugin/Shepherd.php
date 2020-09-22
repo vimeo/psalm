@@ -24,7 +24,6 @@ use Psalm\SourceControl\SourceControlInfo;
 use const STDERR;
 use function strlen;
 use function var_export;
-use function count;
 use function array_merge;
 use function array_values;
 

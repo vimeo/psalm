@@ -1,9 +1,6 @@
 <?php
 namespace Psalm\Type\Atomic;
 
-use Psalm\CodeLocation;
-use Psalm\StatementsSource;
-
 class TClosedResource extends \Psalm\Type\Atomic
 {
     public function __toString(): string

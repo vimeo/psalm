@@ -6,7 +6,6 @@ use function array_shift;
 use function array_unique;
 use function count;
 use const DIRECTORY_SEPARATOR;
-use function dirname;
 use function explode;
 use function file_exists;
 use function file_get_contents;

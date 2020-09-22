@@ -13,7 +13,6 @@ use function implode;
 use function preg_quote;
 use Psalm\Config;
 use Psalm\Context;
-use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Tests\Internal\Provider;
 use function sort;
 use function strpos;

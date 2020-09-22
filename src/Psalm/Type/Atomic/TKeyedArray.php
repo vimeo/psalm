@@ -9,8 +9,6 @@ use function implode;
 use function is_int;
 use function sort;
 use Psalm\Codebase;
-use Psalm\CodeLocation;
-use Psalm\StatementsSource;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TypeCombination;
 use Psalm\Internal\Type\TemplateResult;

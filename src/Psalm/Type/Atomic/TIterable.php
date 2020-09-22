@@ -3,9 +3,6 @@ namespace Psalm\Type\Atomic;
 
 use function count;
 use function implode;
-use Psalm\CodeLocation;
-use Psalm\Internal\Type\TemplateResult;
-use Psalm\StatementsSource;
 use Psalm\Type\Atomic;
 use function substr;
 use function array_merge;

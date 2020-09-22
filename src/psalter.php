@@ -4,11 +4,8 @@ namespace Psalm;
 
 require_once('command_functions.php');
 
-use Psalm\DocComment;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
-use Psalm\Config;
 use Psalm\Internal\IncludeCollector;
-use Psalm\IssueBuffer;
 use Psalm\Progress\DebugProgress;
 use Psalm\Progress\DefaultProgress;
 use function error_reporting;

@@ -10,7 +10,6 @@ use function explode;
 use const DIRECTORY_SEPARATOR;
 use Psalm\Config;
 use Psalm\Context;
-use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\Internal\Provider;

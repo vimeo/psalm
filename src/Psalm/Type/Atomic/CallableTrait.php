@@ -5,13 +5,10 @@ use function array_map;
 use function count;
 use function implode;
 use Psalm\Codebase;
-use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\UnionTemplateHandler;
-use Psalm\StatementsSource;
 use Psalm\Storage\FunctionLikeParameter;
-use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 

@@ -5,7 +5,6 @@ use function array_keys;
 use function count;
 use const DIRECTORY_SEPARATOR;
 use function getcwd;
-use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Tests\Internal\Provider;

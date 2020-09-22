@@ -4,7 +4,6 @@ namespace Psalm;
 
 use Composer\Autoload\ClassLoader;
 use Phar;
-use Psalm\Config;
 use function dirname;
 use function strpos;
 use function realpath;

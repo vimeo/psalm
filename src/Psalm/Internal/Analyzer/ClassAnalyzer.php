@@ -48,7 +48,6 @@ use function strtolower;
 use function implode;
 use function substr;
 use function array_map;
-use function array_shift;
 use function str_replace;
 use function count;
 use function array_search;

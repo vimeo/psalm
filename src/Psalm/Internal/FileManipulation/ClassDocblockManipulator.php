@@ -1,8 +1,6 @@
 <?php
 namespace Psalm\Internal\FileManipulation;
 
-use function array_shift;
-use function count;
 use function ltrim;
 use PhpParser\Node\Stmt\Class_;
 use Psalm\DocComment;
