@@ -1264,7 +1264,7 @@ class TypeCombination
                         } elseif (get_class($combination->value_types['string']) === TNonEmptyString::class
                             && get_class($type) === TNonEmptyLowercaseString::class
                         ) {
-                            $combination->value_types['string'] = $combination->value_types['string'];
+                            //no-change
                         } elseif (get_class($type) === TLowercaseString::class
                             && get_class($combination->value_types['string']) === TNonEmptyLowercaseString::class
                         ) {
@@ -1272,7 +1272,7 @@ class TypeCombination
                         } elseif (get_class($combination->value_types['string']) === TLowercaseString::class
                             && get_class($type) === TNonEmptyLowercaseString::class
                         ) {
-                            $combination->value_types['string'] = $combination->value_types['string'];
+                            //no-change
                         } else {
                             $combination->value_types['string'] = new TString();
                         }

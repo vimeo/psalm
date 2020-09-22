@@ -192,8 +192,6 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
             $call_map = InternalCallMapHandler::getCallMap();
 
             foreach ($mapping_function_ids as $mapping_function_id) {
-                $mapping_function_id = $mapping_function_id;
-
                 $mapping_function_id_parts = explode('&', $mapping_function_id);
 
                 $part_match_found = false;

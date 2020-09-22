@@ -1103,8 +1103,7 @@ class ClassLikes
             $source_namespace = $source->getNamespace();
 
             if ($migrated_source_fqcln && $calling_fq_class_name !== $migrated_source_fqcln) {
-                $new_source_parts = explode('\\', $migrated_source_fqcln);
-                array_pop($new_source_parts);
+                $new_source_parts = explode('\\', $migrated_source_fqcln, -1);
                 $source_namespace = implode('\\', $new_source_parts);
             }
 
@@ -1259,8 +1258,7 @@ class ClassLikes
             $source_namespace = $source->getNamespace();
 
             if ($migrated_source_fqcln && $calling_fq_class_name !== $migrated_source_fqcln) {
-                $new_source_parts = explode('\\', $migrated_source_fqcln);
-                array_pop($new_source_parts);
+                $new_source_parts = explode('\\', $migrated_source_fqcln, -1);
                 $source_namespace = implode('\\', $new_source_parts);
             }
 
