@@ -226,7 +226,7 @@ class MethodCallReturnTypeFetcher
     ) : void {
         $codebase = $statements_analyzer->getCodebase();
 
-        if ($statements_analyzer->control_flow_graph
+        if ($statements_analyzer->control_flow_graph instanceof \Psalm\Internal\Codebase\TaintFlowGraph
             && $declaring_method_id
             && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
         ) {

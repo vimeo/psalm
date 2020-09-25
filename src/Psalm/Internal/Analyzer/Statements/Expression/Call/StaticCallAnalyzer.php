@@ -1423,7 +1423,7 @@ class StaticCallAnalyzer extends CallAnalyzer
         Type\Union $return_type_candidate,
         ?\Psalm\Storage\MethodStorage $method_storage
     ) : void {
-        if (!$statements_analyzer->control_flow_graph
+        if (!$statements_analyzer->control_flow_graph instanceof \Psalm\Internal\Codebase\TaintFlowGraph
             || \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
         ) {
             return;

@@ -393,7 +393,7 @@ class VariableFetchAnalyzer
         Type\Union $type,
         PhpParser\Node\Expr\Variable $stmt
     ) : void {
-        if ($statements_analyzer->control_flow_graph
+        if ($statements_analyzer->control_flow_graph instanceof \Psalm\Internal\Codebase\TaintFlowGraph
             && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
         ) {
             if ($var_name === '$_GET'

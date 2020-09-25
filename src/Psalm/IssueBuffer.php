@@ -200,7 +200,7 @@ class IssueBuffer
             return false;
         }
 
-        if ($project_analyzer->getCodebase()->control_flow_graph && $issue_type !== 'TaintedInput') {
+        if ($project_analyzer->getCodebase()->taint_flow_graph && $issue_type !== 'TaintedInput') {
             return false;
         }
 
@@ -598,7 +598,7 @@ class IssueBuffer
                 }
             }
 
-            if (self::$fixable_issue_counts && $show_suggestions && !$codebase->control_flow_graph) {
+            if (self::$fixable_issue_counts && $show_suggestions && !$codebase->taint_flow_graph) {
                 echo str_repeat('-', 30) . "\n";
 
                 $total_count = \array_sum(self::$fixable_issue_counts);

@@ -1219,7 +1219,7 @@ class ArgumentAnalyzer
     ) : Type\Union {
         $codebase = $statements_analyzer->getCodebase();
 
-        if (!$statements_analyzer->control_flow_graph
+        if (!$statements_analyzer->control_flow_graph instanceof \Psalm\Internal\Codebase\TaintFlowGraph
             || \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
         ) {
             return $input_type;

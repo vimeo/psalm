@@ -102,7 +102,7 @@ class IncludeAnalyzer
         }
 
         if ($stmt_expr_type
-            && $statements_analyzer->control_flow_graph
+            && $statements_analyzer->control_flow_graph instanceof \Psalm\Internal\Codebase\TaintFlowGraph
             && $stmt_expr_type->parent_nodes
             && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
         ) {

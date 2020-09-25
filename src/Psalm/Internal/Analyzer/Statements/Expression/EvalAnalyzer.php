@@ -23,7 +23,7 @@ class EvalAnalyzer
         $expr_type = $statements_analyzer->node_data->getType($stmt->expr);
 
         if ($expr_type) {
-            if ($statements_analyzer->control_flow_graph
+            if ($statements_analyzer->control_flow_graph instanceof \Psalm\Internal\Codebase\TaintFlowGraph
                 && $expr_type->parent_nodes
                 && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
             ) {
