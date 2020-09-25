@@ -25,7 +25,7 @@ class PrintAnalyzer
             return false;
         }
 
-        if ($statements_analyzer->control_flow_graph) {
+        if ($statements_analyzer->control_flow_graph instanceof \Psalm\Internal\Codebase\TaintFlowGraph) {
             $call_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
             $print_param_sink = TaintSink::getForMethodArgument(

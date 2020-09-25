@@ -20,6 +20,7 @@ use Psalm\Internal\Analyzer\Statements\ReturnAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ThrowAnalyzer;
 use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\Internal\Codebase\ControlFlowGraph;
+use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Context;
@@ -133,9 +134,12 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
         $this->file_analyzer = $source->getFileAnalyzer();
         $this->codebase = $source->getCodebase();
         $this->node_data = $node_data;
-        $this->control_flow_graph = $this->codebase->control_flow_graph
-            ? new ControlFlowGraph()
-            : null;
+
+        if ($this->codebase->taint_flow_graph) {
+            $this->control_flow_graph = new TaintFlowGraph();
+        } elseif ($this->codebase->find_unused_variables) {
+            $this->control_flow_graph = new ControlFlowGraph();
+        }
     }
 
     /**
@@ -192,11 +196,11 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
         }
 
         if ($root_scope
-            && $this->control_flow_graph
-            && $this->codebase->control_flow_graph
+            && $this->control_flow_graph instanceof TaintFlowGraph
+            && $this->codebase->taint_flow_graph
             && $codebase->config->trackTaintsInPath($this->getFilePath())
         ) {
-            $this->codebase->control_flow_graph->addGraph($this->control_flow_graph);
+            $this->codebase->taint_flow_graph->addGraph($this->control_flow_graph);
         }
 
         return null;

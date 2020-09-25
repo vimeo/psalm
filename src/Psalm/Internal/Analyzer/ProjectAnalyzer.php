@@ -87,7 +87,7 @@ use function file_get_contents;
 use function substr_count;
 use function array_map;
 use function end;
-use Psalm\Internal\Codebase\ControlFlowGraph;
+use Psalm\Internal\Codebase\TaintFlowGraph;
 use function ini_get;
 use function in_array;
 
@@ -665,7 +665,7 @@ class ProjectAnalyzer
 
     public function trackTaintedInputs(): void
     {
-        $this->codebase->control_flow_graph = new ControlFlowGraph();
+        $this->codebase->taint_flow_graph = new TaintFlowGraph();
     }
 
     public function trackUnusedSuppressions(): void
