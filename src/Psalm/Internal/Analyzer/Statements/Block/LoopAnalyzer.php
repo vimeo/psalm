@@ -51,7 +51,7 @@ class LoopAnalyzer
         $assignment_mapper = new \Psalm\Internal\PhpVisitor\AssignmentMapVisitor($loop_scope->loop_context->self);
         $traverser->addVisitor($assignment_mapper);
 
-        $traverser->traverse(array_merge($stmts, $post_expressions));
+        $traverser->traverse(array_merge($pre_conditions, $stmts, $post_expressions));
 
         $assignment_map = $assignment_mapper->getAssignmentMap();
 
@@ -96,10 +96,18 @@ class LoopAnalyzer
 
         $does_always_break = $final_actions === [ScopeAnalyzer::ACTION_BREAK];
 
+        $has_continue = in_array(ScopeAnalyzer::ACTION_CONTINUE, $final_actions, true);
+
         if ($assignment_map) {
             $first_var_id = array_keys($assignment_map)[0];
 
             $assignment_depth = self::getAssignmentMapDepth($first_var_id, $assignment_map);
+        }
+
+        if ($has_continue) {
+            // this intuuitively feels right to me – if there's a continue statement,
+            // maybe more assignment intrigue is possible
+            $assignment_depth++;
         }
 
         $loop_scope->loop_context->parent_context = $loop_scope->loop_parent_context;
@@ -601,7 +609,7 @@ class LoopAnalyzer
         if ($inner_do_context) {
             $inner_context = $inner_do_context;
         }
-        
+
         return null;
     }
 
