@@ -541,6 +541,29 @@ class TryAnalyzer
                         $context->vars_in_scope[$var_id] = clone $finally_context->vars_in_scope[$var_id];
                     }
                 }
+
+                $newly_unreferenced_vars = array_merge(
+                    $newly_unreferenced_vars,
+                    array_diff_key(
+                        $finally_context->unreferenced_vars,
+                        $old_unreferenced_vars
+                    )
+                );
+
+                foreach ($finally_context->unreferenced_vars as $var_id => $locations) {
+                    if (!isset($old_unreferenced_vars[$var_id])
+                        && (isset($context->unreferenced_vars[$var_id])
+                            || isset($newly_assigned_var_ids[$var_id]))
+                    ) {
+                        $statements_analyzer->registerVariableUses($locations);
+                    } elseif (isset($old_unreferenced_vars[$var_id])
+                        && $old_unreferenced_vars[$var_id] !== $locations
+                    ) {
+                        $statements_analyzer->registerVariableUses($locations);
+                    } elseif (isset($newly_unreferenced_vars[$var_id])) {
+                        $context->unreferenced_vars[$var_id] = $newly_unreferenced_vars[$var_id];
+                    }
+                }
             }
         }
 
