@@ -211,14 +211,19 @@ class UnusedVariableTest extends TestCase
             ],
             'foreachReassigned' => [
                 '<?php
-                    $a = false;
+                    /**
+                     * @param list<int> $arr
+                     */
+                    function foo(array $arr) : void {
+                        $a = false;
 
-                    foreach ([1, 2, 3] as $b) {
-                        $a = true;
-                        echo $b;
-                    }
+                        foreach ($arr as $b) {
+                            $a = true;
+                            echo $b;
+                        }
 
-                    echo $a;',
+                        echo $a;
+                    }',
             ],
             'doWhileReassigned' => [
                 '<?php
@@ -426,8 +431,6 @@ class UnusedVariableTest extends TestCase
                     }
 
                     function callDangerous(): void {
-                        $s = null;
-
                         try {
                             $s = dangerous();
                         } catch (Exception $e) {
@@ -727,6 +730,44 @@ class UnusedVariableTest extends TestCase
                     echo $a;
                     echo $b;',
             ],
+            'arrayVarAssignmentInFunctionAndReturned' => [
+                '<?php
+                    /**
+                     * @param array{string} $arr
+                     */
+                    function far(array $arr): string {
+                        [$a] = $arr;
+
+                        return $a;
+                    }',
+            ],
+            'arrayUnpackInForeach' => [
+                '<?php
+                    /**
+                     * @param list<array{string, string}> $arr
+                     */
+                    function far(array $arr): void {
+                        foreach ($arr as [$a, $b]) {
+                            echo $a;
+                            echo $b;
+                        }
+                    }',
+            ],
+            'arrayAssignmentInFunctionCoerced' => [
+                '<?php
+                    class A {
+                        public int $a = 0;
+                        public int $b = 1;
+
+                        function setPhpVersion(string $version): void {
+                            [$a, $b] = explode(".", $version);
+
+                            $this->a = (int) $a;
+                            $this->b = (int) $b;
+                        }
+                    }
+                    '
+            ],
             'varCheckAfterNestedAssignmentAndBreak' => [
                 '<?php
                     $a = false;
@@ -793,19 +834,23 @@ class UnusedVariableTest extends TestCase
             ],
             'echoVarWithAdditionOp' => [
                 '<?php
-                    function foo(int $i) : void {
-                        echo $i;
-                    }
                     $a = 5;
-                    foo($a += 1);',
+
+                    while (rand(0, 1)) {
+                        echo($a += 1);
+                    }',
             ],
             'echoVarWithIncrement' => [
                 '<?php
                     function foo(int $i) : void {
                         echo $i;
                     }
+
                     $a = 5;
-                    foo(++$a);',
+
+                    while (rand(0, 1)) {
+                        foo(++$a);
+                    }',
             ],
             'afterMethodExistsCheck' => [
                 '<?php
@@ -884,6 +929,14 @@ class UnusedVariableTest extends TestCase
                     $i = 0;
                     $a = function () use (&$i) : void {
                         $i = 1;
+                    };
+                    $a();',
+            ],
+            'regularVariableClosureUseInAddition' => [
+                '<?php
+                    $i = 0;
+                    $a = function () use ($i) : int {
+                        return $i + 1;
                     };
                     $a();',
             ],
@@ -1377,7 +1430,7 @@ class UnusedVariableTest extends TestCase
                     $a = 0;
                     for ($i = 0; $i < 1000; $i++) {
                         if (rand(0, 1)) {
-                            $a = $a + $i;
+                            $a = $a + 1;
                             continue;
                         }
                         break;
@@ -1399,6 +1452,15 @@ class UnusedVariableTest extends TestCase
                                 }
                                 echo $a;
                         }
+                    }'
+            ],
+            'passedByRefSimple' => [
+                '<?php
+                    takes_ref($a);
+
+                    /** @param array $p */
+                    function takes_ref(?array &$p): void {
+                        $p = [0];
                     }'
             ],
             'passedByRefArrayOffset' => [
@@ -1429,6 +1491,14 @@ class UnusedVariableTest extends TestCase
                         } while (rand(0,1));
 
                         if ($f) {}
+                    }'
+            ],
+            'usedParamInWhileAddition' => [
+                '<?php
+                    function foo(int $index): void {
+                        while ($index++ <= 100) {
+                            //
+                        }
                     }'
             ],
             'usedParamInWhileDirectly' => [
@@ -1471,6 +1541,226 @@ class UnusedVariableTest extends TestCase
                         } while ($nextKey === null);
 
                         return $nextKey;
+                    }'
+            ],
+            'variableUsedIndirectly' => [
+                '<?php
+                    $a = 0;
+
+                    while (rand(0,1)){
+                        $b = $a + 1;
+                        echo $b;
+                        $a = $b;
+                    }',
+            ],
+            'arrayMapClosureWithParamType' => [
+                '<?php
+                    $a = [1, 2, 3];
+
+                    $b = array_map(
+                        function(int $i) {
+                            return $i * 3;
+                        },
+                        $a
+                    );
+
+                    foreach ($b as $c) {
+                        echo $c;
+                    }',
+            ],
+            'arrayMapClosureWithoutParamType' => [
+                '<?php
+                    $a = [1, 2, 3];
+
+                    $b = array_map(
+                        function($i) {
+                            return $i * 3;
+                        },
+                        $a
+                    );
+
+                    foreach ($b as $c) {
+                        echo $c;
+                    }',
+            ],
+            'unusedArrayAdditionWithArrayChecked' => [
+                '<?php
+                    $a = [];
+
+                    while (rand(0,1)) {
+                        $a[] = 1;
+                    }
+
+                    if ($a) {}',
+            ],
+            'usedArrayRecursiveAddition' => [
+                '<?php
+                    $a = [];
+
+                    while (rand(0,1)) {
+                        $a[] = $a;
+                    }
+
+                    print_r($a);',
+            ],
+            'usedImmutableProperty' => [
+                '<?php
+                    /**
+                     * @psalm-immutable
+                     */
+                    class Clause {
+                        /**
+                         * @var array<int, int>
+                         */
+                        public $b = [];
+                    }
+
+                    function foo(Clause $c, int $var): void {
+                        $new_b = $c->b;
+
+                        if (isset($c->b[0])) {
+                            $new_b[$var] = 0;
+                        }
+
+                        if ($new_b) {}
+                    }',
+            ],
+            'arrayAssignOpAdditionInsideLoop' => [
+                '<?php
+                    /**
+                     * @param array<string, string> $arr0
+                     * @param array<string, string> $arr1
+                     * @param array<string, string> $arr2
+                     * @return void
+                     */
+                    function parp(array $arr0, array $arr1, array $arr2) {
+                        $arr3 = $arr0;
+
+                        foreach ($arr1 as $a) {
+                            echo $a;
+                            $arr3 += $arr2;
+                        }
+
+                        if ($arr3) {}
+                    }',
+            ],
+            'arrayAdditionInsideLoop' => [
+                '<?php
+                    /**
+                     * @param array<string, string> $arr0
+                     * @param array<string, string> $arr1
+                     * @param array<string, string> $arr2
+                     * @return void
+                     */
+                    function parp(array $arr0, array $arr1, array $arr2) {
+                        $arr3 = $arr0;
+
+                        foreach ($arr1 as $a) {
+                            echo $a;
+                            $arr3 = $arr3 + $arr2;
+                        }
+
+                        if ($arr3) {}
+                    }',
+            ],
+            'checkValueBeforeAdding' => [
+                '<?php
+                    class T {
+                        public bool $b = false;
+                    }
+
+                    function foo(
+                        ?T $t
+                    ): void {
+                        if (!$t) {
+                            $t = new T();
+                        } elseif (rand(0, 1)) {
+                            //
+                        }
+
+                        if ($t->b) {}
+                    }'
+            ],
+            'loopOverUnknown' => [
+                '<?php
+                    /** @psalm-suppress MixedAssignment */
+                    function foo(Traversable $t) : void {
+                        foreach ($t as $u) {
+                            if ($u instanceof stdClass) {}
+                        }
+                    }'
+            ],
+            'loopWithRequire' => [
+                '<?php
+                    /**
+                     * @psalm-suppress UnresolvableInclude
+                     */
+                    function foo(string $delta_file) : void {
+                        while (rand(0, 1)) {
+                            /**
+                             * @var array<string, mixed>
+                             */
+                            $diff_call_map = require($delta_file);
+
+                            foreach ($diff_call_map as $key => $_) {
+                                $cased_key = strtolower($key);
+                                echo $cased_key;
+                            }
+                        }
+                    }',
+            ],
+            'loopAgain' => [
+                '<?php
+                    /** @param non-empty-list<string> $lines */
+                    function parse(array $lines) : array {
+                        $last = 0;
+                        foreach ($lines as $k => $line) {
+                            if (rand(0, 1)) {
+                                $last = $k;
+                            } elseif (rand(0, 1)) {
+                                $last = 0;
+                            } elseif ($last !== 0) {
+                                $lines[$last] .= $line;
+                            }
+                        }
+
+                        return $lines;
+                    }'
+            ],
+            'necessaryVarAnnotation' => [
+                '<?php
+                    function foo(array $arr) : void {
+                        /** @var int $key */
+                        foreach ($arr as $key => $_) {
+                            echo $key;
+                        }
+                    }'
+            ],
+            'continuingEducation' => [
+                '<?php
+                    function breakUpPathIntoParts(): void {
+                        $b = false;
+
+                        while (rand(0, 1)) {
+                            if ($b) {
+                                if (rand(0, 1)) {
+                                    $b = 0;
+                                }
+
+                                echo "hello";
+
+                                continue;
+                            }
+
+                            $b = true;
+                        }
+                    }'
+            ],
+            'usedInBinaryOp' => [
+                '<?php
+                    function foo(int $a, int $b) : int {
+                        $a |= $b;
+                        return $a;
                     }'
             ],
         ];
@@ -2240,6 +2530,22 @@ class UnusedVariableTest extends TestCase
                 '<?php
                     function foo(bool $b = false) : void {}',
                 'error_message' => 'UnusedParam',
+            ],
+            'arrayMapClosureWithParamTypeNoUse' => [
+                '<?php
+                    $a = [1, 2, 3];
+
+                    $b = array_map(
+                        function(int $i) {
+                            return rand(0, 5);
+                        },
+                        $a
+                    );
+
+                    foreach ($b as $c) {
+                        echo $c;
+                    }',
+                'error_message' => 'UnusedClosureParam',
             ],
         ];
     }
