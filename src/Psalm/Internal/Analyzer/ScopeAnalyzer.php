@@ -268,7 +268,7 @@ class ScopeAnalyzer
                 }
 
                 if ($has_default_terminator || isset($stmt->allMatched)) {
-                    return array_merge($control_actions, [self::ACTION_END]);
+                    return \array_values(array_unique(array_merge($control_actions, [self::ACTION_END])));
                 }
             }
 
