@@ -1,23 +1,26 @@
 <?php
+
 namespace Psalm\Tests\EndToEnd;
+
+use PHPUnit\Framework\TestCase;
+use Symfony\Component\Process\Process;
 
 use function closedir;
 use function copy;
+use function file_get_contents;
+use function file_put_contents;
 use function getcwd;
 use function is_dir;
 use function is_string;
 use function mkdir;
 use function opendir;
-use PHPUnit\Framework\TestCase;
+use function preg_replace;
 use function readdir;
 use function rmdir;
-use Symfony\Component\Process\Process;
 use function sys_get_temp_dir;
 use function tempnam;
 use function unlink;
-use function file_get_contents;
-use function file_put_contents;
-use function preg_replace;
+
 use const PHP_VERSION_ID;
 
 /**
@@ -60,7 +63,10 @@ class PsalmEndToEndTest extends TestCase
     public function setUp(): void
     {
         @unlink(self::$tmpDir . '/psalm.xml');
-        copy(__DIR__ . '/../fixtures/DummyProjectWithErrors/src/FileWithErrors.php', self::$tmpDir . '/src/FileWithErrors.php');
+        copy(
+            __DIR__ . '/../fixtures/DummyProjectWithErrors/src/FileWithErrors.php',
+            self::$tmpDir . '/src/FileWithErrors.php'
+        );
         parent::setUp();
     }
 
@@ -84,7 +90,10 @@ class PsalmEndToEndTest extends TestCase
 
     public function testInit(): void
     {
-        $this->assertStringStartsWith('Calculating best config level based on project files', $this->runPsalmInit()['STDOUT']);
+        $this->assertStringStartsWith(
+            'Calculating best config level based on project files',
+            $this->runPsalmInit()['STDOUT']
+        );
         $this->assertFileExists(self::$tmpDir . '/psalm.xml');
     }
 
@@ -144,6 +153,16 @@ class PsalmEndToEndTest extends TestCase
         $this->assertSame(1, $result['CODE']);
 
         @unlink(self::$tmpDir . '/composer.lock');
+    }
+
+    public function testTainting(): void
+    {
+        $this->runPsalmInit(1);
+        $result = $this->runPsalm(['--taint-analysis'], self::$tmpDir, true);
+
+        $this->assertStringContainsString('TaintedInput', $result['STDOUT']);
+        $this->assertStringContainsString('1 errors', $result['STDOUT']);
+        $this->assertSame(1, $result['CODE']);
     }
 
     public function testLegacyConfigWithoutresolveFromConfigFile(): void
