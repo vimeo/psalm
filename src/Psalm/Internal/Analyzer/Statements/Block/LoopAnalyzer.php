@@ -279,6 +279,8 @@ class LoopAnalyzer
 
                             // if there's a change, invalidate related clauses
                             $pre_loop_context->removeVarFromConflictingClauses($var_id);
+
+                            $loop_scope->loop_parent_context->possibly_assigned_var_ids[$var_id] = true;
                         }
 
                         if (isset($loop_scope->loop_context->vars_in_scope[$var_id])
