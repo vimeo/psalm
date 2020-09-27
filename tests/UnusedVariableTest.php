@@ -930,7 +930,8 @@ class UnusedVariableTest extends TestCase
                     $a = function () use (&$i) : void {
                         $i = 1;
                     };
-                    $a();',
+                    $a();
+                    echo $i;',
             ],
             'regularVariableClosureUseInAddition' => [
                 '<?php
@@ -1052,9 +1053,10 @@ class UnusedVariableTest extends TestCase
             ],
             'varPassedByRef' => [
                 '<?php
-                    function foo(array $b) : void {
-                        $a = &$b;
-                        $a["foo"] = 5;
+                    function foo(array $returned) : array {
+                        $ancillary = &$returned;
+                        $ancillary["foo"] = 5;
+                        return $returned;
                     }',
             ],
             'usedAsMethodName' => [
@@ -1454,11 +1456,19 @@ class UnusedVariableTest extends TestCase
                         }
                     }'
             ],
-            'passedByRefSimple' => [
+            'passedByRefSimpleUndefinedBefore' => [
                 '<?php
                     takes_ref($a);
 
-                    /** @param array $p */
+                    function takes_ref(?array &$p): void {
+                        $p = [0];
+                    }'
+            ],
+            'passedByRefSimpleDefinedBefore' => [
+                '<?php
+                    $a = [];
+                    takes_ref($a);
+
                     function takes_ref(?array &$p): void {
                         $p = [0];
                     }'
@@ -1772,6 +1782,267 @@ class UnusedVariableTest extends TestCase
                         }
 
                         echo $s;
+                    }'
+            ],
+            'divAssignOp' => [
+                '<?php
+                    function hslToRgb(float $hue): float {
+                        $hue /= 360;
+
+                        return $hue;
+                    }'
+            ],
+            'concatAssignOp' => [
+                '<?php
+                    function hslToRgb(string $hue): string {
+                        $hue .= "hello";
+
+                        return $hue;
+                    }'
+            ],
+            'possiblyUndefinedVariableUsed' => [
+                '<?php
+                    function foo(string $a): void {
+                        if ($a === "a") {
+                            $hue = "hello";
+                        } elseif ($a === "b") {
+                            $hue = "goodbye";
+                        }
+
+                        /** @psalm-suppress PossiblyUndefinedVariable */
+                        echo $hue;
+                    }'
+            ],
+            'possiblyUndefinedVariableUsedInUnknownMethod' => [
+                '<?php
+                    function foo(string $a, object $b): void {
+                        if ($a === "a") {
+                            $hue = "hello";
+                        } elseif ($a === "b") {
+                            $hue = "goodbye";
+                        }
+
+                        /**
+                         * @psalm-suppress PossiblyUndefinedVariable
+                         * @psalm-suppress MixedMethodCall
+                         */
+                        $b->foo($hue);
+                    }'
+            ],
+            'usedAsArrayKey' => [
+                '<?php
+                    function hslToRgb(string $hue, string $lightness): array {
+                        $arr = [$hue => $lightness];
+                        return $arr;
+                    }'
+            ],
+            'assignToGlobalVar' => [
+                '<?php
+                    /** @psalm-suppress MixedAssignment */
+                    function foo(array $args) : void {
+                        foreach ($args as $key => $value) {
+                            $_GET[$key] = $value;
+                        }
+                    }'
+            ],
+            'assignToArrayTwice' => [
+                '<?php
+                    function foo(string $c): void {
+                        $arr = [$c];
+                        $arr[] = 1;
+
+                        foreach ($arr as $e) {
+                            echo $e;
+                        }
+                    }'
+            ],
+            'classPropertyThing' => [
+                '<?php
+                    function foo(): string {
+                        $notice  = "i";
+                        $notice .= "j";
+                        $notice .= "k";
+                        $notice .= "l";
+                        $notice .= "m";
+                        $notice .= "n";
+                        $notice .= "o";
+                        $notice .= "p";
+                        $notice .= "q";
+                        $notice .= "r";
+                        $notice .= "s";
+
+                        return $notice;
+                    }'
+            ],
+            'usedInIsset' => [
+                '<?php
+                    function foo(int $i): void {
+                        if ($i === 0) {
+                            $j = "hello";
+                        } elseif ($i === 1) {
+                            $j = "goodbye";
+                        }
+
+                        if (isset($j)) {
+                            echo $j;
+                        }
+                    }'
+            ],
+            'byRefNestedArrayParam' => [
+                '<?php
+                    function foo(array &$arr): void {
+                        $b = 5;
+                        $arr[0] = $b;
+                    }'
+            ],
+            'byRefNestedArrayInForeach' => [
+                '<?php
+                    function foo(array $arr): array {
+                        /**
+                         * @psalm-suppress MixedAssignment
+                         * @psalm-suppress MixedArrayAssignment
+                         */
+                        foreach ($arr as &$element) {
+                            $b = 5;
+                            $element[0] = $b;
+                        }
+
+                        return $arr;
+                    }'
+            ],
+            'instantArrayAssignment' => [
+                '<?php
+                    function foo(string $b) : array {
+                        /** @psalm-suppress PossiblyUndefinedVariable */
+                        $arr["foo"] = $b;
+
+                        return $arr;
+                    }',
+            ],
+            'csvByRefForeach' => [
+                '<?php
+                    function foo(string $value) : array {
+                        $arr = str_getcsv($value);
+
+                        foreach ($arr as &$element) {
+                            $element = $element ?: "foo";
+                        }
+
+                        return $arr;
+                    }'
+            ],
+            'returnNotBool' => [
+                '<?php
+                    function verifyLoad(bool $b) : bool {
+                        $c = !$b;
+                        return $c;
+                    }'
+            ],
+            'sourcemaps' => [
+                '<?php
+                    /**
+                     * @psalm-suppress MixedAssignment
+                     * @param iterable<mixed, int> $keys
+                     */
+                    function foo(iterable $keys, int $colno) : void {
+                        $i = 0;
+                        $key = 0;
+                        $index = 0;
+
+                        foreach ($keys as $index => $key) {
+                            if ($key === $colno) {
+                                $i = $index;
+                                break;
+                            } elseif ($key > $colno) {
+                                $i = $index;
+                                break;
+                            }
+                        }
+
+                        echo $i;
+                        echo $index;
+                        echo $key;
+                    }'
+            ],
+            'whileLoopVarUpdatedInWhileLoop' => [
+                '<?php
+                    /** @param non-empty-list<int> $arr */
+                    function foo(array $arr) : void {
+                        while ($a = array_pop($arr)) {
+                            if ($a === 4) {
+                                $arr = array_merge($arr, ["a", "b", "c"]);
+                                continue;
+                            }
+
+                            echo "here";
+                        }
+                    }'
+            ],
+            'usedThroughParamByRef' => [
+                '<?php
+                    $arr = [];
+
+                    $populator = function(array &$arr): void {
+                        $arr[] = 5;
+                    };
+
+                    $populator($arr);
+
+                    print_r($arr);'
+            ],
+            'maybeUndefinedCheckedWithEmpty' => [
+                '<?php
+                    function foo(array $arr) : void {
+                        if (rand(0, 1)) {
+                            $maybe_undefined = $arr;
+                        }
+
+                        if (empty($maybe_undefined)) {
+                            $maybe_undefined = [0];
+                        }
+
+                        print_r($maybe_undefined);
+                    }'
+            ],
+            'maybeUndefinedCheckedWithEmptyOrRand' => [
+                '<?php
+                    function foo(array $arr) : void {
+                        if (rand(0, 1)) {
+                            $maybe_undefined = $arr;
+                        }
+
+                        if (empty($maybe_undefined) || rand(0, 1)) {
+                            $maybe_undefined = [0];
+                        }
+
+                        print_r($maybe_undefined);
+                    }'
+            ],
+            'maybeUndefinedCheckedWithNotIsset' => [
+                '<?php
+                    function foo(array $arr) : void {
+                        if (rand(0, 1)) {
+                            $maybe_undefined = $arr;
+                        }
+
+                        if (!isset($maybe_undefined)) {
+                            $maybe_undefined = [0];
+                        }
+
+                        print_r($maybe_undefined);
+                    }'
+            ],
+            'maybeUndefinedCheckedWithImplicitIsset' => [
+                '<?php
+                    function foo(array $arr) : void {
+                        if (rand(0, 1)) {
+                            $maybe_undefined = $arr;
+                        }
+
+                        /** @psalm-suppress MixedAssignment */
+                        $maybe_undefined = $maybe_undefined ?? [0];
+
+                        print_r($maybe_undefined);
                     }'
             ],
         ];
