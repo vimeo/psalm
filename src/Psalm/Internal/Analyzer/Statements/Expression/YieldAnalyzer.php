@@ -104,6 +104,10 @@ class YieldAnalyzer
                     }
                 }
 
+                if (isset($context->vars_in_scope[$var_comment->var_id])) {
+                    $comment_type->parent_nodes = $context->vars_in_scope[$var_comment->var_id]->parent_nodes;
+                }
+
                 $context->vars_in_scope[$var_comment->var_id] = $comment_type;
             }
         }

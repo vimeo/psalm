@@ -246,7 +246,7 @@ class MethodCallReturnTypeFetcher
             $statements_analyzer->control_flow_graph->addNode($method_call_node);
 
             $return_type_candidate->parent_nodes = [
-                $method_call_node
+                $method_call_node->id => $method_call_node
             ];
 
             if ($method_storage->specialize_call) {
@@ -278,7 +278,7 @@ class MethodCallReturnTypeFetcher
                         }
                     }
 
-                    $stmt_var_type->parent_nodes = [$var_node];
+                    $stmt_var_type->parent_nodes = [$var_node->id => $var_node];
 
                     $context->vars_in_scope[$var_id] = $stmt_var_type;
                 }

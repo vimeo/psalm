@@ -1452,7 +1452,7 @@ class StaticCallAnalyzer extends CallAnalyzer
 
         $statements_analyzer->control_flow_graph->addNode($method_source);
 
-        $return_type_candidate->parent_nodes = [$method_source];
+        $return_type_candidate->parent_nodes = [$method_source->id => $method_source];
 
         if ($method_storage && $method_storage->taint_source_types) {
             $method_node = TaintSource::getForMethodReturn(

@@ -132,7 +132,9 @@ class VariableFetchAnalyzer
                     $context->vars_possibly_in_scope[$var_name] = true;
                     $statements_analyzer->node_data->setType($stmt, Type::getMixed());
                 } else {
-                    $statements_analyzer->node_data->setType($stmt, clone $context->vars_in_scope[$var_name]);
+                    $stmt_type = clone $context->vars_in_scope[$var_name];
+
+                    $statements_analyzer->node_data->setType($stmt, $stmt_type);
                 }
             } else {
                 $statements_analyzer->node_data->setType($stmt, Type::getMixed());
@@ -414,7 +416,7 @@ class VariableFetchAnalyzer
                 $statements_analyzer->control_flow_graph->addSource($server_taint_source);
 
                 $type->parent_nodes = [
-                    $server_taint_source
+                    $server_taint_source->id => $server_taint_source
                 ];
             }
         }

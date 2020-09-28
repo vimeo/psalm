@@ -1199,7 +1199,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     $function_param->location,
                     null
                 );
-                $var_type->parent_nodes = [$type_source];
+                $var_type->parent_nodes = [$type_source->id => $type_source];
             }
 
             $context->vars_in_scope['$' . $function_param->name] = $var_type;

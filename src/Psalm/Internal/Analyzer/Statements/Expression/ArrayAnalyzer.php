@@ -226,7 +226,7 @@ class ArrayAnalyzer
                             );
                         }
 
-                        $parent_taint_nodes = array_merge($parent_taint_nodes, [$new_parent_node]);
+                        $parent_taint_nodes[$new_parent_node->id] = $new_parent_node;
                     }
                 }
             }

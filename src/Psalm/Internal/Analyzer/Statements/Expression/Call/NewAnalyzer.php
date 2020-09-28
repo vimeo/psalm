@@ -673,7 +673,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
 
                     $statements_analyzer->control_flow_graph->addNode($method_source);
 
-                    $stmt_type->parent_nodes = [$method_source];
+                    $stmt_type->parent_nodes = [$method_source->id => $method_source];
                 }
             } else {
                 ArgumentsAnalyzer::analyze(

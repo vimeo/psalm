@@ -26,7 +26,7 @@ class BinaryOpAnalyzer
         bool $from_stmt = false
     ) : bool {
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat && $nesting > 100) {
-            $statements_analyzer->node_data->setType($stmt, Type::getBool());
+            $statements_analyzer->node_data->setType($stmt, Type::getString());
 
             // ignore deeply-nested string concatenation
             return true;
@@ -116,7 +116,9 @@ class BinaryOpAnalyzer
                 $new_parent_node = ControlFlowNode::getForAssignment('concat', $var_location);
                 $statements_analyzer->control_flow_graph->addNode($new_parent_node);
 
-                $stmt_type->parent_nodes = [$new_parent_node];
+                $stmt_type->parent_nodes = [
+                    $new_parent_node->id => $new_parent_node
+                ];
 
                 if ($stmt_left_type && $stmt_left_type->parent_nodes) {
                     foreach ($stmt_left_type->parent_nodes as $parent_node) {
@@ -138,6 +140,14 @@ class BinaryOpAnalyzer
 
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Spaceship) {
             $statements_analyzer->node_data->setType($stmt, Type::getInt());
+
+            self::addControlFlow(
+                $statements_analyzer,
+                $stmt,
+                $stmt->left,
+                $stmt->right,
+                '<=>'
+            );
 
             return true;
         }
@@ -278,6 +288,14 @@ class BinaryOpAnalyzer
                 );
             }
 
+            self::addControlFlow(
+                $statements_analyzer,
+                $stmt,
+                $stmt->left,
+                $stmt->right,
+                'comparison'
+            );
+
             return true;
         }
 
@@ -288,6 +306,47 @@ class BinaryOpAnalyzer
         );
 
         return true;
+    }
+
+    public static function addControlFlow(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $stmt,
+        PhpParser\Node\Expr $left,
+        PhpParser\Node\Expr $right,
+        string $type = 'binaryop'
+    ) : void {
+        if ($stmt->getLine() === -1) {
+            throw new \UnexpectedValueException('bad');
+        }
+        $result_type = $statements_analyzer->node_data->getType($stmt);
+
+        if ($statements_analyzer->control_flow_graph
+            && $result_type
+        ) {
+            $stmt_left_type = $statements_analyzer->node_data->getType($left);
+            $stmt_right_type = $statements_analyzer->node_data->getType($right);
+
+            $var_location = new CodeLocation($statements_analyzer, $stmt);
+
+            $new_parent_node = ControlFlowNode::getForAssignment($type, $var_location);
+            $statements_analyzer->control_flow_graph->addNode($new_parent_node);
+
+            $result_type->parent_nodes = [
+                $new_parent_node->id => $new_parent_node
+            ];
+
+            if ($stmt_left_type && $stmt_left_type->parent_nodes) {
+                foreach ($stmt_left_type->parent_nodes as $parent_node) {
+                    $statements_analyzer->control_flow_graph->addPath($parent_node, $new_parent_node, $type);
+                }
+            }
+
+            if ($stmt_right_type && $stmt_right_type->parent_nodes) {
+                foreach ($stmt_right_type->parent_nodes as $parent_node) {
+                    $statements_analyzer->control_flow_graph->addPath($parent_node, $new_parent_node, $type);
+                }
+            }
+        }
     }
 
     private static function checkForImpureEqualityComparison(

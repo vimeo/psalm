@@ -1076,7 +1076,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
 
         $statements_analyzer->control_flow_graph->addNode($function_call_node);
 
-        $stmt_type->parent_nodes[] = $function_call_node;
+        $stmt_type->parent_nodes[$function_call_node->id] = $function_call_node;
 
         if ($function_storage->return_source_params) {
             $removed_taints = $function_storage->removed_taints;
@@ -1464,6 +1464,56 @@ class FunctionCallAnalyzer extends CallAnalyzer
             $context->check_consts = false;
         } elseif ($function_name->parts === ['extract']) {
             $context->check_variables = false;
+
+            foreach ($context->vars_in_scope as $var_id => $_) {
+                if ($var_id === '$this' || strpos($var_id, '[') || strpos($var_id, '>')) {
+                    continue;
+                }
+
+                $mixed_type = Type::getMixed();
+                $mixed_type->parent_nodes = $context->vars_in_scope[$var_id]->parent_nodes;
+
+                $context->vars_in_scope[$var_id] = $mixed_type;
+                $context->assigned_var_ids[$var_id] = true;
+                $context->possibly_assigned_var_ids[$var_id] = true;
+            }
+        } elseif ($function_name->parts === ['compact']) {
+            $all_args_string_literals = true;
+            $new_items = [];
+
+            foreach ($stmt->args as $arg) {
+                $arg_type = $statements_analyzer->node_data->getType($arg->value);
+
+                if (!$arg_type || !$arg_type->isSingleStringLiteral()) {
+                    $all_args_string_literals = false;
+                    break;
+                }
+
+                $var_name = $arg_type->getSingleStringLiteral()->value;
+
+                $new_items[] = new PhpParser\Node\Expr\ArrayItem(
+                    new PhpParser\Node\Expr\Variable($var_name, $arg->value->getAttributes()),
+                    new PhpParser\Node\Scalar\String_($var_name, $arg->value->getAttributes()),
+                    false,
+                    $arg->getAttributes()
+                );
+            }
+
+            if ($all_args_string_literals) {
+                $arr = new PhpParser\Node\Expr\Array_($new_items, $stmt->getAttributes());
+                $old_node_data = $statements_analyzer->node_data;
+                $statements_analyzer->node_data = clone $statements_analyzer->node_data;
+
+                ExpressionAnalyzer::analyze($statements_analyzer, $arr, $context);
+
+                $arr_type = $statements_analyzer->node_data->getType($arr);
+
+                $statements_analyzer->node_data = $old_node_data;
+
+                if ($arr_type) {
+                    $statements_analyzer->node_data->setType($stmt, $arr_type);
+                }
+            }
         } elseif (strtolower($function_name->parts[0]) === 'var_dump'
             || strtolower($function_name->parts[0]) === 'shell_exec') {
             if (IssueBuffer::accepts(

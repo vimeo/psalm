@@ -104,10 +104,8 @@ class ClassTemplateParamCollector
                 }
             }
 
-            $i = 0;
             foreach ($template_types as $type_name => $_) {
                 if (isset($class_template_params[$type_name])) {
-                    $i++;
                     continue;
                 }
 
@@ -190,8 +188,6 @@ class ClassTemplateParamCollector
                         $class_storage->name => [Type::getMixed()]
                     ];
                 }
-
-                $i++;
             }
         }
 

@@ -41,7 +41,7 @@ class EncapsulatedStringAnalyzer
                     $new_parent_node = ControlFlowNode::getForAssignment('concat', $var_location);
                     $statements_analyzer->control_flow_graph->addNode($new_parent_node);
 
-                    $stmt_type->parent_nodes[] = $new_parent_node;
+                    $stmt_type->parent_nodes[$new_parent_node->id] = $new_parent_node;
 
                     if ($casted_part_type->parent_nodes) {
                         foreach ($casted_part_type->parent_nodes as $parent_node) {
