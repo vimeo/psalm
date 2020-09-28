@@ -146,7 +146,7 @@ class FilterVarReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTy
                 'arg'
             );
 
-            $filter_type->parent_nodes = [$function_return_sink];
+            $filter_type->parent_nodes = [$function_return_sink->id => $function_return_sink];
         }
 
         return $filter_type;

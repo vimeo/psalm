@@ -639,25 +639,6 @@ class ArgumentsAnalyzer
 
             $arg_value_type = $statements_analyzer->node_data->getType($arg->value);
 
-            if ($method_id === 'compact'
-                && $arg_value_type
-                && $arg_value_type->isSingleStringLiteral()
-            ) {
-                $literal = $arg_value_type->getSingleStringLiteral();
-
-                if (!$context->hasVariable('$' . $literal->value, $statements_analyzer)) {
-                    if (IssueBuffer::accepts(
-                        new UndefinedVariable(
-                            'Cannot find referenced variable $' . $literal->value,
-                            new CodeLocation($statements_analyzer->getSource(), $arg->value)
-                        ),
-                        $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
-                }
-            }
-
             if (ArgumentAnalyzer::checkArgumentMatches(
                 $statements_analyzer,
                 $cased_method_id,

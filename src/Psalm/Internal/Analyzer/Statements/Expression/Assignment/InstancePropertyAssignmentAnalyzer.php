@@ -1210,7 +1210,7 @@ class InstancePropertyAssignmentAnalyzer
                     }
                 }
 
-                $stmt_var_type->parent_nodes = [$var_node];
+                $stmt_var_type->parent_nodes = [$var_node->id => $var_node];
 
                 $context->vars_in_scope[$var_id] = $stmt_var_type;
             }

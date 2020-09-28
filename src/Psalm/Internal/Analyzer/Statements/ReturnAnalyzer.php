@@ -115,6 +115,10 @@ class ReturnAnalyzer
                     continue;
                 }
 
+                if (isset($context->vars_in_scope[$var_comment->var_id])) {
+                    $comment_type->parent_nodes = $context->vars_in_scope[$var_comment->var_id]->parent_nodes;
+                }
+
                 $context->vars_in_scope[$var_comment->var_id] = $comment_type;
             }
         }
@@ -136,11 +140,17 @@ class ReturnAnalyzer
                 return false;
             }
 
+            $stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr);
+
             if ($var_comment_type) {
                 $stmt_type = $var_comment_type;
 
+                if ($stmt_expr_type && $stmt_expr_type->parent_nodes) {
+                    $stmt_type->parent_nodes = $stmt_expr_type->parent_nodes;
+                }
+
                 $statements_analyzer->node_data->setType($stmt, $var_comment_type);
-            } elseif ($stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr)) {
+            } elseif ($stmt_expr_type) {
                 $stmt_type = $stmt_expr_type;
 
                 if ($stmt_type->isNever()) {

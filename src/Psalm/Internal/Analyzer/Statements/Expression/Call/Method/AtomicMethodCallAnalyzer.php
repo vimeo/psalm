@@ -221,6 +221,14 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                 );
             }
 
+            ArgumentsAnalyzer::analyze(
+                $statements_analyzer,
+                $stmt->args,
+                null,
+                null,
+                $context
+            );
+
             $result->return_type = Type::getMixed();
             return;
         }
@@ -304,10 +312,12 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
             && $lhs_type_part instanceof Type\Atomic\TGenericObject
             && $class_storage->template_types
         ) {
+            $template_type_keys = \array_keys($class_storage->template_types);
+
             foreach ($class_storage->templatedMixins as $mixin) {
                 $param_position = \array_search(
                     $mixin->param_name,
-                    \array_keys($class_storage->template_types)
+                    $template_type_keys
                 );
 
                 if ($param_position !== false

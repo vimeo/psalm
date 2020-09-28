@@ -1252,7 +1252,7 @@ class InstancePropertyFetchAnalyzer
                     }
                 }
 
-                $type->parent_nodes = [$property_node];
+                $type->parent_nodes = [$property_node->id => $property_node];
             }
         } else {
             $code_location = new CodeLocation($statements_analyzer, $stmt->name);
@@ -1281,7 +1281,7 @@ class InstancePropertyFetchAnalyzer
                 $control_flow_graph->addPath($property_node, $localized_property_node, 'property-fetch');
             }
 
-            $type->parent_nodes[] = $localized_property_node;
+            $type->parent_nodes[$localized_property_node->id] = $localized_property_node;
         }
     }
 }

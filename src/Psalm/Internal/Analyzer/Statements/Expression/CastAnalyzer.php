@@ -211,7 +211,7 @@ class CastAnalyzer
             if ($atomic_type instanceof TString) {
                 $valid_strings[] = $atomic_type;
                 if ($statements_analyzer->control_flow_graph) {
-                    $parent_nodes = array_merge($parent_nodes, $stmt_type->parent_nodes ?: []);
+                    $parent_nodes = $parent_nodes + $stmt_type->parent_nodes;
                 }
 
                 continue;
@@ -230,7 +230,7 @@ class CastAnalyzer
             ) {
                 $castable_types[] = new TString();
                 if ($statements_analyzer->control_flow_graph) {
-                    $parent_nodes = array_merge($parent_nodes, $stmt_type->parent_nodes ?: []);
+                    $parent_nodes = $parent_nodes + $stmt_type->parent_nodes;
                 }
 
                 continue;
@@ -276,7 +276,7 @@ class CastAnalyzer
                             );
 
                             if ($statements_analyzer->control_flow_graph) {
-                                $parent_nodes = array_merge($return_type->parent_nodes ?: [], $parent_nodes);
+                                $parent_nodes = array_merge($return_type->parent_nodes, $parent_nodes);
                             }
 
                             $castable_types = array_merge(
