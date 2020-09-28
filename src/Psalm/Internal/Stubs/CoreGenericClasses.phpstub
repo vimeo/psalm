@@ -1170,6 +1170,174 @@ class SplDoublyLinkedList implements Iterator, Countable, ArrayAccess, Serializa
 }
 
 /**
+ * The SplFixedArray class provides the main functionalities of array. 
+ * The main differences between a SplFixedArray and a normal PHP array is that 
+ * the SplFixedArray is of fixed length and allows only integers within the range as indexes. 
+ * The advantage is that it uses less memory than a standard array.
+ *
+ * @link https://php.net/manual/en/class.splfixedarray.php
+ *
+ * @template TValue
+ * @template-implements ArrayAccess<int, TValue>
+ * @template-implements Iterator<int, TValue>
+ */
+class SplFixedArray implements Iterator, ArrayAccess, Countable {
+    /**
+     * Constructs a new fixed array
+     *
+     * Initializes a fixed array with a number of NULL values equal to size. 
+     * @link https://php.net/manual/en/splfixedarray.construct.php
+     *
+     * @param int $size The size of the fixed array. This expects a number between 0 and PHP_INT_MAX.
+
+     * @since 5.3.0
+     */
+    public function __construct(int $size = 0) {}
+
+    /**
+     * Import a PHP array in a new SplFixedArray instance
+     * @link https://php.net/manual/en/splfixedarray.fromarray.php
+     *
+     * @template TInValue
+     * @param array<int, TInValue> $array The array to import
+     * @param bool $save_indexes [optional] Try to save the numeric indexes used in the original array.
+     * 
+     * @return SplFixedArray<TInValue> Instance of SplFixedArray containing the array content
+
+     * @since 5.3.0
+     */
+    public static function fromArray(array $array, bool $save_indexes = true): SplFixedArray {}
+
+    /**
+     * Returns a PHP array from the fixed array
+     * @link https://php.net/manual/en/splfixedarray.toarray.php
+     *
+     * @return array<int, TValue>
+
+     * @since 5.3.0
+     */
+    public function toArray(): array {}
+
+    /**
+     * Returns the size of the array.
+     * @link https://php.net/manual/en/splfixedarray.getsize.php
+     *
+     * @return int The size of the array
+
+     * @see SplFixedArray::count()
+     *
+     * @since 5.3.0
+     */
+    public function getSize(): int {}
+
+    /**
+     * Returns the size of the array.
+     * @link https://php.net/manual/en/splfixedarray.count.php
+     *
+     * @return int The size of the array
+     *
+     * @since 5.3.0
+     */
+    public function count(): int {}
+
+    /**
+     * Rewind the iterator back to the start
+     * @link https://php.net/manual/en/splfixedarray.rewind.php
+     *
+     * @return void
+     *
+     * @since 5.3.0
+     */
+    public function rewind(): void {}
+
+    /**
+     * Check whether the array contains more elements
+     * @link https://php.net/manual/en/splfixedarray.valid.php
+     *
+     * @return bool true if the array contains any more elements, false otherwise.
+     *
+     * @since 5.3.0
+     */
+    public function valid(): bool {}
+
+    /**
+     * Returns current array index
+     * @link https://php.net/manual/en/splfixedarray.key.php
+     *
+     * @return int The current array index
+     *
+     * @since 5.3.0
+     */
+    public function key(): int {}
+
+    /**
+     * Returns the current array entry
+     * @link https://php.net/manual/en/splfixedarray.current.php
+     *
+     * @return TValue The current element value
+     *
+     * @since 5.3.0
+     */
+    public function current() {}
+
+    /**
+     * Move to the next entry
+     * @link https://php.net/manual/en/splfixedarray.next.php
+     *
+     * @return void
+     *
+     * @since 5.3.0
+     */
+    public function next(): void {}
+    
+    /**
+     * Returns whether the specified index exists
+     * @link https://php.net/manual/en/splfixedarray.offsetexists.php
+     *
+     * @param int $index The index being checked.
+     * @return bool true if the requested index exists, and false otherwise.
+     *
+     * @since 5.3.0
+     */
+    public function offsetExists(int $index): bool {}
+
+    /**
+     * Sets a new value at a specified index
+     * @link https://php.net/manual/en/splfixedarray.offsetset.php
+     *
+     * @param int $index The index being sent.
+     * @param TValue $newval The new value for the index
+     * @return void
+     *
+     * @since 5.3.0
+     */
+    public function offsetSet(int $index, $newval): void {}
+
+    /**
+     * Unsets the value at the specified $index
+     * @link https://php.net/manual/en/splfixedarray.offsetunset.php
+     *
+     * @param int $index The index being unset
+     * @return void
+     *
+     * @since 5.3.0
+     */
+    public function offsetUnset(int $index): void {}
+
+    /**
+     * Returns the value at the specified index
+     * @link https://php.net/manual/en/splfixedarray.offsetget.php
+     *
+     * @param int $index The index with the value
+     * @return TValue The value at the specified index
+     *
+     * @since 5.3.0
+     */
+    public function offsetGet(int $index) {}
+}
+
+
+/**
  * The SplStack class provides the main functionalities of a stack implemented using a doubly linked list.
  * @link https://php.net/manual/en/class.splstack.php
  *
@@ -1446,7 +1614,7 @@ class SplPriorityQueue implements Iterator, Countable {
      *
      * @return SplPriorityQueue::EXTR_* Returns the current extraction mode
      *
-     * @see setExtractFlags
+     * @see SplPriorityQueue::setExtractFlags
      *
      * @since 5.3.0
      */
