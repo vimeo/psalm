@@ -4,7 +4,7 @@ Psalm's type system represents the types of variables within a program using dif
 
 ## Union types
 
-All type Psalm's type information you are likely to use will be wrapped in a [Union Type](../../annotating_code/type_syntax/union_types.md).
+All type information you are likely to use will be wrapped in a [Union Type](../../annotating_code/type_syntax/union_types.md).
 
 The `Union` class constructor takes an array of `Atomic` types, and can represent one or more of these types at a time. They correspond to a vertical bar in a doc comment.
 
