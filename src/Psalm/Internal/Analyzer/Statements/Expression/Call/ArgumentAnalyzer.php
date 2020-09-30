@@ -285,6 +285,7 @@ class ArgumentAnalyzer
 
                 if (!$arg_type_param) {
                     $arg_type_param = Type::getMixed();
+                    $arg_type_param->parent_nodes = $arg_type->parent_nodes;
                 }
             }
 
@@ -1329,11 +1330,9 @@ class ArgumentAnalyzer
             $statements_analyzer->control_flow_graph->addSink($sink);
         }
 
-        if ($input_type->parent_nodes) {
-            foreach ($input_type->parent_nodes as $parent_node) {
-                $statements_analyzer->control_flow_graph->addNode($method_node);
-                $statements_analyzer->control_flow_graph->addPath($parent_node, $argument_value_node, 'arg');
-            }
+        foreach ($input_type->parent_nodes as $parent_node) {
+            $statements_analyzer->control_flow_graph->addNode($method_node);
+            $statements_analyzer->control_flow_graph->addPath($parent_node, $argument_value_node, 'arg');
         }
 
         if ($function_param->assert_untainted) {

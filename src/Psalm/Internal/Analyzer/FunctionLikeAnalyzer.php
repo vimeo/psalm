@@ -111,6 +111,13 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     public $inferred_has_mutation = false;
 
     /**
+     * Holds param nodes for functions with func_get_args calls
+     *
+     * @var array<string, ControlFlowNode>
+     */
+    public $param_nodes = [];
+
+    /**
      * @var FunctionLikeStorage
      */
     protected $storage;
@@ -1229,6 +1236,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         new ControlFlowNode('variable-use', 'variable use', null),
                         'variable-use'
                     );
+                }
+
+                if ($storage->variadic) {
+                    $this->param_nodes += [$param_assignment->id => $param_assignment];
                 }
 
                 $var_type->parent_nodes += [$param_assignment->id => $param_assignment];
