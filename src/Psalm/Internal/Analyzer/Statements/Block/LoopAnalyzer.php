@@ -451,6 +451,8 @@ class LoopAnalyzer
                         $type,
                         $loop_scope->loop_parent_context->vars_in_scope[$var]
                     );
+
+                    $loop_scope->loop_parent_context->possibly_assigned_var_ids[$var] = true;
                 }
             }
         }
