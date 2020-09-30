@@ -284,6 +284,7 @@ class ArgumentAnalyzer
 
                 if (!$arg_type_param) {
                     $arg_type_param = Type::getMixed();
+                    $arg_type_param->parent_nodes = $arg_type->parent_nodes;
                 }
             }
 

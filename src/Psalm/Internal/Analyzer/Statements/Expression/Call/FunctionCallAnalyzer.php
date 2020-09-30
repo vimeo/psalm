@@ -1514,6 +1514,16 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     $statements_analyzer->node_data->setType($stmt, $arr_type);
                 }
             }
+        } elseif ($function_name->parts === ['func_get_args']) {
+            $source = $statements_analyzer->getSource();
+
+            if ($codebase->find_unused_variables
+                && $source instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+            ) {
+                foreach ($source->param_names as $param_name => $_) {
+                    $context->hasVariable('$' . $param_name, $statements_analyzer);
+                }
+            }
         } elseif (strtolower($function_name->parts[0]) === 'var_dump'
             || strtolower($function_name->parts[0]) === 'shell_exec') {
             if (IssueBuffer::accepts(

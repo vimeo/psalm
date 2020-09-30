@@ -111,6 +111,13 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     public $inferred_has_mutation = false;
 
     /**
+     * Holds param nodes for functions with func_get_args calls
+     *
+     * @var array<string, bool>
+     */
+    public $param_names = [];
+
+    /**
      * @var FunctionLikeStorage
      */
     protected $storage;
@@ -1199,7 +1206,12 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     $function_param->location,
                     null
                 );
+
                 $var_type->parent_nodes = [$type_source->id => $type_source];
+            }
+
+            if ($storage->variadic) {
+                $this->param_names[$function_param->name] = true;
             }
 
             $context->vars_in_scope['$' . $function_param->name] = $var_type;

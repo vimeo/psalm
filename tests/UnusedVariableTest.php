@@ -2046,6 +2046,71 @@ class UnusedVariableTest extends TestCase
                         print_r($maybe_undefined);
                     }'
             ],
+            'takesByRefThing' => [
+                '<?php
+                    while (rand(0, 1)) {
+                        if (rand(0, 1)) {
+                            $c = 5;
+                        }
+
+                        takesByRef($c);
+                        echo $c;
+                    }
+
+                    /**
+                     * @param-out int $c
+                     */
+                    function takesByRef(?int &$c) : void {
+                        $c = 7;
+                    }'
+            ],
+            'clips' => [
+                '<?php declare(strict_types=1);
+                    function foo(array $clips) : void {
+                        /** @psalm-suppress MixedAssignment */
+                        foreach ($clips as &$clip) {
+                            /** @psalm-suppress MixedArgument */
+                            if (!empty($clip)) {
+                                $legs = explode("/", $clip);
+                                $clip_id = $clip = $legs[1];
+
+                                if ((is_numeric($clip_id) || $clip = (new \Exception($clip_id)))) {}
+
+                                print_r($clips);
+                            }
+                        }
+                    }'
+            ],
+            'validator' => [
+                '<?php
+                    /**
+                     * @param bool $b
+                     */
+                    function validate($b, string $source) : void {
+                        /**
+                         * @psalm-suppress DocblockTypeContradiction
+                         * @psalm-suppress MixedAssignment
+                         */
+                        if (!is_bool($b)) {
+                            $source = $b;
+                        }
+
+                        print_r($source);
+                    }'
+            ],
+            'implicitSpread' => [
+                '<?php
+                    function validate(bool $b, bool $c) : void {
+                        $d = [$b, $c];
+                        print_r(...$d);
+                    }'
+            ],
+            'funcGetArgs' => [
+                '<?php
+                    function validate(bool $b, bool $c) : void {
+                        print_r(...func_get_args());
+                    }'
+            ],
         ];
     }
 
