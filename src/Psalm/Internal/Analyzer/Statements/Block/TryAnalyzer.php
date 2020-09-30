@@ -5,6 +5,7 @@ use PhpParser;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\ControlFlow\ControlFlowNode;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\InvalidCatch;
@@ -308,6 +309,37 @@ class TryAnalyzer
                 );
 
                 $catch_context->vars_possibly_in_scope[$catch_var_id] = true;
+
+                $location = new CodeLocation($statements_analyzer->getSource(), $catch->var);
+
+                if (!$statements_analyzer->hasVariable($catch_var_id)) {
+                    $statements_analyzer->registerVariable(
+                        $catch_var_id,
+                        $location,
+                        $catch_context->branch_point
+                    );
+                } else {
+                    $statements_analyzer->registerVariableAssignment(
+                        $catch_var_id,
+                        $location
+                    );
+                }
+
+                if ($statements_analyzer->control_flow_graph) {
+                    $catch_var_node = ControlFlowNode::getForAssignment($catch_var_id, $location);
+
+                    $catch_context->vars_in_scope[$catch_var_id]->parent_nodes = [
+                        $catch_var_node->id => $catch_var_node
+                    ];
+
+                    if ($statements_analyzer->control_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph) {
+                        $statements_analyzer->control_flow_graph->addPath(
+                            $catch_var_node,
+                            new ControlFlowNode('variable-use', 'variable use', null),
+                            'variable-use'
+                        );
+                    }
+                }
             }
 
             $suppressed_issues = $statements_analyzer->getSuppressedIssues();
