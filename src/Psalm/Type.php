@@ -431,9 +431,15 @@ abstract class Type
                 if ($type_2->failed_reconciliation) {
                     $both_failed_reconciliation = true;
                 } else {
+                    $type_2 = clone $type_2;
+                    $type_2->parent_nodes += $type_1->parent_nodes;
+
                     return $type_2;
                 }
             } elseif ($type_2->failed_reconciliation) {
+                $type_1 = clone $type_1;
+                $type_1->parent_nodes += $type_2->parent_nodes;
+
                 return $type_1;
             }
 
@@ -491,6 +497,10 @@ abstract class Type
 
         if ($type_1->parent_nodes || $type_2->parent_nodes) {
             $combined_type->parent_nodes = $type_1->parent_nodes + $type_2->parent_nodes;
+        }
+
+        if ($type_1->by_ref || $type_2->by_ref) {
+            $combined_type->by_ref = true;
         }
 
         return $combined_type;

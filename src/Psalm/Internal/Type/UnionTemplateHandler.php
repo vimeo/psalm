@@ -920,7 +920,6 @@ class UnionTemplateHandler
             $container_type_params_covariant = $container_class_storage->template_covariants;
         } catch (\Throwable $e) {
             $input_class_storage = null;
-            $container_class_storage = null;
         }
 
         if ($input_type_part->value !== $container_type_part->value

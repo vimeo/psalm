@@ -300,7 +300,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                             $var_id = '$' . $var->name;
 
                             // registers variable in global context
-                            $context->hasVariable($var_id, $statements_analyzer);
+                            $context->hasVariable($var_id);
                         }
                     }
                 }

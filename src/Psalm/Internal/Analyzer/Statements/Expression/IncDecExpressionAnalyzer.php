@@ -44,6 +44,7 @@ class IncDecExpressionAnalyzer
 
         if (($stmt_var_type = $statements_analyzer->node_data->getType($stmt->var))
             && $stmt_var_type->hasString()
+            && ($stmt instanceof PostInc || $stmt instanceof PreInc)
         ) {
             $return_type = null;
 
@@ -64,6 +65,14 @@ class IncDecExpressionAnalyzer
 
             $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
+            BinaryOpAnalyzer::addControlFlow(
+                $statements_analyzer,
+                $stmt,
+                $stmt->var,
+                $fake_right_expr,
+                'inc'
+            );
+
             $var_id = ExpressionIdentifier::getArrayVarId($stmt->var, null);
 
             $codebase = $statements_analyzer->getCodebase();
@@ -72,18 +81,8 @@ class IncDecExpressionAnalyzer
                 $context->vars_in_scope[$var_id] = $stmt_type;
 
                 if ($codebase->find_unused_variables && $stmt->var instanceof PhpParser\Node\Expr\Variable) {
-                    $location = new CodeLocation($statements_analyzer, $stmt->var);
                     $context->assigned_var_ids[$var_id] = true;
                     $context->possibly_assigned_var_ids[$var_id] = true;
-
-                    if (!$context->inside_isset) {
-                        $statements_analyzer->registerVariableAssignment(
-                            $var_id,
-                            $location
-                        );
-
-                        $context->unreferenced_vars[$var_id] = [$location->getHash() => $location];
-                    }
                 }
 
                 // removes dependent vars from $context

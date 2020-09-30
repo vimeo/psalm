@@ -157,10 +157,6 @@ class AndAnalyzer
             $left_context->referenced_var_ids
         );
 
-        if ($codebase->find_unused_variables) {
-            $context->unreferenced_vars = $right_context->unreferenced_vars;
-        }
-
         if ($context->inside_conditional) {
             $context->updateChecks($right_context);
 
@@ -196,10 +192,6 @@ class AndAnalyzer
                 $context->assigned_var_ids,
                 $if_context->assigned_var_ids
             );
-
-            if ($codebase->find_unused_variables) {
-                $if_context->unreferenced_vars = $context->unreferenced_vars;
-            }
 
             $if_context->reconciled_expression_clauses = array_merge(
                 $if_context->reconciled_expression_clauses,

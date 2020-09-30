@@ -4,6 +4,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression;
 use PhpParser;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\ControlFlow\ControlFlowNode;
 use Psalm\CodeLocation;
 use Psalm\Context;
@@ -35,12 +36,17 @@ class BinaryOpAnalyzer
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd ||
             $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalAnd
         ) {
+            $was_inside_use = $context->inside_use;
+            $context->inside_use = true;
+
             $expr_result = BinaryOp\AndAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt,
                 $context,
                 $from_stmt
             );
+
+            $context->inside_use = $was_inside_use;
 
             $statements_analyzer->node_data->setType($stmt, Type::getBool());
 
@@ -50,6 +56,9 @@ class BinaryOpAnalyzer
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr ||
             $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
         ) {
+            $was_inside_use = $context->inside_use;
+            $context->inside_use = true;
+
             $expr_result = BinaryOp\OrAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt,
@@ -57,21 +66,33 @@ class BinaryOpAnalyzer
                 $from_stmt
             );
 
+            $context->inside_use = $was_inside_use;
+
             $statements_analyzer->node_data->setType($stmt, Type::getBool());
 
             return $expr_result;
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Coalesce) {
-            return BinaryOp\CoalesceAnalyzer::analyze(
+            $expr_result = BinaryOp\CoalesceAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt,
                 $context
             );
+
+            self::addControlFlow(
+                $statements_analyzer,
+                $stmt,
+                $stmt->left,
+                $stmt->right,
+                'coalesce'
+            );
+
+            return $expr_result;
         }
 
         if ($stmt->left instanceof PhpParser\Node\Expr\BinaryOp) {
-            if (self::analyze($statements_analyzer, $stmt->left, $context, ++$nesting) === false) {
+            if (self::analyze($statements_analyzer, $stmt->left, $context, $nesting + 1) === false) {
                 return false;
             }
         } else {
@@ -81,7 +102,7 @@ class BinaryOpAnalyzer
         }
 
         if ($stmt->right instanceof PhpParser\Node\Expr\BinaryOp) {
-            if (self::analyze($statements_analyzer, $stmt->right, $context, ++$nesting) === false) {
+            if (self::analyze($statements_analyzer, $stmt->right, $context, $nesting + 1) === false) {
                 return false;
             }
         } else {
@@ -106,7 +127,8 @@ class BinaryOpAnalyzer
             }
 
             if ($statements_analyzer->control_flow_graph
-                && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
+                && ($statements_analyzer->control_flow_graph instanceof VariableUseGraph
+                    || !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues()))
             ) {
                 $stmt_left_type = $statements_analyzer->node_data->getType($stmt->left);
                 $stmt_right_type = $statements_analyzer->node_data->getType($stmt->right);
@@ -344,6 +366,36 @@ class BinaryOpAnalyzer
             if ($stmt_right_type && $stmt_right_type->parent_nodes) {
                 foreach ($stmt_right_type->parent_nodes as $parent_node) {
                     $statements_analyzer->control_flow_graph->addPath($parent_node, $new_parent_node, $type);
+                }
+            }
+
+            if ($stmt instanceof PhpParser\Node\Expr\AssignOp
+                && $statements_analyzer->control_flow_graph instanceof VariableUseGraph
+            ) {
+                $root_expr = $left;
+
+                while ($root_expr instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+                    $root_expr = $root_expr->var;
+                }
+
+                if ($left instanceof PhpParser\Node\Expr\PropertyFetch) {
+                    $statements_analyzer->control_flow_graph->addPath(
+                        $new_parent_node,
+                        new ControlFlowNode('variable-use', 'variable use', null),
+                        'used-by-instance-property'
+                    );
+                } if ($left instanceof PhpParser\Node\Expr\StaticPropertyFetch) {
+                    $statements_analyzer->control_flow_graph->addPath(
+                        $new_parent_node,
+                        new ControlFlowNode('variable-use', 'variable use', null),
+                        'use-in-static-property'
+                    );
+                } elseif (!$left instanceof PhpParser\Node\Expr\Variable) {
+                    $statements_analyzer->control_flow_graph->addPath(
+                        $new_parent_node,
+                        new ControlFlowNode('variable-use', 'variable use', null),
+                        'variable-use'
+                    );
                 }
             }
         }

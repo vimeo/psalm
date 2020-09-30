@@ -8,6 +8,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\InvalidGlobal;
+use Psalm\Internal\ControlFlow\ControlFlowNode;
 use Psalm\IssueBuffer;
 use function is_string;
 
@@ -48,7 +49,7 @@ class GlobalAnalyzer
                         $context->vars_possibly_in_scope[$var_id] = true;
                     } else {
                         $context->vars_in_scope[$var_id] =
-                            $global_context && $global_context->hasVariable($var_id, $statements_analyzer)
+                            $global_context && $global_context->hasVariable($var_id)
                                 ? clone $global_context->vars_in_scope[$var_id]
                                 : VariableFetchAnalyzer::getGlobalType($var_id);
 

@@ -192,7 +192,7 @@ class ConstFetchAnalyzer
             }
         }
 
-        if ($context && $context->hasVariable($fq_const_name, $statements_analyzer)) {
+        if ($context && $context->hasVariable($fq_const_name)) {
             return $context->vars_in_scope[$fq_const_name];
         }
 

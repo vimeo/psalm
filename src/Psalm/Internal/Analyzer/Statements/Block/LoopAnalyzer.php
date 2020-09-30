@@ -154,7 +154,6 @@ class LoopAnalyzer
                 }
             }
 
-            $new_referenced_var_ids = $inner_context->referenced_var_ids;
             $inner_context->referenced_var_ids = $old_referenced_var_ids + $inner_context->referenced_var_ids;
 
             $loop_scope->loop_parent_context->vars_possibly_in_scope = array_merge(
@@ -234,10 +233,6 @@ class LoopAnalyzer
                 }
             }
 
-            /**
-             * @var array<string, bool>
-             */
-            $new_referenced_var_ids = $inner_context->referenced_var_ids;
             $inner_context->referenced_var_ids = array_intersect_key(
                 $old_referenced_var_ids,
                 $inner_context->referenced_var_ids
@@ -310,15 +305,6 @@ class LoopAnalyzer
 
                 $inner_context->has_returned = false;
 
-                if ($codebase->find_unused_variables) {
-                    foreach ($inner_context->unreferenced_vars as $var_id => $locations) {
-                        if (!isset($pre_outer_context->vars_in_scope[$var_id])) {
-                            $loop_scope->unreferenced_vars[$var_id] = $locations;
-                            unset($inner_context->unreferenced_vars[$var_id]);
-                        }
-                    }
-                }
-
                 $loop_scope->loop_parent_context->vars_possibly_in_scope = array_merge(
                     $inner_context->vars_possibly_in_scope,
                     $loop_scope->loop_parent_context->vars_possibly_in_scope
@@ -327,16 +313,6 @@ class LoopAnalyzer
                 // if there are no changes to the types, no need to re-examine
                 if (!$has_changes) {
                     break;
-                }
-
-                if ($codebase->find_unused_variables) {
-                    foreach ($loop_scope->possibly_unreferenced_vars as $var_id => $locations) {
-                        if (isset($inner_context->unreferenced_vars[$var_id])) {
-                            $inner_context->unreferenced_vars[$var_id] += $locations;
-                        } else {
-                            $inner_context->unreferenced_vars[$var_id] = $locations;
-                        }
-                    }
                 }
 
                 // remove vars that were defined in the foreach
@@ -469,6 +445,9 @@ class LoopAnalyzer
                 );
 
                 $loop_scope->loop_parent_context->removeVarFromConflictingClauses($var_id);
+            } else {
+                $loop_scope->loop_parent_context->vars_in_scope[$var_id]->parent_nodes
+                    += $loop_scope->loop_context->vars_in_scope[$var_id]->parent_nodes;
             }
         }
 
@@ -480,9 +459,13 @@ class LoopAnalyzer
                 }
 
                 if ($inner_context->vars_in_scope[$var_id]->hasMixed()) {
+                    $inner_context->vars_in_scope[$var_id]->parent_nodes
+                        += $loop_scope->loop_parent_context->vars_in_scope[$var_id]->parent_nodes;
+
                     $loop_scope->loop_parent_context->vars_in_scope[$var_id] =
                         $inner_context->vars_in_scope[$var_id];
                     $loop_scope->loop_parent_context->removeVarFromConflictingClauses($var_id);
+
                     continue;
                 }
 
@@ -493,6 +476,11 @@ class LoopAnalyzer
                     );
 
                     $loop_scope->loop_parent_context->removeVarFromConflictingClauses($var_id);
+                } else {
+                    $loop_scope->loop_parent_context->vars_in_scope[$var_id]->parent_nodes = array_merge(
+                        $loop_scope->loop_parent_context->vars_in_scope[$var_id]->parent_nodes,
+                        $inner_context->vars_in_scope[$var_id]->parent_nodes
+                    );
                 }
             }
         }
@@ -544,41 +532,6 @@ class LoopAnalyzer
             $loop_scope->loop_context->referenced_var_ids
         );
 
-        if ($codebase->find_unused_variables) {
-            foreach ($loop_scope->possibly_unreferenced_vars as $var_id => $locations) {
-                if (isset($inner_context->unreferenced_vars[$var_id])) {
-                    $inner_context->unreferenced_vars[$var_id] += $locations;
-                }
-            }
-
-            foreach ($inner_context->unreferenced_vars as $var_id => $locations) {
-                if (!isset($new_referenced_var_ids[$var_id])
-                    || !isset($pre_outer_context->vars_in_scope[$var_id])
-                    || $does_always_break
-                ) {
-                    if (!isset($loop_scope->loop_context->unreferenced_vars[$var_id])) {
-                        $loop_scope->loop_context->unreferenced_vars[$var_id] = $locations;
-                    } else {
-                        $loop_scope->loop_context->unreferenced_vars[$var_id] += $locations;
-                    }
-                } else {
-                    $statements_analyzer->registerVariableUses($locations);
-                }
-            }
-
-            foreach ($loop_scope->unreferenced_vars as $var_id => $locations) {
-                if (isset($loop_scope->referenced_var_ids[$var_id])) {
-                    $statements_analyzer->registerVariableUses($locations);
-                } else {
-                    if (!isset($loop_scope->loop_context->unreferenced_vars[$var_id])) {
-                        $loop_scope->loop_context->unreferenced_vars[$var_id] = $locations;
-                    } else {
-                        $loop_scope->loop_context->unreferenced_vars[$var_id] += $locations;
-                    }
-                }
-            }
-        }
-
         if ($always_enters_loop) {
             foreach ($inner_context->vars_in_scope as $var_id => $type) {
                 // if there are break statements in the loop it's not certain
@@ -594,14 +547,6 @@ class LoopAnalyzer
                         );
                     }
                 } else {
-                    if ($codebase->find_unused_variables
-                        && !isset($loop_scope->loop_parent_context->vars_in_scope[$var_id])
-                        && isset($inner_context->unreferenced_vars[$var_id])
-                    ) {
-                        $loop_scope->loop_parent_context->unreferenced_vars[$var_id]
-                            = $inner_context->unreferenced_vars[$var_id];
-                    }
-
                     $loop_scope->loop_parent_context->vars_in_scope[$var_id] = $type;
                 }
             }
@@ -632,13 +577,16 @@ class LoopAnalyzer
 
             if ($loop_scope->possibly_redefined_loop_vars) {
                 foreach ($loop_scope->possibly_redefined_loop_vars as $var => $type) {
-                    if ($loop_scope->loop_context->hasVariable($var)
-                        && !isset($updated_loop_vars[$var])
-                    ) {
-                        $loop_scope->loop_context->vars_in_scope[$var] = Type::combineUnionTypes(
-                            $loop_scope->loop_context->vars_in_scope[$var],
-                            $type
-                        );
+                    if ($loop_scope->loop_context->hasVariable($var)) {
+                        if (!isset($updated_loop_vars[$var])) {
+                            $loop_scope->loop_context->vars_in_scope[$var] = Type::combineUnionTypes(
+                                $loop_scope->loop_context->vars_in_scope[$var],
+                                $type
+                            );
+                        } else {
+                            $loop_scope->loop_context->vars_in_scope[$var]->parent_nodes
+                                += $type->parent_nodes;
+                        }
                     }
                 }
             }

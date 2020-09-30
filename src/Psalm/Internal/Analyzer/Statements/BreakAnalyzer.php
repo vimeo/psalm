@@ -18,8 +18,6 @@ class BreakAnalyzer
 
         $leaving_switch = true;
 
-        $codebase = $statements_analyzer->getCodebase();
-
         if ($loop_scope) {
             if ($context->break_types
                 && \end($context->break_types) === 'switch'
@@ -74,18 +72,6 @@ class BreakAnalyzer
                 }
             }
 
-            if ($codebase->find_unused_variables && !$leaving_switch) {
-                foreach ($context->unreferenced_vars as $var_id => $locations) {
-                    if (isset($loop_scope->unreferenced_vars[$var_id])) {
-                        $loop_scope->unreferenced_vars[$var_id] += $locations;
-                    } else {
-                        $loop_scope->unreferenced_vars[$var_id] = $locations;
-                    }
-                }
-
-                $loop_scope->referenced_var_ids += $context->referenced_var_ids;
-            }
-
             if ($context->finally_scope) {
                 foreach ($context->vars_in_scope as $var_id => $type) {
                     if (isset($context->finally_scope->vars_in_scope[$var_id])) {
@@ -118,15 +104,6 @@ class BreakAnalyzer
                         );
                     } else {
                         $case_scope->break_vars[$var_id] = $type;
-                    }
-                }
-            }
-            if ($codebase->find_unused_variables) {
-                foreach ($context->unreferenced_vars as $var_id => $locations) {
-                    if (isset($case_scope->unreferenced_vars[$var_id])) {
-                        $case_scope->unreferenced_vars[$var_id] += $locations;
-                    } else {
-                        $case_scope->unreferenced_vars[$var_id] = $locations;
                     }
                 }
             }

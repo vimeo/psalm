@@ -156,10 +156,6 @@ class DoAnalyzer
             $do_context->referenced_var_ids
         );
 
-        if ($codebase->find_unused_variables) {
-            $context->unreferenced_vars = $loop_scope->loop_context->unreferenced_vars;
-        }
-
         if ($context->collect_exceptions) {
             $context->mergeExceptions($inner_loop_context);
         }

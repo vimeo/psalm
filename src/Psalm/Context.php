@@ -79,6 +79,13 @@ class Context
     public $inside_call = false;
 
     /**
+     * Whether or not we're inside any other situation that treats a variable as used
+     *
+     * @var bool
+     */
+    public $inside_use = false;
+
+    /**
      * Whether or not we're inside a throw
      *
      * @var bool
@@ -208,18 +215,11 @@ class Context
     public $referenced_var_ids = [];
 
     /**
-     * A list of variables that have never been referenced
-     *
-     * @var array<string, array<string, CodeLocation>>
-     */
-    public $unreferenced_vars = [];
-
-    /**
      * A list of variables that have been passed by reference (where we know their type)
      *
-     * @var array<string, \Psalm\Internal\ReferenceConstraint>|null
+     * @var array<string, \Psalm\Internal\ReferenceConstraint>
      */
-    public $byref_constraints;
+    public $byref_constraints = [];
 
     /**
      * If this context inherits from a context, it is here
@@ -467,8 +467,7 @@ class Context
 
             $new_type = $new_vars_in_scope[$var_id];
 
-            if (!$this_type->failed_reconciliation
-                && !$this_type->isEmpty()
+            if (!$this_type->isEmpty()
                 && !$new_type->isEmpty()
                 && !$this_type->equals($new_type)
             ) {
@@ -724,7 +723,7 @@ class Context
         return isset($this->phantom_classes[strtolower($class_name)]);
     }
 
-    public function hasVariable(?string $var_name, ?StatementsAnalyzer $statements_analyzer = null): bool
+    public function hasVariable(?string $var_name): bool
     {
         if (!$var_name) {
             return false;
@@ -739,14 +738,6 @@ class Context
                 && !isset($this->vars_in_scope[$var_name])
             ) {
                 return false;
-            }
-
-            if ($statements_analyzer && $statements_analyzer->getCodebase()->find_unused_variables) {
-                if (isset($this->unreferenced_vars[$var_name])) {
-                    $statements_analyzer->registerVariableUses($this->unreferenced_vars[$var_name]);
-                }
-
-                unset($this->unreferenced_vars[$var_name]);
             }
         }
 

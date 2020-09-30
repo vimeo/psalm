@@ -371,6 +371,10 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
             && $class_storage->namedMixins
         ) {
             foreach ($class_storage->namedMixins as $mixin) {
+                if (!$class_storage->mixin_declaring_fqcln) {
+                    continue;
+                }
+
                 $new_method_id = new MethodIdentifier(
                     $mixin->value,
                     $method_name_lc

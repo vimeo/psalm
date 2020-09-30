@@ -317,32 +317,6 @@ class IfAnalyzer
             $changed_var_ids
         );
 
-        // this captures statements in the if conditional
-        if ($codebase->find_unused_variables) {
-            foreach ($if_context->unreferenced_vars as $var_id => $locations) {
-                if (!isset($context->unreferenced_vars[$var_id])) {
-                    if (isset($if_scope->new_unreferenced_vars[$var_id])) {
-                        $if_scope->new_unreferenced_vars[$var_id] += $locations;
-                    } else {
-                        $if_scope->new_unreferenced_vars[$var_id] = $locations;
-                    }
-                } else {
-                    $new_locations = array_diff_key(
-                        $locations,
-                        $context->unreferenced_vars[$var_id]
-                    );
-
-                    if ($new_locations) {
-                        if (isset($if_scope->new_unreferenced_vars[$var_id])) {
-                            $if_scope->new_unreferenced_vars[$var_id] += $locations;
-                        } else {
-                            $if_scope->new_unreferenced_vars[$var_id] = $locations;
-                        }
-                    }
-                }
-            }
-        }
-
         // check the if
         if (self::analyzeIfBlock(
             $statements_analyzer,
@@ -417,7 +391,15 @@ class IfAnalyzer
         );
 
         if ($if_scope->new_vars) {
-            $context->vars_in_scope = array_merge($context->vars_in_scope, $if_scope->new_vars);
+            foreach ($if_scope->new_vars as $var_id => $type) {
+                if (isset($context->vars_possibly_in_scope[$var_id])
+                    && $statements_analyzer->control_flow_graph
+                ) {
+                    $type->parent_nodes += $statements_analyzer->getParentNodesForPossiblyUndefinedVariable($var_id);
+                }
+
+                $context->vars_in_scope[$var_id] = $type;
+            }
         }
 
         if ($if_scope->redefined_vars) {
@@ -457,48 +439,29 @@ class IfAnalyzer
 
         if ($if_scope->possibly_redefined_vars) {
             foreach ($if_scope->possibly_redefined_vars as $var_id => $type) {
-                if (isset($context->vars_in_scope[$var_id])
-                    && !$type->failed_reconciliation
-                    && !isset($if_scope->updated_vars[$var_id])
-                ) {
-                    $combined_type = Type::combineUnionTypes(
-                        $context->vars_in_scope[$var_id],
-                        $type,
-                        $codebase
-                    );
+                if (isset($context->vars_in_scope[$var_id])) {
+                    if (!$type->failed_reconciliation
+                        && !isset($if_scope->updated_vars[$var_id])
+                    ) {
+                        $combined_type = Type::combineUnionTypes(
+                            $context->vars_in_scope[$var_id],
+                            $type,
+                            $codebase
+                        );
 
-                    if ($combined_type->equals($context->vars_in_scope[$var_id])) {
-                        continue;
-                    }
+                        if (!$combined_type->equals($context->vars_in_scope[$var_id])) {
+                            $context->removeDescendents($var_id, $combined_type);
+                        }
 
-                    $context->removeDescendents($var_id, $combined_type);
-                    $context->vars_in_scope[$var_id] = $combined_type;
-                }
-            }
-        }
-
-        if ($codebase->find_unused_variables) {
-            foreach ($if_scope->new_unreferenced_vars as $var_id => $locations) {
-                if (($stmt->else
-                        && (isset($if_scope->assigned_var_ids[$var_id]) || isset($if_scope->new_vars[$var_id])))
-                    || !isset($context->vars_in_scope[$var_id])
-                ) {
-                    $context->unreferenced_vars[$var_id] = $locations;
-                } elseif (isset($if_scope->possibly_assigned_var_ids[$var_id])
-                    || isset($if_context->possibly_assigned_var_ids[$var_id])
-                ) {
-                    if (!isset($context->unreferenced_vars[$var_id])) {
-                        $context->unreferenced_vars[$var_id] = $locations;
+                        $context->vars_in_scope[$var_id] = $combined_type;
                     } else {
-                        $context->unreferenced_vars[$var_id] += $locations;
+                        $context->vars_in_scope[$var_id]->parent_nodes += $type->parent_nodes;
                     }
-                } else {
-                    $statements_analyzer->registerVariableUses($locations);
                 }
             }
-
-            $context->possibly_assigned_var_ids += $if_scope->possibly_assigned_var_ids;
         }
+
+        $context->possibly_assigned_var_ids += $if_scope->possibly_assigned_var_ids;
 
         if (!in_array(ScopeAnalyzer::ACTION_NONE, $if_scope->final_actions, true)) {
             $context->has_returned = true;
@@ -807,7 +770,6 @@ class IfAnalyzer
 
         $has_break_statement = $final_actions === [ScopeAnalyzer::ACTION_BREAK];
         $has_continue_statement = $final_actions === [ScopeAnalyzer::ACTION_CONTINUE];
-        $has_leave_switch_statement = $final_actions === [ScopeAnalyzer::ACTION_LEAVE_SWITCH];
 
         $if_scope->final_actions = $final_actions;
 
@@ -822,38 +784,28 @@ class IfAnalyzer
             $new_possibly_assigned_var_ids
         );
 
-        if ($if_context->byref_constraints !== null) {
-            foreach ($if_context->byref_constraints as $var_id => $byref_constraint) {
-                if ($outer_context->byref_constraints !== null
-                    && isset($outer_context->byref_constraints[$var_id])
-                    && $byref_constraint->type
-                    && ($outer_constraint_type = $outer_context->byref_constraints[$var_id]->type)
-                    && !UnionTypeComparator::isContainedBy(
-                        $codebase,
-                        $byref_constraint->type,
-                        $outer_constraint_type
-                    )
-                ) {
-                    if (IssueBuffer::accepts(
-                        new ConflictingReferenceConstraint(
-                            'There is more than one pass-by-reference constraint on ' . $var_id,
-                            new CodeLocation($statements_analyzer, $stmt, $outer_context->include_location, true)
-                        ),
-                        $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
-                } else {
-                    $outer_context->byref_constraints[$var_id] = $byref_constraint;
+        foreach ($if_context->byref_constraints as $var_id => $byref_constraint) {
+            if (isset($outer_context->byref_constraints[$var_id])
+                && $byref_constraint->type
+                && ($outer_constraint_type = $outer_context->byref_constraints[$var_id]->type)
+                && !UnionTypeComparator::isContainedBy(
+                    $codebase,
+                    $byref_constraint->type,
+                    $outer_constraint_type
+                )
+            ) {
+                if (IssueBuffer::accepts(
+                    new ConflictingReferenceConstraint(
+                        'There is more than one pass-by-reference constraint on ' . $var_id,
+                        new CodeLocation($statements_analyzer, $stmt, $outer_context->include_location, true)
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
                 }
+            } else {
+                $outer_context->byref_constraints[$var_id] = $byref_constraint;
             }
-        }
-
-        if ($codebase->find_unused_variables) {
-            $outer_context->referenced_var_ids = array_merge(
-                $outer_context->referenced_var_ids,
-                $if_context->referenced_var_ids
-            );
         }
 
         $mic_drop = false;
@@ -1001,31 +953,6 @@ class IfAnalyzer
                 );
             } elseif (!$has_leaving_statements) {
                 $if_scope->new_vars_possibly_in_scope = $vars_possibly_in_scope;
-            }
-
-            if ($codebase->find_unused_variables && (!$has_leaving_statements || $has_leave_switch_statement)) {
-                foreach ($if_context->unreferenced_vars as $var_id => $locations) {
-                    if (!isset($outer_context->unreferenced_vars[$var_id])) {
-                        if (isset($if_scope->new_unreferenced_vars[$var_id])) {
-                            $if_scope->new_unreferenced_vars[$var_id] += $locations;
-                        } else {
-                            $if_scope->new_unreferenced_vars[$var_id] = $locations;
-                        }
-                    } else {
-                        $new_locations = array_diff_key(
-                            $locations,
-                            $outer_context->unreferenced_vars[$var_id]
-                        );
-
-                        if ($new_locations) {
-                            if (isset($if_scope->new_unreferenced_vars[$var_id])) {
-                                $if_scope->new_unreferenced_vars[$var_id] += $locations;
-                            } else {
-                                $if_scope->new_unreferenced_vars[$var_id] = $locations;
-                            }
-                        }
-                    }
-                }
             }
         }
 
@@ -1274,30 +1201,27 @@ class IfAnalyzer
         $elseif_context->possibly_assigned_var_ids =
             $pre_stmts_possibly_assigned_var_ids + $new_stmts_possibly_assigned_var_ids;
 
-        if ($elseif_context->byref_constraints !== null) {
-            foreach ($elseif_context->byref_constraints as $var_id => $byref_constraint) {
-                if ($outer_context->byref_constraints !== null
-                    && isset($outer_context->byref_constraints[$var_id])
-                    && ($outer_constraint_type = $outer_context->byref_constraints[$var_id]->type)
-                    && $byref_constraint->type
-                    && !UnionTypeComparator::isContainedBy(
-                        $codebase,
-                        $byref_constraint->type,
-                        $outer_constraint_type
-                    )
-                ) {
-                    if (IssueBuffer::accepts(
-                        new ConflictingReferenceConstraint(
-                            'There is more than one pass-by-reference constraint on ' . $var_id,
-                            new CodeLocation($statements_analyzer, $elseif, $outer_context->include_location, true)
-                        ),
-                        $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
-                } else {
-                    $outer_context->byref_constraints[$var_id] = $byref_constraint;
+        foreach ($elseif_context->byref_constraints as $var_id => $byref_constraint) {
+            if (isset($outer_context->byref_constraints[$var_id])
+                && ($outer_constraint_type = $outer_context->byref_constraints[$var_id]->type)
+                && $byref_constraint->type
+                && !UnionTypeComparator::isContainedBy(
+                    $codebase,
+                    $byref_constraint->type,
+                    $outer_constraint_type
+                )
+            ) {
+                if (IssueBuffer::accepts(
+                    new ConflictingReferenceConstraint(
+                        'There is more than one pass-by-reference constraint on ' . $var_id,
+                        new CodeLocation($statements_analyzer, $elseif, $outer_context->include_location, true)
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
                 }
+            } else {
+                $outer_context->byref_constraints[$var_id] = $byref_constraint;
             }
         }
 
@@ -1314,7 +1238,6 @@ class IfAnalyzer
 
         $has_break_statement = $final_actions === [ScopeAnalyzer::ACTION_BREAK];
         $has_continue_statement = $final_actions === [ScopeAnalyzer::ACTION_CONTINUE];
-        $has_leave_switch_statement = $final_actions === [ScopeAnalyzer::ACTION_LEAVE_SWITCH];
 
         $if_scope->final_actions = array_merge($final_actions, $if_scope->final_actions);
 
@@ -1326,7 +1249,7 @@ class IfAnalyzer
                 $if_scope->new_vars = array_diff_key($elseif_context->vars_in_scope, $outer_context->vars_in_scope);
             } else {
                 foreach ($if_scope->new_vars as $new_var => $type) {
-                    if (!$elseif_context->hasVariable($new_var, $statements_analyzer)) {
+                    if (!$elseif_context->hasVariable($new_var)) {
                         unset($if_scope->new_vars[$new_var]);
                     } else {
                         $if_scope->new_vars[$new_var] = Type::combineUnionTypes(
@@ -1471,38 +1394,6 @@ class IfAnalyzer
                     $if_scope->possibly_assigned_var_ids
                 );
             }
-
-            if ($codebase->find_unused_variables &&  (!$has_leaving_statements || $has_leave_switch_statement)) {
-                foreach ($elseif_context->unreferenced_vars as $var_id => $locations) {
-                    if (!isset($outer_context->unreferenced_vars[$var_id])) {
-                        if (isset($if_scope->new_unreferenced_vars[$var_id])) {
-                            $if_scope->new_unreferenced_vars[$var_id] += $locations;
-                        } else {
-                            $if_scope->new_unreferenced_vars[$var_id] = $locations;
-                        }
-                    } else {
-                        $new_locations = array_diff_key(
-                            $locations,
-                            $outer_context->unreferenced_vars[$var_id]
-                        );
-
-                        if ($new_locations) {
-                            if (isset($if_scope->new_unreferenced_vars[$var_id])) {
-                                $if_scope->new_unreferenced_vars[$var_id] += $locations;
-                            } else {
-                                $if_scope->new_unreferenced_vars[$var_id] = $locations;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        if ($codebase->find_unused_variables) {
-            $outer_context->referenced_var_ids = array_merge(
-                $outer_context->referenced_var_ids,
-                $elseif_context->referenced_var_ids
-            );
         }
 
         if ($outer_context->collect_exceptions) {
@@ -1614,10 +1505,9 @@ class IfAnalyzer
         $new_possibly_assigned_var_ids = $else_context->possibly_assigned_var_ids;
         $else_context->possibly_assigned_var_ids = $pre_possibly_assigned_var_ids + $new_possibly_assigned_var_ids;
 
-        if ($else && $else_context->byref_constraints !== null) {
+        if ($else) {
             foreach ($else_context->byref_constraints as $var_id => $byref_constraint) {
-                if ($outer_context->byref_constraints !== null
-                    && isset($outer_context->byref_constraints[$var_id])
+                if (isset($outer_context->byref_constraints[$var_id])
                     && ($outer_constraint_type = $outer_context->byref_constraints[$var_id]->type)
                     && $byref_constraint->type
                     && !UnionTypeComparator::isContainedBy(
@@ -1641,13 +1531,6 @@ class IfAnalyzer
             }
         }
 
-        if ($else && $codebase->find_unused_variables) {
-            $outer_context->referenced_var_ids = array_merge(
-                $outer_context->referenced_var_ids,
-                $else_context->referenced_var_ids
-            );
-        }
-
         $final_actions = $else
             ? ScopeAnalyzer::getFinalControlActions(
                 $else->stmts,
@@ -1663,7 +1546,6 @@ class IfAnalyzer
 
         $has_break_statement = $final_actions === [ScopeAnalyzer::ACTION_BREAK];
         $has_continue_statement = $final_actions === [ScopeAnalyzer::ACTION_CONTINUE];
-        $has_leave_switch_statement = $final_actions === [ScopeAnalyzer::ACTION_LEAVE_SWITCH];
 
         $if_scope->final_actions = array_merge($final_actions, $if_scope->final_actions);
 
@@ -1771,31 +1653,6 @@ class IfAnalyzer
                     $possibly_assigned_var_ids,
                     $if_scope->possibly_assigned_var_ids
                 );
-            }
-
-            if ($codebase->find_unused_variables && (!$has_leaving_statements || $has_leave_switch_statement)) {
-                foreach ($else_context->unreferenced_vars as $var_id => $locations) {
-                    if (!isset($outer_context->unreferenced_vars[$var_id])) {
-                        if (isset($if_scope->new_unreferenced_vars[$var_id])) {
-                            $if_scope->new_unreferenced_vars[$var_id] += $locations;
-                        } else {
-                            $if_scope->new_unreferenced_vars[$var_id] = $locations;
-                        }
-                    } else {
-                        $new_locations = array_diff_key(
-                            $locations,
-                            $outer_context->unreferenced_vars[$var_id]
-                        );
-
-                        if ($new_locations) {
-                            if (isset($if_scope->new_unreferenced_vars[$var_id])) {
-                                $if_scope->new_unreferenced_vars[$var_id] += $locations;
-                            } else {
-                                $if_scope->new_unreferenced_vars[$var_id] = $locations;
-                            }
-                        }
-                    }
-                }
             }
         }
 

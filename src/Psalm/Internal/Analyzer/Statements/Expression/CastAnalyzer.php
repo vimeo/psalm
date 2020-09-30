@@ -44,10 +44,10 @@ class CastAnalyzer
             $as_int = true;
             $maybe_type = $statements_analyzer->node_data->getType($stmt->expr);
 
-            if (null !== $maybe_type) {
+            if ($maybe_type) {
                 $maybe = $maybe_type->getAtomicTypes();
 
-                if (1 === count($maybe) && current($maybe) instanceof Type\Atomic\TBool) {
+                if (count($maybe) === 1 && current($maybe) instanceof Type\Atomic\TBool) {
                     $as_int = false;
                     $statements_analyzer->node_data->setType($stmt, new Type\Union([
                         new Type\Atomic\TLiteralInt(0),
@@ -57,7 +57,15 @@ class CastAnalyzer
             }
 
             if ($as_int) {
-                $statements_analyzer->node_data->setType($stmt, Type::getInt());
+                $type = Type::getInt();
+
+                if ($statements_analyzer->control_flow_graph
+                    && $statements_analyzer->control_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph
+                ) {
+                    $type->parent_nodes = $maybe_type ? $maybe_type->parent_nodes : [];
+                }
+
+                $statements_analyzer->node_data->setType($stmt, $type);
             }
 
             return true;
@@ -108,9 +116,12 @@ class CastAnalyzer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\Cast\Object_) {
+            $was_inside_use = $context->inside_use;
+            $context->inside_use = true;
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
                 return false;
             }
+            $context->inside_use = $was_inside_use;
 
             $statements_analyzer->node_data->setType($stmt, new Type\Union([new TNamedObject('stdClass')]));
 
@@ -118,9 +129,12 @@ class CastAnalyzer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\Cast\Array_) {
+            $was_inside_use = $context->inside_use;
+            $context->inside_use = true;
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
                 return false;
             }
+            $context->inside_use = $was_inside_use;
 
             $permissible_atomic_types = [];
             $all_permissible = false;
@@ -197,6 +211,10 @@ class CastAnalyzer
 
         $parent_nodes = [];
 
+        if ($statements_analyzer->control_flow_graph) {
+            $parent_nodes = $stmt_type->parent_nodes;
+        }
+
         while ($atomic_types) {
             $atomic_type = \array_pop($atomic_types);
 
@@ -210,9 +228,6 @@ class CastAnalyzer
 
             if ($atomic_type instanceof TString) {
                 $valid_strings[] = $atomic_type;
-                if ($statements_analyzer->control_flow_graph) {
-                    $parent_nodes = $parent_nodes + $stmt_type->parent_nodes;
-                }
 
                 continue;
             }
@@ -229,9 +244,6 @@ class CastAnalyzer
                 || $atomic_type instanceof Type\Atomic\Scalar
             ) {
                 $castable_types[] = new TString();
-                if ($statements_analyzer->control_flow_graph) {
-                    $parent_nodes = $parent_nodes + $stmt_type->parent_nodes;
-                }
 
                 continue;
             }

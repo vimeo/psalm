@@ -725,6 +725,24 @@ class UnusedCodeTest extends TestCase
 
                     echo $a[0];'
             ],
+            'callMethodThatUpdatesStaticVar' => [
+                '<?php
+                    class References {
+                        /**
+                         * @var array<string, string>
+                         */
+                        public $foo = [];
+
+                        /**
+                         * @param array<string, string> $map
+                         */
+                        public function bar(array $map) : void {
+                            self::$foo += $map;
+                        }
+                    }
+
+                    (new References)->bar(["a" => "b"]);'
+            ],
         ];
     }
 

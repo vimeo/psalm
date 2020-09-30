@@ -66,7 +66,6 @@ class OrAnalyzer
                 $left_context = $if_conditional_scope->if_context;
 
                 $left_referenced_var_ids = $if_conditional_scope->cond_referenced_var_ids;
-                $left_assigned_var_ids = $if_conditional_scope->cond_assigned_var_ids;
             } catch (\Psalm\Exception\ScopeAnalysisException $e) {
                 return false;
             }
@@ -97,10 +96,6 @@ class OrAnalyzer
                         $codebase
                     );
                 }
-            }
-
-            if ($codebase->find_unused_variables) {
-                $context->unreferenced_vars = $left_context->unreferenced_vars;
             }
 
             $left_referenced_var_ids = $left_context->referenced_var_ids;
@@ -274,23 +269,6 @@ class OrAnalyzer
             $right_context->assigned_var_ids
         );
 
-        if ($codebase->find_unused_variables) {
-            foreach ($right_context->unreferenced_vars as $var_id => $locations) {
-                if (!isset($context->unreferenced_vars[$var_id])) {
-                    $context->unreferenced_vars[$var_id] = $locations;
-                } else {
-                    $new_locations = array_diff_key(
-                        $locations,
-                        $context->unreferenced_vars[$var_id]
-                    );
-
-                    if ($new_locations) {
-                        $context->unreferenced_vars[$var_id] += $locations;
-                    }
-                }
-            }
-        }
-
         if ($context->if_context) {
             $if_context = $context->if_context;
 
@@ -315,10 +293,6 @@ class OrAnalyzer
                 $context->assigned_var_ids,
                 $if_context->assigned_var_ids
             );
-
-            if ($codebase->find_unused_variables) {
-                $if_context->unreferenced_vars = $context->unreferenced_vars;
-            }
 
             $if_context->updateChecks($context);
         }

@@ -22,10 +22,6 @@ class ContinueAnalyzer
     ): ?bool {
         $loop_scope = $context->loop_scope;
 
-        $leaving_switch = true;
-
-        $codebase = $statements_analyzer->getCodebase();
-
         if ($loop_scope === null) {
             if (!$context->break_types) {
                 if (IssueBuffer::accepts(
@@ -48,7 +44,6 @@ class ContinueAnalyzer
             ) {
                 $loop_scope->final_actions[] = ScopeAnalyzer::ACTION_LEAVE_SWITCH;
             } else {
-                $leaving_switch = false;
                 $loop_scope->final_actions[] = ScopeAnalyzer::ACTION_CONTINUE;
             }
 
@@ -86,24 +81,6 @@ class ContinueAnalyzer
                 }
             }
 
-            if ($codebase->find_unused_variables && (!$context->case_scope || $stmt->num)) {
-                foreach ($context->unreferenced_vars as $var_id => $locations) {
-                    if (isset($loop_scope->unreferenced_vars[$var_id])) {
-                        $loop_scope->unreferenced_vars[$var_id] += $locations;
-                    } else {
-                        $loop_scope->unreferenced_vars[$var_id] = $locations;
-                    }
-
-                    if (isset($loop_scope->possibly_unreferenced_vars[$var_id])) {
-                        $loop_scope->possibly_unreferenced_vars[$var_id] += $locations;
-                    } else {
-                        $loop_scope->possibly_unreferenced_vars[$var_id] = $locations;
-                    }
-                }
-
-                $loop_scope->referenced_var_ids += $context->referenced_var_ids;
-            }
-
             if ($context->finally_scope) {
                 foreach ($context->vars_in_scope as $var_id => $type) {
                     if (isset($context->finally_scope->vars_in_scope[$var_id])) {
@@ -117,17 +94,6 @@ class ContinueAnalyzer
                     } else {
                         $context->finally_scope->vars_in_scope[$var_id] = $type;
                     }
-                }
-            }
-        }
-
-        $case_scope = $context->case_scope;
-        if ($case_scope && $codebase->find_unused_variables && $leaving_switch) {
-            foreach ($context->unreferenced_vars as $var_id => $locations) {
-                if (isset($case_scope->unreferenced_vars[$var_id])) {
-                    $case_scope->unreferenced_vars[$var_id] += $locations;
-                } else {
-                    $case_scope->unreferenced_vars[$var_id] = $locations;
                 }
             }
         }

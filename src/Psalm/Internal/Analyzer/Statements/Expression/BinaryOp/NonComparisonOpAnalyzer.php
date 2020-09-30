@@ -50,7 +50,6 @@ class NonComparisonOpAnalyzer
                     || $stmt instanceof PhpParser\Node\Expr\BinaryOp\ShiftLeft
                     || $stmt instanceof PhpParser\Node\Expr\BinaryOp\ShiftRight
                 )
-                && ($stmt_left_type->hasInt() || $stmt_right_type->hasInt())
             )
         ) {
             NonDivArithmeticOpAnalyzer::analyze(

@@ -93,8 +93,6 @@ class ArgumentsAnalyzer
             $args = array_reverse($args, true);
         }
 
-        $codebase = $statements_analyzer->getCodebase();
-
         foreach ($args as $argument_offset => $arg) {
             if ($function_params === null) {
                 if (self::evaluateAribitraryParam(
@@ -200,22 +198,6 @@ class ArgumentsAnalyzer
                     $context,
                     $template_result
                 );
-            }
-
-            if ($codebase->find_unused_variables
-                && ($arg->value instanceof PhpParser\Node\Expr\AssignOp
-                    || $arg->value instanceof PhpParser\Node\Expr\PreInc
-                    || $arg->value instanceof PhpParser\Node\Expr\PreDec)
-            ) {
-                $var_id = ExpressionIdentifier::getVarId(
-                    $arg->value->var,
-                    $statements_analyzer->getFQCLN(),
-                    $statements_analyzer
-                );
-
-                if ($var_id) {
-                    $context->hasVariable($var_id, $statements_analyzer);
-                }
             }
 
             if ($toggled_class_exists) {
@@ -986,7 +968,11 @@ class ArgumentsAnalyzer
         }
 
         if ($var_id) {
-            if (!$context->hasVariable($var_id, $statements_analyzer)
+            if ($arg->value instanceof PhpParser\Node\Expr\Variable) {
+                $statements_analyzer->registerPossiblyUndefinedVariable($var_id, $arg->value);
+            }
+
+            if (!$context->hasVariable($var_id)
                 || $context->vars_in_scope[$var_id]->isNull()
             ) {
                 if (!isset($context->vars_in_scope[$var_id])
@@ -1007,21 +993,12 @@ class ArgumentsAnalyzer
                 // we don't know if it exists, assume it's passed by reference
                 $context->vars_in_scope[$var_id] = Type::getMixed();
                 $context->vars_possibly_in_scope[$var_id] = true;
-
-                if (strpos($var_id, '-') === false
-                    && strpos($var_id, '[') === false
-                    && !$statements_analyzer->hasVariable($var_id)
-                ) {
-                    $location = new CodeLocation($statements_analyzer, $arg->value);
-                    $statements_analyzer->registerVariable(
-                        $var_id,
-                        $location,
-                        null
-                    );
-
-                    $statements_analyzer->registerVariableUses([$location->getHash() => $location]);
-                }
             } else {
+                $was_inside_call = $context->inside_call;
+                $context->inside_call = true;
+                ExpressionAnalyzer::analyze($statements_analyzer, $arg->value, $context);
+                $context->inside_call = $was_inside_call;
+
                 $context->removeVarFromConflictingClauses(
                     $var_id,
                     $context->vars_in_scope[$var_id],

@@ -177,7 +177,7 @@ class TaintTest extends TestCase
                         }
                     }'
             ],
-            'untaintedInput' => [
+            'untaintedInputAfterIntCast' => [
                 '<?php
                     class A {
                         public function getUserId() : int {
@@ -515,7 +515,7 @@ class TaintTest extends TestCase
                     }
 
                     echo getName();',
-                'error_message' => 'TaintedInput - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:26 - Detected tainted html in path: $_GET -> $_GET[\'name\'] (src/somefile.php:3:32) -> getName (src/somefile.php:2:42) -> call to echo (src/somefile.php:6:26) -> echo#1',
+                'error_message' => 'TaintedInput - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:26 - Detected tainted html in path: $_GET -> $_GET[\'name\'] (src/somefile.php:3:32) -> coalesce (src/somefile.php:3:32) -> getName (src/somefile.php:2:42) -> call to echo (src/somefile.php:6:26) -> echo#1',
             ],
             'taintedInputFromExplicitTaintSource' => [
                 '<?php
@@ -686,7 +686,7 @@ class TaintTest extends TestCase
                             $pdo->exec("delete from users where user_id = " . $userId);
                         }
                     }',
-                'error_message' => 'TaintedInput - src' . DIRECTORY_SEPARATOR . 'somefile.php:17:40 - Detected tainted sql in path: $_GET -> $_GET[\'user_id\'] (src/somefile.php:4:45) -> A::getUserId (src/somefile.php:3:55) -> concat (src/somefile.php:8:36) -> A::getAppendedUserId (src/somefile.php:7:63) -> $userId (src/somefile.php:12:29) -> call to A::deleteUser (src/somefile.php:13:53) -> A::deleteUser#2 (src/somefile.php:16:69) -> concat (src/somefile.php:17:40) -> call to PDO::exec (src/somefile.php:17:40) -> PDO::exec#1',
+                'error_message' => 'TaintedInput - src' . DIRECTORY_SEPARATOR . 'somefile.php:17:40 - Detected tainted sql in path: $_GET -> $_GET[\'user_id\'] (src/somefile.php:4:45) -> A::getUserId (src/somefile.php:3:55) -> concat (src/somefile.php:8:36) -> A::getAppendedUserId (src/somefile.php:7:63) -> $userId (src/somefile.php:12:29) -> call to A::deleteUser (src/somefile.php:13:53) -> A::deleteUser#2 (src/somefile.php:16:69) -> $userId (src/somefile.php:16:69) -> concat (src/somefile.php:17:40) -> call to PDO::exec (src/somefile.php:17:40) -> PDO::exec#1',
             ],
             'taintedInputToParam' => [
                 '<?php
@@ -756,7 +756,7 @@ class TaintTest extends TestCase
                             }
                         }
                     }',
-                'error_message' => 'TaintedInput - src' . DIRECTORY_SEPARATOR . 'somefile.php:23:44 - Detected tainted sql in path: $_GET -> $_GET[\'user_id\'] (src/somefile.php:7:67) -> call to A::getAppendedUserId (src/somefile.php:7:58) -> A::getAppendedUserId#1 (src/somefile.php:11:66) -> concat (src/somefile.php:12:36) -> A::getAppendedUserId (src/somefile.php:11:78) -> call to A::deleteUser (src/somefile.php:7:33) -> A::deleteUser#3 (src/somefile.php:19:85) -> concat (src/somefile.php:23:44) -> call to PDO::exec (src/somefile.php:23:44) -> PDO::exec#1',
+                'error_message' => 'TaintedInput - src' . DIRECTORY_SEPARATOR . 'somefile.php:23:44 - Detected tainted sql in path: $_GET -> $_GET[\'user_id\'] (src/somefile.php:7:67) -> call to A::getAppendedUserId (src/somefile.php:7:58) -> A::getAppendedUserId#1 (src/somefile.php:11:66) -> $user_id (src/somefile.php:11:66) -> concat (src/somefile.php:12:36) -> A::getAppendedUserId (src/somefile.php:11:78) -> call to A::deleteUser (src/somefile.php:7:33) -> A::deleteUser#3 (src/somefile.php:19:85) -> $userId2 (src/somefile.php:19:85) -> concat (src/somefile.php:23:44) -> call to PDO::exec (src/somefile.php:23:44) -> PDO::exec#1',
             ],
             'taintedInParentLoader' => [
                 '<?php
@@ -787,7 +787,7 @@ class TaintTest extends TestCase
                     }
 
                     (new C)->foo((string) $_GET["user_id"]);',
-                'error_message' => 'TaintedInput - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:44 - Detected tainted sql in path: $_GET -> $_GET[\'user_id\'] (src/somefile.php:28:43) -> call to C::foo (src/somefile.php:28:34) -> C::foo#1 (src/somefile.php:23:52) -> call to AGrandChild::loadFull (src/somefile.php:24:51) -> AGrandChild::loadFull#1 (src/somefile.php:5:64) -> A::loadFull#1 (src/somefile.php:24:51) -> call to A::loadPartial (src/somefile.php:6:49) -> A::loadPartial#1 (src/somefile.php:3:76) -> AChild::loadPartial#1 (src/somefile.php:6:49) -> concat (src/somefile.php:16:44) -> call to PDO::exec (src/somefile.php:16:44) -> PDO::exec#1',
+                'error_message' => 'TaintedInput - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:44 - Detected tainted sql in path: $_GET -> $_GET[\'user_id\'] (src/somefile.php:28:43) -> call to C::foo (src/somefile.php:28:34) -> C::foo#1 (src/somefile.php:23:52) -> $user_id (src/somefile.php:23:52) -> call to AGrandChild::loadFull (src/somefile.php:24:51) -> AGrandChild::loadFull#1 (src/somefile.php:5:64) -> A::loadFull#1 (src/somefile.php:24:51) -> $sink (src/somefile.php:5:64) -> call to A::loadPartial (src/somefile.php:6:49) -> A::loadPartial#1 (src/somefile.php:3:76) -> AChild::loadPartial#1 (src/somefile.php:6:49) -> $sink (src/somefile.php:15:67) -> concat (src/somefile.php:16:44) -> call to PDO::exec (src/somefile.php:16:44) -> PDO::exec#1',
             ],
             'taintedInputFromProperty' => [
                 '<?php

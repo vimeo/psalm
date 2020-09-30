@@ -17,6 +17,7 @@ use Psalm\Context;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\ControlFlow\TaintSource;
 use Psalm\Internal\ControlFlow\ControlFlowNode;
+use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Issue\DeprecatedFunction;
 use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\MixedFunctionCall;
@@ -853,7 +854,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 $context->vars_in_scope,
                 $changed_var_ids,
                 array_map(
-                    function ($v): bool {
+                    function ($_): bool {
                         return true;
                     },
                     $assert_type_assertions
@@ -1059,7 +1060,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
         FunctionLikeStorage $function_storage,
         Type\Union $stmt_type
     ) : void {
-        if (!$statements_analyzer->control_flow_graph instanceof \Psalm\Internal\Codebase\TaintFlowGraph
+        if (!$statements_analyzer->control_flow_graph instanceof TaintFlowGraph
             || \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
         ) {
             return;
@@ -1292,7 +1293,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 && !$context->inside_conditional
                 && !$context->inside_unset
             ) {
-                if (!$context->inside_assignment && !$context->inside_call) {
+                if (!$context->inside_assignment && !$context->inside_call && !$context->inside_use) {
                     if (IssueBuffer::accepts(
                         new UnusedFunctionCall(
                             'The call to ' . $function_id . ' is not used',

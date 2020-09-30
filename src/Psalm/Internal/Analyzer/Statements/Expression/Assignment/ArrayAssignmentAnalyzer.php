@@ -7,6 +7,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Context;
 use Psalm\IssueBuffer;
 use Psalm\Issue\InvalidArrayAssignment;
@@ -152,6 +153,9 @@ class ArrayAssignmentAnalyzer
             $dim_value = null;
 
             if ($child_stmt->dim) {
+                $was_inside_use = $context->inside_use;
+                $context->inside_use = true;
+
                 if (ExpressionAnalyzer::analyze(
                     $statements_analyzer,
                     $child_stmt->dim,
@@ -159,6 +163,8 @@ class ArrayAssignmentAnalyzer
                 ) === false) {
                     return false;
                 }
+
+                $context->inside_use = $was_inside_use;
 
                 if (!($child_stmt_dim_type = $statements_analyzer->node_data->getType($child_stmt->dim))) {
                     return null;
@@ -783,7 +789,8 @@ class ArrayAssignmentAnalyzer
         array $key_values
     ) : void {
         if ($statements_analyzer->control_flow_graph
-            && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
+            && ($statements_analyzer->control_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph
+                || !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues()))
         ) {
             if (!$stmt_type->parent_nodes) {
                 $var_location = new \Psalm\CodeLocation($statements_analyzer->getSource(), $expr->var);

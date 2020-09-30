@@ -6,6 +6,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CastAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\ControlFlow\TaintSink;
+use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\ForbiddenCode;
@@ -36,7 +37,9 @@ class EchoAnalyzer
 
             $expr_type = $statements_analyzer->node_data->getType($expr);
 
-            if ($statements_analyzer->control_flow_graph && $expr_type) {
+            if ($statements_analyzer->control_flow_graph
+                && $expr_type
+            ) {
                 $expr_type = CastAnalyzer::castStringAttempt(
                     $statements_analyzer,
                     $context,
@@ -46,9 +49,7 @@ class EchoAnalyzer
                 );
             }
 
-            if ($statements_analyzer->control_flow_graph
-                && $statements_analyzer->control_flow_graph instanceof \Psalm\Internal\Codebase\TaintFlowGraph
-            ) {
+            if ($statements_analyzer->control_flow_graph instanceof TaintFlowGraph) {
                 $call_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
                 $echo_param_sink = TaintSink::getForMethodArgument(

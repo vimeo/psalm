@@ -5,6 +5,7 @@ use PhpParser;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\ControlFlow\TaintSink;
+use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
@@ -102,7 +103,7 @@ class IncludeAnalyzer
         }
 
         if ($stmt_expr_type
-            && $statements_analyzer->control_flow_graph instanceof \Psalm\Internal\Codebase\TaintFlowGraph
+            && $statements_analyzer->control_flow_graph instanceof TaintFlowGraph
             && $stmt_expr_type->parent_nodes
             && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
         ) {

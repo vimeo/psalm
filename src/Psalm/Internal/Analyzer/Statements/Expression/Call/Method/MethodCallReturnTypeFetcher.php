@@ -15,6 +15,7 @@ use Psalm\Type\Atomic\TGenericObject;
 use function strtolower;
 use Psalm\Internal\ControlFlow\TaintSource;
 use Psalm\Internal\ControlFlow\ControlFlowNode;
+use Psalm\Internal\Codebase\TaintFlowGraph;
 
 class MethodCallReturnTypeFetcher
 {
@@ -226,7 +227,7 @@ class MethodCallReturnTypeFetcher
     ) : void {
         $codebase = $statements_analyzer->getCodebase();
 
-        if ($statements_analyzer->control_flow_graph instanceof \Psalm\Internal\Codebase\TaintFlowGraph
+        if ($statements_analyzer->control_flow_graph instanceof TaintFlowGraph
             && $declaring_method_id
             && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
         ) {

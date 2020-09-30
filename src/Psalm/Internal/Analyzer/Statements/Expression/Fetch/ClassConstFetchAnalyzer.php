@@ -366,7 +366,11 @@ class ClassConstFetchAnalyzer
         }
 
         if ($stmt->name instanceof PhpParser\Node\Identifier && $stmt->name->name === 'class') {
+            $was_inside_use = $context->inside_use;
+            $context->inside_use = true;
             ExpressionAnalyzer::analyze($statements_analyzer, $stmt->class, $context);
+            $context->inside_use = $was_inside_use;
+
             $lhs_type = $statements_analyzer->node_data->getType($stmt->class);
 
             $class_string_types = [];
@@ -401,9 +405,14 @@ class ClassConstFetchAnalyzer
 
         $statements_analyzer->node_data->setType($stmt, Type::getMixed());
 
+        $was_inside_use = $context->inside_use;
+        $context->inside_use = true;
+
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->class, $context) === false) {
             return false;
         }
+
+        $context->inside_use = $was_inside_use;
 
         return true;
     }

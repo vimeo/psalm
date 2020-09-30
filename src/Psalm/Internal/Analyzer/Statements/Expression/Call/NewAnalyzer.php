@@ -8,6 +8,7 @@ use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\ControlFlow\ControlFlowNode;
+use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\AbstractInstantiation;
@@ -109,7 +110,10 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
             $statements_analyzer->analyze([$stmt->class], $context);
             $fq_class_name = ClassAnalyzer::getAnonymousClassName($stmt->class, $statements_analyzer->getFilePath());
         } else {
+            $was_inside_use = $context->inside_use;
+            $context->inside_use = true;
             ExpressionAnalyzer::analyze($statements_analyzer, $stmt->class, $context);
+            $context->inside_use = $was_inside_use;
 
             if ($stmt_class_type = $statements_analyzer->node_data->getType($stmt->class)) {
                 $has_single_class = $stmt_class_type->isSingleStringLiteral();
@@ -640,7 +644,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                     }
                 }
 
-                if ($statements_analyzer->control_flow_graph
+                if ($statements_analyzer->control_flow_graph instanceof TaintFlowGraph
                     && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
                     && ($stmt_type = $statements_analyzer->node_data->getType($stmt))
                 ) {

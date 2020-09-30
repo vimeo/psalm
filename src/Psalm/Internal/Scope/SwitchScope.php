@@ -47,17 +47,7 @@ class SwitchScope
     public $negated_clauses = [];
 
     /**
-     * @var array<string, array<string, CodeLocation>>
-     */
-    public $new_unreferenced_vars = [];
-
-    /**
      * @var array<string, bool>|null
      */
     public $new_assigned_var_ids = null;
-
-    /**
-     * @var array<string, bool>
-     */
-    public $new_possibly_assigned_var_ids = [];
 }

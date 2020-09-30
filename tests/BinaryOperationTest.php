@@ -182,8 +182,8 @@ class BinaryOperationTest extends TestCase
             ],
             'booleanXor' => [
                 '<?php
-                    $a = true ^ false;
-                    $b = false ^ false;
+                    $a = 4 ^ 1;
+                    $b = 3 ^ 1;
                     $c = (true xor false);
                     $d = (false xor false);',
                 'assertions' => [

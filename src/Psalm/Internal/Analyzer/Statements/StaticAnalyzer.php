@@ -178,10 +178,6 @@ class StaticAnalyzer
 
                 $location = new CodeLocation($statements_analyzer, $var);
 
-                if ($codebase->find_unused_variables) {
-                    $context->unreferenced_vars[$var_id] = [$location->getHash() => $location];
-                }
-
                 $statements_analyzer->registerVariable(
                     $var_id,
                     $location,

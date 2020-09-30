@@ -12,6 +12,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\InstancePropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\DeprecatedProperty;
@@ -112,9 +113,14 @@ class InstancePropertyAssignmentAnalyzer
 
             $var_id = '$this->' . $prop_name;
         } else {
+            $was_inside_use = $context->inside_use;
+            $context->inside_use = true;
+
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->var, $context) === false) {
                 return false;
             }
+
+            $context->inside_use = $was_inside_use;
 
             $lhs_type = $statements_analyzer->node_data->getType($stmt->var);
 
@@ -1170,7 +1176,9 @@ class InstancePropertyAssignmentAnalyzer
             );
 
             if ($var_id) {
-                if (\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())) {
+                if ($statements_analyzer->control_flow_graph instanceof TaintFlowGraph
+                    && \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
+                ) {
                     $context->vars_in_scope[$var_id]->parent_nodes = [];
                     return;
                 }
@@ -1215,11 +1223,12 @@ class InstancePropertyAssignmentAnalyzer
                 $context->vars_in_scope[$var_id] = $stmt_var_type;
             }
         } else {
-            if (\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())) {
+            if ($statements_analyzer->control_flow_graph instanceof TaintFlowGraph
+                && \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
+            ) {
                 $assignment_value_type->parent_nodes = [];
                 return;
             }
-
 
             $code_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 

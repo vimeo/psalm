@@ -182,11 +182,6 @@ class TernaryAnalyzer
                 $context->referenced_var_ids,
                 $if_context->referenced_var_ids
             );
-
-            $context->unreferenced_vars = array_intersect_key(
-                $context->unreferenced_vars,
-                $if_context->unreferenced_vars
-            );
         }
 
         $t_else_context->clauses = Algebra::simplifyCNF(
@@ -246,21 +241,6 @@ class TernaryAnalyzer
             $context->referenced_var_ids,
             $t_else_context->referenced_var_ids
         );
-
-        $context->unreferenced_vars = array_intersect_key(
-            $context->unreferenced_vars,
-            $t_else_context->unreferenced_vars
-        );
-
-        foreach ($context->unreferenced_vars as $var_id => $_) {
-            if (isset($t_else_context->unreferenced_vars[$var_id])) {
-                $context->unreferenced_vars[$var_id] += $t_else_context->unreferenced_vars[$var_id];
-            }
-
-            if (isset($if_context->unreferenced_vars[$var_id])) {
-                $context->unreferenced_vars[$var_id] += $if_context->unreferenced_vars[$var_id];
-            }
-        }
 
         $lhs_type = null;
 

@@ -85,9 +85,4 @@ class IfScope
      * @var string[]
      */
     public $final_actions = [];
-
-    /**
-     * @var array<string, array<string, CodeLocation>>
-     */
-    public $new_unreferenced_vars = [];
 }

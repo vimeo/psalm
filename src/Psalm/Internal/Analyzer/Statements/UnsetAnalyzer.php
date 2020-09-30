@@ -17,7 +17,12 @@ class UnsetAnalyzer
         $context->inside_unset = true;
 
         foreach ($stmt->vars as $var) {
+            $was_inside_use = $context->inside_use;
+            $context->inside_use = true;
+
             ExpressionAnalyzer::analyze($statements_analyzer, $var, $context);
+
+            $context->inside_use = $was_inside_use;
 
             $var_id = ExpressionIdentifier::getArrayVarId(
                 $var,

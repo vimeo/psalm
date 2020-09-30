@@ -78,9 +78,6 @@ class TryAnalyzer
         $context->assigned_var_ids = [];
 
         $old_referenced_var_ids = $try_context->referenced_var_ids;
-        $old_unreferenced_vars = $try_context->unreferenced_vars;
-
-        $newly_unreferenced_vars = [];
 
         if ($statements_analyzer->analyze($stmt->stmts, $context) === false) {
             return false;
@@ -144,16 +141,6 @@ class TryAnalyzer
                 $try_context->referenced_var_ids,
                 $context->referenced_var_ids
             );
-
-            if ($codebase->find_unused_variables) {
-                $newly_unreferenced_vars = array_merge(
-                    $newly_unreferenced_vars,
-                    array_diff_key(
-                        $context->unreferenced_vars,
-                        $old_unreferenced_vars
-                    )
-                );
-            }
         }
 
         $try_leaves_loop = $context->loop_scope
@@ -199,14 +186,6 @@ class TryAnalyzer
                         $type,
                         $old_context->vars_in_scope[$var_id]
                     );
-                }
-
-                if (isset($old_context->unreferenced_vars[$var_id])) {
-                    if (!isset($catch_context->unreferenced_vars[$var_id])) {
-                        $catch_context->unreferenced_vars[$var_id] = $old_context->unreferenced_vars[$var_id];
-                    } else {
-                        $catch_context->unreferenced_vars[$var_id] += $old_context->unreferenced_vars[$var_id];
-                    }
                 }
             }
 
@@ -329,23 +308,6 @@ class TryAnalyzer
                 );
 
                 $catch_context->vars_possibly_in_scope[$catch_var_id] = true;
-
-                if (!$statements_analyzer->hasVariable($catch_var_id)) {
-                    $location = new CodeLocation(
-                        $statements_analyzer,
-                        $catch->var,
-                        $context->include_location
-                    );
-                    $statements_analyzer->registerVariable(
-                        $catch_var_id,
-                        $location,
-                        $try_context->branch_point
-                    );
-                    $catch_context->unreferenced_vars[$catch_var_id] = [$location->getHash() => $location];
-                }
-
-                // this registers the variable to avoid unfair deadcode issues
-                $catch_context->hasVariable($catch_var_id, $statements_analyzer);
             }
 
             $suppressed_issues = $statements_analyzer->getSuppressedIssues();
@@ -392,28 +354,7 @@ class TryAnalyzer
             );
 
             if ($codebase->find_unused_variables && $catch_actions[$i] !== [ScopeAnalyzer::ACTION_END]) {
-                $newly_unreferenced_vars = array_merge(
-                    $newly_unreferenced_vars,
-                    array_diff_key(
-                        $catch_context->unreferenced_vars,
-                        $old_unreferenced_vars
-                    )
-                );
-
-                foreach ($catch_context->unreferenced_vars as $var_id => $locations) {
-                    if (!isset($old_unreferenced_vars[$var_id])
-                        && (isset($context->unreferenced_vars[$var_id])
-                            || isset($newly_assigned_var_ids[$var_id]))
-                    ) {
-                        $statements_analyzer->registerVariableUses($locations);
-                    } elseif (isset($old_unreferenced_vars[$var_id])
-                        && $old_unreferenced_vars[$var_id] !== $locations
-                    ) {
-                        $statements_analyzer->registerVariableUses($locations);
-                    } elseif (isset($newly_unreferenced_vars[$var_id])) {
-                        $context->unreferenced_vars[$var_id] = $newly_unreferenced_vars[$var_id];
-                    }
-                }
+                // something
             }
 
             if ($catch_context->collect_exceptions) {
@@ -485,35 +426,6 @@ class TryAnalyzer
             $context->loop_scope->final_actions[] = ScopeAnalyzer::ACTION_NONE;
         }
 
-        $newly_referenced_var_ids = array_diff_key(
-            $context->referenced_var_ids,
-            $old_referenced_var_ids
-        );
-
-        if ($codebase->find_unused_variables) {
-            foreach ($old_unreferenced_vars as $var_id => $locations) {
-                if ((isset($context->unreferenced_vars[$var_id]) && $context->unreferenced_vars[$var_id] !== $locations)
-                    || (!isset($newly_referenced_var_ids[$var_id]) && isset($possibly_referenced_var_ids[$var_id]))
-                ) {
-                    $statements_analyzer->registerVariableUses($locations);
-                }
-            }
-
-            $newly_unreferenced_vars = array_merge(
-                $newly_unreferenced_vars,
-                array_diff_key(
-                    $try_context->unreferenced_vars,
-                    $old_unreferenced_vars
-                )
-            );
-
-            foreach ($newly_unreferenced_vars as $var_id => $locations) {
-                if (!isset($context->unreferenced_vars[$var_id])) {
-                    $context->unreferenced_vars[$var_id] = $locations;
-                }
-            }
-        }
-
         if ($stmt->finally) {
             if ($try_context->finally_scope) {
                 $finally_context = clone $context;
@@ -539,29 +451,6 @@ class TryAnalyzer
                         );
                     } else {
                         $context->vars_in_scope[$var_id] = clone $finally_context->vars_in_scope[$var_id];
-                    }
-                }
-
-                $newly_unreferenced_vars = array_merge(
-                    $newly_unreferenced_vars,
-                    array_diff_key(
-                        $finally_context->unreferenced_vars,
-                        $old_unreferenced_vars
-                    )
-                );
-
-                foreach ($finally_context->unreferenced_vars as $var_id => $locations) {
-                    if (!isset($old_unreferenced_vars[$var_id])
-                        && (isset($context->unreferenced_vars[$var_id])
-                            || isset($newly_assigned_var_ids[$var_id]))
-                    ) {
-                        $statements_analyzer->registerVariableUses($locations);
-                    } elseif (isset($old_unreferenced_vars[$var_id])
-                        && $old_unreferenced_vars[$var_id] !== $locations
-                    ) {
-                        $statements_analyzer->registerVariableUses($locations);
-                    } elseif (isset($newly_unreferenced_vars[$var_id])) {
-                        $context->unreferenced_vars[$var_id] = $newly_unreferenced_vars[$var_id];
                     }
                 }
             }

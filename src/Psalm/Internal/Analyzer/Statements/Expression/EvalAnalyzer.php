@@ -5,6 +5,7 @@ use PhpParser;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\ControlFlow\TaintSink;
+use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\CodeLocation;
 use Psalm\Context;
 
@@ -23,7 +24,7 @@ class EvalAnalyzer
         $expr_type = $statements_analyzer->node_data->getType($stmt->expr);
 
         if ($expr_type) {
-            if ($statements_analyzer->control_flow_graph instanceof \Psalm\Internal\Codebase\TaintFlowGraph
+            if ($statements_analyzer->control_flow_graph instanceof TaintFlowGraph
                 && $expr_type->parent_nodes
                 && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
             ) {

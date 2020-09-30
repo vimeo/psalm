@@ -13,6 +13,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
+use Psalm\Internal\ControlFlow\ControlFlowNode;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Exception\DocblockParseException;
@@ -178,15 +179,20 @@ class ForeachAnalyzer
                     }
                 }
 
+                if (isset($context->vars_in_scope[$var_comment->var_id])) {
+                    $comment_type->parent_nodes = $context->vars_in_scope[$var_comment->var_id]->parent_nodes;
+                }
+
                 $context->vars_in_scope[$var_comment->var_id] = $comment_type;
             }
         }
 
-        $context->inside_assignment = true;
+        $was_inside_use = $context->inside_use;
+        $context->inside_use = true;
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
             return false;
         }
-        $context->inside_assignment = false;
+        $context->inside_use = $was_inside_use;
 
         $key_type = null;
         $value_type = null;
@@ -200,7 +206,7 @@ class ForeachAnalyzer
 
         if ($stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr)) {
             $iterator_type = $stmt_expr_type;
-        } elseif ($var_id && $context->hasVariable($var_id, $statements_analyzer)) {
+        } elseif ($var_id && $context->hasVariable($var_id)) {
             $iterator_type = $context->vars_in_scope[$var_id];
         } else {
             $iterator_type = null;
@@ -237,51 +243,36 @@ class ForeachAnalyzer
         }
 
         if ($stmt->keyVar && $stmt->keyVar instanceof PhpParser\Node\Expr\Variable && is_string($stmt->keyVar->name)) {
-            $key_var_id = '$' . $stmt->keyVar->name;
-            $foreach_context->vars_in_scope[$key_var_id] = $key_type ?: Type::getMixed();
-            $foreach_context->vars_possibly_in_scope[$key_var_id] = true;
+            $key_type = $key_type ?: Type::getMixed();
 
-            $location = new CodeLocation($statements_analyzer, $stmt->keyVar);
-
-            if ($codebase->find_unused_variables && !isset($foreach_context->byref_constraints[$key_var_id])) {
-                $foreach_context->unreferenced_vars[$key_var_id] = [$location->getHash() => $location];
-                unset($foreach_context->referenced_var_ids[$key_var_id]);
-            }
-
-            if (!$statements_analyzer->hasVariable($key_var_id)) {
-                $statements_analyzer->registerVariable(
-                    $key_var_id,
-                    $location,
-                    $foreach_context->branch_point
-                );
-            } else {
-                $statements_analyzer->registerVariableAssignment(
-                    $key_var_id,
-                    $location
-                );
-            }
-
-            if ($stmt->byRef && $codebase->find_unused_variables) {
-                $statements_analyzer->registerVariableUses([$location->getHash() => $location]);
-            }
+            AssignmentAnalyzer::analyze(
+                $statements_analyzer,
+                $stmt->keyVar,
+                $stmt->expr,
+                $key_type,
+                $foreach_context,
+                $doc_comment,
+                ['$' . $stmt->keyVar->name => true]
+            );
         }
 
-        if ($codebase->find_unused_variables
-            && $stmt->byRef
-            && $stmt->valueVar instanceof PhpParser\Node\Expr\Variable
-            && is_string($stmt->valueVar->name)
-        ) {
-            $foreach_context->byref_constraints['$' . $stmt->valueVar->name]
-                = new \Psalm\Internal\ReferenceConstraint($value_type);
+        $value_type = $value_type ?: Type::getMixed();
+
+        if ($stmt->byRef) {
+            $value_type->by_ref = true;
         }
 
         AssignmentAnalyzer::analyze(
             $statements_analyzer,
             $stmt->valueVar,
-            null,
-            $value_type ?: Type::getMixed(),
+            $stmt->expr,
+            $value_type,
             $foreach_context,
-            $doc_comment
+            $doc_comment,
+            $stmt->valueVar instanceof PhpParser\Node\Expr\Variable
+                && is_string($stmt->valueVar->name)
+                ? ['$' . $stmt->valueVar->name => true]
+                : []
         );
 
         foreach ($var_comments as $var_comment) {
@@ -296,6 +287,12 @@ class ForeachAnalyzer
                 $context->self,
                 $statements_analyzer->getParentFQCLN()
             );
+
+            if (isset($foreach_context->vars_in_scope[$var_comment->var_id])) {
+                $existing_var_type = $foreach_context->vars_in_scope[$var_comment->var_id];
+                $comment_type->parent_nodes = $existing_var_type->parent_nodes;
+                $comment_type->by_ref = $existing_var_type->by_ref;
+            }
 
             $foreach_context->vars_in_scope[$var_comment->var_id] = $comment_type;
         }
@@ -333,16 +330,6 @@ class ForeachAnalyzer
 
         if ($context->collect_exceptions) {
             $context->mergeExceptions($foreach_context);
-        }
-
-        if ($codebase->find_unused_variables) {
-            foreach ($foreach_context->unreferenced_vars as $var_id => $locations) {
-                if (isset($context->unreferenced_vars[$var_id])) {
-                    $context->unreferenced_vars[$var_id] += $locations;
-                } else {
-                    $context->unreferenced_vars[$var_id] = $locations;
-                }
-            }
         }
 
         return null;

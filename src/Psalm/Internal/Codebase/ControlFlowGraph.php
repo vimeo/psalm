@@ -17,14 +17,12 @@ use function strlen;
 use function array_intersect;
 use function array_reverse;
 
-class ControlFlowGraph
+abstract class ControlFlowGraph
 {
     /** @var array<string, array<string, Path>> */
     protected $forward_edges = [];
 
-    public function addNode(ControlFlowNode $node) : void
-    {
-    }
+    abstract public function addNode(ControlFlowNode $node) : void;
 
     /**
      * @param array<string> $added_taints

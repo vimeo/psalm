@@ -985,6 +985,14 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 continue;
             }
 
+            $assignment_node = ControlFlowNode::getForAssignment($var_name, $original_location);
+
+            if ($statements_analyzer->control_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph
+                && $statements_analyzer->control_flow_graph->isVariableUsed($assignment_node)
+            ) {
+                continue;
+            }
+
             if (!($storage instanceof MethodStorage)
                 || !$storage->cased_name
                 || $storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
@@ -1191,31 +1199,57 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 ]);
             }
 
-            if ($cased_method_id && $codebase->taint_flow_graph) {
-                $type_source = ControlFlowNode::getForMethodArgument(
-                    $cased_method_id,
-                    $cased_method_id,
-                    $offset,
-                    $function_param->location,
-                    null
+            if ($statements_analyzer->control_flow_graph
+                && $function_param->location
+            ) {
+                $param_assignment = ControlFlowNode::getForAssignment(
+                    '$' . $function_param->name,
+                    $function_param->location
                 );
-                $var_type->parent_nodes = [$type_source->id => $type_source];
+
+                $statements_analyzer->control_flow_graph->addNode($param_assignment);
+
+                if ($cased_method_id) {
+                    $type_source = ControlFlowNode::getForMethodArgument(
+                        $cased_method_id,
+                        $cased_method_id,
+                        $offset,
+                        $function_param->location,
+                        null
+                    );
+
+                    $statements_analyzer->control_flow_graph->addPath($type_source, $param_assignment, 'param');
+                }
+
+                if ($function_param->by_ref
+                    && $codebase->find_unused_variables
+                ) {
+                    $statements_analyzer->control_flow_graph->addPath(
+                        $param_assignment,
+                        new ControlFlowNode('variable-use', 'variable use', null),
+                        'variable-use'
+                    );
+                }
+
+                $var_type->parent_nodes += [$param_assignment->id => $param_assignment];
             }
 
             $context->vars_in_scope['$' . $function_param->name] = $var_type;
             $context->vars_possibly_in_scope['$' . $function_param->name] = true;
-
-            if ($codebase->find_unused_variables && $function_param->location) {
-                $context->unreferenced_vars['$' . $function_param->name] = [
-                    $function_param->location->getHash() => $function_param->location
-                ];
-            }
 
             if ($function_param->by_ref) {
                 $context->vars_in_scope['$' . $function_param->name]->by_ref = true;
             }
 
             $parser_param = $this->function->getParams()[$offset];
+
+            if ($function_param->location) {
+                $statements_analyzer->registerVariable(
+                    '$' . $function_param->name,
+                    $function_param->location,
+                    null
+                );
+            }
 
             if (!$function_param->type_location || !$function_param->location) {
                 if ($parser_param->default) {
@@ -1360,12 +1394,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 // so that we don't have to do this
                 $context->hasVariable('$' . $function_param->name);
             }
-
-            $statements_analyzer->registerVariable(
-                '$' . $function_param->name,
-                $function_param->location,
-                null
-            );
         }
 
         return $check_stmts;

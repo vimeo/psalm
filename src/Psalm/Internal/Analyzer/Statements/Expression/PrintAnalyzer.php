@@ -5,6 +5,7 @@ use PhpParser;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\ControlFlow\TaintSink;
+use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\ForbiddenCode;
@@ -25,7 +26,7 @@ class PrintAnalyzer
             return false;
         }
 
-        if ($statements_analyzer->control_flow_graph instanceof \Psalm\Internal\Codebase\TaintFlowGraph) {
+        if ($statements_analyzer->control_flow_graph instanceof TaintFlowGraph) {
             $call_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
             $print_param_sink = TaintSink::getForMethodArgument(

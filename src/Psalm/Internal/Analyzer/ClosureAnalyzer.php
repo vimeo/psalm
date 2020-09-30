@@ -8,6 +8,7 @@ use Psalm\Issue\DuplicateParam;
 use Psalm\Issue\PossiblyUndefinedVariable;
 use Psalm\Issue\UndefinedVariable;
 use Psalm\IssueBuffer;
+use Psalm\Internal\ControlFlow\ControlFlowNode;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use function strpos;
@@ -137,12 +138,24 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
 
                 // insert the ref into the current context if passed by ref, as whatever we're passing
                 // the closure to could execute it straight away.
-                if (!$context->hasVariable($use_var_id, $statements_analyzer) && $use->byRef) {
+                if (!$context->hasVariable($use_var_id) && $use->byRef) {
                     $context->vars_in_scope[$use_var_id] = Type::getMixed();
                 }
 
+                if ($statements_analyzer->control_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph) {
+                    $parent_nodes = $context->vars_in_scope[$use_var_id]->parent_nodes;
+
+                    foreach ($parent_nodes as $parent_node) {
+                        $statements_analyzer->control_flow_graph->addPath(
+                            $parent_node,
+                            new ControlFlowNode('closure-use', 'closure use', null),
+                            'closure-use'
+                        );
+                    }
+                }
+
                 $use_context->vars_in_scope[$use_var_id] =
-                    $context->hasVariable($use_var_id, $statements_analyzer) && !$use->byRef
+                    $context->hasVariable($use_var_id) && !$use->byRef
                     ? clone $context->vars_in_scope[$use_var_id]
                     : Type::getMixed();
 
@@ -158,7 +171,7 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
 
             foreach ($short_closure_visitor->getUsedVariables() as $use_var_id => $_) {
                 $use_context->vars_in_scope[$use_var_id] =
-                    $context->hasVariable($use_var_id, $statements_analyzer)
+                    $context->hasVariable($use_var_id)
                     ? clone $context->vars_in_scope[$use_var_id]
                     : Type::getMixed();
 
@@ -228,7 +241,7 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
                 }
             }
 
-            if (!$context->hasVariable($use_var_id, $statements_analyzer)) {
+            if (!$context->hasVariable($use_var_id)) {
                 if ($use_var_id === '$argv' || $use_var_id === '$argc') {
                     continue;
                 }
@@ -295,9 +308,12 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
                     continue;
                 }
             } elseif ($use->byRef) {
+                $new_type = Type::getMixed();
+                $new_type->parent_nodes = $context->vars_in_scope[$use_var_id]->parent_nodes;
+
                 $context->remove($use_var_id);
 
-                $context->vars_in_scope[$use_var_id] = Type::getMixed();
+                $context->vars_in_scope[$use_var_id] = $new_type;
             }
         }
 

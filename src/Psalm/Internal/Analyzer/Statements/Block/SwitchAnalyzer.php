@@ -204,24 +204,6 @@ class SwitchAnalyzer
             $context->assigned_var_ids += $switch_scope->new_assigned_var_ids;
         }
 
-        if ($codebase->find_unused_variables) {
-            foreach ($switch_scope->new_unreferenced_vars as $var_id => $locations) {
-                if (($all_options_matched && isset($switch_scope->new_assigned_var_ids[$var_id]))
-                    || !isset($context->vars_in_scope[$var_id])
-                ) {
-                    $context->unreferenced_vars[$var_id] = $locations;
-                } elseif (isset($switch_scope->new_possibly_assigned_var_ids[$var_id])) {
-                    if (!isset($context->unreferenced_vars[$var_id])) {
-                        $context->unreferenced_vars[$var_id] = $locations;
-                    } else {
-                        $context->unreferenced_vars[$var_id] += $locations;
-                    }
-                } else {
-                    $statements_analyzer->registerVariableUses($locations);
-                }
-            }
-        }
-
         $context->vars_possibly_in_scope = array_merge(
             $context->vars_possibly_in_scope,
             $switch_scope->new_vars_possibly_in_scope

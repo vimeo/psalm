@@ -38,6 +38,7 @@ use function strlen;
 use function substr;
 use Psalm\Internal\ControlFlow\TaintSource;
 use Psalm\Internal\ControlFlow\ControlFlowNode;
+use Psalm\Internal\Codebase\TaintFlowGraph;
 use function array_filter;
 
 /**
@@ -51,15 +52,12 @@ class StaticCallAnalyzer extends CallAnalyzer
         Context $context
     ) : bool {
         $method_id = null;
-        $cased_method_id = null;
 
         $lhs_type = null;
 
         $file_analyzer = $statements_analyzer->getFileAnalyzer();
         $codebase = $statements_analyzer->getCodebase();
         $source = $statements_analyzer->getSource();
-
-        $stmt_type = null;
 
         $config = $codebase->config;
 
@@ -194,7 +192,10 @@ class StaticCallAnalyzer extends CallAnalyzer
                 $lhs_type = new Type\Union([new TNamedObject($fq_class_name)]);
             }
         } else {
+            $was_inside_use = $context->inside_use;
+            $context->inside_use = true;
             ExpressionAnalyzer::analyze($statements_analyzer, $stmt->class, $context);
+            $context->inside_use = $was_inside_use;
             $lhs_type = $statements_analyzer->node_data->getType($stmt->class) ?: Type::getMixed();
         }
 
@@ -1329,7 +1330,12 @@ class StaticCallAnalyzer extends CallAnalyzer
                 }
             } else {
                 if ($stmt->name instanceof PhpParser\Node\Expr) {
+                    $was_inside_use = $context->inside_use;
+                    $context->inside_use = true;
+
                     ExpressionAnalyzer::analyze($statements_analyzer, $stmt->name, $context);
+
+                    $context->inside_use = $was_inside_use;
                 }
 
                 if (!$context->ignore_variable_method) {
@@ -1423,7 +1429,7 @@ class StaticCallAnalyzer extends CallAnalyzer
         Type\Union $return_type_candidate,
         ?\Psalm\Storage\MethodStorage $method_storage
     ) : void {
-        if (!$statements_analyzer->control_flow_graph instanceof \Psalm\Internal\Codebase\TaintFlowGraph
+        if (!$statements_analyzer->control_flow_graph instanceof TaintFlowGraph
             || \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
         ) {
             return;

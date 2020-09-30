@@ -56,21 +56,6 @@ class LoopScope
     public $protected_var_ids = [];
 
     /**
-     * @var array<string, array<string, CodeLocation>>
-     */
-    public $unreferenced_vars = [];
-
-    /**
-     * @var array<string, bool>
-     */
-    public $referenced_var_ids = [];
-
-    /**
-     * @var array<string, array<string, CodeLocation>>
-     */
-    public $possibly_unreferenced_vars = [];
-
-    /**
      * @var string[]
      */
     public $final_actions = [];

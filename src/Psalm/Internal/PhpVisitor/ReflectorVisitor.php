@@ -2692,7 +2692,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 $storage->template_types ?: []
             );
 
-            foreach ($storage->params as $i => $param_storage) {
+            foreach ($storage->params as $param_storage) {
                 if ($param_storage->name === $param_name) {
                     $param_storage->out_type = $out_type;
                 }

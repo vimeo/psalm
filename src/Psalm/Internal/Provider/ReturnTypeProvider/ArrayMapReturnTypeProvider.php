@@ -326,8 +326,6 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
         foreach ($mapping_function_ids as $mapping_function_id) {
             $mapping_function_id_parts = explode('&', $mapping_function_id);
 
-            $function_id_return_type = null;
-
             foreach ($mapping_function_id_parts as $mapping_function_id_part) {
                 $fake_args = [];
 

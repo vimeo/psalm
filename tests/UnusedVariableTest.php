@@ -1266,7 +1266,7 @@ class UnusedVariableTest extends TestCase
                         return "hello";
                     }',
             ],
-            'SKIPPED-useTryAndCatchAssignedVariableInsideFinally' => [
+            'useTryAndCatchAssignedVariableInsideFinally' => [
                 '<?php
                     function foo() : void {
                         try {
@@ -1343,15 +1343,14 @@ class UnusedVariableTest extends TestCase
             'usedInNewCall' => [
                 '<?php
                     /**
-                     * @psalm-suppress MixedAssignment
                      * @psalm-suppress MixedMethodCall
-                     * @psalm-suppress MissingParamType
                      * @psalm-suppress MixedArgument
                      * @psalm-suppress PossiblyNullArgument
+                     * @param mixed $mixed
+                     * @param mixed|null $mixed_or_null
                      */
-                    function foo($a): void {
-                        $m = $_GET["m"] ?? null;
-                        $a->foo(new Exception($m));
+                    function foo($mixed, $mixed_or_null): void {
+                        $mixed->foo(new Exception($mixed_or_null));
                     }',
             ],
             'validMixedAnnotation' => [
@@ -1365,7 +1364,14 @@ class UnusedVariableTest extends TestCase
                         echo gettype($k);
                     }'
             ],
-            'byRefVariableAfterAssignment' => [
+            'byRefVariableAfterAssignmentToArray' => [
+                '<?php
+                    $a = [1, 2, 3];
+                    $b = &$a[1];
+                    $b = 5;
+                    print_r($a);'
+            ],
+            'byRefVariableAfterAssignmentToProperty' => [
                 '<?php
                     class A {
                         public string $value = "";
@@ -1440,6 +1446,28 @@ class UnusedVariableTest extends TestCase
 
                     echo $a;'
             ],
+            'usedForVariableMinusString' => [
+                '<?php
+                    function foo(string $limit) : void {
+                        /**
+                         * @psalm-suppress InvalidOperand
+                         */
+                        for ($i = $limit; $i > 0; $i--) {
+                            echo $i . "\n";
+                        }
+                    }'
+            ],
+            'usedForVariablePlusString' => [
+                '<?php
+                    function foo(string $limit) : void {
+                        /**
+                         * @psalm-suppress InvalidOperand
+                         */
+                        for ($i = $limit; $i < 50; $i++) {
+                            echo $i . "\n";
+                        }
+                    }'
+            ],
             'breakInForeachInsideSwitch' => [
                 '<?php
                     function foo(string $b) : void {
@@ -1472,6 +1500,20 @@ class UnusedVariableTest extends TestCase
                     function takes_ref(?array &$p): void {
                         $p = [0];
                     }'
+            ],
+            'passedByRefSimpleDefinedBeforeWithExtract' => [
+                '<?php
+                    function foo(array $arr) : void {
+                        while (rand(0, 1)) {
+                            /** @psalm-suppress MixedArgument */
+                            extract($arr);
+                            $a = [];
+                            takes_ref($a);
+                        }
+                    }
+
+                    /** @param mixed $p */
+                    function takes_ref(&$p): void {}'
             ],
             'passedByRefArrayOffset' => [
                 '<?php
@@ -1919,6 +1961,16 @@ class UnusedVariableTest extends TestCase
                         return $arr;
                     }',
             ],
+            'explodeSource' => [
+                '<?php
+                    $start = microtime();
+                    $start = explode(" ", $start);
+                    /**
+                     * @psalm-suppress InvalidOperand
+                     */
+                    $start = $start[1] + $start[0];
+                    echo $start;'
+            ],
             'csvByRefForeach' => [
                 '<?php
                     function foo(string $value) : array {
@@ -1929,6 +1981,22 @@ class UnusedVariableTest extends TestCase
                         }
 
                         return $arr;
+                    }'
+            ],
+            'memoryFree' => [
+                '<?php
+                    function verifyLoad(string $free) : void {
+                        $free = explode("\n", $free);
+
+                        $parts_mem = preg_split("/\s+/", $free[1]);
+
+                        $free_mem = $parts_mem[3];
+                        $total_mem = $parts_mem[1];
+
+                        /** @psalm-suppress InvalidOperand */
+                        $used_mem  = ($total_mem - $free_mem) / $total_mem;
+
+                        echo $used_mem;
                     }'
             ],
             'returnNotBool' => [
@@ -2043,6 +2111,67 @@ class UnusedVariableTest extends TestCase
                         $maybe_undefined = $maybe_undefined ?? [0];
 
                         print_r($maybe_undefined);
+                    }'
+            ],
+            'usedInGlobalAfterAssignOp' => [
+                '<?php
+                    $total = 0;
+                    $foo = &$total;
+
+                    $total = 5;
+
+                    echo $foo;'
+            ],
+            'takesByRefThing' => [
+                '<?php
+                    while (rand(0, 1)) {
+                        if (rand(0, 1)) {
+                            $c = 5;
+                        }
+
+                        takesByRef($c);
+                        echo $c;
+                    }
+
+                    /**
+                     * @param-out int $c
+                     */
+                    function takesByRef(?int &$c) : void {
+                        $c = 7;
+                    }'
+            ],
+            'clips' => [
+                '<?php declare(strict_types=1);
+                    function foo(array $clips) : void {
+                        /** @psalm-suppress MixedAssignment */
+                        foreach ($clips as &$clip) {
+                            /** @psalm-suppress MixedArgument */
+                            if (!empty($clip)) {
+                                $legs = explode("/", $clip);
+                                $clip_id = $clip = $legs[1];
+
+                                if ((is_numeric($clip_id) || $clip = (new \Exception($clip_id)))) {}
+
+                                print_r($clips);
+                            }
+                        }
+                    }'
+            ],
+            'validator' => [
+                '<?php
+                    /**
+                     * @param bool $b
+                     */
+                    function validate($b, string $source) : void {
+                        /**
+                         * @psalm-suppress DocblockTypeContradiction
+                         * @psalm-suppress MixedAssignment
+                         */
+                        if (!is_bool($b)) {
+                            $source = $b;
+                        }
+
+                        print_r($source);
                     }'
             ],
         ];
@@ -2828,6 +2957,27 @@ class UnusedVariableTest extends TestCase
                         echo $c;
                     }',
                 'error_message' => 'UnusedClosureParam',
+            ],
+            'noUseOfInstantArrayAssignment' => [
+                '<?php
+                    function foo() : void {
+                        /** @psalm-suppress PossiblyUndefinedVariable */
+                        $arr["foo"] = 1;
+                    }',
+                'error_message' => 'UnusedVariable',
+            ],
+            'expectsNonNullAndPassedPossiblyNull' => [
+                '<?php
+                    /**
+                     * @param mixed|null $mixed_or_null
+                     */
+                    function foo($mixed_or_null): Exception {
+                        /**
+                         * @psalm-suppress MixedArgument
+                         */
+                        return new Exception($mixed_or_null);
+                    }',
+                'error_message' => 'PossiblyNullArgument'
             ],
         ];
     }

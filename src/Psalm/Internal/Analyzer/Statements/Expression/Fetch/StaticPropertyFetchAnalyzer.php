@@ -34,8 +34,6 @@ class StaticPropertyFetchAnalyzer
             return true;
         }
 
-        $fq_class_name = null;
-
         $codebase = $statements_analyzer->getCodebase();
 
         if (count($stmt->class->parts) === 1
@@ -189,7 +187,7 @@ class StaticPropertyFetchAnalyzer
             $statements_analyzer->getSource()->inferred_impure = true;
         }
 
-        if ($var_id && $context->hasVariable($var_id, $statements_analyzer)) {
+        if ($var_id && $context->hasVariable($var_id)) {
             $stmt_type = $context->vars_in_scope[$var_id];
 
             // we don't need to check anything
@@ -358,11 +356,17 @@ class StaticPropertyFetchAnalyzer
         PhpParser\Node\Expr\StaticPropertyFetch $stmt,
         Context $context
     ) : void {
+        $was_inside_use = $context->inside_use;
+
+        $context->inside_use = true;
+
         ExpressionAnalyzer::analyze(
             $statements_analyzer,
             $stmt_class,
             $context
         );
+
+        $context->inside_use = $was_inside_use;
 
         $stmt_class_type = $statements_analyzer->node_data->getType($stmt_class) ?: Type::getMixed();
 

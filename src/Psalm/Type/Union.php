@@ -1634,6 +1634,10 @@ class Union implements TypeNode
             return false;
         }
 
+        if ($this->parent_nodes !== $other_type->parent_nodes) {
+            return false;
+        }
+
         if ($this->different || $other_type->different) {
             return false;
         }

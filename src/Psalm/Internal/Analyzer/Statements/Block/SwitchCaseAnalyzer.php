@@ -446,11 +446,8 @@ class SwitchCaseAnalyzer
                 $context,
                 $case_context,
                 $original_context,
-                $new_case_assigned_var_ids,
-                $new_case_possibly_assigned_var_ids,
                 $case_exit_type,
-                $switch_scope,
-                $case_scope
+                $switch_scope
             ) === false) {
                 /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
                 $case_scope->parent_context = null;
@@ -534,11 +531,8 @@ class SwitchCaseAnalyzer
         Context $context,
         Context $case_context,
         Context $original_context,
-        array $new_case_assigned_var_ids,
-        array $new_case_possibly_assigned_var_ids,
         string $case_exit_type,
-        SwitchScope $switch_scope,
-        CaseScope $case_scope
+        SwitchScope $switch_scope
     ): ?bool {
         if (!$case->cond
             && $switch_var_id
@@ -611,7 +605,7 @@ class SwitchCaseAnalyzer
                 );
             } else {
                 foreach ($switch_scope->new_vars_in_scope as $new_var => $type) {
-                    if (!$case_context->hasVariable($new_var, $statements_analyzer)) {
+                    if (!$case_context->hasVariable($new_var)) {
                         unset($switch_scope->new_vars_in_scope[$new_var]);
                     } else {
                         $switch_scope->new_vars_in_scope[$new_var] =
@@ -631,68 +625,6 @@ class SwitchCaseAnalyzer
 
         if ($context->collect_exceptions) {
             $context->mergeExceptions($case_context);
-        }
-
-        $codebase = $statements_analyzer->getCodebase();
-
-        if ($codebase->find_unused_variables) {
-            $switch_scope->new_possibly_assigned_var_ids =
-                $switch_scope->new_possibly_assigned_var_ids + $new_case_possibly_assigned_var_ids;
-
-            if ($switch_scope->new_assigned_var_ids === null) {
-                $switch_scope->new_assigned_var_ids = $new_case_assigned_var_ids;
-            } else {
-                $switch_scope->new_assigned_var_ids = array_intersect_key(
-                    $switch_scope->new_assigned_var_ids,
-                    $new_case_assigned_var_ids
-                );
-            }
-
-            foreach ($case_context->unreferenced_vars as $var_id => $locations) {
-                if (!isset($original_context->unreferenced_vars[$var_id])) {
-                    if (isset($switch_scope->new_unreferenced_vars[$var_id])) {
-                        $switch_scope->new_unreferenced_vars[$var_id] += $locations;
-                    } else {
-                        $switch_scope->new_unreferenced_vars[$var_id] = $locations;
-                    }
-                } else {
-                    $new_locations = array_diff_key(
-                        $locations,
-                        $original_context->unreferenced_vars[$var_id]
-                    );
-
-                    if ($new_locations) {
-                        if (isset($switch_scope->new_unreferenced_vars[$var_id])) {
-                            $switch_scope->new_unreferenced_vars[$var_id] += $locations;
-                        } else {
-                            $switch_scope->new_unreferenced_vars[$var_id] = $locations;
-                        }
-                    }
-                }
-            }
-
-            foreach ($case_scope->unreferenced_vars as $var_id => $locations) {
-                if (!isset($original_context->unreferenced_vars[$var_id])) {
-                    if (isset($switch_scope->new_unreferenced_vars[$var_id])) {
-                        $switch_scope->new_unreferenced_vars[$var_id] += $locations;
-                    } else {
-                        $switch_scope->new_unreferenced_vars[$var_id] = $locations;
-                    }
-                } else {
-                    $new_locations = array_diff_key(
-                        $locations,
-                        $original_context->unreferenced_vars[$var_id]
-                    );
-
-                    if ($new_locations) {
-                        if (isset($switch_scope->new_unreferenced_vars[$var_id])) {
-                            $switch_scope->new_unreferenced_vars[$var_id] += $locations;
-                        } else {
-                            $switch_scope->new_unreferenced_vars[$var_id] = $locations;
-                        }
-                    }
-                }
-            }
         }
 
         return null;
