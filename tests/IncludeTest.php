@@ -599,6 +599,28 @@ class IncludeTest extends TestCase
                     getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
                 ],
             ],
+            'noCrash' => [
+                'files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'classes.php' => '<?php
+                        // one.php
+
+                        if (true) {
+                            class One {}
+                        }
+                        else {
+                            class One {}
+                        }
+
+                        class Two {}',
+                    getcwd() . DIRECTORY_SEPARATOR . 'user.php' => '<?php
+                        include("classes.php");
+
+                        new Two();',
+                ],
+                'files_to_check' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'user.php',
+                ],
+            ],
         ];
     }
 

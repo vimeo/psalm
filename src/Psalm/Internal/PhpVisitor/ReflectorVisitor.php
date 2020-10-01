@@ -146,6 +146,11 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
      */
     private $classlike_type_aliases = [];
 
+    /**
+     * @var array<int, bool>
+     */
+    private $bad_classes = [];
+
     public function __construct(
         Codebase $codebase,
         FileStorage $file_storage,
@@ -285,7 +290,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             }
 
             if ($this->registerClassLike($node) === false) {
-                return PhpParser\NodeTraverser::STOP_TRAVERSAL;
+                $this->bad_classes[\spl_object_id($node)] = true;
+                return PhpParser\NodeTraverser::DONT_TRAVERSE_CHILDREN;
             }
         } elseif (($node instanceof PhpParser\Node\Expr\New_
                 || $node instanceof PhpParser\Node\Expr\Instanceof_
@@ -572,6 +578,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\ClassLike) {
             if ($this->skip_if_descendants) {
+                return null;
+            }
+
+            if (isset($this->bad_classes[\spl_object_id($node)])) {
                 return null;
             }
 
