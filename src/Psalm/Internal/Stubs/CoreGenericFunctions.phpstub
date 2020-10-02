@@ -54,6 +54,7 @@ function array_intersect_key(array $arr, array $arr2, array ...$arr3)
  * @param callable(TKey): int $keyCompareFunc
  *
  * @return array<TKey, TValue>
+ *
  * @psalm-pure
  */
 function array_intersect_ukey(array $arr, array $arr2, array ...$arr3, callable $keyCompareFunc): array {}
@@ -85,6 +86,7 @@ function array_intersect_assoc(array $arr, array $arr2, array ...$arr3)
  * @param callable(TKey): int $keyCompareFunc
  *
  * @return array<TKey, TValue>
+ *
  * @psalm-pure
  */
 function array_intersect_uassoc(array $arr, array $arr2, array ...$arr3, callable $keyCompareFunc): array {}
@@ -143,12 +145,12 @@ function array_diff_key(array $arr, array $arr2, array ...$arr3)
  * @param array<TKey, TValue> $arr
  * @param array $arr2
  * @param array ...$arr3
- * @param callable(TKey, TKey): int
+ * @param callable(TKey, TKey): int $keyCompareFunc
  *
  * @return array<TKey, TValue>
  * @psalm-pure
  */
-function array_diff_ukey(array $arr, array $arr2, array ...$arr3, callable $key_compare_func): array {}
+function array_diff_ukey(array $arr, array $arr2, array ...$arr3, callable $keyCompareFunc): array {}
 {
 }
 
@@ -174,12 +176,12 @@ function array_diff_assoc(array $arr, array $arr2, array ...$arr3)
  * @param array<TKey, TValue> $arr
  * @param array $arr2
  * @param array ...$arr3
- * @param callable(TKey, TKey): int
+ * @param callable(TKey, TKey): int $keyCompareFunc
  *
  * @return array<TKey, TValue>
  * @psalm-pure
  */
-function array_diff_uassoc(array $arr, array $arr2, array ... $arr3, callable $key_compare_func): array {}
+function array_diff_uassoc(array $arr, array $arr2, array ... $arr3, callable $keyCompareFunc): array {}
 
 /**
  * @psalm-template TKey as array-key
@@ -846,8 +848,10 @@ function random_int(int $min, int $max): int {}
 /**
  * @template TKey as array-key
  *
- * @param array<mixed, TKey>
+ * @param array<mixed, TKey> $array
+ *
  * @return array<TKey, positive-int>
+ *
  * @psalm-pure
  */
 function array_count_values(array $array): array {}
@@ -875,8 +879,8 @@ function array_rand(array $array, int $num = 1) {}
  * @template TValue
  * @template T
  *
- * @param array<mixed, TValue>
- * @param callable(T, TValue): T
+ * @param array<mixed, TValue> $array
+ * @param callable(T, TValue): T $callback
  * @param T $initial
  *
  * @return T
