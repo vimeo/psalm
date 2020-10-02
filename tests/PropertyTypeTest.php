@@ -2074,6 +2074,34 @@ class PropertyTypeTest extends TestCase
                         }
                     }'
             ],
+            'promotedPublicProperty' => [
+                '<?php
+                    class A {
+                        public function __construct(public int $foo = 5) {}
+                    }
+
+                    echo (new A)->foo;'
+            ],
+            'promotedProtectedProperty' => [
+                '<?php
+                    class A {
+                        public function __construct(protected int $foo = 5) {}
+                    }
+
+                    class AChild extends A {
+                        public function bar() : int {
+                            return $this->foo;
+                        }
+                    }'
+            ],
+            'setPublicProperty' => [
+                '<?php
+                    class A {
+                        public function __construct(public int $foo) {
+                            $this->foo = 5;
+                        }
+                    }'
+            ],
         ];
     }
 
@@ -3213,6 +3241,22 @@ class PropertyTypeTest extends TestCase
                         public $var;
                     }',
                 'error_message' => 'MissingPropertyType',
+            ],
+            'promotedPrivateProperty' => [
+                '<?php
+                    class A {
+                        public function __construct(private int $foo = 5) {}
+                    }
+
+                    echo (new A)->foo;',
+                'error_message' => 'InaccessibleProperty',
+            ],
+            'promotedPublicPropertyWithoutSet' => [
+                '<?php
+                    class A {
+                        public function __construct(public int $foo) {}
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor'
             ],
         ];
     }

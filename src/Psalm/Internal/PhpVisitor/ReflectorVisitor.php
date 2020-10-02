@@ -1854,6 +1854,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         $fq_classlike_name = null;
         $is_functionlike_override = false;
 
+        $method_name_lc = null;
+
         if ($fake_method && $stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
             $cased_function_id = '@method ' . $stmt->name->name;
 
@@ -2356,6 +2358,61 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     $fake_method,
                     $cased_function_id
                 );
+            }
+        }
+
+        if ($class_storage && $method_name_lc === '__construct') {
+            foreach ($stmt->getParams() as $param) {
+                if (!$param->flags || !$param->var instanceof PhpParser\Node\Expr\Variable) {
+                    continue;
+                }
+
+                $param_storage = null;
+
+                foreach ($storage->params as $param_storage) {
+                    if ($param_storage->name === $param->var->name) {
+                        break;
+                    }
+                }
+
+                if (!$param_storage) {
+                    continue;
+                }
+
+                $property_storage = $class_storage->properties[$param_storage->name] = new PropertyStorage();
+                $property_storage->is_static = false;
+                $property_storage->type = $param_storage->type;
+                $property_storage->signature_type = $param_storage->signature_type;
+                $property_storage->signature_type_location = $param_storage->signature_type_location;
+                $property_storage->type_location = $param_storage->type_location;
+                $property_storage->location = $param_storage->location;
+                $property_storage->stmt_location = new CodeLocation($this->file_scanner, $param);
+                $property_storage->has_default = $param->default ? true : false;
+
+                $property_id = $fq_classlike_name . '::$' . $param_storage->name;
+
+                switch ($param->flags) {
+                    case \PhpParser\Node\Stmt\Class_::MODIFIER_PUBLIC:
+                        $property_storage->visibility = ClassLikeAnalyzer::VISIBILITY_PUBLIC;
+                        $class_storage->inheritable_property_ids[$param_storage->name] = $property_id;
+                        break;
+
+                    case \PhpParser\Node\Stmt\Class_::MODIFIER_PROTECTED:
+                        $property_storage->visibility = ClassLikeAnalyzer::VISIBILITY_PROTECTED;
+                        $class_storage->inheritable_property_ids[$param_storage->name] = $property_id;
+                        break;
+
+                    case \PhpParser\Node\Stmt\Class_::MODIFIER_PRIVATE:
+                        $property_storage->visibility = ClassLikeAnalyzer::VISIBILITY_PRIVATE;
+                        break;
+                }
+
+                $fq_classlike_name = $this->fq_classlike_names[count($this->fq_classlike_names) - 1];
+
+                $property_id = $fq_classlike_name . '::$' . $param_storage->name;
+
+                $class_storage->declaring_property_ids[$param_storage->name] = $fq_classlike_name;
+                $class_storage->appearing_property_ids[$param_storage->name] = $property_id;
             }
         }
 
