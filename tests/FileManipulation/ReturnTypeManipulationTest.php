@@ -575,6 +575,38 @@ class ReturnTypeManipulationTest extends FileManipulationTest
                 false,
                 true,
             ],
+            'dontOOM' => [
+                '<?php
+                    class FC {
+                        public function __invoke() : void {}
+                    }
+
+                    function foo(): string {
+                        if (rand(0, 1)) {
+                            $cb = new FC();
+                        } else {
+                            $cb = function() {};
+                        }
+                        $cb();
+                    }',
+                '<?php
+                    class FC {
+                        public function __invoke() : void {}
+                    }
+
+                    function foo(): string {
+                        if (rand(0, 1)) {
+                            $cb = new FC();
+                        } else {
+                            $cb = function() {};
+                        }
+                        $cb();
+                    }',
+                '7.3',
+                ['InvalidReturnType'],
+                false,
+                true,
+            ],
         ];
     }
 }

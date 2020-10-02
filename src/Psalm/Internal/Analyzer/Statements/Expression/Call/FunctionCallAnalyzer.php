@@ -694,7 +694,8 @@ class FunctionCallAnalyzer extends CallAnalyzer
                         $stmt,
                         $real_stmt,
                         $function_name,
-                        $context
+                        $context,
+                        $var_type_part
                     );
                 }
             }
@@ -745,7 +746,8 @@ class FunctionCallAnalyzer extends CallAnalyzer
         PhpParser\Node\Expr\FuncCall $stmt,
         PhpParser\Node\Expr\FuncCall $real_stmt,
         PhpParser\Node\Expr $function_name,
-        Context $context
+        Context $context,
+        Type\Atomic $atomic_type
     ) : void {
         $old_data_provider = $statements_analyzer->node_data;
 
@@ -770,6 +772,8 @@ class FunctionCallAnalyzer extends CallAnalyzer
         if (!in_array('PossiblyInvalidMethodCall', $suppressed_issues, true)) {
             $statements_analyzer->addSuppressedIssues(['PossiblyInvalidMethodCall']);
         }
+
+        $statements_analyzer->node_data->setType($function_name, new Type\Union([$atomic_type]));
 
         \Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer::analyze(
             $statements_analyzer,
