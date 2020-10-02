@@ -45,7 +45,15 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
         $was_inside_use = $context->inside_use;
         $context->inside_use = true;
 
-        if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->var, $context) === false) {
+        $existing_stmt_var_type = null;
+
+        if (!$real_method_call) {
+            $existing_stmt_var_type = $statements_analyzer->node_data->getType($stmt->var);
+        }
+
+        if ($existing_stmt_var_type) {
+            $statements_analyzer->node_data->setType($stmt->var, $existing_stmt_var_type);
+        } elseif (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->var, $context) === false) {
             return false;
         }
 
