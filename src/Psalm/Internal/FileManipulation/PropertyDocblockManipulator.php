@@ -93,7 +93,7 @@ class PropertyDocblockManipulator
         $file_contents = $codebase->getFileContents($file_path);
 
         if (count($stmt->props) > 1) {
-            throw new \UnexpectedValueException('Cannot replace multiple properties');
+            throw new \UnexpectedValueException('Cannot replace multiple inline properties in ' . $file_path);
         }
 
         $prop = $stmt->props[0];
