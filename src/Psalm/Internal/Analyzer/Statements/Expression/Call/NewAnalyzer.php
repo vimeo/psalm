@@ -209,7 +209,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
 
                     if ($lhs_type_part instanceof Type\Atomic\TLiteralClassString
                         || $lhs_type_part instanceof Type\Atomic\TClassString
-                        || $lhs_type_part instanceof Type\Atomic\GetClassT
+                        || $lhs_type_part instanceof Type\Atomic\TDependentGetClass
                     ) {
                         if (!$statements_analyzer->node_data->getType($stmt)) {
                             if ($lhs_type_part instanceof Type\Atomic\TClassString) {
@@ -238,7 +238,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                                         }
                                     }
                                 }
-                            } elseif ($lhs_type_part instanceof Type\Atomic\GetClassT) {
+                            } elseif ($lhs_type_part instanceof Type\Atomic\TDependentGetClass) {
                                 $generated_type = new Type\Atomic\TObject();
 
                                 if ($lhs_type_part->as_type->hasObjectType()

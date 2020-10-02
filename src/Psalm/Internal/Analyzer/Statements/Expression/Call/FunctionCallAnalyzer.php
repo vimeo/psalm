@@ -1338,13 +1338,13 @@ class FunctionCallAnalyzer extends CallAnalyzer
 
                     if (isset($context->vars_in_scope[$var_id])) {
                         $atomic_type = $function_name->parts === ['get_class']
-                            ? new Type\Atomic\GetClassT(
+                            ? new Type\Atomic\TDependentGetClass(
                                 $var_id,
                                 $context->vars_in_scope[$var_id]->hasMixed()
                                     ? Type::getObject()
                                     : $context->vars_in_scope[$var_id]
                             )
-                            : new Type\Atomic\GetTypeT($var_id);
+                            : new Type\Atomic\TDependentGetType($var_id);
 
                         $statements_analyzer->node_data->setType($real_stmt, new Type\Union([$atomic_type]));
                     }

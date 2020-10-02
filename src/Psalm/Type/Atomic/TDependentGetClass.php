@@ -6,7 +6,7 @@ use Psalm\Type\Union;
 /**
  * Represents a string whose value is a fully-qualified class found by get_class($var)
  */
-class GetClassT extends TString
+class TDependentGetClass extends TString
 {
     /**
      * Used to hold information as to what this refers to

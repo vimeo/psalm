@@ -122,7 +122,7 @@ class SwitchCaseAnalyzer
                 $type_statements = [];
 
                 foreach ($switch_var_type->getAtomicTypes() as $type) {
-                    if ($type instanceof Type\Atomic\GetClassT) {
+                    if ($type instanceof Type\Atomic\TDependentGetClass) {
                         $type_statements[] = new PhpParser\Node\Expr\FuncCall(
                             new PhpParser\Node\Name(['get_class']),
                             [
@@ -131,7 +131,7 @@ class SwitchCaseAnalyzer
                                 ),
                             ]
                         );
-                    } elseif ($type instanceof Type\Atomic\GetTypeT) {
+                    } elseif ($type instanceof Type\Atomic\TDependentGetType) {
                         $type_statements[] = new PhpParser\Node\Expr\FuncCall(
                             new PhpParser\Node\Name(['gettype']),
                             [

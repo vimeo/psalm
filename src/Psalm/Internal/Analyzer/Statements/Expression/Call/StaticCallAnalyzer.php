@@ -261,7 +261,7 @@ class StaticCallAnalyzer extends CallAnalyzer
                 }
 
                 $intersection_types = $lhs_type_part->as_type->extra_types;
-            } elseif ($lhs_type_part instanceof Type\Atomic\GetClassT
+            } elseif ($lhs_type_part instanceof Type\Atomic\TDependentGetClass
                 && !$lhs_type_part->as_type->hasObject()
             ) {
                 $fq_class_name = 'object';

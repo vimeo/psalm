@@ -15,8 +15,8 @@ use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
-use Psalm\Type\Atomic\GetClassT;
-use Psalm\Type\Atomic\GetTypeT;
+use Psalm\Type\Atomic\TDependentGetClass;
+use Psalm\Type\Atomic\TDependentGetType;
 use Psalm\Type\Atomic\THtmlEscapedString;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TLiteralClassString;
@@ -114,7 +114,7 @@ class ScalarTypeComparator
             return false;
         }
 
-        if ($container_type_part instanceof GetClassT) {
+        if ($container_type_part instanceof TDependentGetClass) {
             $first_type = array_values($container_type_part->as_type->getAtomicTypes())[0];
 
             $container_type_part = new TClassString(
@@ -123,7 +123,7 @@ class ScalarTypeComparator
             );
         }
 
-        if ($input_type_part instanceof GetClassT) {
+        if ($input_type_part instanceof TDependentGetClass) {
             $first_type = array_values($input_type_part->as_type->getAtomicTypes())[0];
 
             if ($first_type instanceof TTemplateParam) {
@@ -143,7 +143,7 @@ class ScalarTypeComparator
             }
         }
 
-        if ($input_type_part instanceof GetTypeT) {
+        if ($input_type_part instanceof TDependentGetType) {
             $input_type_part = new TString();
 
             if ($container_type_part instanceof TLiteralString) {
@@ -151,7 +151,7 @@ class ScalarTypeComparator
             }
         }
 
-        if ($container_type_part instanceof GetTypeT) {
+        if ($container_type_part instanceof TDependentGetType) {
             $container_type_part = new TString();
 
             if ($input_type_part instanceof TLiteralString) {

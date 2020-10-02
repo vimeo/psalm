@@ -4,7 +4,7 @@ namespace Psalm\Type\Atomic;
 /**
  * Represents a string whose value is that of a type found by gettype($var)
  */
-class GetTypeT extends TString
+class TDependentGetType extends TString
 {
     /**
      * Used to hold information as to what this refers to

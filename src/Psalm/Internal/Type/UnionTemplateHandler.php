@@ -829,7 +829,7 @@ class UnionTemplateHandler
                     } else {
                         $valid_input_atomic_types[] = new Atomic\TObject();
                     }
-                } elseif ($input_atomic_type instanceof Atomic\GetClassT) {
+                } elseif ($input_atomic_type instanceof Atomic\TDependentGetClass) {
                     $valid_input_atomic_types[] = new Atomic\TObject();
                 }
             }
