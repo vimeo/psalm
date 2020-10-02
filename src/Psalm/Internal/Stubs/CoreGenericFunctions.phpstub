@@ -49,11 +49,45 @@ function array_intersect_key(array $arr, array $arr2, array ...$arr3)
  * @psalm-template TValue
  *
  * @param array<TKey, TValue> $arr
+ * @param array $arr2
+ * @param array ...$arr3
+ * @param callable(TKey): int $keyCompareFunc
+ *
+ * @return array<TKey, TValue>
+ * @psalm-pure
+ */
+function array_intersect_ukey(array $arr, array $arr2, array ...$arr3, callable $keyCompareFunc): array
+{
+}
+
+/**
+ * @psalm-template TKey as array-key
+ * @psalm-template TValue
+ *
+ * @param array<TKey, TValue> $arr
+ * @param array $arr2
+ * @param array ...$arr3
  *
  * @return array<TKey, TValue>
  * @psalm-pure
  */
 function array_intersect_assoc(array $arr, array $arr2, array ...$arr3)
+{
+}
+
+/**
+ * @psalm-template TKey as array-key
+ * @psalm-template TValue
+ *
+ * @param array<TKey, TValue> $arr
+ * @param array $arr2
+ * @param array ...$arr3
+ * @param callable(TKey): int $keyCompareFunc
+ *
+ * @return array<TKey, TValue>
+ * @psalm-pure
+ */
+function array_intersect_assoc(array $arr, array $arr2, array ...$arr3, callable $keyCompareFunc): array
 {
 }
 
@@ -109,6 +143,22 @@ function array_diff_key(array $arr, array $arr2, array ...$arr3)
  * @param array<TKey, TValue> $arr
  * @param array $arr2
  * @param array ...$arr3
+ * @param callable(TKey, TKey): int
+ *
+ * @return array<TKey, TValue>
+ * @psalm-pure
+ */
+function array_diff_ukey(array $arr, array $arr2, array ...$arr3, callable $key_compare_func): array
+{
+}
+
+/**
+ * @psalm-template TKey as array-key
+ * @psalm-template TValue
+ *
+ * @param array<TKey, TValue> $arr
+ * @param array $arr2
+ * @param array ...$arr3
  *
  * @return array<TKey, TValue>
  * @psalm-pure
@@ -116,6 +166,20 @@ function array_diff_key(array $arr, array $arr2, array ...$arr3)
 function array_diff_assoc(array $arr, array $arr2, array ...$arr3)
 {
 }
+
+/**
+ * @psalm-template TKey as array-key
+ * @psalm-template TValue
+ *
+ * @param array<TKey, TValue> $arr
+ * @param array $arr2
+ * @param array ...$arr3
+ * @param callable(TKey, TKey): int
+ *
+ * @return array<TKey, TValue>
+ * @psalm-pure
+ */
+function array_diff_uassoc(array $arr, array $arr2, array ... $arr3, callable $key_compare_func): array
 
 /**
  * @psalm-template TKey as array-key
@@ -291,6 +355,34 @@ function array_key_exists($key, array $search) : bool
 function array_merge_recursive(array $arr, array ...$arr2)
 {
 }
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-template TKey as array-key
+ * @psalm-template TValue
+ *
+ * @param array<TKey, TValue> $arr
+ * @param array<TKey, TValue> ...$arr2
+ *
+ * @return array<TKey, TValue>
+ */
+function array_merge(array $arr, array ...$arr2)
+{
+}
+
+/**
+ * @template TValue
+ *
+ * @param int $startIndex
+ * @param int $num
+ * @param TValue $value
+ *
+ * @return array<int, TValue>
+ *
+ * @psalm-pure
+ */
+function array_fill(int $startIndex, int $num, $value): array
 
 /**
  * @psalm-pure
@@ -551,6 +643,20 @@ function explode(string $delimiter, string $string, int $limit = -1) : array {}
 function array_sum(array $input) {}
 
 /**
+ * @param array $input
+ *
+ * @return (
+ *     $input is array<int>
+ *     ? int
+ *     : ($input is array<float>
+ *         ? float
+ *         : float|int
+ *     )
+ * )
+ */
+function array_product(array $input) {}
+
+/**
  * @psalm-pure
  *
  * @psalm-taint-escape html
@@ -736,3 +842,45 @@ function str_getcsv(string $input, string $delimiter = ',', string $enclosure = 
  * @return ($min is positive-int ? positive-int : int)
  */
 function random_int(int $min, int $max): int {}
+
+/**
+ * @template TKey as array-key
+ *
+ * @param array<mixed, TKey>
+ * @return array<TKey, positive-int>
+ * @psalm-pure
+ */
+function array_count_values(array $array): array
+
+/**
+ * @template TValue
+ *
+ * @param array<mixed, TValue> $array
+ *
+ * @return ($array is non-empty-array ? TValue : null)
+ */
+function array_pop(array &$array)
+
+/**
+ * @template TKey as array-key
+ *
+ * @param array<TKey, mixed> $array
+ * @param int $num
+ *
+ * @return ($num is 1 ? TKey : list<TKey>|null)
+ */
+function array_rand(array $array, int $num = 1)
+
+/**
+ * @template TValue
+ * @template T
+ *
+ * @param array<mixed, TValue>
+ * @param callable(T, TValue): T
+ * @param T $initial
+ *
+ * @return T
+ *
+ * @psalm-pure
+ */
+function array_reduce(array $array, callable $callback, $initial = null)
