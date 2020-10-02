@@ -140,6 +140,15 @@ class SwitchCaseAnalyzer
                                 ),
                             ]
                         );
+                    } elseif ($type instanceof Type\Atomic\TDependentGetDebugType) {
+                        $type_statements[] = new PhpParser\Node\Expr\FuncCall(
+                            new PhpParser\Node\Name(['get_debug_type']),
+                            [
+                                new PhpParser\Node\Arg(
+                                    new PhpParser\Node\Expr\Variable(substr($type->typeof, 1))
+                                ),
+                            ]
+                        );
                     } else {
                         $type_statements = null;
                         break;

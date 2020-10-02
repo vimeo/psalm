@@ -3617,6 +3617,7 @@ return [
 'get_declared_classes' => ['list<class-string>'],
 'get_declared_interfaces' => ['list<class-string>'],
 'get_declared_traits' => ['list<class-string>|null'],
+'get_debug_type' => ['string', 'data'=>'mixed'],
 'get_defined_constants' => ['array<string,int|string|float|bool|null|array|resource>', 'categorize='=>'bool'],
 'get_defined_functions' => ['array<string,array<string,callable-string>>', 'exclude_disabled='=>'bool'],
 'get_defined_vars' => ['array'],

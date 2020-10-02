@@ -1327,7 +1327,10 @@ class FunctionCallAnalyzer extends CallAnalyzer
     ) : void {
         $first_arg = isset($stmt->args[0]) ? $stmt->args[0] : null;
 
-        if ($function_name->parts === ['get_class'] || $function_name->parts === ['gettype']) {
+        if ($function_name->parts === ['get_class']
+            || $function_name->parts === ['gettype']
+            || $function_name->parts === ['get_debug_type']
+        ) {
             if ($first_arg) {
                 $var = $first_arg->value;
 
@@ -1337,18 +1340,26 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     $var_id = '$' . $var->name;
 
                     if (isset($context->vars_in_scope[$var_id])) {
-                        $atomic_type = $function_name->parts === ['get_class']
-                            ? new Type\Atomic\TDependentGetClass(
+                        if ($function_name->parts === ['get_class']) {
+                            $atomic_type = new Type\Atomic\TDependentGetClass(
                                 $var_id,
                                 $context->vars_in_scope[$var_id]->hasMixed()
                                     ? Type::getObject()
                                     : $context->vars_in_scope[$var_id]
-                            )
-                            : new Type\Atomic\TDependentGetType($var_id);
+                            );
+                        } elseif ($function_name->parts === ['get_class']) {
+                            $atomic_type = new Type\Atomic\TDependentGetType($var_id);
+                        } else {
+                            $atomic_type = new Type\Atomic\TDependentGetDebugType($var_id);
+                        }
 
                         $statements_analyzer->node_data->setType($real_stmt, new Type\Union([$atomic_type]));
                     }
-                } elseif ($var_type = $statements_analyzer->node_data->getType($var)) {
+                } elseif (($var_type = $statements_analyzer->node_data->getType($var))
+                    && ($function_name->parts === ['get_class']
+                        || $function_name->parts === ['get_debug_type']
+                    )
+                ) {
                     $class_string_types = [];
 
                     foreach ($var_type->getAtomicTypes() as $class_type) {
@@ -1374,8 +1385,24 @@ class FunctionCallAnalyzer extends CallAnalyzer
                                     $class_type->defining_class
                                 );
                             }
-                        } else {
+                        } elseif ($function_name->parts === ['get_class']) {
                             $class_string_types[] = new Type\Atomic\TClassString();
+                        } elseif ($function_name->parts === ['get_debug_type']) {
+                            if ($class_type instanceof Type\Atomic\TInt) {
+                                $class_string_types[] = new Type\Atomic\TLiteralString('int');
+                            } elseif ($class_type instanceof Type\Atomic\TString) {
+                                $class_string_types[] = new Type\Atomic\TLiteralString('string');
+                            } elseif ($class_type instanceof Type\Atomic\TFloat) {
+                                $class_string_types[] = new Type\Atomic\TLiteralString('float');
+                            } elseif ($class_type instanceof Type\Atomic\TBool) {
+                                $class_string_types[] = new Type\Atomic\TLiteralString('bool');
+                            } elseif ($class_type instanceof Type\Atomic\TClosedResource) {
+                                $class_string_types[] = new Type\Atomic\TLiteralString('resource (closed)');
+                            } elseif ($class_type instanceof Type\Atomic\TNull) {
+                                $class_string_types[] = new Type\Atomic\TLiteralString('null');
+                            } else {
+                                $class_string_types[] = new Type\Atomic\TString();
+                            }
                         }
                     }
 

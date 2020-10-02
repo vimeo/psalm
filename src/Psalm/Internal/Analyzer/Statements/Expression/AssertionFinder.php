@@ -568,6 +568,7 @@ class AssertionFinder
         $true_position = self::hasTrueVariable($conditional);
         $empty_array_position = self::hasEmptyArrayVariable($conditional);
         $gettype_position = self::hasGetTypeCheck($conditional);
+        $get_debug_type_position = self::hasGetDebugTypeCheck($conditional);
         $min_count = null;
         $count_equality_position = self::hasNonEmptyCountEqualityCheck($conditional, $min_count);
 
@@ -965,6 +966,52 @@ class AssertionFinder
             return $if_types;
         }
 
+        if ($get_debug_type_position) {
+            if ($get_debug_type_position === self::ASSIGNMENT_TO_RIGHT) {
+                $whichclass_expr = $conditional->left;
+                $get_debug_type_expr = $conditional->right;
+            } elseif ($get_debug_type_position === self::ASSIGNMENT_TO_LEFT) {
+                $whichclass_expr = $conditional->right;
+                $get_debug_type_expr = $conditional->left;
+            } else {
+                throw new \UnexpectedValueException('$gettype_position value');
+            }
+
+            /** @var PhpParser\Node\Expr\FuncCall $get_debug_type_expr */
+            $var_name = ExpressionIdentifier::getArrayVarId(
+                $get_debug_type_expr->args[0]->value,
+                $this_class_name,
+                $source
+            );
+
+            if ($whichclass_expr instanceof PhpParser\Node\Scalar\String_) {
+                $var_type = $whichclass_expr->value;
+            } elseif ($whichclass_expr instanceof PhpParser\Node\Expr\ClassConstFetch
+                && $whichclass_expr->class instanceof PhpParser\Node\Name
+            ) {
+                $var_type = ClassLikeAnalyzer::getFQCLNFromNameObject(
+                    $whichclass_expr->class,
+                    $source->getAliases()
+                );
+            } else {
+                throw new \UnexpectedValueException('Shouldn’t get here');
+            }
+
+            if ($var_name && $var_type) {
+                if ($var_type === 'class@anonymous') {
+                    $if_types[$var_name] = [['=object']];
+                } elseif ($var_type === 'resource (closed)') {
+                    $if_types[$var_name] = [['closed-resource']];
+                } elseif (substr($var_type, 0, 10) === 'resource (') {
+                    $if_types[$var_name] = [['=resource']];
+                } else {
+                    $if_types[$var_name] = [[$var_type]];
+                }
+            }
+
+            return $if_types;
+        }
+
         if ($count_equality_position) {
             if ($count_equality_position === self::ASSIGNMENT_TO_RIGHT) {
                 $count_expr = $conditional->left;
@@ -1206,6 +1253,7 @@ class AssertionFinder
         $true_position = self::hasTrueVariable($conditional);
         $empty_array_position = self::hasEmptyArrayVariable($conditional);
         $gettype_position = self::hasGetTypeCheck($conditional);
+        $get_debug_type_position = self::hasGetDebugTypeCheck($conditional);
         $count = null;
         $count_inequality_position = self::hasNotCountEqualityCheck($conditional, $count);
 
@@ -1624,6 +1672,52 @@ class AssertionFinder
                 }
             } else {
                 if ($var_name && $var_type) {
+                    $if_types[$var_name] = [['!' . $var_type]];
+                }
+            }
+
+            return $if_types;
+        }
+
+        if ($get_debug_type_position) {
+            if ($get_debug_type_position === self::ASSIGNMENT_TO_RIGHT) {
+                $whichclass_expr = $conditional->left;
+                $get_debug_type_expr = $conditional->right;
+            } elseif ($get_debug_type_position === self::ASSIGNMENT_TO_LEFT) {
+                $whichclass_expr = $conditional->right;
+                $get_debug_type_expr = $conditional->left;
+            } else {
+                throw new \UnexpectedValueException('$gettype_position value');
+            }
+
+            /** @var PhpParser\Node\Expr\FuncCall $get_debug_type_expr */
+            $var_name = ExpressionIdentifier::getArrayVarId(
+                $get_debug_type_expr->args[0]->value,
+                $this_class_name,
+                $source
+            );
+
+            if ($whichclass_expr instanceof PhpParser\Node\Scalar\String_) {
+                $var_type = $whichclass_expr->value;
+            } elseif ($whichclass_expr instanceof PhpParser\Node\Expr\ClassConstFetch
+                && $whichclass_expr->class instanceof PhpParser\Node\Name
+            ) {
+                $var_type = ClassLikeAnalyzer::getFQCLNFromNameObject(
+                    $whichclass_expr->class,
+                    $source->getAliases()
+                );
+            } else {
+                throw new \UnexpectedValueException('Shouldn’t get here');
+            }
+
+            if ($var_name && $var_type) {
+                if ($var_type === 'class@anonymous') {
+                    $if_types[$var_name] = [['!=object']];
+                } elseif ($var_type === 'resource (closed)') {
+                    $if_types[$var_name] = [['!closed-resource']];
+                } elseif (substr($var_type, 0, 10) === 'resource (') {
+                    $if_types[$var_name] = [['!=resource']];
+                } else {
                     $if_types[$var_name] = [['!' . $var_type]];
                 }
             }
@@ -2613,6 +2707,32 @@ class AssertionFinder
         if ($conditional->left instanceof PhpParser\Node\Expr\FuncCall
             && $conditional->left->name instanceof PhpParser\Node\Name
             && strtolower($conditional->left->name->parts[0]) === 'gettype'
+            && $conditional->left->args
+            && $conditional->right instanceof PhpParser\Node\Scalar\String_
+        ) {
+            return self::ASSIGNMENT_TO_LEFT;
+        }
+
+        return false;
+    }
+
+    /**
+     * @return  false|int
+     */
+    protected static function hasGetDebugTypeCheck(PhpParser\Node\Expr\BinaryOp $conditional)
+    {
+        if ($conditional->right instanceof PhpParser\Node\Expr\FuncCall
+            && $conditional->right->name instanceof PhpParser\Node\Name
+            && strtolower($conditional->right->name->parts[0]) === 'get_debug_type'
+            && $conditional->right->args
+            && $conditional->left instanceof PhpParser\Node\Scalar\String_
+        ) {
+            return self::ASSIGNMENT_TO_RIGHT;
+        }
+
+        if ($conditional->left instanceof PhpParser\Node\Expr\FuncCall
+            && $conditional->left->name instanceof PhpParser\Node\Name
+            && strtolower($conditional->left->name->parts[0]) === 'get_debug_type'
             && $conditional->left->args
             && $conditional->right instanceof PhpParser\Node\Scalar\String_
         ) {
