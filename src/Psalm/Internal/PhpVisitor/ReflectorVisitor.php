@@ -2111,18 +2111,18 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 continue;
             }
 
-            $param_array = $this->getTranslatedFunctionParam($param, $stmt, $fake_method, $fq_classlike_name);
+            $param_storage = $this->getTranslatedFunctionParam($param, $stmt, $fake_method, $fq_classlike_name);
 
-            if ($param_array->name === 'haystack'
+            if ($param_storage->name === 'haystack'
                 && (strpos($this->file_path, 'CoreGenericFunctions.phpstub')
                     || strpos($this->file_path, 'CoreGenericClasses.phpstub'))
             ) {
-                $param_array->expect_variable = true;
+                $param_storage->expect_variable = true;
             }
 
-            if (isset($existing_params['$' . $param_array->name])) {
+            if (isset($existing_params['$' . $param_storage->name])) {
                 $storage->docblock_issues[] = new DuplicateParam(
-                    'Duplicate param $' . $param_array->name . ' in docblock for ' . $cased_function_id,
+                    'Duplicate param $' . $param_storage->name . ' in docblock for ' . $cased_function_id,
                     new CodeLocation($this->file_scanner, $param, null, true)
                 );
 
@@ -2131,11 +2131,11 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 continue;
             }
 
-            $existing_params['$' . $param_array->name] = $i;
-            $storage->param_lookup[$param_array->name] = !!$param->type;
-            $storage->params[] = $param_array;
+            $existing_params['$' . $param_storage->name] = $i;
+            $storage->param_lookup[$param_storage->name] = !!$param->type;
+            $storage->params[] = $param_storage;
 
-            if (!$param_array->is_optional && !$param_array->is_variadic) {
+            if (!$param_storage->is_optional && !$param_storage->is_variadic) {
                 $required_param_count = $i + 1;
 
                 if (!$param->variadic
@@ -2356,42 +2356,60 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $storage->internal = $class_storage->internal;
         }
 
-        if (!$doc_comment) {
-            if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod
-                && $stmt->name->name === '__construct'
-                && $class_storage
-                && $storage instanceof MethodStorage
-                && $storage->params
-                && $this->config->infer_property_types_from_constructor
-            ) {
-                $this->inferPropertyTypeFromConstructor($stmt, $storage, $class_storage);
+        if ($doc_comment) {
+            try {
+                $docblock_info = CommentAnalyzer::extractFunctionDocblockInfo($doc_comment);
+            } catch (IncorrectDocblockException $e) {
+                $storage->docblock_issues[] = new MissingDocblockType(
+                    $e->getMessage() . ' in docblock for ' . $cased_function_id,
+                    new CodeLocation($this->file_scanner, $stmt, null, true)
+                );
+
+                $docblock_info = null;
+            } catch (DocblockParseException $e) {
+                $storage->docblock_issues[] = new InvalidDocblock(
+                    $e->getMessage() . ' in docblock for ' . $cased_function_id,
+                    new CodeLocation($this->file_scanner, $stmt, null, true)
+                );
+
+                $docblock_info = null;
             }
 
-            return $storage;
+            if ($docblock_info) {
+                $this->handleFunctionLikeDocblock(
+                    $stmt,
+                    $storage,
+                    $docblock_info,
+                    $class_storage,
+                    $is_functionlike_override,
+                    $fake_method,
+                    $cased_function_id
+                );
+            }
         }
 
-        try {
-            $docblock_info = CommentAnalyzer::extractFunctionDocblockInfo($doc_comment);
-        } catch (IncorrectDocblockException $e) {
-            $storage->docblock_issues[] = new MissingDocblockType(
-                $e->getMessage() . ' in docblock for ' . $cased_function_id,
-                new CodeLocation($this->file_scanner, $stmt, null, true)
-            );
-
-            $docblock_info = null;
-        } catch (DocblockParseException $e) {
-            $storage->docblock_issues[] = new InvalidDocblock(
-                $e->getMessage() . ' in docblock for ' . $cased_function_id,
-                new CodeLocation($this->file_scanner, $stmt, null, true)
-            );
-
-            $docblock_info = null;
+        if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod
+            && $stmt->name->name === '__construct'
+            && $class_storage
+            && $storage instanceof MethodStorage
+            && $storage->params
+            && $this->config->infer_property_types_from_constructor
+        ) {
+            $this->inferPropertyTypeFromConstructor($stmt, $storage, $class_storage);
         }
 
-        if (!$docblock_info) {
-            return $storage;
-        }
+        return $storage;
+    }
 
+    private function handleFunctionLikeDocblock(
+        PhpParser\Node\FunctionLike $stmt,
+        FunctionLikeStorage $storage,
+        \Psalm\Internal\Scanner\FunctionDocblockComment $docblock_info,
+        ?ClassLikeStorage $class_storage,
+        bool $is_functionlike_override,
+        bool $fake_method,
+        string $cased_function_id
+    ) : void {
         if ($docblock_info->mutation_free) {
             $storage->mutation_free = true;
 
@@ -2492,7 +2510,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         }
 
         if (!$this->config->use_docblock_types) {
-            return $storage;
+            return;
         }
 
         if ($storage instanceof MethodStorage && $docblock_info->inheritdoc) {
@@ -3036,18 +3054,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
             $storage->return_type_description = $docblock_info->return_type_description;
         }
-
-        if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod
-            && $stmt->name->name === '__construct'
-            && $class_storage
-            && $storage instanceof MethodStorage
-            && $storage->params
-            && $this->config->infer_property_types_from_constructor
-        ) {
-            $this->inferPropertyTypeFromConstructor($stmt, $storage, $class_storage);
-        }
-
-        return $storage;
     }
 
     private function inferPropertyTypeFromConstructor(
