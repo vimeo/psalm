@@ -2074,7 +2074,7 @@ class PropertyTypeTest extends TestCase
                         }
                     }'
             ],
-            'promotedPublicProperty' => [
+            'promotedPublicPropertyWithDefault' => [
                 '<?php
                     class A {
                         public function __construct(public int $foo = 5) {}
@@ -2082,23 +2082,23 @@ class PropertyTypeTest extends TestCase
 
                     echo (new A)->foo;'
             ],
+            'promotedPublicPropertyWitoutDefault' => [
+                '<?php
+                    class A {
+                        public function __construct(public int $foo) {}
+                    }
+
+                    echo (new A(5))->foo;'
+            ],
             'promotedProtectedProperty' => [
                 '<?php
                     class A {
-                        public function __construct(protected int $foo = 5) {}
+                        public function __construct(protected int $foo) {}
                     }
 
                     class AChild extends A {
                         public function bar() : int {
                             return $this->foo;
-                        }
-                    }'
-            ],
-            'setPublicProperty' => [
-                '<?php
-                    class A {
-                        public function __construct(public int $foo) {
-                            $this->foo = 5;
                         }
                     }'
             ],
@@ -3250,13 +3250,6 @@ class PropertyTypeTest extends TestCase
 
                     echo (new A)->foo;',
                 'error_message' => 'InaccessibleProperty',
-            ],
-            'promotedPublicPropertyWithoutSet' => [
-                '<?php
-                    class A {
-                        public function __construct(public int $foo) {}
-                    }',
-                'error_message' => 'PropertyNotSetInConstructor'
             ],
         ];
     }

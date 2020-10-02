@@ -2413,6 +2413,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
                 $class_storage->declaring_property_ids[$param_storage->name] = $fq_classlike_name;
                 $class_storage->appearing_property_ids[$param_storage->name] = $property_id;
+                $class_storage->initialized_properties[$param_storage->name] = true;
             }
         }
 
