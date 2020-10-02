@@ -57,7 +57,7 @@ function array_intersect_key(array $arr, array $arr2, array ...$arr3)
  *
  * @psalm-pure
  */
-function array_intersect_ukey(array $arr, array $arr2, array ...$arr3, callable $keyCompareFunc): array {}
+function array_intersect_ukey(array $arr, array $arr2, array ...$arr3, callable $keyCompareFunc): array
 {
 }
 
