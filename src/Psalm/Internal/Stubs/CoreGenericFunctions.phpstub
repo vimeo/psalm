@@ -56,7 +56,7 @@ function array_intersect_key(array $arr, array $arr2, array ...$arr3)
  * @return array<TKey, TValue>
  * @psalm-pure
  */
-function array_intersect_ukey(array $arr, array $arr2, array ...$arr3, callable $keyCompareFunc): array
+function array_intersect_ukey(array $arr, array $arr2, array ...$arr3, callable $keyCompareFunc): array {}
 {
 }
 
@@ -87,7 +87,7 @@ function array_intersect_assoc(array $arr, array $arr2, array ...$arr3)
  * @return array<TKey, TValue>
  * @psalm-pure
  */
-function array_intersect_assoc(array $arr, array $arr2, array ...$arr3, callable $keyCompareFunc): array
+function array_intersect_uassoc(array $arr, array $arr2, array ...$arr3, callable $keyCompareFunc): array {}
 {
 }
 
@@ -148,7 +148,7 @@ function array_diff_key(array $arr, array $arr2, array ...$arr3)
  * @return array<TKey, TValue>
  * @psalm-pure
  */
-function array_diff_ukey(array $arr, array $arr2, array ...$arr3, callable $key_compare_func): array
+function array_diff_ukey(array $arr, array $arr2, array ...$arr3, callable $key_compare_func): array {}
 {
 }
 
@@ -179,7 +179,7 @@ function array_diff_assoc(array $arr, array $arr2, array ...$arr3)
  * @return array<TKey, TValue>
  * @psalm-pure
  */
-function array_diff_uassoc(array $arr, array $arr2, array ... $arr3, callable $key_compare_func): array
+function array_diff_uassoc(array $arr, array $arr2, array ... $arr3, callable $key_compare_func): array {}
 
 /**
  * @psalm-template TKey as array-key
@@ -382,7 +382,7 @@ function array_merge(array $arr, array ...$arr2)
  *
  * @psalm-pure
  */
-function array_fill(int $startIndex, int $num, $value): array
+function array_fill(int $startIndex, int $num, $value): array {}
 
 /**
  * @psalm-pure
@@ -850,7 +850,7 @@ function random_int(int $min, int $max): int {}
  * @return array<TKey, positive-int>
  * @psalm-pure
  */
-function array_count_values(array $array): array
+function array_count_values(array $array): array {}
 
 /**
  * @template TValue
@@ -859,7 +859,7 @@ function array_count_values(array $array): array
  *
  * @return ($array is non-empty-array ? TValue : null)
  */
-function array_pop(array &$array)
+function array_pop(array &$array) {}
 
 /**
  * @template TKey as array-key
@@ -869,7 +869,7 @@ function array_pop(array &$array)
  *
  * @return ($num is 1 ? TKey : list<TKey>|null)
  */
-function array_rand(array $array, int $num = 1)
+function array_rand(array $array, int $num = 1) {}
 
 /**
  * @template TValue
@@ -883,4 +883,4 @@ function array_rand(array $array, int $num = 1)
  *
  * @psalm-pure
  */
-function array_reduce(array $array, callable $callback, $initial = null)
+function array_reduce(array $array, callable $callback, $initial = null) {}
