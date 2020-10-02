@@ -358,7 +358,7 @@ Whether or not to show issues in files that are used by your project files, but 
 ```
 The directory used to store Psalm's cache data - if you specify one (and it does not already exist), its parent directory must already exist, otherwise Psalm will throw an error.
 
-Defaults to `$HOME/.cache/psalm` or `sys_get_temp_dir() . '/psalm'` when not defined.
+Defaults to `$XDG_CACHE_HOME/psalm`. If `$XDG_CACHE_HOME` is either not set or empty, a default equal to `$HOME/.cache/psalm` is used or `sys_get_temp_dir() . '/psalm'` when not defined.
 
 #### allowFileIncludes
 ```xml
