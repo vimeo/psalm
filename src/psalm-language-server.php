@@ -3,6 +3,7 @@
 namespace Psalm;
 
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Composer;
 use Psalm\Internal\IncludeCollector;
 use function gc_disable;
 use function error_reporting;
@@ -31,6 +32,7 @@ use function chdir;
 use function strtolower;
 
 require_once('command_functions.php');
+require_once __DIR__ . '/Psalm/Internal/Composer.php';
 
 gc_disable();
 
@@ -260,7 +262,7 @@ $providers = new \Psalm\Internal\Provider\Providers(
     new \Psalm\Internal\Provider\FileStorageCacheProvider($config),
     new \Psalm\Internal\Provider\ClassLikeStorageCacheProvider($config),
     new \Psalm\Internal\Provider\FileReferenceCacheProvider($config),
-    new \Psalm\Internal\Provider\ProjectCacheProvider($current_dir . DIRECTORY_SEPARATOR . 'composer.lock')
+    new \Psalm\Internal\Provider\ProjectCacheProvider(Composer::getLockFilePath($current_dir))
 );
 
 $project_analyzer = new ProjectAnalyzer(

@@ -13,6 +13,7 @@ use Psalm\Exception\ConfigException;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Composer;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Issue\ArgumentIssue;
@@ -1993,7 +1994,7 @@ class Config
      */
     private function getPHPVersionFromComposerJson(): ?string
     {
-        $composer_json_path = $this->base_dir . DIRECTORY_SEPARATOR . 'composer.json';
+        $composer_json_path = Composer::getJsonFilePath($this->base_dir);
 
         if (file_exists($composer_json_path)) {
             if (!$composer_json = json_decode(file_get_contents($composer_json_path), true)) {

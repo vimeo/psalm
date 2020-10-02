@@ -4,12 +4,17 @@ namespace Psalm;
 
 use Composer\Autoload\ClassLoader;
 use Phar;
+use Psalm\Internal\Composer;
+use function basename;
 use function dirname;
+use function getenv;
+use function pathinfo;
 use function strpos;
 use function realpath;
 use const DIRECTORY_SEPARATOR;
 use function file_exists;
 use function in_array;
+use const PATHINFO_EXTENSION;
 use const PHP_EOL;
 use function fwrite;
 use const STDERR;
@@ -83,7 +88,8 @@ function requireAutoloaders(string $current_dir, bool $has_explicit_root, string
             $has_autoloader = true;
         }
 
-        if (!$has_autoloader && file_exists($autoload_root . '/composer.json')) {
+        $composer_json_file = Composer::getJsonFilePath($autoload_root);
+        if (!$has_autoloader && file_exists($composer_json_file)) {
             $error_message = 'Could not find any composer autoloaders in ' . $autoload_root;
 
             if (!$has_explicit_root) {
@@ -140,7 +146,7 @@ function requireAutoloaders(string $current_dir, bool $has_explicit_root, string
  */
 function getVendorDir(string $current_dir): string
 {
-    $composer_json_path = $current_dir . DIRECTORY_SEPARATOR . 'composer.json';
+    $composer_json_path = Composer::getJsonFilePath($current_dir);
 
     if (!file_exists($composer_json_path)) {
         return 'vendor';
