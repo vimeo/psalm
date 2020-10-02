@@ -1,6 +1,6 @@
 # Installation
 
-Psalm Requires PHP >= 7.1 and [Composer](https://getcomposer.org/).
+The latest version of Psalm Requires PHP >= 7.1 and [Composer](https://getcomposer.org/).
 
 ```bash
 composer require --dev vimeo/psalm
