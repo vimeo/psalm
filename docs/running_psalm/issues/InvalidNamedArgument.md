@@ -5,7 +5,7 @@ Emitted when a supplied function/method argument name is incompatible with the f
 ```php
 <?php
 
-function takesArguments(string $name, int $age) {}
+function takesArguments(string $name, int $age) : void {}
 
 takesArguments(name: "hello", ag: 5);
 ```
