@@ -2,7 +2,9 @@
 
 namespace Psalm;
 
-require_once __DIR__ . '/command_functions.php';
+require_once('command_functions.php');
+require_once __DIR__ . '/Psalm/Internal/Composer.php';
+
 use PackageVersions\Versions;
 use Psalm\Internal\PluginManager\Command\DisableCommand;
 use Psalm\Internal\PluginManager\Command\EnableCommand;

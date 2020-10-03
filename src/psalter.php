@@ -3,8 +3,10 @@
 namespace Psalm;
 
 require_once('command_functions.php');
+require_once __DIR__ . '/Psalm/Internal/Composer.php';
 
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Composer;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Progress\DebugProgress;
 use Psalm\Progress\DefaultProgress;
@@ -250,7 +252,7 @@ if (isset($options['no-cache'])) {
         new \Psalm\Internal\Provider\FileStorageCacheProvider($config),
         new \Psalm\Internal\Provider\ClassLikeStorageCacheProvider($config),
         null,
-        new \Psalm\Internal\Provider\ProjectCacheProvider($current_dir . DIRECTORY_SEPARATOR . 'composer.lock')
+        new \Psalm\Internal\Provider\ProjectCacheProvider(Composer::getLockFilePath($current_dir))
     );
 }
 

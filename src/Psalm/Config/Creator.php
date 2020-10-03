@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Config;
 
+use Psalm\Internal\Composer;
 use function array_merge;
 use function array_shift;
 use function array_unique;
@@ -164,7 +165,7 @@ class Creator
         } elseif (is_dir($current_dir . DIRECTORY_SEPARATOR . 'src')) {
             $replacements[] = '<directory name="src" />';
         } else {
-            $composer_json_location = $current_dir . DIRECTORY_SEPARATOR . 'composer.json';
+            $composer_json_location = Composer::getJsonFilePath($current_dir);
 
             if (!file_exists($composer_json_location)) {
                 throw new ConfigCreationException(
