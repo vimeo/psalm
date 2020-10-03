@@ -8,7 +8,7 @@ Psalm plugins are distributed as composer packages.
 
 ### Discovering plugins
 
-Plugins can be found on Packagist website: https://packagist.org/?type=psalm-plugin  or from CLI using `composer search -t psalm-plugin '.'`
+You can find a list of plugins on [Psalm’s own website](https://psalm.dev/plugins), and [also on Packagist](https://packagist.org/?type=psalm-plugin). Alternatively you can get a list via the CLI by typing `composer search -t psalm-plugin '.'`
 
 ### Installing plugins
 
