@@ -1347,7 +1347,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                                     ? Type::getObject()
                                     : $context->vars_in_scope[$var_id]
                             );
-                        } elseif ($function_name->parts === ['get_class']) {
+                        } elseif ($function_name->parts === ['gettype']) {
                             $atomic_type = new Type\Atomic\TDependentGetType($var_id);
                         } else {
                             $atomic_type = new Type\Atomic\TDependentGetDebugType($var_id);
