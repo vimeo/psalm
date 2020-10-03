@@ -6,7 +6,7 @@ The latest version of Psalm requires PHP >= 7.1 and [Composer](https://getcompos
 composer require --dev vimeo/psalm
 ```
 
-Add a `psalm.xml` config:
+Generate a config file:
 
 ```bash
 ./vendor/bin/psalm --init
