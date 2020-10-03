@@ -352,6 +352,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                         $stmt->args,
                         null,
                         null,
+                        true,
                         $context
                     );
 
@@ -363,6 +364,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                     $stmt->args,
                     null,
                     null,
+                    true,
                     $context
                 );
 
@@ -391,6 +393,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                         $stmt->args,
                         null,
                         null,
+                        true,
                         $context
                     );
 
@@ -411,6 +414,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                         $stmt->args,
                         null,
                         null,
+                        true,
                         $context
                     );
 
@@ -685,6 +689,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                     $stmt->args,
                     null,
                     null,
+                    true,
                     $context
                 );
             }

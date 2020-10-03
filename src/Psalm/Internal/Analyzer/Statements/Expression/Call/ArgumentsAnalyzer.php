@@ -55,6 +55,7 @@ class ArgumentsAnalyzer
         array $args,
         ?array $function_params,
         ?string $method_id,
+        bool $allow_named_args,
         Context $context,
         ?TemplateResult $template_result = null
     ): ?bool {
@@ -109,7 +110,7 @@ class ArgumentsAnalyzer
 
             $param = null;
 
-            if ($arg->name) {
+            if ($arg->name && $allow_named_args) {
                 foreach ($function_params as $candidate_param) {
                     if ($candidate_param->name === $arg->name->name) {
                         $param = $candidate_param;
@@ -599,6 +600,7 @@ class ArgumentsAnalyzer
                         $code_location,
                         $function_params[$i],
                         $i,
+                        $function_storage ? $function_storage->allow_named_arg_calls : true,
                         new PhpParser\Node\Arg(
                             StubsGenerator::getExpressionFromType($function_params[$i]->default_type)
                         ),
@@ -677,6 +679,7 @@ class ArgumentsAnalyzer
                 $code_location,
                 $function_param,
                 $argument_offset,
+                $function_storage ? $function_storage->allow_named_arg_calls : true,
                 $arg,
                 $arg_value_type,
                 $context,

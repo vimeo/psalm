@@ -205,6 +205,7 @@ class StaticCallAnalyzer extends CallAnalyzer
                 $stmt->args,
                 null,
                 null,
+                true,
                 $context
             ) === false) {
                 return false;
@@ -660,6 +661,7 @@ class StaticCallAnalyzer extends CallAnalyzer
                                 $args,
                                 null,
                                 null,
+                                true,
                                 $context
                             ) === false) {
                                 return false;
@@ -715,6 +717,7 @@ class StaticCallAnalyzer extends CallAnalyzer
                             $stmt->args,
                             null,
                             null,
+                            true,
                             $context
                         ) === false) {
                             return false;
@@ -738,6 +741,7 @@ class StaticCallAnalyzer extends CallAnalyzer
                         $stmt->args,
                         null,
                         null,
+                        true,
                         $context
                     ) === false) {
                         return false;
@@ -1350,6 +1354,7 @@ class StaticCallAnalyzer extends CallAnalyzer
                     $stmt->args,
                     null,
                     null,
+                    true,
                     $context
                 ) === false) {
                     return false;
@@ -1492,6 +1497,7 @@ class StaticCallAnalyzer extends CallAnalyzer
             $args,
             $pseudo_method_storage->params,
             (string) $method_id,
+            true,
             $context
         ) === false) {
             return false;
@@ -1524,6 +1530,7 @@ class StaticCallAnalyzer extends CallAnalyzer
                     $args,
                     $method_storage->params,
                     (string) $method_id,
+                    true,
                     $context
                 );
 

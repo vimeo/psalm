@@ -106,6 +106,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 $stmt->args,
                 null,
                 null,
+                true,
                 $context
             ) === false) {
                 return false;

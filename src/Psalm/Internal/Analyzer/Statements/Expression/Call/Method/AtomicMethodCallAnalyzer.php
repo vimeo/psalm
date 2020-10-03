@@ -131,6 +131,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                 $stmt->args,
                 null,
                 null,
+                true,
                 $context
             );
 
@@ -226,6 +227,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                 $stmt->args,
                 null,
                 null,
+                true,
                 $context
             );
 
@@ -1045,6 +1047,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                     $stmt->args,
                     null,
                     null,
+                    true,
                     $context
                 ) === false) {
                     return;

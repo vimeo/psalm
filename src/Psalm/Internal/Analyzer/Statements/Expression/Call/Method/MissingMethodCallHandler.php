@@ -81,6 +81,7 @@ class MissingMethodCallHandler
                 $stmt->args,
                 $pseudo_method_storage->params,
                 (string) $method_id,
+                true,
                 $context
             );
 
@@ -133,6 +134,7 @@ class MissingMethodCallHandler
                 $stmt->args,
                 null,
                 null,
+                true,
                 $context
             );
 
@@ -201,6 +203,7 @@ class MissingMethodCallHandler
                 $stmt->args,
                 $pseudo_method_storage->params,
                 (string) $method_id,
+                true,
                 $context
             ) === false) {
                 return;
@@ -261,6 +264,7 @@ class MissingMethodCallHandler
             $stmt->args,
             null,
             null,
+            true,
             $context
         ) === false) {
             return;

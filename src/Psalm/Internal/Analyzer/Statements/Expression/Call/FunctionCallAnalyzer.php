@@ -117,6 +117,8 @@ class FunctionCallAnalyzer extends CallAnalyzer
 
         $byref_uses = [];
 
+        $allow_named_args = true;
+
         if ($function_name instanceof PhpParser\Node\Expr) {
             [$expr_function_exists, $expr_function_name, $expr_function_params, $byref_uses]
                 = self::getAnalyzeNamedExpression(
@@ -214,6 +216,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                             $stmt->args,
                             null,
                             null,
+                            true,
                             $context
                         ) === false) {
                             // fall through
@@ -246,6 +249,10 @@ class FunctionCallAnalyzer extends CallAnalyzer
                             );
 
                             $function_params = $function_storage->params;
+
+                            if (!$function_storage->allow_named_arg_calls) {
+                                $allow_named_args = false;
+                            }
 
                             if (!$is_predefined) {
                                 $defined_constants = $function_storage->defined_constants;
@@ -296,6 +303,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
             $stmt->args,
             $function_params,
             $function_id,
+            $allow_named_args,
             $context
         ) === false) {
             // fall through

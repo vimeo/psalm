@@ -243,24 +243,19 @@ class CallAnalyzer
     ) : bool {
         $codebase = $statements_analyzer->getCodebase();
 
-        $method_params = $method_id
-            ? $codebase->methods->getMethodParams($method_id, $statements_analyzer, $args, $context)
-            : null;
-
-        if (Call\ArgumentsAnalyzer::analyze(
-            $statements_analyzer,
-            $args,
-            $method_params,
-            (string) $method_id,
-            $context,
-            $class_template_result
-        ) === false) {
-            return false;
+        if (!$method_id) {
+            return Call\ArgumentsAnalyzer::analyze(
+                $statements_analyzer,
+                $args,
+                null,
+                null,
+                true,
+                $context,
+                $class_template_result
+            ) !== false;
         }
 
-        if (!$method_id || $method_params === null) {
-            return true;
-        }
+        $method_params = $codebase->methods->getMethodParams($method_id, $statements_analyzer, $args, $context);
 
         $fq_class_name = $method_id->fq_class_name;
         $method_name = $method_id->method_name;
@@ -305,6 +300,18 @@ class CallAnalyzer
             if (!$context->isSuppressingExceptions($statements_analyzer)) {
                 $context->mergeFunctionExceptions($method_storage, $code_location);
             }
+        }
+
+        if (Call\ArgumentsAnalyzer::analyze(
+            $statements_analyzer,
+            $args,
+            $method_params,
+            (string) $method_id,
+            $method_storage ? $method_storage->allow_named_arg_calls : true,
+            $context,
+            $class_template_result
+        ) === false) {
+            return false;
         }
 
         if (Call\ArgumentsAnalyzer::checkArgumentsMatch(

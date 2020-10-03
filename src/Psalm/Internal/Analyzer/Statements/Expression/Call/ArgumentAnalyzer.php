@@ -60,6 +60,7 @@ class ArgumentAnalyzer
         CodeLocation $function_call_location,
         ?FunctionLikeParameter $function_param,
         int $argument_offset,
+        bool $allow_named_args,
         PhpParser\Node\Arg $arg,
         ?Type\Union $arg_value_type,
         Context $context,
@@ -171,6 +172,7 @@ class ArgumentAnalyzer
             $static_fq_class_name,
             $function_call_location,
             $function_param,
+            $allow_named_args,
             $arg_value_type,
             $argument_offset,
             $arg,
@@ -200,6 +202,7 @@ class ArgumentAnalyzer
         ?string $static_fq_class_name,
         CodeLocation $function_call_location,
         FunctionLikeParameter $function_param,
+        bool $allow_named_args,
         Type\Union $arg_type,
         int $argument_offset,
         PhpParser\Node\Arg $arg,
@@ -411,6 +414,7 @@ class ArgumentAnalyzer
 
                 if ($unpacked_atomic_array instanceof Type\Atomic\TKeyedArray) {
                     if ($codebase->php_major_version >= 8
+                        && $allow_named_args
                         && isset($unpacked_atomic_array->properties[$function_param->name])
                     ) {
                         $arg_type = clone $unpacked_atomic_array->properties[$function_param->name];
