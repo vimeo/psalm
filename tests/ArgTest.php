@@ -121,6 +121,44 @@ class ArgTest extends TestCase
                         return intval(...$args);
                     }',
             ],
+            'useNamedArguments' => [
+                '<?php
+                    class CustomerData {
+                        public function __construct(
+                            public string $name,
+                            public string $email,
+                            public int $age,
+                        ) {}
+                    }
+
+                    /**
+                     * @param array{age: int, name: string, email: string} $input
+                     */
+                    function foo(array $input) : CustomerData {
+                        return new CustomerData(
+                            age: $input["age"],
+                            name: $input["name"],
+                            email: $input["email"],
+                        );
+                    }'
+            ],
+            'useNamedArgumentsSimple' => [
+                '<?php
+                    function takesArguments(string $name, int $age) : void {}
+
+                    takesArguments(name: "hello", age: 5);
+                    takesArguments(age: 5, name: "hello");'
+            ],
+            'useNamedArgumentsSpread' => [
+                '<?php
+                    function takesArguments(string $name, int $age) : void {}
+
+                    $args = ["name" => "hello", "age" => 5];
+                    takesArguments(...$args);',
+                [],
+                [],
+                '8.0'
+            ],
         ];
     }
 
@@ -186,6 +224,28 @@ class ArgTest extends TestCase
                         new Exception($mixed_or_null);
                     }',
                 'error_message' => 'PossiblyNullArgument'
+            ],
+            'useInvalidNamedArgument' => [
+                '<?php
+                    class CustomerData {
+                        public function __construct(
+                            public string $name,
+                            public string $email,
+                            public int $age,
+                        ) {}
+                    }
+
+                    /**
+                     * @param array{age: int, name: string, email: string} $input
+                     */
+                    function foo(array $input) : CustomerData {
+                        return new CustomerData(
+                            aage: $input["age"],
+                            name: $input["name"],
+                            email: $input["email"],
+                        );
+                    }',
+                'error_message' => 'InvalidNamedArgument'
             ],
         ];
     }

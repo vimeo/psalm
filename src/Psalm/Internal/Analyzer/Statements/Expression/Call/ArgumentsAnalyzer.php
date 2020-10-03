@@ -18,6 +18,7 @@ use Psalm\Internal\Type\UnionTemplateHandler;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\InvalidPassByReference;
+use Psalm\Issue\InvalidNamedArgument;
 use Psalm\Issue\PossiblyUndefinedVariable;
 use Psalm\Issue\TooFewArguments;
 use Psalm\Issue\TooManyArguments;
@@ -106,9 +107,20 @@ class ArgumentsAnalyzer
                 continue;
             }
 
-            $param = $argument_offset < count($function_params)
-                ? $function_params[$argument_offset]
-                : ($last_param && $last_param->is_variadic ? $last_param : null);
+            $param = null;
+
+            if ($arg->name) {
+                foreach ($function_params as $candidate_param) {
+                    if ($candidate_param->name === $arg->name->name) {
+                        $param = $candidate_param;
+                        break;
+                    }
+                }
+            } elseif ($argument_offset < count($function_params)) {
+                $param = $function_params[$argument_offset];
+            } elseif ($last_param && $last_param->is_variadic) {
+                $param = $last_param;
+            }
 
             $by_ref = $param && $param->by_ref;
 
@@ -518,9 +530,20 @@ class ArgumentsAnalyzer
                 }
 
                 foreach ($args as $argument_offset => $arg) {
-                    $function_param = count($function_params) > $argument_offset
-                        ? $function_params[$argument_offset]
-                        : ($last_param && $last_param->is_variadic ? $last_param : null);
+                    $function_param = null;
+
+                    if ($arg->name) {
+                        foreach ($function_params as $candidate_param) {
+                            if ($candidate_param->name === $arg->name->name) {
+                                $function_param = $candidate_param;
+                                break;
+                            }
+                        }
+                    } elseif ($argument_offset < count($function_params)) {
+                        $function_param = $function_params[$argument_offset];
+                    } elseif ($last_param && $last_param->is_variadic) {
+                        $function_param = $last_param;
+                    }
 
                     if (!$function_param
                         || !$function_param->type
@@ -595,9 +618,34 @@ class ArgumentsAnalyzer
         }
 
         foreach ($args as $argument_offset => $arg) {
-            $function_param = $function_param_count > $argument_offset
-                ? $function_params[$argument_offset]
-                : ($last_param && $last_param->is_variadic ? $last_param : null);
+            $function_param = null;
+
+            if ($arg->name) {
+                foreach ($function_params as $candidate_param) {
+                    if ($candidate_param->name === $arg->name->name) {
+                        $function_param = $candidate_param;
+                        break;
+                    }
+                }
+
+                if (!$function_param) {
+                    if (IssueBuffer::accepts(
+                        new InvalidNamedArgument(
+                            'Parameter $' . $arg->name->name . ' does not exist on function '
+                                . ($cased_method_id ?: $method_id),
+                            new CodeLocation($statements_analyzer, $arg->name),
+                            (string) $method_id
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                }
+            } elseif ($function_param_count > $argument_offset) {
+                $function_param = $function_params[$argument_offset];
+            } elseif ($last_param && $last_param->is_variadic) {
+                $function_param = $last_param;
+            }
 
             if ($function_param
                 && $function_param->by_ref
