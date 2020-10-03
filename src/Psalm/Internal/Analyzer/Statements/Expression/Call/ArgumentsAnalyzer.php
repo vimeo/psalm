@@ -533,7 +533,7 @@ class ArgumentsAnalyzer
                 foreach ($args as $argument_offset => $arg) {
                     $function_param = null;
 
-                    if ($arg->name) {
+                    if ($arg->name && $function_storage->allow_named_arg_calls) {
                         foreach ($function_params as $candidate_param) {
                             if ($candidate_param->name === $arg->name->name) {
                                 $function_param = $candidate_param;
@@ -622,7 +622,7 @@ class ArgumentsAnalyzer
         foreach ($args as $argument_offset => $arg) {
             $function_param = null;
 
-            if ($arg->name) {
+            if ($arg->name && $function_storage && $function_storage->allow_named_arg_calls) {
                 foreach ($function_params as $candidate_param) {
                     if ($candidate_param->name === $arg->name->name) {
                         $function_param = $candidate_param;
