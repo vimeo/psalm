@@ -9,10 +9,12 @@ gc_disable();
 error_reporting(-1);
 
 require_once('command_functions.php');
+require_once __DIR__ . '/Psalm/Internal/Composer.php';
 require_once __DIR__ . '/Psalm/Internal/exception_handler.php';
 
 use Psalm\Exception\ConfigException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Composer;
 use Psalm\Internal\Provider;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Progress\DebugProgress;
@@ -576,7 +578,7 @@ if (isset($options['no-cache']) || isset($options['i'])) {
         $file_storage_cache_provider,
         $classlike_storage_cache_provider,
         new Provider\FileReferenceCacheProvider($config),
-        new Provider\ProjectCacheProvider($current_dir . DIRECTORY_SEPARATOR . 'composer.lock')
+        new Provider\ProjectCacheProvider(Composer::getLockFilePath($current_dir))
     );
 }
 

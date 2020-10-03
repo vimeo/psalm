@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Internal\PluginManager;
 
+use Psalm\Internal\Composer;
 use function array_filter;
 use const DIRECTORY_SEPARATOR;
 use function json_encode;
@@ -42,13 +43,13 @@ class PluginListFactory
         if ($this->psalm_root === $this->project_root) {
             // managing plugins for psalm itself
             $composer_lock_filenames = [
-                rtrim($this->psalm_root, DIRECTORY_SEPARATOR) . '/composer.lock',
+                Composer::getLockFilePath(rtrim($this->psalm_root, DIRECTORY_SEPARATOR)),
             ];
         } else {
             $composer_lock_filenames = [
-                rtrim($this->project_root, DIRECTORY_SEPARATOR) . '/composer.lock',
-                rtrim($this->psalm_root, DIRECTORY_SEPARATOR) . '/../../../composer.lock',
-                rtrim($this->psalm_root, DIRECTORY_SEPARATOR) . '/composer.lock',
+                Composer::getLockFilePath(rtrim($this->project_root, DIRECTORY_SEPARATOR)),
+                Composer::getLockFilePath(rtrim($this->psalm_root, DIRECTORY_SEPARATOR) . '/../../..'),
+                Composer::getLockFilePath(rtrim($this->psalm_root, DIRECTORY_SEPARATOR)),
             ];
         }
 
