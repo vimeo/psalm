@@ -16,9 +16,13 @@ You can find a list of plugins on [Psalm’s own website](https://psalm.dev/plug
 
 ### Managing known plugins
 
-Once installed, use `psalm-plugin` tool to enable, disable and show available and enabled plugins.
+Once installed, use the `psalm-plugin` tool to enable, disable and show available and enabled plugins.
 
-To enable the plugin, run `psalm-plugin enable plugin-vendor/plugin-package`. To disable it, run `psalm-plugin disable plugin-vendor/plugin-package`. `psalm-plugin show` (as well as bare `psalm-plugin`) will show you the list of enabled plugins, and the list of plugins known to `psalm-plugin` (installed into your `vendor` folder)
+To enable a plugin, run `vendor/bin/psalm-plugin enable plugin-vendor/plugin-package`.
+
+To disable a plugin, run `vendor/bin/psalm-plugin disable plugin-vendor/plugin-package`.
+
+`vendor/bin/psalm-plugin show` will show you a list of all local plugins (enabled and disabled).
 
 ## Using your own plugins
 
