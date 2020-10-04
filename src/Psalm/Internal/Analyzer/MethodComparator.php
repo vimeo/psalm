@@ -545,8 +545,9 @@ class MethodComparator
             $implementer_classlike_storage->parent_class
         );
 
-        $is_contained_by = $codebase->php_major_version >= 7
-            && $codebase->php_minor_version >= 4
+        $is_contained_by = (($codebase->php_major_version === 7
+                    && $codebase->php_minor_version === 4)
+                || $codebase->php_major_version >= 8)
             && $guide_param_signature_type
             ? UnionTypeComparator::isContainedBy(
                 $codebase,
@@ -844,8 +845,9 @@ class MethodComparator
                 $implementer_classlike_storage->parent_class
             ) : null;
 
-        $is_contained_by = $codebase->php_major_version >= 7
-            && $codebase->php_minor_version >= 4
+        $is_contained_by = (($codebase->php_major_version === 7
+                    && $codebase->php_minor_version === 4)
+                || $codebase->php_major_version >= 8)
             && $implementer_signature_return_type
             ? UnionTypeComparator::isContainedBy(
                 $codebase,

@@ -812,6 +812,22 @@ class MethodSignatureTest extends TestCase
                         public function __construct() {}
                     }'
             ],
+            'allowStaticInheritance' => [
+                '<?php
+                    class A {
+                        public function method(): static {
+                            return $this;
+                        }
+                    }
+                    class B extends A {
+                        public function method(): static {
+                            return $this;
+                        }
+                    }',
+                [],
+                [],
+                '8.0'
+            ],
         ];
     }
 
