@@ -209,6 +209,9 @@ class DocumentationTest extends TestCase
                 case 'RedundantIdentityWithTrue':
                     continue 2;
 
+                case 'TraitMethodSignatureMismatch':
+                    continue 2;
+
                 case 'InvalidFalsableReturnType':
                     $ignored_issues = ['FalsableReturnStatement'];
                     break;
