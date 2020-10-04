@@ -510,12 +510,11 @@ class AtomicTypeComparator
                     }
 
                     if ($codebase->methods->methodExists(
-                            new \Psalm\Internal\MethodIdentifier(
-                                $input_type_part->value,
-                                '__tostring'
-                            )
+                        new \Psalm\Internal\MethodIdentifier(
+                            $input_type_part->value,
+                            '__tostring'
                         )
-                    ) {
+                    )) {
                         if ($atomic_comparison_result) {
                             $atomic_comparison_result->to_string_cast = true;
                         }
