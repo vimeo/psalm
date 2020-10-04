@@ -930,6 +930,33 @@ class IfAnalyzer
                     );
                 }
 
+                foreach ($changed_var_ids as $var_id => $_) {
+                    $first_appearance = $statements_analyzer->getFirstAppearance($var_id);
+
+                    if ($first_appearance
+                        && isset($outer_context->vars_in_scope[$var_id])
+                        && isset($outer_context_vars_reconciled[$var_id])
+                        && $outer_context->vars_in_scope[$var_id]->hasMixed()
+                        && !$outer_context_vars_reconciled[$var_id]->hasMixed()
+                    ) {
+                        if (!$outer_context->collect_initializations
+                            && !$outer_context->collect_mutations
+                            && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
+                            && (!(($parent_source = $statements_analyzer->getSource())
+                                        instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer)
+                                    || !$parent_source->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer)
+                        ) {
+                            $codebase->analyzer->decrementMixedCount($statements_analyzer->getFilePath());
+                        }
+
+                        IssueBuffer::remove(
+                            $statements_analyzer->getFilePath(),
+                            'MixedAssignment',
+                            $first_appearance->raw_file_start
+                        );
+                    }
+                }
+
                 $outer_context->vars_in_scope = $outer_context_vars_reconciled;
                 $mic_drop = true;
             }
