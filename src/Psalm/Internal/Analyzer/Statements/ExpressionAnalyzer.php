@@ -375,6 +375,12 @@ class ExpressionAnalyzer
             return ThrowAnalyzer::analyze($statements_analyzer, $stmt, $context);
         }
 
+        if ($stmt instanceof PhpParser\Node\Expr\NullsafePropertyFetch
+            || $stmt instanceof PhpParser\Node\Expr\NullsafeMethodCall
+        ) {
+            return Expression\NullsafeAnalyzer::analyze($statements_analyzer, $stmt, $context);
+        }
+
         if ($stmt instanceof PhpParser\Node\Expr\Error) {
             // do nothing
             return true;

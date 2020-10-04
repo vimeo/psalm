@@ -2822,6 +2822,50 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                         }
                     }'
             ],
+            'nullsafePropertyAccess' => [
+                '<?php
+                    class IntLinkedList {
+                        public function __construct(
+                            public int $value,
+                            public ?self $next
+                        ) {}
+                    }
+
+                    function skipOn(IntLinkedList $l) : ?int {
+                        return $l->next?->value;
+                    }
+
+                    function skipTwo(IntLinkedList $l) : ?int {
+                        return $l->next?->next?->value;
+                    }',
+                [],
+                [],
+                '8.0'
+            ],
+            'nullsafeMethodCall' => [
+                '<?php
+                    class IntLinkedList {
+                        public function __construct(
+                            public int $value,
+                            private ?self $next
+                        ) {}
+
+                        public function getNext() : ?self {
+                            return $this->next;
+                        }
+                    }
+
+                    function skipOne(IntLinkedList $l) : ?int {
+                        return $l->getNext()?->value;
+                    }
+
+                    function skipTwo(IntLinkedList $l) : ?int {
+                        return $l->getNext()?->getNext()?->value;
+                    }',
+                [],
+                [],
+                '8.0'
+            ]
         ];
     }
 
