@@ -2004,9 +2004,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $class_name_parts = explode('\\', $fq_classlike_name);
             $class_name = array_pop($class_name_parts);
 
-            if ($method_name_lc === strtolower($class_name) &&
-                !isset($class_storage->methods['__construct']) &&
-                strpos($fq_classlike_name, '\\') === false
+            if ($method_name_lc === strtolower($class_name)
+                && !isset($class_storage->methods['__construct'])
+                && strpos($fq_classlike_name, '\\') === false
+                && $this->codebase->php_major_version < 8
             ) {
                 $this->codebase->methods->setDeclaringMethodId(
                     $fq_classlike_name,
