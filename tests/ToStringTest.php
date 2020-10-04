@@ -145,8 +145,29 @@ class ToStringTest extends TestCase
                     if (is_callable([$object, \'__toString\'])) {
                         $a = (string) $object;
                         echo $a;
+                    }'
+            ],
+            'stringableInterface' => [
+                '<?php
+                    interface Foo extends Stringable {}
+
+                    function takesString(string $s) : void {}
+
+                    function takesFoo(Foo $foo) : void {
+                        /** @psalm-suppress ImplicitToStringCast */
+                        takesString($foo);
                     }
-                    '
+
+                    class FooImplementer implements Foo {
+                        public function __toString() : string {
+                            return "hello";
+                        }
+                    }
+
+                    takesFoo(new FooImplementer());',
+                [],
+                [],
+                '8.0'
             ],
         ];
     }

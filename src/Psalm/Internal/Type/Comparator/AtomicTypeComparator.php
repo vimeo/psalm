@@ -495,19 +495,33 @@ class AtomicTypeComparator
         if ($container_type_part instanceof TString || $container_type_part instanceof TScalar) {
             if ($input_type_part instanceof TNamedObject) {
                 // check whether the object has a __toString method
-                if ($codebase->classOrInterfaceExists($input_type_part->value)
-                    && $codebase->methods->methodExists(
-                        new \Psalm\Internal\MethodIdentifier(
-                            $input_type_part->value,
-                            '__tostring'
-                        )
-                    )
-                ) {
-                    if ($atomic_comparison_result) {
-                        $atomic_comparison_result->to_string_cast = true;
+                if ($codebase->classOrInterfaceExists($input_type_part->value)) {
+                    if ($codebase->php_major_version >= 8
+                        && ($input_type_part->value === 'Stringable'
+                            || ($codebase->classlikes->classExists($input_type_part->value)
+                                && $codebase->classlikes->classImplements($input_type_part->value, 'Stringable'))
+                            || $codebase->classlikes->interfaceExtends($input_type_part->value, 'Stringable'))
+                    ) {
+                        if ($atomic_comparison_result) {
+                            $atomic_comparison_result->to_string_cast = true;
+                        }
+
+                        return true;
                     }
 
-                    return true;
+                    if ($codebase->methods->methodExists(
+                            new \Psalm\Internal\MethodIdentifier(
+                                $input_type_part->value,
+                                '__tostring'
+                            )
+                        )
+                    ) {
+                        if ($atomic_comparison_result) {
+                            $atomic_comparison_result->to_string_cast = true;
+                        }
+
+                        return true;
+                    }
                 }
 
                 // PHP 5.6 doesn't support this natively, so this introduces a bug *just* when checking PHP 5.6 code
