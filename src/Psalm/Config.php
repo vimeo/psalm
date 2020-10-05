@@ -308,7 +308,7 @@ class Config
     /**
      * @var bool
      */
-    public $skip_checks_on_unresolvable_includes = true;
+    public $skip_checks_on_unresolvable_includes = false;
 
     /**
      * @var bool
