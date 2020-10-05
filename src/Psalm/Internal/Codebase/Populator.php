@@ -575,13 +575,15 @@ class Populator
             $storage->has_visitor_issues = true;
         }
 
-        $storage->public_class_constants = array_merge(
-            $parent_storage->public_class_constants,
-            $storage->public_class_constants
-        );
-        $storage->protected_class_constants = array_merge(
-            $parent_storage->protected_class_constants,
-            $storage->protected_class_constants
+        $storage->constants = array_merge(
+            \array_filter(
+                $parent_storage->constants,
+                function ($constant) {
+                    return $constant->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC
+                        || $constant->visibility === ClassLikeAnalyzer::VISIBILITY_PROTECTED;
+                }
+            ),
+            $storage->constants
         );
 
         if ($parent_storage->preserve_constructor_signature) {
@@ -599,14 +601,6 @@ class Populator
             if (!$storage->templatedMixins) {
                 $storage->templatedMixins = $parent_storage->templatedMixins;
             }
-        }
-
-        foreach ($parent_storage->public_class_constant_nodes as $name => $_) {
-            $storage->public_class_constants[$name] = Type::getMixed();
-        }
-
-        foreach ($parent_storage->protected_class_constant_nodes as $name => $_) {
-            $storage->protected_class_constants[$name] = Type::getMixed();
         }
 
         $storage->pseudo_property_get_types += $parent_storage->pseudo_property_get_types;
@@ -642,19 +636,20 @@ class Populator
             $this->populateClassLikeStorage($parent_interface_storage, $dependent_classlikes);
 
             // copy over any constants
-            $storage->public_class_constants = array_merge(
-                $parent_interface_storage->public_class_constants,
-                $storage->public_class_constants
+            $storage->constants = array_merge(
+                \array_filter(
+                    $parent_interface_storage->constants,
+                    function ($constant) {
+                        return $constant->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC;
+                    }
+                ),
+                $storage->constants
             );
 
             $storage->invalid_dependencies = array_merge(
                 $storage->invalid_dependencies,
                 $parent_interface_storage->invalid_dependencies
             );
-
-            foreach ($parent_interface_storage->public_class_constant_nodes as $name => $node) {
-                $storage->public_class_constant_nodes[$name] = $node;
-            }
 
             if ($parent_interface_storage->template_types) {
                 if (isset($storage->template_type_extends[$parent_interface_storage->name])) {
@@ -738,14 +733,15 @@ class Populator
             $this->populateClassLikeStorage($implemented_interface_storage, $dependent_classlikes);
 
             // copy over any constants
-            $storage->public_class_constants = array_merge(
-                $implemented_interface_storage->public_class_constants,
-                $storage->public_class_constants
+            $storage->constants = array_merge(
+                \array_filter(
+                    $implemented_interface_storage->constants,
+                    function ($constant) {
+                        return $constant->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC;
+                    }
+                ),
+                $storage->constants
             );
-
-            foreach ($implemented_interface_storage->public_class_constant_nodes as $name => $_) {
-                $storage->public_class_constants[$name] = Type::getMixed();
-            }
 
             $storage->invalid_dependencies = array_merge(
                 $storage->invalid_dependencies,

@@ -1023,9 +1023,7 @@ class Codebase
                     return null;
                 }
 
-                $class_const_storage = $this->classlike_storage_provider->get($fq_classlike_name);
-
-                return $class_const_storage->class_constant_locations[$const_name];
+                return $class_constants[$const_name]->location;
             }
 
             if (strpos($symbol, '()')) {
@@ -1350,7 +1348,7 @@ class Codebase
                         }
                     }
 
-                    foreach ($class_storage->class_constant_locations as $const_name => $_) {
+                    foreach ($class_storage->constants as $const_name => $_) {
                         $static_completion_items[] = new \LanguageServerProtocol\CompletionItem(
                             $const_name,
                             \LanguageServerProtocol\CompletionItemKind::VARIABLE,

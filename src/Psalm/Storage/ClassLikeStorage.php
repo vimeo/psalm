@@ -10,60 +10,9 @@ class ClassLikeStorage
     use CustomMetadataTrait;
 
     /**
-     * A lookup table for public class constants
-     *
-     * @var array<string, Type\Union>
+     * @var array<string, ClassConstantStorage>
      */
-    public $public_class_constants = [];
-
-    /**
-     * A lookup table for protected class constants
-     *
-     * @var array<string, Type\Union>
-     */
-    public $protected_class_constants = [];
-
-    /**
-     * A lookup table for private class constants
-     *
-     * @var array<string, Type\Union>
-     */
-    public $private_class_constants = [];
-
-    /**
-     * A lookup table for class constant name locations
-     *
-     * @var array<string, CodeLocation>
-     */
-    public $class_constant_locations = [];
-
-    /**
-     * A lookup table for class constant statement locations
-     *
-     * @var array<string, CodeLocation>
-     */
-    public $class_constant_stmt_locations = [];
-
-    /**
-     * A lookup table for nodes of unresolvable public class constants
-     *
-     * @var array<string, \Psalm\Internal\Scanner\UnresolvedConstantComponent>
-     */
-    public $public_class_constant_nodes = [];
-
-    /**
-     * A lookup table for nodes of unresolvable protected class constants
-     *
-     * @var array<string, \Psalm\Internal\Scanner\UnresolvedConstantComponent>
-     */
-    public $protected_class_constant_nodes = [];
-
-    /**
-     * A lookup table for nodes of unresolvable private class constants
-     *
-     * @var array<string, \Psalm\Internal\Scanner\UnresolvedConstantComponent>
-     */
-    public $private_class_constant_nodes = [];
+    public $constants = [];
 
     /**
      * Aliases to help Psalm understand constant refs
@@ -112,11 +61,6 @@ class ClassLikeStorage
      * @var ?string
      */
     public $mixin_declaring_fqcln = null;
-
-    /**
-     * @var array<string, bool>
-     */
-    public $deprecated_constants = [];
 
     /**
      * @var bool

@@ -4,6 +4,7 @@ namespace Psalm\Internal\Stubs\Generator;
 
 use PhpParser;
 use Psalm\Storage\ClassLikeStorage;
+use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\Type;
 
@@ -100,57 +101,32 @@ class ClassLikeStubGenerator
     {
         $constant_nodes = [];
 
-        foreach ($storage->public_class_constants as $constant_name => $_) {
-            $resolved_type = $codebase->classlikes->getConstantForClass(
-                $storage->name,
-                $constant_name,
-                \ReflectionProperty::IS_PUBLIC
-            ) ?: Type::getMixed();
+        foreach ($storage->constants as $constant_name => $constant_storage) {
+            if ($constant_storage->unresolved_node) {
+                $type = new Type\Union([
+                    \Psalm\Internal\Codebase\ConstantTypeResolver::resolve(
+                        $codebase->classlikes,
+                        $constant_storage->unresolved_node
+                    )
+                ]);
+            } elseif ($constant_storage->type) {
+                $type = $constant_storage->type;
+            } else {
+                throw new \UnexpectedValueException('bad');
+            }
 
             $constant_nodes[] = new PhpParser\Node\Stmt\ClassConst(
                 [
                     new PhpParser\Node\Const_(
                         $constant_name,
-                        StubsGenerator::getExpressionFromType($resolved_type)
+                        StubsGenerator::getExpressionFromType($type)
                     )
                 ],
-                PhpParser\Node\Stmt\Class_::MODIFIER_PUBLIC
-            );
-        }
-
-        foreach ($storage->protected_class_constants as $constant_name => $_) {
-            $resolved_type = $codebase->classlikes->getConstantForClass(
-                $storage->name,
-                $constant_name,
-                \ReflectionProperty::IS_PROTECTED
-            ) ?: Type::getMixed();
-
-            $constant_nodes[] = new PhpParser\Node\Stmt\ClassConst(
-                [
-                    new PhpParser\Node\Const_(
-                        $constant_name,
-                        StubsGenerator::getExpressionFromType($resolved_type)
-                    )
-                ],
-                PhpParser\Node\Stmt\Class_::MODIFIER_PROTECTED
-            );
-        }
-
-        foreach ($storage->private_class_constants as $constant_name => $_) {
-            $resolved_type = $codebase->classlikes->getConstantForClass(
-                $storage->name,
-                $constant_name,
-                \ReflectionProperty::IS_PRIVATE
-            ) ?: Type::getMixed();
-
-            $constant_nodes[] = new PhpParser\Node\Stmt\ClassConst(
-                [
-                    new PhpParser\Node\Const_(
-                        $constant_name,
-                        StubsGenerator::getExpressionFromType($resolved_type)
-                    )
-                ],
-                PhpParser\Node\Stmt\Class_::MODIFIER_PRIVATE
+                $constant_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC
+                    ? PhpParser\Node\Stmt\Class_::MODIFIER_PUBLIC
+                    : ($constant_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PROTECTED
+                        ? PhpParser\Node\Stmt\Class_::MODIFIER_PROTECTED
+                        : PhpParser\Node\Stmt\Class_::MODIFIER_PRIVATE)
             );
         }
 
@@ -168,10 +144,10 @@ class ClassLikeStubGenerator
 
         foreach ($storage->properties as $property_name => $property_storage) {
             switch ($property_storage->visibility) {
-                case \ReflectionProperty::IS_PRIVATE:
+                case ClassLikeAnalyzer::VISIBILITY_PRIVATE:
                     $flag = PhpParser\Node\Stmt\Class_::MODIFIER_PRIVATE;
                     break;
-                case \ReflectionProperty::IS_PROTECTED:
+                case ClassLikeAnalyzer::VISIBILITY_PROTECTED:
                     $flag = PhpParser\Node\Stmt\Class_::MODIFIER_PROTECTED;
                     break;
                 default:

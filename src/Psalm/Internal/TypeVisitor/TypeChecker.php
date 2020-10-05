@@ -320,7 +320,7 @@ class TypeChecker extends NodeVisitor
 
             $is_defined = \is_array($expanded) && \count($expanded) > 0;
         } else {
-            $class_constant_type = $this->source->getCodebase()->classlikes->getConstantForClass(
+            $class_constant_type = $this->source->getCodebase()->classlikes->getClassConstantType(
                 $fq_classlike_name,
                 $atomic->const_name,
                 \ReflectionProperty::IS_PRIVATE,

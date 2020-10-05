@@ -3617,9 +3617,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
         $property_is_initialized = false;
 
-        $existing_constants = $storage->protected_class_constants
-            + $storage->private_class_constants
-            + $storage->public_class_constants;
+        $existing_constants = $storage->constants;
 
         if ($comment && $comment->getText() && ($config->use_docblock_types || $config->use_docblock_property_types)) {
             if (preg_match('/[ \t\*]+@psalm-suppress[ \t]+PropertyNotSetInConstructor/', (string)$comment)) {
@@ -3791,9 +3789,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         ClassLikeStorage $storage,
         string $fq_classlike_name
     ): void {
-        $existing_constants = $storage->protected_class_constants
-            + $storage->private_class_constants
-            + $storage->public_class_constants;
+        $existing_constants = $storage->constants;
 
         $comment = $stmt->getDocComment();
         $deprecated = false;
@@ -3818,25 +3814,29 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 $fq_classlike_name
             );
 
-            if ($const_type) {
-                $existing_constants[$const->name->name] = $const_type;
-
-                if ($stmt->isProtected()) {
-                    $storage->protected_class_constants[$const->name->name] = $const_type;
-                } elseif ($stmt->isPrivate()) {
-                    $storage->private_class_constants[$const->name->name] = $const_type;
-                } else {
-                    $storage->public_class_constants[$const->name->name] = $const_type;
-                }
-
-                $storage->class_constant_locations[$const->name->name] = new CodeLocation(
+            $storage->constants[$const->name->name] = $constant_storage = new \Psalm\Storage\ClassConstantStorage(
+                $const_type,
+                $stmt->isProtected()
+                    ? ClassLikeAnalyzer::VISIBILITY_PROTECTED
+                    : ($stmt->isPrivate()
+                        ? ClassLikeAnalyzer::VISIBILITY_PRIVATE
+                        : ClassLikeAnalyzer::VISIBILITY_PUBLIC),
+                new CodeLocation(
                     $this->file_scanner,
                     $const->name
-                );
+                )
+            );
 
-                $storage->class_constant_stmt_locations[$const->name->name] = new CodeLocation(
-                    $this->file_scanner,
-                    $const
+            $constant_storage->stmt_location = new CodeLocation(
+                $this->file_scanner,
+                $const
+            );
+
+            if ($const_type) {
+                $existing_constants[$const->name->name] = new \Psalm\Storage\ClassConstantStorage(
+                    $const_type,
+                    ClassLikeAnalyzer::VISIBILITY_PUBLIC,
+                    null
                 );
             } else {
                 $unresolved_const_expr = self::getUnresolvedClassConstExpr(
@@ -3845,29 +3845,15 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     $fq_classlike_name
                 );
 
-                if ($stmt->isProtected()) {
-                    if ($unresolved_const_expr) {
-                        $storage->protected_class_constant_nodes[$const->name->name] = $unresolved_const_expr;
-                    } else {
-                        $storage->protected_class_constants[$const->name->name] = Type::getMixed();
-                    }
-                } elseif ($stmt->isPrivate()) {
-                    if ($unresolved_const_expr) {
-                        $storage->private_class_constant_nodes[$const->name->name] = $unresolved_const_expr;
-                    } else {
-                        $storage->private_class_constants[$const->name->name] = Type::getMixed();
-                    }
+                if ($unresolved_const_expr) {
+                    $constant_storage->unresolved_node = $unresolved_const_expr;
                 } else {
-                    if ($unresolved_const_expr) {
-                        $storage->public_class_constant_nodes[$const->name->name] = $unresolved_const_expr;
-                    } else {
-                        $storage->public_class_constants[$const->name->name] = Type::getMixed();
-                    }
+                    $constant_storage->type = Type::getMixed();
                 }
             }
 
             if ($deprecated) {
-                $storage->deprecated_constants[$const->name->name] = true;
+                $constant_storage->deprecated = true;
             }
         }
     }

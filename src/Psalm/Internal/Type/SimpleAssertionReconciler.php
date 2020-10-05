@@ -1385,7 +1385,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
         if (strpos($assertion, '::')) {
             [$fq_classlike_name, $const_name] = explode('::', $assertion);
 
-            $class_constant_type = $codebase->classlikes->getConstantForClass(
+            $class_constant_type = $codebase->classlikes->getClassConstantType(
                 $fq_classlike_name,
                 $const_name,
                 \ReflectionProperty::IS_PRIVATE

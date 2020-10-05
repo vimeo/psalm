@@ -220,14 +220,7 @@ class TypeExpander
                 if (strpos($return_type->const_name, '*') !== false) {
                     $class_storage = $codebase->classlike_storage_provider->get($return_type->fq_classlike_name);
 
-                    $all_class_constants = $class_storage->public_class_constants
-                        + $class_storage->protected_class_constants
-                        + $class_storage->private_class_constants
-                        + $class_storage->public_class_constant_nodes
-                        + $class_storage->protected_class_constant_nodes
-                        + $class_storage->private_class_constant_nodes;
-
-                    $matching_constants = \array_keys($all_class_constants);
+                    $matching_constants = \array_keys($class_storage->constants);
 
                     $const_name_part = \substr($return_type->const_name, 0, -1);
 
@@ -248,7 +241,7 @@ class TypeExpander
 
                 foreach ($matching_constants as $matching_constant) {
                     try {
-                        $class_constant = $codebase->classlikes->getConstantForClass(
+                        $class_constant = $codebase->classlikes->getClassConstantType(
                             $return_type->fq_classlike_name,
                             $matching_constant,
                             \ReflectionProperty::IS_PRIVATE
@@ -335,7 +328,7 @@ class TypeExpander
 
             if ($evaluate_class_constants && $codebase->classOrInterfaceExists($return_type->fq_classlike_name)) {
                 try {
-                    $class_constant_type = $codebase->classlikes->getConstantForClass(
+                    $class_constant_type = $codebase->classlikes->getClassConstantType(
                         $return_type->fq_classlike_name,
                         $return_type->const_name,
                         \ReflectionProperty::IS_PRIVATE

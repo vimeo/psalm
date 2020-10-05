@@ -83,8 +83,8 @@ class Reflection
 
             $storage->class_implements = $parent_storage->class_implements;
 
-            $storage->public_class_constants = $parent_storage->public_class_constants;
-            $storage->protected_class_constants = $parent_storage->protected_class_constants;
+            $storage->constants = $parent_storage->constants;
+
             $storage->parent_classes = array_merge(
                 [$parent_class_name_lc => $parent_class_name],
                 $parent_storage->parent_classes
@@ -153,7 +153,11 @@ class Reflection
         $class_constants = $reflected_class->getConstants();
 
         foreach ($class_constants as $name => $value) {
-            $storage->public_class_constants[$name] = ClassLikeAnalyzer::getTypeFromValue($value);
+            $storage->constants[$name] = new \Psalm\Storage\ClassConstantStorage(
+                ClassLikeAnalyzer::getTypeFromValue($value),
+                ClassLikeAnalyzer::VISIBILITY_PUBLIC,
+                null
+            );
         }
 
         if ($reflected_class->isInterface()) {

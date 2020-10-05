@@ -509,7 +509,7 @@ class Reconciler
                     return null;
                 }
 
-                $class_constant = $codebase->classlikes->getConstantForClass(
+                $class_constant = $codebase->classlikes->getClassConstantType(
                     $fq_class_name,
                     $const_name,
                     \ReflectionProperty::IS_PRIVATE,

@@ -6,6 +6,7 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\NonDivArithmeticOpAnalyzer;
 use Psalm\StatementsSource;
+use Psalm\Storage\ClassConstantStorage;
 use Psalm\Type;
 use function strtolower;
 use function count;
@@ -15,9 +16,8 @@ use function reset;
 class SimpleTypeInferer
 {
     /**
-     * @param   ?array<string, Type\Union> $existing_class_constants
+     * @param   ?array<string, ClassConstantStorage> $existing_class_constants
      * @param   string $fq_classlike_name
-     *
      */
     public static function infer(
         \Psalm\Codebase $codebase,
@@ -211,9 +211,11 @@ class SimpleTypeInferer
                 && $stmt->class->parts !== ['static']
                 && $stmt->class->parts !== ['parent']
             ) {
-                if (isset($existing_class_constants[$stmt->name->name])) {
+                if (isset($existing_class_constants[$stmt->name->name])
+                    && $existing_class_constants[$stmt->name->name]->type
+                ) {
                     if ($stmt->class->parts === ['self']) {
-                        return clone $existing_class_constants[$stmt->name->name];
+                        return clone $existing_class_constants[$stmt->name->name]->type;
                     }
                 }
 
@@ -228,8 +230,9 @@ class SimpleTypeInferer
 
                 if (strtolower($const_fq_class_name) === strtolower($fq_classlike_name)
                     && isset($existing_class_constants[$stmt->name->name])
+                    && $existing_class_constants[$stmt->name->name]->type
                 ) {
-                    return clone $existing_class_constants[$stmt->name->name];
+                    return clone $existing_class_constants[$stmt->name->name]->type;
                 }
 
                 if (strtolower($stmt->name->name) === 'class') {
@@ -240,7 +243,7 @@ class SimpleTypeInferer
                     && $file_source instanceof StatementsAnalyzer
                 ) {
                     try {
-                        $foreign_class_constant = $codebase->classlikes->getConstantForClass(
+                        $foreign_class_constant = $codebase->classlikes->getClassConstantType(
                             $const_fq_class_name,
                             $stmt->name->name,
                             \ReflectionProperty::IS_PRIVATE,
