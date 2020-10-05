@@ -394,10 +394,9 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 $context->vars_possibly_in_scope[$var_id] = true;
             }
 
-            if ($config->use_assert_for_type &&
-                $function_name instanceof PhpParser\Node\Name &&
-                $function_name->parts === ['assert'] &&
-                isset($stmt->args[0])
+            if ($function_name instanceof PhpParser\Node\Name
+                && $function_name->parts === ['assert']
+                && isset($stmt->args[0])
             ) {
                 self::processAssertFunctionEffects(
                     $statements_analyzer,

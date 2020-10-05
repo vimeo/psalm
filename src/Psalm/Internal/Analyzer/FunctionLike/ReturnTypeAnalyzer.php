@@ -222,10 +222,6 @@ class ReturnTypeAnalyzer
             $inferred_return_type = $inferred_yield_type;
         }
 
-        if (!$return_type && !$codebase->config->add_void_docblocks && $inferred_return_type->isVoid()) {
-            return null;
-        }
-
         $unsafe_return_type = false;
 
         // prevent any return types that do not return a value from being used in PHP typehints

@@ -57,21 +57,18 @@
             </xs:annotation>
         </xs:attribute>
         <xs:attribute name="memoizeMethodCallResults" type="xs:boolean" default="false" />
-        <xs:attribute name="parseSql" type="xs:boolean" default="false" />
         <xs:attribute name="rememberPropertyAssignmentsAfterCall" type="xs:boolean" default="true" />
-        <xs:attribute name="requireVoidReturnType" type="xs:boolean" default="true" />
-        <xs:attribute name="resolveFromConfigFile" type="xs:boolean" default="false" />
+        <xs:attribute name="resolveFromConfigFile" type="xs:boolean" default="true" />
         <xs:attribute name="strictBinaryOperands" type="xs:boolean" default="false" />
         <xs:attribute name="throwExceptionOnError" type="xs:boolean" default="false" />
         <xs:attribute name="totallyTyped" type="xs:boolean" default="false" />
         <xs:attribute name="errorLevel" type="xs:integer" default="1" />
         <xs:attribute name="reportMixedIssues" type="xs:boolean" default="true" />
-        <xs:attribute name="useAssertForType" type="xs:boolean" default="true" />
         <xs:attribute name="useDocblockTypes" type="xs:boolean" default="true" />
         <xs:attribute name="useDocblockPropertyTypes" type="xs:boolean" default="false" />
         <xs:attribute name="usePhpDocMethodsWithoutMagicCall" type="xs:boolean" default="false" />
         <xs:attribute name="usePhpDocPropertiesWithoutMagicCall" type="xs:boolean" default="false" />
-        <xs:attribute name="skipChecksOnUnresolvableIncludes" type="xs:boolean" default="true" />
+        <xs:attribute name="skipChecksOnUnresolvableIncludes" type="xs:boolean" default="false" />
         <xs:attribute name="sealAllMethods" type="xs:boolean" default="false" />
         <xs:attribute name="runTaintAnalysis" type="xs:boolean" default="false" />
         <xs:attribute name="usePhpStormMetaPath" type="xs:boolean" default="true" />

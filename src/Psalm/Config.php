@@ -267,16 +267,6 @@ class Config
     /** @var bool */
     public $strict_binary_operands = false;
 
-    /** @var bool */
-    public $add_void_docblocks = true;
-
-    /**
-     * If true, assert() calls can be used to check types of variables
-     *
-     * @var bool
-     */
-    public $use_assert_for_type = true;
-
     /**
      * @var bool
      */
@@ -419,12 +409,9 @@ class Config
     public $use_phpstorm_meta_path = true;
 
     /**
-     * Whether to resolve file and directory paths from the location of the config file,
-     * instead of the current working directory.
-     *
      * @var bool
      */
-    public $resolve_from_config_file = false;
+    public $resolve_from_config_file = true;
 
     /**
      * @var string[]
@@ -587,11 +574,6 @@ class Config
      * @var array<string, string>
      */
     public $globals = [];
-
-    /**
-     * @var bool
-     */
-    public $parse_sql = false;
 
     /**
      * @var int
@@ -807,8 +789,6 @@ class Config
             'resolveFromConfigFile' => 'resolve_from_config_file',
             'allowFileIncludes' => 'allow_includes',
             'strictBinaryOperands' => 'strict_binary_operands',
-            'requireVoidReturnType' => 'add_void_docblocks',
-            'useAssertForType' => 'use_assert_for_type',
             'rememberPropertyAssignmentsAfterCall' => 'remember_property_assignments_after_call',
             'allowPhpStormGenerics' => 'allow_phpstorm_generics',
             'allowStringToStandInForClass' => 'allow_string_standin_for_class',
@@ -937,11 +917,6 @@ class Config
         if (isset($config_xml['maxStringLength'])) {
             $attribute_text = intval($config_xml['maxStringLength']);
             $config->max_string_length = $attribute_text;
-        }
-
-        if (isset($config_xml['parseSql'])) {
-            $attribute_text = (string) $config_xml['parseSql'];
-            $config->parse_sql = $attribute_text === 'true' || $attribute_text === '1';
         }
 
         if (isset($config_xml['inferPropertyTypesFromConstructor'])) {
