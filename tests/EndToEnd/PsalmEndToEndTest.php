@@ -170,7 +170,7 @@ class PsalmEndToEndTest extends TestCase
         $this->runPsalmInit(1);
         $psalmXmlContent = file_get_contents(self::$tmpDir . '/psalm.xml');
         $count = 0;
-        $psalmXmlContent = preg_replace('/resolveFromConfigFile="true"/', '', $psalmXmlContent, -1, $count);
+        $psalmXmlContent = preg_replace('/resolveFromConfigFile="true"/', 'resolveFromConfigFile="false"', $psalmXmlContent, -1, $count);
         $this->assertEquals(1, $count);
 
         file_put_contents(self::$tmpDir . '/src/psalm.xml', $psalmXmlContent);

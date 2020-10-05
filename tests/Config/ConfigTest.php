@@ -595,60 +595,6 @@ class ConfigTest extends \Psalm\Tests\TestCase
         );
     }
 
-    public function testRequireVoidReturnTypeExists(): void
-    {
-        $this->expectExceptionMessage('MissingReturnType');
-        $this->expectException(\Psalm\Exception\CodeException::class);
-        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
-            TestConfig::loadFromXML(
-                dirname(__DIR__, 2),
-                '<?xml version="1.0"?>
-                <psalm
-                    requireVoidReturnType="true">
-                    <projectFiles>
-                        <directory name="src" />
-                    </projectFiles>
-                </psalm>'
-            )
-        );
-
-        $file_path = getcwd() . '/src/somefile.php';
-
-        $this->addFile(
-            $file_path,
-            '<?php
-                function foo() {}'
-        );
-
-        $this->analyzeFile($file_path, new Context());
-    }
-
-    public function testDoNotRequireVoidReturnTypeExists(): void
-    {
-        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
-            TestConfig::loadFromXML(
-                dirname(__DIR__, 2),
-                '<?xml version="1.0"?>
-                <psalm
-                    requireVoidReturnType="false">
-                    <projectFiles>
-                        <directory name="src" />
-                    </projectFiles>
-                </psalm>'
-            )
-        );
-
-        $file_path = getcwd() . '/src/somefile.php';
-
-        $this->addFile(
-            $file_path,
-            '<?php
-                function foo() {}'
-        );
-
-        $this->analyzeFile($file_path, new Context());
-    }
-
     public function testThing(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
