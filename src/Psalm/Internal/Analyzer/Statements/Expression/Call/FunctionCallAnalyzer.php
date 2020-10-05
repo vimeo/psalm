@@ -1002,8 +1002,8 @@ class FunctionCallAnalyzer extends CallAnalyzer
                                     $context,
                                     $statements_analyzer->getSource(),
                                     $codebase,
-                                    $file_manipulations,
-                                    $return_type
+                                    $return_type,
+                                    $file_manipulations
                                 );
                             }
 
@@ -1013,10 +1013,6 @@ class FunctionCallAnalyzer extends CallAnalyzer
                                     $file_manipulations
                                 );
                             }
-                        }
-
-                        if ($return_type === null) {
-                            throw new \UnexpectedValueException('$return_type shouldn’t be null here');
                         }
 
                         $stmt_type = $return_type;
