@@ -575,7 +575,7 @@ class ArrayFunctionArgumentsAnalyzer
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
-        if (!$closure_type instanceof Type\Atomic\TFn) {
+        if (!$closure_type instanceof Type\Atomic\TClosure) {
             if ($method_id === 'array_map') {
                 return;
             }
@@ -640,7 +640,7 @@ class ArrayFunctionArgumentsAnalyzer
                             continue;
                         }
 
-                        $closure_types[] = new Type\Atomic\TFn(
+                        $closure_types[] = new Type\Atomic\TClosure(
                             'Closure',
                             $method_storage->params,
                             $method_storage->return_type ?: Type::getMixed()
@@ -693,7 +693,7 @@ class ArrayFunctionArgumentsAnalyzer
                             $closure_types[] = $callmap_callables[0];
                         }
                     } else {
-                        $closure_types[] = new Type\Atomic\TFn(
+                        $closure_types[] = new Type\Atomic\TClosure(
                             'Closure',
                             $function_storage->params,
                             $function_storage->return_type ?: Type::getMixed()
@@ -724,7 +724,7 @@ class ArrayFunctionArgumentsAnalyzer
     }
 
     /**
-     * @param  Type\Atomic\TFn|Type\Atomic\TCallable $closure_type
+     * @param  Type\Atomic\TClosure|Type\Atomic\TCallable $closure_type
      * @param  (TArray|null)[] $array_arg_types
      *
      * @return void

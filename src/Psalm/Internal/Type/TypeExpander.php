@@ -425,7 +425,7 @@ class TypeExpander
         }
 
         if ($return_type instanceof Type\Atomic\TCallable
-            || $return_type instanceof Type\Atomic\TFn
+            || $return_type instanceof Type\Atomic\TClosure
         ) {
             if ($return_type->params) {
                 foreach ($return_type->params as $param) {

@@ -23,7 +23,7 @@ use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClassStringMap;
-use Psalm\Type\Atomic\TFn;
+use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TList;
@@ -626,7 +626,7 @@ class TypeParser
                 $type_aliases
             );
 
-            if (!$callable_type instanceof TCallable && !$callable_type instanceof TFn) {
+            if (!$callable_type instanceof TCallable && !$callable_type instanceof TClosure) {
                 throw new \InvalidArgumentException('Parsing callable tree node should return TCallable');
             }
 
@@ -707,7 +707,7 @@ class TypeParser
             $pure = strpos($parse_tree->value, 'pure-') === 0 ? true : null;
 
             if (in_array(strtolower($parse_tree->value), ['closure', '\closure'], true)) {
-                return new TFn('Closure', $params, null, $pure);
+                return new TClosure('Closure', $params, null, $pure);
             }
 
             return new TCallable('callable', $params, null, $pure);

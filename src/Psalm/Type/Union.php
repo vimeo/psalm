@@ -630,14 +630,14 @@ class Union implements TypeNode
     }
 
     /**
-     * @return array<Atomic\TFn>
+     * @return array<Atomic\TClosure>
      */
     public function getClosureTypes(): array
     {
         return array_filter(
             $this->types,
             function ($type): bool {
-                return $type instanceof Atomic\TFn;
+                return $type instanceof Atomic\TClosure;
             }
         );
     }

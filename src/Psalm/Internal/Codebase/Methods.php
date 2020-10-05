@@ -63,7 +63,7 @@ class Methods
 
     /** @var MethodVisibilityProvider */
     public $visibility_provider;
-    
+
     public function __construct(
         ClassLikeStorageProvider $storage_provider,
         FileReferenceProvider $file_reference_provider,
@@ -542,7 +542,7 @@ class Methods
             }
 
             if ($atomic_type instanceof Type\Atomic\TCallable
-                || $atomic_type instanceof Type\Atomic\TFn
+                || $atomic_type instanceof Type\Atomic\TClosure
             ) {
                 if ($atomic_type->params) {
                     foreach ($atomic_type->params as $param) {
@@ -605,7 +605,7 @@ class Methods
 
         return $extra_added_types;
     }
-    
+
     public function isVariadic(MethodIdentifier $method_id): bool
     {
         $declaring_method_id = $this->getDeclaringMethodId($method_id);
@@ -677,11 +677,11 @@ class Methods
             ) {
                 foreach ($first_arg_type->getAtomicTypes() as $atomic_type) {
                     if ($atomic_type instanceof Type\Atomic\TCallable
-                        || $atomic_type instanceof Type\Atomic\TFn
+                        || $atomic_type instanceof Type\Atomic\TClosure
                     ) {
                         $callable_type = clone $atomic_type;
 
-                        return new Type\Union([new Type\Atomic\TFn(
+                        return new Type\Union([new Type\Atomic\TClosure(
                             'Closure',
                             $callable_type->params,
                             $callable_type->return_type
@@ -697,7 +697,7 @@ class Methods
                             new MethodIdentifier($atomic_type->value, '__invoke')
                         );
 
-                        return new Type\Union([new Type\Atomic\TFn(
+                        return new Type\Union([new Type\Atomic\TClosure(
                             'Closure',
                             $invokable_storage->params,
                             $invokable_storage->return_type
@@ -988,7 +988,7 @@ class Methods
 
         return $storage;
     }
-    
+
     public function getClassLikeStorageForMethod(MethodIdentifier $method_id): ClassLikeStorage
     {
         $fq_class_name = $method_id->fq_class_name;

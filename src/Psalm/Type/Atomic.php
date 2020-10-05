@@ -484,7 +484,7 @@ abstract class Atomic implements TypeNode
             }
         }
 
-        if ($this instanceof Type\Atomic\TFn
+        if ($this instanceof Type\Atomic\TClosure
             || $this instanceof Type\Atomic\TCallable
         ) {
             if ($this->params) {

@@ -370,7 +370,7 @@ class ArgumentsAnalyzer
             if (!$has_different_docblock_type) {
                 foreach ($replaced_type->getAtomicTypes() as $replaced_type_part) {
                     if ($replaced_type_part instanceof Type\Atomic\TCallable
-                        || $replaced_type_part instanceof Type\Atomic\TFn
+                        || $replaced_type_part instanceof Type\Atomic\TClosure
                     ) {
                         if (isset($replaced_type_part->params[$closure_param_offset]->type)
                             && !$replaced_type_part->params[$closure_param_offset]->type->hasTemplate()

@@ -311,7 +311,7 @@ abstract class Type
 
     public static function getClosure(): Union
     {
-        $type = new Type\Atomic\TFn('Closure');
+        $type = new Type\Atomic\TClosure('Closure');
 
         return new Union([$type]);
     }

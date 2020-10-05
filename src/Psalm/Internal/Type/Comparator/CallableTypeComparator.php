@@ -9,7 +9,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
-use Psalm\Type\Atomic\TFn;
+use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
@@ -22,8 +22,8 @@ use function end;
 class CallableTypeComparator
 {
     /**
-     * @param  TCallable|Type\Atomic\TFn   $input_type_part
-     * @param  TCallable|Type\Atomic\TFn   $container_type_part
+     * @param  TCallable|Type\Atomic\TClosure   $input_type_part
+     * @param  TCallable|Type\Atomic\TClosure   $container_type_part
      */
     public static function isContainedBy(
         Codebase $codebase,
@@ -217,7 +217,7 @@ class CallableTypeComparator
     }
 
     /**
-     * @return TCallable|TFn|null
+     * @return TCallable|TClosure|null
      */
     public static function getCallableFromAtomic(
         Codebase $codebase,
@@ -225,7 +225,7 @@ class CallableTypeComparator
         ?TCallable $container_type_part = null,
         ?StatementsAnalyzer $statements_analyzer = null
     ) {
-        if ($input_type_part instanceof TCallable || $input_type_part instanceof TFn) {
+        if ($input_type_part instanceof TCallable || $input_type_part instanceof TClosure) {
             return $input_type_part;
         }
 

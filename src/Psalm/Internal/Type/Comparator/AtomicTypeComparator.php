@@ -144,8 +144,8 @@ class AtomicTypeComparator
 
         if (($container_type_part instanceof Type\Atomic\TCallable
                 && $input_type_part instanceof Type\Atomic\TCallable)
-            || ($container_type_part instanceof Type\Atomic\TFn
-                && $input_type_part instanceof Type\Atomic\TFn)
+            || ($container_type_part instanceof Type\Atomic\TClosure
+                && $input_type_part instanceof Type\Atomic\TClosure)
         ) {
             return CallableTypeComparator::isContainedBy(
                 $codebase,
@@ -155,7 +155,7 @@ class AtomicTypeComparator
             );
         }
 
-        if ($container_type_part instanceof Type\Atomic\TFn && $input_type_part instanceof TCallable) {
+        if ($container_type_part instanceof Type\Atomic\TClosure && $input_type_part instanceof TCallable) {
             if (CallableTypeComparator::isContainedBy(
                 $codebase,
                 $input_type_part,
@@ -173,8 +173,8 @@ class AtomicTypeComparator
             return false;
         }
 
-        if ($container_type_part instanceof Type\Atomic\TFn) {
-            if (!$input_type_part instanceof Type\Atomic\TFn) {
+        if ($container_type_part instanceof Type\Atomic\TClosure) {
+            if (!$input_type_part instanceof Type\Atomic\TClosure) {
                 if ($atomic_comparison_result) {
                     $atomic_comparison_result->type_coerced = true;
                     $atomic_comparison_result->type_coerced_from_mixed = true;
@@ -191,7 +191,7 @@ class AtomicTypeComparator
             );
         }
 
-        if ($container_type_part instanceof TCallable && $input_type_part instanceof Type\Atomic\TFn) {
+        if ($container_type_part instanceof TCallable && $input_type_part instanceof Type\Atomic\TClosure) {
             return CallableTypeComparator::isContainedBy(
                 $codebase,
                 $input_type_part,

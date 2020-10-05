@@ -311,7 +311,7 @@ class UnionTemplateHandler
                 continue;
             }
 
-            if ($atomic_input_type instanceof Atomic\TFn && $base_type instanceof Atomic\TFn) {
+            if ($atomic_input_type instanceof Atomic\TClosure && $base_type instanceof Atomic\TClosure) {
                 $matching_atomic_types[$atomic_input_type->getId()] = $atomic_input_type;
                 continue;
             }
@@ -323,7 +323,7 @@ class UnionTemplateHandler
                 continue;
             }
 
-            if ($atomic_input_type instanceof Atomic\TFn && $base_type instanceof Atomic\TCallable) {
+            if ($atomic_input_type instanceof Atomic\TClosure && $base_type instanceof Atomic\TCallable) {
                 $matching_atomic_types[$atomic_input_type->getId()] = $atomic_input_type;
                 continue;
             }

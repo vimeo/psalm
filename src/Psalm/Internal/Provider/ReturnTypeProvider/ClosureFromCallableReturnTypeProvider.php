@@ -52,7 +52,7 @@ class ClosureFromCallableReturnTypeProvider implements \Psalm\Plugin\Hook\Method
                     );
 
                     if ($candidate_callable) {
-                        $closure_types[] = new Type\Atomic\TFn(
+                        $closure_types[] = new Type\Atomic\TClosure(
                             'Closure',
                             $candidate_callable->params,
                             $candidate_callable->return_type,

@@ -376,7 +376,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $closure_return_type = Type::getMixed();
             }
 
-            $closure_type = new Type\Atomic\TFn(
+            $closure_type = new Type\Atomic\TClosure(
                 'Closure',
                 $storage->params,
                 $closure_return_type
@@ -744,7 +744,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
                 if ($function_type = $statements_analyzer->node_data->getType($this->function)) {
                     /**
-                     * @var Type\Atomic\TFn
+                     * @var Type\Atomic\TClosure
                      */
                     $closure_atomic = \array_values($function_type->getAtomicTypes())[0];
 

@@ -575,7 +575,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
             $has_valid_function_call_type = false;
 
             foreach ($stmt_name_type->getAtomicTypes() as $var_type_part) {
-                if ($var_type_part instanceof Type\Atomic\TFn || $var_type_part instanceof Type\Atomic\TCallable) {
+                if ($var_type_part instanceof Type\Atomic\TClosure || $var_type_part instanceof Type\Atomic\TCallable) {
                     if (!$var_type_part->is_pure && $context->pure) {
                         if (IssueBuffer::accepts(
                             new ImpureFunctionCall(
@@ -607,7 +607,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                         );
                     }
 
-                    if ($var_type_part instanceof Type\Atomic\TFn) {
+                    if ($var_type_part instanceof Type\Atomic\TClosure) {
                         $byref_uses += $var_type_part->byref_uses;
                     }
 
