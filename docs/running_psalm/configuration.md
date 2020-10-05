@@ -125,24 +125,6 @@ The PHPDoc `@property`, `@property-read` and `@property-write` annotations norma
 ```
 If true we force strict typing on numerical and string operations (see https://github.com/vimeo/psalm/issues/24). Defaults to `false`.
 
-#### requireVoidReturnType
-
-```xml
-<psalm
-  requireVoidReturnType="[bool]"
->
-```
-If `false`, Psalm will not complain when a function with no return types is missing an explicit `@return` annotation. Defaults to `true`.
-
-#### useAssertForType
-
-```xml
-<psalm
-  useAssertForType="[bool]"
->
-```
-Some like to use [`assert`](http://php.net/manual/en/function.assert.php) for type checks. If `true`, Psalm will process assertions inside `assert` calls. Defaults to `true`.
-
 #### rememberPropertyAssignmentsAfterCall
 
 ```xml
@@ -292,7 +274,7 @@ This can be overridden on the command-line using the `--php-version=` flag which
 
 When `true`, Psalm will skip checking classes, variables and functions after it comes across an `include` or `require` it cannot resolve. This allows code to reference functions and classes unknown to Psalm.
 
-For backwards compatibility, this defaults to `true`, but if you do not rely on dynamically generated includes to cause classes otherwise unknown to Psalm to come into existence, it's recommended you set this to `false` in order to reliably detect errors that would be fatal to PHP at runtime.
+This defaults to `false`.
 
 #### sealAllMethods
 
