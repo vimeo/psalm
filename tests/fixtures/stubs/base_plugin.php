@@ -8,7 +8,7 @@ class BasePlugin implements Psalm\Plugin\Hook\AfterFunctionCallAnalysisInterface
         \Psalm\Context $context,
         \Psalm\StatementsSource $statements_source,
         \Psalm\Codebase $codebase,
-        \Psalm\Type\Union &$return_type_candidate,
+        \Psalm\Type\Union $return_type_candidate,
         array &$file_replacements
     ) {
     }
