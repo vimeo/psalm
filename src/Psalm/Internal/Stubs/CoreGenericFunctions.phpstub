@@ -364,34 +364,6 @@ function array_merge_recursive(array $arr, array ...$arr2)
  * @psalm-template TKey as array-key
  * @psalm-template TValue
  *
- * @param array<TKey, TValue> $arr
- * @param array<TKey, TValue> ...$arr2
- *
- * @return array<TKey, TValue>
- */
-function array_merge(array $arr, array ...$arr2)
-{
-}
-
-/**
- * @template TValue
- *
- * @param int $startIndex
- * @param int $num
- * @param TValue $value
- *
- * @return array<int, TValue>
- *
- * @psalm-pure
- */
-function array_fill(int $startIndex, int $num, $value): array {}
-
-/**
- * @psalm-pure
- *
- * @psalm-template TKey as array-key
- * @psalm-template TValue
- *
  * @param array<TKey> $keys
  * @param TValue $value
  *
@@ -855,36 +827,3 @@ function random_int(int $min, int $max): int {}
  * @psalm-pure
  */
 function array_count_values(array $array): array {}
-
-/**
- * @template TValue
- *
- * @param array<mixed, TValue> $array
- *
- * @return ($array is non-empty-array ? TValue : null)
- */
-function array_pop(array &$array) {}
-
-/**
- * @template TKey as array-key
- *
- * @param array<TKey, mixed> $array
- * @param int $num
- *
- * @return ($num is 1 ? TKey : list<TKey>|null)
- */
-function array_rand(array $array, int $num = 1) {}
-
-/**
- * @template TValue
- * @template T
- *
- * @param array<mixed, TValue> $array
- * @param callable(T, TValue): T $callback
- * @param T $initial
- *
- * @return T
- *
- * @psalm-pure
- */
-function array_reduce(array $array, callable $callback, $initial = null) {}
