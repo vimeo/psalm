@@ -403,6 +403,61 @@ $username = $_GET['username']; // prints something like "test.php:4 $username: m
 
 See [Security Analysis annotations](../security_analysis/annotations.md).
 
+### `@psalm-type`
+
+This allows you to define an alias for another type.
+
+```php
+<?php
+/**
+ * @psalm-type PhoneType = array{phone: string}
+ */
+class Phone {
+    /**
+     * @psalm-return PhoneType
+     */
+    public function toArray(): array {
+        return ["phone" => "Nokia"];
+    }
+}
+```
+
+### `@psalm-import-type`
+
+You can use this annotation to import a type defined with [`@psalm-type`](#psalm-type) if it was defined somewhere else.
+
+```php
+<?php
+/**
+ * @psalm-import-type PhoneType from Phone
+ */
+class User {
+    /**
+     * @psalm-return PhoneType
+     */
+    public function toArray(): array {
+        return array_merge([], (new Phone())->toArray());
+    }
+}
+```
+
+You can also alias a type when you import it:
+
+```php
+<?php
+/**
+ * @psalm-import-type PhoneType from Phone as MyPhoneTypeAlias
+ */
+class User {
+    /**
+     * @psalm-return MyPhoneTypeAlias
+     */
+    public function toArray(): array {
+        return array_merge([], (new Phone())->toArray());
+    }
+}
+```
+
 ## Type Syntax
 
 Psalm supports PHPDoc’s [type syntax](https://docs.phpdoc.org/latest/guides/types.html), and also the [proposed PHPDoc PSR type syntax](https://github.com/php-fig/fig-standards/blob/master/proposed/phpdoc.md#appendix-a-types).
