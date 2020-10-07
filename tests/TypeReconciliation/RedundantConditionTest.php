@@ -1352,7 +1352,7 @@ class RedundantConditionTest extends \Psalm\Tests\TestCase
                     }',
                 'error_message' => 'RedundantCondition',
             ],
-            'fooBar' => [
+            'leftCannotBeTrue' => [
                 '<?php
                     /** @psalm-type F = ""|"0" */
                     /**
@@ -1361,6 +1361,16 @@ class RedundantConditionTest extends \Psalm\Tests\TestCase
                      */
                     function foo(string $a, string $b): void {
                         if ($a || $b) {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'rightCannotBeTrue' => [
+                '<?php
+                    /** @param false $a */
+                    function foo(bool $a): void {
+                        if (rand(0, 1) || $a) {
+                            echo "a or b";
+                        }
                     }',
                 'error_message' => 'DocblockTypeContradiction',
             ],
