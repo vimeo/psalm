@@ -23,13 +23,7 @@ class IssueHandler
      */
     private $custom_levels = [];
 
-    /**
-     * @param  SimpleXMLElement $e
-     * @param  string           $base_dir
-     *
-     * @return self
-     */
-    public static function loadFromXMLElement(SimpleXMLElement $e, $base_dir)
+    public static function loadFromXMLElement(SimpleXMLElement $e, string $base_dir): IssueHandler
     {
         $handler = new self();
 
@@ -49,12 +43,7 @@ class IssueHandler
         return $handler;
     }
 
-    /**
-     * @param string $error_level
-     *
-     * @return void
-     */
-    public function setErrorLevel($error_level)
+    public function setErrorLevel(string $error_level): void
     {
         if (!in_array($error_level, \Psalm\Config::$ERROR_LEVELS, true)) {
             throw new \Psalm\Exception\ConfigException('Unexpected error level ' . $error_level);
@@ -63,12 +52,7 @@ class IssueHandler
         $this->error_level = $error_level;
     }
 
-    /**
-     * @param string $file_path
-     *
-     * @return string
-     */
-    public function getReportingLevelForFile($file_path)
+    public function getReportingLevelForFile(string $file_path): string
     {
         foreach ($this->custom_levels as $custom_level) {
             if ($custom_level->allows($file_path)) {
@@ -79,91 +63,77 @@ class IssueHandler
         return $this->error_level;
     }
 
-    /**
-     * @param string $fq_classlike_name
-     *
-     * @return string|null
-     */
-    public function getReportingLevelForClass($fq_classlike_name)
+    public function getReportingLevelForClass(string $fq_classlike_name): ?string
     {
         foreach ($this->custom_levels as $custom_level) {
             if ($custom_level->allowsClass($fq_classlike_name)) {
                 return $custom_level->getErrorLevel();
             }
         }
+
+        return null;
     }
 
-    /**
-     * @param string $method_id
-     *
-     * @return string|null
-     */
-    public function getReportingLevelForMethod($method_id)
+    public function getReportingLevelForMethod(string $method_id): ?string
     {
         foreach ($this->custom_levels as $custom_level) {
             if ($custom_level->allowsMethod(strtolower($method_id))) {
                 return $custom_level->getErrorLevel();
             }
         }
+
+        return null;
     }
 
-    /**
-     * @return string|null
-     */
-    public function getReportingLevelForFunction(string $function_id)
+    public function getReportingLevelForFunction(string $function_id): ?string
     {
         foreach ($this->custom_levels as $custom_level) {
             if ($custom_level->allowsMethod(strtolower($function_id))) {
                 return $custom_level->getErrorLevel();
             }
         }
+
+        return null;
     }
 
-    /**
-     * @return string|null
-     */
-    public function getReportingLevelForArgument(string $function_id)
+    public function getReportingLevelForArgument(string $function_id): ?string
     {
         foreach ($this->custom_levels as $custom_level) {
             if ($custom_level->allowsMethod(strtolower($function_id))) {
                 return $custom_level->getErrorLevel();
             }
         }
+
+        return null;
     }
 
-    /**
-     * @param string $property_id
-     *
-     * @return string|null
-     */
-    public function getReportingLevelForProperty($property_id)
+    public function getReportingLevelForProperty(string $property_id): ?string
     {
         foreach ($this->custom_levels as $custom_level) {
             if ($custom_level->allowsProperty($property_id)) {
                 return $custom_level->getErrorLevel();
             }
         }
+
+        return null;
     }
 
-    /**
-     * @param string $var_name
-     *
-     * @return string|null
-     */
-    public function getReportingLevelForVariable($var_name)
+    public function getReportingLevelForVariable(string $var_name): ?string
     {
         foreach ($this->custom_levels as $custom_level) {
             if ($custom_level->allowsVariable($var_name)) {
                 return $custom_level->getErrorLevel();
             }
         }
+
+        return null;
     }
 
     /**
      * @return       string[]
      * @psalm-return array<string>
      */
-    public static function getAllIssueTypes()
+    public static function getAllIssueTypes(): array
     {
         return array_filter(
             array_map(
@@ -177,13 +147,8 @@ class IssueHandler
                 },
                 scandir(dirname(__DIR__) . '/Issue', SCANDIR_SORT_NONE)
             ),
-            /**
-             * @param string $issue_name
-             *
-             * @return bool
-             */
-            function ($issue_name) {
-                return !empty($issue_name)
+            function (string $issue_name): bool {
+                return $issue_name !== ''
                     && $issue_name !== 'MethodIssue'
                     && $issue_name !== 'PropertyIssue'
                     && $issue_name !== 'FunctionIssue'

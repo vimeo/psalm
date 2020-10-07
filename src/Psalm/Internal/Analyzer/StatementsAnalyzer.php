@@ -19,6 +19,10 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ReturnAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ThrowAnalyzer;
 use Psalm\Internal\Scanner\ParsedDocblock;
+use Psalm\Internal\Codebase\ControlFlowGraph;
+use Psalm\Internal\Codebase\TaintFlowGraph;
+use Psalm\Internal\Codebase\VariableUseGraph;
+use Psalm\Internal\ControlFlow\ControlFlowNode;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Context;
@@ -40,19 +44,18 @@ use function strtolower;
 use function fwrite;
 use const STDERR;
 use function array_filter;
-use function array_map;
 use function array_merge;
 use function preg_split;
 use function get_class;
 use function strrpos;
 use function strlen;
 use function substr;
-use function array_key_exists;
 use function array_change_key_case;
 use function array_reverse;
 use function trim;
 use function array_column;
 use function array_combine;
+use function array_keys;
 
 /**
  * @internal
@@ -102,11 +105,6 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
     private $unused_var_locations = [];
 
     /**
-     * @var array<string, bool>
-     */
-    private $used_var_locations = [];
-
-    /**
      * @var ?array<string, bool>
      */
     public $byref_uses;
@@ -124,39 +122,42 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
     /** @var \Psalm\Internal\Provider\NodeDataProvider */
     public $node_data;
 
-    /**
-     * @param SourceAnalyzer $source
-     */
+    /** @var ?ControlFlowGraph */
+    public $control_flow_graph;
+
     public function __construct(SourceAnalyzer $source, \Psalm\Internal\Provider\NodeDataProvider $node_data)
     {
         $this->source = $source;
         $this->file_analyzer = $source->getFileAnalyzer();
         $this->codebase = $source->getCodebase();
         $this->node_data = $node_data;
+
+        if ($this->codebase->taint_flow_graph) {
+            $this->control_flow_graph = new TaintFlowGraph();
+        } elseif ($this->codebase->find_unused_variables) {
+            $this->control_flow_graph = new VariableUseGraph();
+        }
     }
 
     /**
      * Checks an array of statements for validity
      *
      * @param  array<PhpParser\Node\Stmt>   $stmts
-     * @param  Context                                          $context
-     * @param  Context|null                                     $global_context
-     * @param  bool                                             $root_scope
      *
      * @return null|false
      */
     public function analyze(
         array $stmts,
         Context $context,
-        Context $global_context = null,
-        $root_scope = false
-    ) {
+        ?Context $global_context = null,
+        bool $root_scope = false
+    ): ?bool {
         if (!$stmts) {
-            return;
+            return null;
         }
 
         // hoist functions to the top
-        $this->hoistFunctions($stmts);
+        $this->hoistFunctions($stmts, $context);
 
         $project_analyzer = $this->getFileAnalyzer()->project_analyzer;
         $codebase = $project_analyzer->getCodebase();
@@ -176,6 +177,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
             && $codebase->find_unused_variables
             && $context->check_variables
         ) {
+            //var_dump($this->control_flow_graph);
             $this->checkUnreferencedVars($stmts);
         }
 
@@ -191,13 +193,21 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
             }
         }
 
+        if ($root_scope
+            && $this->control_flow_graph instanceof TaintFlowGraph
+            && $this->codebase->taint_flow_graph
+            && $codebase->config->trackTaintsInPath($this->getFilePath())
+        ) {
+            $this->codebase->taint_flow_graph->addGraph($this->control_flow_graph);
+        }
+
         return null;
     }
 
     /**
      * @param  array<PhpParser\Node\Stmt>   $stmts
      */
-    private function hoistFunctions(array $stmts) : void
+    private function hoistFunctions(array $stmts, Context $context) : void
     {
         foreach ($stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\Function_) {
@@ -207,6 +217,28 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                     $fq_function_name = strtolower($ns) . '\\' . $function_name;
                 } else {
                     $fq_function_name = $function_name;
+                }
+
+                if ($this->control_flow_graph
+                    && $this->codebase->find_unused_variables
+                ) {
+                    foreach ($stmt->stmts as $function_stmt) {
+                        if ($function_stmt instanceof PhpParser\Node\Stmt\Global_) {
+                            foreach ($function_stmt->vars as $var) {
+                                if (!$var instanceof PhpParser\Node\Expr\Variable
+                                    || !\is_string($var->name)
+                                ) {
+                                    continue;
+                                }
+
+                                $var_id = '$' . $var->name;
+
+                                if ($var_id !== '$argv' && $var_id !== '$argc') {
+                                    $context->byref_constraints[$var_id] = new \Psalm\Internal\ReferenceConstraint();
+                                }
+                            }
+                        }
+                    }
                 }
 
                 try {
@@ -284,7 +316,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
         PhpParser\Node\Stmt $stmt,
         Context $context,
         ?Context $global_context
-    ) {
+    ): ?bool {
         $ignore_variable_property = false;
         $ignore_variable_method = false;
 
@@ -308,7 +340,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                 }
             }
 
-            return;
+            return null;
         }
 
         if ($statements_analyzer->getProjectAnalyzer()->debug_lines) {
@@ -348,37 +380,25 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
             }
 
             if (isset($statements_analyzer->parsed_docblock->tags['psalm-suppress'])) {
-                $suppressed = array_filter(
-                    array_map(
-                        /**
-                         * @param string $line
-                         *
-                         * @return string
-                         */
-                        function ($line) {
-                            return preg_split('/[\s]+/', $line)[0];
-                        },
-                        $statements_analyzer->parsed_docblock->tags['psalm-suppress']
-                    )
-                );
-
+                $suppressed = $statements_analyzer->parsed_docblock->tags['psalm-suppress'];
                 if ($suppressed) {
                     $new_issues = [];
 
-                    foreach ($suppressed as $offset => $issue_type) {
-                        $offset += $docblock->getFilePos();
-                        $new_issues[$offset] = $issue_type;
+                    foreach ($suppressed as $offset => $suppress_entry) {
+                        foreach (DocComment::parseSuppressList($suppress_entry) as $issue_offset => $issue_type) {
+                            $new_issues[$issue_offset + $offset + $docblock->getStartFilePos()] = $issue_type;
 
-                        if ($issue_type === 'InaccessibleMethod') {
-                            continue;
-                        }
+                            if ($issue_type === 'InaccessibleMethod') {
+                                continue;
+                            }
 
-                        if ($codebase->track_unused_suppressions) {
-                            IssueBuffer::addUnusedSuppression(
-                                $statements_analyzer->getFilePath(),
-                                $offset,
-                                $issue_type
-                            );
+                            if ($codebase->track_unused_suppressions) {
+                                IssueBuffer::addUnusedSuppression(
+                                    $statements_analyzer->getFilePath(),
+                                    $issue_offset + $offset + $docblock->getStartFilePos(),
+                                    $issue_type
+                                );
+                            }
                         }
                     }
 
@@ -610,6 +630,8 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                 }
             }
         }
+
+        return null;
     }
 
     private function parseStatementDocblock(
@@ -660,17 +682,12 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
 
     /**
      * @param  array<PhpParser\Node\Stmt>   $stmts
-     * @return void
      */
-    public function checkUnreferencedVars(array $stmts)
+    public function checkUnreferencedVars(array $stmts): void
     {
         $source = $this->getSource();
         $codebase = $source->getCodebase();
         $function_storage = $source instanceof FunctionLikeAnalyzer ? $source->getFunctionLikeStorage($this) : null;
-        if ($codebase->alter_code) {
-            // Reverse array to deal with chain of assignments
-            $this->unused_var_locations = array_reverse($this->unused_var_locations, true);
-        }
         $var_list = array_column($this->unused_var_locations, 0);
         $loc_list = array_column($this->unused_var_locations, 1);
 
@@ -678,15 +695,31 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
 
         $unused_var_remover = new Statements\UnusedAssignmentRemover();
 
-        foreach ($this->unused_var_locations as $hash => list($var_id, $original_location)) {
-            if (substr($var_id, 0, 2) === '$_' || isset($this->used_var_locations[$hash])) {
+        foreach ($this->unused_var_locations as [$var_id, $original_location]) {
+            if (substr($var_id, 0, 2) === '$_') {
                 continue;
             }
 
-            if ((!$function_storage
-                || !array_key_exists(substr($var_id, 1), $function_storage->param_lookup))
-                && !isset($this->byref_uses[$var_id])
+            if ($function_storage) {
+                $param_index = \array_search(substr($var_id, 1), array_keys($function_storage->param_lookup));
+                if ($param_index !== false) {
+                    $param = $function_storage->params[$param_index];
+
+                    if ($param->location
+                        && ($original_location->raw_file_end === $param->location->raw_file_end
+                            || $param->by_ref)
+                    ) {
+                        continue;
+                    }
+                }
+            }
+
+            $assignment_node = ControlFlowNode::getForAssignment($var_id, $original_location);
+
+            if (!isset($this->byref_uses[$var_id])
                 && !VariableFetchAnalyzer::isSuperGlobal($var_id)
+                && $this->control_flow_graph instanceof VariableUseGraph
+                && !$this->control_flow_graph->isVariableUsed($assignment_node)
             ) {
                 $issue = new UnusedVariable(
                     'Variable ' . $var_id . ' is never referenced',
@@ -718,24 +751,12 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
         }
     }
 
-    /**
-     * @param  string       $var_name
-     *
-     * @return bool
-     */
-    public function hasVariable($var_name)
+    public function hasVariable(string $var_name): bool
     {
         return isset($this->all_vars[$var_name]);
     }
 
-    /**
-     * @param  string       $var_id
-     * @param  CodeLocation $location
-     * @param  int|null     $branch_point
-     *
-     * @return void
-     */
-    public function registerVariable($var_id, CodeLocation $location, $branch_point)
+    public function registerVariable(string $var_id, CodeLocation $location, ?int $branch_point): void
     {
         $this->all_vars[$var_id] = $location;
 
@@ -746,66 +767,80 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
         $this->registerVariableAssignment($var_id, $location);
     }
 
-    /**
-     * @param  string       $var_id
-     * @param  CodeLocation $location
-     *
-     * @return void
-     */
-    public function registerVariableAssignment($var_id, CodeLocation $location)
+    public function registerVariableAssignment(string $var_id, CodeLocation $location): void
     {
         $this->unused_var_locations[$location->getHash()] = [$var_id, $location];
     }
 
     /**
-     * @param array<string, CodeLocation> $locations
-     * @return void
+     * @return array<string, array{0: string, 1: CodeLocation}>
      */
-    public function registerVariableUses(array $locations)
+    public function getUnusedVarLocations(): array
     {
-        foreach ($locations as $hash => $_) {
-            unset($this->unused_var_locations[$hash]);
-            $this->used_var_locations[$hash] = true;
+        return $this->unused_var_locations;
+    }
+
+    public function registerPossiblyUndefinedVariable(
+        string $undefined_var_id,
+        PhpParser\Node\Expr\Variable $stmt
+    ) : void {
+        if (!$this->control_flow_graph) {
+            return;
+        }
+
+        $use_location = new CodeLocation($this->getSource(), $stmt);
+        $use_node = ControlFlowNode::getForAssignment($undefined_var_id, $use_location);
+
+        $stmt_type = $this->node_data->getType($stmt);
+
+        if ($stmt_type) {
+            $stmt_type->parent_nodes[$use_node->id] = $use_node;
+        }
+
+        foreach ($this->unused_var_locations as [$var_id, $original_location]) {
+            if ($var_id === $undefined_var_id) {
+                $parent_node = ControlFlowNode::getForAssignment($var_id, $original_location);
+
+                $this->control_flow_graph->addPath($parent_node, $use_node, '=');
+            }
         }
     }
 
     /**
-     * @return array<string, array{0: string, 1: CodeLocation}>
+     * @return array<string, ControlFlowNode>
      */
-    public function getUnusedVarLocations()
+    public function getParentNodesForPossiblyUndefinedVariable(string $undefined_var_id) : array
     {
-        return \array_diff_key($this->unused_var_locations, $this->used_var_locations);
+        if (!$this->control_flow_graph) {
+            return [];
+        }
+
+        $parent_nodes = [];
+
+        foreach ($this->unused_var_locations as [$var_id, $original_location]) {
+            if ($var_id === $undefined_var_id) {
+                $assignment_node = ControlFlowNode::getForAssignment($var_id, $original_location);
+                $parent_nodes[$assignment_node->id] = $assignment_node;
+            }
+        }
+
+        return $parent_nodes;
     }
 
     /**
      * The first appearance of the variable in this set of statements being evaluated
-     *
-     * @param  string  $var_id
-     *
-     * @return CodeLocation|null
      */
-    public function getFirstAppearance($var_id)
+    public function getFirstAppearance(string $var_id): ?CodeLocation
     {
         return isset($this->all_vars[$var_id]) ? $this->all_vars[$var_id] : null;
     }
 
-    /**
-     * @param  string $var_id
-     *
-     * @return int|null
-     */
-    public function getBranchPoint($var_id)
+    public function getBranchPoint(string $var_id): ?int
     {
         return isset($this->var_branch_points[$var_id]) ? $this->var_branch_points[$var_id] : null;
     }
 
-    /**
-     * @param string $var_id
-     * @param int    $branch_point
-     *
-     * @return void
-     */
-    public function addVariableInitialization($var_id, $branch_point)
+    public function addVariableInitialization(string $var_id, int $branch_point): void
     {
         $this->vars_to_initialize[$var_id] = $branch_point;
     }
@@ -823,16 +858,15 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
     /**
      * @return array<string, FunctionAnalyzer>
      */
-    public function getFunctionAnalyzers()
+    public function getFunctionAnalyzers(): array
     {
         return $this->function_analyzers;
     }
 
     /**
      * @param array<string, bool> $byref_uses
-     * @return void
      */
-    public function setByRefUses(array $byref_uses)
+    public function setByRefUses(array $byref_uses): void
     {
         $this->byref_uses = $byref_uses;
     }
@@ -840,7 +874,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
     /**
      * @return array<string, array<array-key, CodeLocation>>
      */
-    public function getUncaughtThrows(Context $context)
+    public function getUncaughtThrows(Context $context): array
     {
         $uncaught_throws = [];
 
@@ -899,7 +933,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
         return $this->parsed_docblock;
     }
 
-    public function getFQCLN()
+    public function getFQCLN(): ?string
     {
         if ($this->fake_this_class) {
             return $this->fake_this_class;

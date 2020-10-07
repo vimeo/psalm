@@ -244,7 +244,7 @@ class StubsGenerator
     /**
      * @return list<PhpParser\Node\Param>
      */
-    public static function getFunctionParamNodes(\Psalm\Storage\FunctionLikeStorage $method_storage)
+    public static function getFunctionParamNodes(\Psalm\Storage\FunctionLikeStorage $method_storage): array
     {
         $param_nodes = [];
 
@@ -256,7 +256,9 @@ class StubsGenerator
                     : null,
                 $param->signature_type
                     ? self::getParserTypeFromPsalmType($param->signature_type)
-                    : null
+                    : null,
+                $param->by_ref,
+                $param->is_variadic
             );
         }
 
@@ -266,7 +268,7 @@ class StubsGenerator
     /**
      * @return PhpParser\Node\Identifier|PhpParser\Node\Name|PhpParser\Node\NullableType|null
      */
-    public static function getParserTypeFromPsalmType(Type\Union $type)
+    public static function getParserTypeFromPsalmType(Type\Union $type): ?PhpParser\NodeAbstract
     {
         $nullable = $type->isNullable();
 
@@ -306,6 +308,8 @@ class StubsGenerator
                 return $name_node;
             }
         }
+        
+        return null;
     }
 
     public static function getExpressionFromType(Type\Union $type) : PhpParser\Node\Expr

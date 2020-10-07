@@ -1,9 +1,11 @@
 <?php
 namespace Psalm\Internal\Analyzer;
 
+use PhpParser\Node\Stmt\ClassMethod;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\PhpVisitor\ParamReplacementVisitor;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\ImplementedParamTypeMismatch;
@@ -25,23 +27,18 @@ use function is_string;
 use function in_array;
 use Psalm\Issue\MissingImmutableAnnotation;
 use function count;
+use function substr;
 
 class MethodComparator
 {
     /**
-     * @param  ClassLikeStorage $implementer_classlike_storage
-     * @param  ClassLikeStorage $guide_classlike_storage
-     * @param  MethodStorage    $implementer_method_storage
-     * @param  MethodStorage    $guide_method_storage
-     * @param  CodeLocation     $code_location
      * @param  string[]         $suppressed_issues
-     * @param  bool             $prevent_abstract_override
-     * @param  bool             $prevent_method_signature_mismatch
      *
      * @return false|null
      */
     public static function compare(
         Codebase $codebase,
+        ?ClassMethod $stmt,
         ClassLikeStorage $implementer_classlike_storage,
         ClassLikeStorage $guide_classlike_storage,
         MethodStorage $implementer_method_storage,
@@ -50,9 +47,9 @@ class MethodComparator
         int $implementer_visibility,
         CodeLocation $code_location,
         array $suppressed_issues,
-        $prevent_abstract_override = true,
-        $prevent_method_signature_mismatch = true
-    ) {
+        bool $prevent_abstract_override = true,
+        bool $prevent_method_signature_mismatch = true
+    ): ?bool {
         $implementer_declaring_method_id = $codebase->methods->getDeclaringMethodId(
             new MethodIdentifier(
                 $implementer_classlike_storage->name,
@@ -76,6 +73,7 @@ class MethodComparator
             $cased_implementer_method_id,
             $prevent_method_signature_mismatch,
             $prevent_abstract_override,
+            $codebase->php_major_version >= 8,
             $code_location,
             $suppressed_issues
         );
@@ -140,6 +138,7 @@ class MethodComparator
 
             self::compareMethodParams(
                 $codebase,
+                $stmt,
                 $implementer_classlike_storage,
                 $guide_classlike_storage,
                 $implementer_called_class_name,
@@ -187,6 +186,8 @@ class MethodComparator
 
             return null;
         }
+
+        return null;
     }
 
     /**
@@ -203,11 +204,13 @@ class MethodComparator
         string $cased_implementer_method_id,
         bool $prevent_method_signature_mismatch,
         bool $prevent_abstract_override,
+        bool $trait_mismatches_are_fatal,
         CodeLocation $code_location,
         array $suppressed_issues
     ) : void {
         if ($implementer_visibility > $guide_visibility) {
-            if ($guide_classlike_storage->is_trait === $implementer_classlike_storage->is_trait
+            if ($trait_mismatches_are_fatal
+                || $guide_classlike_storage->is_trait === $implementer_classlike_storage->is_trait
                 || !in_array($guide_classlike_storage->name, $implementer_classlike_storage->used_traits)
                 || $implementer_method_storage->defining_fqcln !== $implementer_classlike_storage->name
                 || (!$implementer_method_storage->abstract
@@ -289,6 +292,7 @@ class MethodComparator
      */
     private static function compareMethodParams(
         Codebase $codebase,
+        ?ClassMethod $stmt,
         ClassLikeStorage $implementer_classlike_storage,
         ClassLikeStorage $guide_classlike_storage,
         string $implementer_called_class_name,
@@ -382,34 +386,58 @@ class MethodComparator
                 }
             }
 
+            $config = \Psalm\Config::getInstance();
+
             if ($guide_param->name !== $implementer_param->name
-                && $guide_method_storage->allow_named_param_calls
+                && $guide_method_storage->allow_named_arg_calls
                 && count($implementer_method_storage->params) > 1
                 && $guide_classlike_storage->user_defined
                 && $implementer_classlike_storage->user_defined
+                && $implementer_param->location
+                && $guide_method_storage->cased_name
+                && substr($guide_method_storage->cased_name, 0, 2) !== '__'
+                && $config->isInProjectDirs(
+                    $implementer_param->location->file_path
+                )
             ) {
-                $config = \Psalm\Config::getInstance();
-
-                if ($config->allow_named_param_calls
+                if ($config->allow_named_arg_calls
                     || ($guide_classlike_storage->location
                         && !$config->isInProjectDirs($guide_classlike_storage->location->file_path)
                     )
                 ) {
-                    if (IssueBuffer::accepts(
-                        new ParamNameMismatch(
-                            'Argument ' . ($i + 1) . ' of ' . $cased_implementer_method_id . ' has wrong name $'
-                                . $implementer_param->name . ', expecting $'
-                                . $guide_param->name . ' as defined by '
-                                . $cased_guide_method_id,
-                            $implementer_param->location
-                                && $config->isInProjectDirs(
-                                    $implementer_param->location->file_path
-                                )
-                                ? $implementer_param->location
-                                : $code_location
-                        )
-                    )) {
-                        // fall through
+                    if ($codebase->alter_code) {
+                        $project_analyzer = \Psalm\Internal\Analyzer\ProjectAnalyzer::getInstance();
+
+                        if ($stmt && isset($project_analyzer->getIssuesToFix()['ParamNameMismatch'])) {
+                            $param_replacer = new ParamReplacementVisitor(
+                                $implementer_param->name,
+                                $guide_param->name
+                            );
+
+                            $traverser = new \PhpParser\NodeTraverser();
+                            $traverser->addVisitor($param_replacer);
+                            $traverser->traverse([$stmt]);
+
+                            if ($replacements = $param_replacer->getReplacements()) {
+                                \Psalm\Internal\FileManipulation\FileManipulationBuffer::add(
+                                    $implementer_param->location->file_path,
+                                    $replacements
+                                );
+                            }
+                        }
+                    } else {
+                        if (IssueBuffer::accepts(
+                            new ParamNameMismatch(
+                                'Argument ' . ($i + 1) . ' of ' . $cased_implementer_method_id . ' has wrong name $'
+                                    . $implementer_param->name . ', expecting $'
+                                    . $guide_param->name . ' as defined by '
+                                    . $cased_guide_method_id,
+                                $implementer_param->location
+                            ),
+                            $suppressed_issues
+                        )) {
+                            // fall through
+                        }
                     }
                 }
             }
@@ -517,8 +545,9 @@ class MethodComparator
             $implementer_classlike_storage->parent_class
         );
 
-        $is_contained_by = $codebase->php_major_version >= 7
-            && $codebase->php_minor_version >= 4
+        $is_contained_by = (($codebase->php_major_version === 7
+                    && $codebase->php_minor_version === 4)
+                || $codebase->php_major_version >= 8)
             && $guide_param_signature_type
             ? UnionTypeComparator::isContainedBy(
                 $codebase,
@@ -532,7 +561,8 @@ class MethodComparator
         if (!$is_contained_by) {
             $config = \Psalm\Config::getInstance();
 
-            if ($guide_classlike_storage->is_trait === $implementer_classlike_storage->is_trait
+            if ($codebase->php_major_version >= 8
+                || $guide_classlike_storage->is_trait === $implementer_classlike_storage->is_trait
                 || !in_array($guide_classlike_storage->name, $implementer_classlike_storage->used_traits)
                 || $implementer_method_storage->defining_fqcln !== $implementer_classlike_storage->name
                 || (!$implementer_method_storage->abstract
@@ -815,8 +845,9 @@ class MethodComparator
                 $implementer_classlike_storage->parent_class
             ) : null;
 
-        $is_contained_by = $codebase->php_major_version >= 7
-            && $codebase->php_minor_version >= 4
+        $is_contained_by = (($codebase->php_major_version === 7
+                    && $codebase->php_minor_version === 4)
+                || $codebase->php_major_version >= 8)
             && $implementer_signature_return_type
             ? UnionTypeComparator::isContainedBy(
                 $codebase,
@@ -826,7 +857,8 @@ class MethodComparator
             : UnionTypeComparator::isContainedByInPhp($implementer_signature_return_type, $guide_signature_return_type);
 
         if (!$is_contained_by) {
-            if ($guide_classlike_storage->is_trait === $implementer_classlike_storage->is_trait
+            if ($codebase->php_major_version >= 8
+                || $guide_classlike_storage->is_trait === $implementer_classlike_storage->is_trait
                 || !in_array($guide_classlike_storage->name, $implementer_classlike_storage->used_traits)
                 || $implementer_method_storage->defining_fqcln !== $implementer_classlike_storage->name
                 || (!$implementer_method_storage->abstract

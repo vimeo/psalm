@@ -44,6 +44,8 @@ use function substr;
 use function unserialize;
 use function usleep;
 use function version_compare;
+use function array_map;
+use function in_array;
 
 /**
  * Adapted with relatively few changes from
@@ -56,8 +58,8 @@ use function version_compare;
  */
 class Pool
 {
-    const EXIT_SUCCESS = 0;
-    const EXIT_FAILURE = 1;
+    private const EXIT_SUCCESS = 0;
+    private const EXIT_FAILURE = 1;
 
     /** @var int[] */
     private $child_pid_list = [];
@@ -112,6 +114,13 @@ class Pool
             echo
                 'The pcntl & posix extensions must be loaded in order for Psalm to be able to use multiple processes.'
                 . PHP_EOL;
+            exit(1);
+        }
+
+        $disabled_functions = array_map('trim', explode(',', ini_get('disable_functions')));
+        if (in_array('pcntl_fork', $disabled_functions)) {
+            echo "pcntl_fork() is disabled by php configuration (disable_functions directive).\n"
+                . "Please enable it or run Psalm single-threaded with --threads=1 cli switch.\n";
             exit(1);
         }
 
@@ -245,7 +254,7 @@ class Pool
      */
     private static function streamForParent(array $sockets)
     {
-        list($for_read, $for_write) = $sockets;
+        [$for_read, $for_write] = $sockets;
 
         // The parent will not use the write channel, so it
         // must be closed to prevent deadlock.
@@ -271,7 +280,7 @@ class Pool
      */
     private static function streamForChild(array $sockets)
     {
-        list($for_read, $for_write) = $sockets;
+        [$for_read, $for_write] = $sockets;
 
         // The while will not use the read channel, so it must
         // be closed to prevent deadlock.
@@ -285,11 +294,10 @@ class Pool
      * The results are returned in an array, one for each worker. The order of the results
      * is not maintained.
      *
-     * @return array
      *
      * @psalm-suppress MixedAssignment
      */
-    private function readResultsFromChildren()
+    private function readResultsFromChildren(): array
     {
         // Create an array of all active streams, indexed by
         // resource id.
@@ -372,7 +380,6 @@ class Pool
     /**
      * Wait for all child processes to complete
      *
-     * @return array
      */
     public function wait(): array
     {
@@ -418,9 +425,8 @@ class Pool
     /**
      * Returns true if this had an error, e.g. due to memory limits or due to a child process crashing.
      *
-     * @return  bool
      */
-    public function didHaveError()
+    public function didHaveError(): bool
     {
         return $this->did_have_error;
     }

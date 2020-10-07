@@ -35,6 +35,7 @@ Level 5 and above allows a more non-verifiable code, and higher levels are even 
  - [InaccessibleMethod](issues/InaccessibleMethod.md)
  - [InaccessibleProperty](issues/InaccessibleProperty.md)
  - [InterfaceInstantiation](issues/InterfaceInstantiation.md)
+ - [InvalidExtendClass](issues/InvalidExtendClass.md)
  - [InvalidGlobal](issues/InvalidGlobal.md)
  - [InvalidParamDefault](issues/InvalidParamDefault.md)
  - [InvalidParent](issues/InvalidParent.md)
@@ -42,6 +43,7 @@ Level 5 and above allows a more non-verifiable code, and higher levels are even 
  - [InvalidScope](issues/InvalidScope.md)
  - [InvalidStaticInvocation](issues/InvalidStaticInvocation.md)
  - [InvalidThrow](issues/InvalidThrow.md)
+ - [InvalidTypeImport](issues/InvalidTypeImport.md)
  - [LoopInvalidation](issues/LoopInvalidation.md)
  - [MethodSignatureMustOmitReturnType](issues/MethodSignatureMustOmitReturnType.md)
  - [MissingDependency](issues/MissingDependency.md)
@@ -60,6 +62,7 @@ Level 5 and above allows a more non-verifiable code, and higher levels are even 
  - [OverriddenPropertyAccess](issues/OverriddenPropertyAccess.md)
  - [ParadoxicalCondition](issues/ParadoxicalCondition.md)
  - [ParentNotFound](issues/ParentNotFound.md)
+ - [ParseError](issues/ParseError.md)
  - [TooFewArguments](issues/TooFewArguments.md)
  - [UndefinedClass](issues/UndefinedClass.md)
  - [UndefinedConstant](issues/UndefinedConstant.md)
@@ -86,6 +89,7 @@ Level 5 and above allows a more non-verifiable code, and higher levels are even 
  - [MixedArrayOffset](issues/MixedArrayOffset.md)
  - [MixedArrayTypeCoercion](issues/MixedArrayTypeCoercion.md)
  - [MixedAssignment](issues/MixedAssignment.md)
+ - [MixedClone](issues/MixedClone.md)
  - [MixedFunctionCall](issues/MixedFunctionCall.md)
  - [MixedInferredReturnType](issues/MixedInferredReturnType.md)
  - [MixedMethodCall](issues/MixedMethodCall.md)
@@ -98,6 +102,7 @@ Level 5 and above allows a more non-verifiable code, and higher levels are even 
  - [MixedStringOffsetAssignment](issues/MixedStringOffsetAssignment.md)
  - [MutableDependency](issues/MutableDependency.md)
  - [PossiblyNullOperand](issues/PossiblyNullOperand.md)
+ - [RedundantIdentityWithTrue](issues/RedundantIdentityWithTrue.md)
  - [Trace](issues/Trace.md)
  - [UndefinedTrace](issues/UndefinedTrace.md)
 
@@ -116,7 +121,6 @@ These issues are treated as errors at level 2 and below.
  - [InvalidDocblockParamName](issues/InvalidDocblockParamName.md)
  - [InvalidFalsableReturnType](issues/InvalidFalsableReturnType.md)
  - [InvalidStringClass](issues/InvalidStringClass.md)
- - [MisplacedRequiredParam](issues/MisplacedRequiredParam.md)
  - [MissingClosureParamType](issues/MissingClosureParamType.md)
  - [MissingClosureReturnType](issues/MissingClosureReturnType.md)
  - [MissingConstructor](issues/MissingConstructor.md)
@@ -129,6 +133,7 @@ These issues are treated as errors at level 2 and below.
  - [RedundantConditionGivenDocblockType](issues/RedundantConditionGivenDocblockType.md)
  - [ReferenceConstraintViolation](issues/ReferenceConstraintViolation.md)
  - [UnresolvableInclude](issues/UnresolvableInclude.md)
+ - [UnsafeInstantiation](issues/UnsafeInstantiation.md)
 
 ## Errors ignored at level 4 and higher
 
@@ -170,7 +175,6 @@ These issues are treated as errors at level 3 and below.
  - [PossiblyUndefinedMethod](issues/PossiblyUndefinedMethod.md)
  - [PossiblyUndefinedVariable](issues/PossiblyUndefinedVariable.md)
  - [PropertyTypeCoercion](issues/PropertyTypeCoercion.md)
- - [TypeCoercion](issues/TypeCoercion.md)
 
 ## Errors ignored at level 5 and higher
 
@@ -185,6 +189,7 @@ These issues are treated as errors at level 4 and below.
  - [InternalMethod](issues/InternalMethod.md)
  - [InternalProperty](issues/InternalProperty.md)
  - [InvalidDocblock](issues/InvalidDocblock.md)
+ - [InvalidLiteralArgument](issues/InvalidLiteralArgument.md)
  - [InvalidOperand](issues/InvalidOperand.md)
  - [InvalidScalarArgument](issues/InvalidScalarArgument.md)
  - [InvalidToString](issues/InvalidToString.md)
@@ -206,6 +211,7 @@ These issues are treated as errors at level 4 and below.
 
 These issues are treated as errors at level 5 and below.
 
+ - [ConstructorSignatureMismatch](issues/ConstructorSignatureMismatch.md)
  - [FalsableReturnStatement](issues/FalsableReturnStatement.md)
  - [InvalidNullableReturnType](issues/InvalidNullableReturnType.md)
  - [LessSpecificImplementedReturnType](issues/LessSpecificImplementedReturnType.md)
@@ -255,13 +261,17 @@ These issues are treated as errors at level 7 and below.
  - [ContinueOutsideLoop](issues/ContinueOutsideLoop.md)
  - [MethodSignatureMismatch](issues/MethodSignatureMismatch.md)
  - [OverriddenMethodAccess](issues/OverriddenMethodAccess.md)
+ - [ParamNameMismatch](issues/ParamNameMismatch.md)
  - [ReservedWord](issues/ReservedWord.md)
  - [UninitializedProperty](issues/UninitializedProperty.md)
+ - [UnhandledMatchCondition](issues/UnhandledMatchCondition.md)
 
 
 ## Feature-specific errors
 
  - [ForbiddenEcho](issues/ForbiddenEcho.md)
+ - [ImpurePropertyFetch](issues/ImpurePropertyFetch.md)
+ - [ImpureVariable](issues/ImpureVariable.md)
  - [PossiblyUndefinedIntArrayOffset](issues/PossiblyUndefinedIntArrayOffset.md)
  - [PossiblyUndefinedStringArrayOffset](issues/PossiblyUndefinedStringArrayOffset.md)
  - [PossiblyUnusedMethod](issues/PossiblyUnusedMethod.md)

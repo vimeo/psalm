@@ -3,6 +3,6 @@ namespace Psalm\Issue;
 
 class UndefinedMagicMethod extends MethodIssue
 {
-    const ERROR_LEVEL = 4;
-    const SHORTCODE = 219;
+    public const ERROR_LEVEL = 4;
+    public const SHORTCODE = 219;
 }

@@ -9,18 +9,19 @@ use function strtolower;
 use function array_merge;
 use function array_intersect;
 use function array_unique;
+use function array_filter;
 
 /**
  * @internal
  */
 class ScopeAnalyzer
 {
-    const ACTION_END = 'END';
-    const ACTION_BREAK = 'BREAK';
-    const ACTION_CONTINUE = 'CONTINUE';
-    const ACTION_LEAVE_SWITCH = 'LEAVE_SWITCH';
-    const ACTION_NONE = 'NONE';
-    const ACTION_RETURN = 'RETURN';
+    public const ACTION_END = 'END';
+    public const ACTION_BREAK = 'BREAK';
+    public const ACTION_CONTINUE = 'CONTINUE';
+    public const ACTION_LEAVE_SWITCH = 'LEAVE_SWITCH';
+    public const ACTION_NONE = 'NONE';
+    public const ACTION_RETURN = 'RETURN';
 
     private const ACTIONS = [
         self::ACTION_END,
@@ -34,9 +35,8 @@ class ScopeAnalyzer
     /**
      * @param   array<PhpParser\Node\Stmt>   $stmts
      *
-     * @return  bool
      */
-    public static function doesEverBreak(array $stmts)
+    public static function doesEverBreak(array $stmts): bool
     {
         if (empty($stmts)) {
             return false;
@@ -97,7 +97,7 @@ class ScopeAnalyzer
                 ($stmt instanceof PhpParser\Node\Stmt\Expression && $stmt->expr instanceof PhpParser\Node\Expr\Exit_)
             ) {
                 if (!$return_is_exit && $stmt instanceof PhpParser\Node\Stmt\Return_) {
-                    return [self::ACTION_RETURN];
+                    return array_merge($control_actions, [self::ACTION_RETURN]);
                 }
 
                 return [self::ACTION_END];
@@ -159,10 +159,10 @@ class ScopeAnalyzer
                     && end($break_types) === 'switch'
                     && (!$stmt->num || !$stmt->num instanceof PhpParser\Node\Scalar\LNumber || $stmt->num->value < 2)
                 ) {
-                    return [self::ACTION_LEAVE_SWITCH];
+                    return array_merge($control_actions, [self::ACTION_LEAVE_SWITCH]);
                 }
 
-                return [self::ACTION_CONTINUE];
+                return \array_values(array_unique(array_merge($control_actions, [self::ACTION_CONTINUE])));
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\Break_) {
@@ -173,7 +173,7 @@ class ScopeAnalyzer
                     return [self::ACTION_LEAVE_SWITCH];
                 }
 
-                return [self::ACTION_BREAK];
+                return \array_values(array_unique(array_merge($control_actions, [self::ACTION_BREAK])));
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\If_) {
@@ -215,11 +215,16 @@ class ScopeAnalyzer
                     return $if_statement_actions;
                 }
 
-                $control_actions = array_merge(
-                    $control_actions,
-                    $if_statement_actions,
-                    $else_statement_actions,
-                    $all_elseif_actions
+                $control_actions = array_filter(
+                    array_merge(
+                        $control_actions,
+                        $if_statement_actions,
+                        $else_statement_actions,
+                        $all_elseif_actions
+                    ),
+                    function ($action) {
+                        return $action !== self::ACTION_NONE;
+                    }
                 );
             }
 
@@ -263,7 +268,7 @@ class ScopeAnalyzer
                 }
 
                 if ($has_default_terminator || isset($stmt->allMatched)) {
-                    return [self::ACTION_END];
+                    return \array_values(array_unique(array_merge($control_actions, [self::ACTION_END])));
                 }
             }
 
@@ -279,7 +284,12 @@ class ScopeAnalyzer
                     array_merge($break_types, ['loop'])
                 );
 
-                $control_actions = array_merge($control_actions, $do_actions);
+                $control_actions = array_filter(
+                    array_merge($control_actions, $do_actions),
+                    function ($action) {
+                        return $action !== self::ACTION_NONE;
+                    }
+                );
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\TryCatch) {
@@ -323,16 +333,37 @@ class ScopeAnalyzer
                         );
 
                         if (!in_array(self::ACTION_NONE, $finally_statement_actions, true)) {
-                            return $finally_statement_actions;
+                            return array_merge(
+                                array_filter(
+                                    $control_actions,
+                                    function ($action) {
+                                        return $action !== self::ACTION_NONE;
+                                    }
+                                ),
+                                $finally_statement_actions
+                            );
                         }
                     }
 
                     if (!$stmt->catches && !in_array(self::ACTION_NONE, $try_statement_actions, true)) {
-                        return $try_statement_actions;
+                        return array_merge(
+                            array_filter(
+                                $control_actions,
+                                function ($action) {
+                                    return $action !== self::ACTION_NONE;
+                                }
+                            ),
+                            $try_statement_actions
+                        );
                     }
                 }
 
-                $control_actions = \array_merge($control_actions, $try_statement_actions);
+                $control_actions = array_filter(
+                    \array_merge($control_actions, $try_statement_actions),
+                    function ($action) {
+                        return $action !== self::ACTION_NONE;
+                    }
+                );
             }
         }
 
@@ -344,9 +375,8 @@ class ScopeAnalyzer
     /**
      * @param   array<PhpParser\Node> $stmts
      *
-     * @return  bool
      */
-    public static function onlyThrowsOrExits(\Psalm\NodeTypeProvider $type_provider, array $stmts)
+    public static function onlyThrowsOrExits(\Psalm\NodeTypeProvider $type_provider, array $stmts): bool
     {
         if (empty($stmts)) {
             return false;

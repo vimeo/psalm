@@ -25,18 +25,12 @@ use function get_class;
  */
 class ExpressionAnalyzer
 {
-    /**
-     * @param   StatementsAnalyzer   $statements_analyzer
-     * @param   PhpParser\Node\Expr $stmt
-     * @param   Context             $context
-     * @param   bool                $array_assignment
-     */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $stmt,
         Context $context,
         bool $array_assignment = false,
-        Context $global_context = null,
+        ?Context $global_context = null,
         bool $from_stmt = false
     ) : bool {
         $codebase = $statements_analyzer->getCodebase();
@@ -373,6 +367,20 @@ class ExpressionAnalyzer
             return Expression\YieldFromAnalyzer::analyze($statements_analyzer, $stmt, $context);
         }
 
+        if ($stmt instanceof PhpParser\Node\Expr\Match_) {
+            return Expression\MatchAnalyzer::analyze($statements_analyzer, $stmt, $context);
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\Throw_) {
+            return ThrowAnalyzer::analyze($statements_analyzer, $stmt, $context);
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\NullsafePropertyFetch
+            || $stmt instanceof PhpParser\Node\Expr\NullsafeMethodCall
+        ) {
+            return Expression\NullsafeAnalyzer::analyze($statements_analyzer, $stmt, $context);
+        }
+
         if ($stmt instanceof PhpParser\Node\Expr\Error) {
             // do nothing
             return true;
@@ -391,12 +399,7 @@ class ExpressionAnalyzer
         return false;
     }
 
-    /**
-     * @param  string  $fq_class_name
-     *
-     * @return bool
-     */
-    public static function isMock($fq_class_name)
+    public static function isMock(string $fq_class_name): bool
     {
         return in_array(strtolower($fq_class_name), Config::getInstance()->getMockClasses(), true);
     }

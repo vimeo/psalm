@@ -17,14 +17,13 @@ class IncludeTest extends TestCase
      * @param bool $hoist_constants
      * @param array<string, string> $error_levels
      *
-     * @return void
      */
     public function testValidInclude(
         array $files,
         array $files_to_check,
         $hoist_constants = false,
         array $error_levels = []
-    ) {
+    ): void {
         $codebase = $this->project_analyzer->getCodebase();
 
         foreach ($files as $file_path => $contents) {
@@ -61,13 +60,12 @@ class IncludeTest extends TestCase
      * @param string $error_message
      * @param bool $hoist_constants
      *
-     * @return void
      */
     public function testInvalidInclude(
         array $files,
         array $files_to_check,
         $error_message
-    ) {
+    ): void {
         if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
             $this->markTestSkipped();
         }
@@ -100,7 +98,7 @@ class IncludeTest extends TestCase
     /**
      * @return array<string,array{files:array<string,string>,files_to_check:array<int,string>}>
      */
-    public function providerTestValidIncludes()
+    public function providerTestValidIncludes(): array
     {
         return [
             'basicRequire' => [
@@ -601,13 +599,35 @@ class IncludeTest extends TestCase
                     getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
                 ],
             ],
+            'noCrash' => [
+                'files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'classes.php' => '<?php
+                        // one.php
+
+                        if (true) {
+                            class One {}
+                        }
+                        else {
+                            class One {}
+                        }
+
+                        class Two {}',
+                    getcwd() . DIRECTORY_SEPARATOR . 'user.php' => '<?php
+                        include("classes.php");
+
+                        new Two();',
+                ],
+                'files_to_check' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'user.php',
+                ],
+            ],
         ];
     }
 
     /**
      * @return array<string,array{files:array<string,string>,files_to_check:array<int,string>,error_message:string}>
      */
-    public function providerTestInvalidIncludes()
+    public function providerTestInvalidIncludes(): array
     {
         return [
             'undefinedMethodInRequire' => [

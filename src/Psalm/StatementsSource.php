@@ -3,77 +3,43 @@ namespace Psalm;
 
 interface StatementsSource extends FileSource
 {
-    /**
-     * @return null|string
-     */
-    public function getNamespace();
+    public function getNamespace(): ?string;
 
     /**
      * @return array<string, string>
      */
-    public function getAliasedClassesFlipped();
+    public function getAliasedClassesFlipped(): array;
 
     /**
      * @return array<string, string>
      */
-    public function getAliasedClassesFlippedReplaceable();
+    public function getAliasedClassesFlippedReplaceable(): array;
 
-    /**
-     * @return string|null
-     */
-    public function getFQCLN();
+    public function getFQCLN(): ?string;
 
-    /**
-     * @return string|null
-     */
-    public function getClassName();
+    public function getClassName(): ?string;
 
-    /**
-     * @return string|null
-     */
-    public function getParentFQCLN();
+    public function getParentFQCLN(): ?string;
 
     /**
      * @return array<string, array<string, array{Type\Union}>>|null
      */
-    public function getTemplateTypeMap();
+    public function getTemplateTypeMap(): ?array;
 
     /**
-     * @param string $file_path
-     * @param string $file_name
-     *
      * @return void
      */
-    public function setRootFilePath($file_path, $file_name);
+    public function setRootFilePath(string $file_path, string $file_name);
 
-    /**
-     * @param string $file_path
-     *
-     * @return bool
-     */
-    public function hasParentFilePath($file_path);
+    public function hasParentFilePath(string $file_path): bool;
 
-    /**
-     * @param string $file_path
-     *
-     * @return bool
-     */
-    public function hasAlreadyRequiredFilePath($file_path);
+    public function hasAlreadyRequiredFilePath(string $file_path): bool;
 
-    /**
-     * @return int
-     */
-    public function getRequireNesting();
+    public function getRequireNesting(): int;
 
-    /**
-     * @return bool
-     */
-    public function isStatic();
+    public function isStatic(): bool;
 
-    /**
-     * @return StatementsSource|null
-     */
-    public function getSource();
+    public function getSource(): StatementsSource;
 
     public function getCodebase() : Codebase;
 
@@ -82,7 +48,7 @@ interface StatementsSource extends FileSource
      *
      * @return array<string>
      */
-    public function getSuppressedIssues();
+    public function getSuppressedIssues(): array;
 
     /**
      * @param array<int, string> $new_issues

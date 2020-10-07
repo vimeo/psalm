@@ -13,11 +13,8 @@ class FileDiffTest extends TestCase
     /**
      * @dataProvider getChanges
      *
-     * @param string $a
-     * @param string $b
      * @param string[] $same_methods
      *
-     * @return void
      */
     public function testCode(
         string $a,
@@ -26,7 +23,7 @@ class FileDiffTest extends TestCase
         array $same_signatures,
         array $changed_methods,
         array $diff_map_offsets
-    ) {
+    ): void {
         if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
             $this->markTestSkipped();
         }
@@ -59,7 +56,7 @@ class FileDiffTest extends TestCase
              *
              * @return array{0: int, 1: int}
              */
-            function (array $arr) {
+            function (array $arr): array {
                 return [$arr[2], $arr[3]];
             },
             $diff[3]
@@ -71,14 +68,11 @@ class FileDiffTest extends TestCase
     /**
      * @dataProvider getChanges
      *
-     * @param string $a
-     * @param string $b
      * @param string[] $same_methods
      * @param string[] $same_signatures
      * @param string[] $changed_methods
      * @param array<array-key,array{int,int}> $diff_map_offsets
      *
-     * @return void
      */
     public function testPartialAstDiff(
         string $a,
@@ -87,7 +81,7 @@ class FileDiffTest extends TestCase
         array $same_signatures,
         array $changed_methods,
         array $diff_map_offsets
-    ) {
+    ): void {
         if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
             $this->markTestSkipped();
         }
@@ -134,7 +128,7 @@ class FileDiffTest extends TestCase
              *
              * @return array{0: int, 1: int}
              */
-            function (array $arr) {
+            function (array $arr): array {
                 return [$arr[2], $arr[3]];
             },
             $diff[3]
@@ -147,9 +141,8 @@ class FileDiffTest extends TestCase
      * @param  array<int, PhpParser\Node\Stmt>  $a
      * @param  array<int, PhpParser\Node\Stmt>  $b
      *
-     * @return void
      */
-    private function assertTreesEqual(array $a, array $b)
+    private function assertTreesEqual(array $a, array $b): void
     {
         $this->assertSame(count($a), count($b));
 
@@ -173,7 +166,7 @@ class FileDiffTest extends TestCase
 
                 $this->assertNotSame($a_doc, $b_doc);
 
-                $this->assertSame($a_doc->getLine(), $b_doc->getLine());
+                $this->assertSame($a_doc->getStartLine(), $b_doc->getStartLine());
             }
 
             $this->assertSame(
@@ -204,7 +197,7 @@ class FileDiffTest extends TestCase
     /**
      * @return array<string,array{string,string,string[],string[],string[],array<array-key,array{int,int}>}>
      */
-    public function getChanges()
+    public function getChanges(): array
     {
         return [
             'sameFile' => [

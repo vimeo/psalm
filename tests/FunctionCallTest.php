@@ -11,7 +11,7 @@ class FunctionCallTest extends TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'preg_grep' => [
@@ -257,7 +257,7 @@ class FunctionCallTest extends TestCase
 
                     a(["a" => "hello"]);',
             ],
-            'objectLikeKeyChecksAgainstObjectLike' => [
+            'objectLikeKeyChecksAgainstTKeyedArray' => [
                 '<?php
                     /**
                      * @param array{a: string} $b
@@ -873,7 +873,7 @@ class FunctionCallTest extends TestCase
                 '<?php
                     $h = hash_init("sha256");',
                 [
-                    '$h' => 'HashContext',
+                    '$h' => 'HashContext|false',
                 ],
                 [],
                 '7.2',
@@ -882,7 +882,7 @@ class FunctionCallTest extends TestCase
                 '<?php
                     $h = hash_init("sha256");',
                 [
-                    '$h' => 'HashContext',
+                    '$h' => 'HashContext|false',
                 ],
                 [],
                 '7.3',
@@ -1191,7 +1191,10 @@ class FunctionCallTest extends TestCase
                             fn (array $matches) => $matches[4],
                             $ids
                         );
-                    };'
+                    };',
+                    'assertions' => [],
+                    'error_levels' => [],
+                    '7.4'
             ],
             'compactDefinedVariable' => [
                 '<?php
@@ -1312,13 +1315,45 @@ class FunctionCallTest extends TestCase
                     }
                     print_r(array_map("strval", $headers));'
             ],
+            'allowListEqualToRange' => [
+                '<?php
+                    /** @param array<int, int> $two */
+                    function collectCommit(array $one, array $two) : void {
+                        if ($one && array_values($one) === array_values($two)) {}
+                    }'
+            ],
+            'pregMatchAll' => [
+                '<?php
+                    /**
+                     * @return array<list<string>>
+                     */
+                    function extractUsernames(string $input): array {
+                        preg_match_all(\'/([a-zA-Z])*/\', $input, $matches);
+
+                        return $matches;
+                    }'
+            ],
+            'pregMatchAllOffsetCapture' => [
+                '<?php
+                    function foo(string $input): array {
+                        preg_match_all(\'/([a-zA-Z])*/\', $input, $matches, PREG_OFFSET_CAPTURE);
+
+                        return $matches[0];
+                    }'
+            ],
+            'strposAllowDictionary' => [
+                '<?php
+                    function sayHello(string $format): void {
+                        if (strpos("abcdefghijklmno", $format)) {}
+                    }',
+            ],
         ];
     }
 
     /**
      * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'invalidScalarArgument' => [
@@ -1483,7 +1518,7 @@ class FunctionCallTest extends TestCase
                     a(["a" => "hello"]);',
                 'error_message' => 'InvalidScalarArgument',
             ],
-            'objectLikeKeyChecksAgainstDifferentObjectLike' => [
+            'objectLikeKeyChecksAgainstDifferentTKeyedArray' => [
                 '<?php
                     /**
                      * @param array{a: int} $b
@@ -1595,18 +1630,6 @@ class FunctionCallTest extends TestCase
                 '<?php
                     function sort() : void {}',
                 'error_message' => 'DuplicateFunction',
-            ],
-            'usortInvalidComparison' => [
-                '<?php
-                    $arr = [["one"], ["two"], ["three"]];
-
-                    usort(
-                        $arr,
-                        function (string $a, string $b): int {
-                            return strcmp($a, $b);
-                        }
-                    );',
-                'error_message' => 'InvalidArgument',
             ],
             'functionCallOnMixed' => [
                 '<?php
@@ -1801,6 +1824,13 @@ class FunctionCallTest extends TestCase
                         if ($s) {}
                     }',
                 'error_message' => 'RedundantCondition',
+            ],
+            'strposNoSetFirstParam' => [
+                '<?php
+                    function sayHello(string $format): void {
+                        if (strpos("u", $format)) {}
+                    }',
+                'error_message' => 'InvalidLiteralArgument',
             ],
         ];
     }

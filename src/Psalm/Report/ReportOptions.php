@@ -23,7 +23,7 @@ class ReportOptions
     /**
      * @var value-of<Report::SUPPORTED_OUTPUT_TYPES>
      */
-    public $format = REPORT::TYPE_CONSOLE;
+    public $format = Report::TYPE_CONSOLE;
 
     /**
      * @var bool

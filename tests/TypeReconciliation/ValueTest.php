@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Tests\TypeReconciliation;
 
+use Psalm\Internal\RuntimeCaches;
+
 class ValueTest extends \Psalm\Tests\TestCase
 {
     use \Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
@@ -8,7 +10,7 @@ class ValueTest extends \Psalm\Tests\TestCase
 
     public function setUp() : void
     {
-        \Psalm\Internal\Analyzer\FileAnalyzer::clearCache();
+        RuntimeCaches::clearAll();
 
         $this->file_provider = new \Psalm\Tests\Internal\Provider\FakeFileProvider();
 
@@ -21,13 +23,12 @@ class ValueTest extends \Psalm\Tests\TestCase
         );
 
         $this->project_analyzer->setPhpVersion('7.3');
-        $this->project_analyzer->getCodebase()->config->parse_sql = true;
     }
 
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'whileCountUpdate' => [
@@ -734,13 +735,53 @@ class ValueTest extends \Psalm\Tests\TestCase
                     }
                     if ($data["e"] > 0) {}'
             ],
+            'compareToNullImplicitly' => [
+                '<?php
+                    final class Foo {
+                        public const VALUE_ANY = null;
+                        public const VALUE_ONE = "one";
+
+                        /** @return self::VALUE_* */
+                        public static function getValues() {
+                            return rand(0, 1) ? null : self::VALUE_ONE;
+                        }
+                    }
+
+                    $data = Foo::getValues();
+
+                    if ($data === Foo::VALUE_ANY) {
+                        $data = "default";
+                    }
+
+                    echo strlen($data);'
+            ],
+            'negateValueInUnion' => [
+                '<?php
+                    function f(): int {
+                        $ret = 0;
+                        for ($i = 20; $i >= 0; $i--) {
+                            $ret = ($ret === 10) ? 1 : $ret + 1;
+                        }
+                        return $ret;
+                    }'
+            ],
+            'inArrayPreserveNull' => [
+                '<?php
+                    function x(?string $foo): void {
+                        if (!in_array($foo, ["foo", "bar", null], true)) {
+                            throw new Exception();
+                        }
+
+                        if ($foo) {}
+                    }',
+            ],
         ];
     }
 
     /**
      * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'neverEqualsType' => [

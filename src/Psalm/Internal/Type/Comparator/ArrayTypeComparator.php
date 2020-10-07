@@ -4,7 +4,7 @@ namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
 use Psalm\Type;
-use Psalm\Type\Atomic\ObjectLike;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TList;
@@ -12,7 +12,6 @@ use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyList;
-use function array_reduce;
 
 /**
  * @internal
@@ -20,8 +19,8 @@ use function array_reduce;
 class ArrayTypeComparator
 {
     /**
-     * @param TArray|ObjectLike|TList|TClassStringMap $input_type_part
-     * @param TArray|ObjectLike|TList|TClassStringMap $container_type_part
+     * @param TArray|TKeyedArray|TList|TClassStringMap $input_type_part
+     * @param TArray|TKeyedArray|TList|TClassStringMap $container_type_part
      */
     public static function isContainedBy(
         Codebase $codebase,
@@ -32,7 +31,7 @@ class ArrayTypeComparator
     ) : bool {
         $all_types_contain = true;
 
-        if ($container_type_part instanceof ObjectLike
+        if ($container_type_part instanceof TKeyedArray
             && $input_type_part instanceof TArray
         ) {
             $all_string_int_literals = true;
@@ -49,9 +48,9 @@ class ArrayTypeComparator
             }
 
             if ($all_string_int_literals && $properties) {
-                $input_type_part = new ObjectLike($properties);
+                $input_type_part = new TKeyedArray($properties);
 
-                return ObjectLikeComparator::isContainedBy(
+                return KeyedArrayComparator::isContainedBy(
                     $codebase,
                     $input_type_part,
                     $container_type_part,
@@ -62,7 +61,7 @@ class ArrayTypeComparator
         }
 
         if ($container_type_part instanceof TList
-            && $input_type_part instanceof ObjectLike
+            && $input_type_part instanceof TKeyedArray
         ) {
             if ($input_type_part->is_list) {
                 $input_type_part = $input_type_part->getList();
@@ -103,13 +102,13 @@ class ArrayTypeComparator
                 || !$container_type_part instanceof TNonEmptyList;
         }
 
-        if ($container_type_part instanceof ObjectLike) {
+        if ($container_type_part instanceof TKeyedArray) {
             $generic_container_type_part = $container_type_part->getGenericArrayType();
 
             $container_type_part = $generic_container_type_part;
         }
 
-        if ($input_type_part instanceof ObjectLike) {
+        if ($input_type_part instanceof TKeyedArray) {
             $input_type_part = $input_type_part->getGenericArrayType();
         }
 

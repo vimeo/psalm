@@ -16,16 +16,13 @@ use function is_string;
 class StaticAnalyzer
 {
     /**
-     * @param   PhpParser\Node\Stmt\Static_ $stmt
-     * @param   Context                     $context
-     *
      * @return  false|null
      */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Static_ $stmt,
         Context $context
-    ) {
+    ): ?bool {
         $codebase = $statements_analyzer->getCodebase();
 
         if ($context->mutation_free) {
@@ -180,10 +177,6 @@ class StaticAnalyzer
                 $statements_analyzer->byref_uses[$var_id] = true;
 
                 $location = new CodeLocation($statements_analyzer, $var);
-
-                if ($codebase->find_unused_variables) {
-                    $context->unreferenced_vars[$var_id] = [$location->getHash() => $location];
-                }
 
                 $statements_analyzer->registerVariable(
                     $var_id,

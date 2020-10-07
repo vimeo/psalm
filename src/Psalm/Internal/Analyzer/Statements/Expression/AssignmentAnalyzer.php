@@ -4,6 +4,8 @@ namespace Psalm\Internal\Analyzer\Statements\Expression;
 use PhpParser;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\StaticPropertyAssignmentAnalyzer;
@@ -11,6 +13,9 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Scanner\VarDocblockComment;
+use Psalm\Internal\Codebase\VariableUseGraph;
+use Psalm\Internal\Codebase\TaintFlowGraph;
+use Psalm\Internal\ControlFlow\ControlFlowNode;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Exception\DocblockParseException;
@@ -46,22 +51,18 @@ use function substr;
 class AssignmentAnalyzer
 {
     /**
-     * @param  StatementsAnalyzer        $statements_analyzer
-     * @param  PhpParser\Node\Expr      $assign_var
      * @param  PhpParser\Node\Expr|null $assign_value  This has to be null to support list destructuring
-     * @param  Type\Union|null          $assign_value_type
-     * @param  Context                  $context
-     * @param  ?PhpParser\Comment\Doc   $doc_comment
      *
      * @return false|Type\Union
      */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $assign_var,
-        $assign_value,
-        $assign_value_type,
+        ?PhpParser\Node\Expr $assign_value,
+        ?Type\Union $assign_value_type,
         Context $context,
-        ?PhpParser\Comment\Doc $doc_comment
+        ?PhpParser\Comment\Doc $doc_comment,
+        array $not_ignored_docblock_var_ids = []
     ) {
         $var_id = ExpressionIdentifier::getVarId(
             $assign_var,
@@ -85,6 +86,18 @@ class AssignmentAnalyzer
         $context->inside_assignment = true;
 
         $codebase = $statements_analyzer->getCodebase();
+
+        $base_assign_value = $assign_value;
+
+        while ($base_assign_value instanceof PhpParser\Node\Expr\Assign) {
+            $base_assign_value = $base_assign_value->expr;
+        }
+
+        if ($base_assign_value !== $assign_value) {
+            ExpressionAnalyzer::analyze($statements_analyzer, $base_assign_value, $context);
+
+            $assign_value_type = $statements_analyzer->node_data->getType($base_assign_value) ?: $assign_value_type;
+        }
 
         $removed_taints = [];
 
@@ -137,7 +150,8 @@ class AssignmentAnalyzer
                     $context,
                     $var_id,
                     $comment_type,
-                    $comment_type_location
+                    $comment_type_location,
+                    $not_ignored_docblock_var_ids
                 );
             }
         }
@@ -161,6 +175,22 @@ class AssignmentAnalyzer
                 }
             }
 
+            $was_inside_use = $context->inside_use;
+
+            $root_expr = $assign_var;
+
+            while ($root_expr instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+                $root_expr = $root_expr->var;
+            }
+
+            // if we don't know where this data is going, treat as a dead-end usage
+            if (!$root_expr instanceof PhpParser\Node\Expr\Variable
+                || (\is_string($root_expr->name)
+                    && \in_array('$' . $root_expr->name, VariableFetchAnalyzer::SUPER_GLOBALS, true))
+            ) {
+                $context->inside_use = true;
+            }
+
             if (ExpressionAnalyzer::analyze($statements_analyzer, $assign_value, $context) === false) {
                 if ($var_id) {
                     if ($array_var_id) {
@@ -173,6 +203,8 @@ class AssignmentAnalyzer
 
                 return false;
             }
+
+            $context->inside_use = $was_inside_use;
         }
 
         if ($comment_type && $comment_type_location) {
@@ -183,6 +215,7 @@ class AssignmentAnalyzer
             if ($codebase->find_unused_variables
                 && $temp_assign_value_type
                 && $array_var_id
+                && (!$not_ignored_docblock_var_ids || isset($not_ignored_docblock_var_ids[$array_var_id]))
                 && $temp_assign_value_type->getId() === $comment_type->getId()
                 && !$comment_type->isMixed()
             ) {
@@ -201,12 +234,37 @@ class AssignmentAnalyzer
                 }
             }
 
+            $parent_nodes = $temp_assign_value_type->parent_nodes ?? [];
+
             $assign_value_type = $comment_type;
-            $assign_value_type->parent_nodes = $temp_assign_value_type->parent_nodes ?? [];
+            $assign_value_type->parent_nodes = $parent_nodes;
         } elseif (!$assign_value_type) {
-            $assign_value_type = $assign_value
-                ? ($statements_analyzer->node_data->getType($assign_value) ?: Type::getMixed())
-                : Type::getMixed();
+            if ($assign_value) {
+                $assign_value_type = $statements_analyzer->node_data->getType($assign_value);
+            }
+
+            if ($assign_value_type) {
+                $assign_value_type = clone $assign_value_type;
+            } else {
+                $assign_value_type = Type::getMixed();
+            }
+        }
+
+        if ($statements_analyzer->control_flow_graph instanceof VariableUseGraph
+            && !$assign_value_type->parent_nodes
+        ) {
+            if ($array_var_id) {
+                $assignment_node = ControlFlowNode::getForAssignment(
+                    $array_var_id,
+                    new CodeLocation($statements_analyzer->getSource(), $assign_var)
+                );
+            } else {
+                $assignment_node = new ControlFlowNode('unknown-origin', 'unknown origin', null);
+            }
+
+            $assign_value_type->parent_nodes = [
+                $assignment_node->id => $assignment_node
+            ];
         }
 
         if ($array_var_id && isset($context->vars_in_scope[$array_var_id])) {
@@ -220,6 +278,11 @@ class AssignmentAnalyzer
                     )) {
                         // fall through
                     }
+                } elseif ($statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                    && $statements_analyzer->getSource()->track_mutations
+                ) {
+                    $statements_analyzer->getSource()->inferred_impure = true;
+                    $statements_analyzer->getSource()->inferred_has_mutation = true;
                 }
 
                 $assign_value_type->by_ref = true;
@@ -355,10 +418,6 @@ class AssignmentAnalyzer
 
                     $location = new CodeLocation($statements_analyzer, $assign_var);
 
-                    if ($codebase->find_unused_variables) {
-                        $context->unreferenced_vars[$var_id] = [$location->getHash() => $location];
-                    }
-
                     if (!$statements_analyzer->hasVariable($var_id)) {
                         $statements_analyzer->registerVariable(
                             $var_id,
@@ -386,13 +445,54 @@ class AssignmentAnalyzer
                         );
                     }
 
-                    if (isset($context->byref_constraints[$var_id]) || $assign_value_type->by_ref) {
-                        $statements_analyzer->registerVariableUses([$location->getHash() => $location]);
+                    if (isset($context->byref_constraints[$var_id])) {
+                        $assign_value_type->by_ref = true;
+                    }
+
+                    if ($assign_value_type->by_ref) {
+                        if ($statements_analyzer->control_flow_graph instanceof VariableUseGraph
+                            && $assign_value_type->parent_nodes
+                        ) {
+                            $location = new CodeLocation($statements_analyzer, $assign_var);
+
+                            $byref_node = ControlFlowNode::getForAssignment($var_id, $location);
+
+                            foreach ($assign_value_type->parent_nodes as $parent_node) {
+                                $statements_analyzer->control_flow_graph->addPath(
+                                    $parent_node,
+                                    new ControlFlowNode('variable-use', 'variable use', null),
+                                    'variable-use'
+                                );
+
+                                $statements_analyzer->control_flow_graph->addPath(
+                                    $byref_node,
+                                    $parent_node,
+                                    'byref-assignment'
+                                );
+                            }
+                        }
                     }
                 }
             } else {
+                $was_inside_use = $context->inside_use;
+                $context->inside_use = true;
+
                 if (ExpressionAnalyzer::analyze($statements_analyzer, $assign_var->name, $context) === false) {
                     return false;
+                }
+
+                $context->inside_use = $was_inside_use;
+
+                if ($statements_analyzer->control_flow_graph instanceof VariableUseGraph
+                    && $assign_value_type->parent_nodes
+                ) {
+                    foreach ($assign_value_type->parent_nodes as $parent_node) {
+                        $statements_analyzer->control_flow_graph->addPath(
+                            $parent_node,
+                            new ControlFlowNode('variable-use', 'variable use', null),
+                            'variable-use'
+                        );
+                    }
                 }
             }
         } elseif ($assign_var instanceof PhpParser\Node\Expr\List_
@@ -438,6 +538,14 @@ class AssignmentAnalyzer
                     continue;
                 }
 
+                $offset_value = null;
+
+                if (!$assign_var_item->key) {
+                    $offset_value = $offset;
+                } elseif ($assign_var_item->key instanceof PhpParser\Node\Scalar\String_) {
+                    $offset_value = $assign_var_item->key->value;
+                }
+
                 $list_var_id = ExpressionIdentifier::getArrayVarId(
                     $var,
                     $statements_analyzer->getFQCLN(),
@@ -449,14 +557,16 @@ class AssignmentAnalyzer
                 $has_null = false;
 
                 foreach ($assign_value_type->getAtomicTypes() as $assign_value_atomic_type) {
-                    if ($assign_value_atomic_type instanceof Type\Atomic\ObjectLike
+                    if ($assign_value_atomic_type instanceof Type\Atomic\TKeyedArray
                         && !$assign_var_item->key
                     ) {
                         // if object-like has int offsets
-                        if (isset($assign_value_atomic_type->properties[$offset])) {
-                            $offset_type = $assign_value_atomic_type->properties[(string)$offset];
+                        if ($offset_value !== null
+                            && isset($assign_value_atomic_type->properties[$offset_value])
+                        ) {
+                            $value_type = $assign_value_atomic_type->properties[$offset_value];
 
-                            if ($offset_type->possibly_undefined) {
+                            if ($value_type->possibly_undefined) {
                                 if (IssueBuffer::accepts(
                                     new PossiblyUndefinedArrayOffset(
                                         'Possibly undefined array key',
@@ -467,15 +577,39 @@ class AssignmentAnalyzer
                                     // fall through
                                 }
 
-                                $offset_type = clone $offset_type;
-                                $offset_type->possibly_undefined = false;
+                                $value_type = clone $value_type;
+                                $value_type->possibly_undefined = false;
+                            }
+
+                            if ($statements_analyzer->control_flow_graph
+                                && $assign_value
+                            ) {
+                                $assign_value_id = ExpressionIdentifier::getArrayVarId(
+                                    $assign_value,
+                                    $statements_analyzer->getFQCLN(),
+                                    $statements_analyzer
+                                );
+
+                                $keyed_array_var_id = null;
+
+                                if ($assign_value_id) {
+                                    $keyed_array_var_id = $assign_value_id . '[\'' . $offset_value . '\']';
+                                }
+
+                                ArrayFetchAnalyzer::taintArrayFetch(
+                                    $statements_analyzer,
+                                    $assign_value,
+                                    $keyed_array_var_id,
+                                    $value_type,
+                                    Type::getString((string) $offset_value)
+                                );
                             }
 
                             self::analyze(
                                 $statements_analyzer,
                                 $var,
                                 null,
-                                $offset_type,
+                                $value_type,
                                 $context,
                                 $doc_comment
                             );
@@ -522,7 +656,7 @@ class AssignmentAnalyzer
                             // do nothing
                         }
                     } elseif (!$assign_value_atomic_type instanceof Type\Atomic\TArray
-                        && !$assign_value_atomic_type instanceof Type\Atomic\ObjectLike
+                        && !$assign_value_atomic_type instanceof Type\Atomic\TKeyedArray
                         && !$assign_value_atomic_type instanceof Type\Atomic\TList
                         && !$assign_value_type->hasArrayAccessInterface($codebase)
                     ) {
@@ -562,7 +696,7 @@ class AssignmentAnalyzer
                     if ($var instanceof PhpParser\Node\Expr\List_
                         || $var instanceof PhpParser\Node\Expr\Array_
                     ) {
-                        if ($assign_value_atomic_type instanceof Type\Atomic\ObjectLike) {
+                        if ($assign_value_atomic_type instanceof Type\Atomic\TKeyedArray) {
                             $assign_value_atomic_type = $assign_value_atomic_type->getGenericArrayType();
                         }
 
@@ -573,13 +707,15 @@ class AssignmentAnalyzer
                             ]);
                         }
 
+                        $array_value_type = $assign_value_atomic_type instanceof Type\Atomic\TArray
+                            ? clone $assign_value_atomic_type->type_params[1]
+                            : Type::getMixed();
+
                         self::analyze(
                             $statements_analyzer,
                             $var,
                             null,
-                            $assign_value_atomic_type instanceof Type\Atomic\TArray
-                                ? clone $assign_value_atomic_type->type_params[1]
-                                : Type::getMixed(),
+                            $array_value_type,
                             $context,
                             $doc_comment
                         );
@@ -597,10 +733,6 @@ class AssignmentAnalyzer
                         if (strpos($list_var_id, '-') === false && strpos($list_var_id, '[') === false) {
                             $location = new CodeLocation($statements_analyzer, $var);
 
-                            if ($codebase->find_unused_variables) {
-                                $context->unreferenced_vars[$list_var_id] = [$location->getHash() => $location];
-                            }
-
                             if (!$statements_analyzer->hasVariable($list_var_id)) {
                                 $statements_analyzer->registerVariable(
                                     $list_var_id,
@@ -615,19 +747,41 @@ class AssignmentAnalyzer
                             }
 
                             if (isset($context->byref_constraints[$list_var_id])) {
-                                $statements_analyzer->registerVariableUses([$location->getHash() => $location]);
+                                // something
                             }
                         }
 
                         if ($assign_value_atomic_type instanceof Type\Atomic\TArray) {
                             $new_assign_type = clone $assign_value_atomic_type->type_params[1];
 
+                            if ($statements_analyzer->control_flow_graph
+                                && $assign_value
+                            ) {
+                                ArrayFetchAnalyzer::taintArrayFetch(
+                                    $statements_analyzer,
+                                    $assign_value,
+                                    null,
+                                    $new_assign_type,
+                                    Type::getArrayKey()
+                                );
+                            }
+
                             $can_be_empty = !$assign_value_atomic_type instanceof Type\Atomic\TNonEmptyArray;
                         } elseif ($assign_value_atomic_type instanceof Type\Atomic\TList) {
                             $new_assign_type = clone $assign_value_atomic_type->type_param;
 
+                            if ($statements_analyzer->control_flow_graph && $assign_value) {
+                                ArrayFetchAnalyzer::taintArrayFetch(
+                                    $statements_analyzer,
+                                    $assign_value,
+                                    null,
+                                    $new_assign_type,
+                                    Type::getArrayKey()
+                                );
+                            }
+
                             $can_be_empty = !$assign_value_atomic_type instanceof Type\Atomic\TNonEmptyList;
-                        } elseif ($assign_value_atomic_type instanceof Type\Atomic\ObjectLike) {
+                        } elseif ($assign_value_atomic_type instanceof Type\Atomic\TKeyedArray) {
                             if ($assign_var_item->key
                                 && ($assign_var_item->key instanceof PhpParser\Node\Scalar\String_
                                     || $assign_var_item->key instanceof PhpParser\Node\Scalar\LNumber)
@@ -649,6 +803,16 @@ class AssignmentAnalyzer
 
                                     $new_assign_type->possibly_undefined = false;
                                 }
+                            }
+
+                            if ($statements_analyzer->control_flow_graph && $assign_value && $new_assign_type) {
+                                ArrayFetchAnalyzer::taintArrayFetch(
+                                    $statements_analyzer,
+                                    $assign_value,
+                                    null,
+                                    $new_assign_type,
+                                    Type::getArrayKey()
+                                );
                             }
 
                             $can_be_empty = !$assign_value_atomic_type->sealed;
@@ -716,6 +880,47 @@ class AssignmentAnalyzer
                         ) {
                             $context->vars_in_scope[$list_var_id]->addType(new Type\Atomic\TNull);
                         }
+
+                        if ($statements_analyzer->control_flow_graph) {
+                            $control_flow_graph = $statements_analyzer->control_flow_graph;
+
+                            $var_location = new CodeLocation($statements_analyzer->getSource(), $var);
+
+                            if (!$context->vars_in_scope[$list_var_id]->parent_nodes) {
+                                $assignment_node = ControlFlowNode::getForAssignment(
+                                    $list_var_id,
+                                    $var_location
+                                );
+
+                                $context->vars_in_scope[$list_var_id]->parent_nodes = [
+                                    $assignment_node->id => $assignment_node
+                                ];
+                            } else {
+                                if ($statements_analyzer->control_flow_graph instanceof TaintFlowGraph
+                                    && \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
+                                ) {
+                                    $context->vars_in_scope[$list_var_id]->parent_nodes = [];
+                                } else {
+                                    $new_parent_node = ControlFlowNode::getForAssignment($list_var_id, $var_location);
+
+                                    $statements_analyzer->control_flow_graph->addNode($new_parent_node);
+
+                                    foreach ($context->vars_in_scope[$list_var_id]->parent_nodes as $parent_node) {
+                                        $control_flow_graph->addPath(
+                                            $parent_node,
+                                            $new_parent_node,
+                                            '=',
+                                            [],
+                                            $removed_taints
+                                        );
+                                    }
+
+                                    $context->vars_in_scope[$list_var_id]->parent_nodes = [
+                                        $new_parent_node->id => $new_parent_node
+                                    ];
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -729,6 +934,9 @@ class AssignmentAnalyzer
             );
         } elseif ($assign_var instanceof PhpParser\Node\Expr\PropertyFetch) {
             if (!$assign_var->name instanceof PhpParser\Node\Identifier) {
+                $was_inside_use = $context->inside_use;
+                $context->inside_use = true;
+
                 // this can happen when the user actually means to type $this-><autocompleted>, but there's
                 // a variable on the next line
                 if (ExpressionAnalyzer::analyze($statements_analyzer, $assign_var->var, $context) === false) {
@@ -738,6 +946,8 @@ class AssignmentAnalyzer
                 if (ExpressionAnalyzer::analyze($statements_analyzer, $assign_var->name, $context) === false) {
                     return false;
                 }
+
+                $context->inside_use = $was_inside_use;
             }
 
             if ($assign_var->name instanceof PhpParser\Node\Identifier) {
@@ -789,19 +999,30 @@ class AssignmentAnalyzer
             $property_var_pure_compatible = $statements_analyzer->node_data->isPureCompatible($assign_var->var);
 
             // prevents writing to any properties in a mutation-free context
-            if (($context->mutation_free || $context->external_mutation_free)
-                && !$property_var_pure_compatible
+            if (!$property_var_pure_compatible
                 && !$context->collect_mutations
                 && !$context->collect_initializations
             ) {
-                if (IssueBuffer::accepts(
-                    new ImpurePropertyAssignment(
-                        'Cannot assign to a property from a mutation-free context',
-                        new CodeLocation($statements_analyzer, $assign_var)
-                    ),
-                    $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
+                if ($context->mutation_free || $context->external_mutation_free) {
+                    if (IssueBuffer::accepts(
+                        new ImpurePropertyAssignment(
+                            'Cannot assign to a property from a mutation-free context',
+                            new CodeLocation($statements_analyzer, $assign_var)
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                } elseif ($statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                    && $statements_analyzer->getSource()->track_mutations
+                ) {
+                    if (!$assign_var->var instanceof PhpParser\Node\Expr\Variable
+                        || $assign_var->var->name !== 'this'
+                    ) {
+                        $statements_analyzer->getSource()->inferred_has_mutation = true;
+                    }
+
+                    $statements_analyzer->getSource()->inferred_impure = true;
                 }
             }
         } elseif ($assign_var instanceof PhpParser\Node\Expr\StaticPropertyFetch &&
@@ -867,24 +1088,28 @@ class AssignmentAnalyzer
                 return $context->vars_in_scope[$var_id];
             }
 
-            if ($codebase->taint
-                && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
-            ) {
+            if ($statements_analyzer->control_flow_graph) {
+                $control_flow_graph = $statements_analyzer->control_flow_graph;
+
                 if ($context->vars_in_scope[$var_id]->parent_nodes) {
-                    if (\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())) {
+                    if ($control_flow_graph instanceof TaintFlowGraph
+                        && \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
+                    ) {
                         $context->vars_in_scope[$var_id]->parent_nodes = [];
                     } else {
                         $var_location = new CodeLocation($statements_analyzer->getSource(), $assign_var);
 
-                        $new_parent_node = \Psalm\Internal\Taint\TaintNode::getForAssignment($var_id, $var_location);
+                        $new_parent_node = ControlFlowNode::getForAssignment($var_id, $var_location);
 
-                        $codebase->taint->addTaintNode($new_parent_node);
+                        $control_flow_graph->addNode($new_parent_node);
 
                         foreach ($context->vars_in_scope[$var_id]->parent_nodes as $parent_node) {
-                            $codebase->taint->addPath($parent_node, $new_parent_node, '=', [], $removed_taints);
+                            $control_flow_graph->addPath($parent_node, $new_parent_node, '=', [], $removed_taints);
                         }
 
-                        $context->vars_in_scope[$var_id]->parent_nodes = [$new_parent_node];
+                        $context->vars_in_scope[$var_id]->parent_nodes = [
+                            $new_parent_node->id => $new_parent_node
+                        ];
                     }
                 }
             }
@@ -904,7 +1129,8 @@ class AssignmentAnalyzer
         Context $context,
         ?string $var_id = null,
         ?Type\Union &$comment_type = null,
-        ?CodeLocation\DocblockTypeLocation &$comment_type_location = null
+        ?CodeLocation\DocblockTypeLocation &$comment_type_location = null,
+        array $not_ignored_docblock_var_ids = []
     ) : void {
         if (!$var_comment->type) {
             return;
@@ -964,14 +1190,15 @@ class AssignmentAnalyzer
                 return;
             }
 
+            $project_analyzer = $statements_analyzer->getProjectAnalyzer();
+
             if ($codebase->find_unused_variables
                 && $type_location
+                && (!$not_ignored_docblock_var_ids || isset($not_ignored_docblock_var_ids[$var_comment->var_id]))
                 && isset($context->vars_in_scope[$var_comment->var_id])
                 && $context->vars_in_scope[$var_comment->var_id]->getId() === $var_comment_type->getId()
                 && !$var_comment_type->isMixed()
             ) {
-                $project_analyzer = $statements_analyzer->getProjectAnalyzer();
-
                 if ($codebase->alter_code
                     && isset($project_analyzer->getIssuesToFix()['UnnecessaryVarAnnotation'])
                 ) {
@@ -1005,18 +1232,11 @@ class AssignmentAnalyzer
         }
     }
 
-    /**
-     * @param   StatementsAnalyzer               $statements_analyzer
-     * @param   PhpParser\Node\Expr\AssignOp    $stmt
-     * @param   Context                         $context
-     *
-     * @return  bool
-     */
     public static function analyzeAssignmentOperation(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\AssignOp $stmt,
         Context $context
-    ) {
+    ): bool {
         $array_var_id = ExpressionIdentifier::getArrayVarId(
             $stmt->var,
             $statements_analyzer->getFQCLN(),
@@ -1053,6 +1273,14 @@ class AssignmentAnalyzer
                 $statements_analyzer->node_data->setType($stmt, $fake_coalesce_type);
             }
 
+            BinaryOpAnalyzer::addControlFlow(
+                $statements_analyzer,
+                $stmt,
+                $stmt->var,
+                $stmt->expr,
+                'coalesce'
+            );
+
             return true;
         }
 
@@ -1060,31 +1288,54 @@ class AssignmentAnalyzer
 
         $context->inside_assignment = true;
 
+        $root_expr = $stmt->var;
+
+        while ($root_expr instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+            $root_expr = $root_expr->var;
+        }
+
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->var, $context) === false) {
             return false;
+        }
+
+        $was_inside_use = $context->inside_use;
+
+        // if we don't know where this data is going, treat as a dead-end usage
+        if (!$root_expr instanceof PhpParser\Node\Expr\Variable
+            || (\is_string($root_expr->name)
+                && \in_array('$' . $root_expr->name, VariableFetchAnalyzer::SUPER_GLOBALS, true))
+        ) {
+            $context->inside_use = true;
         }
 
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
             return false;
         }
 
+        $context->inside_use = $was_inside_use;
+
         if ($array_var_id
-            && $context->mutation_free
             && $stmt->var instanceof PhpParser\Node\Expr\PropertyFetch
             && ($stmt_var_var_type = $statements_analyzer->node_data->getType($stmt->var->var))
             && !$stmt_var_var_type->reference_free
         ) {
-            if (IssueBuffer::accepts(
-                new ImpurePropertyAssignment(
-                    'Cannot assign to a property from a mutation-free context',
-                    new CodeLocation($statements_analyzer, $stmt->var)
-                ),
-                $statements_analyzer->getSuppressedIssues()
-            )) {
-                // fall through
+            if ($context->mutation_free) {
+                if (IssueBuffer::accepts(
+                    new ImpurePropertyAssignment(
+                        'Cannot assign to a property from a mutation-free context',
+                        new CodeLocation($statements_analyzer, $stmt->var)
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            } elseif ($statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                && $statements_analyzer->getSource()->track_mutations
+            ) {
+                $statements_analyzer->getSource()->inferred_has_mutation = true;
+                $statements_analyzer->getSource()->inferred_impure = true;
             }
-        } elseif ($context->mutation_free
-            && !$context->collect_mutations
+        } elseif (!$context->collect_mutations
             && !$context->collect_initializations
             && $stmt->var instanceof PhpParser\Node\Expr\PropertyFetch
         ) {
@@ -1094,18 +1345,25 @@ class AssignmentAnalyzer
                 $statements_analyzer
             );
 
-            if (isset($context->vars_in_scope[$lhs_var_id])
-                && !$context->vars_in_scope[$lhs_var_id]->allow_mutations
-            ) {
-                if (IssueBuffer::accepts(
-                    new ImpurePropertyAssignment(
-                        'Cannot assign to a property from a mutation-free context',
-                        new CodeLocation($statements_analyzer, $stmt)
-                    ),
-                    $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
+            if ($context->mutation_free) {
+                if (isset($context->vars_in_scope[$lhs_var_id])
+                    && !$context->vars_in_scope[$lhs_var_id]->allow_mutations
+                ) {
+                    if (IssueBuffer::accepts(
+                        new ImpurePropertyAssignment(
+                            'Cannot assign to a property from a mutation-free context',
+                            new CodeLocation($statements_analyzer, $stmt)
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
                 }
+            } elseif ($statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                && $statements_analyzer->getSource()->track_mutations
+            ) {
+                $statements_analyzer->getSource()->inferred_has_mutation = true;
+                $statements_analyzer->getSource()->inferred_impure = true;
             }
         }
 
@@ -1121,7 +1379,6 @@ class AssignmentAnalyzer
                     $array_var_id,
                     $location
                 );
-                $context->unreferenced_vars[$array_var_id] = [$location->getHash() => $location];
             }
         }
 
@@ -1148,26 +1405,54 @@ class AssignmentAnalyzer
             );
 
             if ($stmt->var instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+                $result_type = $result_type ?: Type::getMixed($context->inside_loop);
+
                 ArrayAssignmentAnalyzer::analyze(
                     $statements_analyzer,
                     $stmt->var,
                     $context,
                     $stmt->expr,
-                    $result_type ?: Type::getMixed($context->inside_loop)
+                    $result_type
                 );
-            } elseif ($result_type && $array_var_id) {
-                $context->vars_in_scope[$array_var_id] = $result_type;
-                $statements_analyzer->node_data->setType($stmt, clone $context->vars_in_scope[$array_var_id]);
+            } else {
+                $result_type = $result_type
+                    ? clone $result_type
+                    : new Type\Union([new Type\Atomic\TInt(), new Type\Atomic\TFloat()]);
             }
-        } elseif ($stmt instanceof PhpParser\Node\Expr\AssignOp\Div
-            && $stmt_var_type
-            && $stmt_expr_type
-            && $stmt_var_type->hasDefinitelyNumericType()
-            && $stmt_expr_type->hasDefinitelyNumericType()
-            && $array_var_id
-        ) {
-            $context->vars_in_scope[$array_var_id] = Type::combineUnionTypes(Type::getFloat(), Type::getInt());
-            $statements_analyzer->node_data->setType($stmt, clone $context->vars_in_scope[$array_var_id]);
+
+            if ($array_var_id) {
+                $context->vars_in_scope[$array_var_id] = $result_type;
+            }
+
+            $statements_analyzer->node_data->setType($stmt, $result_type);
+
+            BinaryOpAnalyzer::addControlFlow(
+                $statements_analyzer,
+                $stmt,
+                $stmt->var,
+                $stmt->expr,
+                'nondivop'
+            );
+        } elseif ($stmt instanceof PhpParser\Node\Expr\AssignOp\Div) {
+            if ($stmt_var_type
+                && $stmt_expr_type
+                && $stmt_var_type->hasDefinitelyNumericType()
+                && $stmt_expr_type->hasDefinitelyNumericType()
+                && $array_var_id
+            ) {
+                $context->vars_in_scope[$array_var_id] = Type::combineUnionTypes(Type::getFloat(), Type::getInt());
+                $statements_analyzer->node_data->setType($stmt, clone $context->vars_in_scope[$array_var_id]);
+            } else {
+                $statements_analyzer->node_data->setType($stmt, Type::getMixed());
+            }
+
+            BinaryOpAnalyzer::addControlFlow(
+                $statements_analyzer,
+                $stmt,
+                $stmt->var,
+                $stmt->expr,
+                'div'
+            );
         } elseif ($stmt instanceof PhpParser\Node\Expr\AssignOp\Concat) {
             BinaryOp\ConcatAnalyzer::analyze(
                 $statements_analyzer,
@@ -1181,42 +1466,19 @@ class AssignmentAnalyzer
                 $context->vars_in_scope[$array_var_id] = $result_type;
                 $statements_analyzer->node_data->setType($stmt, clone $context->vars_in_scope[$array_var_id]);
 
-                if ($codebase->taint
-                    && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
-                    && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
-                ) {
-                    $stmt_left_type = $statements_analyzer->node_data->getType($stmt->var);
-                    $stmt_right_type = $statements_analyzer->node_data->getType($stmt->expr);
-
-                    $var_location = new CodeLocation($statements_analyzer, $stmt);
-
-                    $new_parent_node = \Psalm\Internal\Taint\TaintNode::getForAssignment($array_var_id, $var_location);
-                    $codebase->taint->addTaintNode($new_parent_node);
-
-                    $result_type->parent_nodes = [$new_parent_node];
-
-                    if ($stmt_left_type && $stmt_left_type->parent_nodes) {
-                        foreach ($stmt_left_type->parent_nodes as $parent_node) {
-                            $codebase->taint->addPath($parent_node, $new_parent_node, 'concat');
-                        }
-                    }
-
-                    if ($stmt_right_type && $stmt_right_type->parent_nodes) {
-                        foreach ($stmt_right_type->parent_nodes as $parent_node) {
-                            $codebase->taint->addPath($parent_node, $new_parent_node, 'concat');
-                        }
-                    }
-                }
+                BinaryOpAnalyzer::addControlFlow(
+                    $statements_analyzer,
+                    $stmt,
+                    $stmt->var,
+                    $stmt->expr,
+                    'concatop'
+                );
             }
-        } elseif ($stmt_var_type
-            && $stmt_expr_type
-            && ($stmt_var_type->hasInt() || $stmt_expr_type->hasInt())
-            && ($stmt instanceof PhpParser\Node\Expr\AssignOp\BitwiseOr
-                || $stmt instanceof PhpParser\Node\Expr\AssignOp\BitwiseXor
-                || $stmt instanceof PhpParser\Node\Expr\AssignOp\BitwiseAnd
-                || $stmt instanceof PhpParser\Node\Expr\AssignOp\ShiftLeft
-                || $stmt instanceof PhpParser\Node\Expr\AssignOp\ShiftRight
-            )
+        } elseif ($stmt instanceof PhpParser\Node\Expr\AssignOp\BitwiseOr
+            || $stmt instanceof PhpParser\Node\Expr\AssignOp\BitwiseXor
+            || $stmt instanceof PhpParser\Node\Expr\AssignOp\BitwiseAnd
+            || $stmt instanceof PhpParser\Node\Expr\AssignOp\ShiftLeft
+            || $stmt instanceof PhpParser\Node\Expr\AssignOp\ShiftRight
         ) {
             BinaryOp\NonDivArithmeticOpAnalyzer::analyze(
                 $statements_analyzer,
@@ -1229,8 +1491,46 @@ class AssignmentAnalyzer
             );
 
             if ($result_type && $array_var_id) {
-                $context->vars_in_scope[$array_var_id] = $result_type;
-                $statements_analyzer->node_data->setType($stmt, clone $context->vars_in_scope[$array_var_id]);
+                $context->vars_in_scope[$array_var_id] = clone $result_type;
+                $statements_analyzer->node_data->setType($stmt, $context->vars_in_scope[$array_var_id]);
+            }
+
+            BinaryOpAnalyzer::addControlFlow(
+                $statements_analyzer,
+                $stmt,
+                $stmt->var,
+                $stmt->expr,
+                'bitwiseop'
+            );
+        }
+
+        if ($statements_analyzer->control_flow_graph
+            && $array_var_id
+            && isset($context->vars_in_scope[$array_var_id])
+            && ($stmt_type = $statements_analyzer->node_data->getType($stmt))
+        ) {
+            $control_flow_graph = $statements_analyzer->control_flow_graph;
+
+            if ($stmt_type->parent_nodes) {
+                if ($control_flow_graph instanceof TaintFlowGraph
+                    && \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
+                ) {
+                    $stmt_type->parent_nodes = [];
+                } else {
+                    $var_location = new CodeLocation($statements_analyzer->getSource(), $stmt->var);
+
+                    $new_parent_node = ControlFlowNode::getForAssignment($array_var_id, $var_location);
+
+                    $control_flow_graph->addNode($new_parent_node);
+
+                    foreach ($stmt_type->parent_nodes as $parent_node) {
+                        $control_flow_graph->addPath($parent_node, $new_parent_node, '=');
+                    }
+
+                    $context->vars_in_scope[$array_var_id]->parent_nodes = [
+                        $new_parent_node->id => $new_parent_node
+                    ];
+                }
             }
         }
 
@@ -1262,7 +1562,13 @@ class AssignmentAnalyzer
             }
         }
 
-        if ($stmt->var instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+        if (!($stmt instanceof PhpParser\Node\Expr\AssignOp\Plus
+                || $stmt instanceof PhpParser\Node\Expr\AssignOp\Minus
+                || $stmt instanceof PhpParser\Node\Expr\AssignOp\Mod
+                || $stmt instanceof PhpParser\Node\Expr\AssignOp\Mul
+                || $stmt instanceof PhpParser\Node\Expr\AssignOp\Pow)
+            && $stmt->var instanceof PhpParser\Node\Expr\ArrayDimFetch
+        ) {
             ArrayAssignmentAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt->var,
@@ -1279,11 +1585,6 @@ class AssignmentAnalyzer
         return true;
     }
 
-    /**
-     * @param   StatementsAnalyzer               $statements_analyzer
-     * @param   PhpParser\Node\Expr\AssignRef   $stmt
-     * @param   Context                         $context
-     */
     public static function analyzeAssignmentRef(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\AssignRef $stmt,
@@ -1304,13 +1605,13 @@ class AssignmentAnalyzer
 
         $assignment_type->by_ref = true;
 
-        $lhs_var_id = ExpressionIdentifier::getVarId(
+        $lhs_var_id = ExpressionIdentifier::getArrayVarId(
             $stmt->var,
             $statements_analyzer->getFQCLN(),
             $statements_analyzer
         );
 
-        $rhs_var_id = ExpressionIdentifier::getVarId(
+        $rhs_var_id = ExpressionIdentifier::getArrayVarId(
             $stmt->expr,
             $statements_analyzer->getFQCLN(),
             $statements_analyzer
@@ -1318,23 +1619,50 @@ class AssignmentAnalyzer
 
         if ($lhs_var_id) {
             $context->vars_in_scope[$lhs_var_id] = $assignment_type;
-            $context->hasVariable($lhs_var_id, $statements_analyzer);
+            $context->hasVariable($lhs_var_id);
+            $context->byref_constraints[$lhs_var_id] = new \Psalm\Internal\ReferenceConstraint();
+
+            if ($statements_analyzer->control_flow_graph instanceof VariableUseGraph) {
+                foreach ($context->vars_in_scope[$lhs_var_id]->parent_nodes as $parent_node) {
+                    $statements_analyzer->control_flow_graph->addPath(
+                        $parent_node,
+                        new ControlFlowNode('variable-use', 'variable use', null),
+                        'variable-use'
+                    );
+                }
+            }
         }
 
-        if ($rhs_var_id && !isset($context->vars_in_scope[$rhs_var_id])) {
-            $context->vars_in_scope[$rhs_var_id] = Type::getMixed();
+        if ($rhs_var_id) {
+            if (!isset($context->vars_in_scope[$rhs_var_id])) {
+                $context->vars_in_scope[$rhs_var_id] = Type::getMixed();
+            }
+
+            $context->byref_constraints[$rhs_var_id] = new \Psalm\Internal\ReferenceConstraint();
+        }
+
+        if ($statements_analyzer->control_flow_graph
+            && $lhs_var_id
+            && $rhs_var_id
+            && isset($context->vars_in_scope[$rhs_var_id])
+        ) {
+            $rhs_type = $context->vars_in_scope[$rhs_var_id];
+
+            $control_flow_graph = $statements_analyzer->control_flow_graph;
+
+            $lhs_location = new CodeLocation($statements_analyzer->getSource(), $stmt->var);
+
+            $lhs_node = ControlFlowNode::getForAssignment($lhs_var_id, $lhs_location);
+
+            foreach ($rhs_type->parent_nodes as $byref_destination_node) {
+                $control_flow_graph->addPath($lhs_node, $byref_destination_node, '=');
+            }
         }
 
         return true;
     }
 
     /**
-     * @param  StatementsAnalyzer    $statements_analyzer
-     * @param  PhpParser\Node\Expr  $stmt
-     * @param  Type\Union           $by_ref_type
-     * @param  Context              $context
-     * @param  bool                 $constrain_type
-     *
      * @return void
      */
     public static function assignByRefParam(
@@ -1368,17 +1696,16 @@ class AssignmentAnalyzer
         );
 
         if ($var_id) {
+            $var_not_in_scope = false;
+
             if (!$by_ref_type->hasMixed() && $constrain_type) {
                 $context->byref_constraints[$var_id] = new \Psalm\Internal\ReferenceConstraint($by_ref_type);
             }
 
-            if (!$context->hasVariable($var_id, $statements_analyzer)) {
+            if (!$context->hasVariable($var_id)) {
                 $context->vars_possibly_in_scope[$var_id] = true;
 
                 if (!$statements_analyzer->hasVariable($var_id)) {
-                    $location = new CodeLocation($statements_analyzer, $stmt);
-                    $statements_analyzer->registerVariable($var_id, $location, null);
-
                     if ($constrain_type
                         && $prevent_null
                         && !$by_ref_type->isMixed()
@@ -1397,13 +1724,9 @@ class AssignmentAnalyzer
                         }
                     }
 
-                    $codebase = $statements_analyzer->getCodebase();
-
-                    if ($codebase->find_unused_variables) {
-                        $context->unreferenced_vars[$var_id] = [$location->getHash() => $location];
-                    }
-
-                    $context->hasVariable($var_id, $statements_analyzer);
+                    $context->hasVariable($var_id);
+                } else {
+                    $var_not_in_scope = true;
                 }
             } elseif ($var_id === '$this') {
                 // don't allow changing $this
@@ -1419,8 +1742,14 @@ class AssignmentAnalyzer
                     $statements_analyzer
                 );
 
+                $by_ref_out_type = clone $by_ref_out_type;
+
+                if ($existing_type->parent_nodes) {
+                    $by_ref_out_type->parent_nodes += $existing_type->parent_nodes;
+                }
+
                 if ($existing_type->getId() !== 'array<empty, empty>') {
-                    $context->vars_in_scope[$var_id] = clone $by_ref_out_type;
+                    $context->vars_in_scope[$var_id] = $by_ref_out_type;
 
                     if (!($stmt_type = $statements_analyzer->node_data->getType($stmt))
                         || $stmt_type->isEmpty()
@@ -1436,8 +1765,14 @@ class AssignmentAnalyzer
 
             $context->vars_in_scope[$var_id] = $by_ref_out_type;
 
-            if (!($stmt_type = $statements_analyzer->node_data->getType($stmt)) || $stmt_type->isEmpty()) {
+            $stmt_type = $statements_analyzer->node_data->getType($stmt);
+
+            if (!$stmt_type || $stmt_type->isEmpty()) {
                 $statements_analyzer->node_data->setType($stmt, clone $by_ref_type);
+            }
+
+            if ($var_not_in_scope && $stmt instanceof PhpParser\Node\Expr\Variable) {
+                $statements_analyzer->registerPossiblyUndefinedVariable($var_id, $stmt);
             }
         }
     }

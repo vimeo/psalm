@@ -13,7 +13,7 @@ class ClassTemplateExtendsTest extends TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'phanTuple' => [
@@ -3925,7 +3925,7 @@ class ClassTemplateExtendsTest extends TestCase
                 [],
                 '7.4'
             ],
-            'inheritTraitPropertyObjectLike' => [
+            'inheritTraitPropertyTKeyedArray' => [
                 '<?php
                     /** @template TValue */
                     trait A {
@@ -4388,13 +4388,130 @@ class ClassTemplateExtendsTest extends TestCase
                         abstract public function foo($param): void;
                     }'
             ],
+            'extendAndImplementedTemplatedProperty' => [
+                '<?php
+                    interface Mock {}
+                    abstract class A {}
+                    class B extends A {}
+                    class BMock extends B {}
+
+                    /** @template T of A */
+                    abstract class ATestCase {
+                        /** @var T */
+                        protected Mock $foo;
+
+                        /** @param T $foo */
+                        public function __construct(A $foo) {
+                            $this->foo = $foo;
+                        }
+                    }
+
+                    /** @extends ATestCase<B> */
+                    class BTestCase extends ATestCase {
+                        public function getFoo(): B {
+                            return $this->foo;
+                        }
+                    }
+
+                    new BTestCase(new BMock());'
+            ],
+            'extendAndImplementedTemplatedIntersectionProperty' => [
+                '<?php
+                    interface Mock {
+                        function foo():void;
+                    }
+                    abstract class A {}
+                    class B extends A {}
+
+                    /** @template T of A */
+                    abstract class ATestCase {
+                        /** @var T&Mock */
+                        protected Mock $obj;
+
+                        /** @param T&Mock $obj */
+                        public function __construct(Mock $obj) {
+                            $this->obj = $obj;
+                        }
+                    }
+
+                    /** @extends ATestCase<B> */
+                    class BTestCase extends ATestCase {
+                        public function getFoo(): void {
+                            $this->obj->foo();
+                        }
+                    }'
+            ],
+            'extendAndImplementedTemplatedIntersectionReceives' => [
+                '<?php
+                    interface Mock {
+                        function foo():void;
+                    }
+                    abstract class A {}
+                    class B extends A {}
+                    class BMock extends B implements Mock {
+                        public function foo(): void {}
+                    }
+
+                    /** @template T of A */
+                    abstract class ATestCase {
+                        /** @var T&Mock */
+                        protected Mock $obj;
+
+                        /** @param T&Mock $obj */
+                        public function __construct(Mock $obj) {
+                            $this->obj = $obj;
+                        }
+                    }
+
+                    /** @extends ATestCase<B> */
+                    class BTestCase extends ATestCase {}
+
+                    new BTestCase(new BMock());'
+            ],
+            'yieldTemplated' => [
+                '<?php
+                    /**
+                     * @template-covariant TValue
+                     * @psalm-yield TValue
+                     */
+                    interface Promise {}
+
+                    /**
+                     * @template-covariant TValue
+                     * @template-implements Promise<TValue>
+                     */
+                    class Success implements Promise {
+                        /**
+                         * @psalm-param TValue $value
+                         */
+                        public function __construct($value) {}
+                    }
+
+                    /**
+                     * @psalm-return Generator<mixed, mixed, mixed, int>
+                     */
+                    function a(): Generator {
+                        return b(yield c());
+                    }
+
+                    function b(string $baz): int {
+                        return intval($baz);
+                    }
+
+                    /**
+                     * @psalm-return Promise<string>
+                     */
+                    function c(): Promise {
+                        return new Success("a");
+                    }'
+            ],
         ];
     }
 
     /**
      * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'extendsWithUnfulfilledNonTemplate' => [
@@ -5147,7 +5264,7 @@ class ClassTemplateExtendsTest extends TestCase
                     function bar(Child $c) : void {
                         ord($c->example("boris"));
                     }',
-                'error_message' => 'MixedArgument - src/somefile.php:31:29 - Argument 1 of ord cannot be mixed, expecting string',
+                'error_message' => 'MixedArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:31:29 - Argument 1 of ord cannot be mixed, expecting string',
             ],
             'preventWiderParentType' => [
                 '<?php

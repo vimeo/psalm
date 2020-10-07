@@ -12,7 +12,7 @@ class FunctionTemplateAssertTest extends TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'assertTemplatedType' => [
@@ -29,9 +29,8 @@ class FunctionTemplateAssertTest extends TestCase
 
                     /**
                      * @param mixed $value
-                     * @param class-string $type
+                     * @param class-string<T> $type
                      * @template T
-                     * @template-typeof T $type
                      * @psalm-assert T $value
                      */
                     function assertInstanceOf($value, string $type): void {
@@ -165,9 +164,8 @@ class FunctionTemplateAssertTest extends TestCase
 
                     /**
                      * @param mixed $value
-                     * @param class-string $type
+                     * @param class-string<T> $type
                      * @template T
-                     * @template-typeof T $type
                      * @psalm-assert T $value
                      */
                     function assertInstanceOf($value, string $type): void {
@@ -202,12 +200,11 @@ class FunctionTemplateAssertTest extends TestCase
                     class A {}
 
                     /**
-                     * @param class-string $expected
+                     * @param class-string<T> $expected
                      * @param mixed  $actual
                      * @param string $message
                      *
                      * @template T
-                     * @template-typeof T $expected
                      * @psalm-assert T $actual
                      */
                     function assertInstanceOf($expected, $actual) : void {
@@ -724,7 +721,7 @@ class FunctionTemplateAssertTest extends TestCase
     /**
      * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'detectRedundantCondition' => [
@@ -732,12 +729,11 @@ class FunctionTemplateAssertTest extends TestCase
                     class A {}
 
                     /**
-                     * @param class-string $expected
+                     * @param class-string<T> $expected
                      * @param mixed  $actual
                      * @param string $message
                      *
                      * @template T
-                     * @template-typeof T $expected
                      * @psalm-assert T $actual
                      */
                     function assertInstanceOf($expected, $actual) : void {

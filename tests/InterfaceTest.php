@@ -9,7 +9,7 @@ class InterfaceTest extends TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'extendsAndImplements' => [
@@ -686,13 +686,28 @@ class InterfaceTest extends TestCase
                         $f->m()->m();
                     }'
             ],
+            'dontModifyAfterUnnecessaryAssertion' => [
+                '<?php
+                    class A {}
+                    interface I {}
+
+                    /**
+                     * @param A&I $a
+                     * @return A&I
+                     */
+                    function foo(I $a) {
+                        /** @psalm-suppress RedundantConditionGivenDocblockType */
+                        assert($a instanceof A);
+                        return $a;
+                    }'
+            ],
         ];
     }
 
     /**
      * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'invalidInterface' => [

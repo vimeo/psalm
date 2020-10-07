@@ -3,29 +3,14 @@ namespace Psalm\Type;
 
 use function array_filter;
 use function array_keys;
-use function array_search;
-use function array_values;
-use function count;
 use function get_class;
 use function is_numeric;
 use Psalm\Codebase;
-use Psalm\CodeLocation;
-use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
-use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\TypeAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeAlias;
-use Psalm\Issue\InvalidTemplateParam;
-use Psalm\Issue\MissingTemplateParam;
-use Psalm\Issue\ReservedWord;
-use Psalm\Issue\TooManyTemplateParams;
-use Psalm\Issue\UndefinedConstant;
-use Psalm\IssueBuffer;
-use Psalm\StatementsSource;
-use Psalm\Storage\FileStorage;
 use Psalm\Type;
-use Psalm\Type\Atomic\ObjectLike;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TAssertionFalsy;
@@ -34,7 +19,7 @@ use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableArray;
 use Psalm\Type\Atomic\TCallableList;
 use Psalm\Type\Atomic\TCallableObject;
-use Psalm\Type\Atomic\TCallableObjectLikeArray;
+use Psalm\Type\Atomic\TCallableKeyedArray;
 use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TEmpty;
@@ -45,6 +30,7 @@ use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralClassString;
+use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
@@ -64,14 +50,13 @@ use Psalm\Type\Atomic\TTraitString;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Atomic\TTypeAlias;
 use Psalm\Type\Atomic\TVoid;
-use function reset;
 use function strpos;
 use function strtolower;
 use function substr;
 
 abstract class Atomic implements TypeNode
 {
-    const KEY = 'atomic';
+    public const KEY = 'atomic';
 
     /**
      * Whether or not the type has been checked yet
@@ -98,7 +83,6 @@ abstract class Atomic implements TypeNode
     public $offset_end;
 
     /**
-     * @param  string $value
      * @param  array{int,int}|null   $php_version
      * @param  array<string, array<string, array{Union}>> $template_type_map
      * @param  array<string, TypeAlias> $type_aliases
@@ -106,8 +90,8 @@ abstract class Atomic implements TypeNode
      * @return Atomic
      */
     public static function create(
-        $value,
-        array $php_version = null,
+        string $value,
+        ?array $php_version = null,
         array $template_type_map = [],
         array $type_aliases = []
     ) {
@@ -164,6 +148,11 @@ abstract class Atomic implements TypeNode
 
             case 'callable':
                 return new TCallable();
+            case 'pure-callable':
+                $type = new TCallable();
+                $type->is_pure = true;
+
+                return $type;
 
             case 'array':
             case 'associative-array':
@@ -219,7 +208,11 @@ abstract class Atomic implements TypeNode
                 return $php_version !== null ? new TNamedObject($value) : new TNull();
 
             case 'mixed':
-                return $php_version !== null ? new TNamedObject($value) : new TMixed();
+                if ($php_version === null || $php_version[0] >= 8) {
+                    return new TMixed();
+                }
+
+                return new TNamedObject($value);
 
             case 'callable-object':
                 return new TCallableObject();
@@ -278,26 +271,18 @@ abstract class Atomic implements TypeNode
         return new TNamedObject($value);
     }
 
-    /**
-     * @return string
-     */
-    abstract public function getKey(bool $include_extra = true);
+    abstract public function getKey(bool $include_extra = true) : string;
 
-    /**
-     * @return bool
-     */
-    public function isNumericType()
+    public function isNumericType(): bool
     {
         return $this instanceof TInt
             || $this instanceof TFloat
             || $this instanceof TNumericString
-            || $this instanceof TNumeric;
+            || $this instanceof TNumeric
+            || ($this instanceof TLiteralString && \is_numeric($this->value));
     }
 
-    /**
-     * @return bool
-     */
-    public function isObjectType()
+    public function isObjectType(): bool
     {
         return $this instanceof TObject
             || $this instanceof TNamedObject
@@ -305,10 +290,7 @@ abstract class Atomic implements TypeNode
                 && $this->as->hasObjectType());
     }
 
-    /**
-     * @return bool
-     */
-    public function isNamedObjectType()
+    public function isNamedObjectType(): bool
     {
         return $this instanceof TNamedObject
             || ($this instanceof TTemplateParam
@@ -323,46 +305,34 @@ abstract class Atomic implements TypeNode
             );
     }
 
-    /**
-     * @return bool
-     */
-    public function isCallableType()
+    public function isCallableType(): bool
     {
         return $this instanceof TCallable
             || $this instanceof TCallableObject
             || $this instanceof TCallableString
             || $this instanceof TCallableArray
             || $this instanceof TCallableList
-            || $this instanceof TCallableObjectLikeArray;
+            || $this instanceof TCallableKeyedArray;
     }
 
-    /**
-     * @return bool
-     */
-    public function isIterable(Codebase $codebase)
+    public function isIterable(Codebase $codebase): bool
     {
         return $this instanceof TIterable
             || $this->hasTraversableInterface($codebase)
             || $this instanceof TArray
-            || $this instanceof ObjectLike
+            || $this instanceof TKeyedArray
             || $this instanceof TList;
     }
 
-    /**
-     * @return bool
-     */
-    public function isCountable(Codebase $codebase)
+    public function isCountable(Codebase $codebase): bool
     {
         return $this->hasCountableInterface($codebase)
             || $this instanceof TArray
-            || $this instanceof ObjectLike
+            || $this instanceof TKeyedArray
             || $this instanceof TList;
     }
 
-    /**
-     * @return bool
-     */
-    public function hasTraversableInterface(Codebase $codebase)
+    public function hasTraversableInterface(Codebase $codebase): bool
     {
         return $this instanceof TNamedObject
             && (
@@ -387,10 +357,7 @@ abstract class Atomic implements TypeNode
             );
     }
 
-    /**
-     * @return bool
-     */
-    public function hasCountableInterface(Codebase $codebase)
+    public function hasCountableInterface(Codebase $codebase): bool
     {
         return $this instanceof TNamedObject
             && (
@@ -415,32 +382,23 @@ abstract class Atomic implements TypeNode
             );
     }
 
-    /**
-     * @return bool
-     */
-    public function isArrayAccessibleWithStringKey(Codebase $codebase)
+    public function isArrayAccessibleWithStringKey(Codebase $codebase): bool
     {
         return $this instanceof TArray
-            || $this instanceof ObjectLike
+            || $this instanceof TKeyedArray
             || $this instanceof TList
             || $this instanceof Atomic\TClassStringMap
             || $this->hasArrayAccessInterface($codebase)
             || ($this instanceof TNamedObject && $this->value === 'SimpleXMLElement');
     }
 
-    /**
-     * @return bool
-     */
-    public function isArrayAccessibleWithIntOrStringKey(Codebase $codebase)
+    public function isArrayAccessibleWithIntOrStringKey(Codebase $codebase): bool
     {
         return $this instanceof TString
             || $this->isArrayAccessibleWithStringKey($codebase);
     }
 
-    /**
-     * @return bool
-     */
-    public function hasArrayAccessInterface(Codebase $codebase)
+    public function hasArrayAccessInterface(Codebase $codebase): bool
     {
         return $this instanceof TNamedObject
             && (
@@ -457,7 +415,6 @@ abstract class Atomic implements TypeNode
                     $this->extra_types
                     && array_filter(
                         $this->extra_types,
-                        /** @param Atomic $a */
                         function (Atomic $a) use ($codebase) : bool {
                             return $a->hasArrayAccessInterface($codebase);
                         }
@@ -521,13 +478,13 @@ abstract class Atomic implements TypeNode
             }
         }
 
-        if ($this instanceof Type\Atomic\ObjectLike) {
+        if ($this instanceof Type\Atomic\TKeyedArray) {
             foreach ($this->properties as $property_type) {
                 $property_type->replaceClassLike($old, $new);
             }
         }
 
-        if ($this instanceof Type\Atomic\TFn
+        if ($this instanceof Type\Atomic\TClosure
             || $this instanceof Type\Atomic\TCallable
         ) {
             if ($this->params) {
@@ -544,7 +501,7 @@ abstract class Atomic implements TypeNode
         }
     }
 
-    public function __toString()
+    public function __toString(): string
     {
         return '';
     }
@@ -568,18 +525,12 @@ abstract class Atomic implements TypeNode
         }
     }
 
-    /**
-     * @return string
-     */
-    public function getId(bool $nested = false)
+    public function getId(bool $nested = false): string
     {
         return $this->__toString();
     }
 
-    /**
-     * @return string
-     */
-    public function getAssertionString()
+    public function getAssertionString(): string
     {
         return $this->getId();
     }
@@ -587,42 +538,32 @@ abstract class Atomic implements TypeNode
     /**
      * @param  array<string, string> $aliased_classes
      *
-     * @return string
      */
     public function toNamespacedString(
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
         bool $use_phpdoc_format
-    ) {
+    ): string {
         return $this->getKey();
     }
 
     /**
-     * @param  string|null   $namespace
      * @param  array<string, string> $aliased_classes
-     * @param  string|null   $this_class
-     * @param  int           $php_major_version
-     * @param  int           $php_minor_version
-     *
-     * @return null|string
      */
     abstract public function toPhpString(
-        $namespace,
+        ?string $namespace,
         array $aliased_classes,
-        $this_class,
-        $php_major_version,
-        $php_minor_version
-    );
+        ?string $this_class,
+        int $php_major_version,
+        int $php_minor_version
+    ): ?string;
 
-    /**
-     * @return bool
-     */
-    abstract public function canBeFullyExpressedInPhp();
+    abstract public function canBeFullyExpressedInPhp(): bool;
 
     public function replaceTemplateTypesWithStandins(
         TemplateResult $template_result,
-        Codebase $codebase = null,
+        ?Codebase $codebase = null,
         ?StatementsAnalyzer $statements_analyzer = null,
         Type\Atomic $input_type = null,
         ?int $input_arg_offset = null,
@@ -642,10 +583,7 @@ abstract class Atomic implements TypeNode
         // do nothing
     }
 
-    /**
-     * @return bool
-     */
-    public function equals(Atomic $other_type)
+    public function equals(Atomic $other_type): bool
     {
         if (get_class($other_type) !== get_class($this)) {
             return false;

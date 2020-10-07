@@ -22,11 +22,11 @@ class PdoStatementSetFetchMode implements \Psalm\Plugin\Hook\MethodParamsProvide
     public static function getMethodParams(
         string $fq_classlike_name,
         string $method_name_lowercase,
-        array $call_args = null,
-        StatementsSource $statements_source = null,
-        Context $context = null,
-        CodeLocation $code_location = null
-    ) {
+        ?array $call_args = null,
+        ?StatementsSource $statements_source = null,
+        ?Context $context = null,
+        ?CodeLocation $code_location = null
+    ): ?array {
         if (!$statements_source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
             return null;
         }
@@ -40,7 +40,7 @@ class PdoStatementSetFetchMode implements \Psalm\Plugin\Hook\MethodParamsProvide
                     $context
                 ) === false
             ) {
-                return;
+                return null;
             }
 
             if (($first_call_arg_type = $statements_source->node_data->getType($call_args[0]->value))
@@ -106,5 +106,7 @@ class PdoStatementSetFetchMode implements \Psalm\Plugin\Hook\MethodParamsProvide
                 return $params;
             }
         }
+
+        return null;
     }
 }

@@ -6,7 +6,7 @@ class UnusedVariableManipulationTest extends FileManipulationTest
     /**
      * @return array<string,array{string,string,string,string[],bool}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): array
     {
         return [
             'removeUnusedVariableSimple' => [
@@ -179,14 +179,14 @@ class UnusedVariableManipulationTest extends FileManipulationTest
                 '<?php
                     class A {
                         public function foo() : void {
-                            $a = $b = $c = $d = $e = "hello";
+                            $a = $b = $c = $d = $e = "";
                             echo $a.$b.$d.$e;
                         }
                     }',
                 '<?php
                     class A {
                         public function foo() : void {
-                            $a = $b = $d = $e = "hello";
+                            $a = $b = $d = $e = "";
                             echo $a.$b.$d.$e;
                         }
                     }',
@@ -330,7 +330,6 @@ class UnusedVariableManipulationTest extends FileManipulationTest
                     }',
                 '<?php
                     function foo() : void {
-                        $a = 5;
                     }',
                 '7.1',
                 ['UnusedVariable'],
@@ -423,15 +422,30 @@ class UnusedVariableManipulationTest extends FileManipulationTest
                     }',
                 '<?php
                     function foo() : void {
-                        $a = 5;
-                        $b = 6;
                         echo "foo";
                     }',
                 '7.1',
                 ['UnusedVariable'],
                 true,
             ],
-
+            'removeUnusedUnchainedAssign' => [
+                '<?php
+                    function foo() : void {
+                        $a = 5;
+                        $b = 6;
+                        $a -= intval("4");
+                        $b += $a;
+                        $c = $b;
+                        echo "foo";
+                    }',
+                '<?php
+                    function foo() : void {
+                        echo "foo";
+                    }',
+                '7.1',
+                ['UnusedVariable'],
+                true,
+            ],
             'removeUnusedVariableBinaryOp' => [
                 '<?php
                     function foo() : void {
@@ -442,8 +456,6 @@ class UnusedVariableManipulationTest extends FileManipulationTest
                     }',
                 '<?php
                     function foo() : void {
-                        $a = 5;
-                        $b = 6;
                         echo "foo";
                     }',
                 '7.1',

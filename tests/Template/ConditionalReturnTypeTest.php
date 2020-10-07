@@ -1,7 +1,6 @@
 <?php
 namespace Psalm\Tests\Template;
 
-use const DIRECTORY_SEPARATOR;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits;
 
@@ -12,7 +11,7 @@ class ConditionalReturnTypeTest extends TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'conditionalReturnType' => [

@@ -10,12 +10,11 @@ use Psalm\Issue\UndefinedInterface;
  */
 class InterfaceAnalyzer extends ClassLikeAnalyzer
 {
-    /**
-     * @param PhpParser\Node\Stmt\Interface_ $interface
-     * @param string                         $fq_interface_name
-     */
-    public function __construct(PhpParser\Node\Stmt\Interface_ $interface, SourceAnalyzer $source, $fq_interface_name)
-    {
+    public function __construct(
+        PhpParser\Node\Stmt\Interface_ $interface,
+        SourceAnalyzer $source,
+        string $fq_interface_name
+    ) {
         parent::__construct($interface, $source, $fq_interface_name);
     }
 

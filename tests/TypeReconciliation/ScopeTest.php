@@ -11,7 +11,7 @@ class ScopeTest extends \Psalm\Tests\TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'newVarInIf' => [
@@ -171,11 +171,14 @@ class ScopeTest extends \Psalm\Tests\TestCase
             ],
             'repeatAssertionWithOther' => [
                 '<?php
-                    $a = rand(0, 10) ? "hello" : null;
+                    function getString() : string {
+                        return "hello";
+                    }
+                    $a = rand(0, 10) ? getString() : null;
 
                     if (rand(0, 10) > 1 || is_string($a)) {
                         if (is_string($a)) {
-                            echo strpos("e", $a);
+                            echo strpos($a, "e");
                         }
                     }',
                 'assertions' => [
@@ -272,7 +275,7 @@ class ScopeTest extends \Psalm\Tests\TestCase
     /**
      * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'possiblyUndefinedVarInIf' => [

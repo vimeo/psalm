@@ -111,10 +111,7 @@ class MethodSignatureTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testMismatchingCovariantReturnIn73()
+    public function testMismatchingCovariantReturnIn73(): void
     {
         $this->expectExceptionMessage('MethodSignatureMismatch');
         $this->expectException(\Psalm\Exception\CodeException::class);
@@ -141,10 +138,7 @@ class MethodSignatureTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testMismatchingCovariantReturnIn74()
+    public function testMismatchingCovariantReturnIn74(): void
     {
         $this->project_analyzer->setPhpVersion('7.4');
 
@@ -168,10 +162,7 @@ class MethodSignatureTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testMismatchingCovariantReturnIn73WithSelf()
+    public function testMismatchingCovariantReturnIn73WithSelf(): void
     {
         $this->expectExceptionMessage('MethodSignatureMismatch');
         $this->expectException(\Psalm\Exception\CodeException::class);
@@ -196,10 +187,7 @@ class MethodSignatureTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testMismatchingCovariantReturnIn74WithSelf()
+    public function testMismatchingCovariantReturnIn74WithSelf(): void
     {
         $this->project_analyzer->setPhpVersion('7.4');
 
@@ -221,10 +209,7 @@ class MethodSignatureTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testMismatchingCovariantParamIn73()
+    public function testMismatchingCovariantParamIn73(): void
     {
         $this->expectExceptionMessage('MethodSignatureMismatch');
         $this->expectException(\Psalm\Exception\CodeException::class);
@@ -248,10 +233,7 @@ class MethodSignatureTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testMismatchingCovariantParamIn74()
+    public function testMismatchingCovariantParamIn74(): void
     {
         $this->project_analyzer->setPhpVersion('7.4');
 
@@ -347,7 +329,7 @@ class MethodSignatureTest extends TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'privateArgs' => [
@@ -830,13 +812,29 @@ class MethodSignatureTest extends TestCase
                         public function __construct() {}
                     }'
             ],
+            'allowStaticInheritance' => [
+                '<?php
+                    class A {
+                        public function method(): static {
+                            return $this;
+                        }
+                    }
+                    class B extends A {
+                        public function method(): static {
+                            return $this;
+                        }
+                    }',
+                [],
+                [],
+                '8.0'
+            ],
         ];
     }
 
     /**
      * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'moreArguments' => [
@@ -1426,6 +1424,18 @@ class MethodSignatureTest extends TestCase
                         public function __construct(string $s) {}
                     }',
                 'error_message' => 'ConstructorSignatureMismatch',
+            ],
+            'inheritDocblockReturnFromInterface' => [
+                '<?php
+                    interface A {
+                        /** @return ?string */
+                        function foo();
+                    }
+
+                    class C implements A {
+                        public function foo() : ?string {}
+                    }',
+                'error_message' => 'InvalidReturnType',
             ],
         ];
     }

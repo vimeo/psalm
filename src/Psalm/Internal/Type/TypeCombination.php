@@ -13,7 +13,7 @@ use function is_int;
 use Psalm\Codebase;
 use Psalm\Type;
 use Psalm\Type\Atomic;
-use Psalm\Type\Atomic\ObjectLike;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
@@ -21,7 +21,7 @@ use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableArray;
 use Psalm\Type\Atomic\TCallableObject;
-use Psalm\Type\Atomic\TCallableObjectLikeArray;
+use Psalm\Type\Atomic\TCallableKeyedArray;
 use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TEmpty;
@@ -68,13 +68,13 @@ class TypeCombination
     /** @var array<string, TNamedObject>|null */
     private $named_object_types = [];
 
-    /** @var array<int, Union> */
+    /** @var list<Union> */
     private $array_type_params = [];
 
-    /** @var array<string, array<int, Union>> */
+    /** @var array<string, non-empty-list<Union>> */
     private $builtin_type_params = [];
 
-    /** @var array<string, array<int, Union>> */
+    /** @var array<string, non-empty-list<Union>> */
     private $object_type_params = [];
 
     /** @var array<int, bool>|null */
@@ -158,16 +158,14 @@ class TypeCombination
      * @param  int    $literal_limit any greater number of literal types than this
      *                               will be merged to a scalar
      *
-     * @return Union
-     * @psalm-suppress TypeCoercion
      */
     public static function combineTypes(
         array $types,
-        Codebase $codebase = null,
+        ?Codebase $codebase = null,
         bool $overwrite_empty_array = false,
         bool $allow_mixed_union = true,
         int $literal_limit = 500
-    ) {
+    ): Union {
         if (in_array(null, $types, true)) {
             return Type::getMixed();
         }
@@ -271,7 +269,7 @@ class TypeCombination
             $combined_param_types = [];
 
             foreach ($array_param_types as $i => $array_param_type) {
-                $combined_param_types[$i] = Type::combineUnionTypes($array_param_type, $traversable_param_types[$i]);
+                $combined_param_types[] = Type::combineUnionTypes($array_param_type, $traversable_param_types[$i]);
             }
 
             $combination->value_types['iterable'] = new TIterable($combined_param_types);
@@ -336,9 +334,9 @@ class TypeCombination
 
                 if ($combination->objectlike_entries) {
                     if ($combination->all_arrays_callable) {
-                        $objectlike = new TCallableObjectLikeArray($combination->objectlike_entries);
+                        $objectlike = new TCallableKeyedArray($combination->objectlike_entries);
                     } else {
-                        $objectlike = new ObjectLike($combination->objectlike_entries);
+                        $objectlike = new TKeyedArray($combination->objectlike_entries);
                     }
 
                     if ($combination->objectlike_sealed && !$combination->array_type_params) {
@@ -455,7 +453,7 @@ class TypeCombination
                     if ($combination->objectlike_entries
                         && $combination->objectlike_sealed
                     ) {
-                        $array_type = new ObjectLike([$generic_type_params[1]]);
+                        $array_type = new TKeyedArray([$generic_type_params[1]]);
                         $array_type->previous_key_type = Type::getInt();
                         $array_type->previous_value_type = $combination->array_type_params[1];
                         $array_type->is_list = true;
@@ -494,6 +492,7 @@ class TypeCombination
         }
 
         if ($combination->extra_types) {
+            /** @psalm-suppress PropertyTypeCoercion */
             $combination->extra_types = self::combineTypes(
                 array_values($combination->extra_types),
                 $codebase
@@ -505,6 +504,7 @@ class TypeCombination
                 $new_types[] = new TIterable($generic_type_params);
             } else {
                 $generic_object = new TGenericObject($generic_type, $generic_type_params);
+                /** @psalm-suppress PropertyTypeCoercion */
                 $generic_object->extra_types = $combination->extra_types;
                 $new_types[] = $generic_object;
 
@@ -518,6 +518,7 @@ class TypeCombination
             $generic_type = substr($generic_type, 0, (int) strpos($generic_type, '<'));
 
             $generic_object = new TGenericObject($generic_type, $generic_type_params);
+            /** @psalm-suppress PropertyTypeCoercion */
             $generic_object->extra_types = $combination->extra_types;
             $new_types[] = $generic_object;
         }
@@ -610,21 +611,14 @@ class TypeCombination
         return $union_type;
     }
 
-    /**
-     * @param  Atomic  $type
-     * @param  TypeCombination $combination
-     * @param  Codebase|null   $codebase
-     *
-     * @return null|Union
-     */
     private static function scrapeTypeProperties(
         Atomic $type,
         TypeCombination $combination,
-        $codebase,
+        ?Codebase $codebase,
         bool $overwrite_empty_array,
         bool $allow_mixed_union,
         int $literal_limit
-    ) {
+    ): ?Union {
         if ($type instanceof TMixed) {
             $combination->has_mixed = true;
             if ($type->from_loop_isset) {
@@ -708,6 +702,7 @@ class TypeCombination
             } else {
                 foreach ($combination->array_type_params as $i => $array_type_param) {
                     $iterable_type_param = $combination->builtin_type_params['iterable'][$i];
+                    /** @psalm-suppress PropertyTypeCoercion */
                     $combination->builtin_type_params['iterable'][$i] = Type::combineUnionTypes(
                         $iterable_type_param,
                         $array_type_param
@@ -728,6 +723,7 @@ class TypeCombination
             } elseif (isset($combination->builtin_type_params['Traversable'])) {
                 foreach ($combination->builtin_type_params['Traversable'] as $i => $array_type_param) {
                     $iterable_type_param = $combination->builtin_type_params['iterable'][$i];
+                    /** @psalm-suppress PropertyTypeCoercion */
                     $combination->builtin_type_params['iterable'][$i] = Type::combineUnionTypes(
                         $iterable_type_param,
                         $array_type_param
@@ -759,7 +755,7 @@ class TypeCombination
 
         if ($type instanceof TArray && $type_key === 'array') {
             if ($type instanceof TCallableArray && isset($combination->value_types['callable'])) {
-                return;
+                return null;
             }
 
             foreach ($type->type_params as $i => $type_param) {
@@ -771,6 +767,7 @@ class TypeCombination
                         $overwrite_empty_array
                     );
                 } else {
+                    /** @psalm-suppress PropertyTypeCoercion */
                     $combination->array_type_params[$i] = $type_param;
                 }
             }
@@ -808,6 +805,7 @@ class TypeCombination
         if ($type instanceof TList) {
             foreach ([Type::getInt(), $type->type_param] as $i => $type_param) {
                 if (isset($combination->array_type_params[$i])) {
+                    /** @psalm-suppress PropertyTypeCoercion */
                     $combination->array_type_params[$i] = Type::combineUnionTypes(
                         $combination->array_type_params[$i],
                         $type_param,
@@ -815,6 +813,7 @@ class TypeCombination
                         $overwrite_empty_array
                     );
                 } else {
+                    /** @psalm-suppress PropertyTypeCoercion */
                     $combination->array_type_params[$i] = $type_param;
                 }
             }
@@ -846,6 +845,7 @@ class TypeCombination
         if ($type instanceof Atomic\TClassStringMap) {
             foreach ([$type->getStandinKeyParam(), $type->value_param] as $i => $type_param) {
                 if (isset($combination->array_type_params[$i])) {
+                    /** @psalm-suppress PropertyTypeCoercion */
                     $combination->array_type_params[$i] = Type::combineUnionTypes(
                         $combination->array_type_params[$i],
                         $type_param,
@@ -853,6 +853,7 @@ class TypeCombination
                         $overwrite_empty_array
                     );
                 } else {
+                    /** @psalm-suppress PropertyTypeCoercion */
                     $combination->array_type_params[$i] = $type_param;
                 }
             }
@@ -874,6 +875,7 @@ class TypeCombination
         ) {
             foreach ($type->type_params as $i => $type_param) {
                 if (isset($combination->builtin_type_params[$type_key][$i])) {
+                    /** @psalm-suppress PropertyTypeCoercion */
                     $combination->builtin_type_params[$type_key][$i] = Type::combineUnionTypes(
                         $combination->builtin_type_params[$type_key][$i],
                         $type_param,
@@ -881,6 +883,7 @@ class TypeCombination
                         $overwrite_empty_array
                     );
                 } else {
+                    /** @psalm-suppress PropertyTypeCoercion */
                     $combination->builtin_type_params[$type_key][$i] = $type_param;
                 }
             }
@@ -891,6 +894,7 @@ class TypeCombination
         if ($type instanceof TGenericObject) {
             foreach ($type->type_params as $i => $type_param) {
                 if (isset($combination->object_type_params[$type_key][$i])) {
+                    /** @psalm-suppress PropertyTypeCoercion */
                     $combination->object_type_params[$type_key][$i] = Type::combineUnionTypes(
                         $combination->object_type_params[$type_key][$i],
                         $type_param,
@@ -898,6 +902,7 @@ class TypeCombination
                         $overwrite_empty_array
                     );
                 } else {
+                    /** @psalm-suppress PropertyTypeCoercion */
                     $combination->object_type_params[$type_key][$i] = $type_param;
                 }
             }
@@ -905,9 +910,9 @@ class TypeCombination
             return null;
         }
 
-        if ($type instanceof ObjectLike) {
-            if ($type instanceof TCallableObjectLikeArray && isset($combination->value_types['callable'])) {
-                return;
+        if ($type instanceof TKeyedArray) {
+            if ($type instanceof TCallableKeyedArray && isset($combination->value_types['callable'])) {
+                return null;
             }
 
             $existing_objectlike_entries = (bool) $combination->objectlike_entries;
@@ -940,6 +945,8 @@ class TypeCombination
                 }
             }
 
+            $has_defined_keys = false;
+
             foreach ($type->properties as $candidate_property_name => $candidate_property_type) {
                 $value_type = isset($combination->objectlike_entries[$candidate_property_name])
                     ? $combination->objectlike_entries[$candidate_property_name]
@@ -968,6 +975,14 @@ class TypeCombination
                 if (!$type->previous_value_type) {
                     unset($possibly_undefined_entries[$candidate_property_name]);
                 }
+
+                if (!$candidate_property_type->possibly_undefined) {
+                    $has_defined_keys = true;
+                }
+            }
+
+            if (!$has_defined_keys) {
+                $combination->array_always_filled = false;
             }
 
             if ($combination->array_counts !== null) {
@@ -984,7 +999,7 @@ class TypeCombination
                 $combination->all_arrays_lists = true;
             }
 
-            if ($type instanceof TCallableObjectLikeArray) {
+            if ($type instanceof TCallableKeyedArray) {
                 if ($combination->all_arrays_callable !== false) {
                     $combination->all_arrays_callable = true;
                 }
@@ -999,7 +1014,7 @@ class TypeCombination
 
         if ($type instanceof TObject) {
             if ($type instanceof TCallableObject && isset($combination->value_types['callable'])) {
-                return;
+                return null;
             }
 
             $combination->named_object_types = null;
@@ -1108,7 +1123,7 @@ class TypeCombination
 
         if ($type instanceof TString) {
             if ($type instanceof TCallableString && isset($combination->value_types['callable'])) {
-                return;
+                return null;
             }
 
             if (isset($combination->value_types['array-key'])) {
@@ -1249,7 +1264,7 @@ class TypeCombination
                         } elseif (get_class($combination->value_types['string']) === TNonEmptyString::class
                             && get_class($type) === TNonEmptyLowercaseString::class
                         ) {
-                            $combination->value_types['string'] = $combination->value_types['string'];
+                            //no-change
                         } elseif (get_class($type) === TLowercaseString::class
                             && get_class($combination->value_types['string']) === TNonEmptyLowercaseString::class
                         ) {
@@ -1257,7 +1272,7 @@ class TypeCombination
                         } elseif (get_class($combination->value_types['string']) === TLowercaseString::class
                             && get_class($type) === TNonEmptyLowercaseString::class
                         ) {
-                            $combination->value_types['string'] = $combination->value_types['string'];
+                            //no-change
                         } else {
                             $combination->value_types['string'] = new TString();
                         }
@@ -1289,7 +1304,7 @@ class TypeCombination
 
                     $all_nonnegative = !array_filter(
                         $combination->ints,
-                        function ($int) {
+                        function ($int): bool {
                             return $int->value < 0;
                         }
                     );
@@ -1309,7 +1324,7 @@ class TypeCombination
                     if ($combination->ints) {
                         $all_nonnegative = !array_filter(
                             $combination->ints,
-                            function ($int) {
+                            function ($int): bool {
                                 return $int->value < 0;
                             }
                         );
@@ -1366,6 +1381,7 @@ class TypeCombination
         }
 
         $combination->value_types[$type_key] = $type;
+        return null;
     }
 
     /**
@@ -1408,7 +1424,7 @@ class TypeCombination
     /**
      * @return array<string, bool>
      */
-    private static function getClassLikes(Codebase $codebase, string $fq_classlike_name)
+    private static function getClassLikes(Codebase $codebase, string $fq_classlike_name): array
     {
         try {
             $class_storage = $codebase->classlike_storage_provider->get($fq_classlike_name);

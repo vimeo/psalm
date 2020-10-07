@@ -31,6 +31,8 @@ class DocblockParser
 
         $special = [];
 
+        $first_line_padding = null;
+
         $last = false;
         foreach ($lines as $k => $line) {
             if (preg_match('/^[ \t]*\*?\s*@\w/i', $line)) {
@@ -52,12 +54,20 @@ class DocblockParser
 
             $line = str_replace("\r", '', $line);
 
-            if (preg_match('/^[ \t]*\*?\s*@([\w\-:]+)[\t ]*(.*)$/sm', $line, $matches, PREG_OFFSET_CAPTURE)) {
-                /** @var array<int, array{string, int}> $matches */
-                list($_, $type_info, $data_info) = $matches;
+            if ($first_line_padding === null) {
+                $asterisk_pos = strpos($line, '*');
 
-                list($type) = $type_info;
-                list($data, $data_offset) = $data_info;
+                if ($asterisk_pos) {
+                    $first_line_padding = substr($line, 0, $asterisk_pos - 1);
+                }
+            }
+
+            if (preg_match('/^[ \t]*\*?\s*@([\w\-\\\:]+)[\t ]*(.*)$/sm', $line, $matches, PREG_OFFSET_CAPTURE)) {
+                /** @var array<int, array{string, int}> $matches */
+                [$_, $type_info, $data_info] = $matches;
+
+                [$type] = $type_info;
+                [$data, $data_offset] = $data_info;
 
                 if (strpos($data, '*')) {
                     $data = rtrim(preg_replace('/^[ \t]*\*\s*$/m', '', $data));
@@ -85,7 +95,7 @@ class DocblockParser
         $min_indent = 80;
         foreach ($lines as $k => $line) {
             $indent = strspn($line, ' ');
-            if ($indent == strlen($line)) {
+            if ($indent === strlen($line)) {
                 // This line consists of only spaces. Trim it completely.
                 $lines[$k] = '';
                 continue;
@@ -107,7 +117,7 @@ class DocblockParser
         // is one.
         $docblock = preg_replace('/^\s*\n/', '', $docblock);
 
-        $parsed = new ParsedDocblock($docblock, $special);
+        $parsed = new ParsedDocblock($docblock, $special, $first_line_padding ?: '');
 
         self::resolveTags($parsed);
 

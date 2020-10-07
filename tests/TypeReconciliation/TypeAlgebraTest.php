@@ -9,7 +9,7 @@ class TypeAlgebraTest extends \Psalm\Tests\TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'twoVarLogicSimple' => [
@@ -1027,13 +1027,25 @@ class TypeAlgebraTest extends \Psalm\Tests\TestCase
                             || ($i && $j);
                     }'
             ],
+            'fineCheck' => [
+                '<?php
+                    function foo(bool $b, bool $c) : void {
+                        if ((!$b || rand(0, 1)) && (!$c || rand(0, 1))) {}
+                    }'
+            ],
+            'noParadoxInTernary' => [
+                '<?php
+                    function foo(?bool $b) : string {
+                        return $b ? "a" : ($b === null ? "foo" : "b");
+                    }',
+            ],
         ];
     }
 
     /**
      * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'threeVarLogicWithChange' => [
@@ -1227,6 +1239,13 @@ class TypeAlgebraTest extends \Psalm\Tests\TestCase
                     } elseif ($from !== null) {
                     } elseif ($to !== null) {}',
                 'error_message' => 'RedundantCondition',
+            ],
+            'paradoxInTernary' => [
+                '<?php
+                    function foo(string $input) : string {
+                        return $input === "a" ? "bar" : ($input === "a" ? "foo" : "b");
+                    }',
+                'error_message' => 'ParadoxicalCondition',
             ],
         ];
     }

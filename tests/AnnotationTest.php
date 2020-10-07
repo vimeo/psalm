@@ -10,10 +10,7 @@ class AnnotationTest extends TestCase
     use Traits\InvalidCodeAnalysisTestTrait;
     use Traits\ValidCodeAnalysisTestTrait;
 
-    /**
-     * @return void
-     */
-    public function testPhpStormGenericsWithValidArrayIteratorArgument()
+    public function testPhpStormGenericsWithValidArrayIteratorArgument(): void
     {
         Config::getInstance()->allow_phpstorm_generics = true;
 
@@ -36,10 +33,7 @@ class AnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testPhpStormGenericsWithValidTraversableArgument()
+    public function testPhpStormGenericsWithValidTraversableArgument(): void
     {
         Config::getInstance()->allow_phpstorm_generics = true;
 
@@ -59,10 +53,7 @@ class AnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testPhpStormGenericsWithClassProperty()
+    public function testPhpStormGenericsWithClassProperty(): void
     {
         Config::getInstance()->allow_phpstorm_generics = true;
 
@@ -86,10 +77,7 @@ class AnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testPhpStormGenericsWithGeneratorArray()
+    public function testPhpStormGenericsWithGeneratorArray(): void
     {
         Config::getInstance()->allow_phpstorm_generics = true;
 
@@ -110,10 +98,7 @@ class AnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testPhpStormGenericsWithValidIterableArgument()
+    public function testPhpStormGenericsWithValidIterableArgument(): void
     {
         Config::getInstance()->allow_phpstorm_generics = true;
 
@@ -133,10 +118,7 @@ class AnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testPhpStormGenericsInvalidArgument()
+    public function testPhpStormGenericsInvalidArgument(): void
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
         $this->expectExceptionMessage('InvalidScalarArgument');
@@ -158,10 +140,7 @@ class AnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testPhpStormGenericsNoTypehint()
+    public function testPhpStormGenericsNoTypehint(): void
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
         $this->expectExceptionMessage('PossiblyInvalidMethodCall');
@@ -180,10 +159,7 @@ class AnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testInvalidParamDefault()
+    public function testInvalidParamDefault(): void
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
         $this->expectExceptionMessage('InvalidParamDefault');
@@ -201,10 +177,7 @@ class AnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testInvalidParamDefaultButAllowedInConfig()
+    public function testInvalidParamDefaultButAllowedInConfig(): void
     {
         Config::getInstance()->add_param_default_to_docblock_type = true;
 
@@ -223,10 +196,7 @@ class AnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testInvalidTypehintParamDefaultButAllowedInConfig()
+    public function testInvalidTypehintParamDefaultButAllowedInConfig(): void
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
         $this->expectExceptionMessage('InvalidParamDefault');
@@ -245,7 +215,7 @@ class AnnotationTest extends TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'nopType' => [
@@ -1051,7 +1021,7 @@ class AnnotationTest extends TestCase
                         return json_decode($json, true);
                     }'
             ],
-            'allowDocblockDefinedObjectLikeArrayIntoNonEmpty' => [
+            'allowDocblockDefinedTKeyedArrayIntoNonEmpty' => [
                 '<?php
                     /** @param non-empty-array $_bar */
                     function foo(array $_bar) : void { }
@@ -1168,13 +1138,18 @@ class AnnotationTest extends TestCase
 
                     function takesString(string $s): void {}'
             ],
+            'noCrashWithoutAssignment' => [
+                '<?php
+                    /** @var DateTime $obj */
+                    echo $obj->format("Y");'
+            ],
         ];
     }
 
     /**
      * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'invalidClassMethodReturn' => [
@@ -1413,7 +1388,7 @@ class AnnotationTest extends TestCase
                     ',
                 'error_message' => 'UndefinedDocblockClass',
             ],
-            'preventBadObjectLikeFormat' => [
+            'preventBadTKeyedArrayFormat' => [
                 '<?php
                     /**
                      * @param array{} $arr
@@ -1482,7 +1457,7 @@ class AnnotationTest extends TestCase
                     class A {}',
                 'error_message' => 'InvalidDocblock',
             ],
-            'typeAliasInObjectLike' => [
+            'typeAliasInTKeyedArray' => [
                 '<?php
                     /**
                      * @psalm-type aType null|"a"|"b"|"c"|"d"
@@ -1502,7 +1477,7 @@ class AnnotationTest extends TestCase
                     }',
                 'error_message' => 'InvalidDocblock',
             ],
-            'noCrashOnHalfDoneObjectLikeArrayPropertyType' => [
+            'noCrashOnHalfDoneTKeyedArrayPropertyType' => [
                 '<?php
                     class A {
                         /** @var array{ */
@@ -1697,7 +1672,7 @@ class AnnotationTest extends TestCase
                     function bar(array $arr): void {}',
                 'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:21 - Found duplicated @return or prefixed @return tag in docblock for bar',
             ],
-            'missingClassForObjectLike' => [
+            'missingClassForTKeyedArray' => [
                 '<?php
                     interface I {
                         /** @return object{id: int, a: int} */

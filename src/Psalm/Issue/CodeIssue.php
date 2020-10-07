@@ -9,25 +9,28 @@ use function array_pop;
 
 abstract class CodeIssue
 {
-    const ERROR_LEVEL = -1;
-    const SHORTCODE = 0;
+    public const ERROR_LEVEL = -1;
+    public const SHORTCODE = 0;
 
     /**
      * @var CodeLocation
+     * @readonly
      */
-    protected $code_location;
+    public $code_location;
 
     /**
      * @var string
+     * @readonly
      */
-    protected $message;
+    public $message;
 
     /**
-     * @param string        $message
-     * @param CodeLocation  $code_location
+     * @var ?string
      */
+    public $dupe_key;
+
     public function __construct(
-        $message,
+        string $message,
         CodeLocation $code_location
     ) {
         $this->code_location = $code_location;
@@ -35,17 +38,15 @@ abstract class CodeIssue
     }
 
     /**
-     * @return CodeLocation
+     * @deprecated
+     * @psalm-suppress PossiblyUnusedMethod
      */
-    public function getLocation()
+    public function getLocation(): CodeLocation
     {
         return $this->code_location;
     }
 
-    /**
-     * @return string
-     */
-    public function getShortLocationWithPrevious()
+    public function getShortLocationWithPrevious(): string
     {
         $previous_text = '';
 
@@ -57,36 +58,30 @@ abstract class CodeIssue
         return $this->code_location->file_name . ':' . $this->code_location->getLineNumber() . $previous_text;
     }
 
-    /**
-     * @return string
-     */
-    public function getShortLocation()
+    public function getShortLocation(): string
     {
         return $this->code_location->file_name . ':' . $this->code_location->getLineNumber();
     }
 
-    /**
-     * @return string
-     */
-    public function getFilePath()
+    public function getFilePath(): string
     {
         return $this->code_location->file_path;
     }
 
     /**
-     * @return string
-     *
+     * @deprecated
      * @psalm-suppress PossiblyUnusedMethod for convenience
      */
-    public function getFileName()
+    public function getFileName(): string
     {
         return $this->code_location->file_name;
     }
 
     /**
-     * @return string
+     * @deprecated
+     * @psalm-suppress PossiblyUnusedMethod
      */
-    public function getMessage()
+    public function getMessage(): string
     {
         return $this->message;
     }
@@ -94,11 +89,10 @@ abstract class CodeIssue
     /**
      * @param  string          $severity
      *
-     * @return \Psalm\Internal\Analyzer\IssueData
      */
-    public function toIssueData($severity = Config::REPORT_ERROR)
+    public function toIssueData($severity = Config::REPORT_ERROR): \Psalm\Internal\Analyzer\IssueData
     {
-        $location = $this->getLocation();
+        $location = $this->code_location;
         $selection_bounds = $location->getSelectionBounds();
         $snippet_bounds = $location->getSnippetBounds();
 
@@ -110,7 +104,7 @@ abstract class CodeIssue
             $location->getLineNumber(),
             $location->getEndLineNumber(),
             $issue_type,
-            $this->getMessage(),
+            $this->message,
             $location->file_name,
             $location->file_path,
             $location->getSnippet(),
@@ -123,7 +117,8 @@ abstract class CodeIssue
             $location->getEndColumn(),
             (int) static::SHORTCODE,
             (int) static::ERROR_LEVEL,
-            $this instanceof TaintedInput ? $this->getTaintTrace() : null
+            $this instanceof TaintedInput ? $this->getTaintTrace() : null,
+            $this->dupe_key
         );
     }
 }

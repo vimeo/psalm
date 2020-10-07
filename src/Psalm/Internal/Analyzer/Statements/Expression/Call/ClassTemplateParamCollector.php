@@ -23,10 +23,10 @@ class ClassTemplateParamCollector
         Codebase $codebase,
         ClassLikeStorage $class_storage,
         ClassLikeStorage $static_class_storage,
-        string $method_name = null,
-        Type\Atomic $lhs_type_part = null,
-        string $lhs_var_id = null
-    ) {
+        ?string $method_name = null,
+        ?Type\Atomic $lhs_type_part = null,
+        ?string $lhs_var_id = null
+    ): ?array {
         $static_fq_class_name = $static_class_storage->name;
 
         $non_trait_class_storage = $class_storage->is_trait
@@ -104,10 +104,8 @@ class ClassTemplateParamCollector
                 }
             }
 
-            $i = 0;
             foreach ($template_types as $type_name => $_) {
                 if (isset($class_template_params[$type_name])) {
-                    $i++;
                     continue;
                 }
 
@@ -190,13 +188,11 @@ class ClassTemplateParamCollector
                         $class_storage->name => [Type::getMixed()]
                     ];
                 }
-
-                $i++;
             }
         }
 
         foreach ($template_types as $type_name => $type_map) {
-            foreach ($type_map as list($type)) {
+            foreach ($type_map as [$type]) {
                 foreach ($candidate_class_storages as $candidate_class_storage) {
                     if ($candidate_class_storage !== $static_class_storage
                         && isset($e[$candidate_class_storage->name][$type_name])

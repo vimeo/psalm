@@ -29,10 +29,7 @@ class MethodCallTest extends TestCase
         $this->analyzeFile('somefile.php', new \Psalm\Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testMethodCallMemoize()
+    public function testMethodCallMemoize(): void
     {
         $this->project_analyzer->getConfig()->memoize_method_calls = true;
 
@@ -65,10 +62,7 @@ class MethodCallTest extends TestCase
         $this->analyzeFile('somefile.php', new \Psalm\Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testPropertyMethodCallMemoize()
+    public function testPropertyMethodCallMemoize(): void
     {
         $this->project_analyzer->getConfig()->memoize_method_calls = true;
 
@@ -100,10 +94,7 @@ class MethodCallTest extends TestCase
         $this->analyzeFile('somefile.php', new \Psalm\Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testPropertyMethodCallMutationFreeMemoize()
+    public function testPropertyMethodCallMutationFreeMemoize(): void
     {
         $this->project_analyzer->getConfig()->memoize_method_calls = true;
 
@@ -138,10 +129,7 @@ class MethodCallTest extends TestCase
         $this->analyzeFile('somefile.php', new \Psalm\Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testUnchainedMethodCallMemoize()
+    public function testUnchainedMethodCallMemoize(): void
     {
         $this->project_analyzer->getConfig()->memoize_method_calls = true;
 
@@ -174,10 +162,7 @@ class MethodCallTest extends TestCase
         $this->analyzeFile('somefile.php', new \Psalm\Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testUnchainedMutationFreeMethodCallMemoize()
+    public function testUnchainedMutationFreeMethodCallMemoize(): void
     {
         $this->project_analyzer->getConfig()->memoize_method_calls = true;
 
@@ -216,7 +201,7 @@ class MethodCallTest extends TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'notInCallMapTest' => [
@@ -910,13 +895,39 @@ class MethodCallTest extends TestCase
                         echo strlen($a->getValue());
                     }',
             ],
+            'newSplObjectStorageDefaultEmpty' => [
+                '<?php
+                    $a = new SplObjectStorage();',
+                [
+                    '$a' => 'SplObjectStorage<empty, empty>',
+                ]
+            ],
+            'allowIteratorToBeNull' => [
+                '<?php
+                    /**
+                     * @return Iterator<string>
+                     */
+                    function buildIterator(int $size): Iterator {
+
+                        $values = [];
+                        for ($i = 0;  $i < $size; $i++) {
+                           $values[] = "Item $i\n";
+                        }
+
+                        return new ArrayIterator($values);
+                    }
+
+                    $it = buildIterator(2);
+
+                    if ($it->current() === null) {}'
+            ],
         ];
     }
 
     /**
      * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'staticInvocation' => [
@@ -1018,11 +1029,12 @@ class MethodCallTest extends TestCase
                          * @return ?NullableClass
                          */
                         public function returns_nullable_class() {
+                            /** @psalm-suppress ArgumentTypeCoercion */
                             return self::mock("NullableClass");
                         }
                     }',
                 'error_message' => 'LessSpecificReturnStatement',
-                'error_levels' => ['MixedInferredReturnType', 'MixedReturnStatement', 'TypeCoercion', 'MixedMethodCall'],
+                'error_levels' => ['MixedInferredReturnType', 'MixedReturnStatement', 'MixedMethodCall'],
             ],
             'undefinedVariableStaticCall' => [
                 '<?php

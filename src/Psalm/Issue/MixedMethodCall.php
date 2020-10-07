@@ -3,6 +3,6 @@ namespace Psalm\Issue;
 
 class MixedMethodCall extends CodeIssue
 {
-    const ERROR_LEVEL = 1;
-    const SHORTCODE = 15;
+    public const ERROR_LEVEL = 1;
+    public const SHORTCODE = 15;
 }

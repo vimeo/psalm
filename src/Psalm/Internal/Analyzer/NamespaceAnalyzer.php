@@ -41,10 +41,6 @@ class NamespaceAnalyzer extends SourceAnalyzer implements StatementsSource
      */
     protected static $public_namespace_constants = [];
 
-    /**
-     * @param Namespace_        $namespace
-     * @param FileAnalyzer       $source
-     */
     public function __construct(Namespace_ $namespace, FileAnalyzer $source)
     {
         $this->source = $source;
@@ -52,10 +48,7 @@ class NamespaceAnalyzer extends SourceAnalyzer implements StatementsSource
         $this->namespace_name = $this->namespace->name ? implode('\\', $this->namespace->name->parts) : '';
     }
 
-    /**
-     * @return  void
-     */
-    public function collectAnalyzableInformation()
+    public function collectAnalyzableInformation(): void
     {
         $leftover_stmts = [];
 
@@ -89,7 +82,7 @@ class NamespaceAnalyzer extends SourceAnalyzer implements StatementsSource
             $context->is_global = true;
             $context->defineGlobals();
             $context->collect_exceptions = $codebase->config->check_for_throws_in_global_scope;
-            $statements_analyzer->analyze($leftover_stmts, $context);
+            $statements_analyzer->analyze($leftover_stmts, $context, null, true);
 
             $file_context = $this->source->context;
             if ($file_context) {
@@ -98,12 +91,7 @@ class NamespaceAnalyzer extends SourceAnalyzer implements StatementsSource
         }
     }
 
-    /**
-     * @param  PhpParser\Node\Stmt\ClassLike $stmt
-     *
-     * @return void
-     */
-    public function collectAnalyzableClassLike(PhpParser\Node\Stmt\ClassLike $stmt)
+    public function collectAnalyzableClassLike(PhpParser\Node\Stmt\ClassLike $stmt): void
     {
         if (!$stmt->name) {
             throw new \UnexpectedValueException('Did not expect anonymous class here');
@@ -124,32 +112,22 @@ class NamespaceAnalyzer extends SourceAnalyzer implements StatementsSource
         }
     }
 
-    /**
-     * @return string
-     */
-    public function getNamespace()
+    public function getNamespace(): string
     {
         return $this->namespace_name;
     }
 
-    /**
-     * @param string     $const_name
-     * @param Type\Union $const_type
-     *
-     * @return void
-     */
-    public function setConstType($const_name, Type\Union $const_type)
+    public function setConstType(string $const_name, Type\Union $const_type): void
     {
         self::$public_namespace_constants[$this->namespace_name][$const_name] = $const_type;
     }
 
     /**
-     * @param  string $namespace_name
      * @param  mixed  $visibility
      *
      * @return array<string,Type\Union>
      */
-    public static function getConstantsForNamespace($namespace_name, $visibility)
+    public static function getConstantsForNamespace(string $namespace_name, $visibility): array
     {
         // @todo this does not allow for loading in namespace constants not already defined in the current sweep
         if (!isset(self::$public_namespace_constants[$namespace_name])) {
@@ -171,7 +149,8 @@ class NamespaceAnalyzer extends SourceAnalyzer implements StatementsSource
     /**
      * Returns true if $className is the same as, or starts with $namespace, in a case-insensitive comparison.
      *
-     * @return bool
+     *
+     * @psalm-pure
      */
     public static function isWithin(string $calling_namespace, string $namespace): bool
     {
@@ -188,7 +167,10 @@ class NamespaceAnalyzer extends SourceAnalyzer implements StatementsSource
 
     /**
      * @param string $fullyQualifiedClassName, e.g. '\Psalm\Internal\Analyzer\NamespaceAnalyzer'
+     *
      * @return string , e.g. 'Psalm'
+     *
+     * @psalm-pure
      */
     public static function getNameSpaceRoot(string $fullyQualifiedClassName): string
     {

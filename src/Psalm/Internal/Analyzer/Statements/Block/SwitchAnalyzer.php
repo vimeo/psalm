@@ -21,17 +21,13 @@ use function array_merge;
 class SwitchAnalyzer
 {
     /**
-     * @param   StatementsAnalyzer               $statements_analyzer
-     * @param   PhpParser\Node\Stmt\Switch_     $stmt
-     * @param   Context                         $context
-     *
      * @return  false|null
      */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Switch_ $stmt,
         Context $context
-    ) {
+    ): ?bool {
         $codebase = $statements_analyzer->getCodebase();
 
         $context->inside_conditional = true;
@@ -206,24 +202,6 @@ class SwitchAnalyzer
 
         if ($switch_scope->new_assigned_var_ids) {
             $context->assigned_var_ids += $switch_scope->new_assigned_var_ids;
-        }
-
-        if ($codebase->find_unused_variables) {
-            foreach ($switch_scope->new_unreferenced_vars as $var_id => $locations) {
-                if (($all_options_matched && isset($switch_scope->new_assigned_var_ids[$var_id]))
-                    || !isset($context->vars_in_scope[$var_id])
-                ) {
-                    $context->unreferenced_vars[$var_id] = $locations;
-                } elseif (isset($switch_scope->new_possibly_assigned_var_ids[$var_id])) {
-                    if (!isset($context->unreferenced_vars[$var_id])) {
-                        $context->unreferenced_vars[$var_id] = $locations;
-                    } else {
-                        $context->unreferenced_vars[$var_id] += $locations;
-                    }
-                } else {
-                    $statements_analyzer->registerVariableUses($locations);
-                }
-            }
         }
 
         $context->vars_possibly_in_scope = array_merge(

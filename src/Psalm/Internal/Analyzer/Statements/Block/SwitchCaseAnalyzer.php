@@ -31,14 +31,13 @@ use function array_diff_key;
 class SwitchCaseAnalyzer
 {
     /**
-     * @param ?string $switch_var_id
      * @return null|false
      */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
         PhpParser\Node\Stmt\Switch_ $stmt,
-        $switch_var_id,
+        ?string $switch_var_id,
         PhpParser\Node\Stmt\Case_ $case,
         Context $context,
         Context $original_context,
@@ -46,7 +45,7 @@ class SwitchCaseAnalyzer
         array $case_actions,
         bool $is_last,
         SwitchScope $switch_scope
-    ) {
+    ): ?bool {
         // has a return/throw at end
         $has_ending_statements = $case_actions === [ScopeAnalyzer::ACTION_END];
         $has_leaving_statements = $has_ending_statements
@@ -123,7 +122,7 @@ class SwitchCaseAnalyzer
                 $type_statements = [];
 
                 foreach ($switch_var_type->getAtomicTypes() as $type) {
-                    if ($type instanceof Type\Atomic\GetClassT) {
+                    if ($type instanceof Type\Atomic\TDependentGetClass) {
                         $type_statements[] = new PhpParser\Node\Expr\FuncCall(
                             new PhpParser\Node\Name(['get_class']),
                             [
@@ -132,9 +131,18 @@ class SwitchCaseAnalyzer
                                 ),
                             ]
                         );
-                    } elseif ($type instanceof Type\Atomic\GetTypeT) {
+                    } elseif ($type instanceof Type\Atomic\TDependentGetType) {
                         $type_statements[] = new PhpParser\Node\Expr\FuncCall(
                             new PhpParser\Node\Name(['gettype']),
+                            [
+                                new PhpParser\Node\Arg(
+                                    new PhpParser\Node\Expr\Variable(substr($type->typeof, 1))
+                                ),
+                            ]
+                        );
+                    } elseif ($type instanceof Type\Atomic\TDependentGetDebugType) {
+                        $type_statements[] = new PhpParser\Node\Expr\FuncCall(
+                            new PhpParser\Node\Name(['get_debug_type']),
                             [
                                 new PhpParser\Node\Arg(
                                     new PhpParser\Node\Expr\Variable(substr($type->typeof, 1))
@@ -230,7 +238,7 @@ class SwitchCaseAnalyzer
 
             $statements_analyzer->node_data = $old_node_data;
 
-            return;
+            return null;
         }
 
         if ($switch_scope->leftover_case_equality_expr) {
@@ -283,8 +291,10 @@ class SwitchCaseAnalyzer
         $case_clauses = [];
 
         if ($case_equality_expr) {
+            $case_equality_expr_id = \spl_object_id($case_equality_expr);
             $case_clauses = Algebra::getFormula(
-                \spl_object_id($case_equality_expr),
+                $case_equality_expr_id,
+                $case_equality_expr_id,
                 $case_equality_expr,
                 $context->self,
                 $statements_analyzer,
@@ -379,9 +389,12 @@ class SwitchCaseAnalyzer
             try {
                 $negated_case_clauses = Algebra::negateFormula($case_clauses);
             } catch (\Psalm\Exception\ComplicatedExpressionException $e) {
+                $case_equality_expr_id = \spl_object_id($case_equality_expr);
+
                 try {
                     $negated_case_clauses = Algebra::getFormula(
-                        \spl_object_id($case_equality_expr),
+                        $case_equality_expr_id,
+                        $case_equality_expr_id,
                         new PhpParser\Node\Expr\BooleanNot($case_equality_expr),
                         $context->self,
                         $statements_analyzer,
@@ -442,11 +455,8 @@ class SwitchCaseAnalyzer
                 $context,
                 $case_context,
                 $original_context,
-                $new_case_assigned_var_ids,
-                $new_case_possibly_assigned_var_ids,
                 $case_exit_type,
-                $switch_scope,
-                $case_scope
+                $switch_scope
             ) === false) {
                 /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
                 $case_scope->parent_context = null;
@@ -514,27 +524,25 @@ class SwitchCaseAnalyzer
         $case_scope->parent_context = null;
         $case_context->case_scope = null;
         $case_context->parent_context = null;
+
+        return null;
     }
 
     /**
-     * @param ?string $switch_var_id
      * @param array<string, bool> $new_case_assigned_var_ids
      * @param array<string, bool> $new_case_possibly_assigned_var_ids
      * @return null|false
      */
     private static function handleNonReturningCase(
         StatementsAnalyzer $statements_analyzer,
-        $switch_var_id,
+        ?string $switch_var_id,
         PhpParser\Node\Stmt\Case_ $case,
         Context $context,
         Context $case_context,
         Context $original_context,
-        array $new_case_assigned_var_ids,
-        array $new_case_possibly_assigned_var_ids,
         string $case_exit_type,
-        SwitchScope $switch_scope,
-        CaseScope $case_scope
-    ) {
+        SwitchScope $switch_scope
+    ): ?bool {
         if (!$case->cond
             && $switch_var_id
             && isset($case_context->vars_in_scope[$switch_var_id])
@@ -606,7 +614,7 @@ class SwitchCaseAnalyzer
                 );
             } else {
                 foreach ($switch_scope->new_vars_in_scope as $new_var => $type) {
-                    if (!$case_context->hasVariable($new_var, $statements_analyzer)) {
+                    if (!$case_context->hasVariable($new_var)) {
                         unset($switch_scope->new_vars_in_scope[$new_var]);
                     } else {
                         $switch_scope->new_vars_in_scope[$new_var] =
@@ -628,67 +636,7 @@ class SwitchCaseAnalyzer
             $context->mergeExceptions($case_context);
         }
 
-        $codebase = $statements_analyzer->getCodebase();
-
-        if ($codebase->find_unused_variables) {
-            $switch_scope->new_possibly_assigned_var_ids =
-                $switch_scope->new_possibly_assigned_var_ids + $new_case_possibly_assigned_var_ids;
-
-            if ($switch_scope->new_assigned_var_ids === null) {
-                $switch_scope->new_assigned_var_ids = $new_case_assigned_var_ids;
-            } else {
-                $switch_scope->new_assigned_var_ids = array_intersect_key(
-                    $switch_scope->new_assigned_var_ids,
-                    $new_case_assigned_var_ids
-                );
-            }
-
-            foreach ($case_context->unreferenced_vars as $var_id => $locations) {
-                if (!isset($original_context->unreferenced_vars[$var_id])) {
-                    if (isset($switch_scope->new_unreferenced_vars[$var_id])) {
-                        $switch_scope->new_unreferenced_vars[$var_id] += $locations;
-                    } else {
-                        $switch_scope->new_unreferenced_vars[$var_id] = $locations;
-                    }
-                } else {
-                    $new_locations = array_diff_key(
-                        $locations,
-                        $original_context->unreferenced_vars[$var_id]
-                    );
-
-                    if ($new_locations) {
-                        if (isset($switch_scope->new_unreferenced_vars[$var_id])) {
-                            $switch_scope->new_unreferenced_vars[$var_id] += $locations;
-                        } else {
-                            $switch_scope->new_unreferenced_vars[$var_id] = $locations;
-                        }
-                    }
-                }
-            }
-
-            foreach ($case_scope->unreferenced_vars as $var_id => $locations) {
-                if (!isset($original_context->unreferenced_vars[$var_id])) {
-                    if (isset($switch_scope->new_unreferenced_vars[$var_id])) {
-                        $switch_scope->new_unreferenced_vars[$var_id] += $locations;
-                    } else {
-                        $switch_scope->new_unreferenced_vars[$var_id] = $locations;
-                    }
-                } else {
-                    $new_locations = array_diff_key(
-                        $locations,
-                        $original_context->unreferenced_vars[$var_id]
-                    );
-
-                    if ($new_locations) {
-                        if (isset($switch_scope->new_unreferenced_vars[$var_id])) {
-                            $switch_scope->new_unreferenced_vars[$var_id] += $locations;
-                        } else {
-                            $switch_scope->new_unreferenced_vars[$var_id] = $locations;
-                        }
-                    }
-                }
-            }
-        }
+        return null;
     }
 
     private static function simplifyCaseEqualityExpression(

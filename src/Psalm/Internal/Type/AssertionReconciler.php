@@ -53,7 +53,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
         StatementsAnalyzer $statements_analyzer,
         bool $inside_loop,
         array $template_type_map,
-        CodeLocation $code_location = null,
+        ?CodeLocation $code_location = null,
         array $suppressed_issues = [],
         ?int &$failed_reconciliation = 0
     ) : Union {
@@ -104,6 +104,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
             if ($assertion === 'array-key-exists'
                 || $assertion === 'non-empty-countable'
                 || strpos($assertion, 'has-at-least-') === 0
+                || strpos($assertion, 'has-exactly-') === 0
             ) {
                 return Type::getMixed();
             }
@@ -199,7 +200,8 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                     if (IssueBuffer::accepts(
                         new TypeDoesNotContainType(
                             'Cannot allow string comparison to object for ' . $key,
-                            $code_location
+                            $code_location,
+                            null
                         ),
                         $suppressed_issues
                     )) {
@@ -449,11 +451,11 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
             }
         }
 
-        if ($new_type_part instanceof Type\Atomic\ObjectLike) {
+        if ($new_type_part instanceof Type\Atomic\TKeyedArray) {
             $acceptable_atomic_types = [];
 
             foreach ($existing_var_type->getAtomicTypes() as $existing_var_type_part) {
-                if ($existing_var_type_part instanceof Type\Atomic\ObjectLike) {
+                if ($existing_var_type_part instanceof Type\Atomic\TKeyedArray) {
                     if (!array_intersect_key(
                         $existing_var_type_part->properties,
                         $new_type_part->properties
@@ -591,7 +593,8 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                             new DocblockTypeContradiction(
                                 'Cannot resolve types for ' . $key . ' - docblock-defined type '
                                     . $existing_var_type . ' does not contain null',
-                                $code_location
+                                $code_location,
+                                $existing_var_type->getId() . ' null'
                             ),
                             $suppressed_issues
                         )) {
@@ -602,7 +605,8 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                             new TypeDoesNotContainNull(
                                 'Cannot resolve types for ' . $key . ' - ' . $existing_var_type
                                     . ' does not contain null',
-                                $code_location
+                                $code_location,
+                                $existing_var_type->getId()
                             ),
                             $suppressed_issues
                         )) {
@@ -618,7 +622,8 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                             new DocblockTypeContradiction(
                                 'Cannot resolve types for ' . $key . ' - docblock-defined type '
                                     . $existing_var_type->getId() . ' does not contain ' . $new_type->getId(),
-                                $code_location
+                                $code_location,
+                                $existing_var_type->getId() . ' ' . $new_type->getId()
                             ),
                             $suppressed_issues
                         )) {
@@ -627,9 +632,10 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                     } else {
                         if (IssueBuffer::accepts(
                             new TypeDoesNotContainType(
-                                'Cannot resolve types for ' . $key . ' - ' . $existing_var_type->getId() .
-                                ' does not contain ' . $new_type->getId(),
-                                $code_location
+                                'Cannot resolve types for ' . $key . ' - ' . $existing_var_type->getId()
+                                    . ' does not contain ' . $new_type->getId(),
+                                $code_location,
+                                $existing_var_type->getId() . ' ' . $new_type->getId()
                             ),
                             $suppressed_issues
                         )) {
@@ -715,7 +721,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                     $matching_atomic_types[] = $existing_type_part;
                 }
 
-                if ($new_type_part instanceof Type\Atomic\ObjectLike
+                if ($new_type_part instanceof Type\Atomic\TKeyedArray
                     && $existing_type_part instanceof Type\Atomic\TList
                 ) {
                     $new_type_key = $new_type_part->getGenericKeyType();
@@ -733,7 +739,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                             $any_scalar_type_match_found
                         );
 
-                        $hybrid_type_part = new Type\Atomic\ObjectLike($new_type_part->properties);
+                        $hybrid_type_part = new Type\Atomic\TKeyedArray($new_type_part->properties);
                         $hybrid_type_part->previous_key_type = Type::getInt();
                         $hybrid_type_part->previous_value_type = $new_type_value;
                         $hybrid_type_part->is_list = true;
@@ -890,7 +896,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                         && !$codebase->classExists($new_type_part->value)
                         && !array_filter(
                             $existing_type_part->extra_types,
-                            function ($extra_type) use ($codebase) {
+                            function ($extra_type) use ($codebase): bool {
                                 return $extra_type instanceof TNamedObject
                                     && $codebase->classExists($extra_type->value);
                             }
@@ -992,8 +998,10 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                     $can_be_equal = false;
                     $did_remove_type = false;
 
-                    foreach ($existing_var_atomic_types as $atomic_key => $_) {
-                        if ($atomic_key !== $assertion) {
+                    foreach ($existing_var_atomic_types as $atomic_key => $atomic_type) {
+                        if ($atomic_key !== $assertion
+                            && !($atomic_type instanceof Type\Atomic\TPositiveInt && $value > 0)
+                        ) {
                             $existing_var_type->removeType($atomic_key);
                             $did_remove_type = true;
                         } else {

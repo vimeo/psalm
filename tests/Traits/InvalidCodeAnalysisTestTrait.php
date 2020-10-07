@@ -4,7 +4,6 @@ namespace Psalm\Tests\Traits;
 use function is_int;
 use const PHP_VERSION;
 use function preg_quote;
-use function preg_replace;
 use Psalm\Config;
 use Psalm\Context;
 use function strpos;
@@ -15,7 +14,7 @@ trait InvalidCodeAnalysisTestTrait
     /**
      * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
      */
-    abstract public function providerInvalidCodeParse();
+    abstract public function providerInvalidCodeParse(): iterable;
 
     /**
      * @dataProvider providerInvalidCodeParse
@@ -67,7 +66,9 @@ trait InvalidCodeAnalysisTestTrait
 
         $this->project_analyzer->setPhpVersion($php_version);
 
-        $error_message = preg_replace('/ src[\/\\\\]somefile\.php/', ' src/somefile.php', $error_message);
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        // $error_message = preg_replace('/ src[\/\\\\]somefile\.php/', ' src/somefile.php', $error_message);
 
         $this->expectException(\Psalm\Exception\CodeException::class);
 
@@ -76,8 +77,6 @@ trait InvalidCodeAnalysisTestTrait
         } else {
             $this->expectExceptionMessageRegExp('/\b' . preg_quote($error_message, '/') . '\b/');
         }
-
-        $file_path = 'src/somefile.php';
 
         $this->addFile($file_path, $code);
         $this->analyzeFile($file_path, new Context());

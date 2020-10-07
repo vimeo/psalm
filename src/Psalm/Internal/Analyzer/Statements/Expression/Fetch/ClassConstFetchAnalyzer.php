@@ -115,10 +115,10 @@ class ClassConstFetchAnalyzer
             if ($stmt->name instanceof PhpParser\Node\Identifier && $stmt->name->name === 'class') {
                 if ($codebase->classlikes->classExists($fq_class_name)) {
                     $fq_class_name = $codebase->classlikes->getUnAliasedName($fq_class_name);
-                    $class_const_storage = $codebase->classlike_storage_provider->get($fq_class_name);
-                    $fq_class_name = $class_const_storage->name;
+                    $const_class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+                    $fq_class_name = $const_class_storage->name;
 
-                    if ($class_const_storage->deprecated && $fq_class_name !== $context->self) {
+                    if ($const_class_storage->deprecated && $fq_class_name !== $context->self) {
                         if (IssueBuffer::accepts(
                             new DeprecatedClass(
                                 'Class ' . $fq_class_name . ' is deprecated',
@@ -212,7 +212,7 @@ class ClassConstFetchAnalyzer
             }
 
             try {
-                $class_constant_type = $codebase->classlikes->getConstantForClass(
+                $class_constant_type = $codebase->classlikes->getClassConstantType(
                     $fq_class_name,
                     $stmt->name->name,
                     $class_visibility,
@@ -236,7 +236,7 @@ class ClassConstFetchAnalyzer
 
             if (!$class_constant_type) {
                 if ($fq_class_name !== $context->self) {
-                    $class_constant_type = $codebase->classlikes->getConstantForClass(
+                    $class_constant_type = $codebase->classlikes->getClassConstantType(
                         $fq_class_name,
                         $stmt->name->name,
                         \ReflectionProperty::IS_PRIVATE,
@@ -281,7 +281,7 @@ class ClassConstFetchAnalyzer
             if ($codebase->alter_code && !$moved_class) {
                 foreach ($codebase->class_constant_transforms as $original_pattern => $transformation) {
                     if ($declaring_const_id === $original_pattern) {
-                        list($new_fq_class_name, $new_const_name) = explode('::', $transformation);
+                        [$new_fq_class_name, $new_const_name] = explode('::', $transformation);
 
                         $file_manipulations = [];
 
@@ -309,17 +309,17 @@ class ClassConstFetchAnalyzer
                 }
             }
 
-            $class_const_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+            $const_class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
             if ($context->self
                 && !$context->collect_initializations
                 && !$context->collect_mutations
-                && $class_const_storage->internal
-                && !NamespaceAnalyzer::isWithin($context->self, $class_const_storage->internal)
+                && $const_class_storage->internal
+                && !NamespaceAnalyzer::isWithin($context->self, $const_class_storage->internal)
             ) {
                 if (IssueBuffer::accepts(
                     new InternalClass(
-                        $fq_class_name . ' is internal to ' . $class_const_storage->internal
+                        $fq_class_name . ' is internal to ' . $const_class_storage->internal
                             . ' but called from ' . $context->self,
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                         $fq_class_name
@@ -330,7 +330,7 @@ class ClassConstFetchAnalyzer
                 }
             }
 
-            if ($class_const_storage->deprecated && $fq_class_name !== $context->self) {
+            if ($const_class_storage->deprecated && $fq_class_name !== $context->self) {
                 if (IssueBuffer::accepts(
                     new DeprecatedClass(
                         'Class ' . $fq_class_name . ' is deprecated',
@@ -341,7 +341,7 @@ class ClassConstFetchAnalyzer
                 )) {
                     // fall through
                 }
-            } elseif (isset($class_const_storage->deprecated_constants[$stmt->name->name])) {
+            } elseif ($const_class_storage->constants[$stmt->name->name]->deprecated) {
                 if (IssueBuffer::accepts(
                     new DeprecatedConstant(
                         'Constant ' . $const_id . ' is deprecated',
@@ -353,7 +353,7 @@ class ClassConstFetchAnalyzer
                 }
             }
 
-            if ($first_part_lc !== 'static' || $class_const_storage->final) {
+            if ($first_part_lc !== 'static' || $const_class_storage->final) {
                 $stmt_type = clone $class_constant_type;
 
                 $statements_analyzer->node_data->setType($stmt, $stmt_type);
@@ -366,7 +366,11 @@ class ClassConstFetchAnalyzer
         }
 
         if ($stmt->name instanceof PhpParser\Node\Identifier && $stmt->name->name === 'class') {
+            $was_inside_use = $context->inside_use;
+            $context->inside_use = true;
             ExpressionAnalyzer::analyze($statements_analyzer, $stmt->class, $context);
+            $context->inside_use = $was_inside_use;
+
             $lhs_type = $statements_analyzer->node_data->getType($stmt->class);
 
             $class_string_types = [];
@@ -401,9 +405,14 @@ class ClassConstFetchAnalyzer
 
         $statements_analyzer->node_data->setType($stmt, Type::getMixed());
 
+        $was_inside_use = $context->inside_use;
+        $context->inside_use = true;
+
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->class, $context) === false) {
             return false;
         }
+
+        $context->inside_use = $was_inside_use;
 
         return true;
     }
@@ -413,31 +422,8 @@ class ClassConstFetchAnalyzer
         PhpParser\Node\Stmt\ClassConst $stmt,
         Context $context
     ): void {
-        $const_visibility = \ReflectionProperty::IS_PUBLIC;
-
-        if ($stmt->isProtected()) {
-            $const_visibility = \ReflectionProperty::IS_PROTECTED;
-        }
-
-        if ($stmt->isPrivate()) {
-            $const_visibility = \ReflectionProperty::IS_PRIVATE;
-        }
-
-        $codebase = $statements_analyzer->getCodebase();
-
         foreach ($stmt->consts as $const) {
             ExpressionAnalyzer::analyze($statements_analyzer, $const->value, $context);
-
-            if (($const_type = $statements_analyzer->node_data->getType($const->value))
-                && !$const_type->hasMixed()
-            ) {
-                $codebase->classlikes->setConstantType(
-                    (string)$statements_analyzer->getFQCLN(),
-                    $const->name->name,
-                    $const_type,
-                    $const_visibility
-                );
-            }
         }
     }
 }

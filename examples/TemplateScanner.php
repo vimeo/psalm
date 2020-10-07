@@ -22,7 +22,7 @@ class TemplateScanner extends Psalm\Internal\Scanner\FileScanner
         Codebase $codebase,
         FileStorage $file_storage,
         $storage_from_cache = false,
-        Progress $progress = null
+        ?Progress $progress = null
     ) {
         $stmts = $codebase->statements_provider->getStatementsForFile(
             $file_storage->file_path,
@@ -30,7 +30,7 @@ class TemplateScanner extends Psalm\Internal\Scanner\FileScanner
             $progress
         );
 
-        if (empty($stmts)) {
+        if ($stmts === []) {
             return;
         }
 
@@ -50,7 +50,7 @@ class TemplateScanner extends Psalm\Internal\Scanner\FileScanner
                     throw new \InvalidArgumentException('Could not interpret doc comment correctly');
                 }
 
-                list($fq_class_name) = explode('::', $matches[1]);
+                [$fq_class_name] = explode('::', $matches[1]);
 
                 $codebase->scanner->queueClassLikeForScanning(
                     $fq_class_name,

@@ -3,6 +3,6 @@ namespace Psalm\Issue;
 
 class MissingDocblockType extends CodeIssue
 {
-    const ERROR_LEVEL = 4;
-    const SHORTCODE = 110;
+    public const ERROR_LEVEL = 4;
+    public const SHORTCODE = 110;
 }

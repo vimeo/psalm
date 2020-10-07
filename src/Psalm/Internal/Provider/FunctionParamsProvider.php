@@ -32,14 +32,12 @@ class FunctionParamsProvider
     /**
      * @param  class-string<FunctionParamsProviderInterface> $class
      *
-     * @return void
      */
-    public function registerClass(string $class)
+    public function registerClass(string $class): void
     {
         $callable = \Closure::fromCallable([$class, 'getFunctionParams']);
 
         foreach ($class::getFunctionIds() as $function_id) {
-            /** @psalm-suppress MixedTypeCoercion */
             $this->registerClosure($function_id, $callable);
         }
     }
@@ -53,9 +51,8 @@ class FunctionParamsProvider
      *     ?CodeLocation=
      *   ) : ?array<int, \Psalm\Storage\FunctionLikeParameter> $c
      *
-     * @return void
      */
-    public function registerClosure(string $fq_classlike_name, \Closure $c)
+    public function registerClosure(string $fq_classlike_name, \Closure $c): void
     {
         self::$handlers[strtolower($fq_classlike_name)][] = $c;
     }
@@ -74,9 +71,9 @@ class FunctionParamsProvider
         StatementsSource $statements_source,
         string $function_id,
         array $call_args,
-        Context $context = null,
-        CodeLocation $code_location = null
-    ) {
+        ?Context $context = null,
+        ?CodeLocation $code_location = null
+    ): ?array {
         foreach (self::$handlers[strtolower($function_id)] as $class_handler) {
             $result = $class_handler(
                 $statements_source,

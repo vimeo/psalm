@@ -25,7 +25,7 @@ class GetObjectVarsReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionRetu
         array $call_args,
         Context $context,
         CodeLocation $code_location
-    ) {
+    ): ?Type\Union {
         if (!$statements_source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
             return Type::getMixed();
         }
@@ -35,5 +35,7 @@ class GetObjectVarsReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionRetu
         ) {
             return Type::parseString('array<string, mixed>');
         }
+
+        return null;
     }
 }

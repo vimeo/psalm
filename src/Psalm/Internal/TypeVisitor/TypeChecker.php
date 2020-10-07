@@ -66,13 +66,8 @@ class TypeChecker extends NodeVisitor
     private $calling_method_id;
 
     /**
-     * @param  StatementsSource $source
-     * @param  CodeLocation     $code_location
      * @param  array<string>    $suppressed_issues
      * @param  array<string, bool> $phantom_classes
-     * @param  bool             $inferred
-     *
-     * @return null|false
      */
     public function __construct(
         StatementsSource $source,
@@ -325,7 +320,7 @@ class TypeChecker extends NodeVisitor
 
             $is_defined = \is_array($expanded) && \count($expanded) > 0;
         } else {
-            $class_constant_type = $this->source->getCodebase()->classlikes->getConstantForClass(
+            $class_constant_type = $this->source->getCodebase()->classlikes->getClassConstantType(
                 $fq_classlike_name,
                 $atomic->const_name,
                 \ReflectionProperty::IS_PRIVATE,

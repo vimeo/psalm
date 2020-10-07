@@ -3,6 +3,6 @@ namespace Psalm\Issue;
 
 class PossibleRawObjectIteration extends CodeIssue
 {
-    const ERROR_LEVEL = 4;
-    const SHORTCODE = 208;
+    public const ERROR_LEVEL = 4;
+    public const SHORTCODE = 208;
 }

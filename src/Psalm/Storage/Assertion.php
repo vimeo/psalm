@@ -50,7 +50,7 @@ class Assertion
 
                         foreach ($rule_tokens as &$rule_token) {
                             if (isset($template_type_map[$rule_token[0]])) {
-                                foreach ($template_type_map[$rule_token[0]] as list($type)) {
+                                foreach ($template_type_map[$rule_token[0]] as [$type]) {
                                     $substitute = true;
 
                                     $first_type = \array_values($type->getAtomicTypes())[0];

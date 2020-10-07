@@ -7,9 +7,6 @@ use function sprintf;
 
 class EmacsReport extends Report
 {
-    /**
-     * {@inheritdoc}
-     */
     public function create(): string
     {
         $output = '';

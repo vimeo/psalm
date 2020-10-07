@@ -3,6 +3,6 @@ namespace Psalm\Issue;
 
 class PossiblyFalsePropertyAssignmentValue extends PropertyIssue
 {
-    const ERROR_LEVEL = 3;
-    const SHORTCODE = 146;
+    public const ERROR_LEVEL = 3;
+    public const SHORTCODE = 146;
 }

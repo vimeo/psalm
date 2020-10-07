@@ -18,13 +18,13 @@ environment:
       DEPS: 'high'
 
 cache:
-  - '%LOCALAPPDATA%\Composer\files -> composer.lock'
-  - composer.phar
+  - '%LOCALAPPDATA%\Composer\files'
+  - '%LOCALAPPDATA%\Composer\vcs'
   # Cache chocolatey packages
-  - C:\ProgramData\chocolatey\bin -> .appveyor.yml
-  - C:\ProgramData\chocolatey\lib -> .appveyor.yml
+  - C:\ProgramData\chocolatey\bin
+  - C:\ProgramData\chocolatey\lib
   # Cache php install
-  - c:\tools\php -> .appveyor.yml
+  - c:\tools\php
 
 ## Install PHP and composer, and run the appropriate composer command
 install:
@@ -45,18 +45,17 @@ install:
     - IF %PHP%==1 echo assert.exception=On >> php.ini
     - IF %PHP%==1 echo error_reporting=E_ALL >> php.ini
     - IF %PHP%==1 echo @php %%~dp0composer.phar %%* > composer.bat
-    - appveyor-retry appveyor DownloadFile https://getcomposer.org/composer-stable.phar -FileName composer.phar
+    - IF NOT EXIST composer.phar appveyor-retry appveyor DownloadFile https://getcomposer.org/composer-stable.phar -FileName composer.phar
     - cd c:\projects\php-project-workspace
     - php -r "phpinfo(INFO_GENERAL);"
     - if NOT DEFINED APPVEYOR_REPO_TAG_NAME (set COMPOSER_ROOT_VERSION=dev-master)
-    - if %DEPS%==low appveyor-retry composer update --no-interaction --prefer-source --no-progress --profile --prefer-lowest --prefer-stable
-    - if %DEPS%==high appveyor-retry composer update --no-interaction --prefer-source --no-progress --profile
-    - composer show
+    - if %DEPS%==low appveyor-retry composer update --no-interaction --no-progress --profile --prefer-lowest --prefer-stable
+    - if %DEPS%==high appveyor-retry composer update --no-interaction --no-progress --profile
 
 ## Run the actual test
 test_script:
     - cd c:\projects\php-project-workspace
-    - vendor/bin/phpunit --log-junit build/phpunit/phpunit.xml
+    - vendor/bin/paratest --log-junit build/phpunit/phpunit.xml
     - php ./psalm --shepherd
 
 on_finish:

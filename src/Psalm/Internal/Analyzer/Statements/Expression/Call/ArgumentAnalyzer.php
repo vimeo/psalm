@@ -12,8 +12,9 @@ use Psalm\Internal\Analyzer\Statements\Expression\CastAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
-use Psalm\Internal\Taint\Sink;
-use Psalm\Internal\Taint\TaintNode;
+use Psalm\Internal\ControlFlow\TaintSink;
+use Psalm\Internal\ControlFlow\ControlFlowNode;
+use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\UnionTemplateHandler;
 use Psalm\CodeLocation;
@@ -21,6 +22,7 @@ use Psalm\Context;
 use Psalm\Issue\ImplicitToStringCast;
 use Psalm\Issue\InvalidArgument;
 use Psalm\Issue\InvalidScalarArgument;
+use Psalm\Issue\InvalidLiteralArgument;
 use Psalm\Issue\MixedArgument;
 use Psalm\Issue\MixedArgumentTypeCoercion;
 use Psalm\Issue\NoValue;
@@ -39,6 +41,7 @@ use Psalm\Type\Atomic\TList;
 use function strtolower;
 use function strpos;
 use function explode;
+use function count;
 
 /**
  * @internal
@@ -46,8 +49,6 @@ use function explode;
 class ArgumentAnalyzer
 {
     /**
-     * @param  ?string $self_fq_class_name
-     * @param  ?string $static_fq_class_name
      * @param  array<string, array<string, array{Type\Union, 1?:int}>> $class_generic_params
      * @return false|null
      */
@@ -59,16 +60,16 @@ class ArgumentAnalyzer
         CodeLocation $function_call_location,
         ?FunctionLikeParameter $function_param,
         int $argument_offset,
+        bool $allow_named_args,
         PhpParser\Node\Arg $arg,
+        ?Type\Union $arg_value_type,
         Context $context,
         array $class_generic_params,
         ?TemplateResult $template_result,
         bool $specialize_taint,
         bool $in_call_map
-    ) {
+    ): ?bool {
         $codebase = $statements_analyzer->getCodebase();
-
-        $arg_value_type = $statements_analyzer->node_data->getType($arg->value);
 
         if (!$arg_value_type) {
             if ($function_param && !$function_param->by_ref) {
@@ -116,11 +117,51 @@ class ArgumentAnalyzer
                 }
             }
 
-            return;
+            return null;
         }
 
         if (!$function_param) {
-            return;
+            return null;
+        }
+
+        if ($function_param->expect_variable
+            && $arg_value_type->isSingleStringLiteral()
+            && !$arg->value instanceof PhpParser\Node\Scalar\MagicConst
+            && !$arg->value instanceof PhpParser\Node\Expr\ConstFetch
+        ) {
+            $values = \preg_split('//u', $arg_value_type->getSingleStringLiteral()->value, -1, \PREG_SPLIT_NO_EMPTY);
+
+            $prev_ord = 0;
+
+            $gt_count = 0;
+
+            foreach ($values as $value) {
+                /**
+                 * @var int
+                 * @psalm-suppress UnnecessaryVarAnnotation
+                 */
+                $ord = \mb_ord($value);
+
+                if ($ord > $prev_ord) {
+                    $gt_count++;
+                }
+
+                $prev_ord = $ord;
+            }
+
+            if (count($values) < 12 || ($gt_count / count($values)) < 0.8) {
+                if (IssueBuffer::accepts(
+                    new InvalidLiteralArgument(
+                        'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id
+                            . ' expects a non-literal value, ' . $arg_value_type->getId() . ' provided',
+                        new CodeLocation($statements_analyzer->getSource(), $arg->value),
+                        $cased_method_id
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            }
         }
 
         if (self::checkFunctionLikeTypeMatches(
@@ -131,6 +172,7 @@ class ArgumentAnalyzer
             $static_fq_class_name,
             $function_call_location,
             $function_param,
+            $allow_named_args,
             $arg_value_type,
             $argument_offset,
             $arg,
@@ -142,11 +184,11 @@ class ArgumentAnalyzer
         ) === false) {
             return false;
         }
+
+        return null;
     }
 
     /**
-     * @param  ?string $self_fq_class_name
-     * @param  ?string $static_fq_class_name
      * @param  array<string, array<string, array{Type\Union, 1?:int}>> $class_generic_params
      * @param  array<string, array<string, array{Type\Union, 1?:int}>> $generic_params
      * @param  array<string, array<string, array{Type\Union}>> $template_types
@@ -160,6 +202,7 @@ class ArgumentAnalyzer
         ?string $static_fq_class_name,
         CodeLocation $function_call_location,
         FunctionLikeParameter $function_param,
+        bool $allow_named_args,
         Type\Union $arg_type,
         int $argument_offset,
         PhpParser\Node\Arg $arg,
@@ -168,10 +211,10 @@ class ArgumentAnalyzer
         ?TemplateResult $template_result,
         bool $specialize_taint,
         bool $in_call_map
-    ) {
+    ): ?bool {
         if (!$function_param->type) {
-            if (!$codebase->infer_types_from_usage && !$codebase->taint) {
-                return;
+            if (!$codebase->infer_types_from_usage && !$statements_analyzer->control_flow_graph) {
+                return null;
             }
 
             $param_type = Type::getMixed();
@@ -222,9 +265,9 @@ class ArgumentAnalyzer
                 foreach ($arg_type->getAtomicTypes() as $arg_atomic_type) {
                     if ($arg_atomic_type instanceof Type\Atomic\TArray
                         || $arg_atomic_type instanceof Type\Atomic\TList
-                        || $arg_atomic_type instanceof Type\Atomic\ObjectLike
+                        || $arg_atomic_type instanceof Type\Atomic\TKeyedArray
                     ) {
-                        if ($arg_atomic_type instanceof Type\Atomic\ObjectLike) {
+                        if ($arg_atomic_type instanceof Type\Atomic\TKeyedArray) {
                             $arg_type_param = $arg_atomic_type->getGenericValueType();
                         } elseif ($arg_atomic_type instanceof Type\Atomic\TList) {
                             $arg_type_param = $arg_atomic_type->type_param;
@@ -245,6 +288,7 @@ class ArgumentAnalyzer
 
                 if (!$arg_type_param) {
                     $arg_type_param = Type::getMixed();
+                    $arg_type_param->parent_nodes = $arg_type->parent_nodes;
                 }
             }
 
@@ -277,10 +321,6 @@ class ArgumentAnalyzer
                     ];
                 }
             }
-        }
-
-        if (!$context->check_variables) {
-            return;
         }
 
         $parent_class = null;
@@ -362,18 +402,23 @@ class ArgumentAnalyzer
                     );
                 }
 
-                return;
+                return null;
             }
 
             if ($arg_type->hasArray()) {
                 /**
                  * @psalm-suppress PossiblyUndefinedStringArrayOffset
-                 * @var Type\Atomic\TArray|Type\Atomic\TList|Type\Atomic\ObjectLike
+                 * @var Type\Atomic\TArray|Type\Atomic\TList|Type\Atomic\TKeyedArray
                  */
                 $unpacked_atomic_array = $arg_type->getAtomicTypes()['array'];
 
-                if ($unpacked_atomic_array instanceof Type\Atomic\ObjectLike) {
-                    if ($unpacked_atomic_array->is_list
+                if ($unpacked_atomic_array instanceof Type\Atomic\TKeyedArray) {
+                    if ($codebase->php_major_version >= 8
+                        && $allow_named_args
+                        && isset($unpacked_atomic_array->properties[$function_param->name])
+                    ) {
+                        $arg_type = clone $unpacked_atomic_array->properties[$function_param->name];
+                    } elseif ($unpacked_atomic_array->is_list
                         && isset($unpacked_atomic_array->properties[$argument_offset])
                     ) {
                         $arg_type = clone $unpacked_atomic_array->properties[$argument_offset];
@@ -404,7 +449,7 @@ class ArgumentAnalyzer
                     }
                 }
 
-                return;
+                return null;
             }
         }
 
@@ -427,10 +472,12 @@ class ArgumentAnalyzer
         ) === false) {
             return false;
         }
+
+        return null;
     }
 
     /**
-     * @param Type\Atomic\ObjectLike|Type\Atomic\TArray|Type\Atomic\TList $unpacked_atomic_array
+     * @param Type\Atomic\TKeyedArray|Type\Atomic\TArray|Type\Atomic\TList $unpacked_atomic_array
      * @return  null|false
      */
     public static function verifyType(
@@ -449,7 +496,7 @@ class ArgumentAnalyzer
         bool $specialize_taint,
         bool $in_call_map,
         CodeLocation $function_call_location
-    ) {
+    ): ?bool {
         $codebase = $statements_analyzer->getCodebase();
 
         if ($param_type->hasMixed()) {
@@ -660,8 +707,8 @@ class ArgumentAnalyzer
             $potential_method_ids = [];
 
             foreach ($input_type->getAtomicTypes() as $input_type_part) {
-                if ($input_type_part instanceof Type\Atomic\ObjectLike) {
-                    $potential_method_id = CallableTypeComparator::getCallableMethodIdFromObjectLike(
+                if ($input_type_part instanceof Type\Atomic\TKeyedArray) {
+                    $potential_method_id = CallableTypeComparator::getCallableMethodIdFromTKeyedArray(
                         $input_type_part,
                         $codebase,
                         $context->calling_method_id,
@@ -798,7 +845,7 @@ class ArgumentAnalyzer
                 }
             }
 
-            return;
+            return null;
         }
 
         if ($input_expr instanceof PhpParser\Node\Scalar\String_
@@ -819,7 +866,7 @@ class ArgumentAnalyzer
                         $statements_analyzer->getSuppressedIssues()
                     ) === false
                     ) {
-                        return;
+                        return null;
                     }
                 } elseif ($param_type_part instanceof TArray
                     && $input_expr instanceof PhpParser\Node\Expr\Array_
@@ -837,7 +884,7 @@ class ArgumentAnalyzer
                                         $statements_analyzer->getSuppressedIssues()
                                     ) === false
                                     ) {
-                                        return;
+                                        return null;
                                     }
                                 }
                             }
@@ -856,7 +903,7 @@ class ArgumentAnalyzer
                             $row_type = $param_array_type->type_param;
                         } elseif ($param_array_type instanceof TArray) {
                             $row_type = $param_array_type->type_params[1];
-                        } elseif ($param_array_type instanceof Type\Atomic\ObjectLike) {
+                        } elseif ($param_array_type instanceof Type\Atomic\TKeyedArray) {
                             $row_type = $param_array_type->getGenericArrayType()->type_params[1];
                         }
 
@@ -885,7 +932,7 @@ class ArgumentAnalyzer
                                 $has_valid_method = false;
 
                                 foreach ($function_id_parts as $function_id_part) {
-                                    list($callable_fq_class_name, $method_name) = explode('::', $function_id_part);
+                                    [$callable_fq_class_name, $method_name] = explode('::', $function_id_part);
 
                                     switch ($callable_fq_class_name) {
                                         case 'self':
@@ -913,7 +960,7 @@ class ArgumentAnalyzer
                                         $statements_analyzer->getSuppressedIssues()
                                     ) === false
                                     ) {
-                                        return;
+                                        return null;
                                     }
 
                                     $function_id_part = new \Psalm\Internal\MethodIdentifier(
@@ -927,7 +974,7 @@ class ArgumentAnalyzer
                                     );
 
                                     if (!$codebase->classOrInterfaceExists($callable_fq_class_name)) {
-                                        return;
+                                        return null;
                                     }
 
                                     if (!$codebase->methods->methodExists($function_id_part)
@@ -947,7 +994,7 @@ class ArgumentAnalyzer
                                         $statements_analyzer->getSuppressedIssues()
                                     ) === false
                                     ) {
-                                        return;
+                                        return null;
                                     }
                                 }
                             } else {
@@ -960,7 +1007,7 @@ class ArgumentAnalyzer
                                         false
                                     ) === false
                                 ) {
-                                    return;
+                                    return null;
                                 }
                             }
                         }
@@ -1044,7 +1091,7 @@ class ArgumentAnalyzer
     }
 
     /**
-     * @param Type\Atomic\ObjectLike|Type\Atomic\TArray|Type\Atomic\TList $unpacked_atomic_array
+     * @param Type\Atomic\TKeyedArray|Type\Atomic\TArray|Type\Atomic\TList $unpacked_atomic_array
      */
     private static function coerceValueAfterGatekeeperArgument(
         StatementsAnalyzer $statements_analyzer,
@@ -1116,11 +1163,16 @@ class ArgumentAnalyzer
                 }
             } elseif ($input_type->hasMixed() && $signature_param_type) {
                 $was_cloned = true;
+                $parent_nodes = $input_type->parent_nodes;
+                $by_ref = $input_type->by_ref;
                 $input_type = clone $signature_param_type;
 
                 if ($input_type->isNullable()) {
                     $input_type->ignore_nullable_issues = true;
                 }
+
+                $input_type->parent_nodes = $parent_nodes;
+                $input_type->by_ref = $by_ref;
             }
 
             if ($context->inside_conditional) {
@@ -1143,7 +1195,7 @@ class ArgumentAnalyzer
                     $unpacked_atomic_array->type_params[1] = $input_type;
 
                     $context->vars_in_scope[$var_id] = new Type\Union([$unpacked_atomic_array]);
-                } elseif ($unpacked_atomic_array instanceof Type\Atomic\ObjectLike
+                } elseif ($unpacked_atomic_array instanceof Type\Atomic\TKeyedArray
                     && $unpacked_atomic_array->is_list
                 ) {
                     $unpacked_atomic_array = $unpacked_atomic_array->getList();
@@ -1178,25 +1230,28 @@ class ArgumentAnalyzer
     ) : Type\Union {
         $codebase = $statements_analyzer->getCodebase();
 
-        if (!$codebase->taint
-            || !$codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
-            || \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
+        if (!$statements_analyzer->control_flow_graph
+            || ($statements_analyzer->control_flow_graph instanceof TaintFlowGraph
+                && \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues()))
         ) {
             return $input_type;
         }
 
-        if ($function_param->type && $function_param->type->isString()) {
-            $input_type = CastAnalyzer::castStringAttempt(
+        if ($function_param->type && $function_param->type->isString() && !$input_type->isString()) {
+            $cast_type = CastAnalyzer::castStringAttempt(
                 $statements_analyzer,
                 $context,
                 $input_type,
                 $expr,
                 false
             );
+
+            $input_type = clone $input_type;
+            $input_type->parent_nodes += $cast_type->parent_nodes;
         }
 
         if ($specialize_taint) {
-            $method_node = TaintNode::getForMethodArgument(
+            $method_node = ControlFlowNode::getForMethodArgument(
                 $cased_method_id,
                 $cased_method_id,
                 $argument_offset,
@@ -1204,7 +1259,7 @@ class ArgumentAnalyzer
                 $function_call_location
             );
         } else {
-            $method_node = TaintNode::getForMethodArgument(
+            $method_node = ControlFlowNode::getForMethodArgument(
                 $cased_method_id,
                 $cased_method_id,
                 $argument_offset,
@@ -1212,7 +1267,7 @@ class ArgumentAnalyzer
             );
 
             if (strpos($cased_method_id, '::')) {
-                list($fq_classlike_name, $cased_method_name) = explode('::', $cased_method_id);
+                [$fq_classlike_name, $cased_method_name] = explode('::', $cased_method_id);
                 $method_name = strtolower($cased_method_name);
                 $class_storage = $codebase->classlike_storage_provider->get($fq_classlike_name);
 
@@ -1220,7 +1275,7 @@ class ArgumentAnalyzer
                     $dependent_classlike_storage = $codebase->classlike_storage_provider->get(
                         $dependent_classlike_lc
                     );
-                    $new_sink = TaintNode::getForMethodArgument(
+                    $new_sink = ControlFlowNode::getForMethodArgument(
                         $dependent_classlike_lc . '::' . $method_name,
                         $dependent_classlike_storage->name . '::' . $cased_method_name,
                         $argument_offset,
@@ -1228,13 +1283,13 @@ class ArgumentAnalyzer
                         null
                     );
 
-                    $codebase->taint->addTaintNode($new_sink);
-                    $codebase->taint->addPath($method_node, $new_sink, 'arg');
+                    $statements_analyzer->control_flow_graph->addNode($new_sink);
+                    $statements_analyzer->control_flow_graph->addPath($method_node, $new_sink, 'arg');
                 }
 
                 if (isset($class_storage->overridden_method_ids[$method_name])) {
                     foreach ($class_storage->overridden_method_ids[$method_name] as $parent_method_id) {
-                        $new_sink = TaintNode::getForMethodArgument(
+                        $new_sink = ControlFlowNode::getForMethodArgument(
                             (string) $parent_method_id,
                             $codebase->methods->getCasedMethodId($parent_method_id),
                             $argument_offset,
@@ -1242,27 +1297,27 @@ class ArgumentAnalyzer
                             null
                         );
 
-                        $codebase->taint->addTaintNode($new_sink);
-                        $codebase->taint->addPath($method_node, $new_sink, 'arg');
+                        $statements_analyzer->control_flow_graph->addNode($new_sink);
+                        $statements_analyzer->control_flow_graph->addPath($method_node, $new_sink, 'arg');
                     }
                 }
             }
         }
 
-        $codebase->taint->addTaintNode($method_node);
+        $statements_analyzer->control_flow_graph->addNode($method_node);
 
-        $argument_value_node = TaintNode::getForAssignment(
+        $argument_value_node = ControlFlowNode::getForAssignment(
             'call to ' . $cased_method_id,
             $arg_location
         );
 
-        $codebase->taint->addTaintNode($argument_value_node);
+        $statements_analyzer->control_flow_graph->addNode($argument_value_node);
 
-        $codebase->taint->addPath($argument_value_node, $method_node, 'arg');
+        $statements_analyzer->control_flow_graph->addPath($argument_value_node, $method_node, 'arg');
 
-        if ($function_param->sinks) {
+        if ($function_param->sinks && $statements_analyzer->control_flow_graph instanceof TaintFlowGraph) {
             if ($specialize_taint) {
-                $sink = Sink::getForMethodArgument(
+                $sink = TaintSink::getForMethodArgument(
                     $cased_method_id,
                     $cased_method_id,
                     $argument_offset,
@@ -1270,7 +1325,7 @@ class ArgumentAnalyzer
                     $function_call_location
                 );
             } else {
-                $sink = Sink::getForMethodArgument(
+                $sink = TaintSink::getForMethodArgument(
                     $cased_method_id,
                     $cased_method_id,
                     $argument_offset,
@@ -1280,14 +1335,12 @@ class ArgumentAnalyzer
 
             $sink->taints = $function_param->sinks;
 
-            $codebase->taint->addSink($sink);
+            $statements_analyzer->control_flow_graph->addSink($sink);
         }
 
-        if ($input_type->parent_nodes) {
-            foreach ($input_type->parent_nodes as $parent_node) {
-                $codebase->taint->addTaintNode($method_node);
-                $codebase->taint->addPath($parent_node, $argument_value_node, 'arg');
-            }
+        foreach ($input_type->parent_nodes as $parent_node) {
+            $statements_analyzer->control_flow_graph->addNode($method_node);
+            $statements_analyzer->control_flow_graph->addPath($parent_node, $argument_value_node, 'arg');
         }
 
         if ($function_param->assert_untainted) {

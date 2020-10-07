@@ -1,7 +1,6 @@
 <?php
 namespace Psalm\Type;
 
-use function array_map;
 use function array_pop;
 use function array_shift;
 use function count;
@@ -11,8 +10,6 @@ use function ksort;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
-use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Issue\DocblockTypeContradiction;
 use Psalm\Issue\PsalmInternalError;
@@ -21,35 +18,18 @@ use Psalm\Issue\RedundantConditionGivenDocblockType;
 use Psalm\Issue\TypeDoesNotContainType;
 use Psalm\IssueBuffer;
 use Psalm\Type;
-use Psalm\Type\Atomic\ObjectLike;
-use Psalm\Type\Atomic\Scalar;
-use Psalm\Type\Atomic\TArray;
-use Psalm\Type\Atomic\TArrayKey;
-use Psalm\Type\Atomic\TBool;
-use Psalm\Type\Atomic\TCallable;
-use Psalm\Type\Atomic\TCallableObjectLikeArray;
-use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TEmpty;
-use Psalm\Type\Atomic\TFalse;
-use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
-use Psalm\Type\Atomic\TNumeric;
-use Psalm\Type\Atomic\TNumericString;
 use Psalm\Type\Atomic\TObject;
-use Psalm\Type\Atomic\TResource;
-use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
-use Psalm\Type\Atomic\TTrue;
-use function sort;
 use function str_replace;
 use function str_split;
 use function strpos;
 use function strtolower;
 use function substr;
-use Exception;
 use function preg_match;
 use function preg_quote;
 
@@ -66,8 +46,6 @@ class Reconciler
      * @param  array<string, Type\Union> $existing_types
      * @param  array<string, bool>       $changed_var_ids
      * @param  array<string, bool>       $referenced_var_ids
-     * @param  StatementsAnalyzer         $statements_analyzer
-     * @param  CodeLocation|null         $code_location
      * @param  array<string, array<string, array{Type\Union}>> $template_type_map
      *
      * @return array<string, Type\Union>
@@ -81,8 +59,8 @@ class Reconciler
         StatementsAnalyzer $statements_analyzer,
         array $template_type_map = [],
         bool $inside_loop = false,
-        CodeLocation $code_location = null
-    ) {
+        ?CodeLocation $code_location = null
+    ): array {
         if (!$new_types) {
             return $existing_types;
         }
@@ -326,12 +304,21 @@ class Reconciler
                 continue;
             }
 
-            if ($before_adjustment
-                && $before_adjustment->parent_nodes
-                && !$result_type->isInt()
-                && !$result_type->isFloat()
+            if (($statements_analyzer->control_flow_graph instanceof \Psalm\Internal\Codebase\TaintFlowGraph
+                    && $result_type->hasString())
+                || $statements_analyzer->control_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph
             ) {
-                $result_type->parent_nodes = $before_adjustment->parent_nodes;
+                if ($before_adjustment && $before_adjustment->parent_nodes) {
+                    $result_type->parent_nodes = $before_adjustment->parent_nodes;
+                } elseif (!$did_type_exist && $code_location) {
+                    $result_type->parent_nodes = $statements_analyzer->getParentNodesForPossiblyUndefinedVariable(
+                        $key
+                    );
+                }
+            }
+
+            if ($before_adjustment && $before_adjustment->by_ref) {
+                $result_type->by_ref = true;
             }
 
             $type_changed = !$before_adjustment || !$result_type->equals($before_adjustment);
@@ -341,7 +328,7 @@ class Reconciler
 
                 if (substr($key, -1) === ']' && !$has_inverted_isset && !$has_empty && !$is_equality) {
                     $key_parts = self::breakUpPathIntoParts($key);
-                    self::adjustObjectLikeType(
+                    self::adjustTKeyedArrayType(
                         $key_parts,
                         $existing_types,
                         $changed_var_ids,
@@ -377,11 +364,9 @@ class Reconciler
     }
 
     /**
-     * @param  string $path
-     *
      * @return array<int, string>
      */
-    public static function breakUpPathIntoParts($path)
+    public static function breakUpPathIntoParts(string $path): array
     {
         if (isset(self::$broken_paths[$path])) {
             return self::$broken_paths[$path];
@@ -486,12 +471,10 @@ class Reconciler
     /**
      * Gets the type for a given (non-existent key) based on the passed keys
      *
-     * @param  string                    $key
      * @param  array<string,Type\Union>  $existing_keys
      * @param  array<string,mixed>       $new_assertions
      * @param  string[][]                $new_type_parts
      *
-     * @return Type\Union|null
      */
     private static function getValueForKey(
         Codebase $codebase,
@@ -504,7 +487,7 @@ class Reconciler
         bool $has_empty,
         bool $inside_loop,
         bool &$has_object_array_access
-    ) {
+    ): ?Union {
         $key_parts = self::breakUpPathIntoParts($key);
 
         if (count($key_parts) === 1) {
@@ -520,13 +503,13 @@ class Reconciler
 
         if (!isset($existing_keys[$base_key])) {
             if (strpos($base_key, '::')) {
-                list($fq_class_name, $const_name) = explode('::', $base_key);
+                [$fq_class_name, $const_name] = explode('::', $base_key);
 
                 if (!$codebase->classlikes->classOrInterfaceExists($fq_class_name)) {
                     return null;
                 }
 
-                $class_constant = $codebase->classlikes->getConstantForClass(
+                $class_constant = $codebase->classlikes->getClassConstantType(
                     $fq_class_name,
                     $const_name,
                     \ReflectionProperty::IS_PRIVATE,
@@ -610,7 +593,7 @@ class Reconciler
                         ) {
                             $has_object_array_access = true;
                             return null;
-                        } elseif (!$existing_key_type_part instanceof Type\Atomic\ObjectLike) {
+                        } elseif (!$existing_key_type_part instanceof Type\Atomic\TKeyedArray) {
                             return Type::getMixed();
                         } elseif ($array_key[0] === '$' || ($array_key[0] !== '\'' && !\is_numeric($array_key[0]))) {
                             if ($has_empty) {
@@ -814,13 +797,8 @@ class Reconciler
     }
 
     /**
-     * @param  string       $key
-     * @param  string       $old_var_type_string
-     * @param  string       $assertion
-     * @param  bool         $redundant
      * @param  string[]     $suppressed_issues
      *
-     * @return void
      */
     protected static function triggerIssueForImpossible(
         Union $existing_var_type,
@@ -830,8 +808,12 @@ class Reconciler
         bool $redundant,
         CodeLocation $code_location,
         array $suppressed_issues
-    ) {
-        $reconciliation = ' and trying to reconcile type \'' . $old_var_type_string . '\' to ' . $assertion;
+    ): void {
+        $never = $assertion[0] === '!';
+
+        if ($never) {
+            $assertion = substr($assertion, 1);
+        }
 
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
@@ -843,9 +825,11 @@ class Reconciler
             if ($from_docblock) {
                 if (IssueBuffer::accepts(
                     new RedundantConditionGivenDocblockType(
-                        'Found a redundant condition when evaluating docblock-defined type '
-                            . $key . $reconciliation,
-                        $code_location
+                        'Docblock-defined type ' . $old_var_type_string
+                            . ' for ' . $key
+                            . ' is ' . ($never ? 'never ' : 'always ') . $assertion,
+                        $code_location,
+                        $old_var_type_string . ' ' . $assertion
                     ),
                     $suppressed_issues
                 )) {
@@ -854,8 +838,11 @@ class Reconciler
             } else {
                 if (IssueBuffer::accepts(
                     new RedundantCondition(
-                        'Found a redundant condition when evaluating ' . $key . $reconciliation,
-                        $code_location
+                        'Type ' . $old_var_type_string
+                            . ' for ' . $key
+                            . ' is ' . ($never ? 'never ' : 'always ') . $assertion,
+                        $code_location,
+                        $old_var_type_string . ' ' . $assertion
                     ),
                     $suppressed_issues
                 )) {
@@ -866,9 +853,11 @@ class Reconciler
             if ($from_docblock) {
                 if (IssueBuffer::accepts(
                     new DocblockTypeContradiction(
-                        'Found a contradiction with a docblock-defined type '
-                            . 'when evaluating ' . $key . $reconciliation,
-                        $code_location
+                        'Docblock-defined type ' . $old_var_type_string
+                            . ' for ' . $key
+                            . ' is ' . ($never ? 'always ' : 'never ') . $assertion,
+                        $code_location,
+                        $old_var_type_string . ' ' . $assertion
                     ),
                     $suppressed_issues
                 )) {
@@ -877,8 +866,11 @@ class Reconciler
             } else {
                 if (IssueBuffer::accepts(
                     new TypeDoesNotContainType(
-                        'Found a contradiction when evaluating ' . $key . $reconciliation,
-                        $code_location
+                        'Type ' . $old_var_type_string
+                            . ' for ' . $key
+                            . ' is ' . ($never ? 'always ' : 'never ') . $assertion,
+                        $code_location,
+                        $old_var_type_string . ' ' . $assertion
                     ),
                     $suppressed_issues
                 )) {
@@ -895,7 +887,7 @@ class Reconciler
      *
      * @return void
      */
-    private static function adjustObjectLikeType(
+    private static function adjustTKeyedArrayType(
         array $key_parts,
         array &$existing_types,
         array &$changed_var_ids,
@@ -919,7 +911,7 @@ class Reconciler
 
         if (isset($existing_types[$base_key]) && $array_key_offset !== false) {
             foreach ($existing_types[$base_key]->getAtomicTypes() as $base_atomic_type) {
-                if ($base_atomic_type instanceof Type\Atomic\ObjectLike
+                if ($base_atomic_type instanceof Type\Atomic\TKeyedArray
                     || ($base_atomic_type instanceof Type\Atomic\TArray
                         && !$base_atomic_type->type_params[1]->isEmpty())
                     || $base_atomic_type instanceof Type\Atomic\TList
@@ -931,7 +923,7 @@ class Reconciler
                         $previous_key_type = clone $base_atomic_type->type_params[0];
                         $previous_value_type = clone $base_atomic_type->type_params[1];
 
-                        $base_atomic_type = new Type\Atomic\ObjectLike(
+                        $base_atomic_type = new Type\Atomic\TKeyedArray(
                             [
                                 $array_key_offset => clone $result_type,
                             ],
@@ -946,7 +938,7 @@ class Reconciler
                         $previous_key_type = Type::getInt();
                         $previous_value_type = clone $base_atomic_type->type_param;
 
-                        $base_atomic_type = new Type\Atomic\ObjectLike(
+                        $base_atomic_type = new Type\Atomic\TKeyedArray(
                             [
                                 $array_key_offset => clone $result_type,
                             ],
@@ -969,7 +961,7 @@ class Reconciler
                     $changed_var_ids[$base_key . '[' . $array_key . ']'] = true;
 
                     if ($key_parts[count($key_parts) - 1] === ']') {
-                        self::adjustObjectLikeType(
+                        self::adjustTKeyedArrayType(
                             $key_parts,
                             $existing_types,
                             $changed_var_ids,

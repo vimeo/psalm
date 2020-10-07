@@ -19,12 +19,8 @@ class ContinueAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Continue_ $stmt,
         Context $context
-    ) {
+    ): ?bool {
         $loop_scope = $context->loop_scope;
-
-        $leaving_switch = true;
-
-        $codebase = $statements_analyzer->getCodebase();
 
         if ($loop_scope === null) {
             if (!$context->break_types) {
@@ -48,7 +44,6 @@ class ContinueAnalyzer
             ) {
                 $loop_scope->final_actions[] = ScopeAnalyzer::ACTION_LEAVE_SWITCH;
             } else {
-                $leaving_switch = false;
                 $loop_scope->final_actions[] = ScopeAnalyzer::ACTION_CONTINUE;
             }
 
@@ -71,6 +66,10 @@ class ContinueAnalyzer
 
             foreach ($redefined_vars as $var => $type) {
                 if ($type->hasMixed()) {
+                    if (isset($loop_scope->possibly_redefined_loop_vars[$var])) {
+                        $type->parent_nodes += $loop_scope->possibly_redefined_loop_vars[$var]->parent_nodes;
+                    }
+
                     $loop_scope->possibly_redefined_loop_vars[$var] = $type;
                 } elseif (isset($loop_scope->possibly_redefined_loop_vars[$var])) {
                     $loop_scope->possibly_redefined_loop_vars[$var] = Type::combineUnionTypes(
@@ -82,36 +81,25 @@ class ContinueAnalyzer
                 }
             }
 
-            if ($codebase->find_unused_variables && (!$context->case_scope || $stmt->num)) {
-                foreach ($context->unreferenced_vars as $var_id => $locations) {
-                    if (isset($loop_scope->unreferenced_vars[$var_id])) {
-                        $loop_scope->unreferenced_vars[$var_id] += $locations;
+            if ($context->finally_scope) {
+                foreach ($context->vars_in_scope as $var_id => $type) {
+                    if (isset($context->finally_scope->vars_in_scope[$var_id])) {
+                        if ($context->finally_scope->vars_in_scope[$var_id] !== $type) {
+                            $context->finally_scope->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                                $context->finally_scope->vars_in_scope[$var_id],
+                                $type,
+                                $statements_analyzer->getCodebase()
+                            );
+                        }
                     } else {
-                        $loop_scope->unreferenced_vars[$var_id] = $locations;
+                        $context->finally_scope->vars_in_scope[$var_id] = $type;
                     }
-
-                    if (isset($loop_scope->possibly_unreferenced_vars[$var_id])) {
-                        $loop_scope->possibly_unreferenced_vars[$var_id] += $locations;
-                    } else {
-                        $loop_scope->possibly_unreferenced_vars[$var_id] = $locations;
-                    }
-                }
-
-                $loop_scope->referenced_var_ids += $context->referenced_var_ids;
-            }
-        }
-
-        $case_scope = $context->case_scope;
-        if ($case_scope && $codebase->find_unused_variables && $leaving_switch) {
-            foreach ($context->unreferenced_vars as $var_id => $locations) {
-                if (isset($case_scope->unreferenced_vars[$var_id])) {
-                    $case_scope->unreferenced_vars[$var_id] += $locations;
-                } else {
-                    $case_scope->unreferenced_vars[$var_id] = $locations;
                 }
             }
         }
 
         $context->has_returned = true;
+
+        return null;
     }
 }

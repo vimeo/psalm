@@ -4,6 +4,6 @@ namespace Psalm\Issue;
 
 class MixedFunctionCall extends CodeIssue
 {
-    const ERROR_LEVEL = 1;
-    const SHORTCODE = 185;
+    public const ERROR_LEVEL = 1;
+    public const SHORTCODE = 185;
 }

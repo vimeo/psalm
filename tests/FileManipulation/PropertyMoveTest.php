@@ -2,7 +2,7 @@
 namespace Psalm\Tests\FileManipulation;
 
 use Psalm\Context;
-use Psalm\Internal\Analyzer\FileAnalyzer;
+use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\Internal\Provider;
 use Psalm\Tests\TestConfig;
 use function strpos;
@@ -14,8 +14,7 @@ class PropertyMoveTest extends \Psalm\Tests\TestCase
 
     public function setUp() : void
     {
-        FileAnalyzer::clearCache();
-        \Psalm\Internal\FileManipulation\FunctionDocblockManipulator::clearCache();
+        RuntimeCaches::clearAll();
 
         $this->file_provider = new Provider\FakeFileProvider();
     }
@@ -23,18 +22,15 @@ class PropertyMoveTest extends \Psalm\Tests\TestCase
     /**
      * @dataProvider providerValidCodeParse
      *
-     * @param string $input_code
-     * @param string $output_code
      * @param array<string, string> $properties_to_move
      * @param array<string, string> $call_transforms
      *
-     * @return void
      */
     public function testValidCode(
         string $input_code,
         string $output_code,
         array $properties_to_move
-    ) {
+    ): void {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'SKIPPED-') !== false) {
             $this->markTestSkipped('Skipped due to a bug.');
@@ -77,7 +73,7 @@ class PropertyMoveTest extends \Psalm\Tests\TestCase
     /**
      * @return array<string,array{string,string,array<string, string>}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): array
     {
         return [
             'moveSimpleStaticProperty' => [

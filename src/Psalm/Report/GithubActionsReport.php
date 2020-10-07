@@ -7,9 +7,6 @@ use function sprintf;
 
 class GithubActionsReport extends Report
 {
-    /**
-     * {@inheritdoc}
-     */
     public function create(): string
     {
         $output = '';

@@ -6,7 +6,6 @@ use function array_intersect;
 use function array_map;
 use function array_merge;
 use function array_reduce;
-use function explode;
 use function get_loaded_extensions;
 use function implode;
 use function ksort;
@@ -21,7 +20,6 @@ use RuntimeException;
 use function str_replace;
 use function strpos;
 use function usort;
-use function count;
 use function array_values;
 
 class ErrorBaseline
@@ -29,9 +27,10 @@ class ErrorBaseline
     /**
      * @param array<string,array<string,array{o:int, s:array<int, string>}>> $existingIssues
      *
-     * @return int
+     *
+     * @psalm-pure
      */
-    public static function countTotalIssues(array $existingIssues)
+    public static function countTotalIssues(array $existingIssues): int
     {
         $totalIssues = 0;
 
@@ -52,30 +51,24 @@ class ErrorBaseline
     }
 
     /**
-     * @param FileProvider $fileProvider
-     * @param string $baselineFile
      * @param array<string, list<IssueData>> $issues
      *
-     * @return void
      */
     public static function create(
         FileProvider $fileProvider,
         string $baselineFile,
         array $issues,
         bool $include_php_versions
-    ) {
+    ): void {
         $groupedIssues = self::countIssueTypesByFile($issues);
 
         self::writeToFile($fileProvider, $baselineFile, $groupedIssues, $include_php_versions);
     }
 
     /**
-     * @param FileProvider $fileProvider
-     * @param string $baselineFile
+     * @return array<string,array<string,array{o:int, s:array<int, string>}>>
      *
      * @throws Exception\ConfigException
-     *
-     * @return array<string,array<string,array{o:int, s:array<int, string>}>>
      */
     public static function read(FileProvider $fileProvider, string $baselineFile): array
     {
@@ -130,20 +123,18 @@ class ErrorBaseline
     }
 
     /**
-     * @param FileProvider $fileProvider
-     * @param string $baselineFile
      * @param array<string, list<IssueData>> $issues
      *
-     * @throws Exception\ConfigException
-     *
      * @return array<string,array<string,array{o:int, s:array<int, string>}>>
+     *
+     * @throws Exception\ConfigException
      */
     public static function update(
         FileProvider $fileProvider,
         string $baselineFile,
         array $issues,
         bool $include_php_versions
-    ) {
+    ): array {
         $existingIssues = self::read($fileProvider, $baselineFile);
         $newIssues = self::countIssueTypesByFile($issues);
 
@@ -235,18 +226,15 @@ class ErrorBaseline
     }
 
     /**
-     * @param FileProvider $fileProvider
-     * @param string $baselineFile
      * @param array<string,array<string,array{o:int, s:array<int, string>}>> $groupedIssues
      *
-     * @return void
      */
     private static function writeToFile(
         FileProvider $fileProvider,
         string $baselineFile,
         array $groupedIssues,
         bool $include_php_versions
-    ) {
+    ): void {
         $baselineDoc = new \DOMDocument('1.0', 'UTF-8');
         $filesNode = $baselineDoc->createElement('files');
         $filesNode->setAttribute('psalm-version', PSALM_VERSION);
@@ -278,6 +266,9 @@ class ErrorBaseline
                 $issueNode = $baselineDoc->createElement($issueType);
 
                 $issueNode->setAttribute('occurrences', (string)$existingIssueType['o']);
+
+                \sort($existingIssueType['s']);
+
                 foreach ($existingIssueType['s'] as $selection) {
                     $codeNode = $baselineDoc->createElement('code');
 
@@ -306,7 +297,7 @@ class ErrorBaseline
                     "\n" .
                     '  php-version="' .
                     "\n    " .
-                    implode("\n    ", explode('&#10;&#9;', $matches[2])) .
+                    str_replace('&#10;&#9;', "\n    ", $matches[2]).
                     "\n" .
                     '  "' .
                     "\n" .

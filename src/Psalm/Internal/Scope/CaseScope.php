@@ -11,11 +11,6 @@ use Psalm\Type;
 class CaseScope
 {
     /**
-     * @var array<string, array<string, CodeLocation>>
-     */
-    public $unreferenced_vars = [];
-
-    /**
      * @var Context
      */
     public $parent_context;

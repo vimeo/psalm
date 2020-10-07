@@ -4,15 +4,12 @@ namespace Psalm\Example\Plugin;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\FileManipulation;
-use Psalm\FileSource;
 use Psalm\Plugin\Hook\AfterClassLikeExistenceCheckInterface;
 use Psalm\StatementsSource;
-use Psalm\Type;
 
 class ClassUnqualifier implements AfterClassLikeExistenceCheckInterface
 {
     /**
-     * @param  string             $fq_class_name
      * @param  FileManipulation[] $file_replacements
      *
      * @return void

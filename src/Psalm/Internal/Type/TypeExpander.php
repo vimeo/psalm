@@ -19,11 +19,8 @@ use function array_values;
 class TypeExpander
 {
     /**
-     * @param  Type\Union   $return_type
-     * @param  string|null  $self_class
      * @param  string|Type\Atomic\TNamedObject|Type\Atomic\TTemplateParam|null $static_class_type
      *
-     * @return Type\Union
      */
     public static function expandUnion(
         Codebase $codebase,
@@ -34,10 +31,12 @@ class TypeExpander
         bool $evaluate_class_constants = true,
         bool $evaluate_conditional_types = false,
         bool $final = false
-    ) {
+    ): Type\Union {
         $return_type = clone $return_type;
 
         $new_return_type_parts = [];
+
+        $has_array_output = false;
 
         foreach ($return_type->getAtomicTypes() as $return_type_part) {
             $parts = self::expandAtomic(
@@ -53,12 +52,20 @@ class TypeExpander
 
             if (is_array($parts)) {
                 $new_return_type_parts = array_merge($new_return_type_parts, $parts);
+                $has_array_output = true;
             } else {
                 $new_return_type_parts[] = $parts;
             }
         }
 
-        $fleshed_out_type = new Type\Union($new_return_type_parts);
+        if ($has_array_output) {
+            $fleshed_out_type = TypeCombination::combineTypes(
+                $new_return_type_parts,
+                $codebase
+            );
+        } else {
+            $fleshed_out_type = new Type\Union($new_return_type_parts);
+        }
 
         $fleshed_out_type->from_docblock = $return_type->from_docblock;
         $fleshed_out_type->ignore_nullable_issues = $return_type->ignore_nullable_issues;
@@ -73,8 +80,6 @@ class TypeExpander
     }
 
     /**
-     * @param  Type\Atomic  &$return_type
-     * @param  string|null  $self_class
      * @param  string|Type\Atomic\TNamedObject|Type\Atomic\TTemplateParam|null $static_class_type
      *
      * @return Type\Atomic|non-empty-array<int, Type\Atomic>
@@ -215,21 +220,14 @@ class TypeExpander
                 if (strpos($return_type->const_name, '*') !== false) {
                     $class_storage = $codebase->classlike_storage_provider->get($return_type->fq_classlike_name);
 
-                    $all_class_constants = $class_storage->public_class_constants
-                        + $class_storage->protected_class_constants
-                        + $class_storage->private_class_constants
-                        + $class_storage->public_class_constant_nodes
-                        + $class_storage->protected_class_constant_nodes
-                        + $class_storage->private_class_constant_nodes;
-
-                    $matching_constants = \array_keys($all_class_constants);
+                    $matching_constants = \array_keys($class_storage->constants);
 
                     $const_name_part = \substr($return_type->const_name, 0, -1);
 
                     if ($const_name_part) {
                         $matching_constants = \array_filter(
                             $matching_constants,
-                            function ($constant_name) use ($const_name_part) {
+                            function ($constant_name) use ($const_name_part): bool {
                                 return $constant_name !== $const_name_part
                                     && \strpos($constant_name, $const_name_part) === 0;
                             }
@@ -243,7 +241,7 @@ class TypeExpander
 
                 foreach ($matching_constants as $matching_constant) {
                     try {
-                        $class_constant = $codebase->classlikes->getConstantForClass(
+                        $class_constant = $codebase->classlikes->getClassConstantType(
                             $return_type->fq_classlike_name,
                             $matching_constant,
                             \ReflectionProperty::IS_PRIVATE
@@ -330,7 +328,7 @@ class TypeExpander
 
             if ($evaluate_class_constants && $codebase->classOrInterfaceExists($return_type->fq_classlike_name)) {
                 try {
-                    $class_constant_type = $codebase->classlikes->getConstantForClass(
+                    $class_constant_type = $codebase->classlikes->getClassConstantType(
                         $return_type->fq_classlike_name,
                         $return_type->const_name,
                         \ReflectionProperty::IS_PRIVATE
@@ -341,10 +339,10 @@ class TypeExpander
 
                 if ($class_constant_type) {
                     foreach ($class_constant_type->getAtomicTypes() as $const_type_atomic) {
-                        if ($const_type_atomic instanceof Type\Atomic\ObjectLike
+                        if ($const_type_atomic instanceof Type\Atomic\TKeyedArray
                             || $const_type_atomic instanceof Type\Atomic\TArray
                         ) {
-                            if ($const_type_atomic instanceof Type\Atomic\ObjectLike) {
+                            if ($const_type_atomic instanceof Type\Atomic\TKeyedArray) {
                                 $const_type_atomic = $const_type_atomic->getGenericArrayType();
                             }
 
@@ -378,7 +376,7 @@ class TypeExpander
                     $final
                 );
             }
-        } elseif ($return_type instanceof Type\Atomic\ObjectLike) {
+        } elseif ($return_type instanceof Type\Atomic\TKeyedArray) {
             foreach ($return_type->properties as &$property_type) {
                 $property_type = self::expandUnion(
                     $codebase,
@@ -404,8 +402,23 @@ class TypeExpander
             );
         }
 
+        if ($return_type instanceof Type\Atomic\TObjectWithProperties) {
+            foreach ($return_type->properties as &$property_type) {
+                $property_type = self::expandUnion(
+                    $codebase,
+                    $property_type,
+                    $self_class,
+                    $static_class_type,
+                    $parent_class,
+                    $evaluate_class_constants,
+                    $evaluate_conditional_types,
+                    $final
+                );
+            }
+        }
+
         if ($return_type instanceof Type\Atomic\TCallable
-            || $return_type instanceof Type\Atomic\TFn
+            || $return_type instanceof Type\Atomic\TClosure
         ) {
             if ($return_type->params) {
                 foreach ($return_type->params as $param) {

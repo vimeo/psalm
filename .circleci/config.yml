@@ -1,44 +1,47 @@
 # Use the latest 2.1 version of CircleCI pipeline processing engine, see https://circleci.com/docs/2.0/configuration-reference/
 version: 2.1
 executors:
-  php-72:
+  php-73:
     docker:
-      - image: thecodingmachine/php:7.2-v2-cli
+      - image: thecodingmachine/php:7.3-v2-cli
   php-74:
     docker:
       - image: thecodingmachine/php:7.4-v3-cli
 jobs:
   install-and-self-analyse:
-    executor: php-72
+    executor: php-73
     steps:
       - checkout
       - run: date "+%F" > /tmp/cachekey; cat composer.json >> /tmp/cachekey
       - restore_cache:
           keys:
-            - composer-v2-{{ checksum "/tmp/cachekey" }}
-            # fallback to using the latest cache if no exact match is found (See https://circleci.com/docs/2.0/caching/)
-            - composer-v2-
+            - composer-v3
       - restore_cache:
           keys:
             - psalm-cache-{{ checksum "/tmp/cachekey" }} # speeds up run with --diff and --diff-methods
       - run: composer update
+
       - save_cache:
-          key: composer-v2-{{ checksum "/tmp/cachekey" }}
+          key: composer-v3
           paths:
-            - vendor
+            - /home/docker/.composer/cache/files
+            - /home/docker/.composer/cache/vcs
+
+      - run:
+          name: Static analysis
+          command: php -dextension=pcntl.so ./psalm --threads=10 --diff --diff-methods
+
       - save_cache:
           key: psalm-cache-{{ checksum "/tmp/cachekey" }}
           paths:
             - /tmp/psalm
-      - run:
-          name: Static analysis
-          command: php -dextension=pcntl.so ./psalm --threads=10 --diff --diff-methods
+
       - persist_to_workspace:
           root: /home/docker/project/
           paths:
             - .
   "Code Style Analysis":
-    executor: php-72
+    executor: php-73
     steps:
       - attach_workspace:
           at: /home/docker/project/
@@ -46,13 +49,13 @@ jobs:
           name: Code Style Analysis with PHPCS
           command: vendor/bin/phpcs
   test:
-    executor: php-72
+    executor: php-73
     steps:
       - attach_workspace:
             at: /home/docker/project/
       - run:
           name: PHPUnit test
-          command: php vendor/bin/phpunit --log-junit build/phpunit/phpunit.xml
+          command: php vendor/bin/paratest --runner=WrapperRunner --log-junit build/phpunit/phpunit.xml
       - store_test_results:
           path: build/
       - store_artifacts:
@@ -62,7 +65,7 @@ jobs:
           paths:
             - .
   phar-build:
-    executor: php-72
+    executor: php-73
     steps:
       - attach_workspace:
           at: /home/docker/project/

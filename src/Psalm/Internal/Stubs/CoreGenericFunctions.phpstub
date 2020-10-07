@@ -49,11 +49,47 @@ function array_intersect_key(array $arr, array $arr2, array ...$arr3)
  * @psalm-template TValue
  *
  * @param array<TKey, TValue> $arr
+ * @param array $arr2
+ * @param array ...$arr3
+ * @param callable(TKey): int $keyCompareFunc
+ *
+ * @return array<TKey, TValue>
+ *
+ * @psalm-pure
+ */
+function array_intersect_ukey(array $arr, array $arr2, array ...$arr3, callable $keyCompareFunc): array
+{
+}
+
+/**
+ * @psalm-template TKey as array-key
+ * @psalm-template TValue
+ *
+ * @param array<TKey, TValue> $arr
+ * @param array $arr2
+ * @param array ...$arr3
  *
  * @return array<TKey, TValue>
  * @psalm-pure
  */
 function array_intersect_assoc(array $arr, array $arr2, array ...$arr3)
+{
+}
+
+/**
+ * @psalm-template TKey as array-key
+ * @psalm-template TValue
+ *
+ * @param array<TKey, TValue> $arr
+ * @param array $arr2
+ * @param array ...$arr3
+ * @param callable(TKey): int $keyCompareFunc
+ *
+ * @return array<TKey, TValue>
+ *
+ * @psalm-pure
+ */
+function array_intersect_uassoc(array $arr, array $arr2, array ...$arr3, callable $keyCompareFunc): array {}
 {
 }
 
@@ -109,6 +145,22 @@ function array_diff_key(array $arr, array $arr2, array ...$arr3)
  * @param array<TKey, TValue> $arr
  * @param array $arr2
  * @param array ...$arr3
+ * @param callable(TKey, TKey): int $keyCompareFunc
+ *
+ * @return array<TKey, TValue>
+ * @psalm-pure
+ */
+function array_diff_ukey(array $arr, array $arr2, array ...$arr3, callable $keyCompareFunc): array {}
+{
+}
+
+/**
+ * @psalm-template TKey as array-key
+ * @psalm-template TValue
+ *
+ * @param array<TKey, TValue> $arr
+ * @param array $arr2
+ * @param array ...$arr3
  *
  * @return array<TKey, TValue>
  * @psalm-pure
@@ -116,6 +168,20 @@ function array_diff_key(array $arr, array $arr2, array ...$arr3)
 function array_diff_assoc(array $arr, array $arr2, array ...$arr3)
 {
 }
+
+/**
+ * @psalm-template TKey as array-key
+ * @psalm-template TValue
+ *
+ * @param array<TKey, TValue> $arr
+ * @param array $arr2
+ * @param array ...$arr3
+ * @param callable(TKey, TKey): int $keyCompareFunc
+ *
+ * @return array<TKey, TValue>
+ * @psalm-pure
+ */
+function array_diff_uassoc(array $arr, array $arr2, array ... $arr3, callable $keyCompareFunc): array {}
 
 /**
  * @psalm-template TKey as array-key
@@ -484,6 +550,15 @@ function strtoupper(string $str) : string {}
 /**
  * @psalm-pure
  *
+ * @param string $haystack
+ *
+ * @psalm-return positive-int|0|false
+ */
+function strpos($haystack, $needle, int $offset = 0) : int {}
+
+/**
+ * @psalm-pure
+ *
  * @psalm-flow ($str) -> return
  */
 function trim(string $str, string $character_mask = " \t\n\r\0\x0B") : string {}
@@ -540,6 +615,20 @@ function explode(string $delimiter, string $string, int $limit = -1) : array {}
  * )
  */
 function array_sum(array $input) {}
+
+/**
+ * @param array $input
+ *
+ * @return (
+ *     $input is array<int>
+ *     ? int
+ *     : ($input is array<float>
+ *         ? float
+ *         : float|int
+ *     )
+ * )
+ */
+function array_product(array $input) {}
 
 /**
  * @psalm-pure
@@ -627,6 +716,41 @@ function preg_replace_callback($search, $replace, $subject, int $limit = -1, &$c
 
 /**
  * @psalm-pure
+ * @template TFlags as int
+ *
+ * @param string $pattern
+ * @param string $subject
+ * @param mixed $matches
+ * @param TFlags $flags
+ * @param-out (
+ *          TFlags is 1
+ *          ? array<list<string>>
+ *          : (TFlags is 2
+ *              ? list<array<string>>
+ *              : (TFlags is 256|257
+ *                  ? array<list<array{string, int}>>
+ *                  : (TFlags is 258
+ *                      ? list<array<array{string, int}>>
+ *                      : (TFlags is 512|513
+ *                          ? array<list<?string>>
+ *                          : (TFlags is 514
+ *                              ? list<array<?string>>
+ *                              : (TFlags is 770
+ *                                  ? list<array<array{?string, int}>>
+ *                                  : array
+ *                              )
+ *                          )
+ *                      )
+ *                  )
+ *              )
+ *          )
+ *        ) $matches
+ * @return int
+ */
+function preg_match_all($pattern, $replace, &$matches = [], int $flags = 1, int $offset = 0) {}
+
+/**
+ * @psalm-pure
  *
  * @return string|false
  * @psalm-ignore-falsable-return
@@ -673,7 +797,7 @@ function bcdiv(string $left_operand, string $right_operand, int $scale = 0): ?st
 /**
  * @psalm-pure
  *
- * @param scalar|object $var
+ * @param scalar|null|object $var
  * @return string The string value of var.
  *
  * @psalm-flow ($var) -> return
@@ -687,3 +811,19 @@ function strval ($var): string {}
 function str_getcsv(string $input, string $delimiter = ',', string $enclosure = '"', string $escape = '\\\\')
 {
 }
+
+/**
+ * @return ($min is positive-int ? positive-int : int)
+ */
+function random_int(int $min, int $max): int {}
+
+/**
+ * @template TKey as array-key
+ *
+ * @param array<mixed, TKey> $array
+ *
+ * @return array<TKey, positive-int>
+ *
+ * @psalm-pure
+ */
+function array_count_values(array $array): array {}

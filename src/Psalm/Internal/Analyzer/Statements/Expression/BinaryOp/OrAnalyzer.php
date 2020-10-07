@@ -66,7 +66,6 @@ class OrAnalyzer
                 $left_context = $if_conditional_scope->if_context;
 
                 $left_referenced_var_ids = $if_conditional_scope->cond_referenced_var_ids;
-                $left_assigned_var_ids = $if_conditional_scope->cond_assigned_var_ids;
             } catch (\Psalm\Exception\ScopeAnalysisException $e) {
                 return false;
             }
@@ -99,10 +98,6 @@ class OrAnalyzer
                 }
             }
 
-            if ($codebase->find_unused_variables) {
-                $context->unreferenced_vars = $left_context->unreferenced_vars;
-            }
-
             $left_referenced_var_ids = $left_context->referenced_var_ids;
             $left_context->referenced_var_ids = array_merge($pre_referenced_var_ids, $left_referenced_var_ids);
 
@@ -111,8 +106,11 @@ class OrAnalyzer
             $left_referenced_var_ids = array_diff_key($left_referenced_var_ids, $left_assigned_var_ids);
         }
 
+        $left_cond_id = \spl_object_id($stmt->left);
+
         $left_clauses = Algebra::getFormula(
-            \spl_object_id($stmt->left),
+            $left_cond_id,
+            $left_cond_id,
             $stmt->left,
             $context->self,
             $statements_analyzer,
@@ -124,7 +122,8 @@ class OrAnalyzer
         } catch (\Psalm\Exception\ComplicatedExpressionException $e) {
             try {
                 $negated_left_clauses = Algebra::getFormula(
-                    \spl_object_id($stmt->left),
+                    $left_cond_id,
+                    $left_cond_id,
                     new PhpParser\Node\Expr\BooleanNot($stmt->left),
                     $context->self,
                     $statements_analyzer,
@@ -142,8 +141,8 @@ class OrAnalyzer
             $negated_left_clauses = array_values(
                 array_filter(
                     $negated_left_clauses,
-                    function ($c) use ($reconciled_expression_clauses) {
-                        return !\in_array($c->getHash(), $reconciled_expression_clauses);
+                    function ($c) use ($reconciled_expression_clauses): bool {
+                        return !\in_array($c->hash, $reconciled_expression_clauses);
                     }
                 )
             );
@@ -167,7 +166,7 @@ class OrAnalyzer
 
         $negated_type_assertions = Algebra::getTruthsFromFormula(
             $clauses_for_right_analysis,
-            \spl_object_id($stmt->left),
+            $left_cond_id,
             $left_referenced_var_ids,
             $active_negated_type_assertions
         );
@@ -202,7 +201,7 @@ class OrAnalyzer
                 $context->reconciled_expression_clauses,
                 array_map(
                     function ($c) {
-                        return $c->getHash();
+                        return $c->hash;
                     },
                     $partitioned_clauses[1]
                 )
@@ -214,7 +213,7 @@ class OrAnalyzer
                 $context->reconciled_expression_clauses,
                 array_map(
                     function ($c) {
-                        return $c->getHash();
+                        return $c->hash;
                     },
                     $partitioned_clauses[1]
                 )
@@ -270,23 +269,6 @@ class OrAnalyzer
             $right_context->assigned_var_ids
         );
 
-        if ($codebase->find_unused_variables) {
-            foreach ($right_context->unreferenced_vars as $var_id => $locations) {
-                if (!isset($context->unreferenced_vars[$var_id])) {
-                    $context->unreferenced_vars[$var_id] = $locations;
-                } else {
-                    $new_locations = array_diff_key(
-                        $locations,
-                        $context->unreferenced_vars[$var_id]
-                    );
-
-                    if ($new_locations) {
-                        $context->unreferenced_vars[$var_id] += $locations;
-                    }
-                }
-            }
-        }
-
         if ($context->if_context) {
             $if_context = $context->if_context;
 
@@ -311,10 +293,6 @@ class OrAnalyzer
                 $context->assigned_var_ids,
                 $if_context->assigned_var_ids
             );
-
-            if ($codebase->find_unused_variables) {
-                $if_context->unreferenced_vars = $context->unreferenced_vars;
-            }
 
             $if_context->updateChecks($context);
         }

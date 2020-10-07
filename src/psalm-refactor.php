@@ -3,6 +3,7 @@
 namespace Psalm;
 
 require_once('command_functions.php');
+require_once __DIR__ . '/Psalm/Internal/Composer.php';
 // show all errors
 error_reporting(-1);
 ini_set('display_errors', '1');
@@ -15,8 +16,8 @@ gc_disable();
 require_once __DIR__ . '/Psalm/Internal/exception_handler.php';
 
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Composer;
 use Psalm\Internal\IncludeCollector;
-use Psalm\IssueBuffer;
 use Psalm\Progress\DebugProgress;
 use Psalm\Progress\DefaultProgress;
 use function error_reporting;
@@ -159,7 +160,7 @@ $vendor_dir = \Psalm\getVendorDir($current_dir);
 require_once __DIR__ . '/Psalm/Internal/IncludeCollector.php';
 $include_collector = new IncludeCollector();
 $first_autoloader = $include_collector->runAndCollect(
-    function () use ($current_dir, $options, $vendor_dir) {
+    function () use ($current_dir, $options, $vendor_dir): ?\Composer\Autoload\ClassLoader {
         return requireAutoloaders($current_dir, isset($options['r']), $vendor_dir);
     }
 );
@@ -221,7 +222,7 @@ foreach ($args as $arg) {
 
             foreach ($last_arg_parts as $last_arg_part) {
                 if (strpos($last_arg_part, '::')) {
-                    list(, $identifier_name) = explode('::', $last_arg_part);
+                    [, $identifier_name] = explode('::', $last_arg_part);
                     $to_refactor[$last_arg_part] = $arg . '::' . $identifier_name;
                 } else {
                     $namespace_parts = explode('\\', $last_arg_part);
@@ -269,7 +270,7 @@ $providers = new \Psalm\Internal\Provider\Providers(
     new \Psalm\Internal\Provider\FileStorageCacheProvider($config),
     new \Psalm\Internal\Provider\ClassLikeStorageCacheProvider($config),
     null,
-    new \Psalm\Internal\Provider\ProjectCacheProvider($current_dir . DIRECTORY_SEPARATOR . 'composer.lock')
+    new \Psalm\Internal\Provider\ProjectCacheProvider(Composer::getLockFilePath($current_dir))
 );
 
 $debug = array_key_exists('debug', $options) || array_key_exists('debug-by-line', $options);

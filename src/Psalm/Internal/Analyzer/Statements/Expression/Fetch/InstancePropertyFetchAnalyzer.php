@@ -9,11 +9,13 @@ use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
+use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\DeprecatedProperty;
+use Psalm\Issue\ImpurePropertyFetch;
 use Psalm\Issue\InvalidPropertyFetch;
 use Psalm\Issue\InternalProperty;
 use Psalm\Issue\MissingPropertyType;
@@ -29,7 +31,6 @@ use Psalm\Issue\UndefinedPropertyFetch;
 use Psalm\Issue\UndefinedThisPropertyFetch;
 use Psalm\Issue\UninitializedProperty;
 use Psalm\IssueBuffer;
-use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type\Atomic\TGenericObject;
@@ -41,7 +42,8 @@ use function strtolower;
 use function array_values;
 use function in_array;
 use function array_keys;
-use Psalm\Internal\Taint\TaintNode;
+use Psalm\Internal\ControlFlow\ControlFlowNode;
+use Psalm\Internal\Codebase\TaintFlowGraph;
 
 /**
  * @internal
@@ -54,6 +56,9 @@ class InstancePropertyFetchAnalyzer
         Context $context,
         bool $in_assignment = false
     ) : bool {
+        $was_inside_use = $context->inside_use;
+        $context->inside_use = true;
+
         if (!$stmt->name instanceof PhpParser\Node\Identifier) {
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->name, $context) === false) {
                 return false;
@@ -63,6 +68,8 @@ class InstancePropertyFetchAnalyzer
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->var, $context) === false) {
             return false;
         }
+
+        $context->inside_use = $was_inside_use;
 
         if ($stmt->name instanceof PhpParser\Node\Identifier) {
             $prop_name = $stmt->name->name;
@@ -88,9 +95,7 @@ class InstancePropertyFetchAnalyzer
             $statements_analyzer
         );
 
-        $stmt_type = null;
-
-        if ($var_id && $context->hasVariable($var_id, $statements_analyzer)) {
+        if ($var_id && $context->hasVariable($var_id)) {
             $stmt_type = $context->vars_in_scope[$var_id];
 
             // we don't need to check anything
@@ -180,12 +185,14 @@ class InstancePropertyFetchAnalyzer
 
                         $property_id = $lhs_type_part->value . '::$' . $stmt->name->name;
 
+                        $class_storage = $codebase->classlike_storage_provider->get($lhs_type_part->value);
+
                         self::processTaints(
                             $statements_analyzer,
                             $stmt,
                             $stmt_type,
                             $property_id,
-                            $codebase->classlike_storage_provider->get($lhs_type_part->value),
+                            $class_storage,
                             $in_assignment
                         );
 
@@ -209,6 +216,29 @@ class InstancePropertyFetchAnalyzer
                                 $property_id
                             );
                         }
+
+                        if (!$context->collect_mutations
+                            && !$context->collect_initializations
+                            && !($class_storage->external_mutation_free
+                                && $stmt_type->allow_mutations)
+                        ) {
+                            if ($context->pure) {
+                                if (IssueBuffer::accepts(
+                                    new ImpurePropertyFetch(
+                                        'Cannot access a property on a mutable object from a pure context',
+                                        new CodeLocation($statements_analyzer, $stmt)
+                                    ),
+                                    $statements_analyzer->getSuppressedIssues()
+                                )) {
+                                    // fall through
+                                }
+                            } elseif ($statements_analyzer->getSource()
+                                    instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                                && $statements_analyzer->getSource()->track_mutations
+                            ) {
+                                $statements_analyzer->getSource()->inferred_impure = true;
+                            }
+                        }
                     }
                 }
             }
@@ -216,7 +246,7 @@ class InstancePropertyFetchAnalyzer
             return true;
         }
 
-        if ($stmt_var_id && $context->hasVariable($stmt_var_id, $statements_analyzer)) {
+        if ($stmt_var_id && $context->hasVariable($stmt_var_id)) {
             $stmt_var_type = $context->vars_in_scope[$stmt_var_id];
         } else {
             $stmt_var_type = $statements_analyzer->node_data->getType($stmt->var);
@@ -761,6 +791,24 @@ class InstancePropertyFetchAnalyzer
                     $property_id = $context->self . '::$' . $prop_name;
                 } else {
                     if ($context->inside_isset || $context->collect_initializations) {
+                        if ($context->pure) {
+                            if (IssueBuffer::accepts(
+                                new ImpurePropertyFetch(
+                                    'Cannot access a property on a mutable object from a pure context',
+                                    new CodeLocation($statements_analyzer, $stmt)
+                                ),
+                                $statements_analyzer->getSuppressedIssues()
+                            )) {
+                                // fall through
+                            }
+                        } elseif ($context->inside_isset
+                            && $statements_analyzer->getSource()
+                                instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                            && $statements_analyzer->getSource()->track_mutations
+                        ) {
+                            $statements_analyzer->getSource()->inferred_impure = true;
+                        }
+
                         return true;
                     }
 
@@ -889,6 +937,17 @@ class InstancePropertyFetchAnalyzer
                         // fall through
                     }
                 }
+
+                if ($context->inside_unset) {
+                    InstancePropertyAssignmentAnalyzer::trackPropertyImpurity(
+                        $statements_analyzer,
+                        $stmt,
+                        $property_id,
+                        $property_storage,
+                        $declaring_class_storage,
+                        $context
+                    );
+                }
             }
 
             $class_property_type = $codebase->properties->getPropertyType(
@@ -908,7 +967,8 @@ class InstancePropertyFetchAnalyzer
                         new MissingPropertyType(
                             'Property ' . $fq_class_name . '::$' . $prop_name
                                 . ' does not have a declared type',
-                            new CodeLocation($statements_analyzer->getSource(), $stmt)
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
+                            $property_id
                         ),
                         $statements_analyzer->getSuppressedIssues()
                     )) {
@@ -954,6 +1014,28 @@ class InstancePropertyFetchAnalyzer
                         $class_storage,
                         $declaring_class_storage
                     );
+                }
+            }
+
+            if (!$context->collect_mutations
+                && !$context->collect_initializations
+                && !($class_storage->external_mutation_free
+                    && $class_property_type->allow_mutations)
+            ) {
+                if ($context->pure) {
+                    if (IssueBuffer::accepts(
+                        new ImpurePropertyFetch(
+                            'Cannot access a property on a mutable object from a pure context',
+                            new CodeLocation($statements_analyzer, $stmt)
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                } elseif ($statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                    && $statements_analyzer->getSource()->track_mutations
+                ) {
+                    $statements_analyzer->getSource()->inferred_impure = true;
                 }
             }
 
@@ -1114,13 +1196,11 @@ class InstancePropertyFetchAnalyzer
         \Psalm\Storage\ClassLikeStorage $class_storage,
         bool $in_assignment
     ) : void {
-        $codebase = $statements_analyzer->getCodebase();
-
-        if (!$codebase->taint
-            || !$codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
-        ) {
+        if (!$statements_analyzer->control_flow_graph) {
             return;
         }
+
+        $control_flow_graph = $statements_analyzer->control_flow_graph;
 
         $var_location = new CodeLocation($statements_analyzer->getSource(), $stmt->var);
         $property_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
@@ -1141,26 +1221,29 @@ class InstancePropertyFetchAnalyzer
             if ($var_id) {
                 $var_type = $statements_analyzer->node_data->getType($stmt->var);
 
-                if ($var_type && \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())) {
+                if ($statements_analyzer->control_flow_graph instanceof TaintFlowGraph
+                    && $var_type
+                    && \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
+                ) {
                     $var_type->parent_nodes = [];
                     return;
                 }
 
-                $var_node = TaintNode::getForAssignment(
+                $var_node = ControlFlowNode::getForAssignment(
                     $var_id,
                     $var_location
                 );
 
-                $codebase->taint->addTaintNode($var_node);
+                $control_flow_graph->addNode($var_node);
 
-                $property_node = TaintNode::getForAssignment(
+                $property_node = ControlFlowNode::getForAssignment(
                     $var_property_id ?: $var_id . '->$property',
                     $property_location
                 );
 
-                $codebase->taint->addTaintNode($property_node);
+                $control_flow_graph->addNode($property_node);
 
-                $codebase->taint->addPath(
+                $control_flow_graph->addPath(
                     $var_node,
                     $property_node,
                     'property-fetch'
@@ -1169,7 +1252,7 @@ class InstancePropertyFetchAnalyzer
 
                 if ($var_type && $var_type->parent_nodes) {
                     foreach ($var_type->parent_nodes as $parent_node) {
-                        $codebase->taint->addPath(
+                        $control_flow_graph->addPath(
                             $parent_node,
                             $var_node,
                             '='
@@ -1177,36 +1260,36 @@ class InstancePropertyFetchAnalyzer
                     }
                 }
 
-                $type->parent_nodes = [$property_node];
+                $type->parent_nodes = [$property_node->id => $property_node];
             }
         } else {
             $code_location = new CodeLocation($statements_analyzer, $stmt->name);
 
-            $localized_property_node = new TaintNode(
+            $localized_property_node = new ControlFlowNode(
                 $property_id . '-' . $code_location->file_name . ':' . $code_location->raw_file_start,
                 $property_id,
                 $code_location,
                 null
             );
 
-            $codebase->taint->addTaintNode($localized_property_node);
+            $control_flow_graph->addNode($localized_property_node);
 
-            $property_node = new TaintNode(
+            $property_node = new ControlFlowNode(
                 $property_id,
                 $property_id,
                 null,
                 null
             );
 
-            $codebase->taint->addTaintNode($property_node);
+            $control_flow_graph->addNode($property_node);
 
             if ($in_assignment) {
-                $codebase->taint->addPath($localized_property_node, $property_node, 'property-assignment');
+                $control_flow_graph->addPath($localized_property_node, $property_node, 'property-assignment');
             } else {
-                $codebase->taint->addPath($property_node, $localized_property_node, 'property-fetch');
+                $control_flow_graph->addPath($property_node, $localized_property_node, 'property-fetch');
             }
 
-            $type->parent_nodes[] = $localized_property_node;
+            $type->parent_nodes[$localized_property_node->id] = $localized_property_node;
         }
     }
 }

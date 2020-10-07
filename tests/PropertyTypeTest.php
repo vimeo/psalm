@@ -10,10 +10,7 @@ class PropertyTypeTest extends TestCase
     use Traits\InvalidCodeAnalysisTestTrait;
     use Traits\ValidCodeAnalysisTestTrait;
 
-    /**
-     * @return void
-     */
-    public function testForgetPropertyAssignments()
+    public function testForgetPropertyAssignments(): void
     {
         $this->expectExceptionMessage('NullableReturnStatement');
         $this->expectException(\Psalm\Exception\CodeException::class);
@@ -50,10 +47,7 @@ class PropertyTypeTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testForgetPropertyAssignmentsPassesNormally()
+    public function testForgetPropertyAssignmentsPassesNormally(): void
     {
         $this->addFile(
             'somefile.php',
@@ -86,10 +80,7 @@ class PropertyTypeTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testForgetPropertyAssignmentsInBranchWithThrow()
+    public function testForgetPropertyAssignmentsInBranchWithThrow(): void
     {
         Config::getInstance()->remember_property_assignments_after_call = false;
 
@@ -156,7 +147,7 @@ class PropertyTypeTest extends TestCase
     /**
      * @return void
      */
-    public function testForgetPropertyAssignmentsInBranchWithThrowNormally()
+    public function testForgetPropertyAssignmentsInBranchWithThrowNormally(): void
     {
         $this->addFile(
             'somefile.php',
@@ -195,7 +186,7 @@ class PropertyTypeTest extends TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'newVarInIf' => [
@@ -1400,7 +1391,7 @@ class PropertyTypeTest extends TestCase
                 [],
                 ['PropertyNotSetInConstructor'],
             ],
-            'setObjectLikePropertyType' => [
+            'setTKeyedArrayPropertyType' => [
                 '<?php
                     class Foo {
                         /**
@@ -2085,13 +2076,68 @@ class PropertyTypeTest extends TestCase
                         }
                     }'
             ],
+            'unionPropertyType' => [
+                '<?php
+                    class A {
+                        public string|int $i;
+
+                        public function __construct() {
+                            $this->i = 5;
+                            $this->i = "hello";
+                        }
+                    }
+
+                    $a = new A();
+
+                    if ($a->i === 3) {}
+                    if ($a->i === "foo") {}'
+            ],
+            'setClassStringOfStatic' => [
+                '<?php
+                    class A {
+                        public static array $stack = [];
+
+                        public static function foo() : void {
+                            $class = get_called_class();
+                            $class::$stack[] = 1;
+                        }
+                    }'
+            ],
+            'promotedPublicPropertyWithDefault' => [
+                '<?php
+                    class A {
+                        public function __construct(public int $foo = 5) {}
+                    }
+
+                    echo (new A)->foo;'
+            ],
+            'promotedPublicPropertyWitoutDefault' => [
+                '<?php
+                    class A {
+                        public function __construct(public int $foo) {}
+                    }
+
+                    echo (new A(5))->foo;'
+            ],
+            'promotedProtectedProperty' => [
+                '<?php
+                    class A {
+                        public function __construct(protected int $foo) {}
+                    }
+
+                    class AChild extends A {
+                        public function bar() : int {
+                            return $this->foo;
+                        }
+                    }'
+            ],
         ];
     }
 
     /**
      * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'undefinedPropertyAssignment' => [
@@ -3105,7 +3151,7 @@ class PropertyTypeTest extends TestCase
 
                     $a = new A();
                     $a->bar = "goodbye";',
-                'error_message' => 'InaccessibleProperty - src/somefile.php:19:21',
+                'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:19:21',
             ],
             'readonlyPublicPropertySetInConstructorAndAlsoOutsideClass' => [
                 '<?php
@@ -3126,7 +3172,7 @@ class PropertyTypeTest extends TestCase
 
                     $a = new A();
                     $a->bar = "goodbye";',
-                'error_message' => 'InaccessibleProperty - src/somefile.php:18:21',
+                'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:18:21',
             ],
             'addNullToMixedAfterNullablePropertyFetch' => [
                 '<?php
@@ -3214,6 +3260,25 @@ class PropertyTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'UndefinedPropertyFetch',
+            ],
+            'missingPropertyTypeWithDocblock' => [
+                '<?php
+                    class C {
+                        /**
+                         * @varr int
+                         */
+                        public $var;
+                    }',
+                'error_message' => 'MissingPropertyType',
+            ],
+            'promotedPrivateProperty' => [
+                '<?php
+                    class A {
+                        public function __construct(private int $foo = 5) {}
+                    }
+
+                    echo (new A)->foo;',
+                'error_message' => 'InaccessibleProperty',
             ],
         ];
     }

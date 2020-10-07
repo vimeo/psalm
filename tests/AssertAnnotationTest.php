@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Tests;
 
+use const DIRECTORY_SEPARATOR;
+
 class AssertAnnotationTest extends TestCase
 {
     use Traits\ValidCodeAnalysisTestTrait;
@@ -9,7 +11,7 @@ class AssertAnnotationTest extends TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'implictAssertInstanceOfB' => [
@@ -1238,13 +1240,39 @@ class AssertAnnotationTest extends TestCase
                         return substr($a, 0, 1) . substr($b, 0, 1);
                     }'
             ],
+            'convertConstStringType' => [
+                '<?php
+                    class A {
+                        const T1  = 1;
+                        const T2 = 2;
+
+                        /**
+                         * @param self::T* $t
+                         */
+                        public static function bar(int $t):void {}
+
+                        /**
+                         * @psalm-assert-if-true self::T* $t
+                         */
+                        public static function isValid(int $t): bool {
+                            return in_array($t, [self::T1, self::T2], true);
+                        }
+                    }
+
+
+                    function takesA(int $a) : void {
+                        if (A::isValid($a)) {
+                            A::bar($a);
+                        }
+                    }'
+            ],
         ];
     }
 
     /**
      * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'assertInstanceOfMultipleInterfaces' => [
@@ -1429,7 +1457,7 @@ class AssertAnnotationTest extends TestCase
 
                         if ($bar) {}
                     }',
-                'error_message' => 'RedundantCondition - src/somefile.php:19:29',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:19:29',
             ],
             'assertOneOfStrings' => [
                 '<?php

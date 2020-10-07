@@ -60,12 +60,12 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
 
         if (isset($array_arg_types['array'])
             && ($array_arg_types['array'] instanceof Type\Atomic\TArray
-                || $array_arg_types['array'] instanceof Type\Atomic\ObjectLike
+                || $array_arg_types['array'] instanceof Type\Atomic\TKeyedArray
                 || $array_arg_types['array'] instanceof Type\Atomic\TList)
         ) {
             $array_arg_atomic_type = $array_arg_types['array'];
 
-            if ($array_arg_atomic_type instanceof Type\Atomic\ObjectLike) {
+            if ($array_arg_atomic_type instanceof Type\Atomic\TKeyedArray) {
                 $array_arg_atomic_type = $array_arg_atomic_type->getGenericArrayType();
             } elseif ($array_arg_atomic_type instanceof Type\Atomic\TList) {
                 $array_arg_atomic_type = new Type\Atomic\TArray([
@@ -118,8 +118,7 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
                     return Type::getMixed();
                 }
 
-                $carry_param = $closure_atomic_type->params[0];
-                $item_param = $closure_atomic_type->params[1];
+                [$carry_param, $item_param] = $closure_atomic_type->params;
 
                 if ($carry_param->type
                     && (
@@ -193,8 +192,6 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
             $call_map = InternalCallMapHandler::getCallMap();
 
             foreach ($mapping_function_ids as $mapping_function_id) {
-                $mapping_function_id = $mapping_function_id;
-
                 $mapping_function_id_parts = explode('&', $mapping_function_id);
 
                 $part_match_found = false;
@@ -218,7 +215,7 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
                                 $mapping_function_id_part = \substr($mapping_function_id_part, 1);
                             }
 
-                            list($callable_fq_class_name, $method_name) = explode('::', $mapping_function_id_part);
+                            [$callable_fq_class_name, $method_name] = explode('::', $mapping_function_id_part);
 
                             if (in_array($callable_fq_class_name, ['self', 'static', 'parent'], true)) {
                                 continue;

@@ -40,12 +40,7 @@ trait CanAlias
      */
     private $aliased_constants = [];
 
-    /**
-     * @param  PhpParser\Node\Stmt\Use_ $stmt
-     *
-     * @return void
-     */
-    public function visitUse(PhpParser\Node\Stmt\Use_ $stmt)
+    public function visitUse(PhpParser\Node\Stmt\Use_ $stmt): void
     {
         $codebase = $this->getCodebase();
 
@@ -103,12 +98,7 @@ trait CanAlias
         }
     }
 
-    /**
-     * @param  PhpParser\Node\Stmt\GroupUse $stmt
-     *
-     * @return void
-     */
-    public function visitGroupUse(PhpParser\Node\Stmt\GroupUse $stmt)
+    public function visitGroupUse(PhpParser\Node\Stmt\GroupUse $stmt): void
     {
         $use_prefix = implode('\\', $stmt->prefix->parts);
 
@@ -144,7 +134,7 @@ trait CanAlias
     /**
      * @return array<string, string>
      */
-    public function getAliasedClassesFlipped()
+    public function getAliasedClassesFlipped(): array
     {
         return $this->aliased_classes_flipped;
     }
@@ -152,15 +142,12 @@ trait CanAlias
     /**
      * @return array<string, string>
      */
-    public function getAliasedClassesFlippedReplaceable()
+    public function getAliasedClassesFlippedReplaceable(): array
     {
         return $this->aliased_classes_flipped_replaceable;
     }
 
-    /**
-     * @return Aliases
-     */
-    public function getAliases()
+    public function getAliases(): Aliases
     {
         return new Aliases(
             $this->getNamespace(),

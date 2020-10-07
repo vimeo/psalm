@@ -12,6 +12,7 @@ use Psalm\Config;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\Providers;
+use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\Internal\Provider;
 use RuntimeException;
 
@@ -26,9 +27,6 @@ class TestCase extends BaseTestCase
     /** @var Provider\FakeFileProvider */
     protected $file_provider;
 
-    /**
-     * @return void
-     */
     public static function setUpBeforeClass() : void
     {
         ini_set('memory_limit', '-1');
@@ -45,24 +43,16 @@ class TestCase extends BaseTestCase
         self::$src_dir_path = getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR;
     }
 
-    /**
-     * @return Config
-     */
     protected function makeConfig() : Config
     {
         return new TestConfig();
     }
 
-    /**
-     * @return void
-     */
     public function setUp() : void
     {
         parent::setUp();
 
-        FileAnalyzer::clearCache();
-
-        \Psalm\Internal\Provider\StatementsProvider::clearLexer();
+        RuntimeCaches::clearAll();
 
         $this->file_provider = new \Psalm\Tests\Internal\Provider\FakeFileProvider();
 
@@ -78,23 +68,20 @@ class TestCase extends BaseTestCase
             $providers
         );
 
-
-
-        $this->project_analyzer->setPhpVersion('7.3');
+        $this->project_analyzer->setPhpVersion('7.4');
     }
 
     public function tearDown() : void
     {
-        FileAnalyzer::clearCache();
+        RuntimeCaches::clearAll();
     }
 
     /**
      * @param string $file_path
      * @param string $contents
      *
-     * @return void
      */
-    public function addFile($file_path, $contents)
+    public function addFile($file_path, $contents): void
     {
         $this->file_provider->registerFile($file_path, $contents);
         $this->project_analyzer->getCodebase()->scanner->addFileToShallowScan($file_path);
@@ -102,11 +89,9 @@ class TestCase extends BaseTestCase
 
     /**
      * @param  string         $file_path
-     * @param  \Psalm\Context $context
      *
-     * @return void
      */
-    public function analyzeFile($file_path, \Psalm\Context $context, bool $track_unused_suppressions = true)
+    public function analyzeFile($file_path, \Psalm\Context $context, bool $track_unused_suppressions = true): void
     {
         $codebase = $this->project_analyzer->getCodebase();
         $codebase->addFilesToAnalyze([$file_path => $file_path]);
@@ -128,8 +113,8 @@ class TestCase extends BaseTestCase
         );
         $file_analyzer->analyze($context);
 
-        if ($codebase->taint) {
-            $codebase->taint->connectSinksAndSources();
+        if ($codebase->taint_flow_graph) {
+            $codebase->taint_flow_graph->connectSinksAndSources();
         }
 
         if ($track_unused_suppressions) {
@@ -140,9 +125,8 @@ class TestCase extends BaseTestCase
     /**
      * @param  bool $withDataSet
      *
-     * @return string
      */
-    protected function getTestName($withDataSet = true)
+    protected function getTestName($withDataSet = true): string
     {
         $name = parent::getName($withDataSet);
         /**

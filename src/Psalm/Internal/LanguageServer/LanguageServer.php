@@ -80,10 +80,6 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
      */
     protected $onchange_paths_to_analyze = [];
 
-    /**
-     * @param ProtocolReader  $reader
-     * @param ProtocolWriter $writer
-     */
     public function __construct(
         ProtocolReader $reader,
         ProtocolWriter $writer,
@@ -112,7 +108,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
                 /**
                  * @return \Generator<int, \Amp\Promise, mixed, void>
                  */
-                function (Message $msg) {
+                function (Message $msg): \Generator {
                     if (!$msg->body) {
                         return;
                     }
@@ -194,8 +190,8 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
      */
     public function initialize(
         ClientCapabilities $capabilities,
-        string $rootPath = null,
-        int $processId = null
+        ?string $rootPath = null,
+        ?int $processId = null
     ): Promise {
         return call(
             /** @return \Generator<int, true, mixed, InitializeResult> */
@@ -276,25 +272,18 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
     /**
      * @psalm-suppress PossiblyUnusedMethod
      *
-     * @return void
      */
-    public function initialized()
+    public function initialized(): void
     {
         $this->clientStatus('running');
     }
 
-    /**
-     * @return void
-     */
-    public function queueTemporaryFileAnalysis(string $file_path, string $uri)
+    public function queueTemporaryFileAnalysis(string $file_path, string $uri): void
     {
         $this->onchange_paths_to_analyze[$file_path] = $uri;
     }
 
-    /**
-     * @return void
-     */
-    public function queueFileAnalysis(string $file_path, string $uri)
+    public function queueFileAnalysis(string $file_path, string $uri): void
     {
         $this->onsave_paths_to_analyze[$file_path] = $uri;
     }
@@ -342,9 +331,8 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
     /**
      * @param array<string, string> $uris
      *
-     * @return void
      */
-    public function emitIssues(array $uris)
+    public function emitIssues(array $uris): void
     {
         $data = \Psalm\IssueBuffer::clear();
 
@@ -434,9 +422,8 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
     /**
      * A notification to ask the server to exit its process.
      *
-     * @return void
      */
-    public function exit()
+    public function exit(): void
     {
         exit(0);
     }
@@ -447,12 +434,11 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
      *
      * @param string $message The log message to send to the client.
      * @psalm-param 1|2|3|4 $type
-     * @param integer $type The log type:
+     * @param int $type The log type:
      *  - 1 = Error
      *  - 2 = Warning
      *  - 3 = Info
      *  - 4 = Log
-     * @return Promise
      */
     private function verboseLog(string $message, int $type = 4): Promise
     {
@@ -476,9 +462,8 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
      * @param string $status The log message to send to the client. Should not contain colons `:`.
      * @param string|null $additional_info This is additional info that the client
      *                                       can use as part of the display message.
-     * @return Promise
      */
-    private function clientStatus(string $status, string $additional_info = null): Promise
+    private function clientStatus(string $status, ?string $additional_info = null): Promise
     {
         try {
             // here we send a notification to the client using the telemetry notification method
@@ -495,9 +480,9 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
     /**
      * Transforms an absolute file path into a URI as used by the language server protocol.
      *
-     * @param string $filepath
      *
-     * @return string
+     *
+     * @psalm-pure
      */
     public static function pathToUri(string $filepath): string
     {
@@ -518,11 +503,9 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
     /**
      * Transforms URI into file path
      *
-     * @param string $uri
      *
-     * @return string
      */
-    public static function uriToPath(string $uri)
+    public static function uriToPath(string $uri): string
     {
         $fragments = parse_url($uri);
         if ($fragments === false
@@ -540,6 +523,11 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
                 $filepath = substr($filepath, 1);
             }
             $filepath = str_replace('/', '\\', $filepath);
+        }
+
+        $realpath = \realpath($filepath);
+        if ($realpath !== false) {
+            return $realpath;
         }
 
         return $filepath;

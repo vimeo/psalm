@@ -81,8 +81,7 @@ class PluginList
         return $class;
     }
 
-    /** @return null|string */
-    public function findPluginPackage(string $class)
+    public function findPluginPackage(string $class): ?string
     {
         // pluginClass => ?pluginPackage
         $plugin_classes = $this->getAll();
@@ -95,14 +94,12 @@ class PluginList
         return array_key_exists($class, $this->getEnabled());
     }
 
-    /** @return void */
-    public function enable(string $class)
+    public function enable(string $class): void
     {
         $this->config_file->addPlugin($class);
     }
 
-    /** @return void */
-    public function disable(string $class)
+    public function disable(string $class): void
     {
         $this->config_file->removePlugin($class);
     }

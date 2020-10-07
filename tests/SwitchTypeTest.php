@@ -11,7 +11,7 @@ class SwitchTypeTest extends TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'getClassConstArg' => [
@@ -984,13 +984,28 @@ class SwitchTypeTest extends TestCase
                         return true;
                     }'
             ],
+            'alwaysReturnsWithConditionalReturnFirst' => [
+                '<?php
+                    function getRows(string $s) : int {
+                        if (rand(0, 1)) {
+                            return 1;
+                        }
+
+                        switch ($s) {
+                            case "a":
+                                return 2;
+                            default:
+                                return 1;
+                        }
+                    }'
+            ],
         ];
     }
 
     /**
      * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'switchReturnTypeWithFallthroughAndBreak' => [
@@ -1162,7 +1177,7 @@ class SwitchTypeTest extends TestCase
                                 echo "goodbye";
                         }
                     }',
-                'error_message' => 'RedundantCondition - src/somefile.php:10',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:10',
                 'error_levels' => ['ParadoxicalCondition'],
             ],
             'repeatedCaseValue' => [

@@ -28,9 +28,6 @@ use function strlen;
 class ConcatAnalyzer
 {
     /**
-     * @param  StatementsAnalyzer     $statements_analyzer
-     * @param  PhpParser\Node\Expr   $left
-     * @param  PhpParser\Node\Expr   $right
      * @param  Type\Union|null       &$result_type
      *
      * @return void
@@ -291,6 +288,12 @@ class ConcatAnalyzer
                                 )) {
                                     // fall through
                                 }
+                            } elseif ($statements_analyzer->getSource()
+                                    instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                                && $statements_analyzer->getSource()->track_mutations
+                            ) {
+                                $statements_analyzer->getSource()->inferred_has_mutation = true;
+                                $statements_analyzer->getSource()->inferred_impure = true;
                             }
                         }
                     }
@@ -378,6 +381,12 @@ class ConcatAnalyzer
                                 )) {
                                     // fall through
                                 }
+                            } elseif ($statements_analyzer->getSource()
+                                    instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                                && $statements_analyzer->getSource()->track_mutations
+                            ) {
+                                $statements_analyzer->getSource()->inferred_has_mutation = true;
+                                $statements_analyzer->getSource()->inferred_impure = true;
                             }
                         }
                     }

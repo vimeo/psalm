@@ -3,6 +3,6 @@ namespace Psalm\Issue;
 
 class PossiblyUnusedProperty extends CodeIssue
 {
-    const ERROR_LEVEL = -2;
-    const SHORTCODE = 149;
+    public const ERROR_LEVEL = -2;
+    public const SHORTCODE = 149;
 }

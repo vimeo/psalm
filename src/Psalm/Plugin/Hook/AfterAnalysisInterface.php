@@ -18,6 +18,6 @@ interface AfterAnalysisInterface
         Codebase $codebase,
         array $issues,
         array $build_info,
-        SourceControlInfo $source_control_info = null
+        ?SourceControlInfo $source_control_info = null
     );
 }

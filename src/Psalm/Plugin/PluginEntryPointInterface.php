@@ -6,5 +6,5 @@ use SimpleXMLElement;
 interface PluginEntryPointInterface
 {
     /** @return void */
-    public function __invoke(RegistrationInterface $registration, SimpleXMLElement $config = null);
+    public function __invoke(RegistrationInterface $registration, ?SimpleXMLElement $config = null);
 }

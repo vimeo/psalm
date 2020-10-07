@@ -18,7 +18,6 @@
     </projectFiles>
 
     <issueHandlers>
-        <MisplacedRequiredParam errorLevel="suppress" />
         <PossiblyNullOperand errorLevel="suppress" />
         <MissingConstructor errorLevel="suppress" />
         <DeprecatedProperty errorLevel="suppress" />

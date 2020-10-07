@@ -8,10 +8,7 @@ class ArrayAccessTest extends TestCase
     use Traits\InvalidCodeAnalysisTestTrait;
     use Traits\ValidCodeAnalysisTestTrait;
 
-    /**
-     * @return void
-     */
-    public function testEnsureArrayOffsetsExist()
+    public function testEnsureArrayOffsetsExist(): void
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
         $this->expectExceptionMessage('PossiblyUndefinedStringArrayOffset');
@@ -32,10 +29,7 @@ class ArrayAccessTest extends TestCase
         $this->analyzeFile('somefile.php', new \Psalm\Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testEnsureArrayOffsetsExistWithIssetCheck()
+    public function testEnsureArrayOffsetsExistWithIssetCheck(): void
     {
         \Psalm\Config::getInstance()->ensure_array_string_offsets_exist = true;
 
@@ -55,10 +49,7 @@ class ArrayAccessTest extends TestCase
         $this->analyzeFile('somefile.php', new \Psalm\Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testDontEnsureArrayOffsetsExist()
+    public function testDontEnsureArrayOffsetsExist(): void
     {
         \Psalm\Config::getInstance()->ensure_array_string_offsets_exist = false;
 
@@ -76,10 +67,7 @@ class ArrayAccessTest extends TestCase
         $this->analyzeFile('somefile.php', new \Psalm\Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testEnsureArrayOffsetsExistWithIssetCheckFollowedByIsArray()
+    public function testEnsureArrayOffsetsExistWithIssetCheckFollowedByIsArray(): void
     {
         \Psalm\Config::getInstance()->ensure_array_string_offsets_exist = true;
 
@@ -95,10 +83,7 @@ class ArrayAccessTest extends TestCase
         $this->analyzeFile('somefile.php', new \Psalm\Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testComplainAfterFirstIsset()
+    public function testComplainAfterFirstIsset(): void
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
         $this->expectExceptionMessage('PossiblyUndefinedStringArrayOffset');
@@ -116,10 +101,7 @@ class ArrayAccessTest extends TestCase
         $this->analyzeFile('somefile.php', new \Psalm\Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testEnsureArrayIntOffsetsExist()
+    public function testEnsureArrayIntOffsetsExist(): void
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
         $this->expectExceptionMessage('PossiblyUndefinedIntArrayOffset');
@@ -140,10 +122,7 @@ class ArrayAccessTest extends TestCase
         $this->analyzeFile('somefile.php', new \Psalm\Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testNoIssueWhenUsingArrayValuesOnNonEmptyArray()
+    public function testNoIssueWhenUsingArrayValuesOnNonEmptyArray(): void
     {
         \Psalm\Config::getInstance()->ensure_array_int_offsets_exist = true;
 
@@ -182,10 +161,7 @@ class ArrayAccessTest extends TestCase
         $this->analyzeFile('somefile.php', new \Psalm\Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testEnsureListOffsetExistsNotEmpty()
+    public function testEnsureListOffsetExistsNotEmpty(): void
     {
         \Psalm\Config::getInstance()->ensure_array_int_offsets_exist = true;
 
@@ -203,10 +179,7 @@ class ArrayAccessTest extends TestCase
         $this->analyzeFile('somefile.php', new \Psalm\Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testEnsureListOffsetExistsAfterArrayPop()
+    public function testEnsureListOffsetExistsAfterArrayPop(): void
     {
         \Psalm\Config::getInstance()->ensure_array_int_offsets_exist = true;
 
@@ -243,10 +216,7 @@ class ArrayAccessTest extends TestCase
         $this->analyzeFile('somefile.php', new \Psalm\Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testEnsureListOffsetExistsAfterCountValueInRange()
+    public function testEnsureListOffsetExistsAfterCountValueInRange(): void
     {
         \Psalm\Config::getInstance()->ensure_array_int_offsets_exist = true;
 
@@ -296,10 +266,7 @@ class ArrayAccessTest extends TestCase
         $this->analyzeFile('somefile.php', new \Psalm\Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testEnsureListOffsetExistsAfterCountValueOutOfRange()
+    public function testEnsureListOffsetExistsAfterCountValueOutOfRange(): void
     {
         \Psalm\Config::getInstance()->ensure_array_int_offsets_exist = true;
 
@@ -322,10 +289,7 @@ class ArrayAccessTest extends TestCase
         $this->analyzeFile('somefile.php', new \Psalm\Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testEnsureListOffsetExistsAfterCountValueOutOfRangeSmallerThan()
+    public function testEnsureListOffsetExistsAfterCountValueOutOfRangeSmallerThan(): void
     {
         \Psalm\Config::getInstance()->ensure_array_int_offsets_exist = true;
 
@@ -351,7 +315,7 @@ class ArrayAccessTest extends TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'instanceOfStringOffset' => [
@@ -478,7 +442,7 @@ class ArrayAccessTest extends TestCase
                         echo isset($p["key"]) ? $p["key"] : "";
                     }',
             ],
-            'unsetObjectLikeOffset' => [
+            'unsetTKeyedArrayOffset' => [
                 '<?php
                     function takesInt(int $i) : void {}
                     $x = ["a" => "value"];
@@ -707,7 +671,7 @@ class ArrayAccessTest extends TestCase
 
                         /**
                          * @param array<scalar|array> $array
-                         * @psalm-suppress MixedTypeCoercion
+                         * @psalm-suppress MixedArgumentTypeCoercion
                          */
                         final public function __construct(array $array)
                         {
@@ -732,7 +696,7 @@ class ArrayAccessTest extends TestCase
                         /**
                          * @param ?string $name
                          * @param scalar|array $value
-                         * @psalm-suppress MixedTypeCoercion
+                         * @psalm-suppress MixedArgumentTypeCoercion
                          */
                         public function offsetSet($name, $value) : void
                         {
@@ -988,13 +952,25 @@ class ArrayAccessTest extends TestCase
 
                     if ($foo !== null) {}'
             ],
+            'accessKnownArrayWithPositiveInt' => [
+                '<?php
+                    /** @param list<int> $arr */
+                    function foo(array $arr) : void {
+                        $o = [4, 15, 18, 21, 51];
+                        $i = 0;
+                        foreach ($arr as $a) {
+                            if ($o[$i] === $a) {}
+                            $i++;
+                        }
+                    }'
+            ],
         ];
     }
 
     /**
      * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'invalidArrayAccess' => [
@@ -1230,7 +1206,7 @@ class ArrayAccessTest extends TestCase
                     }',
                 'error_message' => 'TypeDoesNotContainType',
             ],
-            'undefinedObjectLikeArrayOffset' => [
+            'undefinedTKeyedArrayOffset' => [
                 '<?php
                     class Example {
                         /**

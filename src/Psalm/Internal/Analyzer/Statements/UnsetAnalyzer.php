@@ -9,18 +9,20 @@ use Psalm\Type;
 
 class UnsetAnalyzer
 {
-    /**
-     * @return void
-     */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Unset_ $stmt,
         Context $context
-    ) {
+    ): void {
         $context->inside_unset = true;
 
         foreach ($stmt->vars as $var) {
+            $was_inside_use = $context->inside_use;
+            $context->inside_use = true;
+
             ExpressionAnalyzer::analyze($statements_analyzer, $var, $context);
+
+            $context->inside_use = $was_inside_use;
 
             $var_id = ExpressionIdentifier::getArrayVarId(
                 $var,
@@ -43,7 +45,7 @@ class UnsetAnalyzer
                     $root_type = clone $context->vars_in_scope[$root_var_id];
 
                     foreach ($root_type->getAtomicTypes() as $atomic_root_type) {
-                        if ($atomic_root_type instanceof Type\Atomic\ObjectLike) {
+                        if ($atomic_root_type instanceof Type\Atomic\TKeyedArray) {
                             if ($var->dim instanceof PhpParser\Node\Scalar\String_
                                 || $var->dim instanceof PhpParser\Node\Scalar\LNumber
                             ) {

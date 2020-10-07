@@ -37,7 +37,7 @@ class ArrayColumnReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
             && $first_arg_type->hasArray()
         ) {
             $input_array = $first_arg_type->getAtomicTypes()['array'];
-            if ($input_array instanceof Type\Atomic\ObjectLike) {
+            if ($input_array instanceof Type\Atomic\TKeyedArray) {
                 $row_type = $input_array->getGenericArrayType()->type_params[1];
                 if ($row_type->isSingle() && $row_type->hasArray()) {
                     $row_shape = $row_type->getAtomicTypes()['array'];
@@ -56,7 +56,7 @@ class ArrayColumnReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
 
             $input_array_not_empty = $input_array instanceof Type\Atomic\TNonEmptyList ||
                 $input_array instanceof Type\Atomic\TNonEmptyArray ||
-                $input_array instanceof Type\Atomic\ObjectLike;
+                $input_array instanceof Type\Atomic\TKeyedArray;
         }
 
         $value_column_name = null;
@@ -88,7 +88,7 @@ class ArrayColumnReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
         $result_element_type = null;
         $have_at_least_one_res = false;
         // calculate results
-        if ($row_shape instanceof Type\Atomic\ObjectLike) {
+        if ($row_shape instanceof Type\Atomic\TKeyedArray) {
             if ((null !== $value_column_name) && isset($row_shape->properties[$value_column_name])) {
                 if ($input_array_not_empty) {
                     $have_at_least_one_res = true;

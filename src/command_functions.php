@@ -4,13 +4,17 @@ namespace Psalm;
 
 use Composer\Autoload\ClassLoader;
 use Phar;
-use Psalm\Config;
+use Psalm\Internal\Composer;
+use function basename;
 use function dirname;
+use function getenv;
+use function pathinfo;
 use function strpos;
 use function realpath;
 use const DIRECTORY_SEPARATOR;
 use function file_exists;
 use function in_array;
+use const PATHINFO_EXTENSION;
 use const PHP_EOL;
 use function fwrite;
 use const STDERR;
@@ -37,14 +41,7 @@ use function ini_get;
 use function preg_match;
 use function strtoupper;
 
-/**
- * @param  string $current_dir
- * @param  bool   $has_explicit_root
- * @param  string $vendor_dir
- *
- * @return ?\Composer\Autoload\ClassLoader
- */
-function requireAutoloaders($current_dir, $has_explicit_root, $vendor_dir)
+function requireAutoloaders(string $current_dir, bool $has_explicit_root, string $vendor_dir): ?ClassLoader
 {
     $autoload_roots = [$current_dir];
 
@@ -70,7 +67,7 @@ function requireAutoloaders($current_dir, $has_explicit_root, $vendor_dir)
     foreach ($autoload_roots as $autoload_root) {
         $has_autoloader = false;
 
-        $nested_autoload_file = dirname(dirname($autoload_root)) . DIRECTORY_SEPARATOR . 'autoload.php';
+        $nested_autoload_file = dirname($autoload_root, 2). DIRECTORY_SEPARATOR . 'autoload.php';
 
         // note: don't realpath $nested_autoload_file, or phar version will fail
         if (file_exists($nested_autoload_file)) {
@@ -91,7 +88,8 @@ function requireAutoloaders($current_dir, $has_explicit_root, $vendor_dir)
             $has_autoloader = true;
         }
 
-        if (!$has_autoloader && file_exists($autoload_root . '/composer.json')) {
+        $composer_json_file = Composer::getJsonFilePath($autoload_root);
+        if (!$has_autoloader && file_exists($composer_json_file)) {
             $error_message = 'Could not find any composer autoloaders in ' . $autoload_root;
 
             if (!$has_explicit_root) {
@@ -142,17 +140,13 @@ function requireAutoloaders($current_dir, $has_explicit_root, $vendor_dir)
 }
 
 /**
- * @param  string $current_dir
- *
- * @return string
- *
  * @psalm-suppress MixedArrayAccess
  * @psalm-suppress MixedAssignment
  * @psalm-suppress PossiblyUndefinedStringArrayOffset
  */
-function getVendorDir($current_dir)
+function getVendorDir(string $current_dir): string
 {
-    $composer_json_path = $current_dir . DIRECTORY_SEPARATOR . 'composer.json';
+    $composer_json_path = Composer::getJsonFilePath($current_dir);
 
     if (!file_exists($composer_json_path)) {
         return 'vendor';
@@ -219,7 +213,7 @@ function getArguments() : array
  *
  * @return string[]|null
  */
-function getPathsToCheck($f_paths)
+function getPathsToCheck($f_paths): ?array
 {
     global $argv;
 
@@ -302,6 +296,9 @@ function getPathsToCheck($f_paths)
     return $paths_to_check;
 }
 
+/**
+ * @psalm-pure
+ */
 function getPsalmHelpText(): string
 {
     return <<<HELP
@@ -381,7 +378,8 @@ Output:
 
     --output-format=console
         Changes the output format.
-        Available formats: compact, console, text, emacs, json, pylint, xml, checkstyle, junit, sonarqube, github
+        Available formats: compact, console, text, emacs, json, pylint, xml, checkstyle, junit, sonarqube, github,
+                           phpstorm
 
     --no-progress
         Disable the progress indicator
@@ -547,6 +545,9 @@ function get_path_to_config(array $options): ?string
     return $path_to_config;
 }
 
+/**
+ * @psalm-pure
+ */
 function getMemoryLimitInBytes(): int
 {
     $limit = ini_get('memory_limit');

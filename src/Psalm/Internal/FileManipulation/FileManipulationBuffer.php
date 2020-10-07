@@ -23,12 +23,10 @@ class FileManipulationBuffer
     private static $code_migrations = [];
 
     /**
-     * @param string $file_path
      * @param FileManipulation[] $file_manipulations
      *
-     * @return void
      */
-    public static function add($file_path, array $file_manipulations)
+    public static function add(string $file_path, array $file_manipulations): void
     {
         if (!isset(self::$file_manipulations[$file_path])) {
             self::$file_manipulations[$file_path] = [];
@@ -76,14 +74,11 @@ class FileManipulationBuffer
         return [$start_offset, $middle_offset];
     }
 
-    /**
-     * @return void
-     */
     public static function addForCodeLocation(
         CodeLocation $code_location,
         string $replacement_text,
         bool $swallow_newlines = false
-    ) {
+    ): void {
         $bounds = $code_location->getSnippetBounds();
 
         if ($swallow_newlines) {
@@ -172,11 +167,9 @@ class FileManipulationBuffer
     }
 
     /**
-     * @param string $file_path
-     *
      * @return FileManipulation[]
      */
-    public static function getManipulationsForFile($file_path)
+    public static function getManipulationsForFile(string $file_path): array
     {
         if (!isset(self::$file_manipulations[$file_path])) {
             return [];
@@ -190,12 +183,12 @@ class FileManipulationBuffer
      *
      * @return array<string, FileManipulation[]>
      */
-    public static function getMigrationManipulations(FileProvider $file_provider)
+    public static function getMigrationManipulations(FileProvider $file_provider): array
     {
         $code_migration_manipulations = [];
 
         foreach (self::$code_migrations as $code_migration) {
-            list($start_offset, $middle_offset) = self::getCodeOffsets(
+            [$start_offset, $middle_offset] = self::getCodeOffsets(
                 $code_migration->source_file_path,
                 $code_migration->source_start,
                 $code_migration->source_end
@@ -217,7 +210,7 @@ class FileManipulationBuffer
 
             $code_migration_manipulations[$code_migration->source_file_path][] = $delete_file_manipulation;
 
-            list($destination_start_offset) = self::getCodeOffsets(
+            [$destination_start_offset] = self::getCodeOffsets(
                 $code_migration->destination_file_path,
                 $code_migration->destination_start,
                 $code_migration->destination_start
@@ -243,15 +236,12 @@ class FileManipulationBuffer
     /**
      * @return array<string, FileManipulation[]>
      */
-    public static function getAll()
+    public static function getAll(): array
     {
         return self::$file_manipulations;
     }
 
-    /**
-     * @return void
-     */
-    public static function clearCache()
+    public static function clearCache(): void
     {
         self::$file_manipulations = [];
         self::$code_migrations = [];

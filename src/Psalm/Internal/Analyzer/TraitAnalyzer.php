@@ -14,13 +14,10 @@ class TraitAnalyzer extends ClassLikeAnalyzer
      */
     private $aliases;
 
-    /**
-     * @param string $fq_class_name
-     */
     public function __construct(
         PhpParser\Node\Stmt\Trait_ $class,
         SourceAnalyzer $source,
-        $fq_class_name,
+        string $fq_class_name,
         Aliases $aliases
     ) {
         $this->source = $source;
@@ -33,18 +30,12 @@ class TraitAnalyzer extends ClassLikeAnalyzer
         $this->aliases = $aliases;
     }
 
-    /**
-     * @return null|string
-     */
-    public function getNamespace()
+    public function getNamespace(): ?string
     {
         return $this->aliases->namespace;
     }
 
-    /**
-     * @return Aliases
-     */
-    public function getAliases()
+    public function getAliases(): Aliases
     {
         return $this->aliases;
     }
@@ -52,7 +43,7 @@ class TraitAnalyzer extends ClassLikeAnalyzer
     /**
      * @return array<string, string>
      */
-    public function getAliasedClassesFlipped()
+    public function getAliasedClassesFlipped(): array
     {
         return [];
     }
@@ -60,7 +51,7 @@ class TraitAnalyzer extends ClassLikeAnalyzer
     /**
      * @return array<string, string>
      */
-    public function getAliasedClassesFlippedReplaceable()
+    public function getAliasedClassesFlippedReplaceable(): array
     {
         return [];
     }

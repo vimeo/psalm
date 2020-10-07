@@ -13,7 +13,7 @@ class ClassTemplateTest extends TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'classTemplate' => [
@@ -31,8 +31,7 @@ class ClassTemplateTest extends TestCase
                         public $T;
 
                         /**
-                         * @param class-string $T
-                         * @template-typeof T $T
+                         * @param class-string<T> $T
                          */
                         public function __construct(string $T) {
                             $this->T = $T;
@@ -50,7 +49,10 @@ class ClassTemplateTest extends TestCase
 
                     $at = "A";
 
-                    /** @var Foo<A> */
+                    /**
+                     * @var Foo<A>
+                     * @psalm-suppress ArgumentTypeCoercion
+                     */
                     $afoo = new Foo($at);
                     $afoo_bar = $afoo->bar();
 
@@ -77,7 +79,6 @@ class ClassTemplateTest extends TestCase
                     'MixedReturnStatement',
                     'LessSpecificReturnStatement',
                     'DocblockTypeContradiction',
-                    'TypeCoercion',
                 ],
             ],
             'classTemplateSelfs' => [
@@ -90,8 +91,7 @@ class ClassTemplateTest extends TestCase
                         public $T;
 
                         /**
-                         * @param class-string $T
-                         * @template-typeof T $T
+                         * @param class-string<T> $T
                          */
                         public function __construct(string $T) {
                             $this->T = $T;
@@ -162,8 +162,7 @@ class ClassTemplateTest extends TestCase
                         public $T;
 
                         /**
-                         * @param class-string $T
-                         * @template-typeof T $T
+                         * @param class-string<T> $T
                          */
                         public function __construct(string $T) {
                             $this->T = $T;
@@ -911,7 +910,7 @@ class ClassTemplateTest extends TestCase
                     '$id' => 'array-key',
                 ],
             ],
-            'templateObjectLikeValues' => [
+            'templateTKeyedArrayValues' => [
                 '<?php
                     /**
                      * @template TKey
@@ -2932,7 +2931,7 @@ class ClassTemplateTest extends TestCase
     /**
      * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'restrictTemplateInputWithClassString' => [

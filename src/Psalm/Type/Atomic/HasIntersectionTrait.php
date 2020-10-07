@@ -4,9 +4,7 @@ namespace Psalm\Type\Atomic;
 use function array_map;
 use function implode;
 use Psalm\Codebase;
-use Psalm\CodeLocation;
 use Psalm\Internal\Type\TemplateResult;
-use Psalm\StatementsSource;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 
@@ -43,7 +41,7 @@ trait HasIntersectionTrait
                     $aliased_classes,
                     $this_class,
                     $use_phpdoc_format
-                ) {
+                ): string {
                     return $extra_type->toNamespacedString(
                         $namespace,
                         $aliased_classes,

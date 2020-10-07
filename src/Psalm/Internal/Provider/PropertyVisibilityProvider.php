@@ -18,8 +18,8 @@ class PropertyVisibilityProvider
      *     string,
      *     string,
      *     bool,
-     *     ?Context=,
-     *     ?CodeLocation=
+     *     Context,
+     *     CodeLocation
      *   ) : ?bool>
      * >
      */
@@ -33,14 +33,12 @@ class PropertyVisibilityProvider
     /**
      * @param  class-string<PropertyVisibilityProviderInterface> $class
      *
-     * @return void
      */
-    public function registerClass(string $class)
+    public function registerClass(string $class): void
     {
         $callable = \Closure::fromCallable([$class, 'isPropertyVisible']);
 
         foreach ($class::getClassLikeNames() as $fq_classlike_name) {
-            /** @psalm-suppress MixedTypeCoercion */
             $this->registerClosure($fq_classlike_name, $callable);
         }
     }
@@ -52,13 +50,12 @@ class PropertyVisibilityProvider
      *     string,
      *     string,
      *     bool,
-     *     ?Context=,
-     *     ?CodeLocation=
+     *     Context,
+     *     CodeLocation
      *   ) : ?bool $c
      *
-     * @return void
      */
-    public function registerClosure(string $fq_classlike_name, \Closure $c)
+    public function registerClosure(string $fq_classlike_name, \Closure $c): void
     {
         self::$handlers[strtolower($fq_classlike_name)][] = $c;
     }
@@ -71,16 +68,15 @@ class PropertyVisibilityProvider
     /**
      * @param  array<PhpParser\Node\Arg>  $call_args
      *
-     * @return ?bool
      */
     public function isPropertyVisible(
         StatementsSource $source,
         string $fq_classlike_name,
         string $property_name,
         bool $read_mode,
-        Context $context = null,
-        CodeLocation $code_location = null
-    ) {
+        Context $context,
+        CodeLocation $code_location
+    ): ?bool {
         foreach (self::$handlers[strtolower($fq_classlike_name)] as $property_handler) {
             $property_visible = $property_handler(
                 $source,

@@ -20,6 +20,7 @@ use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Progress\Progress;
+use Psalm\Internal\Codebase\TaintFlowGraph;
 use function realpath;
 use function strtolower;
 use function substr;
@@ -55,7 +56,7 @@ use function substr;
  *     classlike_storage:array<string, \Psalm\Storage\ClassLikeStorage>,
  *     file_storage:array<string, \Psalm\Storage\FileStorage>,
  *     new_file_content_hashes: array<string, string>,
- *     taint_data: ?\Psalm\Internal\Codebase\Taint
+ *     taint_data: ?TaintFlowGraph
  * }
  */
 
@@ -172,61 +173,38 @@ class Scanner
     /**
      * @param array<string, string> $files_to_scan
      *
-     * @return void
      */
-    public function addFilesToShallowScan(array $files_to_scan)
+    public function addFilesToShallowScan(array $files_to_scan): void
     {
         $this->files_to_scan += $files_to_scan;
     }
 
     /**
      * @param array<string, string> $files_to_scan
-     *
-     * @return void
      */
-    public function addFilesToDeepScan(array $files_to_scan)
+    public function addFilesToDeepScan(array $files_to_scan): void
     {
         $this->files_to_scan += $files_to_scan;
         $this->files_to_deep_scan += $files_to_scan;
     }
 
-    /**
-     * @param  string $file_path
-     *
-     * @return void
-     */
-    public function addFileToShallowScan($file_path)
+    public function addFileToShallowScan(string $file_path): void
     {
         $this->files_to_scan[$file_path] = $file_path;
     }
 
-    /**
-     * @param  string $file_path
-     *
-     * @return void
-     */
-    public function addFileToDeepScan($file_path)
+    public function addFileToDeepScan(string $file_path): void
     {
         $this->files_to_scan[$file_path] = $file_path;
         $this->files_to_deep_scan[$file_path] = $file_path;
     }
 
-    /**
-     * @param string $file_path
-     *
-     * @return void
-     */
-    public function removeFile($file_path)
+    public function removeFile(string $file_path): void
     {
         unset($this->scanned_files[$file_path]);
     }
 
-    /**
-     * @param  string $fq_classlike_name_lc
-     *
-     * @return void
-     */
-    public function removeClassLike($fq_classlike_name_lc)
+    public function removeClassLike(string $fq_classlike_name_lc): void
     {
         unset(
             $this->classlike_files[$fq_classlike_name_lc],
@@ -234,23 +212,12 @@ class Scanner
         );
     }
 
-    /**
-     * @param  string $fq_classlike_name_lc
-     * @param  string $file_path
-     *
-     * @return void
-     */
-    public function setClassLikeFilePath($fq_classlike_name_lc, $file_path)
+    public function setClassLikeFilePath(string $fq_classlike_name_lc, string $file_path): void
     {
         $this->classlike_files[$fq_classlike_name_lc] = $file_path;
     }
 
-    /**
-     * @param  string $fq_classlike_name_lc
-     *
-     * @return string
-     */
-    public function getClassLikeFilePath($fq_classlike_name_lc)
+    public function getClassLikeFilePath(string $fq_classlike_name_lc): string
     {
         if (!isset($this->classlike_files[$fq_classlike_name_lc])) {
             throw new \UnexpectedValueException('Could not find file for ' . $fq_classlike_name_lc);
@@ -260,18 +227,15 @@ class Scanner
     }
 
     /**
-     * @param  string  $fq_classlike_name
-     * @param  string|null  $referencing_file_path
-     * @param  bool $analyze_too
-     * @param  bool $store_failure
+    /**
      * @param  array<string, mixed> $phantom_classes
      *
      * @return void
      */
     public function queueClassLikeForScanning(
-        $fq_classlike_name,
-        $analyze_too = false,
-        $store_failure = true,
+        string $fq_classlike_name,
+        bool $analyze_too = false,
+        bool $store_failure = true,
         array $phantom_classes = []
     ) {
         if ($fq_classlike_name[0] === '\\') {
@@ -317,10 +281,7 @@ class Scanner
         }
     }
 
-    /**
-     * @return bool
-     */
-    public function scanFiles(ClassLikes $classlikes, int $pool_size = 1)
+    public function scanFiles(ClassLikes $classlikes, int $pool_size = 1): bool
     {
         $has_changes = false;
         while ($this->files_to_scan || $this->classes_to_scan) {
@@ -358,12 +319,9 @@ class Scanner
 
         $scanner_worker =
             /**
-             * @param int $_
-             * @param string $file_path
-             *
              * @return void
              */
-            function ($_, $file_path) use ($filetype_scanners, $files_to_deep_scan) {
+            function (int $_, string $file_path) use ($filetype_scanners, $files_to_deep_scan) {
                 $this->scanFile(
                     $file_path,
                     $filetype_scanners,
@@ -431,7 +389,7 @@ class Scanner
                         'new_file_content_hashes' => $statements_provider->parser_cache_provider
                             ? $statements_provider->parser_cache_provider->getNewFileContentHashes()
                             : [],
-                        'taint_data' => $codebase->taint,
+                        'taint_data' => $codebase->taint_flow_graph,
                     ];
                 }
             );
@@ -454,8 +412,8 @@ class Scanner
                 $this->codebase->statements_provider->addDiffMap(
                     $pool_data['diff_map']
                 );
-                if ($this->codebase->taint && $pool_data['taint_data']) {
-                    $this->codebase->taint->addThreadData($pool_data['taint_data']);
+                if ($this->codebase->taint_flow_graph && $pool_data['taint_data']) {
+                    $this->codebase->taint_flow_graph->addGraph($pool_data['taint_data']);
                 }
 
                 $this->codebase->file_storage_provider->addMore($pool_data['file_storage']);
@@ -514,10 +472,7 @@ class Scanner
         return true;
     }
 
-    /**
-     * @return void
-     */
-    private function convertClassesToFilePaths(ClassLikes $classlikes)
+    private function convertClassesToFilePaths(ClassLikes $classlikes): void
     {
         $classes_to_scan = $this->classes_to_scan;
 
@@ -542,7 +497,7 @@ class Scanner
 
                     $this->progress->debug('Using reflection to get metadata for ' . $fq_classlike_name . "\n");
 
-                    /** @psalm-suppress TypeCoercion */
+                    /** @psalm-suppress ArgumentTypeCoercion */
                     $reflected_class = new \ReflectionClass($fq_classlike_name);
                     $this->reflection->registerClass($reflected_class);
                     $this->reflected_classlikes_lc[$fq_classlike_name_lc] = true;
@@ -576,17 +531,13 @@ class Scanner
     }
 
     /**
-     * @param  string $file_path
      * @param  array<string, class-string<FileScanner>>  $filetype_scanners
-     * @param  bool   $will_analyze
-     *
-     * @return FileScanner
      */
     private function scanFile(
-        $file_path,
+        string $file_path,
         array $filetype_scanners,
-        $will_analyze = false
-    ) {
+        bool $will_analyze = false
+    ): FileScanner {
         $file_scanner = $this->getScannerForPath($file_path, $filetype_scanners, $will_analyze);
 
         if (isset($this->scanned_files[$file_path])
@@ -671,17 +622,13 @@ class Scanner
     }
 
     /**
-     * @param  string $file_path
      * @param  array<string, class-string<FileScanner>>  $filetype_scanners
-     * @param  bool   $will_analyze
-     *
-     * @return FileScanner
      */
     private function getScannerForPath(
-        $file_path,
+        string $file_path,
         array $filetype_scanners,
-        $will_analyze = false
-    ) {
+        bool $will_analyze = false
+    ): FileScanner {
         $path_parts = explode(DIRECTORY_SEPARATOR, $file_path);
         $file_name_parts = explode('.', array_pop($path_parts));
         $extension = count($file_name_parts) > 1 ? array_pop($file_name_parts) : null;
@@ -698,7 +645,7 @@ class Scanner
     /**
      * @return array<string, bool>
      */
-    public function getScannedFiles()
+    public function getScannedFiles(): array
     {
         return $this->scanned_files;
     }
@@ -706,12 +653,8 @@ class Scanner
     /**
      * Checks whether a class exists, and if it does then records what file it's in
      * for later checking
-     *
-     * @param  string $fq_class_name
-     *
-     * @return bool
      */
-    private function fileExistsForClassLike(ClassLikes $classlikes, $fq_class_name)
+    private function fileExistsForClassLike(ClassLikes $classlikes, string $fq_class_name): bool
     {
         $fq_class_name_lc = strtolower($fq_class_name);
 
@@ -747,7 +690,7 @@ class Scanner
         try {
             $this->progress->debug('Using reflection to locate file for ' . $fq_class_name . "\n");
 
-            /** @psalm-suppress TypeCoercion */
+            /** @psalm-suppress ArgumentTypeCoercion */
             $reflected_class = new \ReflectionClass($fq_class_name);
         } catch (\Throwable $e) {
             error_reporting($old_level);
@@ -791,7 +734,7 @@ class Scanner
     /**
      * @return ThreadData
      */
-    public function getThreadData()
+    public function getThreadData(): array
     {
         return [
             $this->files_to_scan,
@@ -809,11 +752,10 @@ class Scanner
     /**
      * @param ThreadData $thread_data
      *
-     * @return void
      */
-    public function addThreadData(array $thread_data)
+    public function addThreadData(array $thread_data): void
     {
-        list(
+        [
             $files_to_scan,
             $files_to_deep_scan,
             $classes_to_scan,
@@ -823,7 +765,7 @@ class Scanner
             $deep_scanned_classlike_files,
             $scanned_files,
             $reflected_classlikes_lc
-        ) = $thread_data;
+        ] = $thread_data;
 
         $this->files_to_scan = array_merge($files_to_scan, $this->files_to_scan);
         $this->files_to_deep_scan = array_merge($files_to_deep_scan, $this->files_to_deep_scan);
@@ -839,10 +781,7 @@ class Scanner
         $this->reflected_classlikes_lc = array_merge($reflected_classlikes_lc, $this->reflected_classlikes_lc);
     }
 
-    /**
-     * @return void
-     */
-    public function isForked()
+    public function isForked(): void
     {
         $this->is_forked = true;
     }

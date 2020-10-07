@@ -60,8 +60,11 @@ class AndAnalyzer
 
         $codebase = $statements_analyzer->getCodebase();
 
+        $left_cond_id = \spl_object_id($stmt->left);
+
         $left_clauses = Algebra::getFormula(
-            \spl_object_id($stmt->left),
+            $left_cond_id,
+            $left_cond_id,
             $stmt->left,
             $context->self,
             $statements_analyzer,
@@ -90,8 +93,8 @@ class AndAnalyzer
             $context_clauses = array_values(
                 array_filter(
                     $context_clauses,
-                    function ($c) use ($reconciled_expression_clauses) {
-                        return !\in_array($c->getHash(), $reconciled_expression_clauses);
+                    function ($c) use ($reconciled_expression_clauses): bool {
+                        return !\in_array($c->hash, $reconciled_expression_clauses);
                     }
                 )
             );
@@ -110,7 +113,7 @@ class AndAnalyzer
 
         $left_type_assertions = Algebra::getTruthsFromFormula(
             $simplified_clauses,
-            \spl_object_id($stmt->left),
+            $left_cond_id,
             $left_referenced_var_ids,
             $active_left_assertions
         );
@@ -154,10 +157,6 @@ class AndAnalyzer
             $left_context->referenced_var_ids
         );
 
-        if ($codebase->find_unused_variables) {
-            $context->unreferenced_vars = $right_context->unreferenced_vars;
-        }
-
         if ($context->inside_conditional) {
             $context->updateChecks($right_context);
 
@@ -194,15 +193,11 @@ class AndAnalyzer
                 $if_context->assigned_var_ids
             );
 
-            if ($codebase->find_unused_variables) {
-                $if_context->unreferenced_vars = $context->unreferenced_vars;
-            }
-
             $if_context->reconciled_expression_clauses = array_merge(
                 $if_context->reconciled_expression_clauses,
                 array_map(
                     function ($c) {
-                        return $c->getHash();
+                        return $c->hash;
                     },
                     $partitioned_clauses[1]
                 )

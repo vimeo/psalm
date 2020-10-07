@@ -12,8 +12,6 @@ use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\FileManipulation;
-use Psalm\IssueBuffer;
-use Psalm\Issue\TypeCoercion;
 use Psalm\Plugin\Hook\AfterFunctionCallAnalysisInterface;
 use Psalm\Plugin\Hook\AfterMethodCallAnalysisInterface;
 use Psalm\StatementsSource;
@@ -85,8 +83,8 @@ class FunctionCasingChecker implements AfterFunctionCallAnalysisInterface, After
         Context $context,
         StatementsSource $statements_source,
         Codebase $codebase,
-        array &$file_replacements = [],
-        Union &$return_type_candidate = null
+        Union $return_type_candidate,
+        array &$file_replacements
     ) {
         if ($expr->name instanceof PhpParser\Node\Expr) {
             return;

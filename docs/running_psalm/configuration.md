@@ -125,24 +125,6 @@ The PHPDoc `@property`, `@property-read` and `@property-write` annotations norma
 ```
 If true we force strict typing on numerical and string operations (see https://github.com/vimeo/psalm/issues/24). Defaults to `false`.
 
-#### requireVoidReturnType
-
-```xml
-<psalm
-  requireVoidReturnType="[bool]"
->
-```
-If `false`, Psalm will not complain when a function with no return types is missing an explicit `@return` annotation. Defaults to `true`.
-
-#### useAssertForType
-
-```xml
-<psalm
-  useAssertForType="[bool]"
->
-```
-Some like to use [`assert`](http://php.net/manual/en/function.assert.php) for type checks. If `true`, Psalm will process assertions inside `assert` calls. Defaults to `true`.
-
 #### rememberPropertyAssignmentsAfterCall
 
 ```xml
@@ -160,15 +142,6 @@ Setting this to `false` means that any function calls will cause Psalm to forget
 >
 ```
 Allows you to specify whether or not to use the typed iterator docblock format supported by PHP Storm e.g. `ArrayIterator|string[]`, which Psalm transforms to `ArrayIterator<string>`. Defaults to `false`.
-
-#### allowCoercionFromStringToClassConst
-
-```xml
-<psalm
-  allowCoercionFromStringToClassConst="[bool]"
->
-```
-When `true`, strings can be coerced to [`class-string`](../annotating_code/templated_annotations.md#param-class-stringt), with Psalm emitting a `TypeCoercion` issue. If disabled, that issue changes to a more serious one. Defaults to `false`.
 
 #### allowStringToStandInForClass
 
@@ -256,6 +229,14 @@ When `true`, Psalm will attempt to find all unused variables, the equivalent of 
 ```
 When `true`, Psalm will attempt to find all unused code (including unused variables), the equivalent of running with `--find-unused-code`. Defaults to `false`.
 
+#### findUnusedPsalmSuppress
+```xml
+<psalm
+  findUnusedPsalmSuppress="[bool]"
+>
+```
+When `true`, Psalm will report all `@psalm-suppress` annotations that aren't used, the equivalent of running with `--find-unused-psalm-suppress`. Defaults to `false`.
+
 #### loadXdebugStub
 ```xml
 <psalm
@@ -293,7 +274,7 @@ This can be overridden on the command-line using the `--php-version=` flag which
 
 When `true`, Psalm will skip checking classes, variables and functions after it comes across an `include` or `require` it cannot resolve. This allows code to reference functions and classes unknown to Psalm.
 
-For backwards compatibility, this defaults to `true`, but if you do not rely on dynamically generated includes to cause classes otherwise unknown to Psalm to come into existence, it's recommended you set this to `false` in order to reliably detect errors that would be fatal to PHP at runtime.
+This defaults to `false`.
 
 #### sealAllMethods
 
@@ -314,6 +295,16 @@ When `true`, Psalm will treat all classes as if they had sealed methods, meaning
 ```
 
 When `true`, Psalm will run [Taint Analysis](../security_analysis/index.md) on your codebase. This config is the same as if you were running Psalm with `--taint-analysis`.
+
+#### reportInfo
+
+```xml
+<psalm
+  reportInfo="[bool]"
+>
+```
+
+When `false`, Psalm will not consider issue at lower level than `errorLevel` as `info` (they will be suppressed instead). This can be a big improvement in analysis time for big projects. However, this config will prevent Psalm to count or suggest fixes for suppressed issue
 
 ### Running Psalm
 
@@ -349,7 +340,7 @@ Whether or not to show issues in files that are used by your project files, but 
 ```
 The directory used to store Psalm's cache data - if you specify one (and it does not already exist), its parent directory must already exist, otherwise Psalm will throw an error.
 
-Defaults to `sys_get_temp_dir() . '/psalm'` when not defined.
+Defaults to `$XDG_CACHE_HOME/psalm`. If `$XDG_CACHE_HOME` is either not set or empty, a default equal to `$HOME/.cache/psalm` is used or `sys_get_temp_dir() . '/psalm'` when not defined.
 
 #### allowFileIncludes
 ```xml

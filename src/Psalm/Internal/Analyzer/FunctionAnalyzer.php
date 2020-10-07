@@ -44,17 +44,14 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
     }
 
     /**
-     * @param  string                      $function_id
      * @param  array<PhpParser\Node\Arg>   $call_args
-     *
-     * @return Type\Union
      */
     public static function getReturnTypeFromCallMapWithArgs(
         StatementsAnalyzer $statements_analyzer,
-        $function_id,
+        string $function_id,
         array $call_args,
         Context $context
-    ) {
+    ): Type\Union {
         $call_map_key = strtolower($function_id);
 
         $call_map = InternalCallMapHandler::getCallMap();
@@ -69,7 +66,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
             switch ($call_map_key) {
                 case 'hrtime':
                     return new Type\Union([
-                        new Type\Atomic\ObjectLike([
+                        new Type\Atomic\TKeyedArray([
                             Type::getInt(),
                             Type::getInt()
                         ])
@@ -106,7 +103,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                             if (isset($atomic_types['array'])) {
                                 if ($atomic_types['array'] instanceof Type\Atomic\TCallableArray
                                     || $atomic_types['array'] instanceof Type\Atomic\TCallableList
-                                    || $atomic_types['array'] instanceof Type\Atomic\TCallableObjectLikeArray
+                                    || $atomic_types['array'] instanceof Type\Atomic\TCallableKeyedArray
                                 ) {
                                     return Type::getInt(false, 2);
                                 }
@@ -127,7 +124,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                                     ]);
                                 }
 
-                                if ($atomic_types['array'] instanceof Type\Atomic\ObjectLike
+                                if ($atomic_types['array'] instanceof Type\Atomic\TKeyedArray
                                     && $atomic_types['array']->sealed
                                 ) {
                                     return new Type\Union([
@@ -150,7 +147,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
 
                         if ((string) $first_arg_type === 'false') {
                             return new Type\Union([
-                                new Type\Atomic\ObjectLike([
+                                new Type\Atomic\TKeyedArray([
                                     Type::getInt(),
                                     Type::getInt()
                                 ])
@@ -158,7 +155,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                         }
 
                         return new Type\Union([
-                            new Type\Atomic\ObjectLike([
+                            new Type\Atomic\TKeyedArray([
                                 Type::getInt(),
                                 Type::getInt()
                             ]),
@@ -179,7 +176,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                             if ($first_arg_type->hasArray()) {
                                 /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
                                 $array_type = $first_arg_type->getAtomicTypes()['array'];
-                                if ($array_type instanceof Type\Atomic\ObjectLike) {
+                                if ($array_type instanceof Type\Atomic\TKeyedArray) {
                                     return $array_type->getGenericValueType();
                                 }
 
@@ -282,7 +279,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
     /**
      * @return non-empty-lowercase-string
      */
-    public function getFunctionId()
+    public function getFunctionId(): string
     {
         $namespace = $this->source->getNamespace();
 
@@ -303,7 +300,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                             $var_id = '$' . $var->name;
 
                             // registers variable in global context
-                            $context->hasVariable($var_id, $statements_analyzer);
+                            $context->hasVariable($var_id);
                         }
                     }
                 }

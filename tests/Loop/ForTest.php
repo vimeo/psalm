@@ -12,7 +12,7 @@ class ForTest extends \Psalm\Tests\TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'implicitFourthLoop' => [
@@ -125,13 +125,22 @@ class ForTest extends \Psalm\Tests\TestCase
                         }
                     }'
             ],
+            'noException' => [
+                '<?php
+                    /**
+                     * @param list<int> $arr
+                     */
+                    function cartesianProduct(array $arr) : void {
+                        for ($i = 20; $arr[$i] === 5 && $i > 0; $i--) {}
+                    }'
+            ],
         ];
     }
 
     /**
      * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'possiblyUndefinedArrayInWhileAndForeach' => [

@@ -2,15 +2,14 @@
 namespace Psalm\Type\Atomic;
 
 use Psalm\Codebase;
-use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\UnionTemplateHandler;
-use Psalm\StatementsSource;
 use Psalm\Type\Atomic;
 use function preg_quote;
 use function preg_replace;
 use function stripos;
+use function strpos;
 use function strtolower;
 
 class TClassString extends TString
@@ -25,71 +24,55 @@ class TClassString extends TString
      */
     public $as_type;
 
-    public function __construct(string $as = 'object', TNamedObject $as_type = null)
+    public function __construct(string $as = 'object', ?TNamedObject $as_type = null)
     {
         $this->as = $as;
         $this->as_type = $as_type;
     }
 
-    /**
-     * @return string
-     */
-    public function getKey(bool $include_extra = true)
+    public function getKey(bool $include_extra = true): string
     {
         return 'class-string' . ($this->as === 'object' ? '' : '<' . $this->as_type . '>');
     }
 
-    /**
-     * @return string
-     */
-    public function __toString()
+    public function __toString(): string
     {
         return $this->getKey();
     }
 
-    public function getId(bool $nested = false)
+    public function getId(bool $nested = false): string
     {
         return $this->getKey();
     }
 
-    public function getAssertionString()
+    public function getAssertionString(): string
     {
         return 'class-string';
     }
 
     /**
-     * @param  string|null   $namespace
      * @param  array<string> $aliased_classes
-     * @param  string|null   $this_class
-     * @param  int           $php_major_version
-     * @param  int           $php_minor_version
-     *
-     * @return string|null
      */
     public function toPhpString(
-        $namespace,
+        ?string $namespace,
         array $aliased_classes,
-        $this_class,
-        $php_major_version,
-        $php_minor_version
-    ) {
+        ?string $this_class,
+        int $php_major_version,
+        int $php_minor_version
+    ): ?string {
         return 'string';
     }
 
     /**
-     * @param  string|null   $namespace
      * @param  array<string> $aliased_classes
-     * @param  string|null   $this_class
-     * @param  bool          $use_phpdoc_format
      *
-     * @return string
      */
     public function toNamespacedString(
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
         bool $use_phpdoc_format
-    ) {
+    ): string {
         if ($this->as === 'object') {
             return 'class-string';
         }
@@ -102,7 +85,7 @@ class TClassString extends TString
             ) . '>';
         }
 
-        if (!$namespace && stripos($this->as, '\\') === false) {
+        if (!$namespace && strpos($this->as, '\\') === false) {
             return 'class-string<' . $this->as . '>';
         }
 
@@ -113,10 +96,7 @@ class TClassString extends TString
         return 'class-string<\\' . $this->as . '>';
     }
 
-    /**
-     * @return bool
-     */
-    public function canBeFullyExpressedInPhp()
+    public function canBeFullyExpressedInPhp(): bool
     {
         return false;
     }
@@ -130,7 +110,7 @@ class TClassString extends TString
         TemplateResult $template_result,
         ?Codebase $codebase = null,
         ?StatementsAnalyzer $statements_analyzer = null,
-        Atomic $input_type = null,
+        ?Atomic $input_type = null,
         ?int $input_arg_offset = null,
         ?string $calling_class = null,
         ?string $calling_function = null,

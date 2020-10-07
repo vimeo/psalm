@@ -24,7 +24,6 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
 
     /**
      * @param  array<PhpParser\Node\Arg>    $call_args
-     * @param  CodeLocation                 $code_location
      */
     public static function getFunctionReturnType(
         StatementsSource $statements_source,
@@ -60,7 +59,7 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
             }
 
             if ($array_arg_types) {
-                return new Type\Union([new Type\Atomic\ObjectLike($array_arg_types)]);
+                return new Type\Union([new Type\Atomic\TKeyedArray($array_arg_types)]);
             }
 
             return Type::getArray();
@@ -167,13 +166,13 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
         }
 
         if ($mapping_return_type && $generic_key_type) {
-            if ($array_arg_atomic_type instanceof Type\Atomic\ObjectLike && count($call_args) === 2) {
-                $atomic_type = new Type\Atomic\ObjectLike(
+            if ($array_arg_atomic_type instanceof Type\Atomic\TKeyedArray && count($call_args) === 2) {
+                $atomic_type = new Type\Atomic\TKeyedArray(
                     array_map(
                         /**
                         * @return Type\Union
                         */
-                        function (Type\Union $_) use ($mapping_return_type) {
+                        function (Type\Union $_) use ($mapping_return_type): Type\Union {
                             return clone $mapping_return_type;
                         },
                         $array_arg_atomic_type->properties
@@ -326,8 +325,6 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
 
         foreach ($mapping_function_ids as $mapping_function_id) {
             $mapping_function_id_parts = explode('&', $mapping_function_id);
-
-            $function_id_return_type = null;
 
             foreach ($mapping_function_id_parts as $mapping_function_id_part) {
                 $fake_args = [];

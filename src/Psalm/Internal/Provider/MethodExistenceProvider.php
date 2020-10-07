@@ -30,14 +30,12 @@ class MethodExistenceProvider
     /**
      * @param  class-string<MethodExistenceProviderInterface> $class
      *
-     * @return void
      */
-    public function registerClass(string $class)
+    public function registerClass(string $class): void
     {
         $callable = \Closure::fromCallable([$class, 'doesMethodExist']);
 
         foreach ($class::getClassLikeNames() as $fq_classlike_name) {
-            /** @psalm-suppress MixedTypeCoercion */
             $this->registerClosure($fq_classlike_name, $callable);
         }
     }
@@ -51,9 +49,8 @@ class MethodExistenceProvider
      *     ?CodeLocation
      *   ) : ?bool $c
      *
-     * @return void
      */
-    public function registerClosure(string $fq_classlike_name, \Closure $c)
+    public function registerClosure(string $fq_classlike_name, \Closure $c): void
     {
         self::$handlers[strtolower($fq_classlike_name)][] = $c;
     }
@@ -66,14 +63,13 @@ class MethodExistenceProvider
     /**
      * @param  array<PhpParser\Node\Arg>  $call_args
      *
-     * @return ?bool
      */
     public function doesMethodExist(
         string $fq_classlike_name,
         string $method_name_lowercase,
-        StatementsSource $source = null,
-        CodeLocation $code_location = null
-    ) {
+        ?StatementsSource $source = null,
+        ?CodeLocation $code_location = null
+    ): ?bool {
         foreach (self::$handlers[strtolower($fq_classlike_name)] as $method_handler) {
             $method_exists = $method_handler(
                 $fq_classlike_name,

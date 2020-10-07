@@ -72,9 +72,9 @@ trait EmitterTrait
     public function emit(
         string $eventName,
         array $arguments = [],
-        callable $continueCallBack = null
+        ?callable $continueCallBack = null
     ) : bool {
-        if (\is_null($continueCallBack)) {
+        if ($continueCallBack === null) {
             foreach ($this->listeners($eventName) as $listener) {
                 /** @psalm-suppress MixedAssignment */
                 $result = \call_user_func_array($listener, $arguments);

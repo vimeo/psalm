@@ -30,7 +30,7 @@ $arr = [
     [I::class, IAlias::class],
 ];
 
-foreach ($arr as list($orig, $alias)) {
+foreach ($arr as [$orig, $alias]) {
     // Psalm cannot reason about this in the loading step
     class_alias($orig, $alias);
 }

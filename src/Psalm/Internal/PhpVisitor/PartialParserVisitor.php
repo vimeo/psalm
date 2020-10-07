@@ -59,7 +59,6 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
     }
 
     /**
-     * @param  PhpParser\Node $node
      * @param  bool $traverseChildren
      *
      * @return null|int|PhpParser\Node
@@ -70,7 +69,7 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
         $attrs = $node->getAttributes();
 
         if ($cs = $node->getComments()) {
-            $stmt_start_pos = $cs[0]->getFilePos();
+            $stmt_start_pos = $cs[0]->getStartFilePos();
         } else {
             $stmt_start_pos = $attrs['startFilePos'];
         }
@@ -82,7 +81,7 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
 
         $line_offset = 0;
 
-        foreach ($this->offset_map as list($a_s, $a_e, $b_s, $b_e, $line_diff)) {
+        foreach ($this->offset_map as [$a_s, $a_e, $b_s, $b_e, $line_diff]) {
             if ($a_s > $stmt_end_pos) {
                 break;
             }
@@ -107,7 +106,7 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
             ) {
                 if ($node instanceof PhpParser\Node\Stmt\ClassMethod) {
                     if ($a_s >= $stmt_start_pos && $a_e <= $stmt_end_pos) {
-                        foreach ($this->offset_map as list($a_s2, $a_e2, $b_s2, $b_e2)) {
+                        foreach ($this->offset_map as [$a_s2, $a_e2, $b_s2, $b_e2]) {
                             if ($a_s2 > $stmt_end_pos) {
                                 break;
                             }
@@ -284,14 +283,14 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
                         if ($c instanceof PhpParser\Comment\Doc) {
                             $new_comments[] = new PhpParser\Comment\Doc(
                                 $c->getText(),
-                                $c->getLine() + $line_offset,
-                                $c->getFilePos() + $start_offset
+                                $c->getStartLine() + $line_offset,
+                                $c->getStartFilePos() + $start_offset
                             );
                         } else {
                             $new_comments[] = new PhpParser\Comment(
                                 $c->getText(),
-                                $c->getLine() + $line_offset,
-                                $c->getFilePos() + $start_offset
+                                $c->getStartLine() + $line_offset,
+                                $c->getStartFilePos() + $start_offset
                             );
                         }
                     }
@@ -325,7 +324,10 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
         return $this->must_rescan || $this->non_method_changes;
     }
 
-    private function balanceBrackets(string $fake_class) : string
+    /**
+     * @psalm-pure
+     */
+    private static function balanceBrackets(string $fake_class) : string
     {
         $tokens = \token_get_all($fake_class);
 

@@ -6,6 +6,7 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\EmptyArrayAccess;
@@ -30,7 +31,7 @@ use Psalm\Issue\PossiblyUndefinedIntArrayOffset;
 use Psalm\Issue\PossiblyUndefinedStringArrayOffset;
 use Psalm\IssueBuffer;
 use Psalm\Type;
-use Psalm\Type\Atomic\ObjectLike;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TClassStringMap;
@@ -75,8 +76,13 @@ class ArrayFetchAnalyzer
             $statements_analyzer
         );
 
-        if ($stmt->dim && ExpressionAnalyzer::analyze($statements_analyzer, $stmt->dim, $context) === false) {
-            return false;
+        if ($stmt->dim) {
+            $was_inside_use = $context->inside_use;
+            $context->inside_use = true;
+            if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->dim, $context) === false) {
+                return false;
+            }
+            $context->inside_use = $was_inside_use;
         }
 
         $keyed_array_var_id = ExpressionIdentifier::getArrayVarId(
@@ -178,7 +184,7 @@ class ArrayFetchAnalyzer
             if ($stmt->dim && $stmt_var_type->hasArray()) {
                 /**
                  * @psalm-suppress PossiblyUndefinedStringArrayOffset
-                 * @var TArray|ObjectLike|TList|Type\Atomic\TClassStringMap
+                 * @var TArray|TKeyedArray|TList|Type\Atomic\TClassStringMap
                  */
                 $array_type = $stmt_var_type->getAtomicTypes()['array'];
 
@@ -208,7 +214,7 @@ class ArrayFetchAnalyzer
             ) {
                 /**
                  * @psalm-suppress PossiblyUndefinedStringArrayOffset
-                 * @var TArray|ObjectLike|TList
+                 * @var TArray|TKeyedArray|TList
                  */
                 $array_type = $stmt_var_type->getAtomicTypes()['array'];
 
@@ -253,7 +259,7 @@ class ArrayFetchAnalyzer
         }
 
         if ($keyed_array_var_id
-            && $context->hasVariable($keyed_array_var_id, $statements_analyzer)
+            && $context->hasVariable($keyed_array_var_id)
             && (!($stmt_type = $statements_analyzer->node_data->getType($stmt)) || $stmt_type->isVanillaMixed())
         ) {
             $statements_analyzer->node_data->setType($stmt, $context->vars_in_scope[$keyed_array_var_id]);
@@ -291,7 +297,7 @@ class ArrayFetchAnalyzer
             $context->vars_possibly_in_scope[$keyed_array_var_id] = true;
 
             // reference the variable too
-            $context->hasVariable($keyed_array_var_id, $statements_analyzer);
+            $context->hasVariable($keyed_array_var_id);
         }
 
         self::taintArrayFetch(
@@ -305,6 +311,9 @@ class ArrayFetchAnalyzer
         return true;
     }
 
+    /**
+     * Used to create a path between a variable $foo and $foo["a"]
+     */
     public static function taintArrayFetch(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $var,
@@ -312,26 +321,25 @@ class ArrayFetchAnalyzer
         Type\Union $stmt_type,
         Type\Union $offset_type
     ) : void {
-        $codebase = $statements_analyzer->getCodebase();
-
-        if ($codebase->taint
+        if ($statements_analyzer->control_flow_graph
             && ($stmt_var_type = $statements_analyzer->node_data->getType($var))
             && $stmt_var_type->parent_nodes
-            && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
         ) {
-            if (\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())) {
+            if ($statements_analyzer->control_flow_graph instanceof TaintFlowGraph
+                && \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
+            ) {
                 $stmt_var_type->parent_nodes = [];
                 return;
             }
 
             $var_location = new CodeLocation($statements_analyzer->getSource(), $var);
 
-            $new_parent_node = \Psalm\Internal\Taint\TaintNode::getForAssignment(
+            $new_parent_node = \Psalm\Internal\ControlFlow\ControlFlowNode::getForAssignment(
                 $keyed_array_var_id ?: 'array-fetch',
                 $var_location
             );
 
-            $codebase->taint->addTaintNode($new_parent_node);
+            $statements_analyzer->control_flow_graph->addNode($new_parent_node);
 
             $dim_value = $offset_type->isSingleStringLiteral()
                 ? $offset_type->getSingleStringLiteral()->value
@@ -340,25 +348,25 @@ class ArrayFetchAnalyzer
                     : null);
 
             foreach ($stmt_var_type->parent_nodes as $parent_node) {
-                $codebase->taint->addPath(
+                $statements_analyzer->control_flow_graph->addPath(
                     $parent_node,
                     $new_parent_node,
                     'array-fetch' . ($dim_value !== null ? '-\'' . $dim_value . '\'' : '')
                 );
+
+                if ($stmt_type->by_ref) {
+                    $statements_analyzer->control_flow_graph->addPath(
+                        $new_parent_node,
+                        $parent_node,
+                        'array-assignment' . ($dim_value !== null ? '-\'' . $dim_value . '\'' : '')
+                    );
+                }
             }
 
-            $stmt_type->parent_nodes = [$new_parent_node];
+            $stmt_type->parent_nodes = [$new_parent_node->id => $new_parent_node];
         }
     }
 
-    /**
-     * @param  Type\Union $array_type
-     * @param  Type\Union $offset_type
-     * @param  bool       $in_assignment
-     * @param  null|string    $array_var_id
-     *
-     * @return Type\Union
-     */
     public static function getArrayAccessTypeGivenOffset(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
@@ -369,7 +377,7 @@ class ArrayFetchAnalyzer
         Context $context,
         PhpParser\Node\Expr $assign_value = null,
         Type\Union $replacement_type = null
-    ) {
+    ): Type\Union {
         $codebase = $statements_analyzer->getCodebase();
 
         $has_array_access = false;
@@ -551,7 +559,7 @@ class ArrayFetchAnalyzer
             }
 
             if ($type instanceof TArray
-                || $type instanceof ObjectLike
+                || $type instanceof TKeyedArray
                 || $type instanceof TList
                 || $type instanceof TClassStringMap
             ) {
@@ -569,12 +577,11 @@ class ArrayFetchAnalyzer
                     if (count($key_values) === 1) {
                         $from_mixed_array = $type->type_params[1]->isMixed();
 
-                        $previous_key_type = $type->type_params[0];
-                        $previous_value_type = $type->type_params[1];
+                        [$previous_key_type, $previous_value_type] = $type->type_params;
 
-                        // ok, type becomes an ObjectLike
+                        // ok, type becomes an TKeyedArray
                         $array_type->removeType($type_string);
-                        $type = new ObjectLike([
+                        $type = new TKeyedArray([
                             $key_values[0] => $from_mixed_array ? Type::getMixed() : Type::getEmpty()
                         ]);
 
@@ -592,7 +599,7 @@ class ArrayFetchAnalyzer
                         continue;
                     }
                 } elseif ($in_assignment
-                    && $type instanceof ObjectLike
+                    && $type instanceof TKeyedArray
                     && $type->previous_value_type
                     && $type->previous_value_type->isMixed()
                     && count($key_values) === 1
@@ -1479,6 +1486,10 @@ class ArrayFetchAnalyzer
             return Type::getMixed();
         }
 
+        if ($array_type->by_ref) {
+            $array_access_type->by_ref = true;
+        }
+
         if ($in_assignment) {
             $array_type->bustCache();
         }
@@ -1514,6 +1525,7 @@ class ArrayFetchAnalyzer
                         ]->possibly_undefined
                 ) {
                     $found_match = true;
+                    break;
                 }
             }
 
@@ -1563,6 +1575,7 @@ class ArrayFetchAnalyzer
                         ]->possibly_undefined
                 ) {
                     $found_match = true;
+                    break;
                 }
             }
 
@@ -1584,10 +1597,7 @@ class ArrayFetchAnalyzer
         }
     }
 
-    /**
-     * @return Type\Union
-     */
-    public static function replaceOffsetTypeWithInts(Type\Union $offset_type)
+    public static function replaceOffsetTypeWithInts(Type\Union $offset_type): Type\Union
     {
         $offset_types = $offset_type->getAtomicTypes();
 

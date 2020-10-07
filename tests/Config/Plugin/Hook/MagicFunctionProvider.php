@@ -23,14 +23,11 @@ class MagicFunctionProvider implements
         return ['magicfunction'];
     }
 
-    /**
-     * @return ?bool
-     */
     public static function doesFunctionExist(
         StatementsSource $statements_source,
         string $function_id,
-        CodeLocation $code_location = null
-    ) {
+        ?CodeLocation $code_location = null
+    ): ?bool {
         return $function_id === 'magicfunction';
     }
 
@@ -43,16 +40,15 @@ class MagicFunctionProvider implements
         StatementsSource $statements_source,
         string $function_id,
         array $call_args,
-        Context $context = null,
-        CodeLocation $code_location = null
-    ) {
+        ?Context $context = null,
+        ?CodeLocation $code_location = null
+    ): ?array {
         return [new \Psalm\Storage\FunctionLikeParameter('first', false, Type::getString())];
     }
 
     /**
      * @param  array<PhpParser\Node\Arg>    $call_args
      *
-     * @return ?Type\Union
      */
     public static function getFunctionReturnType(
         StatementsSource $statements_source,
@@ -60,7 +56,7 @@ class MagicFunctionProvider implements
         array $call_args,
         Context $context,
         CodeLocation $code_location
-    ) {
+    ): ?Type\Union {
         return Type::getString();
     }
 }

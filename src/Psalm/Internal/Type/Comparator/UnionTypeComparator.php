@@ -258,15 +258,12 @@ class UnionTypeComparator
     /**
      * Used for comparing signature typehints, uses PHP's light contravariance rules
      *
-     * @param  ?Type\Union  $input_type
-     * @param  Type\Union   $container_type
      *
-     * @return bool
      */
     public static function isContainedByInPhp(
         ?Type\Union $input_type,
         Type\Union $container_type
-    ) {
+    ): bool {
         if (!$input_type) {
             return false;
         }
@@ -299,8 +296,6 @@ class UnionTypeComparator
     /**
      * Used for comparing docblock types to signature types before we know about all types
      *
-     * @param  Type\Union   $input_type
-     * @param  Type\Union   $container_type
      */
     public static function isSimplyContainedBy(
         Type\Union $input_type,
@@ -345,12 +340,9 @@ class UnionTypeComparator
     /**
      * Does the input param type match the given param type
      *
-     * @param  Type\Union   $input_type
-     * @param  Type\Union   $container_type
      * @param  bool         $ignore_null
      * @param  bool         $ignore_false
      *
-     * @return bool
      */
     public static function canBeContainedBy(
         Codebase $codebase,
@@ -359,7 +351,7 @@ class UnionTypeComparator
         $ignore_null = false,
         $ignore_false = false,
         array &$matching_input_keys = []
-    ) {
+    ): bool {
         if ($container_type->hasMixed()) {
             return true;
         }
@@ -402,13 +394,12 @@ class UnionTypeComparator
     /**
      * Can any part of the $type1 be equal to any part of $type2
      *
-     * @return bool
      */
     public static function canExpressionTypesBeIdentical(
         Codebase $codebase,
         Type\Union $type1,
         Type\Union $type2
-    ) {
+    ): bool {
         if ($type1->hasMixed() || $type2->hasMixed()) {
             return true;
         }
@@ -419,29 +410,10 @@ class UnionTypeComparator
 
         foreach ($type1->getAtomicTypes() as $type1_part) {
             foreach ($type2->getAtomicTypes() as $type2_part) {
-                $first_comparison_result = new TypeComparisonResult();
-                $second_comparison_result = new TypeComparisonResult();
-
-                $either_contains = (AtomicTypeComparator::isContainedBy(
+                $either_contains = AtomicTypeComparator::canBeIdentical(
                     $codebase,
                     $type1_part,
-                    $type2_part,
-                    true,
-                    false,
-                    $first_comparison_result
-                )
-                    && !$first_comparison_result->to_string_cast
-                ) || (AtomicTypeComparator::isContainedBy(
-                    $codebase,
-                    $type2_part,
-                    $type1_part,
-                    true,
-                    false,
-                    $second_comparison_result
-                )
-                    && !$second_comparison_result->to_string_cast
-                ) || ($first_comparison_result->type_coerced
-                    && $second_comparison_result->type_coerced
+                    $type2_part
                 );
 
                 if ($either_contains) {

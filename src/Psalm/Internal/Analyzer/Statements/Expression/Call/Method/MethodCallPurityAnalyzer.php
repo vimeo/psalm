@@ -93,7 +93,10 @@ class MethodCallPurityAnalyzer
                 $can_memoize = true;
             }
 
-            if ($codebase->find_unused_variables && !$context->inside_conditional) {
+            if ($codebase->find_unused_variables
+                && !$context->inside_conditional
+                && !$context->inside_use
+            ) {
                 if (!$context->inside_assignment && !$context->inside_call) {
                     if (IssueBuffer::accepts(
                         new \Psalm\Issue\UnusedMethodCall(
@@ -110,6 +113,18 @@ class MethodCallPurityAnalyzer
                     $stmt->pure = true;
                 }
             }
+        }
+
+        if ($statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+            && $statements_analyzer->getSource()->track_mutations
+            && !$method_storage->mutation_free
+            && !$method_pure_compatible
+        ) {
+            if (!$method_storage->mutation_free) {
+                $statements_analyzer->getSource()->inferred_has_mutation = true;
+            }
+
+            $statements_analyzer->getSource()->inferred_impure = true;
         }
 
         if (!$config->remember_property_assignments_after_call

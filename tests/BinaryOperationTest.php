@@ -83,10 +83,7 @@ class BinaryOperationTest extends TestCase
         $this->assertSame($assertions, $actual_vars);
     }
 
-    /**
-     * @return void
-     */
-    public function testStrictTrueEquivalence()
+    public function testStrictTrueEquivalence(): void
     {
         $config = \Psalm\Config::getInstance();
         $config->strict_binary_operands = true;
@@ -112,7 +109,7 @@ class BinaryOperationTest extends TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'regularAddition' => [
@@ -136,7 +133,7 @@ class BinaryOperationTest extends TestCase
                     $c = 25 % 2.5;
                     $d = 25.5 % 2.5;',
                 'assertions' => [
-                    '$a' => 'int',
+                    '$a' => 'int|int',
                     '$b' => 'int',
                     '$c' => 'int',
                     '$d' => 'int',
@@ -185,8 +182,8 @@ class BinaryOperationTest extends TestCase
             ],
             'booleanXor' => [
                 '<?php
-                    $a = true ^ false;
-                    $b = false ^ false;
+                    $a = 4 ^ 1;
+                    $b = 3 ^ 1;
                     $c = (true xor false);
                     $d = (false xor false);',
                 'assertions' => [
@@ -253,7 +250,10 @@ class BinaryOperationTest extends TestCase
                     function foo(?string $s): string {
                         $s ??= "Hello";
                         return $s;
-                    }'
+                    }',
+                'assertions' => [],
+                'error_levels' => [],
+                '7.4',
             ],
             'nullCoalescingArrayAssignment' => [
                 '<?php
@@ -266,7 +266,10 @@ class BinaryOperationTest extends TestCase
                         foreach ($arr as $a) {
                             $b[0] ??= $a;
                         }
-                    }'
+                    }',
+                'assertions' => [],
+                'error_levels' => [],
+                '7.4',
             ],
             'addArrays' => [
                 '<?php
@@ -278,13 +281,28 @@ class BinaryOperationTest extends TestCase
                         return $opts + ["host" => 5];
                     }'
             ],
+            'addIntToZero' => [
+                '<?php
+                    $tick = 0;
+
+                    test($tick + 1);
+
+                    $tick++;
+
+                    test($tick);
+
+                    /**
+                     * @psalm-param positive-int $tickedTimes
+                     */
+                    function test(int $tickedTimes): void {}'
+            ],
         ];
     }
 
     /**
      * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'badAddition' => [

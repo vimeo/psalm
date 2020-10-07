@@ -30,7 +30,6 @@ class NegatedAssertionReconciler extends Reconciler
      * @param  string[]   $suppressed_issues
      * @param  0|1|2      $failed_reconciliation
      *
-     * @return Type\Union
      */
     public static function reconcile(
         StatementsAnalyzer $statements_analyzer,
@@ -44,7 +43,7 @@ class NegatedAssertionReconciler extends Reconciler
         ?CodeLocation $code_location,
         array $suppressed_issues,
         int &$failed_reconciliation
-    ) {
+    ): Type\Union {
         $is_equality = $is_strict_equality || $is_loose_equality;
 
         // this is a specific value comparison type that cannot be negated
@@ -89,7 +88,8 @@ class NegatedAssertionReconciler extends Reconciler
                                         new DocblockTypeContradiction(
                                             'Cannot resolve types for ' . $key . ' with docblock-defined type '
                                                 . $existing_var_type . ' and !isset assertion',
-                                            $code_location
+                                            $code_location,
+                                            null
                                         ),
                                         $suppressed_issues
                                     )) {
@@ -100,7 +100,8 @@ class NegatedAssertionReconciler extends Reconciler
                                         new TypeDoesNotContainType(
                                             'Cannot resolve types for ' . $key . ' with type '
                                                 . $existing_var_type . ' and !isset assertion',
-                                            $code_location
+                                            $code_location,
+                                            null
                                         ),
                                         $suppressed_issues
                                     )) {
@@ -284,14 +285,8 @@ class NegatedAssertionReconciler extends Reconciler
     }
 
     /**
-     * @param  string     $assertion
-     * @param  int        $bracket_pos
-     * @param  string     $old_var_type_string
-     * @param  string|null $key
-     * @param  CodeLocation|null $code_location
      * @param  string[]   $suppressed_issues
      *
-     * @return Type\Union
      */
     private static function handleLiteralNegatedEquality(
         StatementsAnalyzer $statements_analyzer,
@@ -303,7 +298,7 @@ class NegatedAssertionReconciler extends Reconciler
         ?CodeLocation $code_location,
         array $suppressed_issues,
         bool $is_strict_equality
-    ) {
+    ): Type\Union {
         $scalar_type = substr($assertion, 0, $bracket_pos);
 
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
@@ -316,7 +311,9 @@ class NegatedAssertionReconciler extends Reconciler
         if ($scalar_type === 'int') {
             if ($existing_var_type->hasInt()) {
                 if ($existing_int_types = $existing_var_type->getLiteralInts()) {
-                    $did_match_literal_type = true;
+                    if (!$existing_var_type->hasPositiveInt()) {
+                        $did_match_literal_type = true;
+                    }
 
                     if (isset($existing_int_types[$assertion])) {
                         $existing_var_type->removeType($assertion);

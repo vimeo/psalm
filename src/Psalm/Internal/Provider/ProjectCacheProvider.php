@@ -13,8 +13,8 @@ use Psalm\Config;
  */
 class ProjectCacheProvider
 {
-    const GOOD_RUN_NAME = 'good_run';
-    const COMPOSER_LOCK_HASH = 'composer_lock_hash';
+    private const GOOD_RUN_NAME = 'good_run';
+    private const COMPOSER_LOCK_HASH = 'composer_lock_hash';
 
     /**
      * @var int|null
@@ -33,10 +33,7 @@ class ProjectCacheProvider
         $this->composer_lock_location = $composer_lock_location;
     }
 
-    /**
-     * @return bool
-     */
-    public function canDiffFiles()
+    public function canDiffFiles(): bool
     {
         $cache_directory = Config::getInstance()->getCacheDirectory();
 
@@ -44,11 +41,9 @@ class ProjectCacheProvider
     }
 
     /**
-     * @param float $start_time
-     *
      * @return void
      */
-    public function processSuccessfulRun($start_time)
+    public function processSuccessfulRun(float $start_time)
     {
         $cache_directory = Config::getInstance()->getCacheDirectory();
 
@@ -61,10 +56,7 @@ class ProjectCacheProvider
         \touch($run_cache_location, (int)$start_time);
     }
 
-    /**
-     * @return int
-     */
-    public function getLastRun()
+    public function getLastRun(): int
     {
         if ($this->last_run === null) {
             $cache_directory = Config::getInstance()->getCacheDirectory();

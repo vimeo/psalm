@@ -5,10 +5,7 @@ use Psalm\Context;
 
 class BadFormatTest extends TestCase
 {
-    /**
-     * @return void
-     */
-    public function testMissingSemicolon()
+    public function testMissingSemicolon(): void
     {
         $this->expectExceptionMessage('ParseError - somefile.php:9');
         $this->expectException(\Psalm\Exception\CodeException::class);
@@ -29,10 +26,7 @@ class BadFormatTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testClassMethodWithNoStmts()
+    public function testClassMethodWithNoStmts(): void
     {
         $this->expectExceptionMessage('ParseError - somefile.php:3');
         $this->expectException(\Psalm\Exception\CodeException::class);
@@ -47,10 +41,7 @@ class BadFormatTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testInterfaceWithProperties()
+    public function testInterfaceWithProperties(): void
     {
         $this->expectExceptionMessage('ParseError - somefile.php:3');
         $this->expectException(\Psalm\Exception\CodeException::class);
@@ -65,10 +56,7 @@ class BadFormatTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testTypingReturnType()
+    public function testTypingReturnType(): void
     {
         $this->expectExceptionMessage('ParseError - somefile.php:5');
         $this->expectException(\Psalm\Exception\CodeException::class);
@@ -87,10 +75,7 @@ class BadFormatTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testOverriddenUse()
+    public function testOverriddenUse(): void
     {
         $this->expectExceptionMessage('ParseError - somefile.php:6');
         $this->expectException(\Psalm\Exception\CodeException::class);

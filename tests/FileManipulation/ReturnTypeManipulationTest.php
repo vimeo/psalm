@@ -6,7 +6,7 @@ class ReturnTypeManipulationTest extends FileManipulationTest
     /**
      * @return array<string,array{string,string,string,string[],bool,5?:bool}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): array
     {
         return [
             'addMissingClosureStringReturnType56' => [
@@ -572,6 +572,38 @@ class ReturnTypeManipulationTest extends FileManipulationTest
                     }',
                 '7.3',
                 ['LessSpecificReturnType'],
+                false,
+                true,
+            ],
+            'dontOOM' => [
+                '<?php
+                    class FC {
+                        public function __invoke() : void {}
+                    }
+
+                    function foo(): string {
+                        if (rand(0, 1)) {
+                            $cb = new FC();
+                        } else {
+                            $cb = function() {};
+                        }
+                        $cb();
+                    }',
+                '<?php
+                    class FC {
+                        public function __invoke() : void {}
+                    }
+
+                    function foo(): string {
+                        if (rand(0, 1)) {
+                            $cb = new FC();
+                        } else {
+                            $cb = function() {};
+                        }
+                        $cb();
+                    }',
+                '7.3',
+                ['InvalidReturnType'],
                 false,
                 true,
             ],

@@ -10,6 +10,9 @@ class ParsedDocblock
     /** @var string */
     public $description;
 
+    /** @var string */
+    public $first_line_padding;
+
     /** @var array<string, array<int, string>> */
     public $tags = [];
 
@@ -22,10 +25,11 @@ class ParsedDocblock
     private static $shouldAddNewLineBetweenAnnotations = true;
 
     /** @param array<string, array<int, string>> $tags */
-    public function __construct(string $description, array $tags)
+    public function __construct(string $description, array $tags, string $first_line_padding = '')
     {
         $this->description = $description;
         $this->tags = $tags;
+        $this->first_line_padding = $first_line_padding;
     }
 
     public function render(string $left_padding) : string
@@ -34,7 +38,7 @@ class ParsedDocblock
 
         $trimmed_description = trim($this->description);
 
-        if (!empty($trimmed_description)) {
+        if ($trimmed_description !== '') {
             $description_lines = explode("\n", $this->description);
 
             foreach ($description_lines as $line) {
@@ -43,7 +47,7 @@ class ParsedDocblock
         }
 
         if ($this->tags) {
-            if (!empty($trimmed_description)) {
+            if ($trimmed_description !== '') {
                 $doc_comment_text .= $left_padding . ' *' . "\n";
             }
 
@@ -58,7 +62,7 @@ class ParsedDocblock
                 }
 
                 foreach ($lines as $line) {
-                    $doc_comment_text .= $left_padding . ' * @' . $type . ' ' . $line . "\n";
+                    $doc_comment_text .= $left_padding . ' * @' . $type . ($line !== '' ? ' ' . $line : '') . "\n";
                 }
 
                 $last_type = $type;
@@ -78,10 +82,14 @@ class ParsedDocblock
     /**
      * Sets whether a new line should be added between the annotations or not.
      *
-     * @param bool $should
      */
     public static function addNewLineBetweenAnnotations(bool $should = true): void
     {
         static::$shouldAddNewLineBetweenAnnotations = $should;
+    }
+
+    public static function resetNewlineBetweenAnnotations(): void
+    {
+        static::$shouldAddNewLineBetweenAnnotations = true;
     }
 }

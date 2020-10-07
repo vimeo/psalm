@@ -1,16 +1,6 @@
 <?php
 namespace Psalm\Tests\TypeReconciliation;
 
-use function is_array;
-use Psalm\Context;
-use Psalm\Internal\Analyzer\FileAnalyzer;
-use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\TypeAnalyzer;
-use Psalm\Internal\Clause;
-use Psalm\Type;
-use Psalm\Type\Algebra;
-use Psalm\Type\Reconciler;
-
 class ConditionalTest extends \Psalm\Tests\TestCase
 {
     use \Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
@@ -19,7 +9,7 @@ class ConditionalTest extends \Psalm\Tests\TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'intIsMixed' => [
@@ -2171,6 +2161,10 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                         }
                     }'
             ],
+            'manyNestedWedgeAssertions' => [
+                '<?php
+                    if (rand(0, 1) && rand(0, 1)) {}'
+            ],
             'assertionAfterAssertionInsideBooleanNot' => [
                 '<?php
                     class A {}
@@ -2818,13 +2812,67 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                         }
                     }'
             ],
+            'getClassInterfaceCanBeClass' => [
+                '<?php
+                    interface Id {}
+
+                    class A {
+                        public function is(Id $other): bool {
+                            return get_class($this) === get_class($other);
+                        }
+                    }'
+            ],
+            'nullsafePropertyAccess' => [
+                '<?php
+                    class IntLinkedList {
+                        public function __construct(
+                            public int $value,
+                            public ?self $next
+                        ) {}
+                    }
+
+                    function skipOn(IntLinkedList $l) : ?int {
+                        return $l->next?->value;
+                    }
+
+                    function skipTwo(IntLinkedList $l) : ?int {
+                        return $l->next?->next?->value;
+                    }',
+                [],
+                [],
+                '8.0'
+            ],
+            'nullsafeMethodCall' => [
+                '<?php
+                    class IntLinkedList {
+                        public function __construct(
+                            public int $value,
+                            private ?self $next
+                        ) {}
+
+                        public function getNext() : ?self {
+                            return $this->next;
+                        }
+                    }
+
+                    function skipOne(IntLinkedList $l) : ?int {
+                        return $l->getNext()?->value;
+                    }
+
+                    function skipTwo(IntLinkedList $l) : ?int {
+                        return $l->getNext()?->getNext()?->value;
+                    }',
+                [],
+                [],
+                '8.0'
+            ]
         ];
     }
 
     /**
      * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'makeNonNullableNull' => [

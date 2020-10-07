@@ -36,7 +36,7 @@ class ClassLikeStorageCacheProvider
      */
     private $modified_timestamps = '';
 
-    const CLASS_CACHE_DIRECTORY = 'class_cache';
+    private const CLASS_CACHE_DIRECTORY = 'class_cache';
 
     public function __construct(Config $config)
     {
@@ -67,12 +67,9 @@ class ClassLikeStorageCacheProvider
     }
 
     /**
-     * @param  string|null $file_path
-     * @param  string|null $file_contents
-     *
      * @return void
      */
-    public function writeToCache(ClassLikeStorage $storage, $file_path, $file_contents)
+    public function writeToCache(ClassLikeStorage $storage, ?string $file_path, ?string $file_contents)
     {
         $fq_classlike_name_lc = strtolower($storage->name);
 
@@ -86,15 +83,11 @@ class ClassLikeStorageCacheProvider
         }
     }
 
-    /**
-     * @param  string  $fq_classlike_name_lc
-     * @param  string|null $file_path
-     * @param  string|null $file_contents
-     *
-     * @return ClassLikeStorage
-     */
-    public function getLatestFromCache($fq_classlike_name_lc, $file_path, $file_contents)
-    {
+    public function getLatestFromCache(
+        string $fq_classlike_name_lc,
+        ?string $file_path,
+        ?string $file_contents
+    ): ClassLikeStorage {
         $cached_value = $this->loadFromCache($fq_classlike_name_lc, $file_path);
 
         if (!$cached_value) {
@@ -115,25 +108,15 @@ class ClassLikeStorageCacheProvider
         return $cached_value;
     }
 
-    /**
-     * @param  string|null $file_path
-     * @param  string|null $file_contents
-     *
-     * @return string
-     */
-    private function getCacheHash($file_path, $file_contents)
+    private function getCacheHash(?string $file_path, ?string $file_contents): string
     {
         return sha1(($file_path ? $file_contents : '') . $this->modified_timestamps);
     }
 
     /**
-     * @param  string  $fq_classlike_name_lc
-     * @param  string|null  $file_path
      * @psalm-suppress MixedAssignment
-     *
-     * @return ClassLikeStorage|null
      */
-    private function loadFromCache($fq_classlike_name_lc, $file_path)
+    private function loadFromCache(string $fq_classlike_name_lc, ?string $file_path): ?ClassLikeStorage
     {
         $cache_location = $this->getCacheLocationForClass($fq_classlike_name_lc, $file_path);
 
@@ -160,15 +143,11 @@ class ClassLikeStorageCacheProvider
         return null;
     }
 
-    /**
-     * @param  string  $fq_classlike_name_lc
-     * @param  string|null  $file_path
-     * @param  bool $create_directory
-     *
-     * @return string
-     */
-    private function getCacheLocationForClass($fq_classlike_name_lc, $file_path, $create_directory = false)
-    {
+    private function getCacheLocationForClass(
+        string $fq_classlike_name_lc,
+        ?string $file_path,
+        bool $create_directory = false
+    ): string {
         $root_cache_directory = $this->config->getCacheDirectory();
 
         if (!$root_cache_directory) {

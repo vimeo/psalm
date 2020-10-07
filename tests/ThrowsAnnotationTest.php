@@ -66,10 +66,7 @@ class ThrowsAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
-    /**
-     * @return void
-     */
-    public function testUndocumentedThrow()
+    public function testUndocumentedThrow(): void
     {
         $this->expectExceptionMessage('MissingThrowsDocblock');
         $this->expectException(\Psalm\Exception\CodeException::class);
@@ -96,10 +93,7 @@ class ThrowsAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
-    /**
-     * @return void
-     */
-    public function testDocumentedThrow()
+    public function testDocumentedThrow(): void
     {
         Config::getInstance()->check_for_throws_docblock = true;
 
@@ -128,10 +122,7 @@ class ThrowsAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
-    /**
-     * @return void
-     */
-    public function testDocumentedParentThrow()
+    public function testDocumentedParentThrow(): void
     {
         Config::getInstance()->check_for_throws_docblock = true;
 
@@ -159,10 +150,7 @@ class ThrowsAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
-    /**
-     * @return void
-     */
-    public function testThrowableInherited()
+    public function testThrowableInherited(): void
     {
         Config::getInstance()->check_for_throws_docblock = true;
 
@@ -186,10 +174,7 @@ class ThrowsAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
-    /**
-     * @return void
-     */
-    public function testUndocumentedThrowInFunctionCall()
+    public function testUndocumentedThrowInFunctionCall(): void
     {
         $this->expectExceptionMessage('MissingThrowsDocblock');
         $this->expectException(\Psalm\Exception\CodeException::class);
@@ -224,10 +209,7 @@ class ThrowsAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
-    /**
-     * @return void
-     */
-    public function testDocumentedThrowInFunctionCallWithThrow()
+    public function testDocumentedThrowInFunctionCallWithThrow(): void
     {
         Config::getInstance()->check_for_throws_docblock = true;
 
@@ -264,10 +246,7 @@ class ThrowsAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
-    /**
-     * @return void
-     */
-    public function testDocumentedThrowInFunctionCallWithoutThrow()
+    public function testDocumentedThrowInFunctionCallWithoutThrow(): void
     {
         Config::getInstance()->check_for_throws_docblock = true;
 
@@ -304,10 +283,7 @@ class ThrowsAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
-    /**
-     * @return void
-     */
-    public function testCaughtThrowInFunctionCall()
+    public function testCaughtThrowInFunctionCall(): void
     {
         Config::getInstance()->check_for_throws_docblock = true;
 
@@ -344,10 +320,7 @@ class ThrowsAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
-    /**
-     * @return void
-     */
-    public function testUncaughtThrowInFunctionCall()
+    public function testUncaughtThrowInFunctionCall(): void
     {
         $this->expectExceptionMessage('MissingThrowsDocblock');
         $this->expectException(\Psalm\Exception\CodeException::class);
@@ -386,10 +359,7 @@ class ThrowsAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
-    /**
-     * @return void
-     */
-    public function testEmptyThrows()
+    public function testEmptyThrows(): void
     {
         $this->expectExceptionMessage('MissingDocblockType');
         $this->expectException(\Psalm\Exception\CodeException::class);
@@ -409,10 +379,7 @@ class ThrowsAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
-    /**
-     * @return void
-     */
-    public function testCaughtAllThrowInFunctionCall()
+    public function testCaughtAllThrowInFunctionCall(): void
     {
         Config::getInstance()->check_for_throws_docblock = true;
 
@@ -447,10 +414,7 @@ class ThrowsAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
-    /**
-     * @return void
-     */
-    public function testDocumentedThrowInInterfaceWithInheritDocblock()
+    public function testDocumentedThrowInInterfaceWithInheritDocblock(): void
     {
         Config::getInstance()->check_for_throws_docblock = true;
 
@@ -483,10 +447,7 @@ class ThrowsAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
-    /**
-     * @return void
-     */
-    public function testDocumentedThrowInInterfaceWithoutInheritDocblock()
+    public function testDocumentedThrowInInterfaceWithoutInheritDocblock(): void
     {
         Config::getInstance()->check_for_throws_docblock = true;
 
@@ -516,10 +477,7 @@ class ThrowsAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
-    /**
-     * @return void
-     */
-    public function testDocumentedThrowInSubclassWithExtendedInheritDocblock()
+    public function testDocumentedThrowInSubclassWithExtendedInheritDocblock(): void
     {
         Config::getInstance()->check_for_throws_docblock = true;
 
@@ -553,10 +511,7 @@ class ThrowsAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
-    /**
-     * @return void
-     */
-    public function testDocumentedThrowInInterfaceWithExtendedInheritDocblock()
+    public function testDocumentedThrowInInterfaceWithExtendedInheritDocblock(): void
     {
         Config::getInstance()->check_for_throws_docblock = true;
 
@@ -590,10 +545,7 @@ class ThrowsAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
-    /**
-     * @return void
-     */
-    public function testDocumentedThrowInInterfaceWithOverriddenDocblock()
+    public function testDocumentedThrowInInterfaceWithOverriddenDocblock(): void
     {
         $this->expectExceptionMessage('MissingThrowsDocblock');
         $this->expectException(\Psalm\Exception\CodeException::class);
@@ -628,10 +580,7 @@ class ThrowsAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
-    /**
-     * @return void
-     */
-    public function testDocumentedThrowInsideCatch()
+    public function testDocumentedThrowInsideCatch(): void
     {
         $this->expectExceptionMessage('MissingThrowsDocblock');
         $this->expectException(\Psalm\Exception\CodeException::class);

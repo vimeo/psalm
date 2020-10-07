@@ -32,11 +32,6 @@ use function array_reduce;
  */
 class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer
 {
-    /**
-     * @param   StatementsAnalyzer               $statements_analyzer
-     * @param   PhpParser\Node\Expr\MethodCall  $stmt
-     * @param   Context                         $context
-     */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\MethodCall $stmt,
@@ -47,20 +42,33 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
         $context->inside_call = true;
 
-        if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->var, $context) === false) {
+        $was_inside_use = $context->inside_use;
+        $context->inside_use = true;
+
+        $existing_stmt_var_type = null;
+
+        if (!$real_method_call) {
+            $existing_stmt_var_type = $statements_analyzer->node_data->getType($stmt->var);
+        }
+
+        if ($existing_stmt_var_type) {
+            $statements_analyzer->node_data->setType($stmt->var, $existing_stmt_var_type);
+        } elseif (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->var, $context) === false) {
             return false;
         }
 
         $context->inside_call = $was_inside_call;
 
         if (!$stmt->name instanceof PhpParser\Node\Identifier) {
-            $was_inside_call = $context->inside_call;
             $context->inside_call = true;
+
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->name, $context) === false) {
                 return false;
             }
-            $context->inside_call = $was_inside_call;
         }
+
+        $context->inside_call = $was_inside_call;
+        $context->inside_use = $was_inside_use;
 
         if ($stmt->var instanceof PhpParser\Node\Expr\Variable) {
             if (is_string($stmt->var->name) && $stmt->var->name === 'this' && !$statements_analyzer->getFQCLN()) {
@@ -82,7 +90,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             $statements_analyzer
         );
 
-        $class_type = $lhs_var_id && $context->hasVariable($lhs_var_id, $statements_analyzer)
+        $class_type = $lhs_var_id && $context->hasVariable($lhs_var_id)
             ? $context->vars_in_scope[$lhs_var_id]
             : null;
 
@@ -98,6 +106,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 $stmt->args,
                 null,
                 null,
+                true,
                 $context
             ) === false) {
                 return false;

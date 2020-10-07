@@ -8,8 +8,6 @@ use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\FileManipulation;
-use Psalm\IssueBuffer;
-use Psalm\Issue\TypeCoercion;
 use Psalm\Plugin\Hook\AfterExpressionAnalysisInterface;
 use Psalm\StatementsSource;
 
@@ -18,8 +16,6 @@ class StringChecker implements AfterExpressionAnalysisInterface
     /**
      * Called after an expression has been checked
      *
-     * @param  PhpParser\Node\Expr  $expr
-     * @param  Context              $context
      * @param  FileManipulation[]   $file_replacements
      *
      * @return null|false
@@ -30,7 +26,7 @@ class StringChecker implements AfterExpressionAnalysisInterface
         StatementsSource $statements_source,
         Codebase $codebase,
         array &$file_replacements = []
-    ) {
+    ): ?bool {
         if ($expr instanceof PhpParser\Node\Scalar\String_) {
             $class_or_class_method = '/^\\\?Psalm(\\\[A-Z][A-Za-z0-9]+)+(::[A-Za-z0-9]+)?$/';
 
@@ -76,8 +72,10 @@ class StringChecker implements AfterExpressionAnalysisInterface
                     return false;
                 }
 
-                return;
+                return null;
             }
         }
+
+        return null;
     }
 }

@@ -2,13 +2,11 @@
 namespace Psalm\Tests\FileUpdates;
 
 use function array_keys;
-use function array_map;
 use function array_shift;
 use function count;
 use const DIRECTORY_SEPARATOR;
 use function end;
 use function getcwd;
-use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Tests\Internal\Provider;
@@ -16,14 +14,9 @@ use Psalm\Tests\TestConfig;
 
 class TemporaryUpdateTest extends \Psalm\Tests\TestCase
 {
-    /**
-     * @return void
-     */
     public function setUp() : void
     {
         parent::setUp();
-
-        FileAnalyzer::clearCache();
 
         $this->file_provider = new \Psalm\Tests\Internal\Provider\FakeFileProvider();
 
@@ -53,7 +46,6 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
      * @param array<int, array<int>> $error_positions
      * @param array<string, string> $error_levels
      *
-     * @return void
      */
     public function testErrorFix(
         array $file_stages,
@@ -61,7 +53,7 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
         array $error_levels = [],
         bool $test_save = true,
         bool $check_unused_code = false
-    ) {
+    ): void {
         $codebase = $this->project_analyzer->getCodebase();
         $codebase->diff_methods = true;
 
@@ -162,7 +154,7 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
     /**
      * @return array<string,array{array<int, array<string, string>>,error_positions:array<int, array<int>>, error_levels?:array<string, string>, test_save?:bool}>
      */
-    public function providerTestErrorFix()
+    public function providerTestErrorFix(): array
     {
         return [
             'fixMissingColonSyntaxError' => [

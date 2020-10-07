@@ -1,25 +1,27 @@
 <?php
+
 namespace Psalm\Tests\EndToEnd;
 
-use function array_merge;
+use PHPUnit\Framework\TestCase;
+use Symfony\Component\Process\Process;
 
 use function closedir;
 use function copy;
+use function file_get_contents;
+use function file_put_contents;
 use function getcwd;
 use function is_dir;
 use function is_string;
 use function mkdir;
 use function opendir;
-use PHPUnit\Framework\TestCase;
+use function preg_replace;
 use function readdir;
 use function rmdir;
-use Symfony\Component\Process\Process;
 use function sys_get_temp_dir;
 use function tempnam;
 use function unlink;
-use function file_get_contents;
-use function file_put_contents;
-use function preg_replace;
+
+use const PHP_VERSION_ID;
 
 /**
  * Tests some of the most important use cases of the psalm and psalter commands, by launching a new
@@ -61,7 +63,10 @@ class PsalmEndToEndTest extends TestCase
     public function setUp(): void
     {
         @unlink(self::$tmpDir . '/psalm.xml');
-        copy(__DIR__ . '/../fixtures/DummyProjectWithErrors/src/FileWithErrors.php', self::$tmpDir . '/src/FileWithErrors.php');
+        copy(
+            __DIR__ . '/../fixtures/DummyProjectWithErrors/src/FileWithErrors.php',
+            self::$tmpDir . '/src/FileWithErrors.php'
+        );
         parent::setUp();
     }
 
@@ -80,12 +85,15 @@ class PsalmEndToEndTest extends TestCase
 
     public function testVersion(): void
     {
-        $this->assertStringStartsWith('Psalm 3', $this->runPsalm(['--version'], self::$tmpDir, false, false)['STDOUT']);
+        $this->assertStringStartsWith('Psalm 4', $this->runPsalm(['--version'], self::$tmpDir, false, false)['STDOUT']);
     }
 
     public function testInit(): void
     {
-        $this->assertStringStartsWith('Calculating best config level based on project files', $this->runPsalmInit()['STDOUT']);
+        $this->assertStringStartsWith(
+            'Calculating best config level based on project files',
+            $this->runPsalmInit()['STDOUT']
+        );
         $this->assertFileExists(self::$tmpDir . '/psalm.xml');
     }
 
@@ -120,7 +128,9 @@ class PsalmEndToEndTest extends TestCase
 
     public function testPsalmDiff(): void
     {
-        $this->markTestSkipped('Only works on 7.4');
+        if (PHP_VERSION_ID < 70400) {
+            $this->markTestSkipped('Only works on 7.4+');
+        }
 
         copy(__DIR__ . '/../fixtures/DummyProjectWithErrors/diff_composer.lock', self::$tmpDir . '/composer.lock');
 
@@ -145,12 +155,22 @@ class PsalmEndToEndTest extends TestCase
         @unlink(self::$tmpDir . '/composer.lock');
     }
 
+    public function testTainting(): void
+    {
+        $this->runPsalmInit(1);
+        $result = $this->runPsalm(['--taint-analysis'], self::$tmpDir, true);
+
+        $this->assertStringContainsString('TaintedInput', $result['STDOUT']);
+        $this->assertStringContainsString('1 errors', $result['STDOUT']);
+        $this->assertSame(1, $result['CODE']);
+    }
+
     public function testLegacyConfigWithoutresolveFromConfigFile(): void
     {
         $this->runPsalmInit(1);
         $psalmXmlContent = file_get_contents(self::$tmpDir . '/psalm.xml');
         $count = 0;
-        $psalmXmlContent = preg_replace('/resolveFromConfigFile="true"/', '', $psalmXmlContent, -1, $count);
+        $psalmXmlContent = preg_replace('/resolveFromConfigFile="true"/', 'resolveFromConfigFile="false"', $psalmXmlContent, -1, $count);
         $this->assertEquals(1, $count);
 
         file_put_contents(self::$tmpDir . '/src/psalm.xml', $psalmXmlContent);
@@ -193,7 +213,7 @@ class PsalmEndToEndTest extends TestCase
     {
         $dir = opendir($src);
         while (false !== ($file = readdir($dir))) {
-            if (($file != '.') && ($file != '..')) {
+            if (($file !== '.') && ($file !== '..')) {
                 $full = $src . '/' . $file;
                 if (is_dir($full)) {
                     self::recursiveRemoveDirectory($full);

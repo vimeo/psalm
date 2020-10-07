@@ -9,15 +9,14 @@ gc_disable();
 error_reporting(-1);
 
 require_once('command_functions.php');
+require_once __DIR__ . '/Psalm/Internal/Composer.php';
 require_once __DIR__ . '/Psalm/Internal/exception_handler.php';
 
-use Psalm\ErrorBaseline;
 use Psalm\Exception\ConfigException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Composer;
 use Psalm\Internal\Provider;
-use Psalm\Config;
 use Psalm\Internal\IncludeCollector;
-use Psalm\IssueBuffer;
 use Psalm\Progress\DebugProgress;
 use Psalm\Progress\DefaultProgress;
 use Psalm\Progress\LongProgress;
@@ -54,7 +53,6 @@ use function ini_get;
 use const PHP_OS;
 use function version_compare;
 use const PHP_VERSION;
-use function is_null;
 use function setlocale;
 use const LC_CTYPE;
 use function microtime;
@@ -277,7 +275,7 @@ require_once __DIR__ . '/' . 'Psalm/Internal/IncludeCollector.php';
 
 $include_collector = new IncludeCollector();
 $first_autoloader = $include_collector->runAndCollect(
-    function () use ($current_dir, $options, $vendor_dir) {
+    function () use ($current_dir, $options, $vendor_dir): ?\Composer\Autoload\ClassLoader {
         return requireAutoloaders($current_dir, isset($options['r']), $vendor_dir);
     }
 );
@@ -302,12 +300,7 @@ if (isset($options['i'])) {
 
     $args = array_values(array_filter(
         $args,
-        /**
-         * @param string $arg
-         *
-         * @return bool
-         */
-        function ($arg) {
+        function (string $arg): bool {
             return $arg !== '--ansi'
                 && $arg !== '--no-ansi'
                 && $arg !== '-i'
@@ -458,7 +451,7 @@ if (isset($options['generate-stubs']) && is_string($options['generate-stubs'])) 
 // If Xdebug is enabled, restart without it
 $ini_handler->check();
 
-if (is_null($config->load_xdebug_stub) && '' !== $ini_handler->getSkippedVersion()) {
+if ($config->load_xdebug_stub === null && '' !== $ini_handler->getSkippedVersion()) {
     $config->load_xdebug_stub = true;
 }
 
@@ -530,7 +523,9 @@ if (isset($options['shepherd'])) {
 if (isset($options['clear-cache'])) {
     $cache_directory = $config->getCacheDirectory();
 
-    Config::removeCacheDirectory($cache_directory);
+    if ($cache_directory !== null) {
+        Config::removeCacheDirectory($cache_directory);
+    }
     echo 'Cache directory deleted' . PHP_EOL;
     exit;
 }
@@ -583,7 +578,7 @@ if (isset($options['no-cache']) || isset($options['i'])) {
         $file_storage_cache_provider,
         $classlike_storage_cache_provider,
         new Provider\FileReferenceCacheProvider($config),
-        new Provider\ProjectCacheProvider($current_dir . DIRECTORY_SEPARATOR . 'composer.lock')
+        new Provider\ProjectCacheProvider(Composer::getLockFilePath($current_dir))
     );
 }
 
@@ -667,7 +662,7 @@ if ($config->run_taint_analysis || (isset($options['track-tainted-input'])
     $project_analyzer->trackTaintedInputs();
 }
 
-if (isset($options['find-unused-psalm-suppress'])) {
+if ($config->find_unused_psalm_suppress || isset($options['find-unused-psalm-suppress'])) {
     $project_analyzer->trackUnusedSuppressions();
 }
 

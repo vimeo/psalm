@@ -4,6 +4,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression;
 use PhpParser;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\ControlFlow\ControlFlowNode;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Type;
@@ -15,8 +16,6 @@ class EncapsulatedStringAnalyzer
         PhpParser\Node\Scalar\Encapsed $stmt,
         Context $context
     ) : bool {
-        $codebase = $statements_analyzer->getCodebase();
-
         $stmt_type = Type::getString();
 
         foreach ($stmt->parts as $part) {
@@ -34,20 +33,19 @@ class EncapsulatedStringAnalyzer
                     $part
                 );
 
-                if ($codebase->taint
-                    && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
+                if ($statements_analyzer->control_flow_graph
                     && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
                 ) {
                     $var_location = new CodeLocation($statements_analyzer, $part);
 
-                    $new_parent_node = \Psalm\Internal\Taint\TaintNode::getForAssignment('concat', $var_location);
-                    $codebase->taint->addTaintNode($new_parent_node);
+                    $new_parent_node = ControlFlowNode::getForAssignment('concat', $var_location);
+                    $statements_analyzer->control_flow_graph->addNode($new_parent_node);
 
-                    $stmt_type->parent_nodes[] = $new_parent_node;
+                    $stmt_type->parent_nodes[$new_parent_node->id] = $new_parent_node;
 
                     if ($casted_part_type->parent_nodes) {
                         foreach ($casted_part_type->parent_nodes as $parent_node) {
-                            $codebase->taint->addPath($parent_node, $new_parent_node, 'concat');
+                            $statements_analyzer->control_flow_graph->addPath($parent_node, $new_parent_node, 'concat');
                         }
                     }
                 }

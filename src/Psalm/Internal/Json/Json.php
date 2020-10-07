@@ -22,8 +22,9 @@ class Json
 
     /**
      * @param mixed $data
-     * @param int|null $options
-     * @return string
+     *
+     *
+     * @psalm-pure
      */
     public static function encode($data, ?int $options = null): string
     {

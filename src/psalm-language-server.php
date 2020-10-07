@@ -2,8 +2,8 @@
 
 namespace Psalm;
 
-use Psalm\Config;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Composer;
 use Psalm\Internal\IncludeCollector;
 use function gc_disable;
 use function error_reporting;
@@ -32,6 +32,7 @@ use function chdir;
 use function strtolower;
 
 require_once('command_functions.php');
+require_once __DIR__ . '/Psalm/Internal/Composer.php';
 
 gc_disable();
 
@@ -210,7 +211,7 @@ require_once __DIR__ . '/Psalm/Internal/IncludeCollector.php';
 $include_collector = new IncludeCollector();
 
 $first_autoloader = $include_collector->runAndCollect(
-    function () use ($current_dir, $options, $vendor_dir) {
+    function () use ($current_dir, $options, $vendor_dir): ?\Composer\Autoload\ClassLoader {
         return \Psalm\requireAutoloaders($current_dir, isset($options['r']), $vendor_dir);
     }
 );
@@ -233,7 +234,7 @@ if (isset($options['tcp'])) {
     }
 }
 
-$find_dead_code = isset($options['find-dead-code']);
+$find_unused_code = isset($options['find-dead-code']) ? 'auto' : null;
 
 $config = \Psalm\initialiseConfig($path_to_config, $current_dir, \Psalm\Report::TYPE_CONSOLE, $first_autoloader);
 $config->setIncludeCollector($include_collector);
@@ -248,7 +249,9 @@ $config->setServerMode();
 if (isset($options['clear-cache'])) {
     $cache_directory = $config->getCacheDirectory();
 
-    Config::removeCacheDirectory($cache_directory);
+    if ($cache_directory !== null) {
+        Config::removeCacheDirectory($cache_directory);
+    }
     echo 'Cache directory deleted' . PHP_EOL;
     exit;
 }
@@ -259,13 +262,21 @@ $providers = new \Psalm\Internal\Provider\Providers(
     new \Psalm\Internal\Provider\FileStorageCacheProvider($config),
     new \Psalm\Internal\Provider\ClassLikeStorageCacheProvider($config),
     new \Psalm\Internal\Provider\FileReferenceCacheProvider($config),
-    new \Psalm\Internal\Provider\ProjectCacheProvider($current_dir . DIRECTORY_SEPARATOR . 'composer.lock')
+    new \Psalm\Internal\Provider\ProjectCacheProvider(Composer::getLockFilePath($current_dir))
 );
 
 $project_analyzer = new ProjectAnalyzer(
     $config,
     $providers
 );
+
+if ($config->find_unused_variables) {
+    $project_analyzer->getCodebase()->reportUnusedVariables();
+}
+
+if ($config->find_unused_code) {
+    $find_unused_code = 'auto';
+}
 
 if (isset($options['disable-on-change'])) {
     $project_analyzer->onchange_line_limit = (int) $options['disable-on-change'];
@@ -277,8 +288,8 @@ $project_analyzer->provide_completion = !isset($options['enable-autocomplete'])
 
 $config->visitComposerAutoloadFiles($project_analyzer);
 
-if ($find_dead_code) {
-    $project_analyzer->getCodebase()->reportUnusedCode();
+if ($find_unused_code) {
+    $project_analyzer->getCodebase()->reportUnusedCode($find_unused_code);
 }
 
 if (isset($options['use-extended-diagnostic-codes'])) {

@@ -7,8 +7,6 @@ use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\FileManipulation;
-use Psalm\IssueBuffer;
-use Psalm\Issue\TypeCoercion;
 use Psalm\Plugin\Hook\AfterExpressionAnalysisInterface;
 use Psalm\StatementsSource;
 
@@ -20,8 +18,6 @@ class PreventFloatAssignmentChecker implements AfterExpressionAnalysisInterface
     /**
      * Called after an expression has been checked
      *
-     * @param  PhpParser\Node\Expr  $expr
-     * @param  Context              $context
      * @param  FileManipulation[]   $file_replacements
      *
      * @return null|false
@@ -32,7 +28,7 @@ class PreventFloatAssignmentChecker implements AfterExpressionAnalysisInterface
         StatementsSource $statements_source,
         Codebase $codebase,
         array &$file_replacements = []
-    ) {
+    ): ?bool {
         if ($expr instanceof PhpParser\Node\Expr\Assign
             && ($expr_type = $statements_source->getNodeTypeProvider()->getType($expr->expr))
             && $expr_type->hasFloat()
@@ -47,6 +43,8 @@ class PreventFloatAssignmentChecker implements AfterExpressionAnalysisInterface
                 // fall through
             }
         }
+
+        return null;
     }
 }
 

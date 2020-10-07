@@ -64,9 +64,6 @@ class Methods
     /** @var MethodVisibilityProvider */
     public $visibility_provider;
 
-    /**
-     * @param ClassLikeStorageProvider $storage_provider
-     */
     public function __construct(
         ClassLikeStorageProvider $storage_provider,
         FileReferenceProvider $file_reference_provider,
@@ -88,14 +85,15 @@ class Methods
     public function methodExists(
         MethodIdentifier $method_id,
         ?string $calling_method_id = null,
-        CodeLocation $code_location = null,
-        StatementsSource $source = null,
-        string $source_file_path = null
+        ?CodeLocation $code_location = null,
+        ?StatementsSource $source = null,
+        ?string $source_file_path = null,
+        bool $use_method_existence_provider = true
     ) : bool {
         $fq_class_name = $method_id->fq_class_name;
         $method_name = $method_id->method_name;
 
-        if ($this->existence_provider->has($fq_class_name)) {
+        if ($use_method_existence_provider && $this->existence_provider->has($fq_class_name)) {
             $method_exists = $this->existence_provider->doesMethodExist(
                 $fq_class_name,
                 $method_name,
@@ -316,9 +314,9 @@ class Methods
      */
     public function getMethodParams(
         MethodIdentifier $method_id,
-        StatementsSource $source = null,
-        array $args = null,
-        Context $context = null
+        ?StatementsSource $source = null,
+        ?array $args = null,
+        ?Context $context = null
     ) : array {
         $fq_class_name = $method_id->fq_class_name;
         $method_name = $method_id->method_name;
@@ -532,7 +530,7 @@ class Methods
                 );
             }
 
-            if ($atomic_type instanceof Type\Atomic\ObjectLike) {
+            if ($atomic_type instanceof Type\Atomic\TKeyedArray) {
                 foreach ($atomic_type->properties as &$property_type) {
                     $property_type = self::localizeType(
                         $codebase,
@@ -544,7 +542,7 @@ class Methods
             }
 
             if ($atomic_type instanceof Type\Atomic\TCallable
-                || $atomic_type instanceof Type\Atomic\TFn
+                || $atomic_type instanceof Type\Atomic\TClosure
             ) {
                 if ($atomic_type->params) {
                     foreach ($atomic_type->params as $param) {
@@ -608,10 +606,7 @@ class Methods
         return $extra_added_types;
     }
 
-    /**
-     * @return bool
-     */
-    public function isVariadic(MethodIdentifier $method_id)
+    public function isVariadic(MethodIdentifier $method_id): bool
     {
         $declaring_method_id = $this->getDeclaringMethodId($method_id);
 
@@ -623,17 +618,15 @@ class Methods
     }
 
     /**
-     * @param  string $self_class
      * @param  array<int, PhpParser\Node\Arg>|null $args
      *
-     * @return Type\Union|null
      */
     public function getMethodReturnType(
         MethodIdentifier $method_id,
-        &$self_class,
-        \Psalm\Internal\Analyzer\SourceAnalyzer $source_analyzer = null,
-        array $args = null
-    ) {
+        ?string &$self_class,
+        ?\Psalm\Internal\Analyzer\SourceAnalyzer $source_analyzer = null,
+        ?array $args = null
+    ): ?Type\Union {
         $original_fq_class_name = $method_id->fq_class_name;
         $original_method_name = $method_id->method_name;
 
@@ -684,11 +677,11 @@ class Methods
             ) {
                 foreach ($first_arg_type->getAtomicTypes() as $atomic_type) {
                     if ($atomic_type instanceof Type\Atomic\TCallable
-                        || $atomic_type instanceof Type\Atomic\TFn
+                        || $atomic_type instanceof Type\Atomic\TClosure
                     ) {
                         $callable_type = clone $atomic_type;
 
-                        return new Type\Union([new Type\Atomic\TFn(
+                        return new Type\Union([new Type\Atomic\TClosure(
                             'Closure',
                             $callable_type->params,
                             $callable_type->return_type
@@ -704,7 +697,7 @@ class Methods
                             new MethodIdentifier($atomic_type->value, '__invoke')
                         );
 
-                        return new Type\Union([new Type\Atomic\TFn(
+                        return new Type\Union([new Type\Atomic\TClosure(
                             'Closure',
                             $invokable_storage->params,
                             $invokable_storage->return_type
@@ -808,10 +801,7 @@ class Methods
         return $candidate_type;
     }
 
-    /**
-     * @return bool
-     */
-    public function getMethodReturnsByRef(MethodIdentifier $method_id)
+    public function getMethodReturnsByRef(MethodIdentifier $method_id): bool
     {
         $method_id = $this->getDeclaringMethodId($method_id);
 
@@ -833,12 +823,11 @@ class Methods
     /**
      * @param  CodeLocation|null    $defined_location
      *
-     * @return CodeLocation|null
      */
     public function getMethodReturnTypeLocation(
         MethodIdentifier $method_id,
         CodeLocation &$defined_location = null
-    ) {
+    ): ?CodeLocation {
         $method_id = $this->getDeclaringMethodId($method_id);
 
         if ($method_id === null) {
@@ -864,19 +853,16 @@ class Methods
     }
 
     /**
-     * @param string $fq_class_name
      * @param lowercase-string $method_name_lc
-     * @param string $declaring_fq_class_name
      * @param lowercase-string $declaring_method_name_lc
      *
-     * @return void
      */
     public function setDeclaringMethodId(
-        $fq_class_name,
-        $method_name_lc,
-        $declaring_fq_class_name,
-        $declaring_method_name_lc
-    ) {
+        string $fq_class_name,
+        string $method_name_lc,
+        string $declaring_fq_class_name,
+        string $declaring_method_name_lc
+    ): void {
         $class_storage = $this->classlike_storage_provider->get($fq_class_name);
 
         $class_storage->declaring_method_ids[$method_name_lc] = new MethodIdentifier(
@@ -886,19 +872,16 @@ class Methods
     }
 
     /**
-     * @param string $fq_class_name
      * @param lowercase-string $method_name_lc
-     * @param string $appearing_fq_class_name
      * @param lowercase-string $appearing_method_name_lc
      *
-     * @return void
      */
     public function setAppearingMethodId(
-        $fq_class_name,
-        $method_name_lc,
-        $appearing_fq_class_name,
-        $appearing_method_name_lc
-    ) {
+        string $fq_class_name,
+        string $method_name_lc,
+        string $appearing_fq_class_name,
+        string $appearing_method_name_lc
+    ): void {
         $class_storage = $this->classlike_storage_provider->get($fq_class_name);
 
         $class_storage->appearing_method_ids[$method_name_lc] = new MethodIdentifier(
@@ -949,7 +932,7 @@ class Methods
     /**
      * @return array<MethodIdentifier>
      */
-    public function getOverriddenMethodIds(MethodIdentifier $method_id)
+    public function getOverriddenMethodIds(MethodIdentifier $method_id): array
     {
         $class_storage = $this->classlike_storage_provider->get($method_id->fq_class_name);
         $method_name = $method_id->method_name;
@@ -989,10 +972,7 @@ class Methods
         return $fq_class_name . '::' . $storage->cased_name;
     }
 
-    /**
-     * @return ?MethodStorage
-     */
-    public function getUserMethodStorage(MethodIdentifier $method_id)
+    public function getUserMethodStorage(MethodIdentifier $method_id): ?MethodStorage
     {
         $declaring_method_id = $this->getDeclaringMethodId($method_id);
 
@@ -1009,10 +989,7 @@ class Methods
         return $storage;
     }
 
-    /**
-     * @return ClassLikeStorage
-     */
-    public function getClassLikeStorageForMethod(MethodIdentifier $method_id)
+    public function getClassLikeStorageForMethod(MethodIdentifier $method_id): ClassLikeStorage
     {
         $fq_class_name = $method_id->fq_class_name;
         $method_name = $method_id->method_name;
@@ -1043,10 +1020,7 @@ class Methods
         return $this->classlike_storage_provider->get($declaring_fq_class_name);
     }
 
-    /**
-     * @return MethodStorage
-     */
-    public function getStorage(MethodIdentifier $method_id)
+    public function getStorage(MethodIdentifier $method_id): MethodStorage
     {
         try {
             $class_storage = $this->classlike_storage_provider->get($method_id->fq_class_name);
@@ -1065,10 +1039,7 @@ class Methods
         return $class_storage->methods[$method_name];
     }
 
-    /**
-     * @return bool
-     */
-    public function hasStorage(MethodIdentifier $method_id)
+    public function hasStorage(MethodIdentifier $method_id): bool
     {
         try {
             $class_storage = $this->classlike_storage_provider->get($method_id->fq_class_name);

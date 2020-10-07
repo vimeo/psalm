@@ -6,63 +6,44 @@ class TLiteralFloat extends TFloat
     /** @var float */
     public $value;
 
-    /**
-     * @param float $value
-     */
-    public function __construct($value)
+    public function __construct(float $value)
     {
         $this->value = $value;
     }
 
-    /**
-     * @return string
-     */
-    public function getKey(bool $include_extra = true)
+    public function getKey(bool $include_extra = true): string
+    {
+        return 'float(' . $this->value . ')';
+    }
+
+    public function getId(bool $nested = false): string
     {
         return 'float(' . $this->value . ')';
     }
 
     /**
-     * @return string
-     */
-    public function getId(bool $nested = false)
-    {
-        return 'float(' . $this->value . ')';
-    }
-
-    /**
-     * @param  string|null   $namespace
      * @param  array<string> $aliased_classes
-     * @param  string|null   $this_class
-     * @param  int           $php_major_version
-     * @param  int           $php_minor_version
-     *
-     * @return null|string
      */
     public function toPhpString(
-        $namespace,
+        ?string $namespace,
         array $aliased_classes,
-        $this_class,
-        $php_major_version,
-        $php_minor_version
-    ) {
+        ?string $this_class,
+        int $php_major_version,
+        int $php_minor_version
+    ): ?string {
         return $php_major_version >= 7 ? 'float' : null;
     }
 
     /**
-     * @param  string|null   $namespace
      * @param  array<string> $aliased_classes
-     * @param  string|null   $this_class
-     * @param  bool          $use_phpdoc_format
      *
-     * @return string
      */
     public function toNamespacedString(
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
         bool $use_phpdoc_format
-    ) {
+    ): string {
         return 'float';
     }
 }

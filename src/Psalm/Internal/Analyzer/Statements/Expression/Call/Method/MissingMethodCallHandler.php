@@ -2,6 +2,7 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call\Method;
 
 use PhpParser;
+use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentsAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Codebase;
@@ -27,6 +28,48 @@ class MissingMethodCallHandler
         $fq_class_name = $method_id->fq_class_name;
         $method_name_lc = $method_id->method_name;
 
+        if ($codebase->methods->return_type_provider->has($fq_class_name)) {
+            $return_type_candidate = $codebase->methods->return_type_provider->getReturnType(
+                $statements_analyzer,
+                $method_id->fq_class_name,
+                $method_id->method_name,
+                $stmt->args,
+                $context,
+                new CodeLocation($statements_analyzer->getSource(), $stmt->name)
+            );
+
+            if ($return_type_candidate) {
+                if ($all_intersection_return_type) {
+                    $return_type_candidate = Type::intersectUnionTypes(
+                        $all_intersection_return_type,
+                        $return_type_candidate,
+                        $codebase
+                    ) ?: Type::getMixed();
+                }
+
+                if (!$result->return_type) {
+                    $result->return_type = $return_type_candidate;
+                } else {
+                    $result->return_type = Type::combineUnionTypes(
+                        $return_type_candidate,
+                        $result->return_type,
+                        $codebase
+                    );
+                }
+
+                CallAnalyzer::checkMethodArgs(
+                    $method_id,
+                    $stmt->args,
+                    null,
+                    $context,
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    $statements_analyzer
+                );
+
+                return null;
+            }
+        }
+
         if (isset($class_storage->pseudo_methods[$method_name_lc])) {
             $result->has_valid_method_call_type = true;
             $result->existent_method_ids[] = $method_id;
@@ -38,6 +81,7 @@ class MissingMethodCallHandler
                 $stmt->args,
                 $pseudo_method_storage->params,
                 (string) $method_id,
+                true,
                 $context
             );
 
@@ -90,6 +134,7 @@ class MissingMethodCallHandler
                 $stmt->args,
                 null,
                 null,
+                true,
                 $context
             );
 
@@ -107,7 +152,7 @@ class MissingMethodCallHandler
             /**
              * @return PhpParser\Node\Expr\ArrayItem
              */
-            function (PhpParser\Node\Arg $arg) {
+            function (PhpParser\Node\Arg $arg): PhpParser\Node\Expr\ArrayItem {
                 return new PhpParser\Node\Expr\ArrayItem($arg->value);
             },
             $stmt->args
@@ -158,6 +203,7 @@ class MissingMethodCallHandler
                 $stmt->args,
                 $pseudo_method_storage->params,
                 (string) $method_id,
+                true,
                 $context
             ) === false) {
                 return;
@@ -218,6 +264,7 @@ class MissingMethodCallHandler
             $stmt->args,
             null,
             null,
+            true,
             $context
         ) === false) {
             return;

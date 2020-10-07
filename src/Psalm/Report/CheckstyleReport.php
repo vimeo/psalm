@@ -7,9 +7,6 @@ use function sprintf;
 
 class CheckstyleReport extends Report
 {
-    /**
-     * {@inheritdoc}
-     */
     public function create(): string
     {
         $output = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";

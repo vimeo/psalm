@@ -3,8 +3,6 @@ namespace Psalm\Type\Atomic;
 
 use function get_class;
 use Psalm\Codebase;
-use Psalm\CodeLocation;
-use Psalm\StatementsSource;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\UnionTemplateHandler;
@@ -33,7 +31,7 @@ class TClassStringMap extends \Psalm\Type\Atomic
      */
     public $value_param;
 
-    const KEY = 'class-string-map';
+    public const KEY = 'class-string-map';
 
     /**
      * Constructs a new instance of a list
@@ -45,7 +43,7 @@ class TClassStringMap extends \Psalm\Type\Atomic
         $this->as_type = $as_type;
     }
 
-    public function __toString()
+    public function __toString(): string
     {
         /** @psalm-suppress MixedOperand */
         return static::KEY
@@ -58,7 +56,7 @@ class TClassStringMap extends \Psalm\Type\Atomic
             . '>';
     }
 
-    public function getId(bool $nested = false)
+    public function getId(bool $nested = false): string
     {
         /** @psalm-suppress MixedOperand */
         return static::KEY
@@ -79,14 +77,13 @@ class TClassStringMap extends \Psalm\Type\Atomic
     /**
      * @param  array<string, string> $aliased_classes
      *
-     * @return string
      */
     public function toNamespacedString(
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
         bool $use_phpdoc_format
-    ) {
+    ): string {
         if ($use_phpdoc_format) {
             return (new TArray([Type::getString(), $this->value_param]))
                 ->toNamespacedString(
@@ -113,28 +110,24 @@ class TClassStringMap extends \Psalm\Type\Atomic
     }
 
     /**
-     * @param  string|null   $namespace
      * @param  array<string> $aliased_classes
-     * @param  string|null   $this_class
-     * @param  int           $php_major_version
-     * @param  int           $php_minor_version
-     *
-     * @return string
      */
-    public function toPhpString($namespace, array $aliased_classes, $this_class, $php_major_version, $php_minor_version)
-    {
+    public function toPhpString(
+        ?string $namespace,
+        array $aliased_classes,
+        ?string $this_class,
+        int $php_major_version,
+        int $php_minor_version
+    ): string {
         return 'array';
     }
 
-    public function canBeFullyExpressedInPhp()
+    public function canBeFullyExpressedInPhp(): bool
     {
         return false;
     }
 
-    /**
-     * @return string
-     */
-    public function getKey(bool $include_extra = true)
+    public function getKey(bool $include_extra = true): string
     {
         return 'array';
     }
@@ -143,7 +136,7 @@ class TClassStringMap extends \Psalm\Type\Atomic
         TemplateResult $template_result,
         ?Codebase $codebase = null,
         ?StatementsAnalyzer $statements_analyzer = null,
-        Atomic $input_type = null,
+        ?Atomic $input_type = null,
         ?int $input_arg_offset = null,
         ?string $calling_class = null,
         ?string $calling_function = null,
@@ -163,7 +156,7 @@ class TClassStringMap extends \Psalm\Type\Atomic
                     isset($input_type->type_params[$offset])
             ) {
                 $input_type_param = clone $input_type->type_params[$offset];
-            } elseif ($input_type instanceof Atomic\ObjectLike) {
+            } elseif ($input_type instanceof Atomic\TKeyedArray) {
                 if ($offset === 0) {
                     $input_type_param = $input_type->getGenericKeyType();
                 } else {
@@ -211,10 +204,7 @@ class TClassStringMap extends \Psalm\Type\Atomic
         return [$this->value_param];
     }
 
-    /**
-     * @return bool
-     */
-    public function equals(Atomic $other_type)
+    public function equals(Atomic $other_type): bool
     {
         if (get_class($other_type) !== static::class) {
             return false;
@@ -227,10 +217,7 @@ class TClassStringMap extends \Psalm\Type\Atomic
         return true;
     }
 
-    /**
-     * @return string
-     */
-    public function getAssertionString()
+    public function getAssertionString(): string
     {
         return $this->getKey();
     }

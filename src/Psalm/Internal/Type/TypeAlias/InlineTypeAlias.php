@@ -1,6 +1,9 @@
 <?php
 namespace Psalm\Internal\Type\TypeAlias;
 
+/**
+ * @psalm-immutable
+ */
 class InlineTypeAlias implements \Psalm\Internal\Type\TypeAlias
 {
     /**

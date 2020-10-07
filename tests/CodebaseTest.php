@@ -19,7 +19,6 @@ class CodebaseTest extends TestCase
     /** @var Codebase */
     private $codebase;
 
-    /** @return void */
     public function setUp() : void
     {
         parent::setUp();
@@ -30,9 +29,8 @@ class CodebaseTest extends TestCase
      * @test
      * @dataProvider typeContainments
      *
-     * @return void
      */
-    public function isTypeContainedByType(string $input, string $container, bool $expected)
+    public function isTypeContainedByType(string $input, string $container, bool $expected): void
     {
         $input = Type::parseString($input);
         $container = Type::parseString($container);
@@ -61,9 +59,8 @@ class CodebaseTest extends TestCase
      * @test
      * @dataProvider typeIntersections
      *
-     * @return void
      */
-    public function canTypeBeContainedByType(string $input, string $container, bool $expected)
+    public function canTypeBeContainedByType(string $input, string $container, bool $expected): void
     {
         $input = Type::parseString($input);
         $container = Type::parseString($container);
@@ -92,11 +89,10 @@ class CodebaseTest extends TestCase
      *
      * @param array{string,string} $expected
      *
-     * @return void
      */
-    public function getKeyValueParamsForTraversableObject(string $input, array $expected)
+    public function getKeyValueParamsForTraversableObject(string $input, array $expected): void
     {
-        list($input) = array_values(Type::parseString($input)->getAtomicTypes());
+        [$input] = array_values(Type::parseString($input)->getAtomicTypes());
 
         $expected_key_type = Type::parseString($expected[0]);
         $expected_value_type = Type::parseString($expected[1]);
@@ -126,9 +122,8 @@ class CodebaseTest extends TestCase
     /**
      * @test
      *
-     * @return void
      */
-    public function customMetadataIsPersisted()
+    public function customMetadataIsPersisted(): void
     {
         $this->addFile(
             'somefile.php',
@@ -186,9 +181,8 @@ class CodebaseTest extends TestCase
     /**
      * @test
      *
-     * @return void
      */
-    public function classExtendsRejectsUnpopulatedClasslikes()
+    public function classExtendsRejectsUnpopulatedClasslikes(): void
     {
         $this->codebase->classlike_storage_provider->create('A');
         $this->codebase->classlike_storage_provider->create('B');

@@ -27,8 +27,6 @@ class AlgebraAnalyzer
      *
      * @param  array<int, Clause>   $formula1
      * @param  array<int, Clause>   $formula2
-     * @param  StatementsAnalyzer    $statements_analyzer,
-     * @param  PhpParser\Node       $stmt
      * @param  array<string, bool>  $new_assigned_var_ids
      *
      * @return void
@@ -49,22 +47,25 @@ class AlgebraAnalyzer
         $formula1_hashes = [];
 
         foreach ($formula1 as $formula1_clause) {
-            $formula1_hashes[$formula1_clause->getHash()] = true;
+            $formula1_hashes[$formula1_clause->hash] = true;
         }
 
         $formula2_hashes = [];
 
         foreach ($formula2 as $formula2_clause) {
-            $hash = $formula2_clause->getHash();
+            $hash = $formula2_clause->hash;
 
             if (!$formula2_clause->generated
+                && !$formula2_clause->wedge
+                && $formula2_clause->reconcilable
                 && (isset($formula1_hashes[$hash]) || isset($formula2_hashes[$hash]))
                 && !array_intersect_key($new_assigned_var_ids, $formula2_clause->possibilities)
             ) {
                 if (IssueBuffer::accepts(
                     new RedundantCondition(
                         $formula2_clause . ' has already been asserted',
-                        new CodeLocation($statements_analyzer, $stmt)
+                        new CodeLocation($statements_analyzer, $stmt),
+                        null
                     ),
                     $statements_analyzer->getSuppressedIssues()
                 )) {
@@ -104,7 +105,8 @@ class AlgebraAnalyzer
                         if (IssueBuffer::accepts(
                             new RedundantCondition(
                                 'Found a redundant condition when evaluating ' . $key,
-                                new CodeLocation($statements_analyzer, $stmt)
+                                new CodeLocation($statements_analyzer, $stmt),
+                                null
                             ),
                             $statements_analyzer->getSuppressedIssues()
                         )) {

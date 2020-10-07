@@ -23,9 +23,9 @@ use function version_compare;
  */
 class InternalCallMapHandler
 {
-    const PHP_MAJOR_VERSION = 7;
-    const PHP_MINOR_VERSION = 4;
-    const LOWEST_AVAILABLE_DELTA = 71;
+    private const PHP_MAJOR_VERSION = 7;
+    private const PHP_MINOR_VERSION = 4;
+    private const LOWEST_AVAILABLE_DELTA = 71;
 
     /**
      * @var ?int
@@ -52,17 +52,14 @@ class InternalCallMapHandler
     private static $taint_sink_map = [];
 
     /**
-     * @param  string                           $method_id
      * @param  array<int, PhpParser\Node\Arg>   $args
-     *
-     * @return TCallable
      */
     public static function getCallableFromCallMapById(
         Codebase $codebase,
-        $method_id,
+        string $method_id,
         array $args,
         ?\Psalm\Internal\Provider\NodeDataProvider $nodes
-    ) {
+    ): TCallable {
         $possible_callables = self::getCallablesFromCallMap($method_id);
 
         if ($possible_callables === null) {
@@ -83,14 +80,13 @@ class InternalCallMapHandler
      * @param  array<int, TCallable>  $callables
      * @param  array<int, PhpParser\Node\Arg>                 $args
      *
-     * @return TCallable
      */
     public static function getMatchingCallableFromCallMapOptions(
         Codebase $codebase,
         array $callables,
         array $args,
         ?\Psalm\NodeTypeProvider $nodes
-    ) {
+    ): TCallable {
         if (count($callables) === 1) {
             return $callables[0];
         }
@@ -157,11 +153,11 @@ class InternalCallMapHandler
                     if ($arg_type->hasArray()) {
                         /**
                          * @psalm-suppress PossiblyUndefinedStringArrayOffset
-                         * @var Type\Atomic\TArray|Type\Atomic\ObjectLike|Type\Atomic\TList
+                         * @var Type\Atomic\TArray|Type\Atomic\TKeyedArray|Type\Atomic\TList
                          */
                         $array_atomic_type = $arg_type->getAtomicTypes()['array'];
 
-                        if ($array_atomic_type instanceof Type\Atomic\ObjectLike) {
+                        if ($array_atomic_type instanceof Type\Atomic\TKeyedArray) {
                             $arg_type = $array_atomic_type->getGenericValueType();
                         } elseif ($array_atomic_type instanceof Type\Atomic\TList) {
                             $arg_type = $array_atomic_type->type_param;
@@ -218,12 +214,9 @@ class InternalCallMapHandler
     }
 
     /**
-     * @param  string $function_id
-     *
-     * @return array|null
      * @psalm-return array<int, TCallable>|null
      */
-    public static function getCallablesFromCallMap($function_id)
+    public static function getCallablesFromCallMap(string $function_id): ?array
     {
         $call_map_key = strtolower($function_id);
 
@@ -310,6 +303,10 @@ class InternalCallMapHandler
                     $function_param->out_type = $out_type;
                 }
 
+                if ($arg_name === 'haystack') {
+                    $function_param->expect_variable = true;
+                }
+
                 if (isset(self::$taint_sink_map[$call_map_key][$arg_offset])) {
                     $function_param->sinks = self::$taint_sink_map[$call_map_key][$arg_offset];
                 }
@@ -334,10 +331,10 @@ class InternalCallMapHandler
      *
      * @return array<string, array<int|string, string>>
      * @psalm-suppress MixedInferredReturnType as the use of require buggers things up
-     * @psalm-suppress MixedTypeCoercion
      * @psalm-suppress MixedReturnStatement
+     * @psalm-suppress MixedReturnTypeCoercion
      */
-    public static function getCallMap()
+    public static function getCallMap(): array
     {
         $codebase = ProjectAnalyzer::getInstance()->getCodebase();
         $analyzer_major_version = $codebase->php_major_version;
@@ -410,12 +407,7 @@ class InternalCallMapHandler
         return self::$call_map;
     }
 
-    /**
-     * @param   string $key
-     *
-     * @return  bool
-     */
-    public static function inCallMap($key)
+    public static function inCallMap(string $key): bool
     {
         return isset(self::getCallMap()[strtolower($key)]);
     }

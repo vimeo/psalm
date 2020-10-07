@@ -10,10 +10,7 @@ class MagicMethodAnnotationTest extends TestCase
     use Traits\InvalidCodeAnalysisTestTrait;
     use Traits\ValidCodeAnalysisTestTrait;
 
-    /**
-     * @return void
-     */
-    public function testPhpDocMethodWhenUndefined()
+    public function testPhpDocMethodWhenUndefined(): void
     {
         Config::getInstance()->use_phpdoc_method_without_magic_or_parent = true;
 
@@ -44,10 +41,7 @@ class MagicMethodAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testPhpDocMethodWhenTemplated()
+    public function testPhpDocMethodWhenTemplated(): void
     {
         Config::getInstance()->use_phpdoc_method_without_magic_or_parent = true;
 
@@ -73,10 +67,7 @@ class MagicMethodAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testAnnotationWithoutCallConfig()
+    public function testAnnotationWithoutCallConfig(): void
     {
         $this->expectExceptionMessage('UndefinedMethod');
         $this->expectException(\Psalm\Exception\CodeException::class);
@@ -100,10 +91,7 @@ class MagicMethodAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
-    /**
-     * @return void
-     */
-    public function testOverrideParentClassRetunType()
+    public function testOverrideParentClassRetunType(): void
     {
         Config::getInstance()->use_phpdoc_method_without_magic_or_parent = true;
 
@@ -156,7 +144,7 @@ class MagicMethodAnnotationTest extends TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'validSimpleAnnotations' => [
@@ -668,13 +656,54 @@ class MagicMethodAnnotationTest extends TestCase
                         }
                     }'
             ],
+            'parseFloatInDefault' => [
+                '<?php
+                    namespace Foo {
+                        /**
+                         * @method int randomInt()
+                         * @method void takesFloat($a = 0.1)
+                         */
+                        class G
+                        {
+                            /**
+                             * @param string $method
+                             * @param array $attributes
+                             *
+                             * @return mixed
+                             */
+                            public function __call($method, $attributes)
+                            {
+                                return null;
+                            }
+                        }
+                    }
+
+                    namespace Bar {
+                        (new \Foo\G)->randomInt();
+                    }'
+            ],
+            'namespacedUnion' => [
+                '<?php
+                    namespace Foo;
+
+                    /**
+                     * @method string bar(\DateTimeInterface|\DateInterval|self $a, Cache|\Exception $e)
+                     */
+                    class Cache {
+                        public function __call(string $method, array $args) {
+                            return $method;
+                        }
+                    }
+
+                    (new Cache)->bar(new \DateTime(), new Cache());'
+            ],
         ];
     }
 
     /**
      * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'annotationWithBadDocblock' => [
@@ -778,7 +807,7 @@ class MagicMethodAnnotationTest extends TestCase
 
                     /** @method D foo(string $s) */
                     class B extends A {}',
-                'error_message' => 'ImplementedReturnTypeMismatch - src/somefile.php:11:33',
+                'error_message' => 'ImplementedReturnTypeMismatch - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:33',
             ],
             'magicMethodOverridesParentWithDifferentParamType' => [
                 '<?php
@@ -793,7 +822,7 @@ class MagicMethodAnnotationTest extends TestCase
 
                     /** @method D foo(int $s) */
                     class B extends A {}',
-                'error_message' => 'ImplementedParamTypeMismatch - src/somefile.php:11:21',
+                'error_message' => 'ImplementedParamTypeMismatch - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:21',
             ],
             'parseBadMethodAnnotation' => [
                 '<?php
@@ -851,10 +880,7 @@ class MagicMethodAnnotationTest extends TestCase
         ];
     }
 
-    /**
-     * @return void
-     */
-    public function testSealAllMethodsWithoutFoo()
+    public function testSealAllMethodsWithoutFoo(): void
     {
         Config::getInstance()->seal_all_methods = true;
 
@@ -878,10 +904,7 @@ class MagicMethodAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testSealAllMethodsWithFoo()
+    public function testSealAllMethodsWithFoo(): void
     {
         Config::getInstance()->seal_all_methods = true;
 
@@ -903,10 +926,7 @@ class MagicMethodAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testSealAllMethodsWithFooInSubclass()
+    public function testSealAllMethodsWithFooInSubclass(): void
     {
         Config::getInstance()->seal_all_methods = true;
 
@@ -929,10 +949,7 @@ class MagicMethodAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testSealAllMethodsWithFooAnnotated()
+    public function testSealAllMethodsWithFooAnnotated(): void
     {
         Config::getInstance()->seal_all_methods = true;
 
@@ -954,10 +971,7 @@ class MagicMethodAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testSealAllMethodsSetToFalse()
+    public function testSealAllMethodsSetToFalse(): void
     {
         Config::getInstance()->seal_all_methods = false;
 

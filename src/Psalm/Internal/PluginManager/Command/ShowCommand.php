@@ -39,10 +39,7 @@ class ShowCommand extends Command
             ->addUsage('[-c path/to/psalm.xml]');
     }
 
-    /**
-     * @return int
-     */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
         $current_dir = (string) getcwd() . DIRECTORY_SEPARATOR;
@@ -58,8 +55,7 @@ class ShowCommand extends Command
         $available = $plugin_list->getAvailable();
 
         $formatRow =
-            /** @param null|string $package */
-            function (string $class, $package): array {
+            function (string $class, ?string $package): array {
                 return [$package, $class];
             };
 

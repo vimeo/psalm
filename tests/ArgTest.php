@@ -9,7 +9,7 @@ class ArgTest extends TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'callMapClassOptionalArg' => [
@@ -121,13 +121,51 @@ class ArgTest extends TestCase
                         return intval(...$args);
                     }',
             ],
+            'useNamedArguments' => [
+                '<?php
+                    class CustomerData {
+                        public function __construct(
+                            public string $name,
+                            public string $email,
+                            public int $age,
+                        ) {}
+                    }
+
+                    /**
+                     * @param array{age: int, name: string, email: string} $input
+                     */
+                    function foo(array $input) : CustomerData {
+                        return new CustomerData(
+                            age: $input["age"],
+                            name: $input["name"],
+                            email: $input["email"],
+                        );
+                    }'
+            ],
+            'useNamedArgumentsSimple' => [
+                '<?php
+                    function takesArguments(string $name, int $age) : void {}
+
+                    takesArguments(name: "hello", age: 5);
+                    takesArguments(age: 5, name: "hello");'
+            ],
+            'useNamedArgumentsSpread' => [
+                '<?php
+                    function takesArguments(string $name, int $age) : void {}
+
+                    $args = ["name" => "hello", "age" => 5];
+                    takesArguments(...$args);',
+                [],
+                [],
+                '8.0'
+            ],
         ];
     }
 
     /**
      * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'possiblyInvalidArgument' => [
@@ -173,6 +211,73 @@ class ArgTest extends TestCase
                         echo strlen($a);
                     }',
                 'error_message' => 'PossiblyInvalidArgument',
+            ],
+            'expectsNonNullAndPassedPossiblyNull' => [
+                '<?php
+                    /**
+                     * @param mixed|null $mixed_or_null
+                     */
+                    function foo($mixed, $mixed_or_null): void {
+                        /**
+                         * @psalm-suppress MixedArgument
+                         */
+                        new Exception($mixed_or_null);
+                    }',
+                'error_message' => 'PossiblyNullArgument'
+            ],
+            'useInvalidNamedArgument' => [
+                '<?php
+                    class CustomerData {
+                        public function __construct(
+                            public string $name,
+                            public string $email,
+                            public int $age,
+                        ) {}
+                    }
+
+                    /**
+                     * @param array{age: int, name: string, email: string} $input
+                     */
+                    function foo(array $input) : CustomerData {
+                        return new CustomerData(
+                            aage: $input["age"],
+                            name: $input["name"],
+                            email: $input["email"],
+                        );
+                    }',
+                'error_message' => 'InvalidNamedArgument'
+            ],
+            'noNamedArgsMethod' => [
+                '<?php
+                    class CustomerData
+                    {
+                        /** @no-named-arguments */
+                        public function __construct(
+                            public string $name,
+                            public string $email,
+                            public int $age,
+                        ) {}
+                    }
+
+                    /**
+                     * @param array{age: int, name: string, email: string} $input
+                     */
+                    function foo(array $input) : CustomerData {
+                        return new CustomerData(
+                            age: $input["age"],
+                            name: $input["name"],
+                            email: $input["email"],
+                        );
+                    }',
+                'error_message' => 'InvalidScalarArgument'
+            ],
+            'noNamedArgsFunction' => [
+                '<?php
+                    /** @no-named-arguments */
+                    function takesArguments(string $name, int $age) : void {}
+
+                    takesArguments(age: 5, name: "hello");',
+                'error_message' => 'InvalidScalarArgument'
             ],
         ];
     }

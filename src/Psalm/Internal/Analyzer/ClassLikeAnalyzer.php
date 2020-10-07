@@ -8,10 +8,8 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Issue\InaccessibleProperty;
-use Psalm\Issue\InternalClass;
 use Psalm\Issue\InvalidClass;
 use Psalm\Issue\MissingDependency;
-use Psalm\Issue\PsalmInternalError;
 use Psalm\Issue\ReservedWord;
 use Psalm\Issue\UndefinedClass;
 use Psalm\Issue\UndefinedDocblockClass;
@@ -33,11 +31,11 @@ use function gettype;
  */
 abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSource
 {
-    const VISIBILITY_PUBLIC = 1;
-    const VISIBILITY_PROTECTED = 2;
-    const VISIBILITY_PRIVATE = 3;
+    public const VISIBILITY_PUBLIC = 1;
+    public const VISIBILITY_PROTECTED = 2;
+    public const VISIBILITY_PRIVATE = 3;
 
-    const SPECIAL_TYPES = [
+    public const SPECIAL_TYPES = [
         'int' => 'int',
         'string' => 'string',
         'float' => 'float',
@@ -52,7 +50,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
         'mixed' => 'mixed',
     ];
 
-    const GETTYPE_TYPES = [
+    public const GETTYPE_TYPES = [
         'boolean' => true,
         'integer' => true,
         'double' => true,
@@ -98,12 +96,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
     /** @var ClassLikeStorage */
     protected $storage;
 
-    /**
-     * @param PhpParser\Node\Stmt\ClassLike $class
-     * @param SourceAnalyzer                $source
-     * @param string                        $fq_class_name
-     */
-    public function __construct(PhpParser\Node\Stmt\ClassLike $class, SourceAnalyzer $source, $fq_class_name)
+    public function __construct(PhpParser\Node\Stmt\ClassLike $class, SourceAnalyzer $source, string $fq_class_name)
     {
         $this->class = $class;
         $this->source = $source;
@@ -119,16 +112,10 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
         $this->file_analyzer = null;
     }
 
-    /**
-     * @param  string       $method_name
-     * @param  Context      $context
-     *
-     * @return void
-     */
     public function getMethodMutations(
-        $method_name,
+        string $method_name,
         Context $context
-    ) {
+    ): void {
         $project_analyzer = $this->getFileAnalyzer()->project_analyzer;
         $codebase = $project_analyzer->getCodebase();
 
@@ -210,11 +197,8 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
     }
 
     /**
-     * @param  string           $fq_class_name
      * @param  array<string>    $suppressed_issues
      * @param  bool             $inferred - whether or not the type was inferred
-     *
-     * @return bool|null
      */
     public static function checkFullyQualifiedClassLikeName(
         StatementsSource $statements_source,
@@ -227,9 +211,9 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
         bool $allow_trait = false,
         bool $allow_interface = true,
         bool $from_docblock = false
-    ) {
+    ): ?bool {
         $codebase = $statements_source->getCodebase();
-        if (empty($fq_class_name)) {
+        if ($fq_class_name === '') {
             if (IssueBuffer::accepts(
                 new UndefinedClass(
                     'Class or interface <empty string> does not exist',
@@ -241,7 +225,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
                 return false;
             }
 
-            return;
+            return null;
         }
 
         $fq_class_name = preg_replace('/^\\\/', '', $fq_class_name);
@@ -407,15 +391,12 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
     /**
      * Gets the fully-qualified class name from a Name object
      *
-     * @param  PhpParser\Node\Name      $class_name
-     * @param  Aliases                  $aliases
      *
-     * @return string
      */
     public static function getFQCLNFromNameObject(
         PhpParser\Node\Name $class_name,
         Aliases $aliases
-    ) {
+    ): string {
         /** @var string|null */
         $resolved_name = $class_name->getAttribute('resolvedName');
 
@@ -440,7 +421,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
     /**
      * @return array<string, string>
      */
-    public function getAliasedClassesFlipped()
+    public function getAliasedClassesFlipped(): array
     {
         if ($this->source instanceof NamespaceAnalyzer || $this->source instanceof FileAnalyzer) {
             return $this->source->getAliasedClassesFlipped();
@@ -452,7 +433,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
     /**
      * @return array<string, string>
      */
-    public function getAliasedClassesFlippedReplaceable()
+    public function getAliasedClassesFlippedReplaceable(): array
     {
         if ($this->source instanceof NamespaceAnalyzer || $this->source instanceof FileAnalyzer) {
             return $this->source->getAliasedClassesFlippedReplaceable();
@@ -461,18 +442,12 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
         return [];
     }
 
-    /**
-     * @return string
-     */
-    public function getFQCLN()
+    public function getFQCLN(): string
     {
         return $this->fq_class_name;
     }
 
-    /**
-     * @return string|null
-     */
-    public function getClassName()
+    public function getClassName(): ?string
     {
         return $this->class->name ? $this->class->name->name : null;
     }
@@ -480,23 +455,17 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
     /**
      * @return array<string, array<string, array{Type\Union}>>|null
      */
-    public function getTemplateTypeMap()
+    public function getTemplateTypeMap(): ?array
     {
         return $this->storage->template_types;
     }
 
-    /**
-     * @return string|null
-     */
-    public function getParentFQCLN()
+    public function getParentFQCLN(): ?string
     {
         return $this->parent_fq_class_name;
     }
 
-    /**
-     * @return bool
-     */
-    public function isStatic()
+    public function isStatic(): bool
     {
         return false;
     }
@@ -506,9 +475,8 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
      *
      * @param  mixed $value
      *
-     * @return Type\Union
      */
-    public static function getTypeFromValue($value)
+    public static function getTypeFromValue($value): Type\Union
     {
         switch (gettype($value)) {
             case 'boolean':
@@ -539,24 +507,17 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
     }
 
     /**
-     * @param  string           $property_id
-     * @param  string|null      $calling_context
-     * @param  SourceAnalyzer   $source
-     * @param  CodeLocation     $code_location
      * @param  string[]         $suppressed_issues
-     * @param  bool             $emit_issues
-     *
-     * @return bool|null
      */
     public static function checkPropertyVisibility(
-        $property_id,
+        string $property_id,
         Context $context,
         SourceAnalyzer $source,
         CodeLocation $code_location,
         array $suppressed_issues,
-        $emit_issues = true
-    ) {
-        list($fq_class_name, $property_name) = explode('::$', (string)$property_id);
+        bool $emit_issues = true
+    ): ?bool {
+        [$fq_class_name, $property_name] = explode('::$', $property_id);
 
         $codebase = $source->getCodebase();
 
@@ -566,7 +527,8 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
                 $fq_class_name,
                 $property_name,
                 true,
-                $context
+                $context,
+                $code_location
             );
 
             if ($property_visible !== null) {
@@ -671,11 +633,9 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
     }
 
     /**
-     * @param   string $file_path
-     *
      * @return  array<string, string>
      */
-    public static function getClassesForFile(Codebase $codebase, $file_path)
+    public static function getClassesForFile(Codebase $codebase, string $file_path): array
     {
         try {
             return $codebase->file_storage_provider->get($file_path)->classlikes_in_file;

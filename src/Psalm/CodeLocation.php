@@ -92,28 +92,22 @@ class CodeLocation
     /** @var null|CodeLocation */
     public $previous_location;
 
-    const VAR_TYPE = 0;
-    const FUNCTION_RETURN_TYPE = 1;
-    const FUNCTION_PARAM_TYPE = 2;
-    const FUNCTION_PHPDOC_RETURN_TYPE = 3;
-    const FUNCTION_PHPDOC_PARAM_TYPE = 4;
-    const FUNCTION_PARAM_VAR = 5;
-    const CATCH_VAR = 6;
-    const FUNCTION_PHPDOC_METHOD = 7;
+    public const VAR_TYPE = 0;
+    public const FUNCTION_RETURN_TYPE = 1;
+    public const FUNCTION_PARAM_TYPE = 2;
+    public const FUNCTION_PHPDOC_RETURN_TYPE = 3;
+    public const FUNCTION_PHPDOC_PARAM_TYPE = 4;
+    public const FUNCTION_PARAM_VAR = 5;
+    public const CATCH_VAR = 6;
+    public const FUNCTION_PHPDOC_METHOD = 7;
 
-    /**
-     * @param bool                 $single_line
-     * @param null|CodeLocation    $previous_location
-     * @param null|int             $regex_type
-     * @param null|string          $selected_text
-     */
     public function __construct(
         FileSource $file_source,
         PhpParser\Node $stmt,
-        CodeLocation $previous_location = null,
-        $single_line = false,
-        $regex_type = null,
-        $selected_text = null
+        ?CodeLocation $previous_location = null,
+        bool $single_line = false,
+        ?int $regex_type = null,
+        ?string $selected_text = null
     ) {
         $this->file_start = (int)$stmt->getAttribute('startFilePos');
         $this->file_end = (int)$stmt->getAttribute('endFilePos');
@@ -128,21 +122,16 @@ class CodeLocation
 
         $doc_comment = $stmt->getDocComment();
 
-        $this->docblock_start = $doc_comment ? $doc_comment->getFilePos() : null;
+        $this->docblock_start = $doc_comment ? $doc_comment->getStartFilePos() : null;
         $this->docblock_end = $doc_comment ? $this->file_start : null;
-        $this->docblock_start_line_number = $doc_comment ? $doc_comment->getLine() : null;
+        $this->docblock_start_line_number = $doc_comment ? $doc_comment->getStartLine() : null;
 
         $this->preview_start = $this->docblock_start ?: $this->file_start;
 
         $this->raw_line_number = $stmt->getLine();
     }
 
-    /**
-     * @param int $line
-     *
-     * @return void
-     */
-    public function setCommentLine($line)
+    public function setCommentLine(int $line): void
     {
         $this->docblock_line_number = $line;
     }
@@ -330,58 +319,40 @@ class CodeLocation
         $this->end_line_number = $this->getLineNumber() + $newlines;
     }
 
-    /**
-     * @return int
-     */
-    public function getLineNumber()
+    public function getLineNumber(): int
     {
         return $this->docblock_line_number ?: $this->raw_line_number;
     }
 
-    /**
-     * @return int
-     */
-    public function getEndLineNumber()
+    public function getEndLineNumber(): int
     {
         $this->calculateRealLocation();
 
         return $this->end_line_number;
     }
 
-    /**
-     * @return string
-     */
-    public function getSnippet()
+    public function getSnippet(): string
     {
         $this->calculateRealLocation();
 
         return $this->snippet;
     }
 
-    /**
-     * @return string
-     */
-    public function getSelectedText()
+    public function getSelectedText(): string
     {
         $this->calculateRealLocation();
 
         return (string)$this->text;
     }
 
-    /**
-     * @return int
-     */
-    public function getColumn()
+    public function getColumn(): int
     {
         $this->calculateRealLocation();
 
         return $this->column_from;
     }
 
-    /**
-     * @return int
-     */
-    public function getEndColumn()
+    public function getEndColumn(): int
     {
         $this->calculateRealLocation();
 
@@ -391,7 +362,7 @@ class CodeLocation
     /**
      * @return array{0: int, 1: int}
      */
-    public function getSelectionBounds()
+    public function getSelectionBounds(): array
     {
         $this->calculateRealLocation();
 
@@ -401,17 +372,14 @@ class CodeLocation
     /**
      * @return array{0: int, 1: int}
      */
-    public function getSnippetBounds()
+    public function getSnippetBounds(): array
     {
         $this->calculateRealLocation();
 
         return [$this->preview_start, $this->preview_end];
     }
 
-    /**
-     * @return string
-     */
-    public function getHash()
+    public function getHash(): string
     {
         return (string) $this->file_start;
     }

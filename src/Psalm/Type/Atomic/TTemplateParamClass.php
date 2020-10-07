@@ -11,16 +11,6 @@ class TTemplateParamClass extends TClassString
     /**
      * @var string
      */
-    public $as;
-
-    /**
-     * @var ?TNamedObject
-     */
-    public $as_type;
-
-    /**
-     * @var string
-     */
     public $defining_class;
 
     public function __construct(
@@ -35,76 +25,54 @@ class TTemplateParamClass extends TClassString
         $this->defining_class = $defining_class;
     }
 
-    /**
-     * @return string
-     */
-    public function getKey(bool $include_extra = true)
+    public function getKey(bool $include_extra = true): string
     {
         return 'class-string<' . $this->param_name . '>';
     }
 
-    /**
-     * @return string
-     */
-    public function __toString()
+    public function __toString(): string
     {
         return 'class-string<' . $this->param_name . '>';
     }
 
-    /**
-     * @return string
-     */
-    public function getId(bool $nested = false)
+    public function getId(bool $nested = false): string
     {
         return 'class-string<' . $this->param_name . ':' . $this->defining_class . ' as ' . $this->as . '>';
     }
 
-    /**
-     * @return string
-     */
-    public function getAssertionString()
+    public function getAssertionString(): string
     {
         return 'class-string<' . $this->param_name . '>';
     }
 
     /**
-     * @param  string|null   $namespace
      * @param  array<string> $aliased_classes
-     * @param  string|null   $this_class
-     * @param  int           $php_major_version
-     * @param  int           $php_minor_version
-     *
-     * @return string|null
      */
     public function toPhpString(
-        $namespace,
+        ?string $namespace,
         array $aliased_classes,
-        $this_class,
-        $php_major_version,
-        $php_minor_version
-    ) {
+        ?string $this_class,
+        int $php_major_version,
+        int $php_minor_version
+    ): ?string {
         return 'string';
     }
 
-    public function canBeFullyExpressedInPhp()
+    public function canBeFullyExpressedInPhp(): bool
     {
         return false;
     }
 
     /**
-     * @param  string|null   $namespace
      * @param  array<string> $aliased_classes
-     * @param  string|null   $this_class
-     * @param  bool          $use_phpdoc_format
      *
-     * @return string
      */
     public function toNamespacedString(
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
         bool $use_phpdoc_format
-    ) {
+    ): string {
         return $this->param_name . '::class';
     }
 

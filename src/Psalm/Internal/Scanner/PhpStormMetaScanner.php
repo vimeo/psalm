@@ -91,7 +91,6 @@ class PhpStormMetaScanner
                     $meta_fq_classlike_name,
                     /**
                      * @param array<PhpParser\Node\Arg> $call_args
-                     * @return ?Type\Union
                      */
                     function (
                         \Psalm\StatementsSource $statements_analyzer,
@@ -105,7 +104,7 @@ class PhpStormMetaScanner
                         $offset,
                         $meta_fq_classlike_name,
                         $meta_method_name
-                    ) {
+                    ): ?Type\Union {
                         if (!$statements_analyzer instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
                             return Type::getMixed();
                         }
@@ -149,7 +148,6 @@ class PhpStormMetaScanner
                     $meta_fq_classlike_name,
                     /**
                      * @param array<PhpParser\Node\Arg> $call_args
-                     * @return ?Type\Union
                      */
                     function (
                         \Psalm\StatementsSource $statements_analyzer,
@@ -163,7 +161,7 @@ class PhpStormMetaScanner
                         $type_offset,
                         $meta_fq_classlike_name,
                         $meta_method_name
-                    ) {
+                    ): ?Type\Union {
                         if (!$statements_analyzer instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
                             return Type::getMixed();
                         }
@@ -189,7 +187,6 @@ class PhpStormMetaScanner
                     $meta_fq_classlike_name,
                     /**
                      * @param array<PhpParser\Node\Arg> $call_args
-                     * @return ?Type\Union
                      */
                     function (
                         \Psalm\StatementsSource $statements_analyzer,
@@ -203,7 +200,7 @@ class PhpStormMetaScanner
                         $element_type_offset,
                         $meta_fq_classlike_name,
                         $meta_method_name
-                    ) {
+                    ): ?Type\Union {
                         if (!$statements_analyzer instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
                             return Type::getMixed();
                         }
@@ -221,11 +218,11 @@ class PhpStormMetaScanner
                         ) {
                             /**
                              * @psalm-suppress PossiblyUndefinedStringArrayOffset
-                             * @var Type\Atomic\TArray|Type\Atomic\ObjectLike|Type\Atomic\TList
+                             * @var Type\Atomic\TArray|Type\Atomic\TKeyedArray|Type\Atomic\TList
                              */
                             $array_atomic_type = $call_arg_type->getAtomicTypes()['array'];
 
-                            if ($array_atomic_type instanceof Type\Atomic\ObjectLike) {
+                            if ($array_atomic_type instanceof Type\Atomic\TKeyedArray) {
                                 return $array_atomic_type->getGenericValueType();
                             }
 
@@ -370,11 +367,11 @@ class PhpStormMetaScanner
                         ) {
                             /**
                              * @psalm-suppress PossiblyUndefinedStringArrayOffset
-                             * @var Type\Atomic\TArray|Type\Atomic\ObjectLike|Type\Atomic\TList
+                             * @var Type\Atomic\TArray|Type\Atomic\TKeyedArray|Type\Atomic\TList
                              */
                             $array_atomic_type = $call_arg_type->getAtomicTypes()['array'];
 
-                            if ($array_atomic_type instanceof Type\Atomic\ObjectLike) {
+                            if ($array_atomic_type instanceof Type\Atomic\TKeyedArray) {
                                 return $array_atomic_type->getGenericValueType();
                             }
 

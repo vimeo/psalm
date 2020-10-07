@@ -100,7 +100,7 @@ class GitInfoCollector
      *
      * @return RemoteInfo[]
      */
-    protected function collectRemotes()
+    protected function collectRemotes(): array
     {
         $remotesResult = $this->executor->execute('git remote -v');
 
@@ -113,7 +113,7 @@ class GitInfoCollector
 
         foreach ($remotesResult as $result) {
             if (strpos($result, ' ') !== false) {
-                list($remote) = explode(' ', $result, 2);
+                [$remote] = explode(' ', $result, 2);
 
                 $results[] = $remote;
             }
@@ -127,7 +127,7 @@ class GitInfoCollector
 
         foreach ($results as $result) {
             if (strpos($result, "\t") !== false) {
-                list($name, $url) = explode("\t", $result, 2);
+                [$name, $url] = explode("\t", $result, 2);
 
                 $remote = new RemoteInfo();
                 $remotes[] = $remote->setName(trim($name))->setUrl(trim($url));

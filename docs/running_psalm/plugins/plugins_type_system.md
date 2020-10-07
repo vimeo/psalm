@@ -4,7 +4,7 @@ Psalm's type system represents the types of variables within a program using dif
 
 ## Union types
 
-All type Psalm's type information you are likely to use will be wrapped in a [Union Type](../../annotating_code/type_syntax/union_types.md).
+All type information you are likely to use will be wrapped in a [Union Type](../../annotating_code/type_syntax/union_types.md).
 
 The `Union` class constructor takes an array of `Atomic` types, and can represent one or more of these types at a time. They correspond to a vertical bar in a doc comment.
 
@@ -17,7 +17,7 @@ new Union([new TString(), new TInt()]); // equivalent to string|int in docblock
 
 Primitive types like floats, integers and strings, plus arrays, and classes. You can find all of these in [`src/Psalm/Types/Atomic`](https://github.com/vimeo/psalm/tree/master/src/Psalm/Type/Atomic).
 
-Note that all non-abstract classes in this folder are valid types. Most (with the exception of `Fn`, `ObjectLike`, `GetClassT` and `GetTypeT`) are prefixed 'T'.
+Note that all non-abstract classes in this folder are valid types. Most (with the exception of `Fn`, `TKeyedArray`, `GetClassT` and `GetTypeT`) are prefixed 'T'.
 
 The classes are as follows:
 
@@ -121,11 +121,11 @@ if (true === $first) {
 
 `TNonEmptyArray` - as above, but denotes an array known to be non-empty.
 
-`ObjectLike` represents an 'object-like array' - an array with known keys.
+`TKeyedArray` represents an 'object-like array' - an array with known keys.
 
 ``` php
-$x = ["a" => 1, "b" => 2]; // is ObjectLike, array{a: int, b: int}
-$y = rand(0, 1) ? ["a" => null] : ["a" => 1, "b" => "b"]; // is ObjectLike with optional keys/values, array{a: ?int, b?: string}
+$x = ["a" => 1, "b" => 2]; // is TKeyedArray, array{a: int, b: int}
+$y = rand(0, 1) ? ["a" => null] : ["a" => 1, "b" => "b"]; // is TKeyedArray with optional keys/values, array{a: ?int, b?: string}
 ```
 
 Note that not all associative arrays are considered object-like. If the keys are not known, the array is treated as a mapping between two types.
@@ -137,7 +137,7 @@ foreach (range(1,1) as $_) $a[(string)rand(0,1)] = rand(0,1); // array<string,in
 
 `TCallableArray` - denotes an array that is _also_ `callable`.
 
-`TCallableObjectLikeArray` - denotes an object-like array that is _also_ `callable`.
+`TCallableKeyedArray` - denotes an object-like array that is _also_ `callable`.
 
 ### Callables & closures
 
@@ -197,12 +197,12 @@ foreach ($types->getTypes() as $atomic)
 
 Also, union trees are always shallow, because Psalm will flatten union of unions into a single-level union `((A|B)|(C|D) => A|B|C|D)`.
 
-More complex types can be constructed as follows. The following represents an associative array with 3 keys. Psalm calls these 'object-like arrays', and represents them with the 'ObjectLike' class.
+More complex types can be constructed as follows. The following represents an associative array with 3 keys. Psalm calls these 'object-like arrays', and represents them with the 'TKeyedArray' class.
 
 
 ``` php
         new Union([
-            new ObjectLike([
+            new TKeyedArray([
                 'key_1' => new Union([new TString()]),
                 'key_2' => new Union([new TInt()]),
                 'key_3' => new Union([new TBool()])])]);
@@ -212,7 +212,7 @@ The Type object includes some static helper methods, which automatically wrap th
 
 ``` php
 new Union([
-    new Type\Atomic\ObjectLike([
+    new Type\Atomic\TKeyedArray([
         'first' => Type::getInt(),
         'second' => Type::getString()])]);
 ```

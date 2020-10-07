@@ -48,7 +48,6 @@ use function strtolower;
 use function implode;
 use function substr;
 use function array_map;
-use function array_shift;
 use function str_replace;
 use function count;
 use function array_search;
@@ -66,12 +65,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
      */
     public $inferred_property_types = [];
 
-    /**
-     * @param PhpParser\Node\Stmt\Class_    $class
-     * @param SourceAnalyzer                $source
-     * @param string|null                   $fq_class_name
-     */
-    public function __construct(PhpParser\Node\Stmt\Class_ $class, SourceAnalyzer $source, $fq_class_name)
+    public function __construct(PhpParser\Node\Stmt\Class_ $class, SourceAnalyzer $source, ?string $fq_class_name)
     {
         if (!$fq_class_name) {
             $fq_class_name = self::getAnonymousClassName($class, $source->getFilePath());
@@ -91,28 +85,19 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         }
     }
 
-    /**
-     * @param  PhpParser\Node\Stmt\Class_ $class
-     * @param  string                     $file_path
-     *
-     * @return string
-     */
-    public static function getAnonymousClassName(PhpParser\Node\Stmt\Class_ $class, $file_path)
+    public static function getAnonymousClassName(PhpParser\Node\Stmt\Class_ $class, string $file_path): string
     {
         return preg_replace('/[^A-Za-z0-9]/', '_', $file_path)
             . '_' . $class->getLine() . '_' . (int)$class->getAttribute('startFilePos');
     }
 
     /**
-     * @param Context|null  $class_context
-     * @param Context|null  $global_context
-     *
      * @return null|false
      */
     public function analyze(
-        Context $class_context = null,
-        Context $global_context = null
-    ) {
+        ?Context $class_context = null,
+        ?Context $global_context = null
+    ): ?bool {
         $class = $this->class;
 
         if (!$class instanceof PhpParser\Node\Stmt\Class_) {
@@ -124,7 +109,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         $storage = $this->storage;
 
         if ($storage->has_visitor_issues) {
-            return;
+            return null;
         }
 
         if ($class->name
@@ -525,7 +510,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         }
 
         if ($storage->invalid_dependencies) {
-            return;
+            return null;
         }
 
         $class_interfaces = $storage->class_implements;
@@ -669,6 +654,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
                     MethodComparator::compare(
                         $codebase,
+                        null,
                         $implementer_classlike_storage ?: $storage,
                         $interface_storage,
                         $implementer_method_storage,
@@ -938,6 +924,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
                     MethodComparator::compare(
                         $codebase,
+                        null,
                         $storage,
                         $parent_storage,
                         $pseudo_method_storage,
@@ -977,6 +964,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 );
             }
         }
+
+        return null;
     }
 
     public static function addContextProperties(
@@ -1005,7 +994,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
             if (isset($storage->overridden_property_ids[$property_name])) {
                 foreach ($storage->overridden_property_ids[$property_name] as $overridden_property_id) {
-                    list($guide_class_name) = explode('::$', $overridden_property_id);
+                    [$guide_class_name] = explode('::$', $overridden_property_id);
                     $guide_class_storage = $codebase->classlike_storage_provider->get($guide_class_name);
                     $guide_property_storage = $guide_class_storage->properties[$property_name];
 
@@ -1087,7 +1076,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             }
 
             if ($property_type_location && !$fleshed_out_type->isMixed()) {
-                $stmt = array_filter($stmts, function ($stmt) use ($property_name) {
+                $stmt = array_filter($stmts, function ($stmt) use ($property_name): bool {
                     return $stmt instanceof PhpParser\Node\Stmt\Property
                         && isset($stmt->props[0]->name->name)
                         && $stmt->props[0]->name->name === $property_name;
@@ -1154,8 +1143,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         Config $config,
         ClassLikeStorage $storage,
         Context $class_context,
-        Context $global_context = null,
-        MethodAnalyzer $constructor_analyzer = null
+        ?Context $global_context = null,
+        ?MethodAnalyzer $constructor_analyzer = null
     ) {
         if (!$config->reportIssueInFile('PropertyNotSetInConstructor', $this->getFilePath())) {
             return;
@@ -1224,7 +1213,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             }
 
             if ($codebase->diff_methods && $method_already_analyzed && $property->location) {
-                list($start, $end) = $property->location->getSelectionBounds();
+                [$start, $end] = $property->location->getSelectionBounds();
 
                 $existing_issues = $codebase->analyzer->getExistingIssuesForFile(
                     $this->getFilePath(),
@@ -1291,8 +1280,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     function (FunctionLikeParameter $param) : PhpParser\Node\Param {
                         $fake_param = (new PhpParser\Builder\Param($param->name));
                         if ($param->signature_type) {
-                            /** @psalm-suppress DeprecatedMethod */
-                            $fake_param->setTypeHint((string)$param->signature_type);
+                            $fake_param->setType((string)$param->signature_type);
                         }
 
                         return $fake_param->getNode();
@@ -1394,7 +1382,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             );
 
             foreach ($uninitialized_properties as $property_id => $property_storage) {
-                list(,$property_name) = explode('::$', $property_id);
+                [, $property_name] = explode('::$', $property_id);
 
                 if (!isset($method_context->vars_in_scope['$this->' . $property_name])) {
                     $end_type = Type::getVoid();
@@ -1469,18 +1457,19 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         }
 
         if (!$storage->abstract && $uninitialized_typed_properties) {
-            $first_uninitialized_property = array_shift($uninitialized_typed_properties);
-
-            if ($first_uninitialized_property->location) {
-                if (IssueBuffer::accepts(
-                    new MissingConstructor(
-                        $class_storage->name . ' has an uninitialized variable ' . $uninitialized_variables[0] .
-                            ', but no constructor',
-                        $first_uninitialized_property->location
-                    ),
-                    $storage->suppressed_issues + $this->getSuppressedIssues()
-                )) {
-                    // fall through
+            foreach ($uninitialized_typed_properties as $uninitialized_property) {
+                if ($uninitialized_property->location) {
+                    if (IssueBuffer::accepts(
+                        new MissingConstructor(
+                            $class_storage->name . ' has an uninitialized property ' . $uninitialized_variables[0] .
+                                ', but no constructor',
+                            $uninitialized_property->location,
+                            $class_storage->name . '::' . $uninitialized_variables[0]
+                        ),
+                        $storage->suppressed_issues + $this->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
                 }
             }
         }
@@ -1495,10 +1484,10 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         ProjectAnalyzer $project_analyzer,
         ClassLikeStorage $storage,
         Context $class_context,
-        Context $global_context = null,
-        MethodAnalyzer &$constructor_analyzer = null,
-        TraitAnalyzer $previous_trait_analyzer = null
-    ) {
+        ?Context $global_context = null,
+        ?MethodAnalyzer &$constructor_analyzer = null,
+        ?TraitAnalyzer $previous_trait_analyzer = null
+    ): ?bool {
         $codebase = $this->getCodebase();
 
         $previous_context_include_location = $class_context->include_location;
@@ -1520,8 +1509,10 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues()
                 )) {
-                    return false;
+                    // fall through
                 }
+
+                return false;
             } else {
                 if (!$codebase->traitHasCorrectCase($fq_trait_name)) {
                     if (IssueBuffer::accepts(
@@ -1612,11 +1603,11 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         }
 
         $class_context->include_location = $previous_context_include_location;
+
+        return null;
     }
 
     /**
-     * @param   PhpParser\Node\Stmt\Property    $stmt
-     *
      * @return  void
      */
     private function checkForMissingPropertyType(
@@ -1624,104 +1615,99 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         PhpParser\Node\Stmt\Property $stmt,
         Context $context
     ) {
-        $comment = $stmt->getDocComment();
+        $fq_class_name = $source->getFQCLN();
+        $property_name = $stmt->props[0]->name->name;
 
-        if (!$comment || !$comment->getText()) {
-            $fq_class_name = $source->getFQCLN();
-            $property_name = $stmt->props[0]->name->name;
+        $codebase = $this->getCodebase();
 
-            $codebase = $this->getCodebase();
+        $property_id = $fq_class_name . '::$' . $property_name;
 
-            $property_id = $fq_class_name . '::$' . $property_name;
+        $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
+            $property_id,
+            true
+        );
 
-            $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
-                $property_id,
-                true
+        if (!$declaring_property_class) {
+            return;
+        }
+
+        $fq_class_name = $declaring_property_class;
+
+        // gets inherited property type
+        $class_property_type = $codebase->properties->getPropertyType($property_id, false, $source, $context);
+
+        $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+
+        $property_storage = $class_storage->properties[$property_name];
+
+        if ($class_property_type && ($property_storage->type_location || !$codebase->alter_code)) {
+            return;
+        }
+
+        $message = 'Property ' . $property_id . ' does not have a declared type';
+
+        $suggested_type = $property_storage->suggested_type;
+
+        if (isset($this->inferred_property_types[$property_name])) {
+            $suggested_type = $suggested_type
+                ? Type::combineUnionTypes(
+                    $suggested_type,
+                    $this->inferred_property_types[$property_name],
+                    $codebase
+                )
+                : $this->inferred_property_types[$property_name];
+        }
+
+        if ($suggested_type && !$property_storage->has_default && $property_storage->is_static) {
+            $suggested_type->addType(new Type\Atomic\TNull());
+        }
+
+        if ($suggested_type && !$suggested_type->isNull()) {
+            $message .= ' - consider ' . str_replace(
+                ['<array-key, mixed>', '<empty, empty>'],
+                '',
+                (string)$suggested_type
+            );
+        }
+
+        $project_analyzer = ProjectAnalyzer::getInstance();
+
+        if ($codebase->alter_code
+            && $source === $this
+            && isset($project_analyzer->getIssuesToFix()['MissingPropertyType'])
+            && !\in_array('MissingPropertyType', $this->getSuppressedIssues())
+            && $suggested_type
+        ) {
+            if ($suggested_type->hasMixed() || $suggested_type->isNull()) {
+                return;
+            }
+
+            self::addOrUpdatePropertyType(
+                $project_analyzer,
+                $stmt,
+                $suggested_type,
+                $this,
+                $suggested_type->from_docblock
             );
 
-            if (!$declaring_property_class) {
-                return;
-            }
+            return;
+        }
 
-            $fq_class_name = $declaring_property_class;
-
-            // gets inherited property type
-            $class_property_type = $codebase->properties->getPropertyType($property_id, false, $source, $context);
-
-            $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
-
-            $property_storage = $class_storage->properties[$property_name];
-
-            if ($class_property_type && ($property_storage->type_location || !$codebase->alter_code)) {
-                return;
-            }
-
-            $message = 'Property ' . $property_id . ' does not have a declared type';
-
-            $suggested_type = $property_storage->suggested_type;
-
-            if (isset($this->inferred_property_types[$property_name])) {
-                $suggested_type = $suggested_type
-                    ? Type::combineUnionTypes(
-                        $suggested_type,
-                        $this->inferred_property_types[$property_name],
-                        $codebase
-                    )
-                    : $this->inferred_property_types[$property_name];
-            }
-
-            if ($suggested_type && !$property_storage->has_default && $property_storage->is_static) {
-                $suggested_type->addType(new Type\Atomic\TNull());
-            }
-
-            if ($suggested_type && !$suggested_type->isNull()) {
-                $message .= ' - consider ' . str_replace(
-                    ['<array-key, mixed>', '<empty, empty>'],
-                    '',
-                    (string)$suggested_type
-                );
-            }
-
-            $project_analyzer = ProjectAnalyzer::getInstance();
-
-            if ($codebase->alter_code
-                && $source === $this
-                && isset($project_analyzer->getIssuesToFix()['MissingPropertyType'])
-                && !\in_array('MissingPropertyType', $this->getSuppressedIssues())
-                && $suggested_type
-            ) {
-                if ($suggested_type->hasMixed() || $suggested_type->isNull()) {
-                    return;
-                }
-
-                self::addOrUpdatePropertyType(
-                    $project_analyzer,
-                    $stmt,
-                    $property_id,
-                    $suggested_type,
-                    $this,
-                    $suggested_type->from_docblock
-                );
-
-                return;
-            }
-
-            if (IssueBuffer::accepts(
-                new MissingPropertyType(
-                    $message,
-                    new CodeLocation($source, $stmt->props[0]->name)
-                ),
-                $this->source->getSuppressedIssues()
-            )) {
-                // fall through
-            }
+        if (IssueBuffer::accepts(
+            new MissingPropertyType(
+                $message,
+                new CodeLocation($source, $stmt->props[0]->name),
+                $property_id
+            ),
+            $this->source->getSuppressedIssues()
+        )) {
+            // fall through
         }
     }
 
     private static function addOrUpdatePropertyType(
         ProjectAnalyzer $project_analyzer,
         PhpParser\Node\Stmt\Property $property,
-        string $property_id,
         Type\Union $inferred_type,
         StatementsSource $source,
         bool $docblock_only = false
@@ -1729,7 +1715,6 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         $manipulator = PropertyDocblockManipulator::getForProperty(
             $project_analyzer,
             $source->getFilePath(),
-            $property_id,
             $property
         );
 
@@ -1765,23 +1750,14 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         );
     }
 
-    /**
-     * @param  PhpParser\Node\Stmt\ClassMethod $stmt
-     * @param  SourceAnalyzer                  $source
-     * @param  Context                         $class_context
-     * @param  Context|null                    $global_context
-     * @param  bool                            $is_fake
-     *
-     * @return MethodAnalyzer|null
-     */
     private function analyzeClassMethod(
         PhpParser\Node\Stmt\ClassMethod $stmt,
         ClassLikeStorage $class_storage,
         SourceAnalyzer $source,
         Context $class_context,
-        Context $global_context = null,
-        $is_fake = false
-    ) {
+        ?Context $global_context = null,
+        bool $is_fake = false
+    ): ?MethodAnalyzer {
         $config = Config::getInstance();
 
         if ($stmt->stmts === null && !$stmt->isAbstract()) {
@@ -1839,6 +1815,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
                     MethodComparator::compare(
                         $codebase,
+                        null,
                         $class_storage,
                         $declaring_storage,
                         $implementer_method_storage,
@@ -1851,7 +1828,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     );
                 }
 
-                return;
+                return null;
             }
         }
 
@@ -1874,7 +1851,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         $comments = $stmt->getComments();
 
         if ($comments) {
-            $start = $comments[0]->getFilePos();
+            $start = $comments[0]->getStartFilePos();
         }
 
         if ($codebase->diff_methods
@@ -2089,16 +2066,13 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         );
     }
 
-    /**
-     * @return void
-     */
     private function checkTemplateParams(
         Codebase $codebase,
         ClassLikeStorage $storage,
         ClassLikeStorage $parent_storage,
         CodeLocation $code_location,
         int $expected_param_count
-    ) {
+    ): void {
         $template_type_count = $parent_storage->template_types === null
             ? 0
             : count($parent_storage->template_types);

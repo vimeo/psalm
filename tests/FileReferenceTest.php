@@ -3,7 +3,7 @@ namespace Psalm\Tests;
 
 use function count;
 use Psalm\Context;
-use Psalm\Internal\Analyzer\FileAnalyzer;
+use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\Internal\Provider;
 use function strpos;
 
@@ -12,13 +12,9 @@ class FileReferenceTest extends TestCase
     /** @var \Psalm\Internal\Analyzer\ProjectAnalyzer */
     protected $project_analyzer;
 
-    /**
-     * @return void
-     */
     public function setUp() : void
     {
-        FileAnalyzer::clearCache();
-        \Psalm\Internal\FileManipulation\FunctionDocblockManipulator::clearCache();
+        RuntimeCaches::clearAll();
 
         $this->file_provider = new Provider\FakeFileProvider();
 
@@ -41,9 +37,8 @@ class FileReferenceTest extends TestCase
      * @param string $symbol
      * @param array<int, string> $expected_locations
      *
-     * @return void
      */
-    public function testReferenceLocations($input_code, $symbol, $expected_locations)
+    public function testReferenceLocations($input_code, $symbol, $expected_locations): void
     {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'SKIPPED-') !== false) {
@@ -80,13 +75,11 @@ class FileReferenceTest extends TestCase
     /**
      * @dataProvider providerReferencedMethods
      *
-     * @param string $input_code
      * @param array<string,array<string,bool>> $expected_method_references_to_members
      * @param array<string,array<string,bool>> $expected_file_references_to_members
      * @param array<string,array<string,bool>> $expected_method_references_to_missing_members
      * @param array<string,array<string,bool>> $expected_file_references_to_missing_members
      *
-     * @return void
      */
     public function testReferencedMethods(
         string $input_code,
@@ -94,7 +87,7 @@ class FileReferenceTest extends TestCase
         array $expected_method_references_to_missing_members,
         array $expected_file_references_to_members,
         array $expected_file_references_to_missing_members
-    ) {
+    ): void {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'SKIPPED-') !== false) {
             $this->markTestSkipped('Skipped due to a bug.');
@@ -128,7 +121,7 @@ class FileReferenceTest extends TestCase
     /**
      * @return array<string,array{string,string,array<int,string>}>
      */
-    public function providerReferenceLocations()
+    public function providerReferenceLocations(): array
     {
         return [
             'getClassLocation' => [
@@ -161,7 +154,7 @@ class FileReferenceTest extends TestCase
      *              4: array<string,array<string,bool>>
      * }>
      */
-    public function providerReferencedMethods()
+    public function providerReferencedMethods(): array
     {
         return [
             'getClassReferences' => [

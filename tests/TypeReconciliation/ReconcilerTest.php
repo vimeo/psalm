@@ -1,15 +1,11 @@
 <?php
 namespace Psalm\Tests\TypeReconciliation;
 
-use function is_array;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
-use Psalm\Internal\Clause;
 use Psalm\Type;
-use Psalm\Type\Algebra;
-use Psalm\Type\Reconciler;
 
 class ReconcilerTest extends \Psalm\Tests\TestCase
 {
@@ -19,9 +15,6 @@ class ReconcilerTest extends \Psalm\Tests\TestCase
     /** @var StatementsAnalyzer */
     protected $statements_analyzer;
 
-    /**
-     * @return void
-     */
     public function setUp() : void
     {
         parent::setUp();
@@ -48,9 +41,8 @@ class ReconcilerTest extends \Psalm\Tests\TestCase
      * @param string $type
      * @param string $string
      *
-     * @return void
      */
-    public function testReconcilation($expected, $type, $string)
+    public function testReconcilation($expected, $type, $string): void
     {
         $reconciled = \Psalm\Internal\Type\AssertionReconciler::reconcile(
             $type,
@@ -75,9 +67,8 @@ class ReconcilerTest extends \Psalm\Tests\TestCase
      * @param string $input
      * @param string $container
      *
-     * @return void
      */
-    public function testTypeIsContainedBy($input, $container)
+    public function testTypeIsContainedBy($input, $container): void
     {
         $this->assertTrue(
             UnionTypeComparator::isContainedBy(
@@ -91,7 +82,7 @@ class ReconcilerTest extends \Psalm\Tests\TestCase
     /**
      * @return array<string,array{string,string,string}>
      */
-    public function providerTestReconcilation()
+    public function providerTestReconcilation(): array
     {
         return [
             'notNullWithObject' => ['MyObject', '!null', 'MyObject'],
@@ -149,7 +140,7 @@ class ReconcilerTest extends \Psalm\Tests\TestCase
     /**
      * @return array<string,array{string,string}>
      */
-    public function providerTestTypeIsContainedBy()
+    public function providerTestTypeIsContainedBy(): array
     {
         return [
             'arrayContainsWithArrayOfStrings' => ['array<string>', 'array'],
@@ -168,6 +159,14 @@ class ReconcilerTest extends \Psalm\Tests\TestCase
             'objectLikeTypeWithPossiblyUndefinedToEmpty' => [
                 'array<empty, empty>',
                 'array{a?: string, b?: string}',
+            ],
+            'literalNumericStringInt' => [
+                '"0"',
+                'numeric',
+            ],
+            'literalNumericString' => [
+                '"10.03"',
+                'numeric',
             ],
         ];
     }

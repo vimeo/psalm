@@ -1,10 +1,6 @@
 <?php
 namespace Psalm\Tests;
 
-use const DIRECTORY_SEPARATOR;
-use Psalm\Config;
-use Psalm\Context;
-
 class MixinAnnotationTest extends TestCase
 {
     use Traits\ValidCodeAnalysisTestTrait;
@@ -13,7 +9,7 @@ class MixinAnnotationTest extends TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'validSimpleAnnotations' => [
@@ -533,13 +529,45 @@ class MixinAnnotationTest extends TestCase
                         return (new FooGrandChild)->other();
                     }'
             ],
+            'multipleMixinsWithSameMethod' => [
+                '<?php
+
+                    class Mix1
+                    {
+                        public function foo(): string
+                        {
+                            return "";
+                        }
+                    }
+
+                    class Mix2
+                    {
+                        public function foo(): string
+                        {
+                            return "";
+                        }
+                    }
+
+                    /**
+                     * @mixin Mix1
+                     * @mixin Mix2
+                     */
+                    class Bar
+                    {
+                    
+                    }
+
+                    $bar = new Bar();
+
+                    $bar->foo();'
+            ],
         ];
     }
 
     /**
      * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'undefinedMixinClass' => [

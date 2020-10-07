@@ -13,17 +13,13 @@ class ProjectFileFilter extends FileFilter
     private $file_filter = null;
 
     /**
-     * @param  SimpleXMLElement $e
-     * @param  string           $base_dir
-     * @param  bool             $inclusive
-     *
      * @return static
      */
     public static function loadFromXMLElement(
         SimpleXMLElement $e,
-        $base_dir,
-        $inclusive
-    ) {
+        string $base_dir,
+        bool $inclusive
+    ): ProjectFileFilter {
         $filter = parent::loadFromXMLElement($e, $base_dir, $inclusive);
 
         if (isset($e->ignoreFiles)) {
@@ -38,13 +34,7 @@ class ProjectFileFilter extends FileFilter
         return $filter;
     }
 
-    /**
-     * @param  string  $file_name
-     * @param  bool $case_sensitive
-     *
-     * @return bool
-     */
-    public function allows($file_name, $case_sensitive = false)
+    public function allows(string $file_name, bool $case_sensitive = false): bool
     {
         if ($this->inclusive && $this->file_filter) {
             if (!$this->file_filter->allows($file_name, $case_sensitive)) {
@@ -55,13 +45,7 @@ class ProjectFileFilter extends FileFilter
         return parent::allows($file_name, $case_sensitive);
     }
 
-    /**
-     * @param  string  $file_name
-     * @param  bool $case_sensitive
-     *
-     * @return bool
-     */
-    public function forbids($file_name, $case_sensitive = false)
+    public function forbids(string $file_name, bool $case_sensitive = false): bool
     {
         if ($this->inclusive && $this->file_filter) {
             if (!$this->file_filter->allows($file_name, $case_sensitive)) {
@@ -72,13 +56,7 @@ class ProjectFileFilter extends FileFilter
         return false;
     }
 
-    /**
-     * @param  string $file_name
-     * @param  bool   $case_sensitive
-     *
-     * @return bool
-     */
-    public function reportTypeStats($file_name, $case_sensitive = false)
+    public function reportTypeStats(string $file_name, bool $case_sensitive = false): bool
     {
         foreach ($this->ignore_type_stats as $exclude_dir => $_) {
             if ($case_sensitive) {
@@ -95,13 +73,7 @@ class ProjectFileFilter extends FileFilter
         return true;
     }
 
-    /**
-     * @param  string $file_name
-     * @param  bool   $case_sensitive
-     *
-     * @return bool
-     */
-    public function useStrictTypes($file_name, $case_sensitive = false)
+    public function useStrictTypes(string $file_name, bool $case_sensitive = false): bool
     {
         foreach ($this->declare_strict_types as $exclude_dir => $_) {
             if ($case_sensitive) {

@@ -25,18 +25,11 @@ use function array_pop;
  */
 class ConstFetchAnalyzer
 {
-    /**
-     * @param   StatementsAnalyzer               $statements_analyzer
-     * @param   PhpParser\Node\Expr\ConstFetch  $stmt
-     * @param   Context                         $context
-     *
-     * @return  void
-     */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ConstFetch $stmt,
         Context $context
-    ) {
+    ): void {
         $const_name = implode('\\', $stmt->name->parts);
 
         switch (strtolower($const_name)) {
@@ -81,18 +74,11 @@ class ConstFetchAnalyzer
         }
     }
 
-    /**
-     * @param  Codebase $codebase
-     * @param  ?string  $fq_const_name
-     * @param  string   $const_name
-     *
-     * @return Type\Union|null
-     */
     public static function getGlobalConstType(
         Codebase $codebase,
-        $fq_const_name,
-        $const_name
-    ) {
+        ?string $fq_const_name,
+        string $const_name
+    ): ?Type\Union {
         if ($const_name === 'STDERR'
             || $const_name === 'STDOUT'
             || $const_name === 'STDIN'
@@ -176,19 +162,12 @@ class ConstFetchAnalyzer
         return null;
     }
 
-    /**
-     * @param   string  $const_name
-     * @param   bool    $is_fully_qualified
-     * @param   Context $context
-     *
-     * @return  Type\Union|null
-     */
     public static function getConstType(
         StatementsAnalyzer $statements_analyzer,
         string $const_name,
         bool $is_fully_qualified,
         ?Context $context
-    ) {
+    ): ?Type\Union {
         $aliased_constants = $statements_analyzer->getAliases()->constants;
 
         if (isset($aliased_constants[$const_name])) {
@@ -213,7 +192,7 @@ class ConstFetchAnalyzer
             }
         }
 
-        if ($context && $context->hasVariable($fq_const_name, $statements_analyzer)) {
+        if ($context && $context->hasVariable($fq_const_name)) {
             return $context->vars_in_scope[$fq_const_name];
         }
 
@@ -240,19 +219,12 @@ class ConstFetchAnalyzer
             ?? ConstFetchAnalyzer::getGlobalConstType($codebase, $const_name, $const_name);
     }
 
-    /**
-     * @param   string      $const_name
-     * @param   Type\Union  $const_type
-     * @param   Context     $context
-     *
-     * @return  void
-     */
     public static function setConstType(
         StatementsAnalyzer $statements_analyzer,
         string $const_name,
         Type\Union $const_type,
         Context $context
-    ) {
+    ): void {
         $context->vars_in_scope[$const_name] = $const_type;
         $context->constants[$const_name] = $const_type;
 
@@ -288,17 +260,11 @@ class ConstFetchAnalyzer
         return $const_name;
     }
 
-    /**
-     * @param   PhpParser\Node\Stmt\Const_  $stmt
-     * @param   Context                     $context
-     *
-     * @return  void
-     */
     public static function analyzeConstAssignment(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Const_ $stmt,
         Context $context
-    ) {
+    ): void {
         foreach ($stmt->consts as $const) {
             ExpressionAnalyzer::analyze($statements_analyzer, $const->value, $context);
 

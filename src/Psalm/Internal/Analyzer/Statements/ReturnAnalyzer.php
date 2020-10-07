@@ -14,7 +14,8 @@ use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Exception\DocblockParseException;
-use Psalm\Internal\Taint\TaintNode;
+use Psalm\Internal\ControlFlow\ControlFlowNode;
+use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Issue\FalsableReturnStatement;
 use Psalm\Issue\InvalidDocblock;
@@ -35,16 +36,13 @@ use function strtolower;
 class ReturnAnalyzer
 {
     /**
-     * @param  PhpParser\Node\Stmt\Return_ $stmt
-     * @param  Context                     $context
-     *
      * @return false|null
      */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Return_ $stmt,
         Context $context
-    ) {
+    ): ?bool {
         $doc_comment = $stmt->getDocComment();
 
         $var_comments = [];
@@ -118,6 +116,10 @@ class ReturnAnalyzer
                     continue;
                 }
 
+                if (isset($context->vars_in_scope[$var_comment->var_id])) {
+                    $comment_type->parent_nodes = $context->vars_in_scope[$var_comment->var_id]->parent_nodes;
+                }
+
                 $context->vars_in_scope[$var_comment->var_id] = $comment_type;
             }
         }
@@ -139,11 +141,17 @@ class ReturnAnalyzer
                 return false;
             }
 
+            $stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr);
+
             if ($var_comment_type) {
                 $stmt_type = $var_comment_type;
 
+                if ($stmt_expr_type && $stmt_expr_type->parent_nodes) {
+                    $stmt_type->parent_nodes = $stmt_expr_type->parent_nodes;
+                }
+
                 $statements_analyzer->node_data->setType($stmt, $var_comment_type);
-            } elseif ($stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr)) {
+            } elseif ($stmt_expr_type) {
                 $stmt_type = $stmt_expr_type;
 
                 if ($stmt_type->isNever()) {
@@ -172,6 +180,22 @@ class ReturnAnalyzer
 
         $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
+        if ($context->finally_scope) {
+            foreach ($context->vars_in_scope as $var_id => $type) {
+                if (isset($context->finally_scope->vars_in_scope[$var_id])) {
+                    if ($context->finally_scope->vars_in_scope[$var_id] !== $type) {
+                        $context->finally_scope->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                            $context->finally_scope->vars_in_scope[$var_id],
+                            $type,
+                            $statements_analyzer->getCodebase()
+                        );
+                    }
+                } else {
+                    $context->finally_scope->vars_in_scope[$var_id] = $type;
+                }
+            }
+        }
+
         if ($source instanceof FunctionLikeAnalyzer
             && !($source->getSource() instanceof TraitAnalyzer)
         ) {
@@ -192,11 +216,9 @@ class ReturnAnalyzer
                     $source->getParentFQCLN()
                 );
 
-                if ($codebase->taint
-                    && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
-                ) {
+                if ($statements_analyzer->control_flow_graph instanceof TaintFlowGraph) {
                     self::handleTaints(
-                        $codebase,
+                        $statements_analyzer,
                         $stmt,
                         $cased_method_id,
                         $inferred_type,
@@ -224,7 +246,7 @@ class ReturnAnalyzer
                     );
 
                     if ($storage instanceof \Psalm\Storage\MethodStorage) {
-                        list($fq_class_name, $method_name) = explode('::', $cased_method_id);
+                        [$fq_class_name, $method_name] = explode('::', $cased_method_id);
 
                         $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
@@ -255,7 +277,7 @@ class ReturnAnalyzer
                         return null;
                     }
 
-                    if ($stmt_type->isMixed()) {
+                    if ($stmt_type->hasMixed()) {
                         if ($local_return_type->isVoid() || $local_return_type->isNever()) {
                             if (IssueBuffer::accepts(
                                 new InvalidReturnStatement(
@@ -276,17 +298,29 @@ class ReturnAnalyzer
                             $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
                         }
 
+                        if ($stmt_type->isMixed()) {
+                            if (IssueBuffer::accepts(
+                                new MixedReturnStatement(
+                                    'Could not infer a return type',
+                                    new CodeLocation($source, $stmt->expr)
+                                ),
+                                $statements_analyzer->getSuppressedIssues()
+                            )) {
+                                // fall through
+                            }
+
+                            return null;
+                        }
+
                         if (IssueBuffer::accepts(
                             new MixedReturnStatement(
-                                'Could not infer a return type',
+                                'Possibly-mixed return value',
                                 new CodeLocation($source, $stmt->expr)
                             ),
                             $statements_analyzer->getSuppressedIssues()
                         )) {
-                            return false;
+                            // fall through
                         }
-
-                        return null;
                     }
 
                     if ($local_return_type->isMixed()) {
@@ -483,27 +517,30 @@ class ReturnAnalyzer
     }
 
     private static function handleTaints(
-        \Psalm\Codebase $codebase,
+        StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Return_ $stmt,
         string $cased_method_id,
         Type\Union $inferred_type,
         \Psalm\Storage\FunctionLikeStorage $storage
     ) : void {
-        if (!$codebase->taint || !$stmt->expr || !$storage->location) {
+        if (!$statements_analyzer->control_flow_graph instanceof TaintFlowGraph
+            || !$stmt->expr
+            || !$storage->location
+        ) {
             return;
         }
 
-        $method_node = TaintNode::getForMethodReturn(
+        $method_node = ControlFlowNode::getForMethodReturn(
             strtolower($cased_method_id),
             $cased_method_id,
-            $storage->location
+            $storage->signature_return_type_location ?: $storage->location,
         );
 
-        $codebase->taint->addTaintNode($method_node);
+        $statements_analyzer->control_flow_graph->addNode($method_node);
 
         if ($inferred_type->parent_nodes) {
             foreach ($inferred_type->parent_nodes as $parent_node) {
-                $codebase->taint->addPath(
+                $statements_analyzer->control_flow_graph->addPath(
                     $parent_node,
                     $method_node,
                     'return',
@@ -557,7 +594,7 @@ class ReturnAnalyzer
             return;
         }
 
-        /** @var Type\Atomic\TFn|Type\Atomic\TCallable $parent_callable_return_type */
+        /** @var Type\Atomic\TClosure|Type\Atomic\TCallable $parent_callable_return_type */
         $parent_callable_return_type = \current($parent_fn_storage->return_type->getAtomicTypes());
 
         if ($parent_callable_return_type->params === null && $parent_callable_return_type->return_type === null) {

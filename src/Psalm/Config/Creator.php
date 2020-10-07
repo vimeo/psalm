@@ -1,12 +1,12 @@
 <?php
 namespace Psalm\Config;
 
+use Psalm\Internal\Composer;
 use function array_merge;
 use function array_shift;
 use function array_unique;
 use function count;
 use const DIRECTORY_SEPARATOR;
-use function dirname;
 use function explode;
 use function file_exists;
 use function file_get_contents;
@@ -29,7 +29,7 @@ use const GLOB_NOSORT;
 
 class Creator
 {
-    const TEMPLATE = '<?xml version="1.0"?>
+    private const TEMPLATE = '<?xml version="1.0"?>
 <psalm
     errorLevel="1"
     resolveFromConfigFile="true"
@@ -122,7 +122,7 @@ class Creator
             // remove any issues where < 0.1% of expressions are affected
             $filtered_issues = array_filter(
                 $issues,
-                function ($amount) {
+                function ($amount): bool {
                     return $amount > 0.1;
                 }
             );
@@ -148,7 +148,7 @@ class Creator
     /**
      * @return non-empty-list<string>
      */
-    public static function getPaths(string $current_dir, ?string $suggested_dir)
+    public static function getPaths(string $current_dir, ?string $suggested_dir): array
     {
         $replacements = [];
 
@@ -165,7 +165,7 @@ class Creator
         } elseif (is_dir($current_dir . DIRECTORY_SEPARATOR . 'src')) {
             $replacements[] = '<directory name="src" />';
         } else {
-            $composer_json_location = $current_dir . DIRECTORY_SEPARATOR . 'composer.json';
+            $composer_json_location = Composer::getJsonFilePath($current_dir);
 
             if (!file_exists($composer_json_location)) {
                 throw new ConfigCreationException(

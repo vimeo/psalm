@@ -12,15 +12,14 @@ class FunctionClassStringTemplateTest extends TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'callStaticMethodOnTemplatedClassName' => [
                 '<?php
                     /**
                      * @template T
-                     * @param class-string $class
-                     * @template-typeof T $class
+                     * @param class-string<T> $class
                      */
                     function foo(string $class, array $args) : void {
                         $class::bar($args);
@@ -157,7 +156,7 @@ class FunctionClassStringTemplateTest extends TestCase
                     }
 
                     /**
-                     * @psalm-suppress TypeCoercion
+                     * @psalm-suppress ArgumentTypeCoercion
                      */
                     function bat(string $c_class) : void {
                         $c = E::get($c_class);
@@ -187,7 +186,7 @@ class FunctionClassStringTemplateTest extends TestCase
                     }
 
                     /**
-                     * @psalm-suppress TypeCoercion
+                     * @psalm-suppress ArgumentTypeCoercion
                      */
                     function bat(string $c_class) : void {
                         $c = E::get($c_class);
@@ -705,7 +704,7 @@ class FunctionClassStringTemplateTest extends TestCase
     /**
      * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'copyScopedClassInFunction' => [
@@ -790,6 +789,26 @@ class FunctionClassStringTemplateTest extends TestCase
 
                     f(C::class);',
                 'error_message' => 'InvalidArgument',
+            ],
+            'bindToClassString' => [
+                '<?php
+                    /**
+                     * @template TClass as object
+                     *
+                     * @param class-string<TClass> $className
+                     * @param TClass $realInstance
+                     *
+                     * @return Closure(TClass) : void
+                     * @psalm-suppress InvalidReturnType
+                     */
+                    function createInitializer(string $className, object $realInstance) : Closure {}
+
+                    function foo(object $realInstance) : void {
+                        $className = get_class($realInstance);
+                        /** @psalm-trace $i */
+                        $i = createInitializer($className, $realInstance);
+                    }',
+                'error_message' => 'Closure(object):void'
             ],
         ];
     }

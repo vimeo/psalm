@@ -24,11 +24,6 @@ use function explode;
  */
 class StaticPropertyFetchAnalyzer
 {
-    /**
-     * @param   StatementsAnalyzer                       $statements_analyzer
-     * @param   PhpParser\Node\Expr\StaticPropertyFetch $stmt
-     * @param   Context                                 $context
-     */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\StaticPropertyFetch $stmt,
@@ -38,8 +33,6 @@ class StaticPropertyFetchAnalyzer
             self::analyzeVariableStaticPropertyFetch($statements_analyzer, $stmt->class, $stmt, $context);
             return true;
         }
-
-        $fq_class_name = null;
 
         $codebase = $statements_analyzer->getCodebase();
 
@@ -186,9 +179,15 @@ class StaticPropertyFetchAnalyzer
             )) {
                 // fall through
             }
+        } elseif ($statements_analyzer->getSource()
+                instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+            && $statements_analyzer->getSource()->track_mutations
+        ) {
+            $statements_analyzer->getSource()->inferred_has_mutation = true;
+            $statements_analyzer->getSource()->inferred_impure = true;
         }
 
-        if ($var_id && $context->hasVariable($var_id, $statements_analyzer)) {
+        if ($var_id && $context->hasVariable($var_id)) {
             $stmt_type = $context->vars_in_scope[$var_id];
 
             // we don't need to check anything
@@ -284,8 +283,8 @@ class StaticPropertyFetchAnalyzer
             if (!$moved_class) {
                 foreach ($codebase->property_transforms as $original_pattern => $transformation) {
                     if ($declaring_property_id === $original_pattern) {
-                        list($old_declaring_fq_class_name) = explode('::$', $declaring_property_id);
-                        list($new_fq_class_name, $new_property_name) = explode('::$', $transformation);
+                        [$old_declaring_fq_class_name] = explode('::$', $declaring_property_id);
+                        [$new_fq_class_name, $new_property_name] = explode('::$', $transformation);
 
                         $file_manipulations = [];
 
@@ -357,11 +356,17 @@ class StaticPropertyFetchAnalyzer
         PhpParser\Node\Expr\StaticPropertyFetch $stmt,
         Context $context
     ) : void {
+        $was_inside_use = $context->inside_use;
+
+        $context->inside_use = true;
+
         ExpressionAnalyzer::analyze(
             $statements_analyzer,
             $stmt_class,
             $context
         );
+
+        $context->inside_use = $was_inside_use;
 
         $stmt_class_type = $statements_analyzer->node_data->getType($stmt_class) ?: Type::getMixed();
 

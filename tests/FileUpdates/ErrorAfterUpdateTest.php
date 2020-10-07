@@ -6,7 +6,6 @@ use function array_pop;
 use const DIRECTORY_SEPARATOR;
 use function getcwd;
 use function preg_quote;
-use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Tests\Internal\Provider;
@@ -14,14 +13,9 @@ use Psalm\Tests\TestConfig;
 
 class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
 {
-    /**
-     * @return void
-     */
     public function setUp() : void
     {
         parent::setUp();
-
-        FileAnalyzer::clearCache();
 
         $this->file_provider = new \Psalm\Tests\Internal\Provider\FakeFileProvider();
 
@@ -49,13 +43,12 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
      * @param array<int, array<string, string>> $file_stages
      * @param array<string, string> $error_levels
      *
-     * @return void
      */
     public function testErrorAfterUpdate(
         array $file_stages,
         string $error_message,
         array $error_levels = []
-    ) {
+    ): void {
         $this->project_analyzer->getCodebase()->diff_methods = true;
         $this->project_analyzer->getCodebase()->reportUnusedCode();
 
@@ -102,7 +95,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
     /**
      * @return array<string,array{file_stages:array<int,array<string,string>>,error_message:string}>
      */
-    public function providerTestInvalidUpdates()
+    public function providerTestInvalidUpdates(): array
     {
         return [
             'invalidateParentCaller' => [
@@ -652,7 +645,8 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
 
                             class A {}
 
-                            $a = new A();',
+                            $a = new A();
+                            print_r($a);',
                     ],
                     [
                         getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
@@ -683,7 +677,8 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
                                 public function foo() : void {}
                             }
 
-                            $a = new A();',
+                            $a = new A();
+                            print_r($a);',
                     ],
                 ],
                 'error_message' => 'PossiblyUnusedMethod',
@@ -809,7 +804,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
                                 public $foo = "hello";
                             }
 
-                            $a = new A();',
+                            print_r(new A());',
                     ],
                 ],
                 'error_message' => 'PossiblyUnusedProperty',

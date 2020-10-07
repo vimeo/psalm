@@ -9,7 +9,7 @@ use Psalm\Issue\RedundantCondition;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic;
-use Psalm\Type\Atomic\ObjectLike;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
@@ -199,6 +199,10 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             );
         }
 
+        if (substr($assertion, 0, 12) === 'has-exactly-') {
+            return $existing_var_type;
+        }
+
         return null;
     }
 
@@ -321,13 +325,15 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             } elseif ($array_atomic_type->getId() !== 'array<empty, empty>') {
                 $did_remove_type = true;
 
-                $existing_var_type->addType(new TArray(
-                    [
-                        new Type\Union([new TEmpty]),
-                        new Type\Union([new TEmpty]),
-                    ]
-                ));
-            } elseif ($array_atomic_type instanceof Type\Atomic\ObjectLike) {
+                if (!$min_count) {
+                    $existing_var_type->addType(new TArray(
+                        [
+                            new Type\Union([new TEmpty]),
+                            new Type\Union([new TEmpty]),
+                        ]
+                    ));
+                }
+            } elseif ($array_atomic_type instanceof Type\Atomic\TKeyedArray) {
                 $did_remove_type = true;
 
                 foreach ($array_atomic_type->properties as $property_type) {
@@ -599,7 +605,8 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                             'Found a redundant condition when evaluating ' . $key
                                 . ' of type ' . $existing_var_type->getId()
                                 . ' and trying to reconcile it with a non-' . $assertion . ' assertion',
-                            $code_location
+                            $code_location,
+                            $existing_var_type->getId() . ' ' . $assertion
                         ),
                         $suppressed_issues
                     )
@@ -629,7 +636,8 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                             'Found a redundant condition when evaluating ' . $key
                                 . ' of type ' . $existing_var_type->getId()
                                 . ' and trying to reconcile it with a non-' . $assertion . ' assertion',
-                            $code_location
+                            $code_location,
+                            $existing_var_type->getId() . ' ' . $assertion
                         ),
                         $suppressed_issues
                     )
@@ -646,7 +654,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         if (isset($existing_var_atomic_types['string'])) {
             if (!$existing_var_atomic_types['string'] instanceof Type\Atomic\TNonEmptyString
                 && !$existing_var_atomic_types['string'] instanceof Type\Atomic\TClassString
-                && !$existing_var_atomic_types['string'] instanceof Type\Atomic\GetClassT
+                && !$existing_var_atomic_types['string'] instanceof Type\Atomic\TDependentGetClass
             ) {
                 $did_remove_type = true;
 
@@ -665,7 +673,8 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                             'Found a redundant condition when evaluating ' . $key
                                 . ' of type ' . $existing_var_type->getId()
                                 . ' and trying to reconcile it with a non-' . $assertion . ' assertion',
-                            $code_location
+                            $code_location,
+                            $existing_var_type->getId() . ' ' . $assertion
                         ),
                         $suppressed_issues
                     )
@@ -1353,7 +1362,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
 
                 $did_remove_type = true;
             } elseif (!$type instanceof TArray
-                && !$type instanceof ObjectLike
+                && !$type instanceof TKeyedArray
                 && !$type instanceof Atomic\TList
             ) {
                 $non_array_types[] = $type;
@@ -1397,13 +1406,10 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         return Type::getMixed();
     }
 
-    /**
-     * @return void
-     */
     private static function removeFalsyNegatedLiteralTypes(
         Type\Union $existing_var_type,
         bool &$did_remove_type
-    ) {
+    ): void {
         if ($existing_var_type->hasString()) {
             $existing_string_types = $existing_var_type->getLiteralStrings();
 
@@ -1461,7 +1467,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                         $array_atomic_type->type_param
                     )
                 );
-            } elseif ($array_atomic_type instanceof Type\Atomic\ObjectLike
+            } elseif ($array_atomic_type instanceof Type\Atomic\TKeyedArray
                 && !$array_atomic_type->sealed
             ) {
                 $did_remove_type = true;

@@ -65,19 +65,18 @@ class Properties
     /**
      * Whether or not a given property exists
      *
-     * @return bool
      */
     public function propertyExists(
         string $property_id,
         bool $read_mode,
-        StatementsSource $source = null,
-        Context $context = null,
-        CodeLocation $code_location = null
-    ) {
+        ?StatementsSource $source = null,
+        ?Context $context = null,
+        ?CodeLocation $code_location = null
+    ): bool {
         // remove trailing backslash if it exists
         $property_id = preg_replace('/^\\\\/', '', $property_id);
 
-        list($fq_class_name, $property_name) = explode('::$', $property_id);
+        [$fq_class_name, $property_name] = explode('::$', $property_id);
         $fq_class_name_lc = strtolower($fq_class_name);
 
         if ($this->property_existence_provider->has($fq_class_name)) {
@@ -156,14 +155,12 @@ class Properties
         return false;
     }
 
-    /**
-     * @param  string $property_id
-     *
-     * @return string|null
-     */
-    public function getDeclaringClassForProperty($property_id, bool $read_mode, StatementsSource $source = null)
-    {
-        list($fq_class_name, $property_name) = explode('::$', $property_id);
+    public function getDeclaringClassForProperty(
+        string $property_id,
+        bool $read_mode,
+        ?StatementsSource $source = null
+    ): ?string {
+        [$fq_class_name, $property_name] = explode('::$', $property_id);
 
         if ($this->property_existence_provider->has($fq_class_name)) {
             if ($this->property_existence_provider->doesPropertyExist(
@@ -182,18 +179,19 @@ class Properties
         if (isset($class_storage->declaring_property_ids[$property_name])) {
             return $class_storage->declaring_property_ids[$property_name];
         }
+
+        return null;
     }
 
     /**
      * Get the class this property appears in (vs is declared in, which could give a trait)
-     *
-     * @param  string $property_id
-     *
-     * @return string|null
      */
-    public function getAppearingClassForProperty($property_id, bool $read_mode, StatementsSource $source = null)
-    {
-        list($fq_class_name, $property_name) = explode('::$', $property_id);
+    public function getAppearingClassForProperty(
+        string $property_id,
+        bool $read_mode,
+        ?StatementsSource $source = null
+    ): ?string {
+        [$fq_class_name, $property_name] = explode('::$', $property_id);
 
         if ($this->property_existence_provider->has($fq_class_name)) {
             if ($this->property_existence_provider->doesPropertyExist(
@@ -214,19 +212,16 @@ class Properties
 
             return explode('::$', $appearing_property_id)[0];
         }
+
+        return null;
     }
 
-    /**
-     * @param  string $property_id
-     *
-     * @return  \Psalm\Storage\PropertyStorage
-     */
-    public function getStorage($property_id)
+    public function getStorage(string $property_id): \Psalm\Storage\PropertyStorage
     {
         // remove trailing backslash if it exists
         $property_id = preg_replace('/^\\\\/', '', $property_id);
 
-        list($fq_class_name, $property_name) = explode('::$', $property_id);
+        [$fq_class_name, $property_name] = explode('::$', $property_id);
 
         $class_storage = $this->classlike_storage_provider->get($fq_class_name);
 
@@ -242,21 +237,16 @@ class Properties
         throw new \UnexpectedValueException('Property ' . $property_id . ' should exist');
     }
 
-    /**
-     * @param  string $property_id
-     *
-     * @return  ?Type\Union
-     */
     public function getPropertyType(
-        $property_id,
+        string $property_id,
         bool $property_set,
-        StatementsSource $source = null,
-        Context $context = null
-    ) {
+        ?StatementsSource $source = null,
+        ?Context $context = null
+    ): ?Type\Union {
         // remove trailing backslash if it exists
         $property_id = preg_replace('/^\\\\/', '', $property_id);
 
-        list($fq_class_name, $property_name) = explode('::$', $property_id);
+        [$fq_class_name, $property_name] = explode('::$', $property_id);
 
         if ($this->property_type_provider->has($fq_class_name)) {
             $property_type = $this->property_type_provider->getPropertyType(

@@ -4,8 +4,8 @@ namespace Psalm\Tests;
 
 use DOMDocument;
 use Psalm\Context;
-use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\RuntimeCaches;
 use Psalm\IssueBuffer;
 use Psalm\Report;
 use Psalm\Report\JsonReport;
@@ -21,14 +21,11 @@ use function unlink;
 
 class ReportOutputTest extends TestCase
 {
-    /**
-     * @return void
-     */
     public function setUp() : void
     {
         // `TestCase::setUp()` creates its own ProjectAnalyzer and Config instance, but we don't want to do that in this
         // case, so don't run a `parent::setUp()` call here.
-        FileAnalyzer::clearCache();
+        RuntimeCaches::clearAll();
         $this->file_provider = new Provider\FakeFileProvider();
 
         $config = new TestConfig();
@@ -48,10 +45,7 @@ class ReportOutputTest extends TestCase
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testReportFormatValid()
+    public function testReportFormatValid(): void
     {
         $config = new TestConfig();
         $config->throw_exception = false;
@@ -62,10 +56,7 @@ class ReportOutputTest extends TestCase
         }
     }
 
-    /**
-     * @return void
-     */
-    public function testReportFormatException()
+    public function testReportFormatException(): void
     {
         $this->expectException(\UnexpectedValueException::class);
         $config = new TestConfig();
@@ -90,6 +81,7 @@ if (rand(0, 100) > 10) {
   //$a = 2;
 }
 
+/** @psalm-suppress MixedArgument */
 echo $a;';
 
         $this->addFile(
@@ -100,10 +92,7 @@ echo $a;';
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testJsonReport()
+    public function testJsonReport(): void
     {
         $this->analyzeFileForReport();
 
@@ -194,18 +183,18 @@ echo $a;';
             ],
             [
                 'severity' => 'info',
-                'line_from' => 15,
-                'line_to' => 15,
+                'line_from' => 16,
+                'line_to' => 16,
                 'type' => 'PossiblyUndefinedGlobalVariable',
                 'message' => 'Possibly undefined global variable $a, first seen on line 10',
                 'file_name' => 'somefile.php',
                 'file_path' => 'somefile.php',
                 'snippet' => 'echo $a',
                 'selected_text' => '$a',
-                'from' => 201,
-                'to' => 203,
-                'snippet_from' => 196,
-                'snippet_to' => 203,
+                'from' => 238,
+                'to' => 240,
+                'snippet_from' => 233,
+                'snippet_to' => 240,
                 'column_from' => 6,
                 'column_to' => 8,
                 'error_level' => 3,
@@ -256,10 +245,7 @@ echo $a;';
         $this->assertIsArray(json_decode($report->create()));
     }
 
-    /**
-     * @return void
-     */
-    public function testSonarqubeReport()
+    public function testSonarqubeReport(): void
     {
         $this->analyzeFileForReport();
 
@@ -336,8 +322,8 @@ echo $a;';
                         'message' => 'Possibly undefined global variable $a, first seen on line 10',
                         'filePath' => 'somefile.php',
                         'textRange' => [
-                            'startLine' => 15,
-                            'endLine' => 15,
+                            'startLine' => 16,
+                            'endLine' => 16,
                             'startColumn' => 5,
                             'endColumn' => 7,
                         ],
@@ -357,10 +343,7 @@ echo $a;';
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testEmacsReport()
+    public function testEmacsReport(): void
     {
         $this->analyzeFileForReport();
 
@@ -371,16 +354,13 @@ echo $a;';
 somefile.php:3:10:error - Could not infer a return type
 somefile.php:2:42:error - Could not verify return type \'null|string\' for psalmCanVerify
 somefile.php:7:6:error - Const CHANGE_ME is not defined
-somefile.php:15:6:warning - Possibly undefined global variable $a, first seen on line 10
+somefile.php:16:6:warning - Possibly undefined global variable $a, first seen on line 10
 ',
             IssueBuffer::getOutput(IssueBuffer::getIssuesData(), $emacs_report_options)
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testPylintReport()
+    public function testPylintReport(): void
     {
         $this->analyzeFileForReport();
 
@@ -391,16 +371,13 @@ somefile.php:15:6:warning - Possibly undefined global variable $a, first seen on
 somefile.php:3: [E0001] MixedReturnStatement: Could not infer a return type (column 10)
 somefile.php:2: [E0001] MixedInferredReturnType: Could not verify return type \'null|string\' for psalmCanVerify (column 42)
 somefile.php:7: [E0001] UndefinedConstant: Const CHANGE_ME is not defined (column 6)
-somefile.php:15: [W0001] PossiblyUndefinedGlobalVariable: Possibly undefined global variable $a, first seen on line 10 (column 6)
+somefile.php:16: [W0001] PossiblyUndefinedGlobalVariable: Possibly undefined global variable $a, first seen on line 10 (column 6)
 ',
             IssueBuffer::getOutput(IssueBuffer::getIssuesData(), $pylint_report_options)
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testConsoleReport()
+    public function testConsoleReport(): void
     {
         $this->analyzeFileForReport();
 
@@ -420,7 +397,7 @@ function psalmCanVerify(int $your_code): ?string {
 ERROR: UndefinedConstant - somefile.php:7:6 - Const CHANGE_ME is not defined (see https://psalm.dev/020)
 echo CHANGE_ME;
 
-INFO: PossiblyUndefinedGlobalVariable - somefile.php:15:6 - Possibly undefined global variable $a, first seen on line 10 (see https://psalm.dev/126)
+INFO: PossiblyUndefinedGlobalVariable - somefile.php:16:6 - Possibly undefined global variable $a, first seen on line 10 (see https://psalm.dev/126)
 echo $a
 
 ',
@@ -428,10 +405,7 @@ echo $a
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testConsoleReportNoInfo()
+    public function testConsoleReportNoInfo(): void
     {
         $this->analyzeFileForReport();
 
@@ -457,10 +431,7 @@ echo CHANGE_ME;
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testConsoleReportNoSnippet()
+    public function testConsoleReportNoSnippet(): void
     {
         $this->analyzeFileForReport();
 
@@ -481,7 +452,7 @@ ERROR: MixedInferredReturnType - somefile.php:2:42 - Could not verify return typ
 ERROR: UndefinedConstant - somefile.php:7:6 - Const CHANGE_ME is not defined (see https://psalm.dev/020)
 
 
-INFO: PossiblyUndefinedGlobalVariable - somefile.php:15:6 - Possibly undefined global variable $a, first seen on line 10 (see https://psalm.dev/126)
+INFO: PossiblyUndefinedGlobalVariable - somefile.php:16:6 - Possibly undefined global variable $a, first seen on line 10 (see https://psalm.dev/126)
 
 
 ',
@@ -489,10 +460,7 @@ INFO: PossiblyUndefinedGlobalVariable - somefile.php:15:6 - Possibly undefined g
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testCompactReport()
+    public function testCompactReport(): void
     {
         $this->analyzeFileForReport();
 
@@ -510,16 +478,13 @@ INFO: PossiblyUndefinedGlobalVariable - somefile.php:15:6 - Possibly undefined g
             '| ERROR    | 3    | MixedReturnStatement            | Could not infer a return type                                 |' . "\n" .
             '| ERROR    | 2    | MixedInferredReturnType         | Could not verify return type \'null|string\' for psalmCanVerify |' . "\n" .
             '| ERROR    | 7    | UndefinedConstant               | Const CHANGE_ME is not defined                                |' . "\n" .
-            '| INFO     | 15   | PossiblyUndefinedGlobalVariable | Possibly undefined global variable $a, first seen on line 10  |' . "\n" .
+            '| INFO     | 16   | PossiblyUndefinedGlobalVariable | Possibly undefined global variable $a, first seen on line 10  |' . "\n" .
             '+----------+------+---------------------------------+---------------------------------------------------------------+' . "\n",
             $this->toUnixLineEndings(IssueBuffer::getOutput(IssueBuffer::getIssuesData(), $compact_report_options))
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testCheckstyleReport()
+    public function testCheckstyleReport(): void
     {
         $this->analyzeFileForReport();
 
@@ -541,7 +506,7 @@ INFO: PossiblyUndefinedGlobalVariable - somefile.php:15:6 - Possibly undefined g
  <error line="7" column="6" severity="error" message="UndefinedConstant: Const CHANGE_ME is not defined"/>
 </file>
 <file name="somefile.php">
- <error line="15" column="6" severity="info" message="PossiblyUndefinedGlobalVariable: Possibly undefined global variable $a, first seen on line 10"/>
+ <error line="16" column="6" severity="info" message="PossiblyUndefinedGlobalVariable: Possibly undefined global variable $a, first seen on line 10"/>
 </file>
 </checkstyle>
 ',
@@ -555,10 +520,7 @@ INFO: PossiblyUndefinedGlobalVariable - somefile.php:15:6 - Possibly undefined g
         //);
     }
 
-    /**
-     * @return void
-     */
-    public function testJunitReport()
+    public function testJunitReport(): void
     {
         $this->analyzeFileForReport();
 
@@ -610,12 +572,12 @@ column_from: 6
 column_to: 15
 </failure>
     </testcase>
-    <testcase name="somefile.php:15" classname="PossiblyUndefinedGlobalVariable" assertions="1">
+    <testcase name="somefile.php:16" classname="PossiblyUndefinedGlobalVariable" assertions="1">
       <skipped>message: Possibly undefined global variable $a, first seen on line 10
 type: PossiblyUndefinedGlobalVariable
 snippet: echo $a
 selected_text: $a
-line: 15
+line: 16
 column_from: 6
 column_to: 8
 </skipped>
@@ -642,10 +604,7 @@ column_to: 8
         //);
     }
 
-    /**
-     * @return void
-     */
-    public function testEmptyReportIfNotError()
+    public function testEmptyReportIfNotError(): void
     {
         $this->addFile(
             'somefile.php',
@@ -690,6 +649,8 @@ column_to: 8
 
     /**
      * Needed when running on Windows
+     *
+     * @psalm-pure
      */
     private function toUnixLineEndings(string $output): string
     {

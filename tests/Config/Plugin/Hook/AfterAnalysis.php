@@ -7,7 +7,6 @@ use Psalm\Plugin\Hook\{
     AfterAnalysisInterface
 };
 use Psalm\SourceControl\SourceControlInfo;
-use Psalm\Type;
 
 class AfterAnalysis implements
     AfterAnalysisInterface
@@ -23,7 +22,7 @@ class AfterAnalysis implements
         Codebase $codebase,
         array $issues,
         array $build_info,
-        SourceControlInfo $source_control_info = null
+        ?SourceControlInfo $source_control_info = null
     ) {
         if ($source_control_info) {
             $source_control_info->toArray();

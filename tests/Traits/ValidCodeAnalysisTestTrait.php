@@ -15,7 +15,7 @@ trait ValidCodeAnalysisTestTrait
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    abstract public function providerValidCodeParse();
+    abstract public function providerValidCodeParse(): iterable;
 
     /**
      * @dataProvider providerValidCodeParse

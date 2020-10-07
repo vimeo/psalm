@@ -27,14 +27,12 @@ class FunctionExistenceProvider
     /**
      * @param  class-string<FunctionExistenceProviderInterface> $class
      *
-     * @return void
      */
-    public function registerClass(string $class)
+    public function registerClass(string $class): void
     {
         $callable = \Closure::fromCallable([$class, 'doesFunctionExist']);
 
         foreach ($class::getFunctionIds() as $function_id) {
-            /** @psalm-suppress MixedTypeCoercion */
             $this->registerClosure($function_id, $callable);
         }
     }
@@ -46,9 +44,8 @@ class FunctionExistenceProvider
      *     string
      *   ) : ?bool $c
      *
-     * @return void
      */
-    public function registerClosure(string $function_id, \Closure $c)
+    public function registerClosure(string $function_id, \Closure $c): void
     {
         self::$handlers[$function_id][] = $c;
     }
@@ -61,12 +58,11 @@ class FunctionExistenceProvider
     /**
      * @param  array<PhpParser\Node\Arg>  $call_args
      *
-     * @return ?bool
      */
     public function doesFunctionExist(
         StatementsSource $statements_source,
         string $function_id
-    ) {
+    ): ?bool {
         foreach (self::$handlers[strtolower($function_id)] as $function_handler) {
             $function_exists = $function_handler(
                 $statements_source,

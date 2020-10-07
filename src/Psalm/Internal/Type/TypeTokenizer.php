@@ -21,7 +21,7 @@ class TypeTokenizer
     /**
      * @var array<string, bool>
      */
-    const PSALM_RESERVED_WORDS = [
+    public const PSALM_RESERVED_WORDS = [
         'int' => true,
         'string' => true,
         'float' => true,
@@ -41,6 +41,8 @@ class TypeTokenizer
         'class-string' => true,
         'callable-string' => true,
         'callable-array' => true,
+        'pure-callable' => true,
+        'pure-Closure' => true,
         'trait-string' => true,
         'mysql-escaped-string' => true,
         'html-escaped-string' => true,
@@ -77,12 +79,9 @@ class TypeTokenizer
     private static $memoized_tokens = [];
 
     /**
-     * @param  string $string_type
-     * @param  bool   $ignore_space
-     *
      * @return list<array{0: string, 1: int}>
      */
-    public static function tokenize($string_type, $ignore_space = true)
+    public static function tokenize(string $string_type, bool $ignore_space = true): array
     {
         $type_tokens = [['', 0]];
         $was_char = false;
@@ -280,10 +279,10 @@ class TypeTokenizer
     }
 
     /**
-     * @param  string $type_string
-     * @param  array{int,int}|null   $php_version
+     * @param array{int,int}|null   $php_version
      *
-     * @return string
+     *
+     * @psalm-pure
      */
     public static function fixScalarTerms(
         string $type_string,
@@ -332,12 +331,12 @@ class TypeTokenizer
     public static function getFullyQualifiedTokens(
         string $string_type,
         Aliases $aliases,
-        array $template_type_map = null,
-        array $type_aliases = null,
+        ?array $template_type_map = null,
+        ?array $type_aliases = null,
         ?string $self_fqcln = null,
         ?string $parent_fqcln = null,
         bool $allow_assertions = false
-    ) {
+    ): array {
         $type_tokens = self::tokenize($string_type);
 
         for ($i = 0, $l = count($type_tokens); $i < $l; ++$i) {
@@ -361,8 +360,7 @@ class TypeTokenizer
 
             if ($string_type_token[0][0] === '"'
                 || $string_type_token[0][0] === '\''
-                || $string_type_token[0] === '0'
-                || preg_match('/[1-9]/', $string_type_token[0][0])
+                || preg_match('/[0-9]/', $string_type_token[0][0])
             ) {
                 continue;
             }

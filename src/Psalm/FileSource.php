@@ -3,28 +3,13 @@ namespace Psalm;
 
 interface FileSource
 {
-    /**
-     * @return string
-     */
-    public function getFileName();
+    public function getFileName(): string;
 
-    /**
-     * @return string
-     */
-    public function getFilePath();
+    public function getFilePath(): string;
 
-    /**
-     * @return string
-     */
-    public function getRootFileName();
+    public function getRootFileName(): string;
 
-    /**
-     * @return string
-     */
-    public function getRootFilePath();
+    public function getRootFilePath(): string;
 
-    /**
-     * @return Aliases
-     */
-    public function getAliases();
+    public function getAliases(): Aliases;
 }

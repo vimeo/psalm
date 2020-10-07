@@ -104,6 +104,14 @@ You can also specify an absolute path to your plugin:
     </plugins>
 ```
 
+### Using Xdebug
+
+As Psalm disables _Xdebug_ at runtime, if you need to debug your code step-by-step when authoring a plugin, you can allow the extension by running Psalm as following:
+
+```console
+$ PSALM_ALLOW_XDEBUG=1 path/to/psalm
+```
+
 ## Type system
 
 Understand how Psalm handles types by [reading this guide](plugins_type_system.md).
@@ -131,4 +139,3 @@ You can also use more complex rules in the `<issueHandler />` element, as you ca
 ## Upgrading file-based plugin to composer-based version
 
 Create new plugin project using skeleton, then pass the class name of you file-based plugin to `registerHooksFromClass()` method of the `Psalm\Plugin\RegistrationInterface` instance that was passed into your plugin entry point's `__invoke()` method. See the [conversion example](https://github.com/vimeo/psalm/tree/master/examples/plugins/composer-based/echo-checker/).
-

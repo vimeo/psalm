@@ -6,7 +6,7 @@ class MissingReturnTypeTest extends FileManipulationTest
     /**
      * @return array<string,array{string,string,string,string[],bool,5?:bool}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): array
     {
         return [
             'addMissingVoidReturnType56' => [
@@ -180,7 +180,7 @@ class MissingReturnTypeTest extends FileManipulationTest
                 ['MissingReturnType'],
                 true,
             ],
-            'addMissingObjectLikeReturnType70' => [
+            'addMissingTKeyedArrayReturnType70' => [
                 '<?php
                     function foo() {
                         return rand(0, 1) ? ["a" => "hello"] : ["a" => "goodbye", "b" => "hello again"];
@@ -198,7 +198,7 @@ class MissingReturnTypeTest extends FileManipulationTest
                 ['MissingReturnType'],
                 true,
             ],
-            'addMissingObjectLikeReturnTypeWithEmptyArray' => [
+            'addMissingTKeyedArrayReturnTypeWithEmptyArray' => [
                 '<?php
                     function foo() {
                         if (rand(0, 1)) {
@@ -230,7 +230,7 @@ class MissingReturnTypeTest extends FileManipulationTest
                 ['MissingReturnType'],
                 true,
             ],
-            'addMissingObjectLikeReturnTypeWithNestedArrays' => [
+            'addMissingTKeyedArrayReturnTypeWithNestedArrays' => [
                 '<?php
                     function foo() {
                         return [
@@ -272,7 +272,7 @@ class MissingReturnTypeTest extends FileManipulationTest
                 ['MissingReturnType'],
                 true,
             ],
-            'addMissingObjectLikeReturnTypeSeparateStatements70' => [
+            'addMissingTKeyedArrayReturnTypeSeparateStatements70' => [
                 '<?php
                     function foo() {
                         if (rand(0, 1)) {

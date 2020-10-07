@@ -4,7 +4,8 @@ namespace Psalm\Internal\Analyzer\Statements\Expression;
 use PhpParser;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Taint\Sink;
+use Psalm\Internal\ControlFlow\TaintSink;
+use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
@@ -42,7 +43,7 @@ class IncludeAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Include_ $stmt,
         Context $context,
-        Context $global_context = null
+        ?Context $global_context = null
     ) : bool {
         $codebase = $statements_analyzer->getCodebase();
         $config = $codebase->config;
@@ -102,14 +103,13 @@ class IncludeAnalyzer
         }
 
         if ($stmt_expr_type
-            && $codebase->taint
+            && $statements_analyzer->control_flow_graph instanceof TaintFlowGraph
             && $stmt_expr_type->parent_nodes
-            && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
             && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
         ) {
             $arg_location = new CodeLocation($statements_analyzer->getSource(), $stmt->expr);
 
-            $include_param_sink = Sink::getForMethodArgument(
+            $include_param_sink = TaintSink::getForMethodArgument(
                 'include',
                 'include',
                 0,
@@ -118,10 +118,10 @@ class IncludeAnalyzer
 
             $include_param_sink->taints = [\Psalm\Type\TaintKind::INPUT_TEXT];
 
-            $codebase->taint->addSink($include_param_sink);
+            $statements_analyzer->control_flow_graph->addSink($include_param_sink);
 
             foreach ($stmt_expr_type->parent_nodes as $parent_node) {
-                $codebase->taint->addPath($parent_node, $include_param_sink, 'arg');
+                $statements_analyzer->control_flow_graph->addPath($parent_node, $include_param_sink, 'arg');
             }
         }
 
@@ -245,19 +245,15 @@ class IncludeAnalyzer
     }
 
     /**
-     * @param  PhpParser\Node\Expr $stmt
-     * @param  string              $file_name
-     *
-     * @return string|null
      * @psalm-suppress MixedAssignment
      */
     public static function getPathTo(
         PhpParser\Node\Expr $stmt,
         ?\Psalm\Internal\Provider\NodeDataProvider $type_provider,
         ?StatementsAnalyzer $statements_analyzer,
-        $file_name,
+        string $file_name,
         Config $config
-    ) {
+    ): ?string {
         if (DIRECTORY_SEPARATOR === '/') {
             $is_path_relative = $file_name[0] !== DIRECTORY_SEPARATOR;
         } else {
@@ -354,24 +350,18 @@ class IncludeAnalyzer
         return null;
     }
 
-    /**
-     * @param   string  $file_name
-     * @param   string  $current_directory
-     *
-     * @return  string|null
-     */
-    public static function resolveIncludePath($file_name, $current_directory)
+    public static function resolveIncludePath(string $file_name, string $current_directory): ?string
     {
         if (!$current_directory) {
             return $file_name;
         }
 
-        $paths = PATH_SEPARATOR == ':'
+        $paths = PATH_SEPARATOR === ':'
             ? preg_split('#(?<!phar):#', get_include_path())
             : explode(PATH_SEPARATOR, get_include_path());
 
         foreach ($paths as $prefix) {
-            $ds = substr($prefix, -1) == DIRECTORY_SEPARATOR ? '' : DIRECTORY_SEPARATOR;
+            $ds = substr($prefix, -1) === DIRECTORY_SEPARATOR ? '' : DIRECTORY_SEPARATOR;
 
             if ($prefix === '.') {
                 $prefix = $current_directory;
@@ -387,6 +377,9 @@ class IncludeAnalyzer
         return null;
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function normalizeFilePath(string $path_to_file) : string
     {
         // replace all \ with / for normalization

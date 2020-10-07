@@ -37,7 +37,7 @@ class YieldFromAnalyzer
                         $yield_from_type = clone $atomic_type->type_params[3];
                     } elseif ($atomic_type instanceof Type\Atomic\TArray) {
                         $yield_from_type = clone $atomic_type->type_params[1];
-                    } elseif ($atomic_type instanceof Type\Atomic\ObjectLike) {
+                    } elseif ($atomic_type instanceof Type\Atomic\TKeyedArray) {
                         $yield_from_type = $atomic_type->getGenericValueType();
                     }
                 } else {

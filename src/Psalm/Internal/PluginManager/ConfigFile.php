@@ -11,7 +11,7 @@ use function substr;
 
 class ConfigFile
 {
-    const NS = 'https://getpsalm.org/schema/config';
+    public const NS = 'https://getpsalm.org/schema/config';
     /** @var string */
     private $path;
 
@@ -24,8 +24,7 @@ class ConfigFile
     /** @var int|null */
     private $psalm_tag_end_pos;
 
-    /** @param null|string $explicit_path */
-    public function __construct(string $current_dir, $explicit_path)
+    public function __construct(string $current_dir, ?string $explicit_path)
     {
         $this->current_dir = $current_dir;
 
@@ -77,8 +76,7 @@ class ConfigFile
         $this->saveXml($config_xml);
     }
 
-    /** @return void */
-    public function addPlugin(string $plugin_class)
+    public function addPlugin(string $plugin_class): void
     {
         $config_xml = $this->readXml();
         /** @var \DomElement */
@@ -126,8 +124,7 @@ class ConfigFile
         return $doc;
     }
 
-    /** @return void */
-    private function saveXml(DOMDocument $config_xml)
+    private function saveXml(DOMDocument $config_xml): void
     {
         $new_file_contents = $config_xml->saveXML($config_xml);
 

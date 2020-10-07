@@ -4,22 +4,13 @@ namespace Psalm\Type\Atomic;
 use function array_map;
 use function implode;
 use Psalm\Codebase;
-use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
-use Psalm\Internal\Analyzer\TypeAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\UnionTemplateHandler;
-use Psalm\IssueBuffer;
-use Psalm\Issue\InvalidTemplateParam;
-use Psalm\Issue\MissingTemplateParam;
-use Psalm\Issue\TooManyTemplateParams;
-use Psalm\StatementsSource;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 use function substr;
-use function strtolower;
 
 trait GenericTrait
 {
@@ -28,7 +19,7 @@ trait GenericTrait
      */
     public $type_params;
 
-    public function __toString()
+    public function __toString(): string
     {
         $s = '';
         foreach ($this->type_params as $type_param) {
@@ -44,10 +35,7 @@ trait GenericTrait
         return $this->value . '<' . substr($s, 0, -2) . '>' . $extra_types;
     }
 
-    /**
-     * @return string
-     */
-    public function getId(bool $nested = false)
+    public function getId(bool $nested = false): string
     {
         $s = '';
         foreach ($this->type_params as $type_param) {
@@ -74,14 +62,13 @@ trait GenericTrait
     /**
      * @param  array<string, string> $aliased_classes
      *
-     * @return string
      */
     public function toNamespacedString(
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
         bool $use_phpdoc_format
-    ) {
+    ): string {
         $base_value = $this instanceof TNamedObject
             ? parent::toNamespacedString($namespace, $aliased_classes, $this_class, $use_phpdoc_format)
             : $this->value;
@@ -119,7 +106,7 @@ trait GenericTrait
                     /**
                      * @return string
                      */
-                    function (Atomic $extra_type) use ($namespace, $aliased_classes, $this_class) {
+                    function (Atomic $extra_type) use ($namespace, $aliased_classes, $this_class): string {
                         return $extra_type->toNamespacedString($namespace, $aliased_classes, $this_class, false);
                     },
                     $this->extra_types
@@ -135,7 +122,7 @@ trait GenericTrait
                         /**
                          * @return string
                          */
-                        function (Union $type_param) use ($namespace, $aliased_classes, $this_class) {
+                        function (Union $type_param) use ($namespace, $aliased_classes, $this_class): string {
                             return $type_param->toNamespacedString($namespace, $aliased_classes, $this_class, false);
                         },
                         $this->type_params
@@ -163,7 +150,7 @@ trait GenericTrait
         TemplateResult $template_result,
         ?Codebase $codebase = null,
         ?StatementsAnalyzer $statements_analyzer = null,
-        Atomic $input_type = null,
+        ?Atomic $input_type = null,
         ?int $input_arg_offset = null,
         ?string $calling_class = null,
         ?string $calling_function = null,
@@ -199,7 +186,7 @@ trait GenericTrait
                     isset($input_type->type_params[$offset])
             ) {
                 $input_type_param = $input_type->type_params[$offset];
-            } elseif ($input_type instanceof Atomic\ObjectLike) {
+            } elseif ($input_type instanceof Atomic\TKeyedArray) {
                 if ($offset === 0) {
                     $input_type_param = $input_type->getGenericKeyType();
                 } elseif ($offset === 1) {

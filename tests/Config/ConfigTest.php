@@ -13,7 +13,7 @@ use function is_array;
 use function preg_match;
 use Psalm\Config;
 use Psalm\Context;
-use Psalm\Internal\Analyzer\FileAnalyzer;
+use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\Internal\Provider;
 use Psalm\Tests\TestConfig;
 use function realpath;
@@ -28,9 +28,6 @@ class ConfigTest extends \Psalm\Tests\TestCase
     /** @var \Psalm\Internal\Analyzer\ProjectAnalyzer */
     protected $project_analyzer;
 
-    /**
-     * @return void
-     */
     public static function setUpBeforeClass() : void
     {
         self::$config = new TestConfig();
@@ -44,21 +41,13 @@ class ConfigTest extends \Psalm\Tests\TestCase
         }
     }
 
-    /**
-     * @return void
-     */
     public function setUp() : void
     {
-        FileAnalyzer::clearCache();
+        RuntimeCaches::clearAll();
         $this->file_provider = new Provider\FakeFileProvider();
     }
 
-    /**
-     * @param  Config $config
-     *
-     * @return \Psalm\Internal\Analyzer\ProjectAnalyzer
-     */
-    private function getProjectAnalyzerWithConfig(Config $config)
+    private function getProjectAnalyzerWithConfig(Config $config): \Psalm\Internal\Analyzer\ProjectAnalyzer
     {
         $p = new \Psalm\Internal\Analyzer\ProjectAnalyzer(
             $config,
@@ -73,10 +62,7 @@ class ConfigTest extends \Psalm\Tests\TestCase
         return $p;
     }
 
-    /**
-     * @return void
-     */
-    public function testBarebonesConfig()
+    public function testBarebonesConfig(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(
@@ -96,10 +82,7 @@ class ConfigTest extends \Psalm\Tests\TestCase
         $this->assertFalse($config->isInProjectDirs(realpath('examples/StringAnalyzer.php')));
     }
 
-    /**
-     * @return void
-     */
-    public function testIgnoreProjectDirectory()
+    public function testIgnoreProjectDirectory(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(
@@ -123,10 +106,7 @@ class ConfigTest extends \Psalm\Tests\TestCase
         $this->assertFalse($config->isInProjectDirs(realpath('examples/StringAnalyzer.php')));
     }
 
-    /**
-     * @return void
-     */
-    public function testIgnoreMissingProjectDirectory()
+    public function testIgnoreMissingProjectDirectory(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(
@@ -221,10 +201,7 @@ class ConfigTest extends \Psalm\Tests\TestCase
         }
     }
 
-    /**
-     * @return void
-     */
-    public function testIgnoreWildcardProjectDirectory()
+    public function testIgnoreWildcardProjectDirectory(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(
@@ -249,10 +226,7 @@ class ConfigTest extends \Psalm\Tests\TestCase
         $this->assertFalse($config->isInProjectDirs(realpath('examples/StringAnalyzer.php')));
     }
 
-    /**
-     * @return void
-     */
-    public function testIgnoreWildcardFiles()
+    public function testIgnoreWildcardFiles(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(
@@ -277,10 +251,7 @@ class ConfigTest extends \Psalm\Tests\TestCase
         $this->assertFalse($config->isInProjectDirs(realpath('examples/StringAnalyzer.php')));
     }
 
-    /**
-     * @return void
-     */
-    public function testIgnoreWildcardFilesInWildcardFolder()
+    public function testIgnoreWildcardFilesInWildcardFolder(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(
@@ -308,10 +279,7 @@ class ConfigTest extends \Psalm\Tests\TestCase
         $this->assertTrue($config->isInProjectDirs(realpath('examples/plugins/StringChecker.php')));
     }
 
-    /**
-     * @return void
-     */
-    public function testIgnoreWildcardFilesInAllPossibleWildcardFolders()
+    public function testIgnoreWildcardFilesInAllPossibleWildcardFolders(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(
@@ -339,10 +307,7 @@ class ConfigTest extends \Psalm\Tests\TestCase
         $this->assertFalse($config->isInProjectDirs(realpath('examples/StringAnalyzer.php')));
     }
 
-    /**
-     * @return void
-     */
-    public function testIssueHandler()
+    public function testIssueHandler(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(
@@ -367,10 +332,7 @@ class ConfigTest extends \Psalm\Tests\TestCase
         $this->assertFalse($config->reportIssueInFile('MissingReturnType', realpath('src/Psalm/Type.php')));
     }
 
-    /**
-     * @return void
-     */
-    public function testIssueHandlerWithCustomErrorLevels()
+    public function testIssueHandlerWithCustomErrorLevels(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(
@@ -578,10 +540,7 @@ class ConfigTest extends \Psalm\Tests\TestCase
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testAllPossibleIssues()
+    public function testAllPossibleIssues(): void
     {
         $all_possible_handlers = implode(
             ' ',
@@ -591,7 +550,7 @@ class ConfigTest extends \Psalm\Tests\TestCase
                  *
                  * @return string
                  */
-                function ($issue_name) {
+                function ($issue_name): string {
                     return '<' . $issue_name . ' errorLevel="suppress" />' . "\n";
                 },
                 \Psalm\Config\IssueHandler::getAllIssueTypes()
@@ -615,10 +574,7 @@ class ConfigTest extends \Psalm\Tests\TestCase
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testImpossibleIssue()
+    public function testImpossibleIssue(): void
     {
         $this->expectExceptionMessage('This element is not expected');
         $this->expectException(\Psalm\Exception\ConfigException::class);
@@ -639,70 +595,7 @@ class ConfigTest extends \Psalm\Tests\TestCase
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testRequireVoidReturnTypeExists()
-    {
-        $this->expectExceptionMessage('MissingReturnType');
-        $this->expectException(\Psalm\Exception\CodeException::class);
-        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
-            TestConfig::loadFromXML(
-                dirname(__DIR__, 2),
-                '<?xml version="1.0"?>
-                <psalm
-                    requireVoidReturnType="true">
-                    <projectFiles>
-                        <directory name="src" />
-                    </projectFiles>
-                </psalm>'
-            )
-        );
-
-        $file_path = getcwd() . '/src/somefile.php';
-
-        $this->addFile(
-            $file_path,
-            '<?php
-                function foo() {}'
-        );
-
-        $this->analyzeFile($file_path, new Context());
-    }
-
-    /**
-     * @return void
-     */
-    public function testDoNotRequireVoidReturnTypeExists()
-    {
-        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
-            TestConfig::loadFromXML(
-                dirname(__DIR__, 2),
-                '<?xml version="1.0"?>
-                <psalm
-                    requireVoidReturnType="false">
-                    <projectFiles>
-                        <directory name="src" />
-                    </projectFiles>
-                </psalm>'
-            )
-        );
-
-        $file_path = getcwd() . '/src/somefile.php';
-
-        $this->addFile(
-            $file_path,
-            '<?php
-                function foo() {}'
-        );
-
-        $this->analyzeFile($file_path, new Context());
-    }
-
-    /**
-     * @return void
-     */
-    public function testThing()
+    public function testThing(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
@@ -734,10 +627,7 @@ class ConfigTest extends \Psalm\Tests\TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testExitFunctions()
+    public function testExitFunctions(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
@@ -804,10 +694,7 @@ class ConfigTest extends \Psalm\Tests\TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testAllowedEchoFunction()
+    public function testAllowedEchoFunction(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
@@ -828,10 +715,7 @@ class ConfigTest extends \Psalm\Tests\TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testForbiddenEchoFunctionViaFunctions()
+    public function testForbiddenEchoFunctionViaFunctions(): void
     {
         $this->expectExceptionMessage('ForbiddenCode');
         $this->expectException(\Psalm\Exception\CodeException::class);
@@ -858,10 +742,7 @@ class ConfigTest extends \Psalm\Tests\TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testForbiddenEchoFunctionViaFlag()
+    public function testForbiddenEchoFunctionViaFlag(): void
     {
         $this->expectExceptionMessage('ForbiddenEcho');
         $this->expectException(\Psalm\Exception\CodeException::class);
@@ -884,10 +765,7 @@ class ConfigTest extends \Psalm\Tests\TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testAllowedPrintFunction()
+    public function testAllowedPrintFunction(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
@@ -908,10 +786,7 @@ class ConfigTest extends \Psalm\Tests\TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testForbiddenPrintFunction()
+    public function testForbiddenPrintFunction(): void
     {
         $this->expectExceptionMessage('ForbiddenCode');
         $this->expectException(\Psalm\Exception\CodeException::class);
@@ -938,10 +813,7 @@ class ConfigTest extends \Psalm\Tests\TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testAllowedVarExportFunction()
+    public function testAllowedVarExportFunction(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
@@ -963,10 +835,7 @@ class ConfigTest extends \Psalm\Tests\TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testForbiddenVarExportFunction()
+    public function testForbiddenVarExportFunction(): void
     {
         $this->expectExceptionMessage('ForbiddenCode');
         $this->expectException(\Psalm\Exception\CodeException::class);
@@ -994,10 +863,7 @@ class ConfigTest extends \Psalm\Tests\TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testValidThrowInvalidCatch()
+    public function testValidThrowInvalidCatch(): void
     {
         $this->expectExceptionMessage('InvalidCatch');
         $this->expectException(\Psalm\Exception\CodeException::class);
@@ -1045,10 +911,7 @@ class ConfigTest extends \Psalm\Tests\TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testInvalidThrowValidCatch()
+    public function testInvalidThrowValidCatch(): void
     {
         $this->expectExceptionMessage('InvalidThrow');
         $this->expectException(\Psalm\Exception\CodeException::class);
@@ -1096,10 +959,7 @@ class ConfigTest extends \Psalm\Tests\TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testValidThrowValidCatch()
+    public function testValidThrowValidCatch(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
@@ -1150,8 +1010,7 @@ class ConfigTest extends \Psalm\Tests\TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /** @return void */
-    public function testModularConfig()
+    public function testModularConfig(): void
     {
         $root = __DIR__ . '/../fixtures/ModularConfig';
         $config = Config::loadFromXMLFile($root . '/psalm.xml', $root);
@@ -1168,7 +1027,7 @@ class ConfigTest extends \Psalm\Tests\TestCase
     {
         parent::tearDown();
 
-        if ($this->getName() == 'testTemplatedFiles') {
+        if ($this->getName() === 'testTemplatedFiles') {
             $project_root = dirname(__DIR__, 2);
             foreach (['1.xml', '2.xml', '3.xml', '4.xml', '5.xml', '6.xml', '7.xml', '8.xml'] as $file_name) {
                 @unlink($project_root . DIRECTORY_SEPARATOR . $file_name);
@@ -1176,10 +1035,7 @@ class ConfigTest extends \Psalm\Tests\TestCase
         }
     }
 
-    /**
-     * @return void
-     */
-    public function testGlobals()
+    public function testGlobals(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
@@ -1274,10 +1130,7 @@ class ConfigTest extends \Psalm\Tests\TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testIgnoreExceptions()
+    public function testIgnoreExceptions(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
@@ -1353,10 +1206,7 @@ class ConfigTest extends \Psalm\Tests\TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testGetPossiblePsr4Path()
+    public function testGetPossiblePsr4Path(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(
@@ -1407,10 +1257,7 @@ class ConfigTest extends \Psalm\Tests\TestCase
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testTakesPhpVersionFromConfigFile()
+    public function testTakesPhpVersionFromConfigFile(): void
     {
         $cfg = Config::loadFromXML(
             dirname(__DIR__, 2),
@@ -1419,10 +1266,7 @@ class ConfigTest extends \Psalm\Tests\TestCase
         $this->assertSame('7.1', $cfg->getPhpVersion());
     }
 
-    /**
-     * @return void
-     */
-    public function testReadsComposerJsonForPhpVersion()
+    public function testReadsComposerJsonForPhpVersion(): void
     {
 
         $root = __DIR__ . '/../fixtures/ComposerPhpVersion';
@@ -1433,8 +1277,7 @@ class ConfigTest extends \Psalm\Tests\TestCase
         $this->assertSame('8.0', $cfg->getPhpVersion());
     }
 
-    /** @return void */
-    public function testSetsUsePhpStormMetaPath()
+    public function testSetsUsePhpStormMetaPath(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(

@@ -7,7 +7,8 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Taint\TaintNode;
+use Psalm\Internal\ControlFlow\ControlFlowNode;
+use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\AbstractInstantiation;
@@ -82,8 +83,12 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                         // @todo maybe we can do better here
                         $class_storage = $codebase->classlike_storage_provider->get($context->self);
                         $fq_class_name = $class_storage->name;
-                        $can_extend = true;
-                        $from_static = true;
+
+                        if (!$class_storage->final) {
+                            $can_extend = true;
+                            $from_static = true;
+                        }
+
                         break;
                 }
             }
@@ -105,7 +110,10 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
             $statements_analyzer->analyze([$stmt->class], $context);
             $fq_class_name = ClassAnalyzer::getAnonymousClassName($stmt->class, $statements_analyzer->getFilePath());
         } else {
+            $was_inside_use = $context->inside_use;
+            $context->inside_use = true;
             ExpressionAnalyzer::analyze($statements_analyzer, $stmt->class, $context);
+            $context->inside_use = $was_inside_use;
 
             if ($stmt_class_type = $statements_analyzer->node_data->getType($stmt->class)) {
                 $has_single_class = $stmt_class_type->isSingleStringLiteral();
@@ -201,7 +209,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
 
                     if ($lhs_type_part instanceof Type\Atomic\TLiteralClassString
                         || $lhs_type_part instanceof Type\Atomic\TClassString
-                        || $lhs_type_part instanceof Type\Atomic\GetClassT
+                        || $lhs_type_part instanceof Type\Atomic\TDependentGetClass
                     ) {
                         if (!$statements_analyzer->node_data->getType($stmt)) {
                             if ($lhs_type_part instanceof Type\Atomic\TClassString) {
@@ -230,7 +238,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                                         }
                                     }
                                 }
-                            } elseif ($lhs_type_part instanceof Type\Atomic\GetClassT) {
+                            } elseif ($lhs_type_part instanceof Type\Atomic\TDependentGetClass) {
                                 $generated_type = new Type\Atomic\TObject();
 
                                 if ($lhs_type_part->as_type->hasObjectType()
@@ -344,6 +352,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                         $stmt->args,
                         null,
                         null,
+                        true,
                         $context
                     );
 
@@ -355,6 +364,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                     $stmt->args,
                     null,
                     null,
+                    true,
                     $context
                 );
 
@@ -383,6 +393,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                         $stmt->args,
                         null,
                         null,
+                        true,
                         $context
                     );
 
@@ -403,6 +414,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                         $stmt->args,
                         null,
                         null,
+                        true,
                         $context
                     );
 
@@ -542,13 +554,13 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                         return false;
                     }
 
-                    if ($context->pure) {
-                        $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
+                    $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
-                        if ($declaring_method_id) {
-                            $method_storage = $codebase->methods->getStorage($declaring_method_id);
+                    if ($declaring_method_id) {
+                        $method_storage = $codebase->methods->getStorage($declaring_method_id);
 
-                            if (!$method_storage->external_mutation_free && !$context->inside_throw) {
+                        if (!$method_storage->external_mutation_free && !$context->inside_throw) {
+                            if ($context->pure) {
                                 if (IssueBuffer::accepts(
                                     new ImpureMethodCall(
                                         'Cannot call an impure constructor from a pure context',
@@ -558,6 +570,12 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                                 )) {
                                     // fall through
                                 }
+                            } elseif ($statements_analyzer->getSource()
+                                    instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                                && $statements_analyzer->getSource()->track_mutations
+                            ) {
+                                $statements_analyzer->getSource()->inferred_has_mutation = true;
+                                $statements_analyzer->getSource()->inferred_impure = true;
                             }
                         }
                     }
@@ -565,8 +583,6 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                     $generic_param_types = null;
 
                     if ($storage->template_types) {
-                        $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
-
                         $declaring_fq_class_name = $declaring_method_id
                             ? $declaring_method_id->fq_class_name
                             : $fq_class_name;
@@ -583,7 +599,11 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                                     $template_result->upper_bounds
                                 );
                             } else {
-                                $generic_param_type = array_values($base_type)[0][0];
+                                if ($fq_class_name === 'SplObjectStorage') {
+                                    $generic_param_type = Type::getEmpty();
+                                } else {
+                                    $generic_param_type = array_values($base_type)[0][0];
+                                }
                             }
 
                             $generic_param_type->had_template = true;
@@ -628,8 +648,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                     }
                 }
 
-                if ($codebase->taint
-                    && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
+                if ($statements_analyzer->control_flow_graph instanceof TaintFlowGraph
                     && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
                     && ($stmt_type = $statements_analyzer->node_data->getType($stmt))
                 ) {
@@ -646,23 +665,23 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                     if ($storage->external_mutation_free
                         || ($method_storage && $method_storage->specialize_call)
                     ) {
-                        $method_source = TaintNode::getForMethodReturn(
+                        $method_source = ControlFlowNode::getForMethodReturn(
                             (string) $method_id,
                             $fq_class_name . '::__construct',
                             $storage->location,
                             $code_location
                         );
                     } else {
-                        $method_source = TaintNode::getForMethodReturn(
+                        $method_source = ControlFlowNode::getForMethodReturn(
                             (string) $method_id,
                             $fq_class_name . '::__construct',
                             $storage->location
                         );
                     }
 
-                    $codebase->taint->addTaintNode($method_source);
+                    $statements_analyzer->control_flow_graph->addNode($method_source);
 
-                    $stmt_type->parent_nodes = [$method_source];
+                    $stmt_type->parent_nodes = [$method_source->id => $method_source];
                 }
             } else {
                 ArgumentsAnalyzer::analyze(
@@ -670,6 +689,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                     $stmt->args,
                     null,
                     null,
+                    true,
                     $context
                 );
             }
@@ -685,10 +705,8 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
     }
 
     /**
-     * @param  string $template_name
      * @param  array<string, array<int|string, Type\Union>>  $template_type_extends
      * @param  array<string, array<string, array{Type\Union}>>  $found_generic_params
-     * @return Type\Union
      */
     private static function getGenericParamForOffset(
         string $fq_class_name,
@@ -696,7 +714,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
         array $template_type_extends,
         array $found_generic_params,
         bool $mapped = false
-    ) {
+    ): Type\Union {
         if (isset($found_generic_params[$template_name][$fq_class_name])) {
             if (!$mapped && isset($template_type_extends[$fq_class_name][$template_name])) {
                 foreach ($template_type_extends[$fq_class_name][$template_name]->getAtomicTypes() as $t) {
