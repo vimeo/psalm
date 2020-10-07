@@ -3222,16 +3222,6 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                     }',
                 'error_message' => 'RedundantCondition',
             ],
-            'catchTypeDoesNotContainTypeOnBinaryOpForwards' => [
-                '<?php
-                    class App {}
-
-                    function test(App $app) : void {
-                        /** @psalm-suppress RedundantCondition */
-                        if ($app || rand(0, 1)) {}
-                    }',
-                'error_message' => 'TypeDoesNotContainType',
-            ],
             'nonEmptyString' => [
                 '<?php
                     /**

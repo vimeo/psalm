@@ -144,7 +144,7 @@ class AlgebraAnalyzer
 
                     if (!$mini_formula_2[0]->wedge) {
                         if (count($mini_formula_2) > 1) {
-                            $paradox_message = 'Condition ((' . implode(') && (', $mini_formula_2) . '))'
+                            $paradox_message = 'Condition ((' . \implode(') && (', $mini_formula_2) . '))'
                                 . ' contradicts a previously-established condition (' . $clause_1 . ')';
                         } else {
                             $paradox_message = 'Condition (' . $mini_formula_2[0] . ')'

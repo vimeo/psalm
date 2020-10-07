@@ -59,7 +59,8 @@ class Reconciler
         StatementsAnalyzer $statements_analyzer,
         array $template_type_map = [],
         bool $inside_loop = false,
-        ?CodeLocation $code_location = null
+        ?CodeLocation $code_location = null,
+        bool $negated = false
     ): array {
         if (!$new_types) {
             return $existing_types;
@@ -258,7 +259,8 @@ class Reconciler
                             $statements_analyzer,
                             $template_type_map,
                             $inside_loop,
-                            $code_location
+                            $code_location,
+                            $negated
                         );
 
                         $new_type_part_part = '!falsy';
@@ -277,7 +279,8 @@ class Reconciler
                             ? $code_location
                             : null,
                         $suppressed_issues,
-                        $failed_reconciliation
+                        $failed_reconciliation,
+                        $negated
                     );
 
                     if (!$result_type_candidate->getAtomicTypes()) {
