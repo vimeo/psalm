@@ -4,6 +4,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Assignment;
 use PhpParser;
 use PhpParser\Node\Expr\PropertyFetch;
 use PhpParser\Node\Stmt\PropertyProperty;
+use Psalm\Config;
 use Psalm\Internal\Analyzer\ClassAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
@@ -269,7 +270,11 @@ class InstancePropertyAssignmentAnalyzer
                     (
                         in_array(
                             strtolower($lhs_type_part->value),
-                            ['stdclass', 'simplexmlelement', 'dateinterval', 'domdocument', 'domnode'],
+                            Config::getInstance()->getUniversalObjectCrates() + [
+                                'dateinterval',
+                                'domdocument',
+                                'domnode'
+                            ],
                             true
                         )
                     )

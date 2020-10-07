@@ -1290,4 +1290,22 @@ class ConfigTest extends \Psalm\Tests\TestCase
 
         $this->assertFalse($this->project_analyzer->getConfig()->use_phpstorm_meta_path);
     }
+
+    /** @return void */
+    public function testSetsUniversalObjectCrates()
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <universalObjectCrates>
+                        <class name="Foo" />
+                    </universalObjectCrates>
+                </psalm>'
+            )
+        );
+
+        $this->assertContains('foo', $this->project_analyzer->getConfig()->getUniversalObjectCrates());
+    }
 }

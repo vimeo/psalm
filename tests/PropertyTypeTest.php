@@ -118,6 +118,35 @@ class PropertyTypeTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    /**
+     * @return void
+     */
+    public function testUniversalObjectCrates(): void
+    {
+        /** @var class-string $classString */
+        $classString = 'Foo';
+        Config::getInstance()->addUniversalObjectCrate($classString);
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class Foo { }
+
+                $f = new Foo();
+                // reads are fine
+                $f->bar;
+
+                // sets are fine
+                $f->buzz = false;
+        '
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    /**
+     * @return void
+     */
     public function testForgetPropertyAssignmentsInBranchWithThrowNormally(): void
     {
         $this->addFile(

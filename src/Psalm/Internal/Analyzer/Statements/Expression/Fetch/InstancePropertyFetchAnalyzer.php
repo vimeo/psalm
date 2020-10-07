@@ -2,6 +2,7 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression\Fetch;
 
 use PhpParser;
+use Psalm\Config;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
@@ -427,7 +428,7 @@ class InstancePropertyFetchAnalyzer
             // but we don't want to throw an error
             // Hack has a similar issue: https://github.com/facebook/hhvm/issues/5164
             if ($lhs_type_part instanceof TObject
-                || in_array(strtolower($lhs_type_part->value), ['stdclass', 'simplexmlelement'], true)
+                || in_array(strtolower($lhs_type_part->value), Config::getInstance()->getUniversalObjectCrates(), true)
             ) {
                 $statements_analyzer->node_data->setType($stmt, Type::getMixed());
 
