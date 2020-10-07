@@ -95,9 +95,9 @@ class AlgebraAnalyzer
         }
 
         // remove impossible types
-        foreach ($negated_formula2 as $clause_2) {
+        foreach ($negated_formula2 as $negated_clause_2) {
             if (count($negated_formula2) === 1) {
-                foreach ($clause_2->possibilities as $key => $values) {
+                foreach ($negated_clause_2->possibilities as $key => $values) {
                     if (count($values) > 1
                         && !isset($new_assigned_var_ids[$key])
                         && count(array_unique($values)) < count($values)
@@ -116,38 +116,38 @@ class AlgebraAnalyzer
                 }
             }
 
-            if (!$clause_2->reconcilable || $clause_2->wedge) {
+            if (!$negated_clause_2->reconcilable || $negated_clause_2->wedge) {
                 continue;
             }
 
             foreach ($formula_1 as $clause_1) {
-                if ($clause_2 === $clause_1 || !$clause_1->reconcilable || $clause_1->wedge) {
+                if ($negated_clause_2 === $clause_1 || !$clause_1->reconcilable || $clause_1->wedge) {
                     continue;
                 }
 
-                $clause_2_contains_1_possibilities = true;
+                $negated_clause_2_contains_1_possibilities = true;
 
                 foreach ($clause_1->possibilities as $key => $keyed_possibilities) {
-                    if (!isset($clause_2->possibilities[$key])) {
-                        $clause_2_contains_1_possibilities = false;
+                    if (!isset($negated_clause_2->possibilities[$key])) {
+                        $negated_clause_2_contains_1_possibilities = false;
                         break;
                     }
 
-                    if ($clause_2->possibilities[$key] != $keyed_possibilities) {
-                        $clause_2_contains_1_possibilities = false;
+                    if ($negated_clause_2->possibilities[$key] != $keyed_possibilities) {
+                        $negated_clause_2_contains_1_possibilities = false;
                         break;
                     }
                 }
 
-                if ($clause_2_contains_1_possibilities) {
-                    $clause_2_string = (string) $clause_2;
-                    $clause_1_string = (string) $clause_1;
+                if ($negated_clause_2_contains_1_possibilities) {
+                    $mini_formula_2 = Algebra::negateFormula([$negated_clause_2]);
 
-                    if ($clause_2_string === $clause_1_string) {
-                        $paradox_message = 'Encountered a duplicate check for (' . $clause_2_string . ')';
+                    if (count($mini_formula_2) === 1) {
+                        $paradox_message = 'Condition (' . $mini_formula_2[0] . ')'
+                            . ' contradicts a previously-established condition (' . $clause_1 . ')';
                     } else {
-                        $paradox_message = 'Encountered a paradox when evaluating the conditionals ('
-                            . $clause_2_string . ') and (' . $clause_1_string . ')';
+                        $paradox_message = 'Condition not(' . $negated_clause_2 . ')'
+                            . ' contradicts a previously-established condition (' . $clause_1 . ')';
                     }
 
                     if (IssueBuffer::accepts(
