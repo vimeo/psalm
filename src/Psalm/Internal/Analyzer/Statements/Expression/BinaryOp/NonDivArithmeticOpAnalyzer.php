@@ -547,6 +547,22 @@ class NonDivArithmeticOpAnalyzer
             return null;
         }
 
+        if ($left_type_part instanceof Type\Atomic\TLiteralString) {
+            if (preg_match('/^\-?\d+$/', $left_type_part->value)) {
+                $left_type_part = new Type\Atomic\TLiteralInt((int) $left_type_part->value);
+            } elseif (preg_match('/^\-?\d?\.\d+$/', $left_type_part->value)) {
+                $left_type_part = new Type\Atomic\TLiteralFloat((float) $left_type_part->value);
+            }
+        }
+
+        if ($right_type_part instanceof Type\Atomic\TLiteralString) {
+            if (preg_match('/^\-?\d+$/', $right_type_part->value)) {
+                $right_type_part = new Type\Atomic\TLiteralInt((int) $right_type_part->value);
+            } elseif (preg_match('/^\-?\d?\.\d+$/', $right_type_part->value)) {
+                $right_type_part = new Type\Atomic\TLiteralFloat((float) $right_type_part->value);
+            }
+        }
+
         if ($left_type_part->isNumericType() || $right_type_part->isNumericType()) {
             if (($left_type_part instanceof TNumeric || $right_type_part instanceof TNumeric)
                 && ($left_type_part->isNumericType() && $right_type_part->isNumericType())
