@@ -1213,7 +1213,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 return false;
             }
 
-            if (!isset($pattern[$i + 2]) || $next !== '-') {
+            if (!isset($pattern[$i + 2])) {
                 return false;
             }
 

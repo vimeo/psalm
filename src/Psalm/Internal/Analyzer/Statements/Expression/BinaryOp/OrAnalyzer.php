@@ -102,6 +102,7 @@ class OrAnalyzer
             $left_context->referenced_var_ids = array_merge($pre_referenced_var_ids, $left_referenced_var_ids);
 
             $left_assigned_var_ids = array_diff_key($left_context->assigned_var_ids, $pre_assigned_var_ids);
+            $left_context->assigned_var_ids = array_merge($pre_assigned_var_ids, $left_context->assigned_var_ids);
 
             $left_referenced_var_ids = array_diff_key($left_referenced_var_ids, $left_assigned_var_ids);
         }
@@ -223,8 +224,54 @@ class OrAnalyzer
 
         $right_context->if_context = null;
 
+        $pre_referenced_var_ids = $right_context->referenced_var_ids;
+        $right_context->referenced_var_ids = [];
+
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->right, $right_context) === false) {
             return false;
+        }
+
+        $right_referenced_var_ids = $right_context->referenced_var_ids;
+        $right_context->referenced_var_ids = array_merge($pre_referenced_var_ids, $right_referenced_var_ids);
+
+        $right_cond_id = \spl_object_id($stmt->right);
+
+        $right_clauses = Algebra::getFormula(
+            $right_cond_id,
+            $right_cond_id,
+            $stmt->right,
+            $context->self,
+            $statements_analyzer,
+            $codebase
+        );
+
+        $combined_right_clauses = Algebra::simplifyCNF(
+            array_merge($clauses_for_right_analysis, $right_clauses)
+        );
+
+        $active_right_type_assertions = [];
+
+        $right_type_assertions = Algebra::getTruthsFromFormula(
+            $combined_right_clauses,
+            $right_cond_id,
+            $right_referenced_var_ids,
+            $active_right_type_assertions
+        );
+
+        if ($right_type_assertions) {
+            $right_changed_var_ids = [];
+
+            Reconciler::reconcileKeyedTypes(
+                $right_type_assertions,
+                $active_right_type_assertions,
+                $right_context->vars_in_scope,
+                $right_changed_var_ids,
+                $right_referenced_var_ids,
+                $statements_analyzer,
+                [],
+                $left_context->inside_loop,
+                new CodeLocation($statements_analyzer->getSource(), $stmt->right)
+            );
         }
 
         if (!($stmt->right instanceof PhpParser\Node\Expr\Exit_)) {

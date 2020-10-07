@@ -378,7 +378,7 @@ class ParseTreeCreator
             $current_parent = $current_parent->parent;
         }
 
-        if (!$current_parent || !$this->current_leaf) {
+        if (!$current_parent) {
             if ($this->current_leaf instanceof ParseTree\CallableTree
                 && $type_token[0] === '...'
             ) {
