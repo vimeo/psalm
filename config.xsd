@@ -21,6 +21,7 @@
             <xs:element name="issueHandlers" type="IssueHandlersType" minOccurs="0" maxOccurs="1" />
             <xs:element name="ignoreExceptions" type="ExceptionsType" minOccurs="0" maxOccurs="1" />
             <xs:element name="globals" type="GlobalsType" minOccurs="0" maxOccurs="1" />
+            <xs:element name="universalObjectCrates" type="UniversalObjectCratesType" minOccurs="0" maxOccurs="1" />
         </xs:choice>
 
         <xs:attribute name="autoloader" type="xs:string" />
@@ -126,6 +127,12 @@
     </xs:complexType>
 
     <xs:complexType name="MockClassesType">
+        <xs:sequence>
+            <xs:element name="class" maxOccurs="unbounded" type="NameAttributeType" />
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="UniversalObjectCratesType">
         <xs:sequence>
             <xs:element name="class" maxOccurs="unbounded" type="NameAttributeType" />
         </xs:sequence>
