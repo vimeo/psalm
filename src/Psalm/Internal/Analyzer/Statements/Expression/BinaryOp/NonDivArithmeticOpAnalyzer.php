@@ -34,6 +34,7 @@ use Psalm\Type\Atomic\TNumeric;
 use Psalm\Internal\Type\TypeCombination;
 use function array_diff_key;
 use function array_values;
+use function preg_match;
 use function strtolower;
 
 /**
