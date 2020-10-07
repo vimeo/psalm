@@ -668,10 +668,8 @@ class NonDivArithmeticOpAnalyzer
 
                 if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Mod) {
                     $result_type = Type::getInt();
-                } elseif (!$result_type) {
-                    $result_type = Type::getFloat();
                 } else {
-                    $result_type = Type::combineUnionTypes(Type::getFloat(), $result_type);
+                    $result_type = new Type\Union([new Type\Atomic\TInt, new Type\Atomic\TFloat]);
                 }
 
                 $has_valid_right_operand = true;
