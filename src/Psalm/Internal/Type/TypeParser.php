@@ -411,10 +411,11 @@ class TypeParser
                 $parse_tree->children
             );
 
-            $onlyTKeyedArray = true;
-
             $first_type = \reset($intersection_types);
             $last_type = \end($intersection_types);
+
+            $onlyTKeyedArray = $first_type instanceof TKeyedArray
+                && $last_type instanceof TKeyedArray;
 
             foreach ($intersection_types as $intersection_type) {
                 if (!$intersection_type instanceof TKeyedArray

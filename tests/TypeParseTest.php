@@ -203,6 +203,12 @@ class TypeParseTest extends TestCase
         Type::parseString('array{a: string}&array{a: int}');
     }
 
+    public function testIntersectionOfTwoRegularArrays() : void
+    {
+        $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
+        Type::parseString('string[]&array<string, string>');
+    }
+
     public function testUnionOfIntersectionOfTKeyedArray(): void
     {
         $this->assertSame('array{a: int|string, b?: int}', (string) Type::parseString('array{a: int}|array{a: string}&array{b: int}'));
