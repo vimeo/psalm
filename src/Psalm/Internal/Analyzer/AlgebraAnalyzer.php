@@ -142,9 +142,14 @@ class AlgebraAnalyzer
                 if ($negated_clause_2_contains_1_possibilities) {
                     $mini_formula_2 = Algebra::negateFormula([$negated_clause_2]);
 
-                    if (count($mini_formula_2) === 1) {
-                        $paradox_message = 'Condition (' . $mini_formula_2[0] . ')'
-                            . ' contradicts a previously-established condition (' . $clause_1 . ')';
+                    if (!$mini_formula_2[0]->wedge) {
+                        if (count($mini_formula_2) > 1) {
+                            $paradox_message = 'Condition ((' . implode(') && (', $mini_formula_2) . '))'
+                                . ' contradicts a previously-established condition (' . $clause_1 . ')';
+                        } else {
+                            $paradox_message = 'Condition (' . $mini_formula_2[0] . ')'
+                                . ' contradicts a previously-established condition (' . $clause_1 . ')';
+                        }
                     } else {
                         $paradox_message = 'Condition not(' . $negated_clause_2 . ')'
                             . ' contradicts a previously-established condition (' . $clause_1 . ')';
