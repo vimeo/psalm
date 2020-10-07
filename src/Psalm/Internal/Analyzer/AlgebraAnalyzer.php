@@ -25,45 +25,45 @@ class AlgebraAnalyzer
      * if ($a) { }
      * elseif ($a) { }
      *
-     * @param  array<int, Clause>   $formula1
-     * @param  array<int, Clause>   $formula2
+     * @param  array<int, Clause>   $formula_1
+     * @param  array<int, Clause>   $formula_2
      * @param  array<string, bool>  $new_assigned_var_ids
      *
      * @return void
      */
     public static function checkForParadox(
-        array $formula1,
-        array $formula2,
+        array $formula_1,
+        array $formula_2,
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node $stmt,
         array $new_assigned_var_ids
     ) {
         try {
-            $negated_formula2 = Algebra::negateFormula($formula2);
+            $negated_formula2 = Algebra::negateFormula($formula_2);
         } catch (\Psalm\Exception\ComplicatedExpressionException $e) {
             return;
         }
 
-        $formula1_hashes = [];
+        $formula_1_hashes = [];
 
-        foreach ($formula1 as $formula1_clause) {
-            $formula1_hashes[$formula1_clause->hash] = true;
+        foreach ($formula_1 as $formula_1_clause) {
+            $formula_1_hashes[$formula_1_clause->hash] = true;
         }
 
-        $formula2_hashes = [];
+        $formula_2_hashes = [];
 
-        foreach ($formula2 as $formula2_clause) {
-            $hash = $formula2_clause->hash;
+        foreach ($formula_2 as $formula_2_clause) {
+            $hash = $formula_2_clause->hash;
 
-            if (!$formula2_clause->generated
-                && !$formula2_clause->wedge
-                && $formula2_clause->reconcilable
-                && (isset($formula1_hashes[$hash]) || isset($formula2_hashes[$hash]))
-                && !array_intersect_key($new_assigned_var_ids, $formula2_clause->possibilities)
+            if (!$formula_2_clause->generated
+                && !$formula_2_clause->wedge
+                && $formula_2_clause->reconcilable
+                && (isset($formula_1_hashes[$hash]) || isset($formula_2_hashes[$hash]))
+                && !array_intersect_key($new_assigned_var_ids, $formula_2_clause->possibilities)
             ) {
                 if (IssueBuffer::accepts(
                     new RedundantCondition(
-                        $formula2_clause . ' has already been asserted',
+                        $formula_2_clause . ' has already been asserted',
                         new CodeLocation($statements_analyzer, $stmt),
                         null
                     ),
@@ -73,15 +73,15 @@ class AlgebraAnalyzer
                 }
             }
 
-            foreach ($formula2_clause->possibilities as $key => $values) {
-                if (!$formula2_clause->generated
+            foreach ($formula_2_clause->possibilities as $key => $values) {
+                if (!$formula_2_clause->generated
                     && count($values) > 1
                     && !isset($new_assigned_var_ids[$key])
                     && count(array_unique($values)) < count($values)
                 ) {
                     if (IssueBuffer::accepts(
                         new ParadoxicalCondition(
-                            'Found a redundant condition when evaluating assertion (' . $formula2_clause . ')',
+                            'Found a redundant condition when evaluating assertion (' . $formula_2_clause . ')',
                             new CodeLocation($statements_analyzer, $stmt)
                         ),
                         $statements_analyzer->getSuppressedIssues()
@@ -91,13 +91,13 @@ class AlgebraAnalyzer
                 }
             }
 
-            $formula2_hashes[$hash] = true;
+            $formula_2_hashes[$hash] = true;
         }
 
         // remove impossible types
-        foreach ($negated_formula2 as $clause_a) {
+        foreach ($negated_formula2 as $clause_2) {
             if (count($negated_formula2) === 1) {
-                foreach ($clause_a->possibilities as $key => $values) {
+                foreach ($clause_2->possibilities as $key => $values) {
                     if (count($values) > 1
                         && !isset($new_assigned_var_ids[$key])
                         && count(array_unique($values)) < count($values)
@@ -116,38 +116,38 @@ class AlgebraAnalyzer
                 }
             }
 
-            if (!$clause_a->reconcilable || $clause_a->wedge) {
+            if (!$clause_2->reconcilable || $clause_2->wedge) {
                 continue;
             }
 
-            foreach ($formula1 as $clause_b) {
-                if ($clause_a === $clause_b || !$clause_b->reconcilable || $clause_b->wedge) {
+            foreach ($formula_1 as $clause_1) {
+                if ($clause_2 === $clause_1 || !$clause_1->reconcilable || $clause_1->wedge) {
                     continue;
                 }
 
-                $clause_a_contains_b_possibilities = true;
+                $clause_2_contains_1_possibilities = true;
 
-                foreach ($clause_b->possibilities as $key => $keyed_possibilities) {
-                    if (!isset($clause_a->possibilities[$key])) {
-                        $clause_a_contains_b_possibilities = false;
+                foreach ($clause_1->possibilities as $key => $keyed_possibilities) {
+                    if (!isset($clause_2->possibilities[$key])) {
+                        $clause_2_contains_1_possibilities = false;
                         break;
                     }
 
-                    if ($clause_a->possibilities[$key] != $keyed_possibilities) {
-                        $clause_a_contains_b_possibilities = false;
+                    if ($clause_2->possibilities[$key] != $keyed_possibilities) {
+                        $clause_2_contains_1_possibilities = false;
                         break;
                     }
                 }
 
-                if ($clause_a_contains_b_possibilities) {
-                    $clause_a_string = (string) $clause_a;
-                    $clause_b_string = (string) $clause_b;
+                if ($clause_2_contains_1_possibilities) {
+                    $clause_2_string = (string) $clause_2;
+                    $clause_1_string = (string) $clause_1;
 
-                    if ($clause_a_string === $clause_b_string) {
-                        $paradox_message = 'Encountered a duplicate check for (' . $clause_a_string . ')';
+                    if ($clause_2_string === $clause_1_string) {
+                        $paradox_message = 'Encountered a duplicate check for (' . $clause_2_string . ')';
                     } else {
                         $paradox_message = 'Encountered a paradox when evaluating the conditionals ('
-                            . $clause_a_string . ') and (' . $clause_b_string . ')';
+                            . $clause_2_string . ') and (' . $clause_1_string . ')';
                     }
 
                     if (IssueBuffer::accepts(
