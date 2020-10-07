@@ -127,45 +127,69 @@ class Clause
         return true;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __toString(): string
     {
-        return implode(
-            ' || ',
-            array_map(
-                /**
-                 * @param string $var_id
-                 * @param string[] $values
-                 *
-                 * @return string
-                 */
-                function ($var_id, $values): string {
-                    return implode(
-                        ' || ',
-                        array_map(
-                            /**
-                             * @param string $value
-                             *
-                             * @return string
-                             */
-                            function ($value) use ($var_id): string {
-                                if ($value === 'falsy') {
-                                    return '!' . $var_id;
-                                }
+        $clause_strings = array_map(
+            /**
+             * @param string $var_id
+             * @param non-empty-list<string> $values
+             *
+             * @return string
+             */
+            function ($var_id, $values): string {
+                $var_id_clauses = array_map(
+                    /**
+                     * @param string $value
+                     *
+                     * @return string
+                     */
+                    function ($value) use ($var_id): string {
+                        if ($value === 'falsy') {
+                            return '!' . $var_id;
+                        }
 
-                                if ($value === '!falsy') {
-                                    return $var_id;
-                                }
+                        if ($value === '!falsy') {
+                            return $var_id;
+                        }
 
-                                return $var_id . '==' . $value;
-                            },
-                            $values
-                        )
-                    );
-                },
-                array_keys($this->possibilities),
-                array_values($this->possibilities)
-            )
+                        $negate = false;
+
+                        if ($value[0] === '!') {
+                            $negate = true;
+                            $value = substr($value, 1);
+                        }
+
+                        if ($value[0] === '=') {
+                            $value = substr($value, 1);
+                        }
+
+                        if ($negate) {
+                            return $var_id . ' doesn’t equal ' . $value;
+                        }
+
+                        return $var_id . ' equals ' . $value;
+                    },
+                    $values
+                );
+
+                if (count($var_id_clauses) > 1) {
+                    return '(' . implode(') || (', $var_id_clauses) . ')';
+                }
+
+                return $var_id_clauses[0];
+            },
+            array_keys($this->possibilities),
+            array_values($this->possibilities)
         );
+
+        if (count($clause_strings) > 1) {
+            return '(' . implode(') || (', $clause_strings) . ')';
+        }
+
+        return reset($clause_strings);
     }
 
     public function makeUnique() : self
