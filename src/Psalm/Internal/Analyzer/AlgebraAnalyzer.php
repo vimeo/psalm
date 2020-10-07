@@ -144,7 +144,7 @@ class AlgebraAnalyzer
                     $clause_b_string = (string) $clause_b;
 
                     if ($clause_a_string === $clause_b_string) {
-                        $clause_a_string = 'Encountered a duplicate check for (' . $clause_a_string . ')';
+                        $paradox_message = 'Encountered a duplicate check for (' . $clause_a_string . ')';
                     } else {
                         $paradox_message = 'Encountered a paradox when evaluating the conditionals ('
                             . $clause_a_string . ') and (' . $clause_b_string . ')';
