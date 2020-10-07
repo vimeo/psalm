@@ -167,10 +167,10 @@ class Clause
                         }
 
                         if ($negate) {
-                            return $var_id . ' doesn’t equal ' . $value;
+                            return $var_id . ' is not ' . $value;
                         }
 
-                        return $var_id . ' equals ' . $value;
+                        return $var_id . ' is ' . $value;
                     },
                     $values
                 );
