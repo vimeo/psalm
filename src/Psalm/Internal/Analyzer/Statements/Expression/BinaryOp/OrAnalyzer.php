@@ -117,6 +117,55 @@ class OrAnalyzer
             $codebase
         );
 
+        $context_clauses = array_merge($left_context->clauses, $left_clauses);
+
+        if ($left_context->reconciled_expression_clauses) {
+            $reconciled_expression_clauses = $left_context->reconciled_expression_clauses;
+
+            $context_clauses = array_values(
+                array_filter(
+                    $context_clauses,
+                    function ($c) use ($reconciled_expression_clauses): bool {
+                        return !\in_array($c->hash, $reconciled_expression_clauses);
+                    }
+                )
+            );
+
+            if (\count($context_clauses) === 1
+                && $context_clauses[0]->wedge
+                && !$context_clauses[0]->possibilities
+            ) {
+                $context_clauses = [];
+            }
+        }
+
+        $simplified_clauses = Algebra::simplifyCNF($context_clauses);
+
+        $active_left_assertions = [];
+
+        $left_type_assertions = Algebra::getTruthsFromFormula(
+            $simplified_clauses,
+            $left_cond_id,
+            $left_referenced_var_ids,
+            $active_left_assertions
+        );
+
+        if ($left_type_assertions) {
+            $changed_var_ids = [];
+
+            Reconciler::reconcileKeyedTypes(
+                $left_type_assertions,
+                $active_left_assertions,
+                $context->vars_in_scope,
+                $changed_var_ids,
+                $left_referenced_var_ids,
+                $statements_analyzer,
+                [],
+                $context->inside_loop,
+                new CodeLocation($statements_analyzer->getSource(), $stmt)
+            );
+        }
+
         try {
             $negated_left_clauses = Algebra::negateFormula($left_clauses);
         } catch (\Psalm\Exception\ComplicatedExpressionException $e) {
