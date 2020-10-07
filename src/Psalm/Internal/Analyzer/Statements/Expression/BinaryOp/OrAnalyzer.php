@@ -167,7 +167,7 @@ class OrAnalyzer
                 $statements_analyzer,
                 [],
                 $context->inside_loop,
-                new CodeLocation($statements_analyzer->getSource(), $stmt)
+                new CodeLocation($statements_analyzer->getSource(), $stmt->left)
             );
         }
 
@@ -241,7 +241,7 @@ class OrAnalyzer
                 $statements_analyzer,
                 [],
                 $left_context->inside_loop,
-                new CodeLocation($statements_analyzer->getSource(), $stmt)
+                new CodeLocation($statements_analyzer->getSource(), $stmt->right)
             );
             $right_context->vars_in_scope = $right_vars_in_scope;
         }
