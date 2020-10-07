@@ -159,11 +159,11 @@ class Clause
 
                         if ($value[0] === '!') {
                             $negate = true;
-                            $value = substr($value, 1);
+                            $value = \substr($value, 1);
                         }
 
                         if ($value[0] === '=') {
-                            $value = substr($value, 1);
+                            $value = \substr($value, 1);
                         }
 
                         if ($negate) {
@@ -189,7 +189,7 @@ class Clause
             return '(' . implode(') || (', $clause_strings) . ')';
         }
 
-        return reset($clause_strings);
+        return \reset($clause_strings);
     }
 
     public function makeUnique() : self
