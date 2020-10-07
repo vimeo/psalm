@@ -134,7 +134,7 @@ class AndAnalyzer
                 $statements_analyzer,
                 [],
                 $context->inside_loop,
-                new CodeLocation($statements_analyzer->getSource(), $stmt)
+                new CodeLocation($statements_analyzer->getSource(), $stmt->left)
             );
 
             $right_context->vars_in_scope = $right_vars_in_scope;
