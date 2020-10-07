@@ -55,7 +55,8 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
         array $template_type_map,
         ?CodeLocation $code_location = null,
         array $suppressed_issues = [],
-        ?int &$failed_reconciliation = 0
+        ?int &$failed_reconciliation = 0,
+        bool $negated = false
     ) : Union {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -140,6 +141,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                 $template_type_map,
                 $old_var_type_string,
                 $key,
+                $negated,
                 $code_location,
                 $suppressed_issues,
                 $failed_reconciliation
@@ -151,6 +153,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
             $codebase,
             $existing_var_type,
             $key,
+            $negated,
             $code_location,
             $suppressed_issues,
             $failed_reconciliation,
@@ -314,6 +317,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                     $existing_var_type,
                     $old_var_type_string,
                     $key,
+                    $negated,
                     $code_location,
                     $suppressed_issues
                 );
@@ -339,6 +343,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
             $existing_var_type,
             $template_type_map,
             $key,
+            $negated,
             $code_location,
             $is_equality,
             $is_loose_equality,
@@ -360,6 +365,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
         Union $existing_var_type,
         array $template_type_map,
         ?string $key,
+        bool $negated,
         ?CodeLocation $code_location,
         bool $is_equality,
         bool $is_loose_equality,
@@ -541,7 +547,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                     $old_var_type_string,
                     $key,
                     $assertion,
-                    true,
+                    !$negated,
                     $code_location,
                     $suppressed_issues
                 );
@@ -568,7 +574,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                     $old_var_type_string,
                     $key,
                     $assertion,
-                    true,
+                    !$negated,
                     $code_location,
                     $suppressed_issues
                 );
@@ -943,6 +949,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
         Type\Union $existing_var_type,
         string $old_var_type_string,
         ?string $var_id,
+        bool $negated,
         ?CodeLocation $code_location,
         array $suppressed_issues
     ) : Type\Union {
@@ -1018,7 +1025,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                             $old_var_type_string,
                             $var_id,
                             $assertion,
-                            $can_be_equal,
+                            $negated xor $can_be_equal,
                             $code_location,
                             $suppressed_issues
                         );
@@ -1032,7 +1039,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                     $old_var_type_string,
                     $var_id,
                     $assertion,
-                    false,
+                    $negated,
                     $code_location,
                     $suppressed_issues
                 );
@@ -1065,7 +1072,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                             $old_var_type_string,
                             $var_id,
                             $assertion,
-                            $can_be_equal,
+                            $negated xor $can_be_equal,
                             $code_location,
                             $suppressed_issues
                         );
@@ -1120,6 +1127,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                             $existing_var_atomic_type->as,
                             $old_var_type_string,
                             $var_id,
+                            $negated,
                             $code_location,
                             $suppressed_issues
                         );
@@ -1158,7 +1166,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                             $old_var_type_string,
                             $var_id,
                             $assertion,
-                            $can_be_equal,
+                            $negated xor $can_be_equal,
                             $code_location,
                             $suppressed_issues
                         );
@@ -1179,7 +1187,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                     $old_var_type_string,
                     $var_id,
                     $assertion,
-                    false,
+                    $negated,
                     $code_location,
                     $suppressed_issues
                 );
@@ -1220,7 +1228,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                             $old_var_type_string,
                             $var_id,
                             $assertion,
-                            $can_be_equal,
+                            $negated xor $can_be_equal,
                             $code_location,
                             $suppressed_issues
                         );
@@ -1234,7 +1242,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                     $old_var_type_string,
                     $var_id,
                     $assertion,
-                    false,
+                    $negated,
                     $code_location,
                     $suppressed_issues
                 );
@@ -1267,7 +1275,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                             $old_var_type_string,
                             $var_id,
                             $assertion,
-                            $can_be_equal,
+                            $negated xor $can_be_equal,
                             $code_location,
                             $suppressed_issues
                         );

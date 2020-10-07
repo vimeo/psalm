@@ -53,6 +53,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
         Codebase $codebase,
         Union $existing_var_type,
         ?string $key = null,
+        bool $negated = false,
         ?CodeLocation $code_location = null,
         array $suppressed_issues = [],
         int &$failed_reconciliation = 0,
@@ -123,6 +124,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                 $assertion,
                 $existing_var_type,
                 $key,
+                $negated,
                 $code_location,
                 $suppressed_issues,
                 $failed_reconciliation
@@ -133,6 +135,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
             return self::reconcileObject(
                 $existing_var_type,
                 $key,
+                $negated,
                 $code_location,
                 $suppressed_issues,
                 $failed_reconciliation,
@@ -144,6 +147,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
             return self::reconcileResource(
                 $existing_var_type,
                 $key,
+                $negated,
                 $code_location,
                 $suppressed_issues,
                 $failed_reconciliation,
@@ -156,6 +160,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                 $codebase,
                 $existing_var_type,
                 $key,
+                $negated,
                 $code_location,
                 $suppressed_issues,
                 $failed_reconciliation,
@@ -168,6 +173,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                 $codebase,
                 $existing_var_type,
                 $key,
+                $negated,
                 $code_location,
                 $suppressed_issues,
                 $failed_reconciliation,
@@ -179,6 +185,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
             return self::reconcileArray(
                 $existing_var_type,
                 $key,
+                $negated,
                 $code_location,
                 $suppressed_issues,
                 $failed_reconciliation,
@@ -190,6 +197,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
             return self::reconcileList(
                 $existing_var_type,
                 $key,
+                $negated,
                 $code_location,
                 $suppressed_issues,
                 $failed_reconciliation,
@@ -202,6 +210,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
             return self::reconcileList(
                 $existing_var_type,
                 $key,
+                $negated,
                 $code_location,
                 $suppressed_issues,
                 $failed_reconciliation,
@@ -215,6 +224,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                 $codebase,
                 $existing_var_type,
                 $key,
+                $negated,
                 $code_location,
                 $suppressed_issues,
                 $failed_reconciliation,
@@ -227,6 +237,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                 $codebase,
                 $existing_var_type,
                 $key,
+                $negated,
                 $code_location,
                 $suppressed_issues,
                 $failed_reconciliation,
@@ -239,6 +250,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                 $codebase,
                 $existing_var_type,
                 $key,
+                $negated,
                 $code_location,
                 $suppressed_issues,
                 $failed_reconciliation,
@@ -251,6 +263,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                 $codebase,
                 $existing_var_type,
                 $key,
+                $negated,
                 $code_location,
                 $suppressed_issues,
                 $failed_reconciliation,
@@ -262,6 +275,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
             return self::reconcileNumeric(
                 $existing_var_type,
                 $key,
+                $negated,
                 $code_location,
                 $suppressed_issues,
                 $failed_reconciliation,
@@ -273,6 +287,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
             return self::reconcileScalar(
                 $existing_var_type,
                 $key,
+                $negated,
                 $code_location,
                 $suppressed_issues,
                 $failed_reconciliation,
@@ -284,6 +299,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
             return self::reconcileBool(
                 $existing_var_type,
                 $key,
+                $negated,
                 $code_location,
                 $suppressed_issues,
                 $failed_reconciliation,
@@ -295,6 +311,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
             return self::reconcileString(
                 $existing_var_type,
                 $key,
+                $negated,
                 $code_location,
                 $suppressed_issues,
                 $failed_reconciliation,
@@ -307,6 +324,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
             return self::reconcileInt(
                 $existing_var_type,
                 $key,
+                $negated,
                 $code_location,
                 $suppressed_issues,
                 $failed_reconciliation,
@@ -319,6 +337,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
             return self::reconcilePositiveNumeric(
                 $existing_var_type,
                 $key,
+                $negated,
                 $code_location,
                 $suppressed_issues,
                 $failed_reconciliation,
@@ -337,6 +356,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
             return self::reconcileNonEmptyCountable(
                 $existing_var_type,
                 $key,
+                $negated,
                 $code_location,
                 $suppressed_issues,
                 $failed_reconciliation,
@@ -349,6 +369,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
             return self::reconcileNonEmptyCountable(
                 $existing_var_type,
                 $key,
+                $negated,
                 $code_location,
                 $suppressed_issues,
                 $failed_reconciliation,
@@ -371,6 +392,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                 substr($assertion, 10),
                 $existing_var_type,
                 $key,
+                $negated,
                 $code_location,
                 $suppressed_issues,
                 $failed_reconciliation
@@ -405,6 +427,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
     private static function reconcileNonEmptyCountable(
         Union $existing_var_type,
         ?string $key,
+        bool $negated,
         ?CodeLocation $code_location,
         array $suppressed_issues,
         int &$failed_reconciliation,
@@ -471,7 +494,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                         $old_var_type_string,
                         $key,
                         'non-empty-countable',
-                        !$did_remove_type,
+                        $negated xor !$did_remove_type,
                         $code_location,
                         $suppressed_issues
                     );
@@ -527,6 +550,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
     private static function reconcilePositiveNumeric(
         Union $existing_var_type,
         ?string $key,
+        bool $negated,
         ?CodeLocation $code_location,
         array $suppressed_issues,
         int &$failed_reconciliation,
@@ -572,7 +596,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                     $old_var_type_string,
                     $key,
                     'positive-numeric',
-                    !$did_remove_type,
+                    $negated xor !$did_remove_type,
                     $code_location,
                     $suppressed_issues
                 );
@@ -597,6 +621,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
         string $method_name,
         Union $existing_var_type,
         ?string $key,
+        bool $negated,
         ?CodeLocation $code_location,
         array $suppressed_issues,
         int &$failed_reconciliation
@@ -675,7 +700,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                     $old_var_type_string,
                     $key,
                     'object with method ' . $method_name,
-                    !$did_remove_type,
+                    $negated xor !$did_remove_type,
                     $code_location,
                     $suppressed_issues
                 );
@@ -698,6 +723,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
     private static function reconcileString(
         Union $existing_var_type,
         ?string $key,
+        bool $negated,
         ?CodeLocation $code_location,
         array $suppressed_issues,
         int &$failed_reconciliation,
@@ -741,6 +767,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                     $type->as = self::reconcileString(
                         $type->as,
                         null,
+                        false,
                         null,
                         $suppressed_issues,
                         $failed_reconciliation,
@@ -764,7 +791,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                     $old_var_type_string,
                     $key,
                     'string',
-                    !$did_remove_type,
+                    $negated xor !$did_remove_type,
                     $code_location,
                     $suppressed_issues
                 );
@@ -789,6 +816,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
     private static function reconcileInt(
         Union $existing_var_type,
         ?string $key,
+        bool $negated,
         ?CodeLocation $code_location,
         array $suppressed_issues,
         int &$failed_reconciliation,
@@ -833,6 +861,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                     $type->as = self::reconcileInt(
                         $type->as,
                         null,
+                        false,
                         null,
                         $suppressed_issues,
                         $failed_reconciliation,
@@ -856,7 +885,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                     $old_var_type_string,
                     $key,
                     'int',
-                    !$did_remove_type,
+                    $negated xor !$did_remove_type,
                     $code_location,
                     $suppressed_issues
                 );
@@ -881,6 +910,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
     private static function reconcileBool(
         Union $existing_var_type,
         ?string $key,
+        bool $negated,
         ?CodeLocation $code_location,
         array $suppressed_issues,
         int &$failed_reconciliation,
@@ -910,6 +940,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                     $type->as = self::reconcileBool(
                         $type->as,
                         null,
+                        false,
                         null,
                         $suppressed_issues,
                         $failed_reconciliation,
@@ -932,7 +963,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                     $old_var_type_string,
                     $key,
                     'bool',
-                    !$did_remove_type,
+                    $negated xor !$did_remove_type,
                     $code_location,
                     $suppressed_issues
                 );
@@ -957,6 +988,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
     private static function reconcileScalar(
         Union $existing_var_type,
         ?string $key,
+        bool $negated,
         ?CodeLocation $code_location,
         array $suppressed_issues,
         int &$failed_reconciliation,
@@ -982,6 +1014,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                     $type->as = self::reconcileScalar(
                         $type->as,
                         null,
+                        false,
                         null,
                         $suppressed_issues,
                         $failed_reconciliation,
@@ -1004,7 +1037,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                     $old_var_type_string,
                     $key,
                     'scalar',
-                    !$did_remove_type,
+                    $negated xor !$did_remove_type,
                     $code_location,
                     $suppressed_issues
                 );
@@ -1029,6 +1062,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
     private static function reconcileNumeric(
         Union $existing_var_type,
         ?string $key,
+        bool $negated,
         ?CodeLocation $code_location,
         array $suppressed_issues,
         int &$failed_reconciliation,
@@ -1071,6 +1105,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                     $type->as = self::reconcileNumeric(
                         $type->as,
                         null,
+                        false,
                         null,
                         $suppressed_issues,
                         $failed_reconciliation,
@@ -1093,7 +1128,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                     $old_var_type_string,
                     $key,
                     'numeric',
-                    !$did_remove_type,
+                    $negated xor !$did_remove_type,
                     $code_location,
                     $suppressed_issues
                 );
@@ -1118,6 +1153,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
     private static function reconcileObject(
         Union $existing_var_type,
         ?string $key,
+        bool $negated,
         ?CodeLocation $code_location,
         array $suppressed_issues,
         int &$failed_reconciliation,
@@ -1153,6 +1189,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                     $type->as = self::reconcileObject(
                         $type->as,
                         null,
+                        false,
                         null,
                         $suppressed_issues,
                         $failed_reconciliation,
@@ -1175,7 +1212,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                     $old_var_type_string,
                     $key,
                     'object',
-                    !$did_remove_type,
+                    $negated xor !$did_remove_type,
                     $code_location,
                     $suppressed_issues
                 );
@@ -1200,6 +1237,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
     private static function reconcileResource(
         Union $existing_var_type,
         ?string $key,
+        bool $negated,
         ?CodeLocation $code_location,
         array $suppressed_issues,
         int &$failed_reconciliation,
@@ -1230,7 +1268,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                     $old_var_type_string,
                     $key,
                     'resource',
-                    !$did_remove_type,
+                    $negated xor !$did_remove_type,
                     $code_location,
                     $suppressed_issues
                 );
@@ -1256,6 +1294,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
         Codebase $codebase,
         Union $existing_var_type,
         ?string $key,
+        bool $negated,
         ?CodeLocation $code_location,
         array $suppressed_issues,
         int &$failed_reconciliation,
@@ -1299,7 +1338,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                     $old_var_type_string,
                     $key,
                     'countable',
-                    !$did_remove_type,
+                    $negated xor !$did_remove_type,
                     $code_location,
                     $suppressed_issues
                 );
@@ -1323,6 +1362,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
         Codebase $codebase,
         Union $existing_var_type,
         ?string $key,
+        bool $negated,
         ?CodeLocation $code_location,
         array $suppressed_issues,
         int &$failed_reconciliation,
@@ -1357,7 +1397,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                     $old_var_type_string,
                     $key,
                     'iterable',
-                    !$did_remove_type,
+                    $negated xor !$did_remove_type,
                     $code_location,
                     $suppressed_issues
                 );
@@ -1457,6 +1497,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
         Codebase $codebase,
         Union $existing_var_type,
         ?string $key,
+        bool $negated,
         ?CodeLocation $code_location,
         array $suppressed_issues,
         int &$failed_reconciliation,
@@ -1500,7 +1541,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                     $old_var_type_string,
                     $key,
                     'Traversable',
-                    !$did_remove_type,
+                    $negated xor !$did_remove_type,
                     $code_location,
                     $suppressed_issues
                 );
@@ -1525,6 +1566,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
     private static function reconcileArray(
         Union $existing_var_type,
         ?string $key,
+        bool $negated,
         ?CodeLocation $code_location,
         array $suppressed_issues,
         int &$failed_reconciliation,
@@ -1571,7 +1613,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                     $old_var_type_string,
                     $key,
                     'array',
-                    !$did_remove_type,
+                    $negated xor !$did_remove_type,
                     $code_location,
                     $suppressed_issues
                 );
@@ -1621,6 +1663,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
     private static function reconcileList(
         Union $existing_var_type,
         ?string $key,
+        bool $negated,
         ?CodeLocation $code_location,
         array $suppressed_issues,
         int &$failed_reconciliation,
@@ -1688,7 +1731,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                     $old_var_type_string,
                     $key,
                     'array',
-                    !$did_remove_type,
+                    $negated xor !$did_remove_type,
                     $code_location,
                     $suppressed_issues
                 );
@@ -1718,6 +1761,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
         Codebase $codebase,
         Union $existing_var_type,
         ?string $key,
+        bool $negated,
         ?CodeLocation $code_location,
         array $suppressed_issues,
         int &$failed_reconciliation,
@@ -1757,7 +1801,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                     $old_var_type_string,
                     $key,
                     'string-array-access',
-                    true,
+                    !$negated,
                     $code_location,
                     $suppressed_issues
                 );
@@ -1781,6 +1825,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
         Codebase $codebase,
         Union $existing_var_type,
         ?string $key,
+        bool $negated,
         ?CodeLocation $code_location,
         array $suppressed_issues,
         int &$failed_reconciliation,
@@ -1815,7 +1860,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                     $old_var_type_string,
                     $key,
                     'int-or-string-array-access',
-                    true,
+                    !$negated,
                     $code_location,
                     $suppressed_issues
                 );
@@ -1839,6 +1884,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
         Codebase $codebase,
         Union $existing_var_type,
         ?string $key,
+        bool $negated,
         ?CodeLocation $code_location,
         array $suppressed_issues,
         int &$failed_reconciliation,
@@ -1910,7 +1956,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                     $old_var_type_string,
                     $key,
                     'callable',
-                    !$did_remove_type,
+                    $negated xor !$did_remove_type,
                     $code_location,
                     $suppressed_issues
                 );
@@ -1934,6 +1980,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
         string $assertion,
         Union $existing_var_type,
         ?string $key,
+        bool $negated,
         ?CodeLocation $code_location,
         array $suppressed_issues,
         int &$failed_reconciliation
@@ -2222,7 +2269,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                     $old_var_type_string,
                     $key,
                     $assertion,
-                    !$did_remove_type,
+                    $negated xor !$did_remove_type,
                     $code_location,
                     $suppressed_issues
                 );
