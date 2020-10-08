@@ -1174,7 +1174,7 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
                     'RedundantConditionGivenDocblockType' => \Psalm\Config::REPORT_INFO,
                 ],
             ],
-            'noChangeAfterSyntaxError' => [
+            'SKIPPED-noChangeAfterSyntaxError' => [
                 'start_files' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                         namespace Foo;
@@ -1216,7 +1216,7 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
                     ],
                 ],
             ],
-            'nothingBeforeSyntaxError' => [
+            'SKIPPED-nothingBeforeSyntaxError' => [
                 'start_files' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                         namespace Foo;
