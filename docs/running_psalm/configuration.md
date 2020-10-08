@@ -358,6 +358,14 @@ Whether or not to allow `require`/`include` calls in your PHP. Defaults to `true
 ```
 Allows you to hard-code a serializer for Psalm to use when caching data. By default, Psalm uses `ext-igbinary` *if* the version is greater than or equal to 2.0.5, otherwise it defaults to PHP's built-in serializer.
 
+#### allowParadoxicalDefaultForExitTypes
+```xml
+<psalm
+  allowParadoxicalDefaultForExitTypes="[''|'throw_or_exit'|'return'|'throw_or_exit, return']"
+>
+```
+Allows you to specify which paradoxical default branches are allowed, depending on their 'switch-leaving-strategy'. `throw_or_exit` will allow paradoxical `default` statements ending in an exit function or throwing an exception, `return` will allow paradoxical `default` statements ending in a `return` statement, `throw_or_exit, return` will allow both previous mentioned paradoxical `default` statements, `allowParadoxicalDefaultForExitTypes=""` will not allow either previous mentioned. By default, psalm uses `throw_or_exit`.
+
 
 ## Project settings
 

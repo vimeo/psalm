@@ -31,6 +31,7 @@
         <xs:attribute name="name" type="xs:string" />
         <xs:attribute name="phpVersion" type="xs:string" />
         <xs:attribute name="serializer" type="xs:string" />
+        <xs:attribute name="allowParadoxicalDefaultForExitTypes" type="xs:string" default="throw_or_exit" />
 
         <xs:attribute name="addParamDefaultToDocblockType" type="xs:boolean" default="false" />
         <xs:attribute name="allowCoercionFromStringToClassConst" type="xs:boolean" default="false" />

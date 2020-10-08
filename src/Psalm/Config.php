@@ -286,6 +286,11 @@ class Config
     public $use_igbinary = false;
 
     /**
+     * @var list<'return'|'throw_or_exit'>
+     */
+    public $allow_paradoxical_defaults = ['throw_or_exit'];
+
+    /**
      * @var bool
      */
     public $allow_phpstorm_generics = false;
@@ -881,6 +886,25 @@ class Config
             $config->use_igbinary = version_compare($igbinary_version, '2.0.5') >= 0;
         }
 
+        if (isset($config_xml['allowParadoxicalDefaultForExitTypes'])) {
+            $attribute_text = (string) $config_xml['allowParadoxicalDefaultForExitTypes'];
+            $attribute_pieces = explode(',', $attribute_text);
+            $config->allow_paradoxical_defaults = [];
+            $unsupported_values = [];
+            foreach ($attribute_pieces as $piece) {
+                $piece = trim($piece);
+                if (!in_array($piece, ['return', 'throw_or_exit'], true)) {
+                    $unsupported_values[] = $piece;
+                } else {
+                    $config->allow_paradoxical_defaults[] = $piece;
+                }
+            }
+            if (!empty($unsupported_values)) {
+                throw new Exception\ConfigException(
+                    'Invalid allowed paradoxical default values: "' . implode(', ', $unsupported_values) .'"'
+                );
+            }
+        }
 
         if (isset($config_xml['findUnusedCode'])) {
             $attribute_text = (string) $config_xml['findUnusedCode'];

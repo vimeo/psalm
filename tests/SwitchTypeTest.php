@@ -308,6 +308,38 @@ class SwitchTypeTest extends TestCase
                             throw new \Exception("should never happen");
                     }',
             ],
+            'impossibleCaseDefaultWithExitFunction' => [
+                '<?php
+                    $a = rand(0, 1) ? "a" : "b";
+
+                    switch ($a) {
+                        case "a":
+                            break;
+
+                        case "b":
+                            break;
+
+                        default:
+                            exit();
+                    }'
+            ],
+            'impossibleCaseDefaultWithCustomDefinedExitFunction' => [
+                '<?php
+                    /** @return no-return */
+                    function foo() { exit(); }
+                    $a = rand(0, 1) ? "a" : "b";
+
+                    switch ($a) {
+                        case "a":
+                            break;
+
+                        case "b":
+                            break;
+
+                        default:
+                            foo();
+                    }'
+            ],
             'switchOnUnknownInts' => [
                 '<?php
                     function foo(int $a, int $b, int $c) : void {
@@ -1288,5 +1320,331 @@ class SwitchTypeTest extends TestCase
                 'error_message' => 'ParadoxicalCondition'
             ],
         ];
+    }
+
+
+    public function testConfiguredImpossibleCaseDefaultWithReturnSuppressed1(): void
+    {
+        \Psalm\Config::getInstance()->allow_paradoxical_defaults = ['return'];
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                    $a = rand(0, 1) ? "a" : "b";
+
+                    switch ($a) {
+                        case "a":
+                            break;
+
+                        case "b":
+                            break;
+
+                        default:
+                            echo "impossible";
+                            return;
+                    }'
+        );
+
+        $this->analyzeFile('somefile.php', new \Psalm\Context());
+    }
+
+    public function testConfiguredImpossibleCaseDefaultWithReturnSuppressed2(): void
+    {
+        \Psalm\Config::getInstance()->allow_paradoxical_defaults[] = 'return';
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                    $a = rand(0, 1) ? "a" : "b";
+
+                    switch ($a) {
+                        case "a":
+                            break;
+
+                        case "b":
+                            break;
+
+                        default:
+                            echo "impossible";
+                            return;
+                    }'
+        );
+
+        $this->analyzeFile('somefile.php', new \Psalm\Context());
+    }
+
+    public function testConfiguredImpossibleCaseDefaultWithCustomConfiguredExitFunctionSuppressed1(): void
+    {
+        \Psalm\Config::getInstance()->exit_functions = ['foo' => true];
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                    function foo(): void { }
+                    $a = rand(0, 1) ? "a" : "b";
+
+                    switch ($a) {
+                        case "a":
+                            break;
+
+                        case "b":
+                            break;
+
+                        default:
+                            foo();
+                    }'
+        );
+
+        $this->analyzeFile('somefile.php', new \Psalm\Context());
+    }
+
+    public function testConfiguredImpossibleCaseDefaultWithCustomConfiguredExitFunctionSuppressed2(): void
+    {
+        \Psalm\Config::getInstance()->allow_paradoxical_defaults[] = 'return';
+        \Psalm\Config::getInstance()->exit_functions = ['foo' => true];
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                    function foo(): void { }
+                    $a = rand(0, 1) ? "a" : "b";
+
+                    switch ($a) {
+                        case "a":
+                            break;
+
+                        case "b":
+                            break;
+
+                        default:
+                            foo();
+                    }'
+        );
+
+        $this->analyzeFile('somefile.php', new \Psalm\Context());
+    }
+
+    public function testConfiguredImpossibleCaseDefaultWithThrowReported1(): void
+    {
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectExceptionMessage('ParadoxicalCondition');
+
+        \Psalm\Config::getInstance()->allow_paradoxical_defaults = [];
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                    $a = rand(0, 1) ? "a" : "b";
+
+                    switch ($a) {
+                        case "a":
+                            break;
+
+                        case "b":
+                            break;
+
+                        default:
+                            throw new \Exception("should never happen");
+                    }'
+        );
+
+        $this->analyzeFile('somefile.php', new \Psalm\Context());
+    }
+
+    public function testConfiguredImpossibleCaseDefaultWithThrowReported2(): void
+    {
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectExceptionMessage('ParadoxicalCondition');
+
+        \Psalm\Config::getInstance()->allow_paradoxical_defaults = ['return'];
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                    $a = rand(0, 1) ? "a" : "b";
+
+                    switch ($a) {
+                        case "a":
+                            break;
+
+                        case "b":
+                            break;
+
+                        default:
+                            throw new \Exception("should never happen");
+                    }'
+        );
+
+        $this->analyzeFile('somefile.php', new \Psalm\Context());
+    }
+
+    public function testConfiguredImpossibleCaseDefaultWithExitFunctionReported1(): void
+    {
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectExceptionMessage('ParadoxicalCondition');
+
+        \Psalm\Config::getInstance()->allow_paradoxical_defaults = [];
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                    $a = rand(0, 1) ? "a" : "b";
+
+                    switch ($a) {
+                        case "a":
+                            break;
+
+                        case "b":
+                            break;
+
+                        default:
+                            exit();
+                    }'
+        );
+
+        $this->analyzeFile('somefile.php', new \Psalm\Context());
+    }
+
+    public function testConfiguredImpossibleCaseDefaultWithExitFunctionReported2(): void
+    {
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectExceptionMessage('ParadoxicalCondition');
+
+        \Psalm\Config::getInstance()->allow_paradoxical_defaults = ['return'];
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                    $a = rand(0, 1) ? "a" : "b";
+
+                    switch ($a) {
+                        case "a":
+                            break;
+
+                        case "b":
+                            break;
+
+                        default:
+                            exit();
+                    }'
+        );
+
+        $this->analyzeFile('somefile.php', new \Psalm\Context());
+    }
+
+    public function testConfiguredImpossibleCaseDefaultWithCustomDefinedExitFunctionReported1(): void
+    {
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectExceptionMessage('ParadoxicalCondition');
+
+        \Psalm\Config::getInstance()->allow_paradoxical_defaults = [];
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                    /** @return no-return */
+                    function foo() { exit(); }
+                    $a = rand(0, 1) ? "a" : "b";
+
+                    switch ($a) {
+                        case "a":
+                            break;
+
+                        case "b":
+                            break;
+
+                        default:
+                            foo();
+                    }'
+        );
+
+        $this->analyzeFile('somefile.php', new \Psalm\Context());
+    }
+
+    public function testConfiguredImpossibleCaseDefaultWithCustomDefinedExitFunctionReported2(): void
+    {
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectExceptionMessage('ParadoxicalCondition');
+
+        \Psalm\Config::getInstance()->allow_paradoxical_defaults = ['return'];
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                    /** @return no-return */
+                    function foo() { exit(); }
+                    $a = rand(0, 1) ? "a" : "b";
+
+                    switch ($a) {
+                        case "a":
+                            break;
+
+                        case "b":
+                            break;
+
+                        default:
+                            foo();
+                    }'
+        );
+
+        $this->analyzeFile('somefile.php', new \Psalm\Context());
+    }
+
+    public function testConfiguredImpossibleCaseDefaultWithCustomConfiguredExitFunctionReported1(): void
+    {
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectExceptionMessage('ParadoxicalCondition');
+
+        \Psalm\Config::getInstance()->allow_paradoxical_defaults = [];
+        \Psalm\Config::getInstance()->exit_functions = ['foo' => true];
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                    function foo(): void { }
+                    $a = rand(0, 1) ? "a" : "b";
+
+                    switch ($a) {
+                        case "a":
+                            break;
+
+                        case "b":
+                            break;
+
+                        default:
+                            foo();
+                    }'
+        );
+
+        $this->analyzeFile('somefile.php', new \Psalm\Context());
+    }
+
+    public function testConfiguredImpossibleCaseDefaultWithCustomConfiguredExitFunctionReported2(): void
+    {
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectExceptionMessage('ParadoxicalCondition');
+
+        \Psalm\Config::getInstance()->allow_paradoxical_defaults = ['return'];
+        \Psalm\Config::getInstance()->exit_functions = ['foo' => true];
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                    function foo(): void { }
+                    $a = rand(0, 1) ? "a" : "b";
+
+                    switch ($a) {
+                        case "a":
+                            break;
+
+                        case "b":
+                            break;
+
+                        default:
+                            foo();
+                    }'
+        );
+
+        $this->analyzeFile('somefile.php', new \Psalm\Context());
     }
 }

@@ -447,13 +447,22 @@ class SwitchCaseAnalyzer
             $case_context->referenced_var_ids
         );
 
+        $config = \Psalm\Config::getInstance();
+
         if ($case_exit_type === 'return' || $case_exit_type === 'throw') {
-            if (self::checkImpossibleDefault(
-                $statements_analyzer,
-                $switch_var_id,
-                $case,
-                $case_context
-            ) === false) {
+            if (!($case_exit_type === 'return'
+                    && in_array('return', $config->allow_paradoxical_defaults, true)
+                )
+                && !($case_exit_type === 'throw'
+                    && in_array('throw_or_exit', $config->allow_paradoxical_defaults, true)
+                )
+                && self::checkImpossibleDefault(
+                    $statements_analyzer,
+                    $switch_var_id,
+                    $case,
+                    $case_context
+                ) === false
+            ) {
                 /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
                 $case_scope->parent_context = null;
                 $case_context->case_scope = null;
