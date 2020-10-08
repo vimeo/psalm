@@ -619,16 +619,14 @@ class LoopAnalyzer
 
         $suppressed_issues = $statements_analyzer->getSuppressedIssues();
 
-        if ($is_do) {
-            if (!in_array('RedundantCondition', $suppressed_issues, true)) {
-                $statements_analyzer->addSuppressedIssues(['RedundantCondition']);
-            }
-            if (!in_array('RedundantConditionGivenDocblockType', $suppressed_issues, true)) {
-                $statements_analyzer->addSuppressedIssues(['RedundantConditionGivenDocblockType']);
-            }
-            if (!in_array('TypeDoesNotContainType', $suppressed_issues, true)) {
-                $statements_analyzer->addSuppressedIssues(['TypeDoesNotContainType']);
-            }
+        if (!in_array('RedundantCondition', $suppressed_issues, true)) {
+            $statements_analyzer->addSuppressedIssues(['RedundantCondition']);
+        }
+        if (!in_array('RedundantConditionGivenDocblockType', $suppressed_issues, true)) {
+            $statements_analyzer->addSuppressedIssues(['RedundantConditionGivenDocblockType']);
+        }
+        if (!in_array('TypeDoesNotContainType', $suppressed_issues, true)) {
+            $statements_analyzer->addSuppressedIssues(['TypeDoesNotContainType']);
         }
 
         if (ExpressionAnalyzer::analyze($statements_analyzer, $pre_condition, $loop_context) === false) {
@@ -672,16 +670,14 @@ class LoopAnalyzer
             $loop_context->vars_in_scope = $pre_condition_vars_in_scope_reconciled;
         }
 
-        if ($is_do) {
-            if (!in_array('RedundantCondition', $suppressed_issues, true)) {
-                $statements_analyzer->removeSuppressedIssues(['RedundantCondition']);
-            }
-            if (!in_array('RedundantConditionGivenDocblockType', $suppressed_issues, true)) {
-                $statements_analyzer->removeSuppressedIssues(['RedundantConditionGivenDocblockType']);
-            }
-            if (!in_array('TypeDoesNotContainType', $suppressed_issues, true)) {
-                $statements_analyzer->removeSuppressedIssues(['TypeDoesNotContainType']);
-            }
+        if (!in_array('RedundantCondition', $suppressed_issues, true)) {
+            $statements_analyzer->removeSuppressedIssues(['RedundantCondition']);
+        }
+        if (!in_array('RedundantConditionGivenDocblockType', $suppressed_issues, true)) {
+            $statements_analyzer->removeSuppressedIssues(['RedundantConditionGivenDocblockType']);
+        }
+        if (!in_array('TypeDoesNotContainType', $suppressed_issues, true)) {
+            $statements_analyzer->removeSuppressedIssues(['TypeDoesNotContainType']);
         }
 
         if ($is_do) {
