@@ -419,6 +419,7 @@ class ArgumentAnalyzer
                     ) {
                         $arg_type = clone $unpacked_atomic_array->properties[$function_param->name];
                     } elseif ($unpacked_atomic_array->is_list
+                        && $argument_offset === 0
                         && isset($unpacked_atomic_array->properties[$argument_offset])
                     ) {
                         $arg_type = clone $unpacked_atomic_array->properties[$argument_offset];
