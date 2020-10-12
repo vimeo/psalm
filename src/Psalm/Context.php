@@ -446,11 +446,10 @@ class Context
 
     /**
      * @param  array<string, Type\Union> $new_vars_in_scope
-     * @param  bool $include_new_vars
      *
      * @return array<string,Type\Union>
      */
-    public function getRedefinedVars(array $new_vars_in_scope, $include_new_vars = false): array
+    public function getRedefinedVars(array $new_vars_in_scope, bool $include_new_vars = false): array
     {
         $redefined_vars = [];
 

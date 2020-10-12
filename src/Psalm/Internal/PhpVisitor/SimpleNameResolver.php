@@ -157,9 +157,8 @@ class SimpleNameResolver extends NodeVisitorAbstract
 
     /**
      * @param Stmt\Function_|Stmt\ClassMethod|Expr\Closure $node
-     *
      */
-    private function resolveSignature($node): void
+    private function resolveSignature(PhpParser\NodeAbstract $node): void
     {
         foreach ($node->params as $param) {
             $param->type = $this->resolveType($param->type);
@@ -197,7 +196,7 @@ class SimpleNameResolver extends NodeVisitorAbstract
      *
      * @return Name Resolved name, or original name with attribute
      */
-    protected function resolveName(Name $name, $type): Name
+    protected function resolveName(Name $name, int $type): Name
     {
         $resolvedName = $this->nameContext->getResolvedName($name, $type);
         if (null !== $resolvedName) {

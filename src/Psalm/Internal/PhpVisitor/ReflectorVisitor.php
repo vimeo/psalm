@@ -1839,7 +1839,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
      *
      * @return FunctionLikeStorage|false
      */
-    private function registerFunctionLike(PhpParser\Node\FunctionLike $stmt, $fake_method = false)
+    private function registerFunctionLike(PhpParser\Node\FunctionLike $stmt, bool $fake_method = false)
     {
         $class_storage = null;
         $fq_classlike_name = null;

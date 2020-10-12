@@ -41,19 +41,16 @@ class VariableFetchAnalyzer
     ];
 
     /**
-     * @param   bool                            $passed_by_reference
-     * @param   Type\Union|null                 $by_ref_type
-     * @param   bool                            $array_assignment
-     * @param   bool                            $from_global - when used in a global keyword
+     * @param bool $from_global - when used in a global keyword
      */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Variable $stmt,
         Context $context,
-        $passed_by_reference = false,
-        Type\Union $by_ref_type = null,
-        $array_assignment = false,
-        $from_global = false
+        bool $passed_by_reference = false,
+        ?Type\Union $by_ref_type = null,
+        bool $array_assignment = false,
+        bool $from_global = false
     ) : bool {
         $project_analyzer = $statements_analyzer->getFileAnalyzer()->project_analyzer;
         $codebase = $statements_analyzer->getCodebase();

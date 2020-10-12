@@ -405,11 +405,9 @@ class FileReferenceProvider
     }
 
     /**
-     * @param bool $force_reload
-     *
      * @psalm-suppress MixedPropertyTypeCoercion
      */
-    public function loadReferenceCache($force_reload = true): bool
+    public function loadReferenceCache(bool $force_reload = true): bool
     {
         if ($this->cache && (!$this->loaded_from_cache || $force_reload)) {
             $this->loaded_from_cache = true;

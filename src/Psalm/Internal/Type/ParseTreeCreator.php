@@ -149,7 +149,7 @@ class ParseTreeCreator
     /**
      * @param  array{0: string, 1: int} $current_token
      */
-    private function createMethodParam($current_token, ParseTree $current_parent) : void
+    private function createMethodParam(array $current_token, ParseTree $current_parent) : void
     {
         $byref = false;
         $variadic = false;
@@ -355,7 +355,7 @@ class ParseTreeCreator
     }
 
     /** @param array{0: string, 1: int} $type_token */
-    private function handleEllipsisOrEquals($type_token) : void
+    private function handleEllipsisOrEquals(array $type_token) : void
     {
         $prev_token = $this->t > 0 ? $this->type_tokens[$this->t - 1] : null;
 
@@ -673,7 +673,7 @@ class ParseTreeCreator
     }
 
     /** @param array{0: string, 1: int} $type_token */
-    private function handleIsOrAs($type_token) : void
+    private function handleIsOrAs(array $type_token) : void
     {
         if ($this->t === 0) {
             $this->handleValue($type_token);
@@ -716,7 +716,7 @@ class ParseTreeCreator
     }
 
     /** @param array{0: string, 1: int} $type_token */
-    private function handleValue($type_token) : void
+    private function handleValue(array $type_token) : void
     {
         $new_parent = !$this->current_leaf instanceof ParseTree\Root ? $this->current_leaf : null;
 

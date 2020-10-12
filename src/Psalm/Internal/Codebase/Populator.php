@@ -995,11 +995,7 @@ class Populator
         $storage->populated = true;
     }
 
-    /**
-     * @param  bool       $is_property
-     *
-     */
-    private function convertPhpStormGenericToPsalmGeneric(Type\Union $candidate, $is_property = false): void
+    private function convertPhpStormGenericToPsalmGeneric(Type\Union $candidate, bool $is_property = false): void
     {
         $atomic_types = $candidate->getAtomicTypes();
 

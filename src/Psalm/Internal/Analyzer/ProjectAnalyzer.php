@@ -404,10 +404,7 @@ class ProjectAnalyzer
         );
     }
 
-    /**
-     * @param  string|null $address
-     */
-    public function server($address = '127.0.0.1:12345', bool $socket_server_mode = false): void
+    public function server(?string $address = '127.0.0.1:12345', bool $socket_server_mode = false): void
     {
         $this->visitAutoloadFiles();
         $this->codebase->diff_methods = true;
@@ -1233,16 +1230,9 @@ class ProjectAnalyzer
         return $this->file_provider->fileExists($file_path);
     }
 
-    /**
-     * @param int $php_major_version
-     * @param int $php_minor_version
-     * @param bool $dry_run
-     * @param bool $safe_types
-     *
-     */
     public function alterCodeAfterCompletion(
-        $dry_run = false,
-        $safe_types = false
+        bool $dry_run = false,
+        bool $safe_types = false
     ): void {
         $this->codebase->alter_code = true;
         $this->codebase->infer_types_from_usage = true;

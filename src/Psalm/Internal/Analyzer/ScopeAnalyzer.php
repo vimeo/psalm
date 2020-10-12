@@ -81,7 +81,7 @@ class ScopeAnalyzer
         ?\Psalm\Internal\Provider\NodeDataProvider $nodes,
         array $exit_functions,
         array $break_types = [],
-        $return_is_exit = true
+        bool $return_is_exit = true
     ): array {
         if (empty($stmts)) {
             return [self::ACTION_NONE];

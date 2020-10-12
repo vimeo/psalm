@@ -154,12 +154,7 @@ abstract class Type
         return '\\' . $value;
     }
 
-    /**
-     * @param bool $from_calculation
-     * @param int|null $value
-     *
-     */
-    public static function getInt($from_calculation = false, $value = null): Union
+    public static function getInt(bool $from_calculation = false, ?int $value = null): Union
     {
         if ($value !== null) {
             $union = new Union([new TLiteralInt($value)]);
@@ -229,11 +224,7 @@ abstract class Type
         return new Union([$type]);
     }
 
-    /**
-     * @param string $extends
-     *
-     */
-    public static function getClassString($extends = 'object'): Union
+    public static function getClassString(string $extends = 'object'): Union
     {
         return new Union([
             new TClassString(
@@ -259,11 +250,7 @@ abstract class Type
         return new Union([$type]);
     }
 
-    /**
-     * @param bool $from_loop_isset
-     *
-     */
-    public static function getMixed($from_loop_isset = false): Union
+    public static function getMixed(bool $from_loop_isset = false): Union
     {
         $type = new TMixed($from_loop_isset);
 
