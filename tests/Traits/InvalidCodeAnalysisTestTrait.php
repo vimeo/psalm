@@ -41,6 +41,12 @@ trait InvalidCodeAnalysisTestTrait
 
                 return;
             }
+        } elseif (strpos($test_name, 'PHP80-') !== false) {
+            if (version_compare(PHP_VERSION, '8.0.0', '<')) {
+                $this->markTestSkipped('Test case requires PHP 8.0.');
+
+                return;
+            }
         } elseif (strpos($test_name, 'SKIPPED-') !== false) {
             $this->markTestSkipped('Skipped due to a bug.');
         }

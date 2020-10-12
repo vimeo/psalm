@@ -147,7 +147,7 @@ class ToStringTest extends TestCase
                         echo $a;
                     }'
             ],
-            'stringableInterface' => [
+            'PHP80-stringableInterface' => [
                 '<?php
                     interface Foo extends Stringable {}
 
