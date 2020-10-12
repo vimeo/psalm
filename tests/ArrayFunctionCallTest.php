@@ -1847,6 +1847,17 @@ class ArrayFunctionCallTest extends TestCase
                     $list = array_filter($list);
                     if (!empty($list)) {}'
             ],
+            'arrayShiftOnMixedOrEmptyArray' => [
+                '<?php
+                    /**
+                     * @param mixed|array<empty, empty> $lengths
+                     */
+                    function doStuff($lengths): void {
+                        /** @psalm-suppress MixedArgument, MixedAssignment */
+                        $length = array_shift($lengths);
+                        if ($length !== null) {}
+                    }'
+            ],
         ];
     }
 
