@@ -151,8 +151,12 @@ class TypeParser
                 && count($generic_params) === 1
             ) {
                 array_unshift($generic_params, new Union([new TArrayKey]));
-            } elseif (in_array($generic_type_value, ['iterable', 'Traversable', 'Iterator', 'IteratorAggregate'], true)
-                && count($generic_params) === 1
+            } elseif (count($generic_params) === 1
+                && in_array(
+                    $generic_type_value,
+                    ['iterable', 'Traversable', 'Iterator', 'IteratorAggregate', 'array-like-object'],
+                    true
+                )
             ) {
                 array_unshift($generic_params, new Union([new TMixed]));
             } elseif ($generic_type_value === 'Generator') {
@@ -175,6 +179,14 @@ class TypeParser
                 }
 
                 return new TArray($generic_params);
+            }
+
+            if ($generic_type_value === 'array-like-object') {
+                $traversable = new TGenericObject('Traversable', $generic_params);
+                $array_acccess = new TGenericObject('ArrayAccess', $generic_params);
+                $traversable->extra_types[$array_acccess->getKey()] = $array_acccess;
+
+                return $traversable;
             }
 
             if ($generic_type_value === 'non-empty-array') {
