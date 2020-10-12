@@ -651,9 +651,7 @@ class Algebra
 
                         $new_clause = new Clause(
                             $new_clause_possibilities,
-                            $clause->creating_conditional_id === $grouped_clause->creating_conditional_id
-                                ? $clause->creating_conditional_id
-                                : $grouped_clause->creating_conditional_id,
+                            $grouped_clause->creating_conditional_id,
                             $clause->creating_object_id,
                             false,
                             true,
