@@ -22,7 +22,6 @@ use Psalm\Issue\InvalidNamedArgument;
 use Psalm\Issue\PossiblyUndefinedVariable;
 use Psalm\Issue\TooFewArguments;
 use Psalm\Issue\TooManyArguments;
-use Psalm\Issue\UndefinedVariable;
 use Psalm\IssueBuffer;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;

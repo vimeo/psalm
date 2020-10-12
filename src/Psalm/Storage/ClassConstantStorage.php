@@ -2,7 +2,6 @@
 namespace Psalm\Storage;
 
 use Psalm\CodeLocation;
-use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Type;
 

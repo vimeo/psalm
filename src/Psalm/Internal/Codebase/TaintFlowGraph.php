@@ -3,7 +3,6 @@
 namespace Psalm\Internal\Codebase;
 
 use Psalm\CodeLocation;
-use Psalm\Internal\DataFlow\Path;
 use Psalm\Internal\DataFlow\TaintSink;
 use Psalm\Internal\DataFlow\TaintSource;
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -15,7 +14,6 @@ use function implode;
 use function substr;
 use function strlen;
 use function array_intersect;
-use function array_reverse;
 
 class TaintFlowGraph extends DataFlowGraph
 {

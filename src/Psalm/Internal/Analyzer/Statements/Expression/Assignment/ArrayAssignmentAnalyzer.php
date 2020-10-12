@@ -789,7 +789,7 @@ class ArrayAssignmentAnalyzer
         array $key_values
     ) : void {
         if ($statements_analyzer->data_flow_graph
-            && ($statements_analyzer->data_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph
+            && ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
                 || !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues()))
         ) {
             if (!$stmt_type->parent_nodes) {

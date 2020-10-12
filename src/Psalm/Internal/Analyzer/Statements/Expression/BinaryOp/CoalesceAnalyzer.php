@@ -13,7 +13,6 @@ use Psalm\Type\Algebra;
 use Psalm\Type\Reconciler;
 use Psalm\Internal\Type\AssertionReconciler;
 use function array_merge;
-use function array_intersect_key;
 use function array_values;
 use function array_map;
 use function array_keys;

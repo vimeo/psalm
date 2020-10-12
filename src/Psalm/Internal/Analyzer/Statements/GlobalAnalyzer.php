@@ -8,7 +8,6 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\InvalidGlobal;
-use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\IssueBuffer;
 use function is_string;
 

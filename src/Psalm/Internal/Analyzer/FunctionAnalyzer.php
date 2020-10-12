@@ -2,12 +2,8 @@
 namespace Psalm\Internal\Analyzer;
 
 use PhpParser;
-use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Context;
-use Psalm\Type;
 use function strtolower;
-use function array_values;
-use function count;
 use function is_string;
 
 /**

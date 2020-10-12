@@ -60,7 +60,6 @@ use function implode;
 use function array_diff;
 use function strpos;
 use function explode;
-use function array_pop;
 use function strtolower;
 use function usort;
 use function file_exists;
