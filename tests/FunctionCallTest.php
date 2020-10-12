@@ -1347,6 +1347,13 @@ class FunctionCallTest extends TestCase
                         if (strpos("abcdefghijklmno", $format)) {}
                     }',
             ],
+            'pregSplit' => [
+                '<?php
+                    /** @return non-empty-list */
+                    function foo(string $s) {
+                        return preg_split("/ /", $s);
+                    }'
+            ],
         ];
     }
 
@@ -1831,6 +1838,14 @@ class FunctionCallTest extends TestCase
                         if (strpos("u", $format)) {}
                     }',
                 'error_message' => 'InvalidLiteralArgument',
+            ],
+            'pregSplitNoEmpty' => [
+                '<?php
+                    /** @return non-empty-list */
+                    function foo(string $s) {
+                        return preg_split("/ /", $s, -1, PREG_SPLIT_NO_EMPTY);
+                    }',
+                'error_message' => 'InvalidReturnStatement'
             ],
         ];
     }
