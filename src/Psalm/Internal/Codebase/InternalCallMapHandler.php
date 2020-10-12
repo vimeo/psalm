@@ -414,4 +414,9 @@ class InternalCallMapHandler
     {
         return isset(self::getCallMap()[strtolower($key)]);
     }
+
+    public static function clearCache() : void
+    {
+        self::$call_map_callables = [];
+    }
 }
