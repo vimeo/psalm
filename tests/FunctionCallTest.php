@@ -1347,6 +1347,14 @@ class FunctionCallTest extends TestCase
                         if (strpos("abcdefghijklmno", $format)) {}
                     }',
             ],
+            'curlInitIsResourceAllowedIn7x' => [
+                '<?php
+                    $ch = curl_init();
+                    if (!is_resource($ch)) {}',
+                [],
+                [],
+                '7.4'
+            ],
         ];
     }
 
@@ -1831,6 +1839,15 @@ class FunctionCallTest extends TestCase
                         if (strpos("u", $format)) {}
                     }',
                 'error_message' => 'InvalidLiteralArgument',
+            ],
+            'curlInitIsResourceFailsIn8x' => [
+                '<?php
+                    $ch = curl_init();
+                    if (!is_resource($ch)) {}',
+                'error_message' => 'RedundantCondition',
+                [],
+                false,
+                '8.0'
             ],
         ];
     }

@@ -20,6 +20,7 @@ use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNumeric;
+use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -61,6 +62,18 @@ class SimpleNegatedAssertionReconciler extends Reconciler
 
         if ($assertion === 'scalar' && !$existing_var_type->hasMixed()) {
             return self::reconcileScalar(
+                $existing_var_type,
+                $key,
+                $negated,
+                $code_location,
+                $suppressed_issues,
+                $failed_reconciliation,
+                $is_equality
+            );
+        }
+
+        if ($assertion === 'resource' && !$existing_var_type->hasMixed()) {
+            return self::reconcileResource(
                 $existing_var_type,
                 $key,
                 $negated,
@@ -1435,6 +1448,71 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             $type->ignore_nullable_issues = $existing_var_type->ignore_nullable_issues;
             $type->from_docblock = $existing_var_type->from_docblock;
             return $type;
+        }
+
+        $failed_reconciliation = 2;
+
+        return Type::getMixed();
+    }
+
+    /**
+     * @param   string[]  $suppressed_issues
+     * @param   0|1|2    $failed_reconciliation
+     */
+    private static function reconcileResource(
+        Type\Union $existing_var_type,
+        ?string $key,
+        bool $negated,
+        ?CodeLocation $code_location,
+        array $suppressed_issues,
+        int &$failed_reconciliation,
+        bool $is_equality
+    ) : Type\Union {
+        $old_var_type_string = $existing_var_type->getId();
+        $did_remove_type = false;
+
+        if ($existing_var_type->hasType('resource')) {
+            $did_remove_type = true;
+            $existing_var_type->removeType('resource');
+        }
+
+        foreach ($existing_var_type->getAtomicTypes() as $type) {
+            if ($type instanceof TTemplateParam) {
+                $type->as = self::reconcileResource(
+                    $type->as,
+                    null,
+                    false,
+                    null,
+                    $suppressed_issues,
+                    $failed_reconciliation,
+                    $is_equality
+                );
+
+                $did_remove_type = true;
+                $existing_var_type->bustCache();
+            }
+        }
+
+        if (!$did_remove_type || empty($existing_var_type->getAtomicTypes())) {
+            if ($key && $code_location && !$is_equality) {
+                self::triggerIssueForImpossible(
+                    $existing_var_type,
+                    $old_var_type_string,
+                    $key,
+                    '!resource',
+                    $negated xor !$did_remove_type,
+                    $code_location,
+                    $suppressed_issues
+                );
+            }
+
+            if (!$did_remove_type) {
+                $failed_reconciliation = 1;
+            }
+        }
+
+        if ($existing_var_type->getAtomicTypes()) {
+            return $existing_var_type;
         }
 
         $failed_reconciliation = 2;
