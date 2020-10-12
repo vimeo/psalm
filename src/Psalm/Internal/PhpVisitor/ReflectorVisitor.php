@@ -76,7 +76,7 @@ use function strlen;
 /**
  * @internal
  */
-class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParser\NodeVisitor, FileSource
+class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSource
 {
     /** @var Aliases */
     private $aliases;

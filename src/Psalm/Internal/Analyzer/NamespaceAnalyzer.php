@@ -15,7 +15,7 @@ use function preg_replace;
 /**
  * @internal
  */
-class NamespaceAnalyzer extends SourceAnalyzer implements StatementsSource
+class NamespaceAnalyzer extends SourceAnalyzer
 {
     use CanAlias;
 

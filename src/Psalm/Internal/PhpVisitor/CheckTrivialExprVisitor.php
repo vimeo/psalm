@@ -6,7 +6,7 @@ use PhpParser;
 /**
  * @internal
  */
-class CheckTrivialExprVisitor extends PhpParser\NodeVisitorAbstract implements PhpParser\NodeVisitor
+class CheckTrivialExprVisitor extends PhpParser\NodeVisitorAbstract
 {
     /**
      * @var array<int, PhpParser\Node\Expr>

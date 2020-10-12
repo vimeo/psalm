@@ -60,7 +60,7 @@ use function array_keys;
 /**
  * @internal
  */
-class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
+class StatementsAnalyzer extends SourceAnalyzer
 {
     /**
      * @var SourceAnalyzer

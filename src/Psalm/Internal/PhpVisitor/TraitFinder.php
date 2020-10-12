@@ -8,7 +8,7 @@ use function count;
  * Given a list of file diffs, this scans an AST to find the sections it can replace, and parses
  * just those methods.
  */
-class TraitFinder extends PhpParser\NodeVisitorAbstract implements PhpParser\NodeVisitor
+class TraitFinder extends PhpParser\NodeVisitorAbstract
 {
     /** @var list<PhpParser\Node\Stmt\Trait_> */
     private $matching_trait_nodes = [];

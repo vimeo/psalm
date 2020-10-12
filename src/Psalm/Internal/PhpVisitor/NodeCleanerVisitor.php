@@ -6,7 +6,7 @@ use PhpParser;
 /**
  * @internal
  */
-class NodeCleanerVisitor extends PhpParser\NodeVisitorAbstract implements PhpParser\NodeVisitor
+class NodeCleanerVisitor extends PhpParser\NodeVisitorAbstract
 {
     private $type_provider;
 

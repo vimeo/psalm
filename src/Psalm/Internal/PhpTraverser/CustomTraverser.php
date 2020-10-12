@@ -11,7 +11,7 @@ use PhpParser\NodeTraverserInterface;
 /**
  * @internal
  */
-class CustomTraverser extends \PhpParser\NodeTraverser implements NodeTraverserInterface
+class CustomTraverser extends \PhpParser\NodeTraverser
 {
     public function __construct()
     {

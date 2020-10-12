@@ -23,7 +23,7 @@ use function count;
  * @internal
  * @psalm-consistent-constructor
  */
-class FileAnalyzer extends SourceAnalyzer implements StatementsSource
+class FileAnalyzer extends SourceAnalyzer
 {
     use CanAlias;
 
