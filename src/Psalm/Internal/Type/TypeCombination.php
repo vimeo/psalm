@@ -261,6 +261,7 @@ class TypeCombination
                 || (isset($combination->named_object_types['Traversable'])
                     && $combination->named_object_types['Traversable']->from_docblock)
             )
+            && !$combination->extra_types
         ) {
             $array_param_types = $combination->array_type_params;
             $traversable_param_types = $combination->builtin_type_params['Traversable']
