@@ -1104,7 +1104,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                         if ($classlike_storage->parent_classes) {
                             return new Type\Union([
                                 new Type\Atomic\TClassString(
-                                    array_values($classlike_storage->parent_classes)[0]
+                                    \array_values($classlike_storage->parent_classes)[0]
                                 )
                             ]);
                         }
