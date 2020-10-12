@@ -138,7 +138,7 @@ class ArrayFunctionArgumentsAnalyzer
         );
 
         if ($is_push && !$unpacked_args) {
-            for ($i = 1; $i < count($args); $i++) {
+            for ($i = 1, $iMax = count($args); $i < $iMax; $i++) {
                 $was_inside_assignment = $context->inside_assignment;
 
                 $context->inside_assignment = true;
@@ -185,7 +185,7 @@ class ArrayFunctionArgumentsAnalyzer
             return false;
         }
 
-        for ($i = 1; $i < count($args); $i++) {
+        for ($i = 1, $iMax = count($args); $i < $iMax; $i++) {
             if (ExpressionAnalyzer::analyze(
                 $statements_analyzer,
                 $args[$i]->value,

@@ -184,7 +184,7 @@ function getArguments() : array
 
     $filtered_input_paths = [];
 
-    for ($i = 0; $i < count($argv); ++$i) {
+    for ($i = 0, $iMax = count($argv); $i < $iMax; ++$i) {
         $input_path = $argv[$i];
 
         if (realpath($input_path) !== false) {
@@ -228,7 +228,7 @@ function getPathsToCheck($f_paths): ?array
     if ($input_paths) {
         $filtered_input_paths = [];
 
-        for ($i = 0; $i < count($input_paths); ++$i) {
+        for ($i = 0, $iMax = count($input_paths); $i < $iMax; ++$i) {
             /** @var string */
             $input_path = $input_paths[$i];
 

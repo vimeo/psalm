@@ -134,7 +134,7 @@ class DocComment
         $min_indent = 80;
         $indent = 0;
         foreach (array_filter(explode("\n", $docblock)) as $line) {
-            for ($ii = 0; $ii < strlen($line); ++$ii) {
+            for ($ii = 0, $iiMax = strlen($line); $ii < $iiMax; ++$ii) {
                 if ($line[$ii] !== ' ') {
                     break;
                 }

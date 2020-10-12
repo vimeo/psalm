@@ -619,7 +619,7 @@ class ArgumentsAnalyzer
         $function_param_count = count($function_params);
 
         if (count($function_params) > count($args) && !$has_packed_var) {
-            for ($i = count($args); $i < count($function_params); $i++) {
+            for ($i = count($args), $iMax = count($function_params); $i < $iMax; $i++) {
                 if ($function_params[$i]->default_type
                     && $function_params[$i]->type
                     && $function_params[$i]->type->hasTemplate()

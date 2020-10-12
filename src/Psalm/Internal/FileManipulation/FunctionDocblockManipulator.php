@@ -162,7 +162,7 @@ class FunctionDocblockManipulator
 
         $in_single_line_comment = $in_multi_line_comment = false;
 
-        for ($i = 0; $i < count($chars); ++$i) {
+        for ($i = 0, $iMax = count($chars); $i < $iMax; ++$i) {
             $char = $chars[$i];
 
             switch ($char) {
