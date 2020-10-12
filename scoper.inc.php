@@ -83,10 +83,6 @@ return [
         'Psalm\*',
     ],
     'files-whitelist' => [
-        'src/Psalm/Internal/PropertyMap.php',
-        'src/Psalm/Internal/CallMap.php',
-        'src/Psalm/Internal/Stubs/CoreGenericFunctions.phpstub',
-        'src/Psalm/Internal/Stubs/CoreGenericClasses.phpstub',
         'src/spl_object_id.php',
     ],
 ];
