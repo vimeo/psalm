@@ -1355,6 +1355,13 @@ class FunctionCallTest extends TestCase
                 [],
                 '7.4'
             ],
+            'pregSplit' => [
+                '<?php
+                    /** @return non-empty-list */
+                    function foo(string $s) {
+                        return preg_split("/ /", $s);
+                    }'
+            ],
         ];
     }
 
@@ -1855,6 +1862,14 @@ class FunctionCallTest extends TestCase
                         max($a);
                     }',
                 'error_message' => 'ArgumentTypeCoercion',
+            ],
+            'pregSplitNoEmpty' => [
+                '<?php
+                    /** @return non-empty-list */
+                    function foo(string $s) {
+                        return preg_split("/ /", $s, -1, PREG_SPLIT_NO_EMPTY);
+                    }',
+                'error_message' => 'InvalidReturnStatement'
             ],
         ];
     }

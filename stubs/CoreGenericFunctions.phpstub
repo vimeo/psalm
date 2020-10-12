@@ -603,6 +603,17 @@ function implode($glue, array $pieces = []) : string {}
 function explode(string $delimiter, string $string, int $limit = -1) : array {}
 
 /**
+ * @psalm-pure
+ *
+ * @psalm-flow ($subject) -(array-assignment)-> return
+ *
+ * @return ($flags is 1|3|5|7 ? list<string>|false : non-empty-list<string>|false)
+ *
+ * @psalm-ignore-falsable-return
+ */
+function preg_split(string $pattern, string $subject, int $limit = -1, int $flags = 0) {}
+
+/**
  * @param array $input
  *
  * @return (
