@@ -504,6 +504,7 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
         \Psalm\Internal\Provider\ClassLikeStorageProvider::deleteAll();
         \Psalm\Internal\Provider\FileStorageProvider::deleteAll();
         \Psalm\Internal\Provider\FileReferenceProvider::clearCache();
+        \Psalm\Internal\Codebase\InternalCallMapHandler::clearCache();
     }
 
     public function getFileName(): string
