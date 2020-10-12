@@ -125,13 +125,16 @@ class Shepherd implements \Psalm\Plugin\Hook\AfterAnalysisInterface
     }
 
     /**
-     * @param resource $ch
+     * @param mixed $ch
      *
      * @psalm-pure
      */
     public static function getCurlErrorMessage($ch) : string
     {
-        /** @var array */
+        /**
+         * @psalm-suppress MixedArgument
+         * @var array
+         */
         $curl_info = curl_getinfo($ch);
 
         if (isset($curl_info['ssl_verify_result'])
@@ -207,6 +210,9 @@ class Shepherd implements \Psalm\Plugin\Hook\AfterAnalysisInterface
             return '';
         }
 
+        /**
+         * @psalm-suppress MixedArgument
+         */
         return var_export(curl_getinfo($ch), true);
     }
 }
