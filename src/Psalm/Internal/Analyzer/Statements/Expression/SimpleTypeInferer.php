@@ -17,7 +17,6 @@ class SimpleTypeInferer
 {
     /**
      * @param   ?array<string, ClassConstantStorage> $existing_class_constants
-     * @param   string $fq_classlike_name
      */
     public static function infer(
         \Psalm\Codebase $codebase,
@@ -26,7 +25,7 @@ class SimpleTypeInferer
         \Psalm\Aliases $aliases,
         \Psalm\FileSource $file_source = null,
         ?array $existing_class_constants = null,
-        $fq_classlike_name = null
+        ?string $fq_classlike_name = null
     ): ?Type\Union {
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp) {
             if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat) {

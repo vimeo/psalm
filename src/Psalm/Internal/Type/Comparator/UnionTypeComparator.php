@@ -339,17 +339,13 @@ class UnionTypeComparator
 
     /**
      * Does the input param type match the given param type
-     *
-     * @param  bool         $ignore_null
-     * @param  bool         $ignore_false
-     *
      */
     public static function canBeContainedBy(
         Codebase $codebase,
         Type\Union $input_type,
         Type\Union $container_type,
-        $ignore_null = false,
-        $ignore_false = false,
+        bool $ignore_null = false,
+        bool $ignore_false = false,
         array &$matching_input_keys = []
     ): bool {
         if ($container_type->hasMixed()) {

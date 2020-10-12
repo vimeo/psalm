@@ -610,9 +610,8 @@ class ClassLikes
 
     /**
      * @param  lowercase-string  $fq_class_name
-     *
      */
-    public function isUserDefined($fq_class_name): bool
+    public function isUserDefined(string $fq_class_name): bool
     {
         return $this->classlike_storage_provider->get($fq_class_name)->user_defined;
     }
@@ -1963,18 +1962,16 @@ class ClassLikes
 
     /**
      * @param  lowercase-string $fq_classlike_name_lc
-     *
      */
-    public function registerMissingClassLike($fq_classlike_name_lc): void
+    public function registerMissingClassLike(string $fq_classlike_name_lc): void
     {
         $this->existing_classlikes_lc[$fq_classlike_name_lc] = false;
     }
 
     /**
      * @param  lowercase-string $fq_classlike_name_lc
-     *
      */
-    public function isMissingClassLike($fq_classlike_name_lc): bool
+    public function isMissingClassLike(string $fq_classlike_name_lc): bool
     {
         return isset($this->existing_classlikes_lc[$fq_classlike_name_lc])
             && $this->existing_classlikes_lc[$fq_classlike_name_lc] === false;
@@ -1982,9 +1979,8 @@ class ClassLikes
 
     /**
      * @param  lowercase-string $fq_classlike_name_lc
-     *
      */
-    public function doesClassLikeExist($fq_classlike_name_lc): bool
+    public function doesClassLikeExist(string $fq_classlike_name_lc): bool
     {
         return isset($this->existing_classlikes_lc[$fq_classlike_name_lc])
             && $this->existing_classlikes_lc[$fq_classlike_name_lc];

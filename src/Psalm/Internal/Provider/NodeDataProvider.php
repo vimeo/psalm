@@ -38,7 +38,7 @@ class NodeDataProvider implements \Psalm\NodeTypeProvider
     /**
      * @param PhpParser\Node\Expr|PhpParser\Node\Name|PhpParser\Node\Stmt\Return_ $node
      */
-    public function setType($node, Union $type) : void
+    public function setType(PhpParser\NodeAbstract $node, Union $type) : void
     {
         $this->node_types[$node] = $type;
     }
@@ -46,7 +46,7 @@ class NodeDataProvider implements \Psalm\NodeTypeProvider
     /**
      * @param PhpParser\Node\Expr|PhpParser\Node\Name|PhpParser\Node\Stmt\Return_ $node
      */
-    public function getType($node) : ?Union
+    public function getType(PhpParser\NodeAbstract $node) : ?Union
     {
         return $this->node_types[$node] ?? null;
     }
@@ -79,7 +79,7 @@ class NodeDataProvider implements \Psalm\NodeTypeProvider
      * @param PhpParser\Node\Expr\FuncCall|PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $node
      * @param array<int, \Psalm\Storage\Assertion> $assertions
      */
-    public function setIfTrueAssertions($node, array $assertions) : void
+    public function setIfTrueAssertions(PhpParser\Node\Expr $node, array $assertions) : void
     {
         $this->node_if_true_assertions[$node] = $assertions;
     }
@@ -88,7 +88,7 @@ class NodeDataProvider implements \Psalm\NodeTypeProvider
      * @param PhpParser\Node\Expr\FuncCall|PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $node
      * @return array<int, \Psalm\Storage\Assertion>|null
      */
-    public function getIfTrueAssertions($node) : ?array
+    public function getIfTrueAssertions(PhpParser\Node\Expr $node) : ?array
     {
         return $this->node_if_true_assertions[$node] ?? null;
     }
@@ -97,7 +97,7 @@ class NodeDataProvider implements \Psalm\NodeTypeProvider
      * @param PhpParser\Node\Expr\FuncCall|PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $node
      * @param array<int, \Psalm\Storage\Assertion> $assertions
      */
-    public function setIfFalseAssertions($node, array $assertions) : void
+    public function setIfFalseAssertions(PhpParser\Node\Expr $node, array $assertions) : void
     {
         $this->node_if_false_assertions[$node] = $assertions;
     }
@@ -106,7 +106,7 @@ class NodeDataProvider implements \Psalm\NodeTypeProvider
      * @param PhpParser\Node\Expr\FuncCall|PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $node
      * @return array<int, \Psalm\Storage\Assertion>|null
      */
-    public function getIfFalseAssertions($node) : ?array
+    public function getIfFalseAssertions(PhpParser\Node\Expr $node) : ?array
     {
         return $this->node_if_false_assertions[$node] ?? null;
     }

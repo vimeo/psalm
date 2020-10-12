@@ -341,7 +341,7 @@ class Reflection
      *
      * @return false|null
      */
-    public function registerFunction($function_id): ?bool
+    public function registerFunction(string $function_id): ?bool
     {
         try {
             $reflection_function = new \ReflectionFunction($function_id);

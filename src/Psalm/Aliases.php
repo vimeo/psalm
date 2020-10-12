@@ -46,7 +46,6 @@ class Aliases
     public $uses_end;
 
     /**
-     * @param string|null           $namespace
      * @param array<string, string> $uses
      * @param array<string, non-empty-string> $functions
      * @param array<string, string> $constants
@@ -55,7 +54,7 @@ class Aliases
      * @param array<string, string> $constants_flipped
      */
     public function __construct(
-        $namespace = null,
+        ?string $namespace = null,
         array $uses = [],
         array $functions = [],
         array $constants = [],

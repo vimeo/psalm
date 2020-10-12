@@ -86,9 +86,9 @@ class Clause
         array $possibilities,
         int $creating_conditional_id,
         int $creating_object_id,
-        $wedge = false,
-        $reconcilable = true,
-        $generated = false,
+        bool $wedge = false,
+        bool $reconcilable = true,
+        bool $generated = false,
         array $redefined_vars = []
     ) {
         $this->possibilities = $possibilities;

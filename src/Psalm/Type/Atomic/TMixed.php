@@ -6,10 +6,7 @@ class TMixed extends \Psalm\Type\Atomic
     /** @var bool */
     public $from_loop_isset = false;
 
-    /**
-     * @param bool $from_loop_isset
-     */
-    public function __construct($from_loop_isset = false)
+    public function __construct(bool $from_loop_isset = false)
     {
         $this->from_loop_isset = $from_loop_isset;
     }
@@ -18,7 +15,7 @@ class TMixed extends \Psalm\Type\Atomic
     {
         return 'mixed';
     }
-    
+
     public function getKey(bool $include_extra = true): string
     {
         return 'mixed';

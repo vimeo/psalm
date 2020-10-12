@@ -431,7 +431,7 @@ class CallAnalyzer
      */
     public static function getFunctionIdsFromCallableArg(
         \Psalm\FileSource $file_source,
-        $callable_arg
+        PhpParser\Node\Expr $callable_arg
     ): array {
         if ($callable_arg instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
             if ($callable_arg->left instanceof PhpParser\Node\Expr\ClassConstFetch
@@ -537,7 +537,7 @@ class CallAnalyzer
      */
     public static function checkFunctionExists(
         StatementsAnalyzer $statements_analyzer,
-        &$function_id,
+        string &$function_id,
         CodeLocation $code_location,
         bool $can_be_in_root_scope
     ): bool {
@@ -583,7 +583,7 @@ class CallAnalyzer
      *
      */
     protected static function applyAssertionsToContext(
-        $expr,
+        PhpParser\NodeAbstract $expr,
         ?string $thisName,
         array $assertions,
         array $args,

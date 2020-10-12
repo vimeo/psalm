@@ -86,11 +86,7 @@ abstract class CodeIssue
         return $this->message;
     }
 
-    /**
-     * @param  string          $severity
-     *
-     */
-    public function toIssueData($severity = Config::REPORT_ERROR): \Psalm\Internal\Analyzer\IssueData
+    public function toIssueData(string $severity = Config::REPORT_ERROR): \Psalm\Internal\Analyzer\IssueData
     {
         $location = $this->code_location;
         $selection_bounds = $location->getSelectionBounds();
