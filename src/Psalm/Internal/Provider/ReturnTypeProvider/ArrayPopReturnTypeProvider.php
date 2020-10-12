@@ -33,6 +33,7 @@ class ArrayPopReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
         $first_arg_array = $first_arg
             && ($first_arg_type = $statements_source->node_data->getType($first_arg))
             && $first_arg_type->hasType('array')
+            && !$first_arg_type->hasMixed()
             && ($array_atomic_type = $first_arg_type->getAtomicTypes()['array'])
             && ($array_atomic_type instanceof Type\Atomic\TArray
                 || $array_atomic_type instanceof Type\Atomic\ObjectLike
