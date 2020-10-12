@@ -67,6 +67,10 @@ class NegatedAssertionReconciler extends Reconciler
             );
         }
 
+        if ($is_equality && $assertion === 'positive-numeric') {
+            return $existing_var_type;
+        }
+
         if (!$is_equality) {
             if ($assertion === 'isset') {
                 if ($existing_var_type->possibly_undefined) {

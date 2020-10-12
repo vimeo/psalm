@@ -776,6 +776,12 @@ class ValueTest extends \Psalm\Tests\TestCase
                         if ($foo) {}
                     }',
             ],
+            'allowCheckOnPositiveNumericInverse' => [
+                '<?php
+                    function foo(int $a): void {
+                        if (false === ($a > 1)){}
+                    }'
+            ],
         ];
     }
 
