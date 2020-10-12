@@ -119,7 +119,7 @@ class IssueData
      * @var ?string
      * @readonly
      */
-    private $dupe_key;
+    public $dupe_key;
 
     /**
      * @param ?list<ControlFlowNodeData|array{label: string, entry_path_type: string}> $taint_trace
@@ -165,10 +165,5 @@ class IssueData
         $this->link = 'https://psalm.dev/' . \str_pad((string) $shortcode, 3, "0", \STR_PAD_LEFT);
         $this->taint_trace = $taint_trace;
         $this->dupe_key = $dupe_key;
-    }
-
-    public function getDupeKey() : ?string
-    {
-        return $this->dupe_key;
     }
 }
