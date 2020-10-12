@@ -18,8 +18,6 @@
     <file>src/</file>
     <file>tests/</file>
 
-    <!-- This is a vendor file that we don't want to bother linting. -->
-    <exclude-pattern>src/Psalm/Internal/CallMap.php</exclude-pattern>
     <exclude-pattern>src/Psalm/Internal/Visitor/SimpleNameResolver.php</exclude-pattern>
 
     <!-- These are just examples and stub classes/files, so it doesn't really matter if they're PSR-2 compliant. -->
