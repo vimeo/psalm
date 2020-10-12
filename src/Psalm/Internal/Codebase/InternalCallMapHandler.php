@@ -12,6 +12,7 @@ use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
 use Psalm\Type\Atomic\TCallable;
+use function dirname;
 use function strtolower;
 use function substr;
 use function version_compare;
@@ -355,7 +356,7 @@ class InternalCallMapHandler
         }
 
         /** @var array<string, array<int|string, string>> */
-        $call_map = require(__DIR__ . '/../CallMap.php');
+        $call_map = require(dirname(__DIR__, 4) . '/dictionaries/CallMap.php');
 
         self::$call_map = [];
 
@@ -367,7 +368,7 @@ class InternalCallMapHandler
         /**
          * @var array<string, list<list<Type\TaintKind::*>>>
          */
-        $taint_map = require(__DIR__ . '/../InternalTaintSinkMap.php');
+        $taint_map = require(dirname(__DIR__, 4) . '/dictionaries/InternalTaintSinkMap.php');
 
         foreach ($taint_map as $key => $value) {
             $cased_key = strtolower($key);
@@ -377,7 +378,7 @@ class InternalCallMapHandler
         if (version_compare($analyzer_version, $current_version, '<')) {
             // the following assumes both minor and major versions a single digits
             for ($i = $current_version_int; $i > $analyzer_version_int && $i >= self::LOWEST_AVAILABLE_DELTA; --$i) {
-                $delta_file = __DIR__ . '/../CallMap_' . $i . '_delta.php';
+                $delta_file = dirname(__DIR__, 4) . '/dictionaries/CallMap_' . $i . '_delta.php';
                 if (!file_exists($delta_file)) {
                     continue;
                 }

@@ -1713,21 +1713,21 @@ class Config
         $codebase->register_stub_files = true;
 
         // note: don't realpath $generic_stubs_path, or phar version will fail
-        $generic_stubs_path = __DIR__ . '/Internal/Stubs/CoreGenericFunctions.phpstub';
+        $generic_stubs_path = dirname(__DIR__, 2) . '/stubs/CoreGenericFunctions.phpstub';
 
         if (!file_exists($generic_stubs_path)) {
             throw new \UnexpectedValueException('Cannot locate core generic stubs');
         }
 
         // note: don't realpath $generic_classes_path, or phar version will fail
-        $generic_classes_path = __DIR__ . '/Internal/Stubs/CoreGenericClasses.phpstub';
+        $generic_classes_path = dirname(__DIR__, 2) . '/stubs/CoreGenericClasses.phpstub';
 
         if (!file_exists($generic_classes_path)) {
             throw new \UnexpectedValueException('Cannot locate core generic classes');
         }
 
         // note: don't realpath $generic_classes_path, or phar version will fail
-        $immutable_classes_path = __DIR__ . '/Internal/Stubs/CoreImmutableClasses.phpstub';
+        $immutable_classes_path = dirname(__DIR__, 2) . '/stubs/CoreImmutableClasses.phpstub';
 
         if (!file_exists($immutable_classes_path)) {
             throw new \UnexpectedValueException('Cannot locate core immutable classes');
@@ -1736,7 +1736,7 @@ class Config
         $core_generic_files = [$generic_stubs_path, $generic_classes_path, $immutable_classes_path];
 
         if (\extension_loaded('ds')) {
-            $ext_ds_path = __DIR__ . '/Internal/Stubs/ext-ds.php';
+            $ext_ds_path = dirname(__DIR__, 2) . '/stubs/ext-ds.php';
 
             if (!file_exists($ext_ds_path)) {
                 throw new \UnexpectedValueException('Cannot locate core generic classes');
@@ -1764,7 +1764,7 @@ class Config
         }
 
         if ($this->load_xdebug_stub) {
-            $xdebug_stub_path = __DIR__ . '/Internal/Stubs/Xdebug.php';
+            $xdebug_stub_path = dirname(__DIR__, 2) . '/stubs/Xdebug.php';
 
             if (!file_exists($xdebug_stub_path)) {
                 throw new \UnexpectedValueException('Cannot locate XDebug stub');
