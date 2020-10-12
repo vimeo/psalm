@@ -1350,7 +1350,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                         $storage->docblock_issues[] = new InvalidTypeImport(
                             'Invalid import in docblock for ' . implode('.', $this->fq_classlike_names)
                             . ', expecting "<TypeName> from <ClassName>",'
-                            . ' got "' . join(' ', $imported_type_data) . '" instead.',
+                            . ' got "' . implode(' ', $imported_type_data) . '" instead.',
                             $location
                         );
                         continue;
@@ -1366,7 +1366,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                         $storage->docblock_issues[] = new InvalidTypeImport(
                             'Invalid import in docblock for ' . implode('.', $this->fq_classlike_names)
                             . ', expecting "<TypeName> from <ClassName>", got "'
-                            . join(
+                            . implode(
                                 ' ',
                                 [$imported_type_data[0], $imported_type_data[1], $imported_type_data[2]]
                             ) . '" instead.',
