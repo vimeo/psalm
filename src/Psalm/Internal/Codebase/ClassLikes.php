@@ -767,10 +767,7 @@ class ClassLikes
         $manipulator->makeImmutable();
     }
 
-    /**
-     * @return void
-     */
-    public function moveMethods(Methods $methods, ?Progress $progress = null)
+    public function moveMethods(Methods $methods, ?Progress $progress = null): void
     {
         if ($progress === null) {
             $progress = new VoidProgress();
@@ -851,10 +848,7 @@ class ClassLikes
         FileManipulationBuffer::addCodeMigrations($code_migrations);
     }
 
-    /**
-     * @return void
-     */
-    public function moveProperties(Properties $properties, ?Progress $progress = null)
+    public function moveProperties(Properties $properties, ?Progress $progress = null): void
     {
         if ($progress === null) {
             $progress = new VoidProgress();
@@ -952,10 +946,7 @@ class ClassLikes
         FileManipulationBuffer::addCodeMigrations($code_migrations);
     }
 
-    /**
-     * @return void
-     */
-    public function moveClassConstants(?Progress $progress = null)
+    public function moveClassConstants(?Progress $progress = null): void
     {
         if ($progress === null) {
             $progress = new VoidProgress();

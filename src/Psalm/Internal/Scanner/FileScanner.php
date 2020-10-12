@@ -38,15 +38,12 @@ class FileScanner implements FileSource
         $this->will_analyze = $will_analyze;
     }
 
-    /**
-     * @return void
-     */
     public function scan(
         Codebase $codebase,
         FileStorage $file_storage,
         bool $storage_from_cache = false,
         ?Progress $progress = null
-    ) {
+    ): void {
         if ($progress === null) {
             $progress = new VoidProgress();
         }

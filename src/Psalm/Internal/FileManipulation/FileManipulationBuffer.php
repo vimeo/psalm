@@ -107,10 +107,7 @@ class FileManipulationBuffer
         );
     }
 
-    /**
-     * @return void
-     */
-    public static function addVarAnnotationToRemove(CodeLocation\DocblockTypeLocation $code_location)
+    public static function addVarAnnotationToRemove(CodeLocation\DocblockTypeLocation $code_location): void
     {
         $bounds = $code_location->getSelectionBounds();
 

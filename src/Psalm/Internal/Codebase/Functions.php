@@ -211,7 +211,7 @@ class Functions
      *
      * @return non-empty-string
      */
-    public function getFullyQualifiedFunctionNameFromString(string $function_name, StatementsSource $source)
+    public function getFullyQualifiedFunctionNameFromString(string $function_name, StatementsSource $source): string
     {
         if ($function_name[0] === '\\') {
             $function_name = substr($function_name, 1);

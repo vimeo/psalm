@@ -26,7 +26,7 @@ class EchoChecker implements AfterStatementAnalysisInterface
         StatementsSource $statements_source,
         Codebase $codebase,
         array &$file_replacements = []
-    ) {
+    ): ?bool {
         if ($stmt instanceof PhpParser\Node\Stmt\Echo_) {
             foreach ($stmt->exprs as $expr) {
                 $expr_type = $statements_source->getNodeTypeProvider()->getType($expr);
@@ -67,5 +67,7 @@ class EchoChecker implements AfterStatementAnalysisInterface
                 }
             }
         }
+
+        return null;
     }
 }

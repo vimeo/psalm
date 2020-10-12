@@ -873,10 +873,7 @@ class Codebase
         return $this->methods->getCasedMethodId(Internal\MethodIdentifier::wrap($method_id));
     }
 
-    /**
-     * @return void
-     */
-    public function invalidateInformationForFile(string $file_path)
+    public function invalidateInformationForFile(string $file_path): void
     {
         $this->scanner->removeFile($file_path);
 
@@ -968,10 +965,7 @@ class Codebase
         }
     }
 
-    /**
-     * @return ?CodeLocation
-     */
-    public function getSymbolLocation(string $file_path, string $symbol)
+    public function getSymbolLocation(string $file_path, string $symbol): ?CodeLocation
     {
         if (\is_numeric($symbol[0])) {
             $symbol = \preg_replace('/:.*/', '', $symbol);

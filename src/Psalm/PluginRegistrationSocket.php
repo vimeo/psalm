@@ -23,16 +23,12 @@ class PluginRegistrationSocket implements RegistrationInterface
         $this->codebase = $codebase;
     }
 
-    /** @return void */
-    public function addStubFile(string $file_name)
+    public function addStubFile(string $file_name): void
     {
         $this->config->addStubFile($file_name);
     }
 
-    /**
-     * @return void
-     */
-    public function registerHooksFromClass(string $handler)
+    public function registerHooksFromClass(string $handler): void
     {
         if (!class_exists($handler, false)) {
             throw new \InvalidArgumentException('Plugins must be loaded before registration');

@@ -339,10 +339,7 @@ class FileReferenceCacheProvider
         return $issues_cache;
     }
 
-    /**
-     * @return void
-     */
-    public function setCachedFileReferences(array $file_references)
+    public function setCachedFileReferences(array $file_references): void
     {
         $cache_directory = $this->config->getCacheDirectory();
 
@@ -355,10 +352,7 @@ class FileReferenceCacheProvider
         file_put_contents($reference_cache_location, serialize($file_references));
     }
 
-    /**
-     * @return void
-     */
-    public function setCachedClassLikeFiles(array $file_references)
+    public function setCachedClassLikeFiles(array $file_references): void
     {
         $cache_directory = $this->config->getCacheDirectory();
 
@@ -371,10 +365,7 @@ class FileReferenceCacheProvider
         file_put_contents($reference_cache_location, serialize($file_references));
     }
 
-    /**
-     * @return void
-     */
-    public function setCachedNonMethodClassReferences(array $file_class_references)
+    public function setCachedNonMethodClassReferences(array $file_class_references): void
     {
         $cache_directory = $this->config->getCacheDirectory();
 
@@ -387,10 +378,7 @@ class FileReferenceCacheProvider
         file_put_contents($reference_cache_location, serialize($file_class_references));
     }
 
-    /**
-     * @return void
-     */
-    public function setCachedMethodClassReferences(array $method_class_references)
+    public function setCachedMethodClassReferences(array $method_class_references): void
     {
         $cache_directory = $this->config->getCacheDirectory();
 
@@ -403,10 +391,7 @@ class FileReferenceCacheProvider
         file_put_contents($reference_cache_location, serialize($method_class_references));
     }
 
-    /**
-     * @return void
-     */
-    public function setCachedMethodMemberReferences(array $member_references)
+    public function setCachedMethodMemberReferences(array $member_references): void
     {
         $cache_directory = $this->config->getCacheDirectory();
 
@@ -419,10 +404,7 @@ class FileReferenceCacheProvider
         file_put_contents($member_cache_location, serialize($member_references));
     }
 
-    /**
-     * @return void
-     */
-    public function setCachedMethodMissingMemberReferences(array $member_references)
+    public function setCachedMethodMissingMemberReferences(array $member_references): void
     {
         $cache_directory = $this->config->getCacheDirectory();
 
@@ -435,10 +417,7 @@ class FileReferenceCacheProvider
         file_put_contents($member_cache_location, serialize($member_references));
     }
 
-    /**
-     * @return void
-     */
-    public function setCachedFileMemberReferences(array $member_references)
+    public function setCachedFileMemberReferences(array $member_references): void
     {
         $cache_directory = $this->config->getCacheDirectory();
 
@@ -451,10 +430,7 @@ class FileReferenceCacheProvider
         file_put_contents($member_cache_location, serialize($member_references));
     }
 
-    /**
-     * @return void
-     */
-    public function setCachedFileMissingMemberReferences(array $member_references)
+    public function setCachedFileMissingMemberReferences(array $member_references): void
     {
         $cache_directory = $this->config->getCacheDirectory();
 
@@ -467,10 +443,7 @@ class FileReferenceCacheProvider
         file_put_contents($member_cache_location, serialize($member_references));
     }
 
-    /**
-     * @return void
-     */
-    public function setCachedMixedMemberNameReferences(array $references)
+    public function setCachedMixedMemberNameReferences(array $references): void
     {
         $cache_directory = $this->config->getCacheDirectory();
 
@@ -483,10 +456,7 @@ class FileReferenceCacheProvider
         file_put_contents($cache_location, serialize($references));
     }
 
-    /**
-     * @return void
-     */
-    public function setCachedMethodParamUses(array $uses)
+    public function setCachedMethodParamUses(array $uses): void
     {
         $cache_directory = $this->config->getCacheDirectory();
 
@@ -499,10 +469,7 @@ class FileReferenceCacheProvider
         file_put_contents($cache_location, serialize($uses));
     }
 
-    /**
-     * @return void
-     */
-    public function setCachedIssues(array $issues)
+    public function setCachedIssues(array $issues): void
     {
         $cache_directory = $this->config->getCacheDirectory();
 
@@ -536,10 +503,8 @@ class FileReferenceCacheProvider
 
     /**
      * @param array<string, array<string, int>> $analyzed_methods
-     *
-     * @return void
      */
-    public function setAnalyzedMethodCache(array $analyzed_methods)
+    public function setAnalyzedMethodCache(array $analyzed_methods): void
     {
         $cache_directory = Config::getInstance()->getCacheDirectory();
 
@@ -580,10 +545,8 @@ class FileReferenceCacheProvider
 
     /**
      * @param array<string, FileMapType> $file_maps
-     *
-     * @return void
      */
-    public function setFileMapCache(array $file_maps)
+    public function setFileMapCache(array $file_maps): void
     {
         $cache_directory = Config::getInstance()->getCacheDirectory();
 
@@ -620,10 +583,8 @@ class FileReferenceCacheProvider
 
     /**
      * @param array<string, array{int, int}> $mixed_counts
-     *
-     * @return void
      */
-    public function setTypeCoverage(array $mixed_counts)
+    public function setTypeCoverage(array $mixed_counts): void
     {
         $cache_directory = Config::getInstance()->getCacheDirectory();
 

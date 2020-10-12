@@ -15,15 +15,13 @@ class TemplateScanner extends Psalm\Internal\Scanner\FileScanner
 
     /**
      * @param bool $storage_from_cache
-     *
-     * @return void
      */
     public function scan(
         Codebase $codebase,
         FileStorage $file_storage,
         $storage_from_cache = false,
         ?Progress $progress = null
-    ) {
+    ): void {
         $stmts = $codebase->statements_provider->getStatementsForFile(
             $file_storage->file_path,
             '7.4',

@@ -19,9 +19,8 @@ class PhpStormMetaScanner
 {
     /**
      * @param  array<PhpParser\Node\Arg> $args
-     * @return void
      */
-    public static function handleOverride(array $args, Codebase $codebase)
+    public static function handleOverride(array $args, Codebase $codebase): void
     {
         $identifier = $args[0]->value;
 

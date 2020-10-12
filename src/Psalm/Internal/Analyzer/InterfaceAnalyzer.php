@@ -18,10 +18,7 @@ class InterfaceAnalyzer extends ClassLikeAnalyzer
         parent::__construct($interface, $source, $fq_interface_name);
     }
 
-    /**
-     * @return void
-     */
-    public function analyze()
+    public function analyze(): void
     {
         if (!$this->class instanceof PhpParser\Node\Stmt\Interface_) {
             throw new \LogicException('Something went badly wrong');

@@ -28,8 +28,6 @@ class AlgebraAnalyzer
      * @param  array<int, Clause>   $formula_1
      * @param  array<int, Clause>   $formula_2
      * @param  array<string, bool>  $new_assigned_var_ids
-     *
-     * @return void
      */
     public static function checkForParadox(
         array $formula_1,
@@ -37,7 +35,7 @@ class AlgebraAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node $stmt,
         array $new_assigned_var_ids
-    ) {
+    ): void {
         try {
             $negated_formula2 = Algebra::negateFormula($formula_2);
         } catch (\Psalm\Exception\ComplicatedExpressionException $e) {

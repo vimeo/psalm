@@ -377,9 +377,6 @@ class Context
         $this->parent_context = null;
     }
 
-    /**
-     * @return void
-     */
     public function __clone()
     {
         foreach ($this->clauses as &$clause) {
@@ -635,15 +632,12 @@ class Context
         }
     }
 
-    /**
-     * @return void
-     */
     public function removeDescendents(
         string $remove_var_id,
         ?Union $existing_type = null,
         ?Union $new_type = null,
         ?StatementsAnalyzer $statements_analyzer = null
-    ) {
+    ): void {
         if (!$existing_type && isset($this->vars_in_scope[$remove_var_id])) {
             $existing_type = $this->vars_in_scope[$remove_var_id];
         }
@@ -668,10 +662,7 @@ class Context
         }
     }
 
-    /**
-     * @return void
-     */
-    public function removeAllObjectVars()
+    public function removeAllObjectVars(): void
     {
         $vars_to_remove = [];
 

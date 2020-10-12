@@ -20,8 +20,6 @@ interface FunctionReturnTypeProviderInterface
      * if something should be returned, but can't be more specific.
      *
      * @param  array<PhpParser\Node\Arg>    $call_args
-     *
-     * @return ?Type\Union
      */
     public static function getFunctionReturnType(
         StatementsSource $statements_source,
@@ -29,5 +27,5 @@ interface FunctionReturnTypeProviderInterface
         array $call_args,
         Context $context,
         CodeLocation $code_location
-    );
+    ): ?Type\Union;
 }

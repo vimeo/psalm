@@ -495,8 +495,7 @@ class ProjectAnalyzer
                         $reader = new ProtocolStreamReader($socket);
                         $reader->on(
                             'close',
-                            /** @return void */
-                            function () {
+                            function (): void {
                                 fwrite(STDOUT, "Connection closed\n");
                             }
                         );
@@ -1345,15 +1344,12 @@ class ProjectAnalyzer
         return $file_analyzer;
     }
 
-    /**
-     * @return void
-     */
     public function getMethodMutations(
         \Psalm\Internal\MethodIdentifier $original_method_id,
         Context $this_context,
         string $root_file_path,
         string $root_file_name
-    ) {
+    ): void {
         $fq_class_name = $original_method_id->fq_class_name;
 
         $appearing_method_id = $this->codebase->methods->getAppearingMethodId($original_method_id);

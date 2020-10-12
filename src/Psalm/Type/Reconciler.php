@@ -887,15 +887,13 @@ class Reconciler
      * @param  string[]                  $key_parts
      * @param  array<string,Type\Union>  $existing_types
      * @param  array<string, bool>       $changed_var_ids
-     *
-     * @return void
      */
     private static function adjustTKeyedArrayType(
         array $key_parts,
         array &$existing_types,
         array &$changed_var_ids,
         Type\Union $result_type
-    ) {
+    ): void {
         array_pop($key_parts);
         $array_key = array_pop($key_parts);
         array_pop($key_parts);

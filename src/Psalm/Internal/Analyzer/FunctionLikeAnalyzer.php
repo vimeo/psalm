@@ -1857,10 +1857,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
     /**
      * @param array<int, string> $new_issues
-     *
-     * @return void
      */
-    public function addSuppressedIssues(array $new_issues)
+    public function addSuppressedIssues(array $new_issues): void
     {
         if (isset($new_issues[0])) {
             $new_issues = \array_combine($new_issues, $new_issues);
@@ -1871,10 +1869,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
     /**
      * @param array<int, string> $new_issues
-     *
-     * @return void
      */
-    public function removeSuppressedIssues(array $new_issues)
+    public function removeSuppressedIssues(array $new_issues): void
     {
         if (isset($new_issues[0])) {
             $new_issues = \array_combine($new_issues, $new_issues);

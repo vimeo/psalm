@@ -15,8 +15,6 @@ interface AfterMethodCallAnalysisInterface
     /**
      * @param  MethodCall|StaticCall $expr
      * @param  FileManipulation[] $file_replacements
-     *
-     * @return void
      */
     public static function afterMethodCallAnalysis(
         Expr $expr,
@@ -28,5 +26,5 @@ interface AfterMethodCallAnalysisInterface
         Codebase $codebase,
         array &$file_replacements = [],
         Union &$return_type_candidate = null
-    );
+    ): void;
 }

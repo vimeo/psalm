@@ -323,10 +323,7 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
         return $leftover_stmts;
     }
 
-    /**
-     * @return void
-     */
-    private function populateClassLikeAnalyzers(PhpParser\Node\Stmt\ClassLike $stmt)
+    private function populateClassLikeAnalyzers(PhpParser\Node\Stmt\ClassLike $stmt): void
     {
         if ($stmt instanceof PhpParser\Node\Stmt\Class_) {
             if (!$stmt->name) {
@@ -372,14 +369,11 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
         $this->interface_analyzers_to_analyze[strtolower($fq_class_name)] = $interface_analyzer;
     }
 
-    /**
-     * @return void
-     */
     public function getMethodMutations(
         \Psalm\Internal\MethodIdentifier $method_id,
         Context $this_context,
         bool $from_project_analyzer = false
-    ) {
+    ): void {
         $fq_class_name = $method_id->fq_class_name;
         $method_name = $method_id->method_name;
         $fq_class_name_lc = strtolower($fq_class_name);
@@ -515,10 +509,7 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
         return $this->root_file_path ?: $this->file_path;
     }
 
-    /**
-     * @return void
-     */
-    public function setRootFilePath(string $file_path, string $file_name)
+    public function setRootFilePath(string $file_path, string $file_name): void
     {
         $this->root_file_name = $file_name;
         $this->root_file_path = $file_path;
@@ -575,10 +566,8 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
 
     /**
      * @param array<int, string> $new_issues
-     *
-     * @return void
      */
-    public function addSuppressedIssues(array $new_issues)
+    public function addSuppressedIssues(array $new_issues): void
     {
         if (isset($new_issues[0])) {
             $new_issues = \array_combine($new_issues, $new_issues);
@@ -589,10 +578,8 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
 
     /**
      * @param array<int, string> $new_issues
-     *
-     * @return void
      */
-    public function removeSuppressedIssues(array $new_issues)
+    public function removeSuppressedIssues(array $new_issues): void
     {
         if (isset($new_issues[0])) {
             $new_issues = \array_combine($new_issues, $new_issues);

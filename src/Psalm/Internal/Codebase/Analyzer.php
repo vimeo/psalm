@@ -402,8 +402,7 @@ class Analyzer
             // files up among a given number of child processes.
             $pool = new \Psalm\Internal\Fork\Pool(
                 $process_file_paths,
-                /** @return void */
-                function () {
+                function (): void {
                     $project_analyzer = ProjectAnalyzer::getInstance();
                     $codebase = $project_analyzer->getCodebase();
 
@@ -1066,10 +1065,7 @@ class Analyzer
         $this->mixed_counts[$file_path] = $mixed_counts;
     }
 
-    /**
-     * @return void
-     */
-    public function incrementMixedCount(string $file_path)
+    public function incrementMixedCount(string $file_path): void
     {
         if (!$this->count_mixed) {
             return;
@@ -1082,10 +1078,7 @@ class Analyzer
         ++$this->mixed_counts[$file_path][0];
     }
 
-    /**
-     * @return void
-     */
-    public function decrementMixedCount(string $file_path)
+    public function decrementMixedCount(string $file_path): void
     {
         if (!$this->count_mixed) {
             return;
@@ -1098,10 +1091,7 @@ class Analyzer
         --$this->mixed_counts[$file_path][0];
     }
 
-    /**
-     * @return void
-     */
-    public function incrementNonMixedCount(string $file_path)
+    public function incrementNonMixedCount(string $file_path): void
     {
         if (!$this->count_mixed) {
             return;
@@ -1298,10 +1288,7 @@ class Analyzer
         $this->count_mixed = true;
     }
 
-    /**
-     * @return void
-     */
-    public function updateFile(string $file_path, bool $dry_run)
+    public function updateFile(string $file_path, bool $dry_run): void
     {
         FileManipulationBuffer::add(
             $file_path,

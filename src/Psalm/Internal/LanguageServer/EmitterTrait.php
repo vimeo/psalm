@@ -28,10 +28,8 @@ trait EmitterTrait
 
     /**
      * Subscribe to an event.
-     *
-     * @return void
      */
-    public function on(string $eventName, callable $callBack, int $priority = 100)
+    public function on(string $eventName, callable $callBack, int $priority = 100): void
     {
         if (!isset($this->listeners[$eventName])) {
             $this->listeners[$eventName] = [

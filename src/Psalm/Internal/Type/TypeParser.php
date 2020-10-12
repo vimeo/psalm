@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Internal\Type;
 
+use Psalm\Type\TypeNode;
 use function array_keys;
 use function array_map;
 use function array_shift;
@@ -115,7 +116,7 @@ class TypeParser
         ?array $php_version = null,
         array $template_type_map = [],
         array $type_aliases = []
-    ) {
+    ): TypeNode {
         if ($parse_tree instanceof ParseTree\GenericTree) {
             $generic_type = $parse_tree->value;
 

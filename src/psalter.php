@@ -82,10 +82,8 @@ $options = getopt(implode('', $valid_short_options), $valid_long_options);
 array_map(
     /**
      * @param string $arg
-     *
-     * @return void
      */
-    function ($arg) use ($valid_long_options, $valid_short_options) {
+    function ($arg) use ($valid_long_options, $valid_short_options): void {
         if (substr($arg, 0, 2) === '--' && $arg !== '--') {
             $arg_name = preg_replace('/=.*$/', '', substr($arg, 2));
 

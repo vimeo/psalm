@@ -61,9 +61,6 @@ class CoalesceAnalyzer
 
         $if_clauses = array_values(
             array_map(
-                /**
-                 * @return \Psalm\Internal\Clause
-                 */
                 function (\Psalm\Internal\Clause $c) use ($mixed_var_ids, $stmt_id): \Psalm\Internal\Clause {
                     $keys = array_keys($c->possibilities);
 

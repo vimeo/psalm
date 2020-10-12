@@ -726,8 +726,6 @@ class ArrayFunctionArgumentsAnalyzer
     /**
      * @param  Type\Atomic\TClosure|Type\Atomic\TCallable $closure_type
      * @param  (TArray|null)[] $array_arg_types
-     *
-     * @return void
      */
     private static function checkClosureTypeArgs(
         StatementsAnalyzer $statements_analyzer,
@@ -738,7 +736,7 @@ class ArrayFunctionArgumentsAnalyzer
         int $min_closure_param_count,
         int $max_closure_param_count,
         array $array_arg_types
-    ) {
+    ): void {
         $codebase = $statements_analyzer->getCodebase();
 
         $closure_params = $closure_type->params;

@@ -20,8 +20,6 @@ class TypeScanner extends NodeVisitor
 
     /**
      * @param  array<string, mixed> $phantom_classes
-     *
-     * @return void
      */
     public function __construct(
         Scanner $scanner,

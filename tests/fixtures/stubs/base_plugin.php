@@ -10,6 +10,6 @@ class BasePlugin implements Psalm\Plugin\Hook\AfterFunctionCallAnalysisInterface
         \Psalm\Codebase $codebase,
         \Psalm\Type\Union $return_type_candidate,
         array &$file_replacements
-    ) {
+    ): void {
     }
 }

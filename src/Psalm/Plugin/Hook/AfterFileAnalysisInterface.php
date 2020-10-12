@@ -10,13 +10,11 @@ interface AfterFileAnalysisInterface
 {
     /**
      * Called after a file has been checked
-     *
-     * @return void
      */
     public static function afterAnalyzeFile(
         StatementsSource $statements_source,
         Context $file_context,
         FileStorage $file_storage,
         Codebase $codebase
-    );
+    ): void;
 }

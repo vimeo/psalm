@@ -82,7 +82,7 @@ class ScopeAnalyzer
         array $exit_functions,
         array $break_types = [],
         $return_is_exit = true
-    ) {
+    ): array {
         if (empty($stmts)) {
             return [self::ACTION_NONE];
         }

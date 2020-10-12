@@ -14,30 +14,26 @@ class FileProvider implements
 {
     /**
      * Called before a file has been checked
-     *
-     * @return void
      */
     public static function beforeAnalyzeFile(
         StatementsSource $statements_source,
         Context $file_context,
         FileStorage $file_storage,
         Codebase $codebase
-    ) {
+    ): void {
         $file_storage = $codebase->file_storage_provider->get($statements_source->getFilePath());
         $file_storage->custom_metadata['before-analysis'] = true;
     }
 
     /**
      * Called before a file has been checked
-     *
-     * @return void
      */
     public static function afterAnalyzeFile(
         StatementsSource $statements_source,
         Context $file_context,
         FileStorage $file_storage,
         Codebase $codebase
-    ) {
+    ): void {
         $file_storage = $codebase->file_storage_provider->get($statements_source->getFilePath());
         $file_storage->custom_metadata['after-analysis'] = true;
     }

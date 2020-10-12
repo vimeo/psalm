@@ -10,8 +10,6 @@ interface AfterClassLikeExistenceCheckInterface
 {
     /**
      * @param  FileManipulation[] $file_replacements
-     *
-     * @return void
      */
     public static function afterClassLikeExistenceCheck(
         string $fq_class_name,
@@ -19,5 +17,5 @@ interface AfterClassLikeExistenceCheckInterface
         StatementsSource $statements_source,
         Codebase $codebase,
         array &$file_replacements = []
-    );
+    ): void;
 }

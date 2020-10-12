@@ -54,8 +54,6 @@ class TObjectWithProperties extends TObject
                 /**
                  * @param  string|int $name
                  * @param  Union $type
-                 *
-                 * @return string
                  */
                 function ($name, Union $type): string {
                     return $name . ($type->possibly_undefined ? '?' : '') . ':' . $type;
@@ -95,8 +93,6 @@ class TObjectWithProperties extends TObject
                 /**
                  * @param  string|int $name
                  * @param  Union $type
-                 *
-                 * @return string
                  */
                 function ($name, Union $type): string {
                     return $name . ($type->possibly_undefined ? '?' : '') . ':' . $type->getId();
@@ -143,8 +139,6 @@ class TObjectWithProperties extends TObject
                         /**
                          * @param  string|int $name
                          * @param  Union  $type
-                         *
-                         * @return string
                          */
                         function (
                             $name,

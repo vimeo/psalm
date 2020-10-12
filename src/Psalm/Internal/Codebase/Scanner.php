@@ -227,17 +227,14 @@ class Scanner
     }
 
     /**
-    /**
      * @param  array<string, mixed> $phantom_classes
-     *
-     * @return void
      */
     public function queueClassLikeForScanning(
         string $fq_classlike_name,
         bool $analyze_too = false,
         bool $store_failure = true,
         array $phantom_classes = []
-    ) {
+    ): void {
         if ($fq_classlike_name[0] === '\\') {
             $fq_classlike_name = substr($fq_classlike_name, 1);
         }
@@ -318,10 +315,7 @@ class Scanner
         $files_to_deep_scan = $this->files_to_deep_scan;
 
         $scanner_worker =
-            /**
-             * @return void
-             */
-            function (int $_, string $file_path) use ($filetype_scanners, $files_to_deep_scan) {
+            function (int $_, string $file_path) use ($filetype_scanners, $files_to_deep_scan): void {
                 $this->scanFile(
                     $file_path,
                     $filetype_scanners,

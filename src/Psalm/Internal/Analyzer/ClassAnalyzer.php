@@ -1135,9 +1135,6 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         }
     }
 
-    /**
-     * @return void
-     */
     private function checkPropertyInitialization(
         Codebase $codebase,
         Config $config,
@@ -1145,7 +1142,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         Context $class_context,
         ?Context $global_context = null,
         ?MethodAnalyzer $constructor_analyzer = null
-    ) {
+    ): void {
         if (!$config->reportIssueInFile('PropertyNotSetInConstructor', $this->getFilePath())) {
             return;
         }
@@ -1607,14 +1604,11 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         return null;
     }
 
-    /**
-     * @return  void
-     */
     private function checkForMissingPropertyType(
         StatementsSource $source,
         PhpParser\Node\Stmt\Property $stmt,
         Context $context
-    ) {
+    ): void {
         $fq_class_name = $source->getFQCLN();
         $property_name = $stmt->props[0]->name->name;
 

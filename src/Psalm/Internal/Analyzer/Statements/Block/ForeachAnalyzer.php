@@ -692,9 +692,6 @@ class ForeachAnalyzer
         return null;
     }
 
-    /**
-     * @return void
-     */
     public static function handleIterable(
         StatementsAnalyzer $statements_analyzer,
         Type\Atomic\TNamedObject $iterator_atomic_type,
@@ -704,7 +701,7 @@ class ForeachAnalyzer
         ?Type\Union &$key_type,
         ?Type\Union &$value_type,
         bool &$has_valid_iterator
-    ) {
+    ): void {
         if ($iterator_atomic_type->extra_types) {
             $iterator_atomic_type_copy = clone $iterator_atomic_type;
             $iterator_atomic_type_copy->extra_types = [];
@@ -954,15 +951,12 @@ class ForeachAnalyzer
         }
     }
 
-    /**
-     * @return void
-     */
     public static function getKeyValueParamsForTraversableObject(
         Type\Atomic $iterator_atomic_type,
         Codebase $codebase,
         ?Type\Union &$key_type,
         ?Type\Union &$value_type
-    ) {
+    ): void {
         if ($iterator_atomic_type instanceof Type\Atomic\TIterable
             || ($iterator_atomic_type instanceof Type\Atomic\TGenericObject
                 && strtolower($iterator_atomic_type->value) === 'traversable')

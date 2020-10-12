@@ -753,13 +753,12 @@ class CommentAnalyzer
 
     /**
      * @param array<int, string> $return_specials
-     * @return void
      */
     private static function extractReturnType(
         PhpParser\Comment\Doc $comment,
         array $return_specials,
         FunctionDocblockComment $info
-    ) {
+    ): void {
         foreach ($return_specials as $offset => $return_block) {
             $return_lines = explode("\n", $return_block);
 
