@@ -72,7 +72,7 @@ class TypeTokenizer
         'open-resource' => true,
         'closed-resource' => true,
         'associative-array' => true,
-        'array-like-object' => true,
+        'arraylike-object' => true,
     ];
 
     /**

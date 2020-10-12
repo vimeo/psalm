@@ -154,7 +154,7 @@ class TypeParser
             } elseif (count($generic_params) === 1
                 && in_array(
                     $generic_type_value,
-                    ['iterable', 'Traversable', 'Iterator', 'IteratorAggregate', 'array-like-object'],
+                    ['iterable', 'Traversable', 'Iterator', 'IteratorAggregate', 'arraylike-object'],
                     true
                 )
             ) {
@@ -181,7 +181,7 @@ class TypeParser
                 return new TArray($generic_params);
             }
 
-            if ($generic_type_value === 'array-like-object') {
+            if ($generic_type_value === 'arraylike-object') {
                 $traversable = new TGenericObject('Traversable', $generic_params);
                 $array_acccess = new TGenericObject('ArrayAccess', $generic_params);
                 $traversable->extra_types[$array_acccess->getKey()] = $array_acccess;
