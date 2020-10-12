@@ -86,15 +86,13 @@ abstract class Atomic implements TypeNode
      * @param  array{int,int}|null   $php_version
      * @param  array<string, array<string, array{Union}>> $template_type_map
      * @param  array<string, TypeAlias> $type_aliases
-     *
-     * @return Atomic
      */
     public static function create(
         string $value,
         ?array $php_version = null,
         array $template_type_map = [],
         array $type_aliases = []
-    ) {
+    ): Atomic {
         switch ($value) {
             case 'int':
                 return new TInt();

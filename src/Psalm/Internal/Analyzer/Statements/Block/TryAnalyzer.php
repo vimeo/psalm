@@ -288,8 +288,6 @@ class TryAnalyzer
                     array_map(
                         /**
                          * @param string $fq_catch_class
-                         *
-                         * @return Type\Atomic
                          */
                         function ($fq_catch_class) use ($codebase): Type\Atomic {
                             $catch_class_type = new TNamedObject($fq_catch_class);

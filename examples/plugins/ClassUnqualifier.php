@@ -11,8 +11,6 @@ class ClassUnqualifier implements AfterClassLikeExistenceCheckInterface
 {
     /**
      * @param  FileManipulation[] $file_replacements
-     *
-     * @return void
      */
     public static function afterClassLikeExistenceCheck(
         string $fq_class_name,
@@ -20,7 +18,7 @@ class ClassUnqualifier implements AfterClassLikeExistenceCheckInterface
         StatementsSource $statements_source,
         Codebase $codebase,
         array &$file_replacements = []
-    ) {
+    ): void {
         $candidate_type = $code_location->getSelectedText();
         $aliases = $statements_source->getAliasedClassesFlipped();
 

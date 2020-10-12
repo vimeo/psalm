@@ -35,14 +35,11 @@ use function array_merge;
  */
 class CallAnalyzer
 {
-    /**
-     * @return  void
-     */
     public static function collectSpecialInformation(
         FunctionLikeAnalyzer $source,
         string $method_name,
         Context $context
-    ) {
+    ): void {
         $fq_class_name = (string)$source->getFQCLN();
 
         $project_analyzer = $source->getFileAnalyzer()->project_analyzer;

@@ -945,10 +945,7 @@ class Methods
         return [];
     }
 
-    /**
-     * @return string
-     */
-    public function getCasedMethodId(MethodIdentifier $original_method_id)
+    public function getCasedMethodId(MethodIdentifier $original_method_id): string
     {
         $method_id = $this->getDeclaringMethodId($original_method_id);
 

@@ -41,10 +41,7 @@ class Reflection
         self::$builtin_functions = [];
     }
 
-    /**
-     * @return void
-     */
-    public function registerClass(\ReflectionClass $reflected_class)
+    public function registerClass(\ReflectionClass $reflected_class): void
     {
         $class_name = $reflected_class->name;
 
@@ -222,10 +219,7 @@ class Reflection
         }
     }
 
-    /**
-     * @return void
-     */
-    public function extractReflectionMethodInfo(\ReflectionMethod $method)
+    public function extractReflectionMethodInfo(\ReflectionMethod $method): void
     {
         $method_name_lc = strtolower($method->getName());
 

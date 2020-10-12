@@ -25,8 +25,6 @@ class FunctionCasingChecker implements AfterFunctionCallAnalysisInterface, After
     /**
      * @param  MethodCall|StaticCall $expr
      * @param  FileManipulation[] $file_replacements
-     *
-     * @return void
      */
     public static function afterMethodCallAnalysis(
         Expr $expr,
@@ -38,7 +36,7 @@ class FunctionCasingChecker implements AfterFunctionCallAnalysisInterface, After
         Codebase $codebase,
         array &$file_replacements = [],
         Union &$return_type_candidate = null
-    ) {
+    ): void {
         if (!$expr->name instanceof PhpParser\Node\Identifier) {
             return;
         }
@@ -74,8 +72,6 @@ class FunctionCasingChecker implements AfterFunctionCallAnalysisInterface, After
     /**
      * @param non-empty-string $function_id
      * @param  FileManipulation[] $file_replacements
-     *
-     * @return void
      */
     public static function afterFunctionCallAnalysis(
         FuncCall $expr,
@@ -85,7 +81,7 @@ class FunctionCasingChecker implements AfterFunctionCallAnalysisInterface, After
         Codebase $codebase,
         Union $return_type_candidate,
         array &$file_replacements
-    ) {
+    ): void {
         if ($expr->name instanceof PhpParser\Node\Expr) {
             return;
         }

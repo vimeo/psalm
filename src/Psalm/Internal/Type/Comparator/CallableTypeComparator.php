@@ -6,6 +6,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Codebase;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Type;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
@@ -224,7 +225,7 @@ class CallableTypeComparator
         Type\Atomic $input_type_part,
         ?TCallable $container_type_part = null,
         ?StatementsAnalyzer $statements_analyzer = null
-    ) {
+    ): ?Atomic {
         if ($input_type_part instanceof TCallable || $input_type_part instanceof TClosure) {
             return $input_type_part;
         }

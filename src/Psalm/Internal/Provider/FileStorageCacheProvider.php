@@ -67,10 +67,7 @@ class FileStorageCacheProvider
         $this->modified_timestamps .= $this->config->hash;
     }
 
-    /**
-     * @return void
-     */
-    public function writeToCache(FileStorage $storage, string $file_contents)
+    public function writeToCache(FileStorage $storage, string $file_contents): void
     {
         $file_path = strtolower($storage->file_path);
         $cache_location = $this->getCacheLocationForPath($file_path, true);
@@ -106,10 +103,7 @@ class FileStorageCacheProvider
         return $cached_value;
     }
 
-    /**
-     * @return void
-     */
-    public function removeCacheForFile(string $file_path)
+    public function removeCacheForFile(string $file_path): void
     {
         $cache_path = $this->getCacheLocationForPath($file_path);
 

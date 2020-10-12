@@ -40,10 +40,7 @@ class ProjectCacheProvider
         return $cache_directory && file_exists($cache_directory . DIRECTORY_SEPARATOR . self::GOOD_RUN_NAME);
     }
 
-    /**
-     * @return void
-     */
-    public function processSuccessfulRun(float $start_time)
+    public function processSuccessfulRun(float $start_time): void
     {
         $cache_directory = Config::getInstance()->getCacheDirectory();
 

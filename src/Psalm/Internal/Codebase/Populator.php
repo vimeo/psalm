@@ -148,10 +148,7 @@ class Populator
         $this->file_storage_provider->populated();
     }
 
-    /**
-     * @return void
-     */
-    private function populateClassLikeStorage(ClassLikeStorage $storage, array $dependent_classlikes = [])
+    private function populateClassLikeStorage(ClassLikeStorage $storage, array $dependent_classlikes = []): void
     {
         if ($storage->populated) {
             return;
@@ -478,14 +475,11 @@ class Populator
         return new Type\Union($extended_types);
     }
 
-    /**
-     * @return void
-     */
     private function populateDataFromParentClass(
         ClassLikeStorage $storage,
         ClassLikeStorageProvider $storage_provider,
         array $dependent_classlikes
-    ) {
+    ): void {
         $parent_storage_class = reset($storage->parent_classes);
 
         $parent_storage_class = strtolower(
@@ -871,10 +865,8 @@ class Populator
 
     /**
      * @param  array<string, bool> $dependent_file_paths
-     *
-     * @return void
      */
-    private function populateFileStorage(FileStorage $storage, array $dependent_file_paths = [])
+    private function populateFileStorage(FileStorage $storage, array $dependent_file_paths = []): void
     {
         if ($storage->populated) {
             return;

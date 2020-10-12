@@ -93,17 +93,13 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
         $this->protocolReader = $reader;
         $this->protocolReader->on(
             'close',
-            /**
-             * @return void
-             */
-            function () {
+            function (): void {
                 $this->shutdown();
                 $this->exit();
             }
         );
         $this->protocolReader->on(
             'message',
-            /** @return void */
             asyncCoroutine(
                 /**
                  * @return \Generator<int, \Amp\Promise, mixed, void>
@@ -166,8 +162,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
 
         $this->protocolReader->on(
             'readMessageGroup',
-            /** @return void */
-            function () {
+            function (): void {
                 $this->doAnalysis();
             }
         );
@@ -288,10 +283,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
         $this->onsave_paths_to_analyze[$file_path] = $uri;
     }
 
-    /**
-     * @return void
-     */
-    public function doAnalysis()
+    public function doAnalysis(): void
     {
         $this->clientStatus('analyzing');
 
@@ -405,7 +397,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
      *
      * @psalm-return Promise<null>
      */
-    public function shutdown()
+    public function shutdown(): Promise
     {
         $this->clientStatus('closing');
         $this->verboseLog("Shutting down...");

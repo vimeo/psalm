@@ -669,9 +669,6 @@ class StaticCallAnalyzer extends CallAnalyzer
                         }
 
                         $array_values = array_map(
-                            /**
-                             * @return PhpParser\Node\Expr\ArrayItem
-                             */
                             function (PhpParser\Node\Arg $arg): PhpParser\Node\Expr\ArrayItem {
                                 return new PhpParser\Node\Expr\ArrayItem($arg->value);
                             },

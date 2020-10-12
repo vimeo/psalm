@@ -53,10 +53,8 @@ class TextDocument
      * document's uri.
      *
      * @param \LanguageServerProtocol\TextDocumentItem $textDocument the document that was opened
-     *
-     * @return void
      */
-    public function didOpen(TextDocumentItem $textDocument)
+    public function didOpen(TextDocumentItem $textDocument): void
     {
         $file_path = LanguageServer::uriToPath($textDocument->uri);
 
@@ -71,10 +69,7 @@ class TextDocument
         $this->server->queueFileAnalysis($file_path, $textDocument->uri);
     }
 
-    /**
-     * @return void
-     */
-    public function didSave(TextDocumentItem $textDocument)
+    public function didSave(TextDocumentItem $textDocument): void
     {
         $file_path = LanguageServer::uriToPath($textDocument->uri);
 
@@ -93,10 +88,8 @@ class TextDocument
      * The document change notification is sent from the client to the server to signal changes to a text document.
      *
      * @param \LanguageServerProtocol\TextDocumentContentChangeEvent[] $contentChanges
-     *
-     * @return void
      */
-    public function didChange(VersionedTextDocumentIdentifier $textDocument, array $contentChanges)
+    public function didChange(VersionedTextDocumentIdentifier $textDocument, array $contentChanges): void
     {
         $file_path = \Psalm\Internal\LanguageServer\LanguageServer::uriToPath($textDocument->uri);
 

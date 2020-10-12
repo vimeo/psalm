@@ -66,10 +66,7 @@ class ClassLikeStorageCacheProvider
         $this->modified_timestamps .= $this->config->hash;
     }
 
-    /**
-     * @return void
-     */
-    public function writeToCache(ClassLikeStorage $storage, ?string $file_path, ?string $file_contents)
+    public function writeToCache(ClassLikeStorage $storage, ?string $file_path, ?string $file_contents): void
     {
         $fq_classlike_name_lc = strtolower($storage->name);
 

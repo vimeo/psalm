@@ -821,10 +821,7 @@ class IssueBuffer
         return $recorded_issues;
     }
 
-    /**
-     * @return void
-     */
-    public static function bubbleUp(CodeIssue $e)
+    public static function bubbleUp(CodeIssue $e): void
     {
         if (self::$recording_level === 0) {
             self::add($e);

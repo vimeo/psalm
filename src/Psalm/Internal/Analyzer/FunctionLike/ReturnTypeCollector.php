@@ -258,7 +258,7 @@ class ReturnTypeCollector
     protected static function getYieldTypeFromExpression(
         PhpParser\Node\Expr $stmt,
         \Psalm\Internal\Provider\NodeDataProvider $nodes
-    ) {
+    ): array {
         if ($stmt instanceof PhpParser\Node\Expr\Yield_) {
             $key_type = null;
 

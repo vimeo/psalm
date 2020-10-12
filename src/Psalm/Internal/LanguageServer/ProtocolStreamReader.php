@@ -74,8 +74,7 @@ class ProtocolStreamReader implements ProtocolReader
 
         $this->on(
             'close',
-            /** @return void */
-            static function () use ($input) {
+            static function () use ($input): void {
                 $input->close();
             }
         );
@@ -135,10 +134,7 @@ class ProtocolStreamReader implements ProtocolReader
         return $emitted_messages;
     }
 
-    /**
-     * @return void
-     */
-    private function emitClose()
+    private function emitClose(): void
     {
         if ($this->did_emit_close) {
             return;

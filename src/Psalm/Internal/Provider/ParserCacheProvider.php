@@ -348,12 +348,7 @@ class ParserCacheProvider
         return $removed_count;
     }
 
-    /**
-     * @param float $start_time
-     *
-     * @return void
-     */
-    public function processSuccessfulRun()
+    public function processSuccessfulRun(): void
     {
         $cache_directory = Config::getInstance()->getCacheDirectory();
 
@@ -380,10 +375,8 @@ class ParserCacheProvider
 
     /**
      * @param  array<string>    $file_names
-     *
-     * @return void
      */
-    public function touchParserCaches(array $file_names, int $min_time)
+    public function touchParserCaches(array $file_names, int $min_time): void
     {
         $cache_directory = Config::getInstance()->getCacheDirectory();
 

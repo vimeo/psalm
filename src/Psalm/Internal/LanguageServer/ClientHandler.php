@@ -61,10 +61,7 @@ class ClientHandler
                 $deferred = new Deferred();
 
                 $listener =
-                    /**
-                     * @return void
-                     */
-                    function (Message $msg) use ($id, $deferred, &$listener) {
+                    function (Message $msg) use ($id, $deferred, &$listener): void {
                         error_log('request handler');
                         /**
                          * @psalm-suppress UndefinedPropertyFetch

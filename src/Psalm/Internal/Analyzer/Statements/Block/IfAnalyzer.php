@@ -1693,11 +1693,8 @@ class IfAnalyzer
     /**
      * Returns statements that are definitely evaluated before any statements after the end of the
      * if/elseif/else blocks
-     *
-     *
-     * @return PhpParser\Node\Expr|null
      */
-    private static function getDefinitelyEvaluatedExpressionAfterIf(PhpParser\Node\Expr $stmt)
+    private static function getDefinitelyEvaluatedExpressionAfterIf(PhpParser\Node\Expr $stmt): ?PhpParser\Node\Expr
     {
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Equal
             || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Identical
@@ -1740,11 +1737,8 @@ class IfAnalyzer
     /**
      * Returns statements that are definitely evaluated before any statements inside
      * the if block
-     *
-     *
-     * @return PhpParser\Node\Expr|null
      */
-    private static function getDefinitelyEvaluatedExpressionInsideIf(PhpParser\Node\Expr $stmt)
+    private static function getDefinitelyEvaluatedExpressionInsideIf(PhpParser\Node\Expr $stmt): ?PhpParser\Node\Expr
     {
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Equal
             || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Identical

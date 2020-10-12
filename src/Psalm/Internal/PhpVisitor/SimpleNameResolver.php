@@ -174,7 +174,7 @@ class SimpleNameResolver extends NodeVisitorAbstract
      * @psalm-suppress InvalidReturnType
      * @psalm-suppress InvalidReturnStatement
      */
-    private function resolveType($node)
+    private function resolveType($node): ?Node
     {
         if ($node instanceof Node\NullableType) {
             /** @psalm-suppress PossiblyInvalidPropertyAssignmentValue */

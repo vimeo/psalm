@@ -77,10 +77,7 @@ abstract class SourceAnalyzer implements StatementsSource
         return $this->source->getRootFilePath();
     }
 
-    /**
-     * @return void
-     */
-    public function setRootFilePath(string $file_path, string $file_name)
+    public function setRootFilePath(string $file_path, string $file_name): void
     {
         $this->source->setRootFilePath($file_path, $file_name);
     }
@@ -120,20 +117,16 @@ abstract class SourceAnalyzer implements StatementsSource
 
     /**
      * @param array<int, string> $new_issues
-     *
-     * @return void
      */
-    public function addSuppressedIssues(array $new_issues)
+    public function addSuppressedIssues(array $new_issues): void
     {
         $this->source->addSuppressedIssues($new_issues);
     }
 
     /**
      * @param array<int, string> $new_issues
-     *
-     * @return void
      */
-    public function removeSuppressedIssues(array $new_issues)
+    public function removeSuppressedIssues(array $new_issues): void
     {
         $this->source->removeSuppressedIssues($new_issues);
     }

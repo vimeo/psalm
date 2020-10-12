@@ -1548,14 +1548,11 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         return null;
     }
 
-    /**
-     * @return void
-     */
     private function extendTemplatedType(
         ClassLikeStorage $storage,
         PhpParser\Node\Stmt\ClassLike $node,
         string $extended_class_name
-    ) {
+    ): void {
         if (trim($extended_class_name) === '') {
             $storage->docblock_issues[] = new InvalidDocblock(
                 'Extended class cannot be empty in docblock for ' . implode('.', $this->fq_classlike_names),
@@ -1635,14 +1632,11 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         }
     }
 
-    /**
-     * @return void
-     */
     private function implementTemplatedType(
         ClassLikeStorage $storage,
         PhpParser\Node\Stmt\ClassLike $node,
         string $implemented_class_name
-    ) {
+    ): void {
         if (trim($implemented_class_name) === '') {
             $storage->docblock_issues[] = new InvalidDocblock(
                 'Extended class cannot be empty in docblock for ' . implode('.', $this->fq_classlike_names),
@@ -1724,14 +1718,11 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         }
     }
 
-    /**
-     * @return void
-     */
     private function useTemplatedType(
         ClassLikeStorage $storage,
         PhpParser\Node\Stmt\TraitUse $node,
         string $used_class_name
-    ) {
+    ): void {
         if (trim($used_class_name) === '') {
             $storage->docblock_issues[] = new InvalidDocblock(
                 'Extended class cannot be empty in docblock for ' . implode('.', $this->fq_classlike_names),
@@ -4046,10 +4037,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         return null;
     }
 
-    /**
-     * @return void
-     */
-    public function visitInclude(PhpParser\Node\Expr\Include_ $stmt)
+    public function visitInclude(PhpParser\Node\Expr\Include_ $stmt): void
     {
         $config = Config::getInstance();
 

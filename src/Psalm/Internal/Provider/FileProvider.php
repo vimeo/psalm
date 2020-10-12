@@ -42,10 +42,7 @@ class FileProvider
         return (string)file_get_contents($file_path);
     }
 
-    /**
-     * @return void
-     */
-    public function setContents(string $file_path, string $file_contents)
+    public function setContents(string $file_path, string $file_contents): void
     {
         if (isset($this->open_files[strtolower($file_path)])) {
             $this->open_files[strtolower($file_path)] = $file_contents;

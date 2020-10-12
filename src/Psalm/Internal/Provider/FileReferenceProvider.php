@@ -925,10 +925,7 @@ class FileReferenceProvider
         unset(self::$file_maps[$file_path]);
     }
 
-    /**
-     * @return void
-     */
-    public function addIssue(string $file_path, IssueData $issue)
+    public function addIssue(string $file_path, IssueData $issue): void
     {
         // don’t save parse errors ever, as they're not responsive to AST diffing
         if ($issue->type === 'ParseError') {

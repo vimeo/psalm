@@ -1662,9 +1662,6 @@ class AssignmentAnalyzer
         return true;
     }
 
-    /**
-     * @return void
-     */
     public static function assignByRefParam(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $stmt,
@@ -1673,7 +1670,7 @@ class AssignmentAnalyzer
         Context $context,
         bool $constrain_type = true,
         bool $prevent_null = false
-    ) {
+    ): void {
         if ($stmt instanceof PhpParser\Node\Expr\PropertyFetch && $stmt->name instanceof PhpParser\Node\Identifier) {
             $prop_name = $stmt->name->name;
 

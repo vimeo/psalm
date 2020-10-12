@@ -26,10 +26,7 @@ interface StatementsSource extends FileSource
      */
     public function getTemplateTypeMap(): ?array;
 
-    /**
-     * @return void
-     */
-    public function setRootFilePath(string $file_path, string $file_name);
+    public function setRootFilePath(string $file_path, string $file_name): void;
 
     public function hasParentFilePath(string $file_path): bool;
 
@@ -52,17 +49,13 @@ interface StatementsSource extends FileSource
 
     /**
      * @param array<int, string> $new_issues
-     *
-     * @return void
      */
-    public function addSuppressedIssues(array $new_issues);
+    public function addSuppressedIssues(array $new_issues): void;
 
     /**
      * @param array<int, string> $new_issues
-     *
-     * @return void
      */
-    public function removeSuppressedIssues(array $new_issues);
+    public function removeSuppressedIssues(array $new_issues): void;
 
     public function getNodeTypeProvider() : NodeTypeProvider;
 }

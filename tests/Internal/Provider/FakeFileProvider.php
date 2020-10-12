@@ -35,10 +35,7 @@ class FakeFileProvider extends \Psalm\Internal\Provider\FileProvider
         return parent::getContents($file_path);
     }
 
-    /**
-     * @return void
-     */
-    public function setContents(string $file_path, string $file_contents)
+    public function setContents(string $file_path, string $file_contents): void
     {
         $this->fake_files[$file_path] = $file_contents;
     }

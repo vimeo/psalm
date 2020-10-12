@@ -10,13 +10,11 @@ interface BeforeFileAnalysisInterface
 {
     /**
      * Called before a file has been checked
-     *
-     * @return void
      */
     public static function beforeAnalyzeFile(
         StatementsSource $statements_source,
         Context $file_context,
         FileStorage $file_storage,
         Codebase $codebase
-    );
+    ): void;
 }

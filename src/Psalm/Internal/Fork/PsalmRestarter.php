@@ -45,10 +45,8 @@ class PsalmRestarter extends \Composer\XdebugHandler\XdebugHandler
 
     /**
      * @param mixed $command
-     *
-     * @return void
      */
-    protected function restart($command)
+    protected function restart($command): void
     {
         if ($this->required && $this->tmpIni) {
             $regex = '/^\s*(extension\s*=.*(' . implode('|', $this->disabledExtensions) . ').*)$/mi';

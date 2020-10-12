@@ -138,10 +138,8 @@ class CodeLocation
 
     /**
      * @psalm-suppress MixedArrayAccess
-     *
-     * @return void
      */
-    private function calculateRealLocation()
+    private function calculateRealLocation(): void
     {
         if ($this->have_recalculated) {
             return;

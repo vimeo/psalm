@@ -7,8 +7,7 @@ require_once __DIR__ . '/extending_plugin.php';
 
 class ExtendingPluginRegistration implements PluginEntryPointInterface
 {
-    /** @return void */
-    public function __invoke(RegistrationInterface $r, ?SimpleXMLElement $config = null)
+    public function __invoke(RegistrationInterface $r, ?SimpleXMLElement $config = null): void
     {
         $r->registerHooksFromClass(ExtendingPlugin::class);
     }

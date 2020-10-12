@@ -3,11 +3,7 @@ namespace Psalm\Plugin;
 
 interface RegistrationInterface
 {
-    /** @return void */
-    public function addStubFile(string $file_name);
+    public function addStubFile(string $file_name): void;
 
-    /**
-     * @return void
-     */
-    public function registerHooksFromClass(string $handler);
+    public function registerHooksFromClass(string $handler): void;
 }

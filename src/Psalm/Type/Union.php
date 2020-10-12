@@ -952,10 +952,7 @@ class Union implements TypeNode
         return isset($this->types['empty']);
     }
 
-    /**
-     * @return void
-     */
-    public function substitute(Union $old_type, ?Union $new_type = null)
+    public function substitute(Union $old_type, ?Union $new_type = null): void
     {
         if ($this->hasMixed() && !$this->isEmptyMixed()) {
             return;

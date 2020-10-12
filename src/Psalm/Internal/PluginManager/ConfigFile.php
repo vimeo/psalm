@@ -44,8 +44,7 @@ class ConfigFile
         return Config::loadFromXMLFile($this->path, $this->current_dir);
     }
 
-    /** @return void */
-    public function removePlugin(string $plugin_class)
+    public function removePlugin(string $plugin_class): void
     {
         $config_xml = $this->readXml();
         /** @var \DomElement */

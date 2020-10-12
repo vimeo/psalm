@@ -13,10 +13,7 @@ class FileStorageInstanceCacheProvider extends \Psalm\Internal\Provider\FileStor
     {
     }
 
-    /**
-     * @return void
-     */
-    public function writeToCache(FileStorage $storage, string $file_contents)
+    public function writeToCache(FileStorage $storage, string $file_contents): void
     {
         $file_path = strtolower($storage->file_path);
         $this->cache[$file_path] = $storage;
@@ -33,10 +30,7 @@ class FileStorageInstanceCacheProvider extends \Psalm\Internal\Provider\FileStor
         return $cached_value;
     }
 
-    /**
-     * @return void
-     */
-    public function removeCacheForFile(string $file_path)
+    public function removeCacheForFile(string $file_path): void
     {
         unset($this->cache[strtolower($file_path)]);
     }

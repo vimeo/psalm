@@ -33,15 +33,13 @@ class Shepherd implements \Psalm\Plugin\Hook\AfterAnalysisInterface
      * Called after analysis is complete
      *
      * @param array<string, list<IssueData>> $issues
-     *
-     * @return void
      */
     public static function afterAnalysis(
         Codebase $codebase,
         array $issues,
         array $build_info,
         ?SourceControlInfo $source_control_info = null
-    ) {
+    ): void {
         if (!function_exists('curl_init')) {
             fwrite(STDERR, 'No curl found, cannot send data to ' . $codebase->config->shepherd_host . PHP_EOL);
 
