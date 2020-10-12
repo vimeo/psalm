@@ -137,7 +137,7 @@ class ErrorBaselineTest extends TestCase
 
                 return true;
             })
-        )->willReturn(null);
+        );
 
         ErrorBaseline::create(
             $this->fileProvider->reveal(),
@@ -341,7 +341,7 @@ class ErrorBaselineTest extends TestCase
               </file>
             </files>'
         );
-        $this->fileProvider->setContents(Argument::cetera())->willReturn(null);
+        $this->fileProvider->setContents(Argument::cetera());
 
         $newIssues = [
             'sample/sample-file.php' => [
