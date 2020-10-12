@@ -81,7 +81,6 @@ class ErrorBaseline
         $baselineDoc = new \DOMDocument();
         $baselineDoc->loadXML($xmlSource, LIBXML_NOBLANKS);
 
-        /** @var \DOMNodeList $filesElement */
         $filesElement = $baselineDoc->getElementsByTagName('files');
 
         if ($filesElement->length === 0) {

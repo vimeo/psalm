@@ -77,9 +77,6 @@ class Clause
 
     /**
      * @param array<string, non-empty-list<string>>  $possibilities
-     * @param bool                          $wedge
-     * @param bool                          $reconcilable
-     * @param bool                          $generated
      * @param array<string, bool> $redefined_vars
      */
     public function __construct(

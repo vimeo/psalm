@@ -18,8 +18,6 @@ class VersionCompareReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionRet
 
     /**
      * @param  array<PhpParser\Node\Arg>    $call_args
-     *
-     * @return Type\Union
      */
     public static function getFunctionReturnType(
         StatementsSource $statements_source,

@@ -421,7 +421,6 @@ class AssertionFinder
 
             if ($typed_value_position) {
                 if ($typed_value_position === self::ASSIGNMENT_TO_RIGHT) {
-                    /** @var PhpParser\Node\Expr $conditional->left */
                     $var_name = ExpressionIdentifier::getArrayVarId(
                         $conditional->left,
                         $this_class_name,
@@ -430,7 +429,6 @@ class AssertionFinder
 
                     $expr = $conditional->right;
                 } elseif ($typed_value_position === self::ASSIGNMENT_TO_LEFT) {
-                    /** @var PhpParser\Node\Expr $conditional->left */
                     $var_name = ExpressionIdentifier::getArrayVarId(
                         $conditional->right,
                         $this_class_name,
@@ -1117,7 +1115,6 @@ class AssertionFinder
 
         if ($typed_value_position) {
             if ($typed_value_position === self::ASSIGNMENT_TO_RIGHT) {
-                /** @var PhpParser\Node\Expr $conditional->right */
                 $var_name = ExpressionIdentifier::getArrayVarId(
                     $conditional->left,
                     $this_class_name,
@@ -1127,7 +1124,6 @@ class AssertionFinder
                 $other_type = $source->node_data->getType($conditional->left);
                 $var_type = $source->node_data->getType($conditional->right);
             } elseif ($typed_value_position === self::ASSIGNMENT_TO_LEFT) {
-                /** @var PhpParser\Node\Expr $conditional->left */
                 $var_name = ExpressionIdentifier::getArrayVarId(
                     $conditional->right,
                     $this_class_name,
@@ -1805,7 +1801,6 @@ class AssertionFinder
 
         if ($typed_value_position) {
             if ($typed_value_position === self::ASSIGNMENT_TO_RIGHT) {
-                /** @var PhpParser\Node\Expr $conditional->right */
                 $var_name = ExpressionIdentifier::getArrayVarId(
                     $conditional->left,
                     $this_class_name,
@@ -1815,7 +1810,6 @@ class AssertionFinder
                 $other_type = $source->node_data->getType($conditional->left);
                 $var_type = $source->node_data->getType($conditional->right);
             } elseif ($typed_value_position === self::ASSIGNMENT_TO_LEFT) {
-                /** @var PhpParser\Node\Expr $conditional->left */
                 $var_name = ExpressionIdentifier::getArrayVarId(
                     $conditional->right,
                     $this_class_name,
