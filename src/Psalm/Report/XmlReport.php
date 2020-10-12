@@ -15,7 +15,9 @@ class XmlReport extends Report
             [
                 'item' => array_map(
                     function (IssueData $issue_data): array {
-                        return (array) $issue_data;
+                        $issue_data = (array) $issue_data;
+                        unset($issue_data['dupe_key']);
+                        return $issue_data;
                     },
                     $this->issues_data
                 )

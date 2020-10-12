@@ -13,6 +13,15 @@ class JsonReport extends Report
     {
         $options = $this->pretty ? Json::PRETTY : Json::DEFAULT;
 
-        return Json::encode(array_values($this->issues_data), $options) . "\n";
+        $issues_data = \array_map(
+            function ($issue_data): array {
+                $issue_data = (array) $issue_data;
+                unset($issue_data['dupe_key']);
+                return $issue_data;
+            },
+            $this->issues_data
+        );
+
+        return Json::encode(array_values($issues_data), $options) . "\n";
     }
 }
