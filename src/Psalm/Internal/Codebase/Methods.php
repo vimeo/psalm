@@ -380,7 +380,8 @@ class Methods
                     $source->getCodebase(),
                     $function_callables,
                     $args,
-                    $source->getNodeTypeProvider()
+                    $source->getNodeTypeProvider(),
+                    (string) $callmap_id
                 );
 
                 assert($matching_callable->params !== null);

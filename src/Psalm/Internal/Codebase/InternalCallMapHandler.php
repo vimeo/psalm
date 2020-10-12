@@ -73,7 +73,8 @@ class InternalCallMapHandler
             $codebase,
             $possible_callables,
             $args,
-            $nodes
+            $nodes,
+            $method_id
         );
     }
 
@@ -86,7 +87,8 @@ class InternalCallMapHandler
         Codebase $codebase,
         array $callables,
         array $args,
-        ?\Psalm\NodeTypeProvider $nodes
+        ?\Psalm\NodeTypeProvider $nodes,
+        string $method_id
     ): TCallable {
         if (count($callables) === 1) {
             return $callables[0];
@@ -193,7 +195,7 @@ class InternalCallMapHandler
                 $matching_param_count_callable = $possible_callable;
             }
 
-            if ($all_args_match && !$type_coerced) {
+            if ($all_args_match && (!$type_coerced || $method_id === 'max' || $method_id === 'min')) {
                 return $possible_callable;
             }
 

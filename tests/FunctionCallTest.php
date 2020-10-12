@@ -1849,6 +1849,13 @@ class FunctionCallTest extends TestCase
                 false,
                 '8.0'
             ],
+            'maxCallWithArray' => [
+                '<?php
+                    function foo(array $a) {
+                        max($a);
+                    }',
+                'error_message' => 'ArgumentTypeCoercion',
+            ],
         ];
     }
 }
