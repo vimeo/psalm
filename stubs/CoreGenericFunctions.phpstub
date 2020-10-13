@@ -607,7 +607,11 @@ function explode(string $delimiter, string $string, int $limit = -1) : array {}
  *
  * @psalm-flow ($subject) -(array-assignment)-> return
  *
- * @return ($flags is 0 ? non-empty-list<string>|false : list<string>|list<list<string|int>>|false)
+ * @template TFlags as 0|1|2|3|4|5|6|7
+ *
+ * @param TFlags $flags
+ *
+ * @return (TFlags is 0|2 ? non-empty-list<string>|false : (TFlags is 1|3 ? list<string>|false : list<array{string,int}>|false))
  *
  * @psalm-ignore-falsable-return
  */

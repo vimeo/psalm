@@ -288,6 +288,48 @@ class NonDivArithmeticOpAnalyzer
         bool &$has_string_increment,
         Type\Union &$result_type = null
     ): ?Type\Union {
+        if ($left_type_part instanceof TLiteralInt
+            && $right_type_part instanceof TLiteralInt
+            && ($left instanceof PhpParser\Node\Scalar || $left instanceof PhpParser\Node\Expr\ConstFetch)
+            && ($right instanceof PhpParser\Node\Scalar || $right instanceof PhpParser\Node\Expr\ConstFetch)
+        ) {
+            // time for some arithmetic!
+
+            $calculated_type = null;
+
+            if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Plus) {
+                $calculated_type = Type::getInt(false, $left_type_part->value + $right_type_part->value);
+            } elseif ($parent instanceof PhpParser\Node\Expr\BinaryOp\Minus) {
+                $calculated_type = Type::getInt(false, $left_type_part->value - $right_type_part->value);
+            } elseif ($parent instanceof PhpParser\Node\Expr\BinaryOp\Mod) {
+                $calculated_type = Type::getInt(false, $left_type_part->value % $right_type_part->value);
+            } elseif ($parent instanceof PhpParser\Node\Expr\BinaryOp\Mul) {
+                $calculated_type = Type::getInt(false, $left_type_part->value * $right_type_part->value);
+            } elseif ($parent instanceof PhpParser\Node\Expr\BinaryOp\Pow) {
+                $calculated_type = Type::getInt(false, $left_type_part->value ^ $right_type_part->value);
+            } elseif ($parent instanceof PhpParser\Node\Expr\BinaryOp\BitwiseOr) {
+                $calculated_type = Type::getInt(false, $left_type_part->value | $right_type_part->value);
+            } elseif ($parent instanceof PhpParser\Node\Expr\BinaryOp\BitwiseAnd) {
+                $calculated_type = Type::getInt(false, $left_type_part->value & $right_type_part->value);
+            }
+
+            if ($calculated_type) {
+                if ($result_type) {
+                    $result_type = Type::combineUnionTypes(
+                        $calculated_type,
+                        $result_type
+                    );
+                } else {
+                    $result_type = $calculated_type;
+                }
+
+                $has_valid_left_operand = true;
+                $has_valid_right_operand = true;
+
+                return null;
+            }
+        }
+
         if ($left_type_part instanceof TNull || $right_type_part instanceof TNull) {
             // null case is handled above
             return null;
