@@ -218,7 +218,7 @@ class CachingIterator extends IteratorIterator implements OuterIterator , ArrayA
     /**
      * @param Iterator<TKey, TValue> $iterator
      */
-    public function __construct(Iterator $iterator) {} 
+    public function __construct(Iterator $iterator, int $flags = self::CALL_TOSTRING) {} 
 
     /** @return bool */
     public function hasNext () {}
