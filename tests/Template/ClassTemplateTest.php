@@ -16,6 +16,86 @@ class ClassTemplateTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'cachingIterator' => [
+                '<?php
+
+                    $input = range("a", "z");
+
+                    $arrayIterator = new ArrayIterator($input);
+                    $decoratorIterator = new CachingIterator($arrayIterator);
+                    $next = $decoratorIterator->hasNext();
+                    $key = $decoratorIterator->key();
+                    $value = $decoratorIterator->current();
+                ',
+                'assertions' => [
+                    '$key' => 'int',
+                    '$value' => 'string',
+                    '$next' => 'bool',
+                ],
+            ],
+            'infiniteIterator' => [
+                '<?php
+
+                    $input = range("a", "z");
+
+                    $arrayIterator = new ArrayIterator($input);
+                    $decoratorIterator = new InfiniteIterator($arrayIterator);
+                    $key = $decoratorIterator->key();
+                    $value = $decoratorIterator->current();
+                ',
+                'assertions' => [
+                    '$key' => 'int',
+                    '$value' => 'string',
+                ],
+            ],
+            'limitIterator' => [
+                '<?php
+
+                    $input = range("a", "z");
+
+                    $arrayIterator = new ArrayIterator($input);
+                    $decoratorIterator = new LimitIterator($arrayIterator, 1, 1);
+                    $key = $decoratorIterator->key();
+                    $value = $decoratorIterator->current();
+                ',
+                'assertions' => [
+                    '$key' => 'int',
+                    '$value' => 'string',
+                ],
+            ],
+            'callbackFilterIterator' => [
+                '<?php
+
+                    $input = range("a", "z");
+
+                    $arrayIterator = new ArrayIterator($input);
+                    $decoratorIterator = new CallbackFilterIterator(
+                        $arrayIterator,
+                        static function (string $value): bool {return "a" === $value;}
+                    );
+                    $key = $decoratorIterator->key();
+                    $value = $decoratorIterator->current();
+                ',
+                'assertions' => [
+                    '$key' => 'int',
+                    '$value' => 'string',
+                ],
+            ],
+            'noRewindIterator' => [
+                '<?php
+
+                    $input = range("a", "z");
+
+                    $arrayIterator = new ArrayIterator($input);
+                    $decoratorIterator = new NoRewindIterator($arrayIterator);
+                    $key = $decoratorIterator->key();
+                    $value = $decoratorIterator->current();
+                ',
+                'assertions' => [
+                    '$key' => 'int',
+                    '$value' => 'string',
+                ],
+            ],
             'classTemplate' => [
                 '<?php
                     class A {}
