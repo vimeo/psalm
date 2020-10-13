@@ -994,8 +994,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
             $assignment_node = DataFlowNode::getForAssignment($var_name, $original_location);
 
-            if ($statements_analyzer->control_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph
-                && $statements_analyzer->control_flow_graph->isVariableUsed($assignment_node)
+            if ($statements_analyzer->data_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph
+                && $statements_analyzer->data_flow_graph->isVariableUsed($assignment_node)
             ) {
                 continue;
             }
@@ -1206,7 +1206,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 ]);
             }
 
-            if ($statements_analyzer->control_flow_graph
+            if ($statements_analyzer->data_flow_graph
                 && $function_param->location
             ) {
                 $param_assignment = DataFlowNode::getForAssignment(
@@ -1214,7 +1214,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     $function_param->location
                 );
 
-                $statements_analyzer->control_flow_graph->addNode($param_assignment);
+                $statements_analyzer->data_flow_graph->addNode($param_assignment);
 
                 if ($cased_method_id) {
                     $type_source = DataFlowNode::getForMethodArgument(
@@ -1225,13 +1225,13 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         null
                     );
 
-                    $statements_analyzer->control_flow_graph->addPath($type_source, $param_assignment, 'param');
+                    $statements_analyzer->data_flow_graph->addPath($type_source, $param_assignment, 'param');
                 }
 
                 if ($function_param->by_ref
                     && $codebase->find_unused_variables
                 ) {
-                    $statements_analyzer->control_flow_graph->addPath(
+                    $statements_analyzer->data_flow_graph->addPath(
                         $param_assignment,
                         new DataFlowNode('variable-use', 'variable use', null),
                         'variable-use'

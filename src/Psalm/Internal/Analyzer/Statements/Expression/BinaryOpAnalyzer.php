@@ -126,8 +126,8 @@ class BinaryOpAnalyzer
                 $stmt_type = $result_type;
             }
 
-            if ($statements_analyzer->control_flow_graph
-                && ($statements_analyzer->control_flow_graph instanceof VariableUseGraph
+            if ($statements_analyzer->data_flow_graph
+                && ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
                     || !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues()))
             ) {
                 $stmt_left_type = $statements_analyzer->node_data->getType($stmt->left);
@@ -136,7 +136,7 @@ class BinaryOpAnalyzer
                 $var_location = new CodeLocation($statements_analyzer, $stmt);
 
                 $new_parent_node = DataFlowNode::getForAssignment('concat', $var_location);
-                $statements_analyzer->control_flow_graph->addNode($new_parent_node);
+                $statements_analyzer->data_flow_graph->addNode($new_parent_node);
 
                 $stmt_type->parent_nodes = [
                     $new_parent_node->id => $new_parent_node
@@ -144,13 +144,13 @@ class BinaryOpAnalyzer
 
                 if ($stmt_left_type && $stmt_left_type->parent_nodes) {
                     foreach ($stmt_left_type->parent_nodes as $parent_node) {
-                        $statements_analyzer->control_flow_graph->addPath($parent_node, $new_parent_node, 'concat');
+                        $statements_analyzer->data_flow_graph->addPath($parent_node, $new_parent_node, 'concat');
                     }
                 }
 
                 if ($stmt_right_type && $stmt_right_type->parent_nodes) {
                     foreach ($stmt_right_type->parent_nodes as $parent_node) {
-                        $statements_analyzer->control_flow_graph->addPath($parent_node, $new_parent_node, 'concat');
+                        $statements_analyzer->data_flow_graph->addPath($parent_node, $new_parent_node, 'concat');
                     }
                 }
             }
@@ -342,7 +342,7 @@ class BinaryOpAnalyzer
         }
         $result_type = $statements_analyzer->node_data->getType($stmt);
 
-        if ($statements_analyzer->control_flow_graph
+        if ($statements_analyzer->data_flow_graph
             && $result_type
         ) {
             $stmt_left_type = $statements_analyzer->node_data->getType($left);
@@ -351,7 +351,7 @@ class BinaryOpAnalyzer
             $var_location = new CodeLocation($statements_analyzer, $stmt);
 
             $new_parent_node = DataFlowNode::getForAssignment($type, $var_location);
-            $statements_analyzer->control_flow_graph->addNode($new_parent_node);
+            $statements_analyzer->data_flow_graph->addNode($new_parent_node);
 
             $result_type->parent_nodes = [
                 $new_parent_node->id => $new_parent_node
@@ -359,18 +359,18 @@ class BinaryOpAnalyzer
 
             if ($stmt_left_type && $stmt_left_type->parent_nodes) {
                 foreach ($stmt_left_type->parent_nodes as $parent_node) {
-                    $statements_analyzer->control_flow_graph->addPath($parent_node, $new_parent_node, $type);
+                    $statements_analyzer->data_flow_graph->addPath($parent_node, $new_parent_node, $type);
                 }
             }
 
             if ($stmt_right_type && $stmt_right_type->parent_nodes) {
                 foreach ($stmt_right_type->parent_nodes as $parent_node) {
-                    $statements_analyzer->control_flow_graph->addPath($parent_node, $new_parent_node, $type);
+                    $statements_analyzer->data_flow_graph->addPath($parent_node, $new_parent_node, $type);
                 }
             }
 
             if ($stmt instanceof PhpParser\Node\Expr\AssignOp
-                && $statements_analyzer->control_flow_graph instanceof VariableUseGraph
+                && $statements_analyzer->data_flow_graph instanceof VariableUseGraph
             ) {
                 $root_expr = $left;
 
@@ -379,19 +379,19 @@ class BinaryOpAnalyzer
                 }
 
                 if ($left instanceof PhpParser\Node\Expr\PropertyFetch) {
-                    $statements_analyzer->control_flow_graph->addPath(
+                    $statements_analyzer->data_flow_graph->addPath(
                         $new_parent_node,
                         new DataFlowNode('variable-use', 'variable use', null),
                         'used-by-instance-property'
                     );
                 } if ($left instanceof PhpParser\Node\Expr\StaticPropertyFetch) {
-                    $statements_analyzer->control_flow_graph->addPath(
+                    $statements_analyzer->data_flow_graph->addPath(
                         $new_parent_node,
                         new DataFlowNode('variable-use', 'variable use', null),
                         'use-in-static-property'
                     );
                 } elseif (!$left instanceof PhpParser\Node\Expr\Variable) {
-                    $statements_analyzer->control_flow_graph->addPath(
+                    $statements_analyzer->data_flow_graph->addPath(
                         $new_parent_node,
                         new DataFlowNode('variable-use', 'variable use', null),
                         'variable-use'

@@ -648,7 +648,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                     }
                 }
 
-                if ($statements_analyzer->control_flow_graph instanceof TaintFlowGraph
+                if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
                     && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
                     && ($stmt_type = $statements_analyzer->node_data->getType($stmt))
                 ) {
@@ -679,7 +679,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                         );
                     }
 
-                    $statements_analyzer->control_flow_graph->addNode($method_source);
+                    $statements_analyzer->data_flow_graph->addNode($method_source);
 
                     $stmt_type->parent_nodes = [$method_source->id => $method_source];
                 }

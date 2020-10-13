@@ -33,19 +33,19 @@ class EncapsulatedStringAnalyzer
                     $part
                 );
 
-                if ($statements_analyzer->control_flow_graph
+                if ($statements_analyzer->data_flow_graph
                     && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
                 ) {
                     $var_location = new CodeLocation($statements_analyzer, $part);
 
                     $new_parent_node = DataFlowNode::getForAssignment('concat', $var_location);
-                    $statements_analyzer->control_flow_graph->addNode($new_parent_node);
+                    $statements_analyzer->data_flow_graph->addNode($new_parent_node);
 
                     $stmt_type->parent_nodes[$new_parent_node->id] = $new_parent_node;
 
                     if ($casted_part_type->parent_nodes) {
                         foreach ($casted_part_type->parent_nodes as $parent_node) {
-                            $statements_analyzer->control_flow_graph->addPath($parent_node, $new_parent_node, 'concat');
+                            $statements_analyzer->data_flow_graph->addPath($parent_node, $new_parent_node, 'concat');
                         }
                     }
                 }

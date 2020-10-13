@@ -227,7 +227,7 @@ class MethodCallReturnTypeFetcher
     ) : void {
         $codebase = $statements_analyzer->getCodebase();
 
-        if ($statements_analyzer->control_flow_graph instanceof TaintFlowGraph
+        if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
             && $declaring_method_id
             && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
         ) {
@@ -244,7 +244,7 @@ class MethodCallReturnTypeFetcher
                 $method_storage->specialize_call ? $node_location : null
             );
 
-            $statements_analyzer->control_flow_graph->addNode($method_call_node);
+            $statements_analyzer->data_flow_graph->addNode($method_call_node);
 
             $return_type_candidate->parent_nodes = [
                 $method_call_node->id => $method_call_node
@@ -263,9 +263,9 @@ class MethodCallReturnTypeFetcher
                         new CodeLocation($statements_analyzer, $var_expr)
                     );
 
-                    $statements_analyzer->control_flow_graph->addNode($var_node);
+                    $statements_analyzer->data_flow_graph->addNode($var_node);
 
-                    $statements_analyzer->control_flow_graph->addPath(
+                    $statements_analyzer->data_flow_graph->addPath(
                         $method_call_node,
                         $var_node,
                         'method-call-' . $method_id->method_name
@@ -275,7 +275,7 @@ class MethodCallReturnTypeFetcher
 
                     if ($context->vars_in_scope[$var_id]->parent_nodes) {
                         foreach ($context->vars_in_scope[$var_id]->parent_nodes as $parent_node) {
-                            $statements_analyzer->control_flow_graph->addPath($parent_node, $var_node, '=');
+                            $statements_analyzer->data_flow_graph->addPath($parent_node, $var_node, '=');
                         }
                     }
 
@@ -294,7 +294,7 @@ class MethodCallReturnTypeFetcher
 
                 $method_node->taints = $method_storage->taint_source_types;
 
-                $statements_analyzer->control_flow_graph->addSource($method_node);
+                $statements_analyzer->data_flow_graph->addSource($method_node);
             }
         }
     }

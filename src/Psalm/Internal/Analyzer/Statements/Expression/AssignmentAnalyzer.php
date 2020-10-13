@@ -250,7 +250,7 @@ class AssignmentAnalyzer
             }
         }
 
-        if ($statements_analyzer->control_flow_graph instanceof VariableUseGraph
+        if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
             && !$assign_value_type->parent_nodes
         ) {
             if ($array_var_id) {
@@ -450,7 +450,7 @@ class AssignmentAnalyzer
                     }
 
                     if ($assign_value_type->by_ref) {
-                        if ($statements_analyzer->control_flow_graph instanceof VariableUseGraph
+                        if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
                             && $assign_value_type->parent_nodes
                         ) {
                             $location = new CodeLocation($statements_analyzer, $assign_var);
@@ -458,13 +458,13 @@ class AssignmentAnalyzer
                             $byref_node = DataFlowNode::getForAssignment($var_id, $location);
 
                             foreach ($assign_value_type->parent_nodes as $parent_node) {
-                                $statements_analyzer->control_flow_graph->addPath(
+                                $statements_analyzer->data_flow_graph->addPath(
                                     $parent_node,
                                     new DataFlowNode('variable-use', 'variable use', null),
                                     'variable-use'
                                 );
 
-                                $statements_analyzer->control_flow_graph->addPath(
+                                $statements_analyzer->data_flow_graph->addPath(
                                     $byref_node,
                                     $parent_node,
                                     'byref-assignment'
@@ -483,11 +483,11 @@ class AssignmentAnalyzer
 
                 $context->inside_use = $was_inside_use;
 
-                if ($statements_analyzer->control_flow_graph instanceof VariableUseGraph
+                if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
                     && $assign_value_type->parent_nodes
                 ) {
                     foreach ($assign_value_type->parent_nodes as $parent_node) {
-                        $statements_analyzer->control_flow_graph->addPath(
+                        $statements_analyzer->data_flow_graph->addPath(
                             $parent_node,
                             new DataFlowNode('variable-use', 'variable use', null),
                             'variable-use'
@@ -581,7 +581,7 @@ class AssignmentAnalyzer
                                 $value_type->possibly_undefined = false;
                             }
 
-                            if ($statements_analyzer->control_flow_graph
+                            if ($statements_analyzer->data_flow_graph
                                 && $assign_value
                             ) {
                                 $assign_value_id = ExpressionIdentifier::getArrayVarId(
@@ -754,7 +754,7 @@ class AssignmentAnalyzer
                         if ($assign_value_atomic_type instanceof Type\Atomic\TArray) {
                             $new_assign_type = clone $assign_value_atomic_type->type_params[1];
 
-                            if ($statements_analyzer->control_flow_graph
+                            if ($statements_analyzer->data_flow_graph
                                 && $assign_value
                             ) {
                                 ArrayFetchAnalyzer::taintArrayFetch(
@@ -770,7 +770,7 @@ class AssignmentAnalyzer
                         } elseif ($assign_value_atomic_type instanceof Type\Atomic\TList) {
                             $new_assign_type = clone $assign_value_atomic_type->type_param;
 
-                            if ($statements_analyzer->control_flow_graph && $assign_value) {
+                            if ($statements_analyzer->data_flow_graph && $assign_value) {
                                 ArrayFetchAnalyzer::taintArrayFetch(
                                     $statements_analyzer,
                                     $assign_value,
@@ -805,7 +805,7 @@ class AssignmentAnalyzer
                                 }
                             }
 
-                            if ($statements_analyzer->control_flow_graph && $assign_value && $new_assign_type) {
+                            if ($statements_analyzer->data_flow_graph && $assign_value && $new_assign_type) {
                                 ArrayFetchAnalyzer::taintArrayFetch(
                                     $statements_analyzer,
                                     $assign_value,
@@ -881,8 +881,8 @@ class AssignmentAnalyzer
                             $context->vars_in_scope[$list_var_id]->addType(new Type\Atomic\TNull);
                         }
 
-                        if ($statements_analyzer->control_flow_graph) {
-                            $control_flow_graph = $statements_analyzer->control_flow_graph;
+                        if ($statements_analyzer->data_flow_graph) {
+                            $data_flow_graph = $statements_analyzer->data_flow_graph;
 
                             $var_location = new CodeLocation($statements_analyzer->getSource(), $var);
 
@@ -896,17 +896,17 @@ class AssignmentAnalyzer
                                     $assignment_node->id => $assignment_node
                                 ];
                             } else {
-                                if ($statements_analyzer->control_flow_graph instanceof TaintFlowGraph
+                                if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
                                     && \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
                                 ) {
                                     $context->vars_in_scope[$list_var_id]->parent_nodes = [];
                                 } else {
                                     $new_parent_node = DataFlowNode::getForAssignment($list_var_id, $var_location);
 
-                                    $statements_analyzer->control_flow_graph->addNode($new_parent_node);
+                                    $statements_analyzer->data_flow_graph->addNode($new_parent_node);
 
                                     foreach ($context->vars_in_scope[$list_var_id]->parent_nodes as $parent_node) {
-                                        $control_flow_graph->addPath(
+                                        $data_flow_graph->addPath(
                                             $parent_node,
                                             $new_parent_node,
                                             '=',
@@ -1088,11 +1088,11 @@ class AssignmentAnalyzer
                 return $context->vars_in_scope[$var_id];
             }
 
-            if ($statements_analyzer->control_flow_graph) {
-                $control_flow_graph = $statements_analyzer->control_flow_graph;
+            if ($statements_analyzer->data_flow_graph) {
+                $data_flow_graph = $statements_analyzer->data_flow_graph;
 
                 if ($context->vars_in_scope[$var_id]->parent_nodes) {
-                    if ($control_flow_graph instanceof TaintFlowGraph
+                    if ($data_flow_graph instanceof TaintFlowGraph
                         && \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
                     ) {
                         $context->vars_in_scope[$var_id]->parent_nodes = [];
@@ -1101,10 +1101,10 @@ class AssignmentAnalyzer
 
                         $new_parent_node = DataFlowNode::getForAssignment($var_id, $var_location);
 
-                        $control_flow_graph->addNode($new_parent_node);
+                        $data_flow_graph->addNode($new_parent_node);
 
                         foreach ($context->vars_in_scope[$var_id]->parent_nodes as $parent_node) {
-                            $control_flow_graph->addPath($parent_node, $new_parent_node, '=', [], $removed_taints);
+                            $data_flow_graph->addPath($parent_node, $new_parent_node, '=', [], $removed_taints);
                         }
 
                         $context->vars_in_scope[$var_id]->parent_nodes = [
@@ -1504,15 +1504,15 @@ class AssignmentAnalyzer
             );
         }
 
-        if ($statements_analyzer->control_flow_graph
+        if ($statements_analyzer->data_flow_graph
             && $array_var_id
             && isset($context->vars_in_scope[$array_var_id])
             && ($stmt_type = $statements_analyzer->node_data->getType($stmt))
         ) {
-            $control_flow_graph = $statements_analyzer->control_flow_graph;
+            $data_flow_graph = $statements_analyzer->data_flow_graph;
 
             if ($stmt_type->parent_nodes) {
-                if ($control_flow_graph instanceof TaintFlowGraph
+                if ($data_flow_graph instanceof TaintFlowGraph
                     && \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
                 ) {
                     $stmt_type->parent_nodes = [];
@@ -1521,10 +1521,10 @@ class AssignmentAnalyzer
 
                     $new_parent_node = DataFlowNode::getForAssignment($array_var_id, $var_location);
 
-                    $control_flow_graph->addNode($new_parent_node);
+                    $data_flow_graph->addNode($new_parent_node);
 
                     foreach ($stmt_type->parent_nodes as $parent_node) {
-                        $control_flow_graph->addPath($parent_node, $new_parent_node, '=');
+                        $data_flow_graph->addPath($parent_node, $new_parent_node, '=');
                     }
 
                     $context->vars_in_scope[$array_var_id]->parent_nodes = [
@@ -1622,9 +1622,9 @@ class AssignmentAnalyzer
             $context->hasVariable($lhs_var_id);
             $context->byref_constraints[$lhs_var_id] = new \Psalm\Internal\ReferenceConstraint();
 
-            if ($statements_analyzer->control_flow_graph instanceof VariableUseGraph) {
+            if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
                 foreach ($context->vars_in_scope[$lhs_var_id]->parent_nodes as $parent_node) {
-                    $statements_analyzer->control_flow_graph->addPath(
+                    $statements_analyzer->data_flow_graph->addPath(
                         $parent_node,
                         new DataFlowNode('variable-use', 'variable use', null),
                         'variable-use'
@@ -1641,21 +1641,21 @@ class AssignmentAnalyzer
             $context->byref_constraints[$rhs_var_id] = new \Psalm\Internal\ReferenceConstraint();
         }
 
-        if ($statements_analyzer->control_flow_graph
+        if ($statements_analyzer->data_flow_graph
             && $lhs_var_id
             && $rhs_var_id
             && isset($context->vars_in_scope[$rhs_var_id])
         ) {
             $rhs_type = $context->vars_in_scope[$rhs_var_id];
 
-            $control_flow_graph = $statements_analyzer->control_flow_graph;
+            $data_flow_graph = $statements_analyzer->data_flow_graph;
 
             $lhs_location = new CodeLocation($statements_analyzer->getSource(), $stmt->var);
 
             $lhs_node = DataFlowNode::getForAssignment($lhs_var_id, $lhs_location);
 
             foreach ($rhs_type->parent_nodes as $byref_destination_node) {
-                $control_flow_graph->addPath($lhs_node, $byref_destination_node, '=');
+                $data_flow_graph->addPath($lhs_node, $byref_destination_node, '=');
             }
         }
 

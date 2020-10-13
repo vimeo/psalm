@@ -414,7 +414,7 @@ class VariableFetchAnalyzer
     ) : void {
         $codebase = $statements_analyzer->getCodebase();
 
-        if ($statements_analyzer->control_flow_graph
+        if ($statements_analyzer->data_flow_graph
             && $codebase->find_unused_variables
             && ($context->inside_call
                 || $context->inside_conditional
@@ -434,7 +434,7 @@ class VariableFetchAnalyzer
 
             foreach ($stmt_type->parent_nodes as $parent_node) {
                 if ($context->inside_call) {
-                    $statements_analyzer->control_flow_graph->addPath(
+                    $statements_analyzer->data_flow_graph->addPath(
                         $parent_node,
                         new DataFlowNode(
                             'variable-use',
@@ -444,7 +444,7 @@ class VariableFetchAnalyzer
                         'use-inside-call'
                     );
                 } elseif ($context->inside_conditional) {
-                    $statements_analyzer->control_flow_graph->addPath(
+                    $statements_analyzer->data_flow_graph->addPath(
                         $parent_node,
                         new DataFlowNode(
                             'variable-use',
@@ -454,7 +454,7 @@ class VariableFetchAnalyzer
                         'use-inside-conditional'
                     );
                 } elseif ($context->inside_isset) {
-                    $statements_analyzer->control_flow_graph->addPath(
+                    $statements_analyzer->data_flow_graph->addPath(
                         $parent_node,
                         new DataFlowNode(
                             'variable-use',
@@ -464,7 +464,7 @@ class VariableFetchAnalyzer
                         'use-inside-isset'
                     );
                 } else {
-                    $statements_analyzer->control_flow_graph->addPath(
+                    $statements_analyzer->data_flow_graph->addPath(
                         $parent_node,
                         new DataFlowNode(
                             'variable-use',
@@ -484,7 +484,7 @@ class VariableFetchAnalyzer
         Type\Union $type,
         PhpParser\Node\Expr\Variable $stmt
     ) : void {
-        if ($statements_analyzer->control_flow_graph instanceof TaintFlowGraph
+        if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
             && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
         ) {
             if ($var_name === '$_GET'
@@ -502,7 +502,7 @@ class VariableFetchAnalyzer
                     Type\TaintKindGroup::ALL_INPUT
                 );
 
-                $statements_analyzer->control_flow_graph->addSource($server_taint_source);
+                $statements_analyzer->data_flow_graph->addSource($server_taint_source);
 
                 $type->parent_nodes = [
                     $server_taint_source->id => $server_taint_source

@@ -24,7 +24,7 @@ class EvalAnalyzer
         $expr_type = $statements_analyzer->node_data->getType($stmt->expr);
 
         if ($expr_type) {
-            if ($statements_analyzer->control_flow_graph instanceof TaintFlowGraph
+            if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
                 && $expr_type->parent_nodes
                 && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
             ) {
@@ -40,10 +40,10 @@ class EvalAnalyzer
 
                 $eval_param_sink->taints = [\Psalm\Type\TaintKind::INPUT_TEXT];
 
-                $statements_analyzer->control_flow_graph->addSink($eval_param_sink);
+                $statements_analyzer->data_flow_graph->addSink($eval_param_sink);
 
                 foreach ($expr_type->parent_nodes as $parent_node) {
-                    $statements_analyzer->control_flow_graph->addPath($parent_node, $eval_param_sink, 'arg');
+                    $statements_analyzer->data_flow_graph->addPath($parent_node, $eval_param_sink, 'arg');
                 }
             }
         }

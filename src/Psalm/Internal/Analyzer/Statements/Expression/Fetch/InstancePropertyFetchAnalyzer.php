@@ -1196,11 +1196,11 @@ class InstancePropertyFetchAnalyzer
         \Psalm\Storage\ClassLikeStorage $class_storage,
         bool $in_assignment
     ) : void {
-        if (!$statements_analyzer->control_flow_graph) {
+        if (!$statements_analyzer->data_flow_graph) {
             return;
         }
 
-        $control_flow_graph = $statements_analyzer->control_flow_graph;
+        $data_flow_graph = $statements_analyzer->data_flow_graph;
 
         $var_location = new CodeLocation($statements_analyzer->getSource(), $stmt->var);
         $property_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
@@ -1221,7 +1221,7 @@ class InstancePropertyFetchAnalyzer
             if ($var_id) {
                 $var_type = $statements_analyzer->node_data->getType($stmt->var);
 
-                if ($statements_analyzer->control_flow_graph instanceof TaintFlowGraph
+                if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
                     && $var_type
                     && \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
                 ) {
@@ -1234,16 +1234,16 @@ class InstancePropertyFetchAnalyzer
                     $var_location
                 );
 
-                $control_flow_graph->addNode($var_node);
+                $data_flow_graph->addNode($var_node);
 
                 $property_node = DataFlowNode::getForAssignment(
                     $var_property_id ?: $var_id . '->$property',
                     $property_location
                 );
 
-                $control_flow_graph->addNode($property_node);
+                $data_flow_graph->addNode($property_node);
 
-                $control_flow_graph->addPath(
+                $data_flow_graph->addPath(
                     $var_node,
                     $property_node,
                     'property-fetch'
@@ -1252,7 +1252,7 @@ class InstancePropertyFetchAnalyzer
 
                 if ($var_type && $var_type->parent_nodes) {
                     foreach ($var_type->parent_nodes as $parent_node) {
-                        $control_flow_graph->addPath(
+                        $data_flow_graph->addPath(
                             $parent_node,
                             $var_node,
                             '='
@@ -1272,7 +1272,7 @@ class InstancePropertyFetchAnalyzer
                 null
             );
 
-            $control_flow_graph->addNode($localized_property_node);
+            $data_flow_graph->addNode($localized_property_node);
 
             $property_node = new DataFlowNode(
                 $property_id,
@@ -1281,12 +1281,12 @@ class InstancePropertyFetchAnalyzer
                 null
             );
 
-            $control_flow_graph->addNode($property_node);
+            $data_flow_graph->addNode($property_node);
 
             if ($in_assignment) {
-                $control_flow_graph->addPath($localized_property_node, $property_node, 'property-assignment');
+                $data_flow_graph->addPath($localized_property_node, $property_node, 'property-assignment');
             } else {
-                $control_flow_graph->addPath($property_node, $localized_property_node, 'property-fetch');
+                $data_flow_graph->addPath($property_node, $localized_property_node, 'property-fetch');
             }
 
             $type->parent_nodes[$localized_property_node->id] = $localized_property_node;

@@ -123,7 +123,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
     public $node_data;
 
     /** @var ?DataFlowGraph */
-    public $control_flow_graph;
+    public $data_flow_graph;
 
     public function __construct(SourceAnalyzer $source, \Psalm\Internal\Provider\NodeDataProvider $node_data)
     {
@@ -133,9 +133,9 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
         $this->node_data = $node_data;
 
         if ($this->codebase->taint_flow_graph) {
-            $this->control_flow_graph = new TaintFlowGraph();
+            $this->data_flow_graph = new TaintFlowGraph();
         } elseif ($this->codebase->find_unused_variables) {
-            $this->control_flow_graph = new VariableUseGraph();
+            $this->data_flow_graph = new VariableUseGraph();
         }
     }
 
@@ -177,7 +177,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
             && $codebase->find_unused_variables
             && $context->check_variables
         ) {
-            //var_dump($this->control_flow_graph);
+            //var_dump($this->data_flow_graph);
             $this->checkUnreferencedVars($stmts);
         }
 
@@ -194,11 +194,11 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
         }
 
         if ($root_scope
-            && $this->control_flow_graph instanceof TaintFlowGraph
+            && $this->data_flow_graph instanceof TaintFlowGraph
             && $this->codebase->taint_flow_graph
             && $codebase->config->trackTaintsInPath($this->getFilePath())
         ) {
-            $this->codebase->taint_flow_graph->addGraph($this->control_flow_graph);
+            $this->codebase->taint_flow_graph->addGraph($this->data_flow_graph);
         }
 
         return null;
@@ -219,7 +219,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                     $fq_function_name = $function_name;
                 }
 
-                if ($this->control_flow_graph
+                if ($this->data_flow_graph
                     && $this->codebase->find_unused_variables
                 ) {
                     foreach ($stmt->stmts as $function_stmt) {
@@ -718,8 +718,8 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
 
             if (!isset($this->byref_uses[$var_id])
                 && !VariableFetchAnalyzer::isSuperGlobal($var_id)
-                && $this->control_flow_graph instanceof VariableUseGraph
-                && !$this->control_flow_graph->isVariableUsed($assignment_node)
+                && $this->data_flow_graph instanceof VariableUseGraph
+                && !$this->data_flow_graph->isVariableUsed($assignment_node)
             ) {
                 $issue = new UnusedVariable(
                     'Variable ' . $var_id . ' is never referenced',
@@ -784,7 +784,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
         string $undefined_var_id,
         PhpParser\Node\Expr\Variable $stmt
     ) : void {
-        if (!$this->control_flow_graph) {
+        if (!$this->data_flow_graph) {
             return;
         }
 
@@ -801,7 +801,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
             if ($var_id === $undefined_var_id) {
                 $parent_node = DataFlowNode::getForAssignment($var_id, $original_location);
 
-                $this->control_flow_graph->addPath($parent_node, $use_node, '=');
+                $this->data_flow_graph->addPath($parent_node, $use_node, '=');
             }
         }
     }
@@ -811,7 +811,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
      */
     public function getParentNodesForPossiblyUndefinedVariable(string $undefined_var_id) : array
     {
-        if (!$this->control_flow_graph) {
+        if (!$this->data_flow_graph) {
             return [];
         }
 

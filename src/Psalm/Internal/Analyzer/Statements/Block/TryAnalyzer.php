@@ -323,15 +323,15 @@ class TryAnalyzer
                     );
                 }
 
-                if ($statements_analyzer->control_flow_graph) {
+                if ($statements_analyzer->data_flow_graph) {
                     $catch_var_node = DataFlowNode::getForAssignment($catch_var_id, $location);
 
                     $catch_context->vars_in_scope[$catch_var_id]->parent_nodes = [
                         $catch_var_node->id => $catch_var_node
                     ];
 
-                    if ($statements_analyzer->control_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph) {
-                        $statements_analyzer->control_flow_graph->addPath(
+                    if ($statements_analyzer->data_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph) {
+                        $statements_analyzer->data_flow_graph->addPath(
                             $catch_var_node,
                             new DataFlowNode('variable-use', 'variable use', null),
                             'variable-use'

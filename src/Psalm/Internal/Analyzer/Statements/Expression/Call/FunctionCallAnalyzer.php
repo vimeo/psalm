@@ -1302,7 +1302,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
         FunctionLikeStorage $function_storage,
         Type\Union $stmt_type
     ) : void {
-        if (!$statements_analyzer->control_flow_graph instanceof TaintFlowGraph
+        if (!$statements_analyzer->data_flow_graph instanceof TaintFlowGraph
             || \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
         ) {
             return;
@@ -1317,7 +1317,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
             $function_storage->specialize_call ? $node_location : null
         );
 
-        $statements_analyzer->control_flow_graph->addNode($function_call_node);
+        $statements_analyzer->data_flow_graph->addNode($function_call_node);
 
         $stmt_type->parent_nodes[$function_call_node->id] = $function_call_node;
 
@@ -1369,9 +1369,9 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     $function_storage->specialize_call ? $node_location : null
                 );
 
-                $statements_analyzer->control_flow_graph->addNode($function_param_sink);
+                $statements_analyzer->data_flow_graph->addNode($function_param_sink);
 
-                $statements_analyzer->control_flow_graph->addPath(
+                $statements_analyzer->data_flow_graph->addPath(
                     $function_param_sink,
                     $function_call_node,
                     $path_type,
@@ -1390,7 +1390,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
 
             $method_node->taints = $function_storage->taint_source_types;
 
-            $statements_analyzer->control_flow_graph->addSource($method_node);
+            $statements_analyzer->data_flow_graph->addSource($method_node);
         }
     }
 
@@ -1787,12 +1787,12 @@ class FunctionCallAnalyzer extends CallAnalyzer
         } elseif ($function_name->parts === ['func_get_args']) {
             $source = $statements_analyzer->getSource();
 
-            if ($statements_analyzer->control_flow_graph
+            if ($statements_analyzer->data_flow_graph
                 && $source instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
             ) {
-                if ($statements_analyzer->control_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph) {
+                if ($statements_analyzer->data_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph) {
                     foreach ($source->param_nodes as $param_node) {
-                        $statements_analyzer->control_flow_graph->addPath(
+                        $statements_analyzer->data_flow_graph->addPath(
                             $param_node,
                             new DataFlowNode('variable-use', 'variable use', null),
                             'variable-use'

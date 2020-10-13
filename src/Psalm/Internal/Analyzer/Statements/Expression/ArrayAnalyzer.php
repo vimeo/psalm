@@ -205,8 +205,8 @@ class ArrayAnalyzer
                 $array_keys[$item_key_value] = true;
             }
 
-            if ($statements_analyzer->control_flow_graph
-                && ($statements_analyzer->control_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph
+            if ($statements_analyzer->data_flow_graph
+                && ($statements_analyzer->data_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph
                     || !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues()))
             ) {
                 if ($item_value_type = $statements_analyzer->node_data->getType($item->value)) {
@@ -219,10 +219,10 @@ class ArrayAnalyzer
                             $var_location
                         );
 
-                        $statements_analyzer->control_flow_graph->addNode($new_parent_node);
+                        $statements_analyzer->data_flow_graph->addNode($new_parent_node);
 
                         foreach ($item_value_type->parent_nodes as $parent_node) {
-                            $statements_analyzer->control_flow_graph->addPath(
+                            $statements_analyzer->data_flow_graph->addPath(
                                 $parent_node,
                                 $new_parent_node,
                                 'array-assignment'

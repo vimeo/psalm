@@ -37,7 +37,7 @@ class EchoAnalyzer
 
             $expr_type = $statements_analyzer->node_data->getType($expr);
 
-            if ($statements_analyzer->control_flow_graph
+            if ($statements_analyzer->data_flow_graph
                 && $expr_type
             ) {
                 $expr_type = CastAnalyzer::castStringAttempt(
@@ -49,7 +49,7 @@ class EchoAnalyzer
                 );
             }
 
-            if ($statements_analyzer->control_flow_graph instanceof TaintFlowGraph) {
+            if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
                 $call_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
                 $echo_param_sink = TaintSink::getForMethodArgument(
@@ -66,7 +66,7 @@ class EchoAnalyzer
                     Type\TaintKind::SYSTEM_SECRET
                 ];
 
-                $statements_analyzer->control_flow_graph->addSink($echo_param_sink);
+                $statements_analyzer->data_flow_graph->addSink($echo_param_sink);
             }
 
             if ($expr_type) {

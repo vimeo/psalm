@@ -118,7 +118,7 @@ class FilterVarReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTy
             $filter_type = Type::getMixed();
         }
 
-        if ($statements_source->control_flow_graph
+        if ($statements_source->data_flow_graph
             && !\in_array('TaintedInput', $statements_source->getSuppressedIssues())
         ) {
             $function_return_sink = DataFlowNode::getForMethodReturn(
@@ -128,7 +128,7 @@ class FilterVarReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTy
                 $code_location
             );
 
-            $statements_source->control_flow_graph->addNode($function_return_sink);
+            $statements_source->data_flow_graph->addNode($function_return_sink);
 
             $function_param_sink = DataFlowNode::getForMethodArgument(
                 $function_id,
@@ -138,9 +138,9 @@ class FilterVarReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTy
                 $code_location
             );
 
-            $statements_source->control_flow_graph->addNode($function_param_sink);
+            $statements_source->data_flow_graph->addNode($function_param_sink);
 
-            $statements_source->control_flow_graph->addPath(
+            $statements_source->data_flow_graph->addPath(
                 $function_param_sink,
                 $function_return_sink,
                 'arg'

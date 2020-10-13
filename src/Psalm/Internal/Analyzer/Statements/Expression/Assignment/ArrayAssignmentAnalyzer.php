@@ -291,7 +291,7 @@ class ArrayAssignmentAnalyzer
                 $child_stmt_type = $assignment_type;
                 $statements_analyzer->node_data->setType($child_stmt, $assignment_type);
 
-                if ($statements_analyzer->control_flow_graph) {
+                if ($statements_analyzer->data_flow_graph) {
                     self::taintArrayAssignment(
                         $statements_analyzer,
                         $child_stmt,
@@ -421,7 +421,7 @@ class ArrayAssignmentAnalyzer
                 $context->possibly_assigned_var_ids[$array_var_id] = true;
             }
 
-            if ($statements_analyzer->control_flow_graph) {
+            if ($statements_analyzer->data_flow_graph) {
                 self::taintArrayAssignment(
                     $statements_analyzer,
                     $child_stmt,
@@ -788,8 +788,8 @@ class ArrayAssignmentAnalyzer
         ?string $var_var_id,
         array $key_values
     ) : void {
-        if ($statements_analyzer->control_flow_graph
-            && ($statements_analyzer->control_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph
+        if ($statements_analyzer->data_flow_graph
+            && ($statements_analyzer->data_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph
                 || !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues()))
         ) {
             if (!$stmt_type->parent_nodes) {
@@ -800,7 +800,7 @@ class ArrayAssignmentAnalyzer
                     $var_location
                 );
 
-                $statements_analyzer->control_flow_graph->addNode($parent_node);
+                $statements_analyzer->data_flow_graph->addNode($parent_node);
 
                 $stmt_type->parent_nodes = [$parent_node->id => $parent_node];
             }
@@ -809,14 +809,14 @@ class ArrayAssignmentAnalyzer
                 foreach ($child_stmt_type->parent_nodes as $child_parent_node) {
                     if ($key_values) {
                         foreach ($key_values as $key_value) {
-                            $statements_analyzer->control_flow_graph->addPath(
+                            $statements_analyzer->data_flow_graph->addPath(
                                 $child_parent_node,
                                 $parent_node,
                                 'array-assignment-\'' . $key_value->value . '\''
                             );
                         }
                     } else {
-                        $statements_analyzer->control_flow_graph->addPath(
+                        $statements_analyzer->data_flow_graph->addPath(
                             $child_parent_node,
                             $parent_node,
                             'array-assignment'

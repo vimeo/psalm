@@ -1431,7 +1431,7 @@ class StaticCallAnalyzer extends CallAnalyzer
         Type\Union $return_type_candidate,
         ?\Psalm\Storage\MethodStorage $method_storage
     ) : void {
-        if (!$statements_analyzer->control_flow_graph instanceof TaintFlowGraph
+        if (!$statements_analyzer->data_flow_graph instanceof TaintFlowGraph
             || \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
         ) {
             return;
@@ -1458,7 +1458,7 @@ class StaticCallAnalyzer extends CallAnalyzer
             );
         }
 
-        $statements_analyzer->control_flow_graph->addNode($method_source);
+        $statements_analyzer->data_flow_graph->addNode($method_source);
 
         $return_type_candidate->parent_nodes = [$method_source->id => $method_source];
 
@@ -1471,7 +1471,7 @@ class StaticCallAnalyzer extends CallAnalyzer
 
             $method_node->taints = $method_storage->taint_source_types;
 
-            $statements_analyzer->control_flow_graph->addSource($method_node);
+            $statements_analyzer->data_flow_graph->addSource($method_node);
         }
     }
 
@@ -1518,7 +1518,7 @@ class StaticCallAnalyzer extends CallAnalyzer
 
         $method_storage = null;
 
-        if ($statements_analyzer->control_flow_graph) {
+        if ($statements_analyzer->data_flow_graph) {
             try {
                 $method_storage = $codebase->methods->getStorage($method_id);
 

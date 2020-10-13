@@ -535,7 +535,7 @@ class InstancePropertyAssignmentAnalyzer
                     }
                 }
 
-                if ($statements_analyzer->control_flow_graph && !$context->collect_initializations) {
+                if ($statements_analyzer->data_flow_graph && !$context->collect_initializations) {
                     $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
                     self::taintProperty(
@@ -1158,11 +1158,11 @@ class InstancePropertyAssignmentAnalyzer
         Type\Union $assignment_value_type,
         Context $context
     ) : void {
-        if (!$statements_analyzer->control_flow_graph) {
+        if (!$statements_analyzer->data_flow_graph) {
             return;
         }
 
-        $control_flow_graph = $statements_analyzer->control_flow_graph;
+        $data_flow_graph = $statements_analyzer->data_flow_graph;
 
         $var_location = new CodeLocation($statements_analyzer->getSource(), $stmt->var);
         $property_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
@@ -1181,7 +1181,7 @@ class InstancePropertyAssignmentAnalyzer
             );
 
             if ($var_id) {
-                if ($statements_analyzer->control_flow_graph instanceof TaintFlowGraph
+                if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
                     && \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
                 ) {
                     $context->vars_in_scope[$var_id]->parent_nodes = [];
@@ -1193,16 +1193,16 @@ class InstancePropertyAssignmentAnalyzer
                     $var_location
                 );
 
-                $control_flow_graph->addNode($var_node);
+                $data_flow_graph->addNode($var_node);
 
                 $property_node = DataFlowNode::getForAssignment(
                     $var_property_id ?: $var_id . '->$property',
                     $property_location
                 );
 
-                $control_flow_graph->addNode($property_node);
+                $data_flow_graph->addNode($property_node);
 
-                $control_flow_graph->addPath(
+                $data_flow_graph->addPath(
                     $property_node,
                     $var_node,
                     'property-assignment'
@@ -1211,7 +1211,7 @@ class InstancePropertyAssignmentAnalyzer
 
                 if ($assignment_value_type->parent_nodes) {
                     foreach ($assignment_value_type->parent_nodes as $parent_node) {
-                        $control_flow_graph->addPath($parent_node, $property_node, '=');
+                        $data_flow_graph->addPath($parent_node, $property_node, '=');
                     }
                 }
 
@@ -1219,7 +1219,7 @@ class InstancePropertyAssignmentAnalyzer
 
                 if ($context->vars_in_scope[$var_id]->parent_nodes) {
                     foreach ($context->vars_in_scope[$var_id]->parent_nodes as $parent_node) {
-                        $control_flow_graph->addPath($parent_node, $var_node, '=');
+                        $data_flow_graph->addPath($parent_node, $var_node, '=');
                     }
                 }
 
@@ -1228,7 +1228,7 @@ class InstancePropertyAssignmentAnalyzer
                 $context->vars_in_scope[$var_id] = $stmt_var_type;
             }
         } else {
-            if ($statements_analyzer->control_flow_graph instanceof TaintFlowGraph
+            if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
                 && \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
             ) {
                 $assignment_value_type->parent_nodes = [];
@@ -1244,7 +1244,7 @@ class InstancePropertyAssignmentAnalyzer
                 null
             );
 
-            $control_flow_graph->addNode($localized_property_node);
+            $data_flow_graph->addNode($localized_property_node);
 
             $property_node = new DataFlowNode(
                 $property_id,
@@ -1253,13 +1253,13 @@ class InstancePropertyAssignmentAnalyzer
                 null
             );
 
-            $control_flow_graph->addNode($property_node);
+            $data_flow_graph->addNode($property_node);
 
-            $control_flow_graph->addPath($localized_property_node, $property_node, 'property-assignment');
+            $data_flow_graph->addPath($localized_property_node, $property_node, 'property-assignment');
 
             if ($assignment_value_type->parent_nodes) {
                 foreach ($assignment_value_type->parent_nodes as $parent_node) {
-                    $control_flow_graph->addPath($parent_node, $localized_property_node, '=');
+                    $data_flow_graph->addPath($parent_node, $localized_property_node, '=');
                 }
             }
         }

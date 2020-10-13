@@ -321,11 +321,11 @@ class ArrayFetchAnalyzer
         Type\Union $stmt_type,
         Type\Union $offset_type
     ) : void {
-        if ($statements_analyzer->control_flow_graph
+        if ($statements_analyzer->data_flow_graph
             && ($stmt_var_type = $statements_analyzer->node_data->getType($var))
             && $stmt_var_type->parent_nodes
         ) {
-            if ($statements_analyzer->control_flow_graph instanceof TaintFlowGraph
+            if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
                 && \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
             ) {
                 $stmt_var_type->parent_nodes = [];
@@ -339,7 +339,7 @@ class ArrayFetchAnalyzer
                 $var_location
             );
 
-            $statements_analyzer->control_flow_graph->addNode($new_parent_node);
+            $statements_analyzer->data_flow_graph->addNode($new_parent_node);
 
             $dim_value = $offset_type->isSingleStringLiteral()
                 ? $offset_type->getSingleStringLiteral()->value
@@ -348,14 +348,14 @@ class ArrayFetchAnalyzer
                     : null);
 
             foreach ($stmt_var_type->parent_nodes as $parent_node) {
-                $statements_analyzer->control_flow_graph->addPath(
+                $statements_analyzer->data_flow_graph->addPath(
                     $parent_node,
                     $new_parent_node,
                     'array-fetch' . ($dim_value !== null ? '-\'' . $dim_value . '\'' : '')
                 );
 
                 if ($stmt_type->by_ref) {
-                    $statements_analyzer->control_flow_graph->addPath(
+                    $statements_analyzer->data_flow_graph->addPath(
                         $new_parent_node,
                         $parent_node,
                         'array-assignment' . ($dim_value !== null ? '-\'' . $dim_value . '\'' : '')

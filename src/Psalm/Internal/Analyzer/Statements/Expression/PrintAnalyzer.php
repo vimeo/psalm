@@ -26,7 +26,7 @@ class PrintAnalyzer
             return false;
         }
 
-        if ($statements_analyzer->control_flow_graph instanceof TaintFlowGraph) {
+        if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
             $call_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
             $print_param_sink = TaintSink::getForMethodArgument(
@@ -43,7 +43,7 @@ class PrintAnalyzer
                 Type\TaintKind::SYSTEM_SECRET
             ];
 
-            $statements_analyzer->control_flow_graph->addSink($print_param_sink);
+            $statements_analyzer->data_flow_graph->addSink($print_param_sink);
         }
 
         if ($stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr)) {

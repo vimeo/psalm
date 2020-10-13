@@ -103,7 +103,7 @@ class IncludeAnalyzer
         }
 
         if ($stmt_expr_type
-            && $statements_analyzer->control_flow_graph instanceof TaintFlowGraph
+            && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph
             && $stmt_expr_type->parent_nodes
             && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
         ) {
@@ -118,10 +118,10 @@ class IncludeAnalyzer
 
             $include_param_sink->taints = [\Psalm\Type\TaintKind::INPUT_TEXT];
 
-            $statements_analyzer->control_flow_graph->addSink($include_param_sink);
+            $statements_analyzer->data_flow_graph->addSink($include_param_sink);
 
             foreach ($stmt_expr_type->parent_nodes as $parent_node) {
-                $statements_analyzer->control_flow_graph->addPath($parent_node, $include_param_sink, 'arg');
+                $statements_analyzer->data_flow_graph->addPath($parent_node, $include_param_sink, 'arg');
             }
         }
 

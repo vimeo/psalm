@@ -216,7 +216,7 @@ class ReturnAnalyzer
                     $source->getParentFQCLN()
                 );
 
-                if ($statements_analyzer->control_flow_graph instanceof TaintFlowGraph) {
+                if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
                     self::handleTaints(
                         $statements_analyzer,
                         $stmt,
@@ -523,7 +523,7 @@ class ReturnAnalyzer
         Type\Union $inferred_type,
         \Psalm\Storage\FunctionLikeStorage $storage
     ) : void {
-        if (!$statements_analyzer->control_flow_graph instanceof TaintFlowGraph
+        if (!$statements_analyzer->data_flow_graph instanceof TaintFlowGraph
             || !$stmt->expr
             || !$storage->location
         ) {
@@ -536,11 +536,11 @@ class ReturnAnalyzer
             $storage->signature_return_type_location ?: $storage->location,
         );
 
-        $statements_analyzer->control_flow_graph->addNode($method_node);
+        $statements_analyzer->data_flow_graph->addNode($method_node);
 
         if ($inferred_type->parent_nodes) {
             foreach ($inferred_type->parent_nodes as $parent_node) {
-                $statements_analyzer->control_flow_graph->addPath(
+                $statements_analyzer->data_flow_graph->addPath(
                     $parent_node,
                     $method_node,
                     'return',

@@ -213,7 +213,7 @@ class ArgumentAnalyzer
         bool $in_call_map
     ): ?bool {
         if (!$function_param->type) {
-            if (!$codebase->infer_types_from_usage && !$statements_analyzer->control_flow_graph) {
+            if (!$codebase->infer_types_from_usage && !$statements_analyzer->data_flow_graph) {
                 return null;
             }
 
@@ -1231,8 +1231,8 @@ class ArgumentAnalyzer
     ) : Type\Union {
         $codebase = $statements_analyzer->getCodebase();
 
-        if (!$statements_analyzer->control_flow_graph
-            || ($statements_analyzer->control_flow_graph instanceof TaintFlowGraph
+        if (!$statements_analyzer->data_flow_graph
+            || ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
                 && \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues()))
         ) {
             return $input_type;
@@ -1284,8 +1284,8 @@ class ArgumentAnalyzer
                         null
                     );
 
-                    $statements_analyzer->control_flow_graph->addNode($new_sink);
-                    $statements_analyzer->control_flow_graph->addPath($method_node, $new_sink, 'arg');
+                    $statements_analyzer->data_flow_graph->addNode($new_sink);
+                    $statements_analyzer->data_flow_graph->addPath($method_node, $new_sink, 'arg');
                 }
 
                 if (isset($class_storage->overridden_method_ids[$method_name])) {
@@ -1298,25 +1298,25 @@ class ArgumentAnalyzer
                             null
                         );
 
-                        $statements_analyzer->control_flow_graph->addNode($new_sink);
-                        $statements_analyzer->control_flow_graph->addPath($method_node, $new_sink, 'arg');
+                        $statements_analyzer->data_flow_graph->addNode($new_sink);
+                        $statements_analyzer->data_flow_graph->addPath($method_node, $new_sink, 'arg');
                     }
                 }
             }
         }
 
-        $statements_analyzer->control_flow_graph->addNode($method_node);
+        $statements_analyzer->data_flow_graph->addNode($method_node);
 
         $argument_value_node = DataFlowNode::getForAssignment(
             'call to ' . $cased_method_id,
             $arg_location
         );
 
-        $statements_analyzer->control_flow_graph->addNode($argument_value_node);
+        $statements_analyzer->data_flow_graph->addNode($argument_value_node);
 
-        $statements_analyzer->control_flow_graph->addPath($argument_value_node, $method_node, 'arg');
+        $statements_analyzer->data_flow_graph->addPath($argument_value_node, $method_node, 'arg');
 
-        if ($function_param->sinks && $statements_analyzer->control_flow_graph instanceof TaintFlowGraph) {
+        if ($function_param->sinks && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
             if ($specialize_taint) {
                 $sink = TaintSink::getForMethodArgument(
                     $cased_method_id,
@@ -1336,12 +1336,12 @@ class ArgumentAnalyzer
 
             $sink->taints = $function_param->sinks;
 
-            $statements_analyzer->control_flow_graph->addSink($sink);
+            $statements_analyzer->data_flow_graph->addSink($sink);
         }
 
         foreach ($input_type->parent_nodes as $parent_node) {
-            $statements_analyzer->control_flow_graph->addNode($method_node);
-            $statements_analyzer->control_flow_graph->addPath($parent_node, $argument_value_node, 'arg');
+            $statements_analyzer->data_flow_graph->addNode($method_node);
+            $statements_analyzer->data_flow_graph->addPath($parent_node, $argument_value_node, 'arg');
         }
 
         if ($function_param->assert_untainted) {

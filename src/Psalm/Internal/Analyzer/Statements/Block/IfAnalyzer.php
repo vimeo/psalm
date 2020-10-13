@@ -393,7 +393,7 @@ class IfAnalyzer
         if ($if_scope->new_vars) {
             foreach ($if_scope->new_vars as $var_id => $type) {
                 if (isset($context->vars_possibly_in_scope[$var_id])
-                    && $statements_analyzer->control_flow_graph
+                    && $statements_analyzer->data_flow_graph
                 ) {
                     $type->parent_nodes += $statements_analyzer->getParentNodesForPossiblyUndefinedVariable($var_id);
                 }

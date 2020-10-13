@@ -59,8 +59,8 @@ class CastAnalyzer
             if ($as_int) {
                 $type = Type::getInt();
 
-                if ($statements_analyzer->control_flow_graph
-                    && $statements_analyzer->control_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph
+                if ($statements_analyzer->data_flow_graph
+                    && $statements_analyzer->data_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph
                 ) {
                     $type->parent_nodes = $maybe_type ? $maybe_type->parent_nodes : [];
                 }
@@ -213,7 +213,7 @@ class CastAnalyzer
 
         $parent_nodes = [];
 
-        if ($statements_analyzer->control_flow_graph) {
+        if ($statements_analyzer->data_flow_graph) {
             $parent_nodes = $stmt_type->parent_nodes;
         }
 
@@ -289,7 +289,7 @@ class CastAnalyzer
                                 $context
                             );
 
-                            if ($statements_analyzer->control_flow_graph) {
+                            if ($statements_analyzer->data_flow_graph) {
                                 $parent_nodes = array_merge($return_type->parent_nodes, $parent_nodes);
                             }
 
@@ -358,7 +358,7 @@ class CastAnalyzer
             );
         }
 
-        if ($statements_analyzer->control_flow_graph) {
+        if ($statements_analyzer->data_flow_graph) {
             $str_type->parent_nodes = $parent_nodes;
         }
 
