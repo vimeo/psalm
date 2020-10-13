@@ -3,10 +3,10 @@
 namespace Psalm\Internal\Codebase;
 
 use Psalm\CodeLocation;
-use Psalm\Internal\ControlFlow\Path;
-use Psalm\Internal\ControlFlow\TaintSink;
-use Psalm\Internal\ControlFlow\TaintSource;
-use Psalm\Internal\ControlFlow\ControlFlowNode;
+use Psalm\Internal\DataFlow\Path;
+use Psalm\Internal\DataFlow\TaintSink;
+use Psalm\Internal\DataFlow\TaintSource;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\IssueBuffer;
 use Psalm\Issue\TaintedInput;
 use function array_merge;
@@ -17,20 +17,20 @@ use function strlen;
 use function array_intersect;
 use function array_reverse;
 
-abstract class ControlFlowGraph
+abstract class DataFlowGraph
 {
     /** @var array<string, array<string, Path>> */
     protected $forward_edges = [];
 
-    abstract public function addNode(ControlFlowNode $node) : void;
+    abstract public function addNode(DataFlowNode $node) : void;
 
     /**
      * @param array<string> $added_taints
      * @param array<string> $removed_taints
      */
     public function addPath(
-        ControlFlowNode $from,
-        ControlFlowNode $to,
+        DataFlowNode $from,
+        DataFlowNode $to,
         string $path_type,
         ?array $added_taints = null,
         ?array $removed_taints = null

@@ -65,7 +65,7 @@ class IncDecExpressionAnalyzer
 
             $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
-            BinaryOpAnalyzer::addControlFlow(
+            BinaryOpAnalyzer::addDataFlow(
                 $statements_analyzer,
                 $stmt,
                 $stmt->var,

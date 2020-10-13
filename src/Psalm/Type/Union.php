@@ -161,7 +161,7 @@ class Union implements TypeNode
     private $id;
 
     /**
-     * @var array<string, \Psalm\Internal\ControlFlow\ControlFlowNode>
+     * @var array<string, \Psalm\Internal\DataFlow\DataFlowNode>
      */
     public $parent_nodes = [];
 

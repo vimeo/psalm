@@ -4,7 +4,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression;
 use PhpParser;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\ControlFlow\TaintSink;
+use Psalm\Internal\DataFlow\TaintSink;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\CodeLocation;
 use Psalm\Config;

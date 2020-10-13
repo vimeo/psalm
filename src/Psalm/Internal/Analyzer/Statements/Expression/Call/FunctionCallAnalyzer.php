@@ -15,8 +15,8 @@ use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
-use Psalm\Internal\ControlFlow\TaintSource;
-use Psalm\Internal\ControlFlow\ControlFlowNode;
+use Psalm\Internal\DataFlow\TaintSource;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Issue\DeprecatedFunction;
 use Psalm\Issue\ForbiddenCode;
@@ -1310,7 +1310,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
 
         $node_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
-        $function_call_node = ControlFlowNode::getForMethodReturn(
+        $function_call_node = DataFlowNode::getForMethodReturn(
             $function_id,
             $function_id,
             $function_storage->signature_return_type_location ?: $function_storage->location,
@@ -1361,7 +1361,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     $stmt->args[$i]->value
                 );
 
-                $function_param_sink = ControlFlowNode::getForMethodArgument(
+                $function_param_sink = DataFlowNode::getForMethodArgument(
                     $function_id,
                     $function_id,
                     $i,
@@ -1794,7 +1794,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     foreach ($source->param_nodes as $param_node) {
                         $statements_analyzer->control_flow_graph->addPath(
                             $param_node,
-                            new ControlFlowNode('variable-use', 'variable use', null),
+                            new DataFlowNode('variable-use', 'variable use', null),
                             'variable-use'
                         );
                     }

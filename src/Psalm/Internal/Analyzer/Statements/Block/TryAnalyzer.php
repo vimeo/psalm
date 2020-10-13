@@ -5,7 +5,7 @@ use PhpParser;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\ControlFlow\ControlFlowNode;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\InvalidCatch;
@@ -324,7 +324,7 @@ class TryAnalyzer
                 }
 
                 if ($statements_analyzer->control_flow_graph) {
-                    $catch_var_node = ControlFlowNode::getForAssignment($catch_var_id, $location);
+                    $catch_var_node = DataFlowNode::getForAssignment($catch_var_id, $location);
 
                     $catch_context->vars_in_scope[$catch_var_id]->parent_nodes = [
                         $catch_var_node->id => $catch_var_node
@@ -333,7 +333,7 @@ class TryAnalyzer
                     if ($statements_analyzer->control_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph) {
                         $statements_analyzer->control_flow_graph->addPath(
                             $catch_var_node,
-                            new ControlFlowNode('variable-use', 'variable use', null),
+                            new DataFlowNode('variable-use', 'variable use', null),
                             'variable-use'
                         );
                     }

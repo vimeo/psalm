@@ -8,7 +8,7 @@ use Psalm\Issue\DuplicateParam;
 use Psalm\Issue\PossiblyUndefinedVariable;
 use Psalm\Issue\UndefinedVariable;
 use Psalm\IssueBuffer;
-use Psalm\Internal\ControlFlow\ControlFlowNode;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use function strpos;
@@ -148,7 +148,7 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
                     foreach ($parent_nodes as $parent_node) {
                         $statements_analyzer->control_flow_graph->addPath(
                             $parent_node,
-                            new ControlFlowNode('closure-use', 'closure use', null),
+                            new DataFlowNode('closure-use', 'closure use', null),
                             'closure-use'
                         );
                     }

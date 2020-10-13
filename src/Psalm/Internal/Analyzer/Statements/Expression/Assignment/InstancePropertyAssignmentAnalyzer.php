@@ -47,7 +47,7 @@ use Psalm\Type\Atomic\TObject;
 use function count;
 use function in_array;
 use function strtolower;
-use Psalm\Internal\ControlFlow\ControlFlowNode;
+use Psalm\Internal\DataFlow\DataFlowNode;
 
 /**
  * @internal
@@ -1188,14 +1188,14 @@ class InstancePropertyAssignmentAnalyzer
                     return;
                 }
 
-                $var_node = ControlFlowNode::getForAssignment(
+                $var_node = DataFlowNode::getForAssignment(
                     $var_id,
                     $var_location
                 );
 
                 $control_flow_graph->addNode($var_node);
 
-                $property_node = ControlFlowNode::getForAssignment(
+                $property_node = DataFlowNode::getForAssignment(
                     $var_property_id ?: $var_id . '->$property',
                     $property_location
                 );
@@ -1237,7 +1237,7 @@ class InstancePropertyAssignmentAnalyzer
 
             $code_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
-            $localized_property_node = new ControlFlowNode(
+            $localized_property_node = new DataFlowNode(
                 $property_id . '-' . $code_location->file_name . ':' . $code_location->raw_file_start,
                 $property_id,
                 $code_location,
@@ -1246,7 +1246,7 @@ class InstancePropertyAssignmentAnalyzer
 
             $control_flow_graph->addNode($localized_property_node);
 
-            $property_node = new ControlFlowNode(
+            $property_node = new DataFlowNode(
                 $property_id,
                 $property_id,
                 null,

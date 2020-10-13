@@ -5,7 +5,7 @@ use PhpParser;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CastAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\ControlFlow\TaintSink;
+use Psalm\Internal\DataFlow\TaintSink;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\CodeLocation;
 use Psalm\Context;

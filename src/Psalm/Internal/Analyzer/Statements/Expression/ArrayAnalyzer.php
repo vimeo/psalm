@@ -213,7 +213,7 @@ class ArrayAnalyzer
                     if ($item_value_type->parent_nodes) {
                         $var_location = new CodeLocation($statements_analyzer->getSource(), $item);
 
-                        $new_parent_node = \Psalm\Internal\ControlFlow\ControlFlowNode::getForAssignment(
+                        $new_parent_node = \Psalm\Internal\DataFlow\DataFlowNode::getForAssignment(
                             'array'
                                 . ($item_key_value !== null ? '[\'' . $item_key_value . '\']' : ''),
                             $var_location

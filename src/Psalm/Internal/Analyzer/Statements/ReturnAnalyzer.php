@@ -14,7 +14,7 @@ use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Exception\DocblockParseException;
-use Psalm\Internal\ControlFlow\ControlFlowNode;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Issue\FalsableReturnStatement;
@@ -530,7 +530,7 @@ class ReturnAnalyzer
             return;
         }
 
-        $method_node = ControlFlowNode::getForMethodReturn(
+        $method_node = DataFlowNode::getForMethodReturn(
             strtolower($cased_method_id),
             $cased_method_id,
             $storage->signature_return_type_location ?: $storage->location,

@@ -1594,7 +1594,7 @@ class Codebase
             return;
         }
 
-        $source = new \Psalm\Internal\ControlFlow\TaintSource(
+        $source = new \Psalm\Internal\DataFlow\TaintSource(
             $taint_id,
             $taint_id,
             $code_location,
@@ -1623,7 +1623,7 @@ class Codebase
             return;
         }
 
-        $sink = new \Psalm\Internal\ControlFlow\TaintSink(
+        $sink = new \Psalm\Internal\DataFlow\TaintSink(
             $taint_id,
             $taint_id,
             $code_location,

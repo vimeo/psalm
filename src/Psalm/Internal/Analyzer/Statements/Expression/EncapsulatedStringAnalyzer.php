@@ -4,7 +4,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression;
 use PhpParser;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\ControlFlow\ControlFlowNode;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Type;
@@ -38,7 +38,7 @@ class EncapsulatedStringAnalyzer
                 ) {
                     $var_location = new CodeLocation($statements_analyzer, $part);
 
-                    $new_parent_node = ControlFlowNode::getForAssignment('concat', $var_location);
+                    $new_parent_node = DataFlowNode::getForAssignment('concat', $var_location);
                     $statements_analyzer->control_flow_graph->addNode($new_parent_node);
 
                     $stmt_type->parent_nodes[$new_parent_node->id] = $new_parent_node;

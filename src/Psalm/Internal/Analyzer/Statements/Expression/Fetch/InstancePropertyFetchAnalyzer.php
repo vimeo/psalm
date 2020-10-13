@@ -42,7 +42,7 @@ use function strtolower;
 use function array_values;
 use function in_array;
 use function array_keys;
-use Psalm\Internal\ControlFlow\ControlFlowNode;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 
 /**
@@ -1229,14 +1229,14 @@ class InstancePropertyFetchAnalyzer
                     return;
                 }
 
-                $var_node = ControlFlowNode::getForAssignment(
+                $var_node = DataFlowNode::getForAssignment(
                     $var_id,
                     $var_location
                 );
 
                 $control_flow_graph->addNode($var_node);
 
-                $property_node = ControlFlowNode::getForAssignment(
+                $property_node = DataFlowNode::getForAssignment(
                     $var_property_id ?: $var_id . '->$property',
                     $property_location
                 );
@@ -1265,7 +1265,7 @@ class InstancePropertyFetchAnalyzer
         } else {
             $code_location = new CodeLocation($statements_analyzer, $stmt->name);
 
-            $localized_property_node = new ControlFlowNode(
+            $localized_property_node = new DataFlowNode(
                 $property_id . '-' . $code_location->file_name . ':' . $code_location->raw_file_start,
                 $property_id,
                 $code_location,
@@ -1274,7 +1274,7 @@ class InstancePropertyFetchAnalyzer
 
             $control_flow_graph->addNode($localized_property_node);
 
-            $property_node = new ControlFlowNode(
+            $property_node = new DataFlowNode(
                 $property_id,
                 $property_id,
                 null,

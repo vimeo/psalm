@@ -68,7 +68,7 @@ class NonComparisonOpAnalyzer
 
             $statements_analyzer->node_data->setType($stmt, $result_type);
 
-            BinaryOpAnalyzer::addControlFlow(
+            BinaryOpAnalyzer::addDataFlow(
                 $statements_analyzer,
                 $stmt,
                 $stmt->left,
@@ -84,7 +84,7 @@ class NonComparisonOpAnalyzer
                 $statements_analyzer->node_data->setType($stmt, Type::getInt());
             }
 
-            BinaryOpAnalyzer::addControlFlow(
+            BinaryOpAnalyzer::addDataFlow(
                 $statements_analyzer,
                 $stmt,
                 $stmt->left,
@@ -100,7 +100,7 @@ class NonComparisonOpAnalyzer
                 $statements_analyzer->node_data->setType($stmt, Type::getBool());
             }
 
-            BinaryOpAnalyzer::addControlFlow(
+            BinaryOpAnalyzer::addDataFlow(
                 $statements_analyzer,
                 $stmt,
                 $stmt->left,
@@ -130,7 +130,7 @@ class NonComparisonOpAnalyzer
 
             $statements_analyzer->node_data->setType($stmt, $result_type);
 
-            BinaryOpAnalyzer::addControlFlow(
+            BinaryOpAnalyzer::addDataFlow(
                 $statements_analyzer,
                 $stmt,
                 $stmt->left,
@@ -152,7 +152,7 @@ class NonComparisonOpAnalyzer
                 $context
             );
 
-            BinaryOpAnalyzer::addControlFlow(
+            BinaryOpAnalyzer::addDataFlow(
                 $statements_analyzer,
                 $stmt,
                 $stmt->left,

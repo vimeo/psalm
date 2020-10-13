@@ -6,9 +6,9 @@ use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\ControlFlow\TaintSource;
+use Psalm\Internal\DataFlow\TaintSource;
 use Psalm\Internal\Codebase\TaintFlowGraph;
-use Psalm\Internal\ControlFlow\ControlFlowNode;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\ImpureVariable;
@@ -135,7 +135,7 @@ class VariableFetchAnalyzer
 
                     $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
-                    self::addControlFlowToVariable($statements_analyzer, $stmt, $var_name, $stmt_type, $context);
+                    self::addDataFlowToVariable($statements_analyzer, $stmt, $var_name, $stmt_type, $context);
                 }
             } else {
                 $statements_analyzer->node_data->setType($stmt, Type::getMixed());
@@ -335,7 +335,7 @@ class VariableFetchAnalyzer
 
                 $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
-                self::addControlFlowToVariable($statements_analyzer, $stmt, $var_name, $stmt_type, $context);
+                self::addDataFlowToVariable($statements_analyzer, $stmt, $var_name, $stmt_type, $context);
 
                 $statements_analyzer->registerPossiblyUndefinedVariable($var_name, $stmt);
 
@@ -346,7 +346,7 @@ class VariableFetchAnalyzer
 
             $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
-            self::addControlFlowToVariable($statements_analyzer, $stmt, $var_name, $stmt_type, $context);
+            self::addDataFlowToVariable($statements_analyzer, $stmt, $var_name, $stmt_type, $context);
 
             if ($stmt_type->possibly_undefined_from_try && !$context->inside_isset) {
                 if ($context->is_global) {
@@ -405,7 +405,7 @@ class VariableFetchAnalyzer
         return true;
     }
 
-    private static function addControlFlowToVariable(
+    private static function addDataFlowToVariable(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Variable $stmt,
         string $var_name,
@@ -422,7 +422,7 @@ class VariableFetchAnalyzer
                 || $context->inside_isset)
         ) {
             if (!$stmt_type->parent_nodes) {
-                $assignment_node = ControlFlowNode::getForAssignment(
+                $assignment_node = DataFlowNode::getForAssignment(
                     $var_name,
                     new CodeLocation($statements_analyzer->getSource(), $stmt)
                 );
@@ -436,7 +436,7 @@ class VariableFetchAnalyzer
                 if ($context->inside_call) {
                     $statements_analyzer->control_flow_graph->addPath(
                         $parent_node,
-                        new ControlFlowNode(
+                        new DataFlowNode(
                             'variable-use',
                             'variable use',
                             null
@@ -446,7 +446,7 @@ class VariableFetchAnalyzer
                 } elseif ($context->inside_conditional) {
                     $statements_analyzer->control_flow_graph->addPath(
                         $parent_node,
-                        new ControlFlowNode(
+                        new DataFlowNode(
                             'variable-use',
                             'variable use',
                             null
@@ -456,7 +456,7 @@ class VariableFetchAnalyzer
                 } elseif ($context->inside_isset) {
                     $statements_analyzer->control_flow_graph->addPath(
                         $parent_node,
-                        new ControlFlowNode(
+                        new DataFlowNode(
                             'variable-use',
                             'variable use',
                             null
@@ -466,7 +466,7 @@ class VariableFetchAnalyzer
                 } else {
                     $statements_analyzer->control_flow_graph->addPath(
                         $parent_node,
-                        new ControlFlowNode(
+                        new DataFlowNode(
                             'variable-use',
                             'variable use',
                             null

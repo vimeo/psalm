@@ -7,7 +7,7 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\ControlFlow\ControlFlowNode;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\CodeLocation;
 use Psalm\Context;
@@ -665,14 +665,14 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                     if ($storage->external_mutation_free
                         || ($method_storage && $method_storage->specialize_call)
                     ) {
-                        $method_source = ControlFlowNode::getForMethodReturn(
+                        $method_source = DataFlowNode::getForMethodReturn(
                             (string) $method_id,
                             $fq_class_name . '::__construct',
                             $storage->location,
                             $code_location
                         );
                     } else {
-                        $method_source = ControlFlowNode::getForMethodReturn(
+                        $method_source = DataFlowNode::getForMethodReturn(
                             (string) $method_id,
                             $fq_class_name . '::__construct',
                             $storage->location

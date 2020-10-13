@@ -1,6 +1,6 @@
 <?php
 
-namespace Psalm\Internal\ControlFlow;
+namespace Psalm\Internal\DataFlow;
 
 use Psalm\CodeLocation;
 use function strtolower;
@@ -8,7 +8,7 @@ use function strtolower;
 /**
  * @psalm-consistent-constructor
  */
-class ControlFlowNode
+class DataFlowNode
 {
     /** @var string */
     public $id;

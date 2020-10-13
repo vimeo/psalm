@@ -3,10 +3,10 @@
 namespace Psalm\Internal\Codebase;
 
 use Psalm\CodeLocation;
-use Psalm\Internal\ControlFlow\Path;
-use Psalm\Internal\ControlFlow\TaintSink;
-use Psalm\Internal\ControlFlow\TaintSource;
-use Psalm\Internal\ControlFlow\ControlFlowNode;
+use Psalm\Internal\DataFlow\Path;
+use Psalm\Internal\DataFlow\TaintSink;
+use Psalm\Internal\DataFlow\TaintSource;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\IssueBuffer;
 use Psalm\Issue\TaintedInput;
 use function array_merge;
@@ -17,13 +17,13 @@ use function strlen;
 use function array_intersect;
 use function array_reverse;
 
-class VariableUseGraph extends ControlFlowGraph
+class VariableUseGraph extends DataFlowGraph
 {
-    public function addNode(ControlFlowNode $node) : void
+    public function addNode(DataFlowNode $node) : void
     {
     }
 
-    public function isVariableUsed(ControlFlowNode $assignment_node) : bool
+    public function isVariableUsed(DataFlowNode $assignment_node) : bool
     {
         $visited_source_ids = [];
 
@@ -58,10 +58,10 @@ class VariableUseGraph extends ControlFlowGraph
 
     /**
      * @param array<string, bool> $visited_source_ids
-     * @return ?array<ControlFlowNode>
+     * @return ?array<DataFlowNode>
      */
     private function getChildNodes(
-        ControlFlowNode $generated_source,
+        DataFlowNode $generated_source,
         array $visited_source_ids
     ) : ?array {
         $new_sources = [];
@@ -98,7 +98,7 @@ class VariableUseGraph extends ControlFlowGraph
                 continue;
             }
 
-            $new_destination = new ControlFlowNode($to_id, $to_id, null);
+            $new_destination = new DataFlowNode($to_id, $to_id, null);
             $new_destination->path_types = array_merge($generated_source->path_types, [$path_type]);
 
             $new_sources[$to_id] = $new_destination;

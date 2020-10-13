@@ -12,8 +12,8 @@ use Psalm\Internal\Analyzer\Statements\Expression\CastAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
-use Psalm\Internal\ControlFlow\TaintSink;
-use Psalm\Internal\ControlFlow\ControlFlowNode;
+use Psalm\Internal\DataFlow\TaintSink;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\UnionTemplateHandler;
@@ -1252,7 +1252,7 @@ class ArgumentAnalyzer
         }
 
         if ($specialize_taint) {
-            $method_node = ControlFlowNode::getForMethodArgument(
+            $method_node = DataFlowNode::getForMethodArgument(
                 $cased_method_id,
                 $cased_method_id,
                 $argument_offset,
@@ -1260,7 +1260,7 @@ class ArgumentAnalyzer
                 $function_call_location
             );
         } else {
-            $method_node = ControlFlowNode::getForMethodArgument(
+            $method_node = DataFlowNode::getForMethodArgument(
                 $cased_method_id,
                 $cased_method_id,
                 $argument_offset,
@@ -1276,7 +1276,7 @@ class ArgumentAnalyzer
                     $dependent_classlike_storage = $codebase->classlike_storage_provider->get(
                         $dependent_classlike_lc
                     );
-                    $new_sink = ControlFlowNode::getForMethodArgument(
+                    $new_sink = DataFlowNode::getForMethodArgument(
                         $dependent_classlike_lc . '::' . $method_name,
                         $dependent_classlike_storage->name . '::' . $cased_method_name,
                         $argument_offset,
@@ -1290,7 +1290,7 @@ class ArgumentAnalyzer
 
                 if (isset($class_storage->overridden_method_ids[$method_name])) {
                     foreach ($class_storage->overridden_method_ids[$method_name] as $parent_method_id) {
-                        $new_sink = ControlFlowNode::getForMethodArgument(
+                        $new_sink = DataFlowNode::getForMethodArgument(
                             (string) $parent_method_id,
                             $codebase->methods->getCasedMethodId($parent_method_id),
                             $argument_offset,
@@ -1307,7 +1307,7 @@ class ArgumentAnalyzer
 
         $statements_analyzer->control_flow_graph->addNode($method_node);
 
-        $argument_value_node = ControlFlowNode::getForAssignment(
+        $argument_value_node = DataFlowNode::getForAssignment(
             'call to ' . $cased_method_id,
             $arg_location
         );

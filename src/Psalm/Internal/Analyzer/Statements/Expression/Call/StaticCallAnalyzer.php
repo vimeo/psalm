@@ -36,8 +36,8 @@ use function strpos;
 use function is_string;
 use function strlen;
 use function substr;
-use Psalm\Internal\ControlFlow\TaintSource;
-use Psalm\Internal\ControlFlow\ControlFlowNode;
+use Psalm\Internal\DataFlow\TaintSource;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use function array_filter;
 
@@ -1444,14 +1444,14 @@ class StaticCallAnalyzer extends CallAnalyzer
             : null;
 
         if ($method_storage && $method_storage->specialize_call) {
-            $method_source = ControlFlowNode::getForMethodReturn(
+            $method_source = DataFlowNode::getForMethodReturn(
                 (string) $method_id,
                 $cased_method_id,
                 $method_location,
                 $code_location
             );
         } else {
-            $method_source = ControlFlowNode::getForMethodReturn(
+            $method_source = DataFlowNode::getForMethodReturn(
                 (string) $method_id,
                 $cased_method_id,
                 $method_location

@@ -42,7 +42,7 @@ use function strpos;
 use function array_search;
 use function array_keys;
 use function end;
-use Psalm\Internal\ControlFlow\ControlFlowNode;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Storage\FunctionStorage;
 
 /**
@@ -113,7 +113,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     /**
      * Holds param nodes for functions with func_get_args calls
      *
-     * @var array<string, ControlFlowNode>
+     * @var array<string, DataFlowNode>
      */
     public $param_nodes = [];
 
@@ -865,7 +865,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             && isset($context->vars_in_scope['$this'])
             && $context->vars_in_scope['$this']->parent_nodes
         ) {
-            $method_source = ControlFlowNode::getForMethodReturn(
+            $method_source = DataFlowNode::getForMethodReturn(
                 (string) $method_id,
                 $cased_method_id,
                 $storage->location
@@ -992,7 +992,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 continue;
             }
 
-            $assignment_node = ControlFlowNode::getForAssignment($var_name, $original_location);
+            $assignment_node = DataFlowNode::getForAssignment($var_name, $original_location);
 
             if ($statements_analyzer->control_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph
                 && $statements_analyzer->control_flow_graph->isVariableUsed($assignment_node)
@@ -1209,7 +1209,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             if ($statements_analyzer->control_flow_graph
                 && $function_param->location
             ) {
-                $param_assignment = ControlFlowNode::getForAssignment(
+                $param_assignment = DataFlowNode::getForAssignment(
                     '$' . $function_param->name,
                     $function_param->location
                 );
@@ -1217,7 +1217,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $statements_analyzer->control_flow_graph->addNode($param_assignment);
 
                 if ($cased_method_id) {
-                    $type_source = ControlFlowNode::getForMethodArgument(
+                    $type_source = DataFlowNode::getForMethodArgument(
                         $cased_method_id,
                         $cased_method_id,
                         $offset,
@@ -1233,7 +1233,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 ) {
                     $statements_analyzer->control_flow_graph->addPath(
                         $param_assignment,
-                        new ControlFlowNode('variable-use', 'variable use', null),
+                        new DataFlowNode('variable-use', 'variable use', null),
                         'variable-use'
                     );
                 }

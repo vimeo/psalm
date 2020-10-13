@@ -15,7 +15,7 @@ use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Scanner\VarDocblockComment;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\Codebase\TaintFlowGraph;
-use Psalm\Internal\ControlFlow\ControlFlowNode;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Exception\DocblockParseException;
@@ -254,12 +254,12 @@ class AssignmentAnalyzer
             && !$assign_value_type->parent_nodes
         ) {
             if ($array_var_id) {
-                $assignment_node = ControlFlowNode::getForAssignment(
+                $assignment_node = DataFlowNode::getForAssignment(
                     $array_var_id,
                     new CodeLocation($statements_analyzer->getSource(), $assign_var)
                 );
             } else {
-                $assignment_node = new ControlFlowNode('unknown-origin', 'unknown origin', null);
+                $assignment_node = new DataFlowNode('unknown-origin', 'unknown origin', null);
             }
 
             $assign_value_type->parent_nodes = [
@@ -455,12 +455,12 @@ class AssignmentAnalyzer
                         ) {
                             $location = new CodeLocation($statements_analyzer, $assign_var);
 
-                            $byref_node = ControlFlowNode::getForAssignment($var_id, $location);
+                            $byref_node = DataFlowNode::getForAssignment($var_id, $location);
 
                             foreach ($assign_value_type->parent_nodes as $parent_node) {
                                 $statements_analyzer->control_flow_graph->addPath(
                                     $parent_node,
-                                    new ControlFlowNode('variable-use', 'variable use', null),
+                                    new DataFlowNode('variable-use', 'variable use', null),
                                     'variable-use'
                                 );
 
@@ -489,7 +489,7 @@ class AssignmentAnalyzer
                     foreach ($assign_value_type->parent_nodes as $parent_node) {
                         $statements_analyzer->control_flow_graph->addPath(
                             $parent_node,
-                            new ControlFlowNode('variable-use', 'variable use', null),
+                            new DataFlowNode('variable-use', 'variable use', null),
                             'variable-use'
                         );
                     }
@@ -887,7 +887,7 @@ class AssignmentAnalyzer
                             $var_location = new CodeLocation($statements_analyzer->getSource(), $var);
 
                             if (!$context->vars_in_scope[$list_var_id]->parent_nodes) {
-                                $assignment_node = ControlFlowNode::getForAssignment(
+                                $assignment_node = DataFlowNode::getForAssignment(
                                     $list_var_id,
                                     $var_location
                                 );
@@ -901,7 +901,7 @@ class AssignmentAnalyzer
                                 ) {
                                     $context->vars_in_scope[$list_var_id]->parent_nodes = [];
                                 } else {
-                                    $new_parent_node = ControlFlowNode::getForAssignment($list_var_id, $var_location);
+                                    $new_parent_node = DataFlowNode::getForAssignment($list_var_id, $var_location);
 
                                     $statements_analyzer->control_flow_graph->addNode($new_parent_node);
 
@@ -1099,7 +1099,7 @@ class AssignmentAnalyzer
                     } else {
                         $var_location = new CodeLocation($statements_analyzer->getSource(), $assign_var);
 
-                        $new_parent_node = ControlFlowNode::getForAssignment($var_id, $var_location);
+                        $new_parent_node = DataFlowNode::getForAssignment($var_id, $var_location);
 
                         $control_flow_graph->addNode($new_parent_node);
 
@@ -1273,7 +1273,7 @@ class AssignmentAnalyzer
                 $statements_analyzer->node_data->setType($stmt, $fake_coalesce_type);
             }
 
-            BinaryOpAnalyzer::addControlFlow(
+            BinaryOpAnalyzer::addDataFlow(
                 $statements_analyzer,
                 $stmt,
                 $stmt->var,
@@ -1426,7 +1426,7 @@ class AssignmentAnalyzer
 
             $statements_analyzer->node_data->setType($stmt, $result_type);
 
-            BinaryOpAnalyzer::addControlFlow(
+            BinaryOpAnalyzer::addDataFlow(
                 $statements_analyzer,
                 $stmt,
                 $stmt->var,
@@ -1446,7 +1446,7 @@ class AssignmentAnalyzer
                 $statements_analyzer->node_data->setType($stmt, Type::getMixed());
             }
 
-            BinaryOpAnalyzer::addControlFlow(
+            BinaryOpAnalyzer::addDataFlow(
                 $statements_analyzer,
                 $stmt,
                 $stmt->var,
@@ -1466,7 +1466,7 @@ class AssignmentAnalyzer
                 $context->vars_in_scope[$array_var_id] = $result_type;
                 $statements_analyzer->node_data->setType($stmt, clone $context->vars_in_scope[$array_var_id]);
 
-                BinaryOpAnalyzer::addControlFlow(
+                BinaryOpAnalyzer::addDataFlow(
                     $statements_analyzer,
                     $stmt,
                     $stmt->var,
@@ -1495,7 +1495,7 @@ class AssignmentAnalyzer
                 $statements_analyzer->node_data->setType($stmt, $context->vars_in_scope[$array_var_id]);
             }
 
-            BinaryOpAnalyzer::addControlFlow(
+            BinaryOpAnalyzer::addDataFlow(
                 $statements_analyzer,
                 $stmt,
                 $stmt->var,
@@ -1519,7 +1519,7 @@ class AssignmentAnalyzer
                 } else {
                     $var_location = new CodeLocation($statements_analyzer->getSource(), $stmt->var);
 
-                    $new_parent_node = ControlFlowNode::getForAssignment($array_var_id, $var_location);
+                    $new_parent_node = DataFlowNode::getForAssignment($array_var_id, $var_location);
 
                     $control_flow_graph->addNode($new_parent_node);
 
@@ -1626,7 +1626,7 @@ class AssignmentAnalyzer
                 foreach ($context->vars_in_scope[$lhs_var_id]->parent_nodes as $parent_node) {
                     $statements_analyzer->control_flow_graph->addPath(
                         $parent_node,
-                        new ControlFlowNode('variable-use', 'variable use', null),
+                        new DataFlowNode('variable-use', 'variable use', null),
                         'variable-use'
                     );
                 }
@@ -1652,7 +1652,7 @@ class AssignmentAnalyzer
 
             $lhs_location = new CodeLocation($statements_analyzer->getSource(), $stmt->var);
 
-            $lhs_node = ControlFlowNode::getForAssignment($lhs_var_id, $lhs_location);
+            $lhs_node = DataFlowNode::getForAssignment($lhs_var_id, $lhs_location);
 
             foreach ($rhs_type->parent_nodes as $byref_destination_node) {
                 $control_flow_graph->addPath($lhs_node, $byref_destination_node, '=');

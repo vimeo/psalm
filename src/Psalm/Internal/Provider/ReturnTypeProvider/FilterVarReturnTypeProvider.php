@@ -6,7 +6,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\StatementsSource;
 use Psalm\Type;
-use Psalm\Internal\ControlFlow\ControlFlowNode;
+use Psalm\Internal\DataFlow\DataFlowNode;
 
 class FilterVarReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface
 {
@@ -121,7 +121,7 @@ class FilterVarReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTy
         if ($statements_source->control_flow_graph
             && !\in_array('TaintedInput', $statements_source->getSuppressedIssues())
         ) {
-            $function_return_sink = ControlFlowNode::getForMethodReturn(
+            $function_return_sink = DataFlowNode::getForMethodReturn(
                 $function_id,
                 $function_id,
                 null,
@@ -130,7 +130,7 @@ class FilterVarReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTy
 
             $statements_source->control_flow_graph->addNode($function_return_sink);
 
-            $function_param_sink = ControlFlowNode::getForMethodArgument(
+            $function_param_sink = DataFlowNode::getForMethodArgument(
                 $function_id,
                 $function_id,
                 0,

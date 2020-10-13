@@ -3,10 +3,10 @@
 namespace Psalm\Internal\Codebase;
 
 use Psalm\CodeLocation;
-use Psalm\Internal\ControlFlow\Path;
-use Psalm\Internal\ControlFlow\TaintSink;
-use Psalm\Internal\ControlFlow\TaintSource;
-use Psalm\Internal\ControlFlow\ControlFlowNode;
+use Psalm\Internal\DataFlow\Path;
+use Psalm\Internal\DataFlow\TaintSink;
+use Psalm\Internal\DataFlow\TaintSource;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\IssueBuffer;
 use Psalm\Issue\TaintedInput;
 use function array_merge;
@@ -17,12 +17,12 @@ use function strlen;
 use function array_intersect;
 use function array_reverse;
 
-class TaintFlowGraph extends ControlFlowGraph
+class TaintFlowGraph extends DataFlowGraph
 {
     /** @var array<string, TaintSource> */
     private $sources = [];
 
-    /** @var array<string, ControlFlowNode> */
+    /** @var array<string, DataFlowNode> */
     private $nodes = [];
 
     /** @var array<string, TaintSink> */
@@ -34,7 +34,7 @@ class TaintFlowGraph extends ControlFlowGraph
     /** @var array<string, array<string, true>> */
     private $specializations = [];
 
-    public function addNode(ControlFlowNode $node) : void
+    public function addNode(DataFlowNode $node) : void
     {
         $this->nodes[$node->id] = $node;
 
@@ -80,7 +80,7 @@ class TaintFlowGraph extends ControlFlowGraph
         }
     }
 
-    public function getPredecessorPath(ControlFlowNode $source) : string
+    public function getPredecessorPath(DataFlowNode $source) : string
     {
         $location_summary = '';
 
@@ -103,7 +103,7 @@ class TaintFlowGraph extends ControlFlowGraph
         return $source_descriptor;
     }
 
-    public function getSuccessorPath(ControlFlowNode $sink) : string
+    public function getSuccessorPath(DataFlowNode $sink) : string
     {
         $location_summary = '';
 
@@ -129,7 +129,7 @@ class TaintFlowGraph extends ControlFlowGraph
     /**
      * @return list<array{location: ?CodeLocation, label: string, entry_path_type: string}>
      */
-    public function getIssueTrace(ControlFlowNode $source) : array
+    public function getIssueTrace(DataFlowNode $source) : array
     {
         $previous_source = $source->previous;
 
@@ -187,11 +187,11 @@ class TaintFlowGraph extends ControlFlowGraph
 
     /**
      * @param array<string> $source_taints
-     * @param array<ControlFlowNode> $sinks
-     * @return array<ControlFlowNode>
+     * @param array<DataFlowNode> $sinks
+     * @return array<DataFlowNode>
      */
     private function getChildNodes(
-        ControlFlowNode $generated_source,
+        DataFlowNode $generated_source,
         array $source_taints,
         array $sinks,
         array $visited_source_ids
@@ -272,8 +272,8 @@ class TaintFlowGraph extends ControlFlowGraph
         return $new_sources;
     }
 
-    /** @return array<ControlFlowNode> */
-    private function getSpecializedSources(ControlFlowNode $source) : array
+    /** @return array<DataFlowNode> */
+    private function getSpecializedSources(DataFlowNode $source) : array
     {
         $generated_sources = [];
 

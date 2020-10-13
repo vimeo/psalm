@@ -795,7 +795,7 @@ class ArrayAssignmentAnalyzer
             if (!$stmt_type->parent_nodes) {
                 $var_location = new \Psalm\CodeLocation($statements_analyzer->getSource(), $expr->var);
 
-                $parent_node = \Psalm\Internal\ControlFlow\ControlFlowNode::getForAssignment(
+                $parent_node = \Psalm\Internal\DataFlow\DataFlowNode::getForAssignment(
                     $var_var_id ?: 'assignment',
                     $var_location
                 );

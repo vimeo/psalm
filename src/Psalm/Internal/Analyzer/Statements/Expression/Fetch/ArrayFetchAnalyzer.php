@@ -334,7 +334,7 @@ class ArrayFetchAnalyzer
 
             $var_location = new CodeLocation($statements_analyzer->getSource(), $var);
 
-            $new_parent_node = \Psalm\Internal\ControlFlow\ControlFlowNode::getForAssignment(
+            $new_parent_node = \Psalm\Internal\DataFlow\DataFlowNode::getForAssignment(
                 $keyed_array_var_id ?: 'array-fetch',
                 $var_location
             );

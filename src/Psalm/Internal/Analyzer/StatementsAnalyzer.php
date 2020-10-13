@@ -19,10 +19,10 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ReturnAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ThrowAnalyzer;
 use Psalm\Internal\Scanner\ParsedDocblock;
-use Psalm\Internal\Codebase\ControlFlowGraph;
+use Psalm\Internal\Codebase\DataFlowGraph;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
-use Psalm\Internal\ControlFlow\ControlFlowNode;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Context;
@@ -122,7 +122,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
     /** @var \Psalm\Internal\Provider\NodeDataProvider */
     public $node_data;
 
-    /** @var ?ControlFlowGraph */
+    /** @var ?DataFlowGraph */
     public $control_flow_graph;
 
     public function __construct(SourceAnalyzer $source, \Psalm\Internal\Provider\NodeDataProvider $node_data)
@@ -714,7 +714,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                 }
             }
 
-            $assignment_node = ControlFlowNode::getForAssignment($var_id, $original_location);
+            $assignment_node = DataFlowNode::getForAssignment($var_id, $original_location);
 
             if (!isset($this->byref_uses[$var_id])
                 && !VariableFetchAnalyzer::isSuperGlobal($var_id)
@@ -789,7 +789,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
         }
 
         $use_location = new CodeLocation($this->getSource(), $stmt);
-        $use_node = ControlFlowNode::getForAssignment($undefined_var_id, $use_location);
+        $use_node = DataFlowNode::getForAssignment($undefined_var_id, $use_location);
 
         $stmt_type = $this->node_data->getType($stmt);
 
@@ -799,7 +799,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
 
         foreach ($this->unused_var_locations as [$var_id, $original_location]) {
             if ($var_id === $undefined_var_id) {
-                $parent_node = ControlFlowNode::getForAssignment($var_id, $original_location);
+                $parent_node = DataFlowNode::getForAssignment($var_id, $original_location);
 
                 $this->control_flow_graph->addPath($parent_node, $use_node, '=');
             }
@@ -807,7 +807,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
     }
 
     /**
-     * @return array<string, ControlFlowNode>
+     * @return array<string, DataFlowNode>
      */
     public function getParentNodesForPossiblyUndefinedVariable(string $undefined_var_id) : array
     {
@@ -819,7 +819,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
 
         foreach ($this->unused_var_locations as [$var_id, $original_location]) {
             if ($var_id === $undefined_var_id) {
-                $assignment_node = ControlFlowNode::getForAssignment($var_id, $original_location);
+                $assignment_node = DataFlowNode::getForAssignment($var_id, $original_location);
                 $parent_nodes[$assignment_node->id] = $assignment_node;
             }
         }

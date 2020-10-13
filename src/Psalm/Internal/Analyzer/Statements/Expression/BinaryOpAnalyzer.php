@@ -5,7 +5,7 @@ use PhpParser;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\VariableUseGraph;
-use Psalm\Internal\ControlFlow\ControlFlowNode;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\ImpureMethodCall;
@@ -80,7 +80,7 @@ class BinaryOpAnalyzer
                 $context
             );
 
-            self::addControlFlow(
+            self::addDataFlow(
                 $statements_analyzer,
                 $stmt,
                 $stmt->left,
@@ -135,7 +135,7 @@ class BinaryOpAnalyzer
 
                 $var_location = new CodeLocation($statements_analyzer, $stmt);
 
-                $new_parent_node = ControlFlowNode::getForAssignment('concat', $var_location);
+                $new_parent_node = DataFlowNode::getForAssignment('concat', $var_location);
                 $statements_analyzer->control_flow_graph->addNode($new_parent_node);
 
                 $stmt_type->parent_nodes = [
@@ -163,7 +163,7 @@ class BinaryOpAnalyzer
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Spaceship) {
             $statements_analyzer->node_data->setType($stmt, Type::getInt());
 
-            self::addControlFlow(
+            self::addDataFlow(
                 $statements_analyzer,
                 $stmt,
                 $stmt->left,
@@ -310,7 +310,7 @@ class BinaryOpAnalyzer
                 );
             }
 
-            self::addControlFlow(
+            self::addDataFlow(
                 $statements_analyzer,
                 $stmt,
                 $stmt->left,
@@ -330,7 +330,7 @@ class BinaryOpAnalyzer
         return true;
     }
 
-    public static function addControlFlow(
+    public static function addDataFlow(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $stmt,
         PhpParser\Node\Expr $left,
@@ -350,7 +350,7 @@ class BinaryOpAnalyzer
 
             $var_location = new CodeLocation($statements_analyzer, $stmt);
 
-            $new_parent_node = ControlFlowNode::getForAssignment($type, $var_location);
+            $new_parent_node = DataFlowNode::getForAssignment($type, $var_location);
             $statements_analyzer->control_flow_graph->addNode($new_parent_node);
 
             $result_type->parent_nodes = [
@@ -381,19 +381,19 @@ class BinaryOpAnalyzer
                 if ($left instanceof PhpParser\Node\Expr\PropertyFetch) {
                     $statements_analyzer->control_flow_graph->addPath(
                         $new_parent_node,
-                        new ControlFlowNode('variable-use', 'variable use', null),
+                        new DataFlowNode('variable-use', 'variable use', null),
                         'used-by-instance-property'
                     );
                 } if ($left instanceof PhpParser\Node\Expr\StaticPropertyFetch) {
                     $statements_analyzer->control_flow_graph->addPath(
                         $new_parent_node,
-                        new ControlFlowNode('variable-use', 'variable use', null),
+                        new DataFlowNode('variable-use', 'variable use', null),
                         'use-in-static-property'
                     );
                 } elseif (!$left instanceof PhpParser\Node\Expr\Variable) {
                     $statements_analyzer->control_flow_graph->addPath(
                         $new_parent_node,
-                        new ControlFlowNode('variable-use', 'variable use', null),
+                        new DataFlowNode('variable-use', 'variable use', null),
                         'variable-use'
                     );
                 }

@@ -13,8 +13,8 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Type;
 use Psalm\Type\Atomic\TGenericObject;
 use function strtolower;
-use Psalm\Internal\ControlFlow\TaintSource;
-use Psalm\Internal\ControlFlow\ControlFlowNode;
+use Psalm\Internal\DataFlow\TaintSource;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 
 class MethodCallReturnTypeFetcher
@@ -237,7 +237,7 @@ class MethodCallReturnTypeFetcher
 
             $node_location = new CodeLocation($statements_analyzer, $name_expr);
 
-            $method_call_node = ControlFlowNode::getForMethodReturn(
+            $method_call_node = DataFlowNode::getForMethodReturn(
                 (string) $method_id,
                 $cased_method_id,
                 $method_storage->signature_return_type_location ?: $method_storage->location,
@@ -258,7 +258,7 @@ class MethodCallReturnTypeFetcher
                 );
 
                 if ($var_id && isset($context->vars_in_scope[$var_id])) {
-                    $var_node = ControlFlowNode::getForAssignment(
+                    $var_node = DataFlowNode::getForAssignment(
                         $var_id,
                         new CodeLocation($statements_analyzer, $var_expr)
                     );

@@ -5,7 +5,7 @@ namespace Psalm\Internal\Analyzer;
 /**
  * @psalm-immutable
  */
-class ControlFlowNodeData
+class DataFlowNodeData
 {
     /**
      * @var int

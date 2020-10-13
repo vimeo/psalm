@@ -1,6 +1,6 @@
 <?php
 
-namespace Psalm\Internal\ControlFlow;
+namespace Psalm\Internal\DataFlow;
 
 /**
  * @psalm-immutable
