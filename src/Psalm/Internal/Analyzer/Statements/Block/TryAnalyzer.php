@@ -537,7 +537,7 @@ class TryAnalyzer
                             $finally_context->vars_in_scope[$var_id],
                             $codebase
                         );
-                    } else {
+                    } elseif (isset($finally_context->vars_in_scope[$var_id])) {
                         $context->vars_in_scope[$var_id] = clone $finally_context->vars_in_scope[$var_id];
                     }
                 }
