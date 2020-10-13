@@ -321,8 +321,8 @@ Basic configuration:
     --threads=INT
         If greater than one, Psalm will run analysis on multiple threads, speeding things up.
 
-    --diff
-        Runs Psalm in diff mode, only checking files that have changed since last run (and their dependents)
+    --no-diff
+        Turns off Psalm’s diff mode, checks all files regardless of whether they've changed
 
     --diff-methods
         Only checks methods that have changed since last run (and their dependents)
