@@ -1346,7 +1346,7 @@ class FunctionCallTest extends TestCase
                     /**
                      * @return int|false
                      */
-                    function badpattern(): array {
+                    function badpattern() {
                         return @preg_match_all("foo", "foo", $matches);
                     }'
             ],
