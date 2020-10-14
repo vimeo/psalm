@@ -60,6 +60,7 @@ class ArgumentAnalyzer
         CodeLocation $function_call_location,
         ?FunctionLikeParameter $function_param,
         int $argument_offset,
+        int $unpacked_argument_offset,
         bool $allow_named_args,
         PhpParser\Node\Arg $arg,
         ?Type\Union $arg_value_type,
@@ -175,6 +176,7 @@ class ArgumentAnalyzer
             $allow_named_args,
             $arg_value_type,
             $argument_offset,
+            $unpacked_argument_offset,
             $arg,
             $context,
             $class_generic_params,
@@ -205,6 +207,7 @@ class ArgumentAnalyzer
         bool $allow_named_args,
         Type\Union $arg_type,
         int $argument_offset,
+        int $unpacked_argument_offset,
         PhpParser\Node\Arg $arg,
         Context $context,
         ?array $class_generic_params,
@@ -413,18 +416,19 @@ class ArgumentAnalyzer
                 $unpacked_atomic_array = $arg_type->getAtomicTypes()['array'];
 
                 if ($unpacked_atomic_array instanceof Type\Atomic\TKeyedArray) {
-                    if ($codebase->php_major_version >= 8
+                    if ($function_param->is_variadic) {
+                        $arg_type = $unpacked_atomic_array->getGenericValueType();
+                    } elseif ($codebase->php_major_version >= 8
                         && $allow_named_args
                         && isset($unpacked_atomic_array->properties[$function_param->name])
                     ) {
                         $arg_type = clone $unpacked_atomic_array->properties[$function_param->name];
                     } elseif ($unpacked_atomic_array->is_list
-                        && $argument_offset === 0
-                        && isset($unpacked_atomic_array->properties[$argument_offset])
+                        && isset($unpacked_atomic_array->properties[$unpacked_argument_offset])
                     ) {
-                        $arg_type = clone $unpacked_atomic_array->properties[$argument_offset];
+                        $arg_type = clone $unpacked_atomic_array->properties[$unpacked_argument_offset];
                     } else {
-                        $arg_type = $unpacked_atomic_array->getGenericValueType();
+                        $arg_type = Type::getMixed();
                     }
                 } elseif ($unpacked_atomic_array instanceof Type\Atomic\TList) {
                     $arg_type = $unpacked_atomic_array->type_param;

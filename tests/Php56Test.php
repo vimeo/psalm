@@ -4,7 +4,6 @@ namespace Psalm\Tests;
 class Php56Test extends TestCase
 {
     use Traits\ValidCodeAnalysisTestTrait;
-    use Traits\InvalidCodeAnalysisTestTrait;
 
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
@@ -68,101 +67,6 @@ class Php56Test extends TestCase
                 'assertions' => [
                     '$one' => 'int',
                     '$two' => 'int',
-                ],
-            ],
-            'argumentUnpacking' => [
-                '<?php
-                    /**
-                     * @return int
-                     * @param int $a
-                     * @param int $b
-                     * @param int $c
-                     */
-                    function add($a, $b, $c) {
-                        return $a + $b + $c;
-                    }
-
-                    $operators = [2, 3];
-                    echo add(1, ...$operators);',
-            ],
-            'arrayPushArgumentUnpackingWithGoodArg' => [
-                '<?php
-                    $a = ["foo"];
-                    $b = ["foo", "bar"];
-
-                    array_push($a, ...$b);',
-                'assertions' => [
-                    '$a' => 'non-empty-list<string>',
-                ],
-            ],
-            'arrayMergeArgumentUnpacking' => [
-                '<?php
-                    $a = [[1, 2]];
-                    $b = array_merge([], ...$a);',
-                'assertions' => [
-                    '$b' => 'array{0: int, 1: int}',
-                ],
-            ],
-            'preserveTypesWhenUnpacking' => [
-                '<?php
-                    /**
-                     * @return array<int,array<int,string>>
-                     */
-                    function getData(): array
-                    {
-                        return [
-                            ["a", "b"],
-                            ["c", "d"]
-                        ];
-                    }
-
-                    /**
-                     * @return array<int,string>
-                     */
-                    function f1(): array
-                    {
-                        $data = getData();
-                        return array_merge($data[0], $data[1]);
-                    }
-
-                    /**
-                     * @return array<int,string>
-                     */
-                    function f2(): array
-                    {
-                        $data = getData();
-                        return array_merge(...$data);
-                    }
-
-                    /**
-                     * @return array<int,string>
-                     */
-                    function f3(): array
-                    {
-                        $data = getData();
-                        return array_merge([], ...$data);
-                    }',
-            ],
-            'unpackArg' => [
-                '<?php
-                    function Foo(string $a, string ...$b) : void {}
-
-                    /** @return array<int, string> */
-                    function Baz(string ...$c) {
-                        Foo(...$c);
-                        return $c;
-                    }',
-            ],
-            'unpackByRefArg' => [
-                '<?php
-                    function example (int &...$x): void {}
-                    $y = 0;
-                    example($y);
-                    $z = [0];
-                    example(...$z);',
-                'assertions' => [
-                    '$y' => 'int',
-                    '$z' => 'array<int, int>',
                 ],
             ],
             'exponentiation' => [
@@ -248,25 +152,6 @@ class Php56Test extends TestCase
 
                         yield "goodbye";
                     }',
-            ],
-        ];
-    }
-
-    /**
-     * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
-     */
-    public function providerInvalidCodeParse(): iterable
-    {
-        return [
-            'arrayPushArgumentUnpackingWithBadArg' => [
-                '<?php
-                    $a = [];
-                    $b = "hello";
-
-                    $a[] = "foo";
-
-                    array_push($a, ...$b);',
-                'error_message' => 'InvalidArgument',
             ],
         ];
     }

@@ -12,6 +12,94 @@ class ArgTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'argumentUnpackingLiteral' => [
+                '<?php
+                    function add(int $a, int $b, int $c) : int {
+                        return $a + $b + $c;
+                    }
+
+                    echo add(1, ...[2, 3]);',
+            ],
+            'arrayPushArgumentUnpackingWithGoodArg' => [
+                '<?php
+                    $a = ["foo"];
+                    $b = ["foo", "bar"];
+
+                    array_push($a, ...$b);',
+                'assertions' => [
+                    '$a' => 'non-empty-list<string>',
+                ],
+            ],
+            'arrayMergeArgumentUnpacking' => [
+                '<?php
+                    $a = [[1, 2]];
+                    $b = array_merge([], ...$a);',
+                'assertions' => [
+                    '$b' => 'array{0: int, 1: int}',
+                ],
+            ],
+            'preserveTypesWhenUnpacking' => [
+                '<?php
+                    /**
+                     * @return array<int,array<int,string>>
+                     */
+                    function getData(): array
+                    {
+                        return [
+                            ["a", "b"],
+                            ["c", "d"]
+                        ];
+                    }
+
+                    /**
+                     * @return array<int,string>
+                     */
+                    function f1(): array
+                    {
+                        $data = getData();
+                        return array_merge($data[0], $data[1]);
+                    }
+
+                    /**
+                     * @return array<int,string>
+                     */
+                    function f2(): array
+                    {
+                        $data = getData();
+                        return array_merge(...$data);
+                    }
+
+                    /**
+                     * @return array<int,string>
+                     */
+                    function f3(): array
+                    {
+                        $data = getData();
+                        return array_merge([], ...$data);
+                    }',
+            ],
+            'unpackArg' => [
+                '<?php
+                    function Foo(string $a, string ...$b) : void {}
+
+                    /** @return array<int, string> */
+                    function Baz(string ...$c) {
+                        Foo(...$c);
+                        return $c;
+                    }',
+            ],
+            'unpackByRefArg' => [
+                '<?php
+                    function example (int &...$x): void {}
+                    $y = 0;
+                    example($y);
+                    $z = [0];
+                    example(...$z);',
+                'assertions' => [
+                    '$y' => 'int',
+                    '$z' => 'array<int, int>',
+                ],
+            ],
             'callMapClassOptionalArg' => [
                 '<?php
                     class Hello {}
@@ -180,6 +268,16 @@ class ArgTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'arrayPushArgumentUnpackingWithBadArg' => [
+                '<?php
+                    $a = [];
+                    $b = "hello";
+
+                    $a[] = "foo";
+
+                    array_push($a, ...$b);',
+                'error_message' => 'InvalidArgument',
+            ],
             'possiblyInvalidArgument' => [
                 '<?php
                     $foo = [
@@ -290,6 +388,49 @@ class ArgTest extends TestCase
 
                     takesArguments(age: 5, name: "hello");',
                 'error_message' => 'InvalidScalarArgument'
+            ],
+            'arrayWithoutAllNamedParameters' => [
+                '<?php
+                    class User {
+                        public function __construct(
+                            public int $id,
+                            public string $name,
+                            public int $age
+                        ) {}
+                    }
+
+                    /**
+                     * @param array{id: int, name: string} $data
+                     */
+                    function processUserDataInvalid(array $data) : User {
+                        return new User(...$data);
+                    }',
+                'error_message' => 'MixedArgument',
+                [],
+                false,
+                '8.0'
+            ],
+            'arrayWithoutAllNamedParametersSuppressMixed' => [
+                '<?php
+                    class User {
+                        public function __construct(
+                            public int $id,
+                            public string $name,
+                            public int $age
+                        ) {}
+                    }
+
+                    /**
+                     * @param array{id: int, name: string} $data
+                     */
+                    function processUserDataInvalid(array $data) : User {
+                        /** @psalm-suppress MixedArgument */
+                        return new User(...$data);
+                    }',
+                'error_message' => 'TooFewArguments',
+                [],
+                false,
+                '8.0'
             ],
         ];
     }

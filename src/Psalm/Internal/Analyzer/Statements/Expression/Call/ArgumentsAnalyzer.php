@@ -498,8 +498,41 @@ class ArgumentsAnalyzer
 
         $has_packed_var = false;
 
+        $packed_var_definite_args = 0;
+
         foreach ($args as $arg) {
-            $has_packed_var = $has_packed_var || $arg->unpack;
+            if ($arg->unpack) {
+                $arg_value_type = $statements_analyzer->node_data->getType($arg->value);
+
+                if (!$arg_value_type
+                    || !$arg_value_type->isSingle()
+                    || !$arg_value_type->hasArray()
+                ) {
+                    $has_packed_var = true;
+                    break;
+                }
+
+                foreach ($arg_value_type->getAtomicTypes() as $atomic_arg_type) {
+                    if (!$atomic_arg_type instanceof TKeyedArray) {
+                        $has_packed_var = true;
+                        break 2;
+                    }
+
+                    $packed_var_definite_args = 0;
+
+                    foreach ($atomic_arg_type->properties as $property_type) {
+                        if ($property_type->possibly_undefined) {
+                            $has_packed_var = true;
+                        } else {
+                            $packed_var_definite_args++;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (!$has_packed_var) {
+            $packed_var_definite_args = \max(0, $packed_var_definite_args - 1);
         }
 
         $last_param = $function_params
@@ -600,6 +633,7 @@ class ArgumentsAnalyzer
                         $code_location,
                         $function_params[$i],
                         $i,
+                        $i,
                         $function_storage ? $function_storage->allow_named_arg_calls : true,
                         new PhpParser\Node\Arg(
                             StubsGenerator::getExpressionFromType($function_params[$i]->default_type)
@@ -620,17 +654,21 @@ class ArgumentsAnalyzer
         }
 
         foreach ($args as $argument_offset => $arg) {
-            $function_param = null;
+            $arg_function_params = [];
 
-            if ($arg->name && $function_storage && $function_storage->allow_named_arg_calls) {
+            if ($arg->unpack && $function_param_count > $argument_offset) {
+                for ($i = $argument_offset; $i < $function_param_count; $i++) {
+                    $arg_function_params[] = $function_params[$i];
+                }
+            } elseif ($arg->name && $function_storage && $function_storage->allow_named_arg_calls) {
                 foreach ($function_params as $candidate_param) {
                     if ($candidate_param->name === $arg->name->name) {
-                        $function_param = $candidate_param;
+                        $arg_function_params = [$candidate_param];
                         break;
                     }
                 }
 
-                if (!$function_param) {
+                if (!$arg_function_params) {
                     if (IssueBuffer::accepts(
                         new InvalidNamedArgument(
                             'Parameter $' . $arg->name->name . ' does not exist on function '
@@ -644,13 +682,13 @@ class ArgumentsAnalyzer
                     }
                 }
             } elseif ($function_param_count > $argument_offset) {
-                $function_param = $function_params[$argument_offset];
+                $arg_function_params = [$function_params[$argument_offset]];
             } elseif ($last_param && $last_param->is_variadic) {
-                $function_param = $last_param;
+                $arg_function_params = [$last_param];
             }
 
-            if ($function_param
-                && $function_param->by_ref
+            if ($arg_function_params
+                && $arg_function_params[0]->by_ref
                 && $method_id !== 'extract'
             ) {
                 if (self::handlePossiblyMatchingByRefParam(
@@ -671,24 +709,27 @@ class ArgumentsAnalyzer
 
             $arg_value_type = $statements_analyzer->node_data->getType($arg->value);
 
-            if (ArgumentAnalyzer::checkArgumentMatches(
-                $statements_analyzer,
-                $cased_method_id,
-                $self_fq_class_name,
-                $static_fq_class_name,
-                $code_location,
-                $function_param,
-                $argument_offset,
-                $function_storage ? $function_storage->allow_named_arg_calls : true,
-                $arg,
-                $arg_value_type,
-                $context,
-                $class_generic_params,
-                $template_result,
-                $function_storage ? $function_storage->specialize_call : true,
-                $in_call_map
-            ) === false) {
-                return false;
+            foreach ($arg_function_params as $i => $function_param) {
+                if (ArgumentAnalyzer::checkArgumentMatches(
+                    $statements_analyzer,
+                    $cased_method_id,
+                    $self_fq_class_name,
+                    $static_fq_class_name,
+                    $code_location,
+                    $function_param,
+                    $argument_offset + $i,
+                    $i,
+                    $function_storage ? $function_storage->allow_named_arg_calls : true,
+                    $arg,
+                    $arg_value_type,
+                    $context,
+                    $class_generic_params,
+                    $template_result,
+                    $function_storage ? $function_storage->specialize_call : true,
+                    $in_call_map
+                ) === false) {
+                    return false;
+                }
             }
         }
 
@@ -767,7 +808,7 @@ class ArgumentsAnalyzer
                 $expected_param_count = $i;
             }
 
-            for ($i = count($args), $j = count($function_params); $i < $j; ++$i) {
+            for ($i = count($args) + $packed_var_definite_args, $j = count($function_params); $i < $j; ++$i) {
                 $param = $function_params[$i];
 
                 if (!$param->is_optional

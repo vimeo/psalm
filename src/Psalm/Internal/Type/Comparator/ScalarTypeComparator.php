@@ -153,10 +153,6 @@ class ScalarTypeComparator
         }
 
         if ($container_type_part instanceof TDependentGetDebugType) {
-            if ($container_type_part instanceof TClassString || $container_type_part instanceof TLiteralClassString) {
-                return true;
-            }
-
             return $input_type_part instanceof TString;
         }
 

@@ -902,6 +902,7 @@ class Codebase
                 if (strpos($symbol, '()')) {
                     $symbol = substr($symbol, 0, -2);
 
+                    /** @psalm-suppress ArgumentTypeCoercion */
                     $method_id = new \Psalm\Internal\MethodIdentifier(...explode('::', $symbol));
 
                     $declaring_method_id = $this->methods->getDeclaringMethodId($method_id);
@@ -987,6 +988,7 @@ class Codebase
                 if (strpos($symbol, '()')) {
                     $symbol = substr($symbol, 0, -2);
 
+                    /** @psalm-suppress ArgumentTypeCoercion */
                     $method_id = new \Psalm\Internal\MethodIdentifier(...explode('::', $symbol));
 
                     $declaring_method_id = $this->methods->getDeclaringMethodId($method_id);
@@ -1162,6 +1164,7 @@ class Codebase
     public function getSignatureInformation(string $function_symbol) : ?\LanguageServerProtocol\SignatureInformation
     {
         if (strpos($function_symbol, '::') !== false) {
+            /** @psalm-suppress ArgumentTypeCoercion */
             $method_id = new \Psalm\Internal\MethodIdentifier(...explode('::', $function_symbol));
 
             $declaring_method_id = $this->methods->getDeclaringMethodId($method_id);
