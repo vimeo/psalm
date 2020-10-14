@@ -367,16 +367,21 @@ class ExpressionAnalyzer
             return Expression\YieldFromAnalyzer::analyze($statements_analyzer, $stmt, $context);
         }
 
-        if ($stmt instanceof PhpParser\Node\Expr\Match_) {
+        if ($stmt instanceof PhpParser\Node\Expr\Match_
+            && $statements_analyzer->getCodebase()->php_major_version >= 8
+        ) {
             return Expression\MatchAnalyzer::analyze($statements_analyzer, $stmt, $context);
         }
 
-        if ($stmt instanceof PhpParser\Node\Expr\Throw_) {
+        if ($stmt instanceof PhpParser\Node\Expr\Throw_
+            && $statements_analyzer->getCodebase()->php_major_version >= 8
+        ) {
             return ThrowAnalyzer::analyze($statements_analyzer, $stmt, $context);
         }
 
-        if ($stmt instanceof PhpParser\Node\Expr\NullsafePropertyFetch
-            || $stmt instanceof PhpParser\Node\Expr\NullsafeMethodCall
+        if (($stmt instanceof PhpParser\Node\Expr\NullsafePropertyFetch
+                || $stmt instanceof PhpParser\Node\Expr\NullsafeMethodCall)
+            && $statements_analyzer->getCodebase()->php_major_version >= 8
         ) {
             return Expression\NullsafeAnalyzer::analyze($statements_analyzer, $stmt, $context);
         }

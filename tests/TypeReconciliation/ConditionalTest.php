@@ -2831,7 +2831,7 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                         ) {}
                     }
 
-                    function skipOn(IntLinkedList $l) : ?int {
+                    function skipOne(IntLinkedList $l) : ?int {
                         return $l->next?->value;
                     }
 
