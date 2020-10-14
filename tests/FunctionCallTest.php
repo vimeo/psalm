@@ -1379,6 +1379,23 @@ class FunctionCallTest extends TestCase
                         return mb_convert_encoding($str, "UTF-8", "UTF-8");
                     }'
             ],
+            'getDebugType' => [
+                '<?php
+                    function foo(mixed $var) : void {
+                        switch (get_debug_type($var)) {
+                            case "string":
+                                echo "a string";
+                                break;
+
+                            case Exception::class;
+                                echo "an Exception with message " . $var->getMessage();
+                                break;
+                        }
+                    }',
+                [],
+                [],
+                '8.0'
+            ],
         ];
     }
 

@@ -16,6 +16,7 @@ use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TDependentGetClass;
+use Psalm\Type\Atomic\TDependentGetDebugType;
 use Psalm\Type\Atomic\TDependentGetType;
 use Psalm\Type\Atomic\THtmlEscapedString;
 use Psalm\Type\Atomic\TInt;
@@ -149,6 +150,18 @@ class ScalarTypeComparator
             if ($container_type_part instanceof TLiteralString) {
                 return isset(ClassLikeAnalyzer::GETTYPE_TYPES[$container_type_part->value]);
             }
+        }
+
+        if ($container_type_part instanceof TDependentGetDebugType) {
+            if ($container_type_part instanceof TClassString || $container_type_part instanceof TLiteralClassString) {
+                return true;
+            }
+
+            return $input_type_part instanceof TString;
+        }
+
+        if ($input_type_part instanceof TDependentGetDebugType) {
+            $input_type_part = new TString();
         }
 
         if ($container_type_part instanceof TDependentGetType) {

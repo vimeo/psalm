@@ -2725,7 +2725,8 @@ class AssertionFinder
             && $conditional->right->name instanceof PhpParser\Node\Name
             && strtolower($conditional->right->name->parts[0]) === 'get_debug_type'
             && $conditional->right->args
-            && $conditional->left instanceof PhpParser\Node\Scalar\String_
+            && ($conditional->left instanceof PhpParser\Node\Scalar\String_
+                || $conditional->left instanceof PhpParser\Node\Expr\ClassConstFetch)
         ) {
             return self::ASSIGNMENT_TO_RIGHT;
         }
@@ -2734,7 +2735,8 @@ class AssertionFinder
             && $conditional->left->name instanceof PhpParser\Node\Name
             && strtolower($conditional->left->name->parts[0]) === 'get_debug_type'
             && $conditional->left->args
-            && $conditional->right instanceof PhpParser\Node\Scalar\String_
+            && ($conditional->right instanceof PhpParser\Node\Scalar\String_
+                || $conditional->right instanceof PhpParser\Node\Expr\ClassConstFetch)
         ) {
             return self::ASSIGNMENT_TO_LEFT;
         }
