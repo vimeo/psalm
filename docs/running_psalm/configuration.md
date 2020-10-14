@@ -273,6 +273,14 @@ Setting to `false` prevents the stub from loading.
 ```
 When `true`, Psalm will complain when referencing an explicit string offset on an array e.g. `$arr['foo']` without a user first asserting that it exists (either via an `isset` check or via an object-like array). Defaults to `false`.
 
+#### ensureArrayIntOffsetsExist
+```xml
+<psalm
+  ensureArrayIntOffsetsExist="[bool]"
+>
+```
+When `true`, Psalm will complain when referencing an explicit integer offset on an array e.g. `$arr[7]` without a user first asserting that it exists (either via an `isset` check or via an object-like array). Defaults to `false`.
+
 #### phpVersion
 ```xml
 <psalm
