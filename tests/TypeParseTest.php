@@ -598,6 +598,14 @@ class TypeParseTest extends TestCase
         Type::parseString('callable(int, string..) : void');
     }
 
+    public function testCallableWithMissingVariadicType(): void
+    {
+        $this->assertSame(
+            'callable(mixed...):void',
+            (string) Type::parseString('callable(...): void')
+        );
+    }
+
     public function testCallableWithVariadicAndDefault(): void
     {
         $this->expectException(\Psalm\Exception\TypeParseTreeException::class);
