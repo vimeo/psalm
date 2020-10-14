@@ -822,7 +822,8 @@ class ArgumentsAnalyzer
                     if (IssueBuffer::accepts(
                         new TooFewArguments(
                             'Too few arguments for ' . $cased_method_id
-                                . ' - expecting ' . $expected_param_count . ' but saw ' . count($args),
+                                . ' - expecting ' . $expected_param_count
+                                . ' but saw ' . (count($args) + $packed_var_definite_args),
                             $code_location,
                             (string) $method_id
                         ),
