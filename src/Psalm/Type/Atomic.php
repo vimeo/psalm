@@ -194,7 +194,11 @@ abstract class Atomic implements TypeNode
                 return $php_version !== null ? new TNamedObject($value) : new TTrue();
 
             case 'false':
-                return $php_version !== null ? new TNamedObject($value) : new TFalse();
+                if ($php_version === null || $php_version[0] >= 8) {
+                    return new TFalse();
+                }
+
+                return new TNamedObject($value);
 
             case 'empty':
                 return $php_version !== null ? new TNamedObject($value) : new TEmpty();
@@ -203,7 +207,11 @@ abstract class Atomic implements TypeNode
                 return $php_version !== null ? new TNamedObject($value) : new TScalar();
 
             case 'null':
-                return $php_version !== null ? new TNamedObject($value) : new TNull();
+                if ($php_version === null || $php_version[0] >= 8) {
+                    return new TNull();
+                }
+
+                return new TNamedObject($value);
 
             case 'mixed':
                 if ($php_version === null || $php_version[0] >= 8) {
