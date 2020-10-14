@@ -761,6 +761,7 @@ function preg_replace_callback($search, $replace, $subject, int $limit = -1, &$c
  *          )
  *        ) $matches
  * @return int|false
+ * @psalm-ignore-falsable-return
  */
 function preg_match_all($pattern, $replace, &$matches = [], int $flags = 1, int $offset = 0) {}
 
