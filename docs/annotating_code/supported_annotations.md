@@ -336,6 +336,23 @@ echo Arithmetic::addCumulative(3); // outputs 3
 echo Arithmetic::addCumulative(3); // outputs 6
 ```
 
+### `@pure-callable`
+
+On the other hand, `pure-callable` can be used to denote a callable which needs to be pure.
+
+```php
+/**
+ * @param pure-callable(mixed): int $callback
+ */
+function foo(callable $callback) {...}
+
+// this fails since random_int is not pure
+foo(
+    /** @param mixed $p */
+    fn($p) => random_int(1, 2)
+);
+```
+
 ### `@psalm-allow-private-mutation`
 
 Used to annotate readonly properties that can be mutated in a private context. With this, public properties can be read from another class but only be mutated within a method of its own class.
