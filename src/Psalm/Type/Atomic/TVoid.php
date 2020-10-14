@@ -23,7 +23,9 @@ class TVoid extends \Psalm\Type\Atomic
         int $php_major_version,
         int $php_minor_version
     ): ?string {
-        return $php_major_version >= 7 && $php_minor_version >= 1 ? $this->getKey() : null;
+        return $php_major_version > 7
+            || ($php_major_version === 7 && $php_minor_version >= 1)
+            ? $this->getKey() : null;
     }
 
     public function canBeFullyExpressedInPhp(): bool
