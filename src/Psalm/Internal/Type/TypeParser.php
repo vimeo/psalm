@@ -675,13 +675,18 @@ class TypeParser
                     $is_optional = false;
 
                     if ($child_tree instanceof ParseTree\CallableParamTree) {
-                        $tree_type = self::getTypeFromTree(
-                            $child_tree->children[0],
-                            $codebase,
-                            null,
-                            $template_type_map,
-                            $type_aliases
-                        );
+                        if (isset($child_tree->children[0])) {
+                            $tree_type = self::getTypeFromTree(
+                                $child_tree->children[0],
+                                $codebase,
+                                null,
+                                $template_type_map,
+                                $type_aliases
+                            );
+                        } else {
+                            $tree_type = new TMixed();
+                        }
+
                         $is_variadic = $child_tree->variadic;
                         $is_optional = $child_tree->has_default;
                     } else {
