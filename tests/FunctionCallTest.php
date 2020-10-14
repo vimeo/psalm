@@ -1341,6 +1341,15 @@ class FunctionCallTest extends TestCase
                         return $matches[0];
                     }'
             ],
+            'pregMatchAllReturnsFalse' => [
+                '<?php
+                    /**
+                     * @return int|false
+                     */
+                    function badpattern(): array {
+                        return @preg_match_all("foo", "foo", $matches);
+                    }'
+            ],
             'strposAllowDictionary' => [
                 '<?php
                     function sayHello(string $format): void {
