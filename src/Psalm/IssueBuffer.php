@@ -225,6 +225,10 @@ class IssueBuffer
         if ($reporting_level === Config::REPORT_INFO) {
             if ($issue_type === 'TaintedInput' || !self::alreadyEmitted($emitted_key)) {
                 self::$issues_data[$e->getFilePath()][] = $e->toIssueData(Config::REPORT_INFO);
+
+                if ($is_fixable) {
+                    self::addFixableIssue($issue_type);
+                }
             }
 
             return false;
@@ -248,10 +252,10 @@ class IssueBuffer
         if ($issue_type === 'TaintedInput' || !self::alreadyEmitted($emitted_key)) {
             ++self::$error_count;
             self::$issues_data[$e->getFilePath()][] = $e->toIssueData(Config::REPORT_ERROR);
-        }
 
-        if ($is_fixable) {
-            self::addFixableIssue($issue_type);
+            if ($is_fixable) {
+                self::addFixableIssue($issue_type);
+            }
         }
 
         return true;
