@@ -876,6 +876,10 @@ class UnionTemplateHandler
         string $defining_class,
         array $visited_classes = []
     ) : ?array {
+        if (isset($visited_classes[$defining_class])) {
+            return null;
+        }
+
         if (isset($template_types[$param_name][$defining_class])) {
             $mapped_type = $template_types[$param_name][$defining_class][0];
 
@@ -883,7 +887,6 @@ class UnionTemplateHandler
 
             if (count($mapped_type_atomic_types) > 1
                 || !$mapped_type_atomic_types[0] instanceof Atomic\TTemplateParam
-                || isset($visited_classes[$defining_class])
             ) {
                 return $template_types[$param_name][$defining_class];
             }
