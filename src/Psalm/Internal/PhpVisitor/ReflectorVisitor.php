@@ -2188,7 +2188,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
                 foreach ($stmt->stmts as $function_stmt) {
                     if ($function_stmt instanceof PhpParser\Node\Stmt\If_) {
-                        $final_actions = \Psalm\Internal\Analyzer\ScopeAnalyzer::getFinalControlActions(
+                        $final_actions = \Psalm\Internal\Analyzer\ScopeAnalyzer::getControlActions(
                             $function_stmt->stmts,
                             null,
                             $this->config->exit_functions,

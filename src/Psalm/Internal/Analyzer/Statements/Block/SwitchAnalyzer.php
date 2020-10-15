@@ -72,7 +72,7 @@ class SwitchAnalyzer
         for ($i = count($stmt->cases) - 1; $i >= 0; --$i) {
             $case = $stmt->cases[$i];
 
-            $case_actions = $case_action_map[$i] = ScopeAnalyzer::getFinalControlActions(
+            $case_actions = $case_action_map[$i] = ScopeAnalyzer::getControlActions(
                 $case->stmts,
                 $statements_analyzer->node_data,
                 $config->exit_functions,

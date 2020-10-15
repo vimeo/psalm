@@ -135,7 +135,7 @@ class ReturnTypeAnalyzer
         }
 
         if ((!$return_type || $return_type->from_docblock)
-            && ScopeAnalyzer::getFinalControlActions(
+            && ScopeAnalyzer::getControlActions(
                 $function_stmts,
                 $type_provider,
                 $codebase->config->exit_functions
@@ -166,7 +166,7 @@ class ReturnTypeAnalyzer
             && !$return_type->isVoid()
             && !$inferred_yield_types
             && (!$function_like_storage || !$function_like_storage->has_yield)
-            && ScopeAnalyzer::getFinalControlActions(
+            && ScopeAnalyzer::getControlActions(
                 $function_stmts,
                 $type_provider,
                 $codebase->config->exit_functions
@@ -189,7 +189,7 @@ class ReturnTypeAnalyzer
         if ($return_type
             && $return_type->isNever()
             && !$inferred_yield_types
-            && ScopeAnalyzer::getFinalControlActions(
+            && ScopeAnalyzer::getControlActions(
                 $function_stmts,
                 $type_provider,
                 $codebase->config->exit_functions,

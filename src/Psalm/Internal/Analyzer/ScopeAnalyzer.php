@@ -76,7 +76,7 @@ class ScopeAnalyzer
      *
      * @return  list<value-of<self::ACTIONS>>
      */
-    public static function getFinalControlActions(
+    public static function getControlActions(
         array $stmts,
         ?\Psalm\Internal\Provider\NodeDataProvider $nodes,
         array $exit_functions,
@@ -177,7 +177,7 @@ class ScopeAnalyzer
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\If_) {
-                $if_statement_actions = self::getFinalControlActions(
+                $if_statement_actions = self::getControlActions(
                     $stmt->stmts,
                     $nodes,
                     $exit_functions,
@@ -185,7 +185,7 @@ class ScopeAnalyzer
                 );
 
                 $else_statement_actions = $stmt->else
-                    ? self::getFinalControlActions($stmt->else->stmts, $nodes, $exit_functions, $break_types)
+                    ? self::getControlActions($stmt->else->stmts, $nodes, $exit_functions, $break_types)
                     : [];
 
                 $all_same = count($if_statement_actions) === 1
@@ -196,7 +196,7 @@ class ScopeAnalyzer
 
                 if ($stmt->elseifs) {
                     foreach ($stmt->elseifs as $elseif) {
-                        $elseif_control_actions = self::getFinalControlActions(
+                        $elseif_control_actions = self::getControlActions(
                             $elseif->stmts,
                             $nodes,
                             $exit_functions,
@@ -237,7 +237,7 @@ class ScopeAnalyzer
                 for ($d = count($stmt->cases) - 1; $d >= 0; --$d) {
                     $case = $stmt->cases[$d];
 
-                    $case_actions = self::getFinalControlActions($case->stmts, $nodes, $exit_functions, ['switch']);
+                    $case_actions = self::getControlActions($case->stmts, $nodes, $exit_functions, ['switch']);
 
                     if (array_intersect([
                         self::ACTION_LEAVE_SWITCH,
@@ -277,7 +277,7 @@ class ScopeAnalyzer
                 || $stmt instanceof PhpParser\Node\Stmt\Foreach_
                 || $stmt instanceof PhpParser\Node\Stmt\For_
             ) {
-                $do_actions = self::getFinalControlActions(
+                $do_actions = self::getControlActions(
                     $stmt->stmts,
                     $nodes,
                     $exit_functions,
@@ -296,7 +296,7 @@ class ScopeAnalyzer
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\TryCatch) {
-                $try_statement_actions = self::getFinalControlActions(
+                $try_statement_actions = self::getControlActions(
                     $stmt->stmts,
                     $nodes,
                     $exit_functions,
@@ -307,7 +307,7 @@ class ScopeAnalyzer
                     $all_same = count($try_statement_actions) === 1;
 
                     foreach ($stmt->catches as $catch) {
-                        $catch_actions = self::getFinalControlActions(
+                        $catch_actions = self::getControlActions(
                             $catch->stmts,
                             $nodes,
                             $exit_functions,
@@ -322,13 +322,15 @@ class ScopeAnalyzer
                     }
 
                     if ($all_same && $try_statement_actions !== [self::ACTION_NONE]) {
-                        return $try_statement_actions;
+                        return \array_values(array_unique(array_merge($control_actions, $try_statement_actions)));
                     }
+                } elseif (!in_array(self::ACTION_NONE, $try_statement_actions, true)) {
+                    return \array_values(array_unique(array_merge($control_actions, $try_statement_actions)));
                 }
 
                 if ($stmt->finally) {
                     if ($stmt->finally->stmts) {
-                        $finally_statement_actions = self::getFinalControlActions(
+                        $finally_statement_actions = self::getControlActions(
                             $stmt->finally->stmts,
                             $nodes,
                             $exit_functions,

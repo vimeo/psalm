@@ -87,7 +87,7 @@ class LoopAnalyzer
             );
         }
 
-        $final_actions = ScopeAnalyzer::getFinalControlActions(
+        $final_actions = ScopeAnalyzer::getControlActions(
             $stmts,
             $statements_analyzer->node_data,
             Config::getInstance()->exit_functions,
