@@ -756,7 +756,7 @@ class IfAnalyzer
             return false;
         }
 
-        $final_actions = ScopeAnalyzer::getFinalControlActions(
+        $final_actions = ScopeAnalyzer::getControlActions(
             $stmt->stmts,
             $statements_analyzer->node_data,
             $codebase->config->exit_functions,
@@ -1252,7 +1252,7 @@ class IfAnalyzer
             }
         }
 
-        $final_actions = ScopeAnalyzer::getFinalControlActions(
+        $final_actions = ScopeAnalyzer::getControlActions(
             $elseif->stmts,
             $statements_analyzer->node_data,
             $codebase->config->exit_functions,
@@ -1559,7 +1559,7 @@ class IfAnalyzer
         }
 
         $final_actions = $else
-            ? ScopeAnalyzer::getFinalControlActions(
+            ? ScopeAnalyzer::getControlActions(
                 $else->stmts,
                 $statements_analyzer->node_data,
                 $codebase->config->exit_functions,
