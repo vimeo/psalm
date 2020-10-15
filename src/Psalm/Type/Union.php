@@ -452,7 +452,7 @@ class Union implements TypeNode
 
         if (!$this->isSingleAndMaybeNullable()
             || $php_major_version < 7
-            || (isset($this->types['null']) && $php_minor_version < 1)
+            || (isset($this->types['null']) && $php_major_version === 7 && $php_minor_version < 1)
         ) {
             return null;
         }
