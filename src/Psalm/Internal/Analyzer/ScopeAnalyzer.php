@@ -286,8 +286,11 @@ class ScopeAnalyzer
 
                 $control_actions = array_filter(
                     array_merge($control_actions, $do_actions),
-                    function ($action) {
-                        return $action !== self::ACTION_NONE;
+                    function ($action) use ($break_types) {
+                        return $action !== self::ACTION_NONE
+                            && ($break_types
+                                || ($action !== self::ACTION_CONTINUE
+                                    && $action !== self::ACTION_BREAK));
                     }
                 );
             }
