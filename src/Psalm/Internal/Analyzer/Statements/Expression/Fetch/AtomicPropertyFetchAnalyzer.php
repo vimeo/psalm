@@ -57,7 +57,7 @@ class AtomicPropertyFetchAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\PropertyFetch $stmt,
         Context $context,
-        bool $in_assignment = false,
+        bool $in_assignment,
         ?string $var_id,
         ?string $stmt_var_id,
         Type\Union $stmt_var_type,
