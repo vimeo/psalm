@@ -999,6 +999,21 @@ class SwitchTypeTest extends TestCase
                         }
                     }'
             ],
+            'loopWithSwitchAlwaysReturns' => [
+                '<?php
+                    function b(): int {
+                        foreach([1,2] as $i) {
+                            continue;
+                        }
+
+                        switch (random_int(1, 10)) {
+                            case 1:
+                                return 1;
+                            default:
+                                return 2;
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -1269,6 +1284,22 @@ class SwitchTypeTest extends TestCase
                             echo "bar";
                     }',
                 'error_message' => 'ParadoxicalCondition'
+            ],
+            'loopWithSwitchDoesntReturnFirstCase' => [
+                '<?php
+                    function b(): int {
+                        switch (random_int(1, 10)) {
+                            case 1:
+                                foreach([1,2] as $i) {
+                                    continue;
+                                }
+                                break;
+
+                            default:
+                                return 2;
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType'
             ],
         ];
     }
