@@ -7,7 +7,7 @@ use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
-use Psalm\Internal\Analyzer\Statements\Expression\Fetch\InstancePropertyFetchAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\CodeLocation;
 use Psalm\Context;
@@ -519,7 +519,7 @@ class StaticCallAnalyzer extends CallAnalyzer
                                     $class_storage->mixin_declaring_fqcln
                                 );
 
-                                $new_mixin_candidate_type = InstancePropertyFetchAnalyzer::localizePropertyType(
+                                $new_mixin_candidate_type = AtomicPropertyFetchAnalyzer::localizePropertyType(
                                     $codebase,
                                     new Type\Union([$lhs_type_part]),
                                     $tGenericMixin,

@@ -10,7 +10,7 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
-use Psalm\Internal\Analyzer\Statements\Expression\Fetch\InstancePropertyFetchAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Codebase\TaintFlowGraph;
@@ -789,7 +789,7 @@ class InstancePropertyAssignmentAnalyzer
                     );
 
                     if ($lhs_type_part instanceof Type\Atomic\TGenericObject) {
-                        $class_property_type = InstancePropertyFetchAnalyzer::localizePropertyType(
+                        $class_property_type = AtomicPropertyFetchAnalyzer::localizePropertyType(
                             $codebase,
                             $class_property_type,
                             $lhs_type_part,
