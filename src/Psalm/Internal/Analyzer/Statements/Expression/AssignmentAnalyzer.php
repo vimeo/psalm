@@ -1273,14 +1273,6 @@ class AssignmentAnalyzer
                 $statements_analyzer->node_data->setType($stmt, $fake_coalesce_type);
             }
 
-            BinaryOpAnalyzer::addDataFlow(
-                $statements_analyzer,
-                $stmt,
-                $stmt->var,
-                $stmt->expr,
-                'coalesce'
-            );
-
             return true;
         }
 

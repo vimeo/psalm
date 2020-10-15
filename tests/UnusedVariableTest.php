@@ -2188,6 +2188,14 @@ class UnusedVariableTest extends TestCase
                         print_r(...func_get_args());
                     }'
             ],
+            'nullCoalesce' => [
+                '<?php
+                    function foo (?bool $b, int $c): void {
+                        $b ??= $c;
+
+                        echo $b;
+                    }'
+            ],
         ];
     }
 
