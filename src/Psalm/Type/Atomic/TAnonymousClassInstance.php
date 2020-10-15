@@ -10,7 +10,9 @@ class TAnonymousClassInstance extends TNamedObject
         int $php_major_version,
         int $php_minor_version
     ): ?string {
-        return $php_major_version >= 7 && $php_minor_version >= 2 ? 'object' : null;
+        return $php_major_version > 7
+            || ($php_major_version === 7 && $php_minor_version >= 2)
+            ? 'object' : null;
     }
 
     /**
