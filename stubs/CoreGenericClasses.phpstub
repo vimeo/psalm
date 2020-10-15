@@ -1674,8 +1674,8 @@ class SplMinHeap extends SplHeap {
  * The SplPriorityQueue class provides the main functionalities of a prioritized queue, implemented using a max heap.
  * @link https://php.net/manual/en/class.splpriorityqueue.php
  *
- * @template TValue
  * @template TPriority
+ * @template TValue
  * @template-implements Iterator<int, TValue>
  */
 class SplPriorityQueue implements Iterator, Countable {
