@@ -3005,7 +3005,7 @@ class ClassTemplateTest extends TestCase
                         }
                     }'
             ],
-            'flippedParamsInside' => [
+            'flippedParamsMethodInside' => [
                 '<?php
                     /**
                      * @template A
@@ -3026,7 +3026,7 @@ class ClassTemplateTest extends TestCase
                         }
                     }'
             ],
-            'flippedParamsOutside' => [
+            'flippedParamsMethodOutside' => [
                 '<?php
                     /**
                      * @template B
@@ -3046,6 +3046,49 @@ class ClassTemplateTest extends TestCase
                     {
                         /** @return Traversable<A, B> */
                         public abstract function getTraversable() : Traversable;
+                    }'
+            ],
+            'flippedParamsPropertyInside' => [
+                '<?php
+                    /**
+                     * @template A
+                     * @template B
+                     */
+                    abstract class Foo
+                    {
+                        /** @var Traversable<A, B> */
+                        public $traversable;
+
+                        /**
+                         * @param Foo<B, A> $flipped
+                         * @return Traversable<B, A>
+                         */
+                        public function getFlippedTraversable(Foo $flipped): Traversable
+                        {
+                            return $flipped->traversable;
+                        }
+                    }'
+            ],
+            'flippedParamsPropertyOutside' => [
+                '<?php
+                    /**
+                     * @template B
+                     * @template A
+                     * @param Foo<B, A> $flipped
+                     * @return Traversable<B, A>
+                     */
+                    function getFlippedTraversable(Foo $flipped): Traversable {
+                        return $flipped->traversable;
+                    }
+
+                    /**
+                     * @template A
+                     * @template B
+                     */
+                    abstract class Foo
+                    {
+                        /** @var Traversable<A, B> */
+                        public $traversable;
                     }'
             ],
         ];

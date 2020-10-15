@@ -1004,9 +1004,7 @@ class InstancePropertyFetchAnalyzer
                         $class_storage,
                         $declaring_class_storage
                     );
-                }
-
-                if ($lhs_type_part instanceof TGenericObject) {
+                } elseif ($lhs_type_part instanceof TGenericObject) {
                     $class_property_type = self::localizePropertyType(
                         $codebase,
                         $class_property_type,
