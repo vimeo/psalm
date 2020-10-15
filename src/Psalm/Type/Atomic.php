@@ -591,10 +591,6 @@ abstract class Atomic implements TypeNode
 
     public function equals(Atomic $other_type): bool
     {
-        if (get_class($other_type) !== get_class($this)) {
-            return false;
-        }
-
-        return true;
+        return get_class($other_type) === get_class($this);
     }
 }

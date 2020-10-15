@@ -7,7 +7,7 @@ use Psalm\FileManipulation;
 /**
  * @internal
  */
-class ParamReplacementVisitor extends PhpParser\NodeVisitorAbstract implements PhpParser\NodeVisitor
+class ParamReplacementVisitor extends PhpParser\NodeVisitorAbstract
 {
     /** @var string */
     private $old_name;

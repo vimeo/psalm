@@ -5,16 +5,12 @@ namespace Psalm;
 use Composer\Autoload\ClassLoader;
 use Phar;
 use Psalm\Internal\Composer;
-use function basename;
 use function dirname;
-use function getenv;
-use function pathinfo;
 use function strpos;
 use function realpath;
 use const DIRECTORY_SEPARATOR;
 use function file_exists;
 use function in_array;
-use const PATHINFO_EXTENSION;
 use const PHP_EOL;
 use function fwrite;
 use const STDERR;
@@ -184,7 +180,7 @@ function getArguments() : array
 
     $filtered_input_paths = [];
 
-    for ($i = 0; $i < count($argv); ++$i) {
+    for ($i = 0, $iMax = count($argv); $i < $iMax; ++$i) {
         $input_path = $argv[$i];
 
         if (realpath($input_path) !== false) {
@@ -228,7 +224,7 @@ function getPathsToCheck($f_paths): ?array
     if ($input_paths) {
         $filtered_input_paths = [];
 
-        for ($i = 0; $i < count($input_paths); ++$i) {
+        for ($i = 0, $iMax = count($input_paths); $i < $iMax; ++$i) {
             /** @var string */
             $input_path = $input_paths[$i];
 

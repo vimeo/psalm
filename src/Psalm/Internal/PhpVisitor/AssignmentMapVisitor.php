@@ -7,7 +7,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 /**
  * @internal
  */
-class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract implements PhpParser\NodeVisitor
+class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
 {
     /**
      * @var array<string, array<string, bool>>

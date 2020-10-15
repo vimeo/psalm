@@ -51,7 +51,6 @@ use function strrpos;
 use function strlen;
 use function substr;
 use function array_change_key_case;
-use function array_reverse;
 use function trim;
 use function array_column;
 use function array_combine;
@@ -60,7 +59,7 @@ use function array_keys;
 /**
  * @internal
  */
-class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
+class StatementsAnalyzer extends SourceAnalyzer
 {
     /**
      * @var SourceAnalyzer

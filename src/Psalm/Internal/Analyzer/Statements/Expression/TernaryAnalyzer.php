@@ -19,7 +19,6 @@ use function array_values;
 use function array_keys;
 use function preg_match;
 use function preg_quote;
-use function array_intersect_key;
 
 /**
  * @internal

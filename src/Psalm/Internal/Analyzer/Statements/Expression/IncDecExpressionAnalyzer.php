@@ -8,7 +8,6 @@ use PhpParser\Node\Expr\PreInc;
 use PhpParser\Node\Expr\PreDec;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Type;
 

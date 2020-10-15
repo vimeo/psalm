@@ -6,7 +6,7 @@ use PhpParser;
 /**
  * @internal
  */
-class ShortClosureVisitor extends PhpParser\NodeVisitorAbstract implements PhpParser\NodeVisitor
+class ShortClosureVisitor extends PhpParser\NodeVisitorAbstract
 {
     /**
      * @var array<string, bool>

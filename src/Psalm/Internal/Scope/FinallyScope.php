@@ -1,8 +1,6 @@
 <?php
 namespace Psalm\Internal\Scope;
 
-use Psalm\CodeLocation;
-use Psalm\Context;
 use Psalm\Type;
 
 /**

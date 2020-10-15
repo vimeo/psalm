@@ -2,20 +2,9 @@
 
 namespace Psalm\Internal\Codebase;
 
-use Psalm\CodeLocation;
-use Psalm\Internal\DataFlow\Path;
-use Psalm\Internal\DataFlow\TaintSink;
-use Psalm\Internal\DataFlow\TaintSource;
 use Psalm\Internal\DataFlow\DataFlowNode;
-use Psalm\IssueBuffer;
-use Psalm\Issue\TaintedInput;
 use function array_merge;
 use function count;
-use function implode;
-use function substr;
-use function strlen;
-use function array_intersect;
-use function array_reverse;
 
 class VariableUseGraph extends DataFlowGraph
 {

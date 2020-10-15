@@ -29,7 +29,7 @@ use function gettype;
 /**
  * @internal
  */
-abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSource
+abstract class ClassLikeAnalyzer extends SourceAnalyzer
 {
     public const VISIBILITY_PUBLIC = 1;
     public const VISIBILITY_PROTECTED = 2;
