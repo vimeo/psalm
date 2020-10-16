@@ -190,7 +190,19 @@ class IfAnalyzer
         try {
             $if_scope->negated_clauses = Algebra::negateFormula($if_clauses);
         } catch (\Psalm\Exception\ComplicatedExpressionException $e) {
-            $if_scope->negated_clauses = [];
+            try {
+                $if_scope->negated_clauses = Algebra::getFormula(
+                    $cond_object_id,
+                    $cond_object_id,
+                    new PhpParser\Node\Expr\BooleanNot($stmt->cond),
+                    $context->self,
+                    $statements_analyzer,
+                    $codebase,
+                    false
+                );
+            } catch (\Psalm\Exception\ComplicatedExpressionException $e) {
+                $if_scope->negated_clauses = [];
+            }
         }
 
         $if_scope->negated_types = Algebra::getTruthsFromFormula(
