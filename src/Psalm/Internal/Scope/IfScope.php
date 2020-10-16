@@ -69,7 +69,7 @@ class IfScope
      * statement, if the `if` statement contains branches with leaving statements,
      * and the else leaves too
      *
-     * @var array<int, Clause>
+     * @var list<Clause>
      */
     public $reasonable_clauses = [];
 

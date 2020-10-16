@@ -78,7 +78,7 @@ class Algebra
     }
 
     /**
-     * @return array<int, Clause>
+     * @return list<Clause>
      */
     public static function getFormula(
         int $conditional_object_id,
@@ -677,10 +677,10 @@ class Algebra
     }
 
     /**
-     * @param array<int, Clause>  $left_clauses
-     * @param array<int, Clause>  $right_clauses
+     * @param list<Clause>  $left_clauses
+     * @param list<Clause>  $right_clauses
      *
-     * @return array<int, Clause>
+     * @return list<Clause>
      *
      * @psalm-pure
      */
