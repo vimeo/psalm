@@ -98,7 +98,7 @@ class JsonOutputTest extends TestCase
                     function fooFoo() {
                         return "hello";
                     }',
-                'message' => 'Method fooFoo does not have a return type, expecting string',
+                'message' => 'Method fooFoo does not have a return type, expecting string(hello)',
                 'line' => 2,
                 'error' => 'fooFoo',
             ],

@@ -309,7 +309,7 @@ class ReturnTypeAnalyzer
 
                     if (IssueBuffer::accepts(
                         new MissingClosureReturnType(
-                            'Closure does not have a return type, expecting ' . $inferred_return_type,
+                            'Closure does not have a return type, expecting ' . $inferred_return_type->getId(),
                             new CodeLocation($function_like_analyzer, $function, null, true)
                         ),
                         $suppressed_issues,
@@ -349,7 +349,7 @@ class ReturnTypeAnalyzer
             if (IssueBuffer::accepts(
                 new MissingReturnType(
                     'Method ' . $cased_method_id . ' does not have a return type' .
-                      (!$inferred_return_type->hasMixed() ? ', expecting ' . $inferred_return_type : ''),
+                      (!$inferred_return_type->hasMixed() ? ', expecting ' . $inferred_return_type->getId() : ''),
                     new CodeLocation($function_like_analyzer, $function->name, null, true)
                 ),
                 $suppressed_issues,

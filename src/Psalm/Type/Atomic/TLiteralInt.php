@@ -44,6 +44,6 @@ class TLiteralInt extends TInt
         ?string $this_class,
         bool $use_phpdoc_format
     ): string {
-        return 'int';
+        return $use_phpdoc_format ? 'int' : $this->value;
     }
 }

@@ -863,7 +863,7 @@ class TypeTest extends \Psalm\Tests\TestCase
                     $a = 0;
                     $b = $a++;',
                 'assertions' => [
-                    '$a' => 'int',
+                    '$a' => 'positive-int',
                 ],
             ],
             'typedValueAssertion' => [
