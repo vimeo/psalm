@@ -98,7 +98,7 @@ class GitInfoCollector
      *
      * @throws \RuntimeException
      *
-     * @return RemoteInfo[]
+     * @return list<RemoteInfo>
      */
     protected function collectRemotes(): array
     {

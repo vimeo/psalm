@@ -330,6 +330,9 @@ class Analyzer
         $filetype_analyzers = $this->config->getFiletypeAnalyzers();
 
         $analysis_worker =
+            /**
+             * @return list<\Psalm\Internal\Analyzer\IssueData>
+             */
             function (int $_, string $file_path) use ($project_analyzer, $filetype_analyzers): array {
                 $file_analyzer = $this->getFileAnalyzer($project_analyzer, $file_path, $filetype_analyzers);
 

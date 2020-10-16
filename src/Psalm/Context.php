@@ -475,7 +475,7 @@ class Context
     }
 
     /**
-     * @return array<int, string>
+     * @return list<string>
      */
     public static function getNewOrUpdatedVarIds(Context $original_context, Context $new_context): array
     {

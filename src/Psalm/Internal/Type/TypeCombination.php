@@ -1423,7 +1423,7 @@ class TypeCombination
     }
 
     /**
-     * @return array<string, bool>
+     * @return array<string, true>
      */
     private static function getClassLikes(Codebase $codebase, string $fq_classlike_name): array
     {

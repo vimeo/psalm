@@ -424,7 +424,7 @@ class CallAnalyzer
      * @param  PhpParser\Node\Scalar\String_|PhpParser\Node\Expr\Array_|PhpParser\Node\Expr\BinaryOp\Concat
      *         $callable_arg
      *
-     * @return non-empty-string[]
+     * @return list<non-empty-string>
      *
      * @psalm-suppress LessSpecificReturnStatement
      * @psalm-suppress MoreSpecificReturnType

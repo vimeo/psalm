@@ -23,8 +23,6 @@ class StrReplaceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnT
 
     /**
      * @param  array<PhpParser\Node\Arg>    $call_args
-     *
-     * @return Type\Union
      */
     public static function getFunctionReturnType(
         StatementsSource $statements_source,

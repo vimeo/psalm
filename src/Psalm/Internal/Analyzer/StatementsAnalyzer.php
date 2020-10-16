@@ -309,7 +309,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
     }
 
     /**
-     * @psalm-return false|null
+     * @return false|null
      */
     private static function analyzeStatement(
         StatementsAnalyzer $statements_analyzer,
@@ -947,6 +947,9 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
         $this->fake_this_class = $fake_this_class;
     }
 
+    /**
+     * @return \Psalm\Internal\Provider\NodeDataProvider
+     */
     public function getNodeTypeProvider() : \Psalm\NodeTypeProvider
     {
         return $this->node_data;

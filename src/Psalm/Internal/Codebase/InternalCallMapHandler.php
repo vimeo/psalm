@@ -217,7 +217,7 @@ class InternalCallMapHandler
     }
 
     /**
-     * @psalm-return array<int, TCallable>|null
+     * @return array<int, TCallable>|null
      */
     public static function getCallablesFromCallMap(string $function_id): ?array
     {

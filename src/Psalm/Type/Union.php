@@ -16,6 +16,8 @@ use Psalm\Internal\Type\TypeCombination;
 use Psalm\StatementsSource;
 use Psalm\Storage\FileStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIterable;
@@ -617,7 +619,7 @@ class Union implements TypeNode
     }
 
     /**
-     * @return array<Atomic\TCallable>
+     * @return array<string, Atomic\TCallable>
      */
     private function getCallableTypes(): array
     {
@@ -630,7 +632,7 @@ class Union implements TypeNode
     }
 
     /**
-     * @return array<Atomic\TClosure>
+     * @return array<string, Atomic\TClosure>
      */
     public function getClosureTypes(): array
     {
@@ -1678,6 +1680,9 @@ class Union implements TypeNode
         return $this->literal_float_types;
     }
 
+    /**
+     * @return array<string, Atomic>
+     */
     public function getChildNodes() : array
     {
         return $this->types;

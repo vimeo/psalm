@@ -10,6 +10,9 @@ use Psalm\Type;
 
 class ClassLikeStubGenerator
 {
+    /**
+     * @return PhpParser\Node\Stmt\Class_|PhpParser\Node\Stmt\Interface_|PhpParser\Node\Stmt\Trait_
+     */
     public static function getClassLikeNode(
         \Psalm\Codebase $codebase,
         ClassLikeStorage $storage,

@@ -54,7 +54,7 @@ class CommentAnalyzer
      *
      * @throws DocblockParseException if there was a problem parsing the docblock
      *
-     * @return VarDocblockComment[]
+     * @return list<VarDocblockComment>
      */
     public static function getTypeFromComment(
         PhpParser\Comment\Doc $comment,
@@ -79,7 +79,7 @@ class CommentAnalyzer
      * @param  array<string, array<string, array{Type\Union}>>|null   $template_type_map
      * @param  array<string, TypeAlias> $type_aliases
      *
-     * @return VarDocblockComment[]
+     * @return list<VarDocblockComment>
      *
      * @throws DocblockParseException if there was a problem parsing the docblock
      */

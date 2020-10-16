@@ -472,8 +472,6 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
     /**
      * Transforms an absolute file path into a URI as used by the language server protocol.
      *
-     *
-     *
      * @psalm-pure
      */
     public static function pathToUri(string $filepath): string

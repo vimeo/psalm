@@ -66,7 +66,7 @@ class ErrorBaseline
     }
 
     /**
-     * @return array<string,array<string,array{o:int, s:array<int, string>}>>
+     * @return array<string,array<string,array{o:int, s: list<string>}>>
      *
      * @throws Exception\ConfigException
      */
@@ -125,7 +125,7 @@ class ErrorBaseline
     /**
      * @param array<string, list<IssueData>> $issues
      *
-     * @return array<string,array<string,array{o:int, s:array<int, string>}>>
+     * @return array<string, array<string, array{o: int, s: list<string>}>>
      *
      * @throws Exception\ConfigException
      */
@@ -287,8 +287,8 @@ class ErrorBaseline
         $xml = preg_replace_callback(
             '/<files (psalm-version="[^"]+") (?:php-version="(.+)"(\/?>)\n)/',
             /**
-            * @param array<int, string> $matches
-            */
+             * @param array<int, string> $matches
+             */
             function (array $matches) : string {
                 return
                     '<files' .

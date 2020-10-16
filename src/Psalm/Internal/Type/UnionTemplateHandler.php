@@ -785,7 +785,7 @@ class UnionTemplateHandler
     }
 
     /**
-     * @return list<Atomic>
+     * @return non-empty-list<Atomic\TClassString>
      */
     public static function handleTemplateParamClassStandin(
         Atomic\TTemplateParamClass $atomic_type,

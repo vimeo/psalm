@@ -30,7 +30,7 @@ class ParseTreeCreator
     private $t = 0;
 
     /**
-     * @param array<int, array{0: string, 1: int}> $type_tokens
+     * @param list<array{0: string, 1: int}> $type_tokens
      */
     public function __construct(array $type_tokens)
     {

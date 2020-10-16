@@ -143,7 +143,7 @@ class FileReferenceProvider
     }
 
     /**
-     * @return array<string>
+     * @return array<int, string>
      */
     public function getDeletedReferencedFiles(): array
     {
@@ -349,7 +349,7 @@ class FileReferenceProvider
     }
 
     /**
-     * @return array<string>
+     * @return array<int, string>
      */
     public function getFilesReferencingFile(string $file): array
     {
@@ -357,7 +357,7 @@ class FileReferenceProvider
     }
 
     /**
-     * @return array<string>
+     * @return array<int, string>
      */
     public function getFilesInheritingFromFile(string $file): array
     {

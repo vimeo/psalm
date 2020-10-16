@@ -229,7 +229,7 @@ class ClassLikes
     }
 
     /**
-     * @return string[]
+     * @return list<string>
      */
     public function getMatchingClassLikeNames(string $stub) : array
     {

@@ -42,7 +42,7 @@ class SwitchScope
     public $leftover_case_equality_expr = null;
 
     /**
-     * @var array<int, Clause>
+     * @var list<Clause>
      */
     public $negated_clauses = [];
 

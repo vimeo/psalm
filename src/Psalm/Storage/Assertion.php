@@ -39,6 +39,8 @@ class Assertion
             array_map(
                 /**
                  * @param array<int, string> $rules
+                 *
+                 * @return array{0: string}
                  */
                 function (array $rules) use ($template_type_map) : array {
                     $first_rule = $rules[0];

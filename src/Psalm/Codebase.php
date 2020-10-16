@@ -527,7 +527,7 @@ class Codebase
     }
 
     /**
-     * @return \Psalm\CodeLocation[]
+     * @return array<int, CodeLocation>
      */
     public function findReferencesToSymbol(string $symbol): array
     {
@@ -547,7 +547,7 @@ class Codebase
     }
 
     /**
-     * @return \Psalm\CodeLocation[]
+     * @return array<int, CodeLocation>
      */
     public function findReferencesToMethod(string $method_id): array
     {
@@ -555,7 +555,7 @@ class Codebase
     }
 
     /**
-     * @return \Psalm\CodeLocation[]
+     * @return array<int, CodeLocation>
      */
     public function findReferencesToProperty(string $property_id): array
     {
@@ -567,7 +567,9 @@ class Codebase
     }
 
     /**
-     * @return \Psalm\CodeLocation[]
+     * @return CodeLocation[]
+     *
+     * @psalm-return array<int, CodeLocation>
      */
     public function findReferencesToClassLike(string $fq_class_name): array
     {
@@ -581,7 +583,7 @@ class Codebase
         return $locations;
     }
 
-    public function getClosureStorage(string $file_path, string $closure_id): FunctionLikeStorage
+    public function getClosureStorage(string $file_path, string $closure_id): Storage\FunctionStorage
     {
         $file_storage = $this->file_storage_provider->get($file_path);
 
@@ -697,7 +699,7 @@ class Codebase
     }
 
     /**
-     * @return array<string>   all interfaces extended by $interface_name
+     * @return array<string, string> all interfaces extended by $interface_name
      */
     public function getParentInterfaces(string $fq_interface_name): array
     {
@@ -729,6 +731,8 @@ class Codebase
      * a method, closure, or function.
      *
      * @param non-empty-string $function_id
+     *
+     * @return Storage\FunctionStorage|Storage\MethodStorage
      */
     public function getFunctionLikeStorage(
         StatementsAnalyzer $statements_analyzer,
@@ -857,7 +861,7 @@ class Codebase
     /**
      * @param  string|\Psalm\Internal\MethodIdentifier $method_id
      *
-     * @return array<string>
+     * @return array<string, Internal\MethodIdentifier>
      */
     public function getOverriddenMethodIds($method_id): array
     {
@@ -1285,7 +1289,7 @@ class Codebase
     }
 
     /**
-     * @return array<int, \LanguageServerProtocol\CompletionItem>
+     * @return list<\LanguageServerProtocol\CompletionItem>
      */
     public function getCompletionItemsForClassishThing(string $type_string, string $gap) : array
     {
@@ -1376,7 +1380,7 @@ class Codebase
     }
 
     /**
-     * @return array<int, \LanguageServerProtocol\CompletionItem>
+     * @return list<\LanguageServerProtocol\CompletionItem>
      */
     public function getCompletionItemsForPartialSymbol(
         string $type_string,

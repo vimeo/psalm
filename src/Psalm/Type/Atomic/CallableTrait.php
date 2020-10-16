@@ -262,7 +262,7 @@ trait CallableTrait
     }
 
     /**
-     * @return array<\Psalm\Type\TypeNode>
+     * @return list<\Psalm\Type\TypeNode>
      */
     public function getChildNodes() : array
     {

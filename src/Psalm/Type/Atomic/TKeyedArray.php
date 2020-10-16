@@ -394,7 +394,7 @@ class TKeyedArray extends \Psalm\Type\Atomic
         return $this->getKey();
     }
 
-    public function getList() : TList
+    public function getList() : TNonEmptyList
     {
         if (!$this->is_list) {
             throw new \UnexpectedValueException('Object-like array must be a list for conversion');

@@ -16,7 +16,7 @@ class AtomicCallContext
     /** @var NodeDataProvider */
     public $node_data;
 
-    /** @param array<int, PhpParser\Node\Arg> $args */
+    /** @param list<PhpParser\Node\Arg> $args */
     public function __construct(MethodIdentifier $method_id, array $args, NodeDataProvider $node_data)
     {
         $this->method_id = $method_id;

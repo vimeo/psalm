@@ -931,7 +931,7 @@ class Methods
     }
 
     /**
-     * @return array<MethodIdentifier>
+     * @return array<string, MethodIdentifier>
      */
     public function getOverriddenMethodIds(MethodIdentifier $method_id): array
     {
