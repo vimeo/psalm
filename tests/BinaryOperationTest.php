@@ -174,9 +174,9 @@ class BinaryOperationTest extends TestCase
                 'assertions' => [
                     '$a' => 'int',
                     '$b' => 'int',
-                    '$c' => 'int',
-                    '$d' => 'int',
-                    '$e' => 'int',
+                    '$c' => 'positive-int',
+                    '$d' => 'positive-int',
+                    '$e' => 'positive-int',
                     '$f' => 'string',
                 ],
             ],
@@ -187,8 +187,8 @@ class BinaryOperationTest extends TestCase
                     $c = (true xor false);
                     $d = (false xor false);',
                 'assertions' => [
-                    '$a' => 'int',
-                    '$b' => 'int',
+                    '$a' => 'positive-int',
+                    '$b' => 'positive-int',
                     '$c' => 'bool',
                     '$d' => 'bool',
                 ],
@@ -220,7 +220,7 @@ class BinaryOperationTest extends TestCase
                     $b = 4 ^ 5;',
                 'assertions' => [
                     '$a' => 'string',
-                    '$b' => 'int',
+                    '$b' => 'positive-int',
                 ],
             ],
             'bitwiseNot' => [

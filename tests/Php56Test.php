@@ -49,8 +49,8 @@ class Php56Test extends TestCase
                     $c4 = (new C)->four;',
                 'assertions' => [
                     '$c1' => 'int',
-                    '$c2' => 'int',
-                    '$c3' => 'int',
+                    '$c2' => 'positive-int',
+                    '$c3' => 'positive-int',
                     '$c1_3rd' => 'float|int',
                     '$c_sentence' => 'string',
                     '$cf' => 'int',
