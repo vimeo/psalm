@@ -404,7 +404,8 @@ class Union implements TypeNode
     ): string {
         $types = [];
 
-        $multi_ints = count($this->literal_int_types) > 1;
+        $multi_ints = count($this->literal_int_types) > 1
+            || $this->hasPositiveInt();
         $multi_strings = count($this->literal_string_types) > 1;
         $multi_floats = count($this->literal_float_types) > 1;
 
