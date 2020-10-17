@@ -1935,7 +1935,7 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                     '$a' => 'bool',
                 ]
             ],
-            'SKIPPED-assertVarRedefinedInOpWithOr' => [
+            'assertVarRedefinedInOpWithOr' => [
                 '<?php
                     class O {
                         public function foo() : bool { return true; }
