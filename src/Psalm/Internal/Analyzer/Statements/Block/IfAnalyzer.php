@@ -1871,11 +1871,15 @@ class IfAnalyzer
                 $expr->getAttributes()
             );
 
+            $mic_drop_context->inside_negation = !$mic_drop_context->inside_negation;
+
             ExpressionAnalyzer::analyze(
                 $statements_analyzer,
                 $fake_negated_expr,
                 $mic_drop_context
             );
+
+            $mic_drop_context->inside_negation = !$mic_drop_context->inside_negation;
         }
 
         $statements_analyzer->node_data = $old_node_data;
