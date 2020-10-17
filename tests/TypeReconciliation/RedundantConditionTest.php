@@ -1222,7 +1222,7 @@ class RedundantConditionTest extends \Psalm\Tests\TestCase
                     }',
                 'error_message' => 'RedundantCondition',
             ],
-            'SKIPPED-noLongerWarnsAboutRedundancyHere' => [
+            'noLongerWarnsAboutRedundancyHere' => [
                 '<?php
                     function a(bool $a, bool $b) : void {
                         if ($a || $b) {
