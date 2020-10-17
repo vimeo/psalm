@@ -1859,6 +1859,18 @@ class IfAnalyzer
         $old_node_data = $statements_analyzer->node_data;
         $statements_analyzer->node_data = clone $old_node_data;
 
+        $suppressed_issues = $statements_analyzer->getSuppressedIssues();
+
+        if (!in_array('RedundantCondition', $suppressed_issues, true)) {
+            $statements_analyzer->addSuppressedIssues(['RedundantCondition']);
+        }
+        if (!in_array('RedundantConditionGivenDocblockType', $suppressed_issues, true)) {
+            $statements_analyzer->addSuppressedIssues(['RedundantConditionGivenDocblockType']);
+        }
+        if (!in_array('TypeDoesNotContainType', $suppressed_issues, true)) {
+            $statements_analyzer->addSuppressedIssues(['TypeDoesNotContainType']);
+        }
+
         foreach ($exprs as $expr) {
             $fake_negated_expr = new PhpParser\Node\Expr\FuncCall(
                 new PhpParser\Node\Name\FullyQualified('assert'),
@@ -1880,6 +1892,16 @@ class IfAnalyzer
             );
 
             $mic_drop_context->inside_negation = !$mic_drop_context->inside_negation;
+        }
+
+        if (!in_array('RedundantCondition', $suppressed_issues, true)) {
+            $statements_analyzer->removeSuppressedIssues(['RedundantCondition']);
+        }
+        if (!in_array('RedundantConditionGivenDocblockType', $suppressed_issues, true)) {
+            $statements_analyzer->removeSuppressedIssues(['RedundantConditionGivenDocblockType']);
+        }
+        if (!in_array('TypeDoesNotContainType', $suppressed_issues, true)) {
+            $statements_analyzer->removeSuppressedIssues(['TypeDoesNotContainType']);
         }
 
         $statements_analyzer->node_data = $old_node_data;
