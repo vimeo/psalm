@@ -368,6 +368,11 @@ class ClassLikeStorage
      */
     public $preserve_constructor_signature = false;
 
+    /**
+     * @var null|string
+     */
+    public $extension_requirement;
+
     public function __construct(string $name)
     {
         $this->name = $name;

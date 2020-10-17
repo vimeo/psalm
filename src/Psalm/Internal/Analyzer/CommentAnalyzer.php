@@ -874,6 +874,15 @@ class CommentAnalyzer
             }
         }
 
+        if (isset($parsed_docblock->tags['psalm-require-extends'])
+            && count($extension_requirements = $parsed_docblock->tags['psalm-require-extends']) > 0) {
+            $info->extension_requirement = trim(preg_replace(
+                '@^[ \t]*\*@m',
+                '',
+                $extension_requirements[array_key_first($extension_requirements)]
+            ));
+        }
+
         if (isset($parsed_docblock->combined_tags['implements'])) {
             foreach ($parsed_docblock->combined_tags['implements'] as $template_line) {
                 $info->template_implements[] = trim(preg_replace('@^[ \t]*\*@m', '', $template_line));

@@ -16,6 +16,7 @@ use Psalm\Context;
 use Psalm\Issue\DeprecatedClass;
 use Psalm\Issue\DeprecatedInterface;
 use Psalm\Issue\DeprecatedTrait;
+use Psalm\Issue\ExtensionRequirementViolation;
 use Psalm\Issue\InaccessibleMethod;
 use Psalm\Issue\InternalClass;
 use Psalm\Issue\InvalidExtendClass;
@@ -1537,6 +1538,25 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         $storage->suppressed_issues + $this->getSuppressedIssues()
                     )) {
                         // fall through
+                    }
+                }
+
+                if ($trait_storage->extension_requirement !== null) {
+                    $extension_requirement = $codebase->classlikes->getUnAliasedName(
+                        $trait_storage->extension_requirement
+                    );
+                    $extensionRequirementMet = in_array($extension_requirement, $storage->parent_classes);
+
+                    if (!$extensionRequirementMet) {
+                        if (IssueBuffer::accepts(
+                            new ExtensionRequirementViolation(
+                                $fq_trait_name . ' requires using class to extend ' . $extension_requirement . ', but ' . $storage->name . ' does not',
+                                new CodeLocation($previous_trait_analyzer ?: $this, $trait_name)
+                            ),
+                            $storage->suppressed_issues + $this->getSuppressedIssues()
+                        )) {
+                            // fall through
+                        }
                     }
                 }
 
