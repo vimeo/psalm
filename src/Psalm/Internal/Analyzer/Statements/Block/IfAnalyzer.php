@@ -665,10 +665,10 @@ class IfAnalyzer
         if ($internally_applied_if_cond_expr !== $cond
             || $externally_applied_if_cond_expr !== $cond
         ) {
-            $assigned_var_ids = $outer_context->assigned_var_ids;
+            $assigned_var_ids = $first_cond_assigned_var_ids;
             $if_conditional_context->assigned_var_ids = [];
 
-            $referenced_var_ids = $outer_context->referenced_var_ids;
+            $referenced_var_ids = $first_cond_referenced_var_ids;
             $if_conditional_context->referenced_var_ids = [];
 
             $if_conditional_context->inside_conditional = true;
