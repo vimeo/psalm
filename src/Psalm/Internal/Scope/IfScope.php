@@ -84,4 +84,9 @@ class IfScope
      * @var string[]
      */
     public $final_actions = [];
+
+    /**
+     * @var ?\Psalm\Context
+     */
+    public $mic_drop_context;
 }

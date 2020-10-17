@@ -18,6 +18,7 @@ use Psalm\Issue\TypeDoesNotContainType;
 use Psalm\Issue\RedundantCondition;
 use Psalm\IssueBuffer;
 use Psalm\Internal\Scope\IfScope;
+use Psalm\Internal\Scope\IfConditionalScope;
 use Psalm\Type;
 use Psalm\Type\Algebra;
 use Psalm\Type\Reconciler;
@@ -76,6 +77,23 @@ class IfAnalyzer
         $codebase = $statements_analyzer->getCodebase();
 
         $if_scope = new IfScope();
+
+        // We need to clone the original context for later use if we're exiting in this if conditional
+        if (!$stmt->else && !$stmt->elseifs && $stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr) {
+            $final_actions = ScopeAnalyzer::getControlActions(
+                $stmt->stmts,
+                $statements_analyzer->node_data,
+                $codebase->config->exit_functions,
+                $context->break_types
+            );
+
+            $has_leaving_statements = $final_actions === [ScopeAnalyzer::ACTION_END]
+                || (count($final_actions) && !in_array(ScopeAnalyzer::ACTION_NONE, $final_actions, true));
+
+            if ($has_leaving_statements) {
+                $if_scope->mic_drop_context = clone $context;
+            }
+        }
 
         try {
             $if_conditional_scope = self::analyzeIfConditional(
@@ -334,6 +352,7 @@ class IfAnalyzer
             $statements_analyzer,
             $stmt,
             $if_scope,
+            $if_conditional_scope,
             $if_context,
             $old_if_context,
             $context,
@@ -489,7 +508,7 @@ class IfAnalyzer
         Codebase $codebase,
         IfScope $if_scope,
         ?int $branch_point
-    ): \Psalm\Internal\Scope\IfConditionalScope {
+    ): IfConditionalScope {
         $entry_clauses = [];
 
         // used when evaluating elseifs
@@ -746,6 +765,7 @@ class IfAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\If_ $stmt,
         IfScope $if_scope,
+        IfConditionalScope $if_conditional_scope,
         Context $if_context,
         Context $old_if_context,
         Context $outer_context,
@@ -859,6 +879,46 @@ class IfAnalyzer
         }
 
         if ($has_leaving_statements && !$has_break_statement && !$stmt->else && !$stmt->elseifs) {
+            // If we're assigning inside
+            if ($if_conditional_scope->cond_assigned_var_ids
+                && $stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+                && $if_scope->mic_drop_context
+            ) {
+                $exprs = self::getDefinitelyEvaluatedOredExpressions($stmt->cond);
+
+                // if there was no assignment in the first expression it's safe to proceed
+                $old_node_data = $statements_analyzer->node_data;
+                $statements_analyzer->node_data = clone $old_node_data;
+
+                foreach ($exprs as $expr) {
+                    $fake_negated_expr = new PhpParser\Node\Expr\FuncCall(
+                        new PhpParser\Node\Name\FullyQualified('assert'),
+                        [new PhpParser\Node\Arg(
+                            new PhpParser\Node\Expr\BooleanNot($expr, $expr->getAttributes()),
+                            false,
+                            false,
+                            $expr->getAttributes()
+                        )],
+                        $expr->getAttributes()
+                    );
+
+                    ExpressionAnalyzer::analyze(
+                        $statements_analyzer,
+                        $fake_negated_expr,
+                        $if_scope->mic_drop_context
+                    );
+                }
+
+                $statements_analyzer->node_data = $old_node_data;
+
+                foreach ($if_conditional_scope->cond_assigned_var_ids as $var_id => $_) {
+                    if (isset($if_scope->mic_drop_context->vars_in_scope[$var_id])) {
+                        $outer_context->vars_in_scope[$var_id]
+                            = clone $if_scope->mic_drop_context->vars_in_scope[$var_id];
+                    }
+                }
+            }
+
             if ($if_scope->negated_types) {
                 $changed_var_ids = [];
 
@@ -1789,4 +1849,25 @@ class IfAnalyzer
 
         return $stmt;
     }
+
+    /**
+     * Returns all expressions inside an ored expression
+     * @return non-empty-list<PhpParser\Node\Expr>
+     */
+    private static function getDefinitelyEvaluatedOredExpressions(PhpParser\Node\Expr $stmt): array
+    {
+        if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+            || $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
+            || $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalXor
+        ) {
+            return array_merge(
+                self::getDefinitelyEvaluatedOredExpressions($stmt->left),
+                self::getDefinitelyEvaluatedOredExpressions($stmt->right)
+            );
+        }
+
+        return [$stmt];
+    }
+
+
 }
