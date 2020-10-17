@@ -7,15 +7,19 @@ use function array_search;
 use function array_splice;
 use function count;
 use function debug_print_backtrace;
+use function dirname;
 use function explode;
 use function file_put_contents;
 use function fwrite;
 use function get_class;
+use function is_dir;
 use function memory_get_peak_usage;
+use function mkdir;
 use function microtime;
 use function number_format;
 use function ob_get_clean;
 use function ob_start;
+use function sprintf;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Issue\CodeIssue;
@@ -561,6 +565,10 @@ class IssueBuffer
                 throw new \UnexpectedValueException('Output path should not be null here');
             }
 
+            $folder = dirname($report_options->output_path);
+            if (!is_dir($folder) && !mkdir($folder, 0777, true) && !is_dir($folder)) {
+                throw new \RuntimeException(sprintf('Directory "%s" was not created', $folder));
+            }
             file_put_contents(
                 $report_options->output_path,
                 self::getOutput(
