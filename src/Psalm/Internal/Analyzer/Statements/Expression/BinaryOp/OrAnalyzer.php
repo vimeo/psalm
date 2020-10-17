@@ -47,9 +47,11 @@ class OrAnalyzer
 
         $codebase = $statements_analyzer->getCodebase();
 
+        $mic_drop_context = null;
+
         if (!$stmt->left instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
-            && !($stmt->left instanceof PhpParser\Node\Expr\BooleanNot
-                && $stmt->left->expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd)
+            || !$stmt->left->left instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+            || !$stmt->left->left->left instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
         ) {
             $if_scope = new \Psalm\Internal\Scope\IfScope();
 
@@ -66,6 +68,11 @@ class OrAnalyzer
                 $left_context = $if_conditional_scope->if_context;
 
                 $left_referenced_var_ids = $if_conditional_scope->cond_referenced_var_ids;
+                $left_assigned_var_ids = $if_conditional_scope->cond_assigned_var_ids;
+
+                if ($stmt->left instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr) {
+                    $mic_drop_context = clone $context;
+                }
             } catch (\Psalm\Exception\ScopeAnalysisException $e) {
                 return false;
             }
@@ -74,6 +81,8 @@ class OrAnalyzer
             $context->referenced_var_ids = [];
 
             $pre_assigned_var_ids = $context->assigned_var_ids;
+
+            $mic_drop_context = clone $context;
 
             $left_context = clone $context;
             $left_context->parent_context = $context;
@@ -175,6 +184,19 @@ class OrAnalyzer
         $changed_var_ids = [];
 
         $right_context = clone $context;
+
+        if ($stmt->left instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+            && $left_assigned_var_ids
+            && $mic_drop_context
+        ) {
+            IfAnalyzer::addConditionallyAssignedVarsToContext(
+                $statements_analyzer,
+                $stmt->left,
+                $mic_drop_context,
+                $right_context,
+                $left_assigned_var_ids
+            );
+        }
 
         if ($negated_type_assertions) {
             // while in an or, we allow scope to boil over to support

@@ -884,39 +884,13 @@ class IfAnalyzer
                 && $stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
                 && $if_scope->mic_drop_context
             ) {
-                $exprs = self::getDefinitelyEvaluatedOredExpressions($stmt->cond);
-
-                // if there was no assignment in the first expression it's safe to proceed
-                $old_node_data = $statements_analyzer->node_data;
-                $statements_analyzer->node_data = clone $old_node_data;
-
-                foreach ($exprs as $expr) {
-                    $fake_negated_expr = new PhpParser\Node\Expr\FuncCall(
-                        new PhpParser\Node\Name\FullyQualified('assert'),
-                        [new PhpParser\Node\Arg(
-                            new PhpParser\Node\Expr\BooleanNot($expr, $expr->getAttributes()),
-                            false,
-                            false,
-                            $expr->getAttributes()
-                        )],
-                        $expr->getAttributes()
-                    );
-
-                    ExpressionAnalyzer::analyze(
-                        $statements_analyzer,
-                        $fake_negated_expr,
-                        $if_scope->mic_drop_context
-                    );
-                }
-
-                $statements_analyzer->node_data = $old_node_data;
-
-                foreach ($if_conditional_scope->cond_assigned_var_ids as $var_id => $_) {
-                    if (isset($if_scope->mic_drop_context->vars_in_scope[$var_id])) {
-                        $outer_context->vars_in_scope[$var_id]
-                            = clone $if_scope->mic_drop_context->vars_in_scope[$var_id];
-                    }
-                }
+                self::addConditionallyAssignedVarsToContext(
+                    $statements_analyzer,
+                    $stmt->cond,
+                    $if_scope->mic_drop_context,
+                    $outer_context,
+                    $if_conditional_scope->cond_assigned_var_ids
+                );
             }
 
             if ($if_scope->negated_types) {
@@ -1867,5 +1841,49 @@ class IfAnalyzer
         }
 
         return [$stmt];
+    }
+
+    /**
+     * @param array<string, bool> $cond_assigned_var_ids
+     */
+    public static function addConditionallyAssignedVarsToContext(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $cond,
+        Context $mic_drop_context,
+        Context $outer_context,
+        array $cond_assigned_var_ids
+    ) : void {
+        $exprs = self::getDefinitelyEvaluatedOredExpressions($cond);
+
+        // if there was no assignment in the first expression it's safe to proceed
+        $old_node_data = $statements_analyzer->node_data;
+        $statements_analyzer->node_data = clone $old_node_data;
+
+        foreach ($exprs as $expr) {
+            $fake_negated_expr = new PhpParser\Node\Expr\FuncCall(
+                new PhpParser\Node\Name\FullyQualified('assert'),
+                [new PhpParser\Node\Arg(
+                    new PhpParser\Node\Expr\BooleanNot($expr, $expr->getAttributes()),
+                    false,
+                    false,
+                    $expr->getAttributes()
+                )],
+                $expr->getAttributes()
+            );
+
+            ExpressionAnalyzer::analyze(
+                $statements_analyzer,
+                $fake_negated_expr,
+                $mic_drop_context
+            );
+        }
+
+        $statements_analyzer->node_data = $old_node_data;
+
+        foreach ($cond_assigned_var_ids as $var_id => $_) {
+            if (isset($mic_drop_context->vars_in_scope[$var_id])) {
+                $outer_context->vars_in_scope[$var_id] = clone $mic_drop_context->vars_in_scope[$var_id];
+            }
+        }
     }
 }
