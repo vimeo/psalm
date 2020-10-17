@@ -1868,6 +1868,4 @@ class IfAnalyzer
 
         return [$stmt];
     }
-
-
 }
