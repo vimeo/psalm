@@ -283,7 +283,7 @@ class FileAnalyzer extends SourceAnalyzer
     /**
      * @param  array<int, PhpParser\Node\Stmt>  $stmts
      *
-     * @return array<int, PhpParser\Node\Stmt>
+     * @return list<PhpParser\Node\Stmt>
      */
     public function populateCheckers(array $stmts): array
     {
@@ -430,7 +430,7 @@ class FileAnalyzer extends SourceAnalyzer
         }
     }
 
-    public function getFunctionLikeAnalyzer(\Psalm\Internal\MethodIdentifier $method_id) : ?FunctionLikeAnalyzer
+    public function getFunctionLikeAnalyzer(\Psalm\Internal\MethodIdentifier $method_id) : ?MethodAnalyzer
     {
         $fq_class_name = $method_id->fq_class_name;
         $method_name = $method_id->method_name;
@@ -536,7 +536,7 @@ class FileAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * @return array<int, string>
+     * @return list<string>
      */
     public function getRequiredFilePaths(): array
     {
@@ -544,7 +544,7 @@ class FileAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * @return array<int, string>
+     * @return list<string>
      */
     public function getParentFilePaths(): array
     {

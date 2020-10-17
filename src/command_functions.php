@@ -168,7 +168,7 @@ function getVendorDir(string $current_dir): string
 }
 
 /**
- * @return string[]
+ * @return list<string>
  */
 function getArguments() : array
 {
@@ -207,7 +207,7 @@ function getArguments() : array
 /**
  * @param  string|array|null|false $f_paths
  *
- * @return string[]|null
+ * @return list<string>|null
  */
 function getPathsToCheck($f_paths): ?array
 {

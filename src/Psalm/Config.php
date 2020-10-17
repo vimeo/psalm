@@ -1631,7 +1631,7 @@ class Config
     }
 
     /**
-     * @return array<string>
+     * @return array<int, string>
      */
     public function getFileExtensions(): array
     {

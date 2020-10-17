@@ -23,9 +23,6 @@ class FooMethodProvider implements
         return ['Ns\Foo'];
     }
 
-    /**
-     * @return ?bool
-     */
     public static function doesMethodExist(
         string $fq_classlike_name,
         string $method_name_lowercase,

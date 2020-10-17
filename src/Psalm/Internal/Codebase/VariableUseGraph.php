@@ -47,7 +47,7 @@ class VariableUseGraph extends DataFlowGraph
 
     /**
      * @param array<string, bool> $visited_source_ids
-     * @return ?array<DataFlowNode>
+     * @return array<string, DataFlowNode>|null
      */
     private function getChildNodes(
         DataFlowNode $generated_source,

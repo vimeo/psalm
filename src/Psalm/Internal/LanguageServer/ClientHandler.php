@@ -49,9 +49,9 @@ class ClientHandler
 
         return call(
             /**
-             * @return \Generator<int, Promise, mixed, mixed>
+             * @return \Generator<int, \Amp\Promise, mixed, \Amp\Promise<mixed>>
              */
-            function () use ($id, $method, $params) {
+            function () use ($id, $method, $params): \Generator {
                 yield $this->protocolWriter->write(
                     new Message(
                         new AdvancedJsonRpc\Request($id, $method, (object) $params)

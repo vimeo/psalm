@@ -1837,7 +1837,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
     /**
      * @param  bool $fake_method in the case of @method annotations we do something a little strange
      *
-     * @return FunctionLikeStorage|false
+     * @return FunctionStorage|MethodStorage|false
      */
     private function registerFunctionLike(PhpParser\Node\FunctionLike $stmt, bool $fake_method = false)
     {
@@ -3143,7 +3143,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
     }
 
     /**
-     * @return ?list<string>
+     * @return non-empty-list<string>|null
      */
     private function getAssertionParts(
         FunctionLikeStorage $storage,

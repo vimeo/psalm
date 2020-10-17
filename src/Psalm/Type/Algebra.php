@@ -420,7 +420,7 @@ class Algebra
      *     ($a) && ($a || $b) => $a
      *     (!$a) && (!$b) && ($a || $b || $c) => $c
      *
-     * @param array<int, Clause>  $clauses
+     * @param list<Clause>  $clauses
      *
      * @return list<Clause>
      *
@@ -522,7 +522,7 @@ class Algebra
      * @param  array<string, bool> $cond_referenced_var_ids
      * @param  array<string, array<int, array<int, string>>> $active_truths
      *
-     * @return array<string, array<int, array<int, string>>>
+     * @return array<string, list<array<int, string>>>
      */
     public static function getTruthsFromFormula(
         array $clauses,
@@ -591,9 +591,9 @@ class Algebra
     }
 
     /**
-     * @param non-empty-array<int, Clause>  $clauses
+     * @param non-empty-list<Clause>  $clauses
      *
-     * @return array<int, Clause>
+     * @return list<Clause>
      *
      * @psalm-pure
      */
@@ -803,7 +803,7 @@ class Algebra
      *   (!$a || !$c || !$e) &&
      *   (!$a || !$c || !$f)
      *
-     * @param array<int, Clause>  $clauses
+     * @param list<Clause>  $clauses
      *
      * @return non-empty-list<Clause>
      */

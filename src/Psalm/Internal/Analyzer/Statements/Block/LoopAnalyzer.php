@@ -31,8 +31,6 @@ class LoopAnalyzer
      * @param  array<PhpParser\Node\Stmt>   $stmts
      * @param  PhpParser\Node\Expr[]        $pre_conditions
      * @param  PhpParser\Node\Expr[]        $post_expressions
-     * @param  Context                      loop_scope->loop_context
-     * @param  Context                      $loop_scope->loop_parent_context
      *
      * @return false|null
      */
@@ -600,9 +598,9 @@ class LoopAnalyzer
     }
 
     /**
-     * @param  array<int, Clause>  $pre_condition_clauses
+     * @param  list<Clause>  $pre_condition_clauses
      *
-     * @return string[]
+     * @return list<string>
      */
     private static function applyPreConditionToLoopContext(
         StatementsAnalyzer $statements_analyzer,

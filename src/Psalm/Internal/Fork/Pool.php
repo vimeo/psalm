@@ -296,6 +296,8 @@ class Pool
      *
      *
      * @psalm-suppress MixedAssignment
+     *
+     * @return list<mixed>
      */
     private function readResultsFromChildren(): array
     {
@@ -380,6 +382,7 @@ class Pool
     /**
      * Wait for all child processes to complete
      *
+     * @return list<mixed>
      */
     public function wait(): array
     {

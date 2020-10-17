@@ -23,7 +23,7 @@ class TraitFinder extends PhpParser\NodeVisitorAbstract
     /**
      * @param  bool $traverseChildren
      *
-     * @return null|int|PhpParser\Node
+     * @return int|null
      */
     public function enterNode(PhpParser\Node $node, &$traverseChildren = true)
     {

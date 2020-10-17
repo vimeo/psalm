@@ -266,7 +266,7 @@ class StubsGenerator
     }
 
     /**
-     * @return PhpParser\Node\Identifier|PhpParser\Node\Name|PhpParser\Node\NullableType|null
+     * @return PhpParser\Node\Identifier|PhpParser\Node\Name\FullyQualified|PhpParser\Node\NullableType|null
      */
     public static function getParserTypeFromPsalmType(Type\Union $type): ?PhpParser\NodeAbstract
     {
@@ -308,7 +308,7 @@ class StubsGenerator
                 return $name_node;
             }
         }
-        
+
         return null;
     }
 

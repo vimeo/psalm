@@ -186,7 +186,7 @@ class TaintFlowGraph extends DataFlowGraph
     /**
      * @param array<string> $source_taints
      * @param array<DataFlowNode> $sinks
-     * @return array<DataFlowNode>
+     * @return array<string, DataFlowNode>
      */
     private function getChildNodes(
         DataFlowNode $generated_source,
@@ -270,7 +270,7 @@ class TaintFlowGraph extends DataFlowGraph
         return $new_sources;
     }
 
-    /** @return array<DataFlowNode> */
+    /** @return array<int, DataFlowNode> */
     private function getSpecializedSources(DataFlowNode $source) : array
     {
         $generated_sources = [];

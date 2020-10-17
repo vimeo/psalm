@@ -48,12 +48,12 @@ interface StatementsSource extends FileSource
     public function getSuppressedIssues(): array;
 
     /**
-     * @param array<int, string> $new_issues
+     * @param list<string> $new_issues
      */
     public function addSuppressedIssues(array $new_issues): void;
 
     /**
-     * @param array<int, string> $new_issues
+     * @param list<string> $new_issues
      */
     public function removeSuppressedIssues(array $new_issues): void;
 

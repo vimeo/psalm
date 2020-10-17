@@ -351,7 +351,7 @@ class ProjectAnalyzer
 
     /**
      * @param  array<string>  $report_file_paths
-     * @return array<ReportOptions>
+     * @return list<ReportOptions>
      */
     public static function getFileReportOptions(array $report_file_paths, bool $show_info = true): array
     {
@@ -1019,7 +1019,7 @@ class ProjectAnalyzer
     }
 
     /**
-     * @return array<int, string>
+     * @return list<string>
      */
     private function getAllFiles(Config $config): array
     {
@@ -1051,7 +1051,7 @@ class ProjectAnalyzer
     }
 
     /**
-     * @return array<string>
+     * @return list<string>
      */
     protected function getDiffFilesInDir(string $dir_name, Config $config): array
     {
@@ -1472,7 +1472,7 @@ class ProjectAnalyzer
     }
 
     /**
-     * @return array<string>
+     * @return array<int, string>
      *
      * @psalm-pure
      */

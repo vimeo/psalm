@@ -82,7 +82,7 @@ class TypeExpander
     /**
      * @param  string|Type\Atomic\TNamedObject|Type\Atomic\TTemplateParam|null $static_class_type
      *
-     * @return Type\Atomic|non-empty-array<int, Type\Atomic>
+     * @return Type\Atomic|non-empty-list<Type\Atomic>
      */
     public static function expandAtomic(
         Codebase $codebase,

@@ -12,7 +12,7 @@ class ArrayValue extends UnresolvedConstantComponent
     /** @var array<int, KeyValuePair> */
     public $entries;
 
-    /** @param array<int, KeyValuePair> $entries */
+    /** @param list<KeyValuePair> $entries */
     public function __construct(array $entries)
     {
         $this->entries = $entries;

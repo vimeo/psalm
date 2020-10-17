@@ -22,7 +22,7 @@ class AstDiffer
      * @param array<int, PhpParser\Node\Stmt> $a
      * @param array<int, PhpParser\Node\Stmt> $b
      *
-     * @return array{0:array<int, array<int, int>>, 1: int, 2: int, 3: array<int, bool>}
+     * @return array{0:non-empty-list<array<int, int>>, 1: int, 2: int, 3: array<int, bool>}
      */
     protected static function calculateTrace(
         \Closure $is_equal,
@@ -74,7 +74,7 @@ class AstDiffer
      * @param array<int, PhpParser\Node\Stmt> $b
      * @param array<int, bool> $bc
      *
-     * @return DiffElem[]
+     * @return list<DiffElem>
      *
      * @psalm-pure
      */

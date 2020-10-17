@@ -130,8 +130,7 @@ class IssueHandler
     }
 
     /**
-     * @return       string[]
-     * @psalm-return array<string>
+     * @return array<int, string>
      */
     public static function getAllIssueTypes(): array
     {

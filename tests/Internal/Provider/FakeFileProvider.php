@@ -61,7 +61,7 @@ class FakeFileProvider extends \Psalm\Internal\Provider\FileProvider
     /**
      * @param array<string> $file_extensions
      *
-     * @return array<int, string>
+     * @return list<string>
      */
     public function getFilesInDir(string $dir_path, array $file_extensions): array
     {
