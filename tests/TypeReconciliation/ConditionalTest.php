@@ -1887,7 +1887,7 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                         return new O();
                     }'
             ],
-            'SKIPPED-assertVarRedefinedInIfWithOr' => [
+            'assertVarRedefinedInIfWithOr' => [
                 '<?php
                     class O {}
 
