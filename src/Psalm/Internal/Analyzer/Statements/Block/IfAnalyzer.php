@@ -2017,6 +2017,4 @@ class IfAnalyzer
 
         return [$stmt];
     }
-
-
 }
