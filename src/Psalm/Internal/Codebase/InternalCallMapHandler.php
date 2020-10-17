@@ -138,8 +138,6 @@ class InternalCallMapHandler
                     continue;
                 }
 
-                $arg_type = null;
-
                 if (!$nodes
                     || !($arg_type = $nodes->getType($arg->value))
                 ) {

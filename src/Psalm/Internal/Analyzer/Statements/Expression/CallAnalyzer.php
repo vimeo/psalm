@@ -493,8 +493,6 @@ class CallAnalyzer
             return [$fq_class_name . '::' . $method_name_arg->value];
         }
 
-        $class_arg_type = null;
-
         if (!$file_source instanceof StatementsAnalyzer
             || !($class_arg_type = $file_source->node_data->getType($class_arg))
         ) {
