@@ -424,7 +424,7 @@ class Union implements TypeNode
         }
 
         sort($types);
-        return implode('|', array_unique($types));
+        return implode('|', \array_unique($types));
     }
 
     /**
