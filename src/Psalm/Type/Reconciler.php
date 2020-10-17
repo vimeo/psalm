@@ -15,6 +15,7 @@ use Psalm\Issue\DocblockTypeContradiction;
 use Psalm\Issue\PsalmInternalError;
 use Psalm\Issue\RedundantCondition;
 use Psalm\Issue\RedundantConditionGivenDocblockType;
+use Psalm\Issue\TypeDoesNotContainNull;
 use Psalm\Issue\TypeDoesNotContainType;
 use Psalm\IssueBuffer;
 use Psalm\Type;
@@ -858,14 +859,26 @@ class Reconciler
                     // fall through
                 }
             } else {
-                if (IssueBuffer::accepts(
-                    new TypeDoesNotContainType(
+                if ($assertion === 'null') {
+                    $issue = new TypeDoesNotContainNull(
                         'Type ' . $old_var_type_string
                             . ' for ' . $key
                             . ' is ' . ($never ? 'always ' : 'never ') . $assertion,
                         $code_location,
                         $old_var_type_string . ' ' . $assertion
-                    ),
+                    );
+                } else {
+                    $issue = new TypeDoesNotContainType(
+                        'Type ' . $old_var_type_string
+                            . ' for ' . $key
+                            . ' is ' . ($never ? 'always ' : 'never ') . $assertion,
+                        $code_location,
+                        $old_var_type_string . ' ' . $assertion
+                    );
+                }
+
+                if (IssueBuffer::accepts(
+                    $issue,
                     $suppressed_issues
                 )) {
                     // fall through
