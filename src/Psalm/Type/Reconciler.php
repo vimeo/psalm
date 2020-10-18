@@ -810,13 +810,25 @@ class Reconciler
         string $key,
         string $assertion,
         bool $redundant,
+        bool $negated,
         CodeLocation $code_location,
         array $suppressed_issues
     ): void {
-        $never = $assertion[0] === '!';
+        $not = $assertion[0] === '!';
 
-        if ($never) {
+        $safe_assertion = $assertion;
+
+        if ($not) {
             $assertion = substr($assertion, 1);
+        }
+
+        if ($negated) {
+            $redundant = !$redundant;
+            $not = !$not;
+        }
+
+        if ($not) {
+            $assertion = '!' . $assertion;
         }
 
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
@@ -831,9 +843,9 @@ class Reconciler
                     new RedundantConditionGivenDocblockType(
                         'Docblock-defined type ' . $old_var_type_string
                             . ' for ' . $key
-                            . ' is ' . ($never ? 'never ' : 'always ') . $assertion,
+                            . ' is always ' . $assertion,
                         $code_location,
-                        $old_var_type_string . ' ' . $assertion
+                        $old_var_type_string . ' ' . $safe_assertion
                     ),
                     $suppressed_issues
                 )) {
@@ -844,9 +856,9 @@ class Reconciler
                     new RedundantCondition(
                         'Type ' . $old_var_type_string
                             . ' for ' . $key
-                            . ' is ' . ($never ? 'never ' : 'always ') . $assertion,
+                            . ' is always ' . $assertion,
                         $code_location,
-                        $old_var_type_string . ' ' . $assertion
+                        $old_var_type_string . ' ' . $safe_assertion
                     ),
                     $suppressed_issues
                 )) {
@@ -859,9 +871,9 @@ class Reconciler
                     new DocblockTypeContradiction(
                         'Docblock-defined type ' . $old_var_type_string
                             . ' for ' . $key
-                            . ' is ' . ($never ? 'always ' : 'never ') . $assertion,
+                            . ' is never ' . $assertion,
                         $code_location,
-                        $old_var_type_string . ' ' . $assertion
+                        $old_var_type_string . ' ' . $safe_assertion
                     ),
                     $suppressed_issues
                 )) {
@@ -872,17 +884,17 @@ class Reconciler
                     $issue = new TypeDoesNotContainNull(
                         'Type ' . $old_var_type_string
                             . ' for ' . $key
-                            . ' is ' . ($never ? 'always ' : 'never ') . $assertion,
+                            . ' is never ' . $assertion,
                         $code_location,
-                        $old_var_type_string . ' ' . $assertion
+                        $old_var_type_string . ' ' . $safe_assertion
                     );
                 } else {
                     $issue = new TypeDoesNotContainType(
                         'Type ' . $old_var_type_string
                             . ' for ' . $key
-                            . ' is ' . ($never ? 'always ' : 'never ') . $assertion,
+                            . ' is never ' . $assertion,
                         $code_location,
-                        $old_var_type_string . ' ' . $assertion
+                        $old_var_type_string . ' ' . $safe_assertion
                     );
                 }
 

@@ -494,7 +494,8 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                         $old_var_type_string,
                         $key,
                         'non-empty-countable',
-                        $negated xor !$did_remove_type,
+                        !$did_remove_type,
+                        $negated,
                         $code_location,
                         $suppressed_issues
                     );
@@ -596,7 +597,8 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                     $old_var_type_string,
                     $key,
                     'positive-numeric',
-                    $negated xor !$did_remove_type,
+                    !$did_remove_type,
+                    $negated,
                     $code_location,
                     $suppressed_issues
                 );
@@ -700,7 +702,8 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                     $old_var_type_string,
                     $key,
                     'object with method ' . $method_name,
-                    $negated xor !$did_remove_type,
+                    !$did_remove_type,
+                    $negated,
                     $code_location,
                     $suppressed_issues
                 );
@@ -791,7 +794,8 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                     $old_var_type_string,
                     $key,
                     'string',
-                    $negated xor !$did_remove_type,
+                    !$did_remove_type,
+                    $negated,
                     $code_location,
                     $suppressed_issues
                 );
@@ -885,7 +889,8 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                     $old_var_type_string,
                     $key,
                     'int',
-                    $negated xor !$did_remove_type,
+                    !$did_remove_type,
+                    $negated,
                     $code_location,
                     $suppressed_issues
                 );
@@ -963,7 +968,8 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                     $old_var_type_string,
                     $key,
                     'bool',
-                    $negated xor !$did_remove_type,
+                    !$did_remove_type,
+                    $negated,
                     $code_location,
                     $suppressed_issues
                 );
@@ -1037,7 +1043,8 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                     $old_var_type_string,
                     $key,
                     'scalar',
-                    $negated xor !$did_remove_type,
+                    !$did_remove_type,
+                    $negated,
                     $code_location,
                     $suppressed_issues
                 );
@@ -1128,7 +1135,8 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                     $old_var_type_string,
                     $key,
                     'numeric',
-                    $negated xor !$did_remove_type,
+                    !$did_remove_type,
+                    $negated,
                     $code_location,
                     $suppressed_issues
                 );
@@ -1212,7 +1220,8 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                     $old_var_type_string,
                     $key,
                     'object',
-                    $negated xor !$did_remove_type,
+                    !$did_remove_type,
+                    $negated,
                     $code_location,
                     $suppressed_issues
                 );
@@ -1268,7 +1277,8 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                     $old_var_type_string,
                     $key,
                     'resource',
-                    $negated xor !$did_remove_type,
+                    !$did_remove_type,
+                    $negated,
                     $code_location,
                     $suppressed_issues
                 );
@@ -1338,7 +1348,8 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                     $old_var_type_string,
                     $key,
                     'countable',
-                    $negated xor !$did_remove_type,
+                    !$did_remove_type,
+                    $negated,
                     $code_location,
                     $suppressed_issues
                 );
@@ -1397,7 +1408,8 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                     $old_var_type_string,
                     $key,
                     'iterable',
-                    $negated xor !$did_remove_type,
+                    !$did_remove_type,
+                    $negated,
                     $code_location,
                     $suppressed_issues
                 );
@@ -1541,7 +1553,8 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                     $old_var_type_string,
                     $key,
                     'Traversable',
-                    $negated xor !$did_remove_type,
+                    !$did_remove_type,
+                    $negated,
                     $code_location,
                     $suppressed_issues
                 );
@@ -1613,7 +1626,8 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                     $old_var_type_string,
                     $key,
                     'array',
-                    $negated xor !$did_remove_type,
+                    !$did_remove_type,
+                    $negated,
                     $code_location,
                     $suppressed_issues
                 );
@@ -1731,7 +1745,8 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                     $old_var_type_string,
                     $key,
                     'array',
-                    $negated xor !$did_remove_type,
+                    !$did_remove_type,
+                    $negated,
                     $code_location,
                     $suppressed_issues
                 );
@@ -1801,7 +1816,8 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                     $old_var_type_string,
                     $key,
                     'string-array-access',
-                    !$negated,
+                    true,
+                    $negated,
                     $code_location,
                     $suppressed_issues
                 );
@@ -1860,7 +1876,8 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                     $old_var_type_string,
                     $key,
                     'int-or-string-array-access',
-                    !$negated,
+                    true,
+                    $negated,
                     $code_location,
                     $suppressed_issues
                 );
@@ -1956,7 +1973,8 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                     $old_var_type_string,
                     $key,
                     'callable',
-                    $negated xor !$did_remove_type,
+                    !$did_remove_type,
+                    $negated,
                     $code_location,
                     $suppressed_issues
                 );
@@ -2269,7 +2287,8 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                     $old_var_type_string,
                     $key,
                     $assertion,
-                    $negated xor !$did_remove_type,
+                    !$did_remove_type,
+                    $negated,
                     $code_location,
                     $suppressed_issues
                 );
