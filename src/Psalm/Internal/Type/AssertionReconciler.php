@@ -1042,7 +1042,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                     $old_var_type_string,
                     $var_id,
                     $assertion,
-                    true,
+                    false,
                     $negated,
                     $code_location,
                     $suppressed_issues
