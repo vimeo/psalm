@@ -1853,6 +1853,13 @@ class IfAnalyzer
         Context $outer_context,
         array $cond_assigned_var_ids
     ) : void {
+        // this filters out coercions to expeccted types in ArgumentAnalyzer
+        $cond_assigned_var_ids = \array_filter($cond_assigned_var_ids);
+
+        if (!$cond_assigned_var_ids) {
+            return;
+        }
+
         $exprs = self::getDefinitelyEvaluatedOredExpressions($cond);
 
         // if there was no assignment in the first expression it's safe to proceed
