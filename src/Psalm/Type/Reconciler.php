@@ -807,8 +807,6 @@ class Reconciler
     ): void {
         $not = $assertion[0] === '!';
 
-        $safe_assertion = $assertion;
-
         if ($not) {
             $assertion = substr($assertion, 1);
         }
@@ -832,7 +830,7 @@ class Reconciler
                             . ' for ' . $key
                             . ' is ' . ($not ? 'never ' : 'always ') . $assertion,
                         $code_location,
-                        $old_var_type_string . ' ' . $safe_assertion
+                        $old_var_type_string . ' ' . $assertion
                     ),
                     $suppressed_issues
                 )) {
@@ -845,7 +843,7 @@ class Reconciler
                             . ' for ' . $key
                             . ' is ' . ($not ? 'never ' : 'always ') . $assertion,
                         $code_location,
-                        $old_var_type_string . ' ' . $safe_assertion
+                        $old_var_type_string . ' ' . $assertion
                     ),
                     $suppressed_issues
                 )) {
@@ -860,7 +858,7 @@ class Reconciler
                             . ' for ' . $key
                             . ' is ' . ($not ? 'always ' : 'never ') . $assertion,
                         $code_location,
-                        $old_var_type_string . ' ' . $safe_assertion
+                        $old_var_type_string . ' ' . $assertion
                     ),
                     $suppressed_issues
                 )) {
@@ -873,7 +871,7 @@ class Reconciler
                             . ' for ' . $key
                             . ' is never ' . $assertion,
                         $code_location,
-                        $old_var_type_string . ' ' . $safe_assertion
+                        $old_var_type_string . ' ' . $assertion
                     );
                 } else {
                     $issue = new TypeDoesNotContainType(
@@ -881,7 +879,7 @@ class Reconciler
                             . ' for ' . $key
                             . ' is ' . ($not ? 'always ' : 'never ') . $assertion,
                         $code_location,
-                        $old_var_type_string . ' ' . $safe_assertion
+                        $old_var_type_string . ' ' . $assertion
                     );
                 }
 
