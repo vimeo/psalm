@@ -258,7 +258,7 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                 'assertions' => [
                     '$b' => 'null',
                 ],
-                'error_levels' => ['TypeDoesNotContainNull', 'RedundantCondition'],
+                'error_levels' => ['TypeDoesNotContainType', 'RedundantCondition'],
             ],
             'ignoreNullCheckAndMaintainNullableValue' => [
                 '<?php

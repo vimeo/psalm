@@ -547,7 +547,8 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                     $old_var_type_string,
                     $key,
                     $assertion,
-                    !$negated,
+                    true,
+                    $negated,
                     $code_location,
                     $suppressed_issues
                 );
@@ -574,7 +575,8 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                     $old_var_type_string,
                     $key,
                     $assertion,
-                    !$negated,
+                    true,
+                    $negated,
                     $code_location,
                     $suppressed_issues
                 );
@@ -1025,7 +1027,8 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                             $old_var_type_string,
                             $var_id,
                             $assertion,
-                            $negated xor $can_be_equal,
+                            $can_be_equal,
+                            $negated,
                             $code_location,
                             $suppressed_issues
                         );
@@ -1039,6 +1042,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                     $old_var_type_string,
                     $var_id,
                     $assertion,
+                    true,
                     $negated,
                     $code_location,
                     $suppressed_issues
@@ -1072,7 +1076,8 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                             $old_var_type_string,
                             $var_id,
                             $assertion,
-                            $negated xor $can_be_equal,
+                            $can_be_equal,
+                            $negated,
                             $code_location,
                             $suppressed_issues
                         );
@@ -1166,7 +1171,8 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                             $old_var_type_string,
                             $var_id,
                             $assertion,
-                            $negated xor $can_be_equal,
+                            $can_be_equal,
+                            $negated,
                             $code_location,
                             $suppressed_issues
                         );
@@ -1187,6 +1193,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                     $old_var_type_string,
                     $var_id,
                     $assertion,
+                    false,
                     $negated,
                     $code_location,
                     $suppressed_issues
@@ -1228,7 +1235,8 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                             $old_var_type_string,
                             $var_id,
                             $assertion,
-                            $negated xor $can_be_equal,
+                            $can_be_equal,
+                            $negated,
                             $code_location,
                             $suppressed_issues
                         );
@@ -1242,6 +1250,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                     $old_var_type_string,
                     $var_id,
                     $assertion,
+                    false,
                     $negated,
                     $code_location,
                     $suppressed_issues
@@ -1275,7 +1284,8 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                             $old_var_type_string,
                             $var_id,
                             $assertion,
-                            $negated xor $can_be_equal,
+                            $can_be_equal,
+                            $negated,
                             $code_location,
                             $suppressed_issues
                         );

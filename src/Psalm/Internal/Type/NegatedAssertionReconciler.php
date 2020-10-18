@@ -259,7 +259,8 @@ class NegatedAssertionReconciler extends Reconciler
                     $old_var_type_string,
                     $key,
                     '!=' . $assertion,
-                    !$negated,
+                    true,
+                    $negated,
                     $code_location,
                     $suppressed_issues
                 );
@@ -276,6 +277,7 @@ class NegatedAssertionReconciler extends Reconciler
                         $old_var_type_string,
                         $key,
                         '!' . $assertion,
+                        false,
                         $negated,
                         $code_location,
                         $suppressed_issues
@@ -381,7 +383,8 @@ class NegatedAssertionReconciler extends Reconciler
                     $old_var_type_string,
                     $key,
                     '!' . $assertion,
-                    $negated xor !$did_remove_type,
+                    !$did_remove_type,
+                    $negated,
                     $code_location,
                     $suppressed_issues
                 );
@@ -400,7 +403,8 @@ class NegatedAssertionReconciler extends Reconciler
                         $old_var_type_string,
                         $key,
                         '!=' . $assertion,
-                        !$negated,
+                        true,
+                        $negated,
                         $code_location,
                         $suppressed_issues
                     );
