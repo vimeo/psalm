@@ -1166,7 +1166,7 @@ class ArgumentAnalyzer
                 }
             }
 
-            if ($context->inside_conditional) {
+            if ($context->inside_conditional && !isset($context->assigned_var_ids[$var_id])) {
                 $context->assigned_var_ids[$var_id] = false;
             }
 
