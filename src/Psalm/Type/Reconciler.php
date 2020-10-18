@@ -818,10 +818,6 @@ class Reconciler
             $not = !$not;
         }
 
-        if ($not) {
-            $assertion = '!' . $assertion;
-        }
-
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
         $from_docblock = $existing_var_type->from_docblock
@@ -834,7 +830,7 @@ class Reconciler
                     new RedundantConditionGivenDocblockType(
                         'Docblock-defined type ' . $old_var_type_string
                             . ' for ' . $key
-                            . ' is always ' . $assertion,
+                            . ' is ' . ($not ? 'never ' : 'always ') . $assertion,
                         $code_location,
                         $old_var_type_string . ' ' . $safe_assertion
                     ),
@@ -847,7 +843,7 @@ class Reconciler
                     new RedundantCondition(
                         'Type ' . $old_var_type_string
                             . ' for ' . $key
-                            . ' is always ' . $assertion,
+                            . ' is ' . ($not ? 'never ' : 'always ') . $assertion,
                         $code_location,
                         $old_var_type_string . ' ' . $safe_assertion
                     ),
@@ -862,7 +858,7 @@ class Reconciler
                     new DocblockTypeContradiction(
                         'Docblock-defined type ' . $old_var_type_string
                             . ' for ' . $key
-                            . ' is never ' . $assertion,
+                            . ' is ' . ($not ? 'always ' : 'never ') . $assertion,
                         $code_location,
                         $old_var_type_string . ' ' . $safe_assertion
                     ),
@@ -871,7 +867,7 @@ class Reconciler
                     // fall through
                 }
             } else {
-                if ($assertion === 'null') {
+                if ($assertion === 'null' && !$not) {
                     $issue = new TypeDoesNotContainNull(
                         'Type ' . $old_var_type_string
                             . ' for ' . $key
@@ -883,7 +879,7 @@ class Reconciler
                     $issue = new TypeDoesNotContainType(
                         'Type ' . $old_var_type_string
                             . ' for ' . $key
-                            . ' is never ' . $assertion,
+                            . ' is ' . ($not ? 'always ' : 'never ') . $assertion,
                         $code_location,
                         $old_var_type_string . ' ' . $safe_assertion
                     );
