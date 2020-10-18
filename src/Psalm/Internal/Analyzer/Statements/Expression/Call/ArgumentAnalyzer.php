@@ -1167,7 +1167,7 @@ class ArgumentAnalyzer
             }
 
             if ($context->inside_conditional) {
-                $context->assigned_var_ids[$var_id] = true;
+                $context->assigned_var_ids[$var_id] = false;
             }
 
             if ($was_cloned) {
