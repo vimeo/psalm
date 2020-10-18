@@ -1902,6 +1902,33 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                         return $value;
                     }'
             ],
+            'assertVarRedefinedInIfWithOrAndConversion' => [
+                '<?php
+                    interface Convertor {
+                        function maybeConvert(string $value): ?SomeObject;
+                    }
+
+                    interface SomeObject
+                    {
+                        function isValid(): bool;
+                    }
+
+                    /**
+                     * @param mixed $value
+                     */
+                    function exampleWithOr(Convertor $convertor, $value): SomeObject
+                    {
+                        if (
+                          !\is_string($value)
+                          || ($value = $convertor->maybeConvert($value)) === null
+                          || !$value->isValid()
+                        ) {
+                            throw new Exception();
+                        }
+
+                        return $value;
+                    }'
+            ],
             'assertVarRedefinedInIfWithExtraIf' => [
                 '<?php
                     class O {}
