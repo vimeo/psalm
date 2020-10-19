@@ -83,7 +83,6 @@ $valid_long_options = [
     'debug-performance',
     'debug-emitted-issues',
     'diff',
-    'diff-methods',
     'disable-extension:',
     'find-dead-code::',
     'find-unused-code::',
@@ -94,6 +93,7 @@ $valid_long_options = [
     'init',
     'memory-limit:',
     'monochrome',
+    'no-diff',
     'no-cache',
     'no-reflection-cache',
     'no-file-cache',
@@ -483,7 +483,9 @@ $show_info = isset($options['show-info'])
     ? $options['show-info'] === 'true' || $options['show-info'] === '1'
     : false;
 
-$is_diff = isset($options['diff']);
+$is_diff = !isset($options['no-diff'])
+    && !isset($options['set-baseline'])
+    && !isset($options['update-baseline']);
 
 /** @var false|'always'|'auto' $find_unused_code */
 $find_unused_code = false;
@@ -680,67 +682,59 @@ if ($find_references_to) {
 }
 
 if (isset($options['set-baseline']) && is_string($options['set-baseline'])) {
-    if ($is_diff) {
-        fwrite(STDERR, 'Cannot set baseline in --diff mode' . PHP_EOL);
-    } else {
-        fwrite(STDERR, 'Writing error baseline to file...' . PHP_EOL);
+    fwrite(STDERR, 'Writing error baseline to file...' . PHP_EOL);
 
-        ErrorBaseline::create(
-            new \Psalm\Internal\Provider\FileProvider,
-            $options['set-baseline'],
-            IssueBuffer::getIssuesData(),
-            $config->include_php_versions_in_error_baseline || isset($options['include-php-versions'])
-        );
+    ErrorBaseline::create(
+        new \Psalm\Internal\Provider\FileProvider,
+        $options['set-baseline'],
+        IssueBuffer::getIssuesData(),
+        $config->include_php_versions_in_error_baseline || isset($options['include-php-versions'])
+    );
 
-        fwrite(STDERR, "Baseline saved to {$options['set-baseline']}.");
+    fwrite(STDERR, "Baseline saved to {$options['set-baseline']}.");
 
-        update_config_file(
-            $config,
-            $path_to_config ?? $current_dir,
-            $options['set-baseline']
-        );
+    update_config_file(
+        $config,
+        $path_to_config ?? $current_dir,
+        $options['set-baseline']
+    );
 
-        fwrite(STDERR, PHP_EOL);
-    }
+    fwrite(STDERR, PHP_EOL);
 }
 
 $issue_baseline = [];
 
 if (isset($options['update-baseline'])) {
-    if ($is_diff) {
-        fwrite(STDERR, 'Cannot update baseline in --diff mode' . PHP_EOL);
-    } else {
-        $baselineFile = Config::getInstance()->error_baseline;
+    $baselineFile = Config::getInstance()->error_baseline;
 
-        if (empty($baselineFile)) {
-            die('Cannot update baseline, because no baseline file is configured.' . PHP_EOL);
+    if (empty($baselineFile)) {
+        die('Cannot update baseline, because no baseline file is configured.' . PHP_EOL);
+    }
+
+    try {
+        $issue_current_baseline = ErrorBaseline::read(
+            new \Psalm\Internal\Provider\FileProvider,
+            $baselineFile
+        );
+        $total_issues_current_baseline = ErrorBaseline::countTotalIssues($issue_current_baseline);
+
+        $issue_baseline = ErrorBaseline::update(
+            new \Psalm\Internal\Provider\FileProvider,
+            $baselineFile,
+            IssueBuffer::getIssuesData(),
+            $config->include_php_versions_in_error_baseline || isset($options['include-php-versions'])
+        );
+        $total_issues_updated_baseline = ErrorBaseline::countTotalIssues($issue_baseline);
+
+        $total_fixed_issues = $total_issues_current_baseline - $total_issues_updated_baseline;
+
+        if ($total_fixed_issues > 0) {
+            echo str_repeat('-', 30) . "\n";
+            echo $total_fixed_issues . ' errors fixed' . "\n";
         }
-
-        try {
-            $issue_current_baseline = ErrorBaseline::read(
-                new \Psalm\Internal\Provider\FileProvider,
-                $baselineFile
-            );
-            $total_issues_current_baseline = ErrorBaseline::countTotalIssues($issue_current_baseline);
-
-            $issue_baseline = ErrorBaseline::update(
-                new \Psalm\Internal\Provider\FileProvider,
-                $baselineFile,
-                IssueBuffer::getIssuesData(),
-                $config->include_php_versions_in_error_baseline || isset($options['include-php-versions'])
-            );
-            $total_issues_updated_baseline = ErrorBaseline::countTotalIssues($issue_baseline);
-
-            $total_fixed_issues = $total_issues_current_baseline - $total_issues_updated_baseline;
-
-            if ($total_fixed_issues > 0) {
-                echo str_repeat('-', 30) . "\n";
-                echo $total_fixed_issues . ' errors fixed' . "\n";
-            }
-        } catch (\Psalm\Exception\ConfigException $exception) {
-            fwrite(STDERR, 'Could not update baseline file: ' . $exception->getMessage() . PHP_EOL);
-            exit(1);
-        }
+    } catch (\Psalm\Exception\ConfigException $exception) {
+        fwrite(STDERR, 'Could not update baseline file: ' . $exception->getMessage() . PHP_EOL);
+        exit(1);
     }
 }
 

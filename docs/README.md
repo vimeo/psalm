@@ -19,7 +19,7 @@ Psalm also has a few features to make it perform as well as possible on large co
   Wherever possible Psalm will run its analysis in parallel to save time. Useful for large codebases, it has a massive impact on performance.
 
 - **Incremental checks**<br />
-  When using the `--diff` command line option, Psalm will only analyse files that have changed *and* files that reference them.
+  By default Psalm only analyses files that have changed and files that reference those changed files.
 
 ## Example output
 
