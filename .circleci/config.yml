@@ -18,7 +18,7 @@ jobs:
             - composer-v3
       - restore_cache:
           keys:
-            - psalm-cache-{{ checksum "/tmp/cachekey" }} # speeds up run with --diff and --diff-methods
+            - psalm-cache-{{ checksum "/tmp/cachekey" }} # speeds up diff run
       - run: composer update
 
       - save_cache:
@@ -29,7 +29,7 @@ jobs:
 
       - run:
           name: Static analysis
-          command: php -dextension=pcntl.so ./psalm --threads=10 --diff --diff-methods
+          command: php -dextension=pcntl.so ./psalm --threads=10
 
       - save_cache:
           key: psalm-cache-{{ checksum "/tmp/cachekey" }}
