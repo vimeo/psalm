@@ -373,6 +373,11 @@ class ClassLikeStorage
      */
     public $extension_requirement;
 
+    /**
+     * @var array<int, string>
+     */
+    public $implementation_requirements = [];
+
     public function __construct(string $name)
     {
         $this->name = $name;

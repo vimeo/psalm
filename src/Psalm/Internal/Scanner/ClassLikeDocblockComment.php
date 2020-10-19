@@ -132,4 +132,9 @@ class ClassLikeDocblockComment
      * @var null|string
      */
     public $extension_requirement;
+
+    /**
+     * @var array<int, string>
+     */
+    public $implementation_requirements = [];
 }

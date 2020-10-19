@@ -1291,6 +1291,20 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                     );
                 }
 
+                foreach ($docblock_info->implementation_requirements as $implementation_requirement) {
+                    $storage->implementation_requirements[] = (string) TypeParser::parseTokens(
+                        TypeTokenizer::getFullyQualifiedTokens(
+                            $implementation_requirement,
+                            $this->aliases,
+                            $this->class_template_types,
+                            $this->type_aliases
+                        ),
+                        null,
+                        $this->class_template_types,
+                        $this->type_aliases
+                    );
+                }
+
                 $storage->sealed_properties = $docblock_info->sealed_properties;
                 $storage->sealed_methods = $docblock_info->sealed_methods;
 

@@ -17,7 +17,6 @@ use Psalm\Internal\Type\ParseTreeCreator;
 use Psalm\Internal\Type\TypeAlias;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
-use Psalm\Type;
 use function array_unique;
 use function trim;
 use function substr_count;
@@ -40,6 +39,7 @@ use function explode;
 use function array_merge;
 use const PREG_OFFSET_CAPTURE;
 use function rtrim;
+use function array_key_first;
 
 /**
  * @internal
@@ -881,6 +881,16 @@ class CommentAnalyzer
                 '',
                 $extension_requirements[array_key_first($extension_requirements)]
             ));
+        }
+
+        if (isset($parsed_docblock->tags['psalm-require-implements'])) {
+            foreach ($parsed_docblock->tags['psalm-require-implements'] as $implementation_requirement) {
+                $info->implementation_requirements[] = trim(preg_replace(
+                    '@^[ \t]*\*@m',
+                    '',
+                    $implementation_requirement
+                ));
+            }
         }
 
         if (isset($parsed_docblock->combined_tags['implements'])) {
