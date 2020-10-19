@@ -127,4 +127,14 @@ class ClassLikeDocblockComment
 
     /** @var bool */
     public $stub_override = false;
+
+    /**
+     * @var null|string
+     */
+    public $extension_requirement;
+
+    /**
+     * @var array<int, string>
+     */
+    public $implementation_requirements = [];
 }
