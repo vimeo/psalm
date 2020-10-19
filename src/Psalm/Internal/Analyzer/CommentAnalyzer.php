@@ -12,6 +12,7 @@ use Psalm\Internal\Scanner\ClassLikeDocblockComment;
 use Psalm\Internal\Scanner\FunctionDocblockComment;
 use Psalm\Internal\Scanner\VarDocblockComment;
 use Psalm\Internal\Scanner\ParsedDocblock;
+use Psalm\Type;
 use Psalm\Internal\Type\ParseTree;
 use Psalm\Internal\Type\ParseTreeCreator;
 use Psalm\Internal\Type\TypeAlias;
