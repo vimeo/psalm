@@ -128,7 +128,11 @@ class TryAnalyzer
             foreach ($context->vars_in_scope as $var_id => $type) {
                 if (!isset($try_context->vars_in_scope[$var_id])) {
                     $try_context->vars_in_scope[$var_id] = clone $type;
-                    $try_context->vars_in_scope[$var_id]->from_docblock = true;
+
+                    if (!$stmt->catches) {
+                        $context->vars_in_scope[$var_id]->possibly_undefined = true;
+                        $context->vars_in_scope[$var_id]->possibly_undefined_from_try = true;
+                    }
                 } else {
                     $try_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                         $try_context->vars_in_scope[$var_id],
@@ -470,11 +474,13 @@ class TryAnalyzer
             }
         }
 
-        foreach ($definitely_newly_assigned_var_ids as $var_id => $_) {
-            if (isset($context->vars_in_scope[$var_id])) {
-                $new_type = clone $context->vars_in_scope[$var_id];
-                $new_type->possibly_undefined_from_try = false;
-                $context->vars_in_scope[$var_id] = $new_type;
+        if ($stmt->catches) {
+            foreach ($definitely_newly_assigned_var_ids as $var_id => $_) {
+                if (isset($context->vars_in_scope[$var_id])) {
+                    $new_type = clone $context->vars_in_scope[$var_id];
+                    $new_type->possibly_undefined_from_try = false;
+                    $context->vars_in_scope[$var_id] = $new_type;
+                }
             }
         }
 
