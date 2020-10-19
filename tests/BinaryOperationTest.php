@@ -187,8 +187,8 @@ class BinaryOperationTest extends TestCase
                     $c = (true xor false);
                     $d = (false xor false);',
                 'assertions' => [
-                    '$a' => 'positive-int',
-                    '$b' => 'positive-int',
+                    '$a' => 'int',
+                    '$b' => 'int',
                     '$c' => 'bool',
                     '$d' => 'bool',
                 ],
