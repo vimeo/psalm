@@ -2197,6 +2197,12 @@ class UnusedVariableTest extends TestCase
                         echo $b;
                     }'
             ],
+            'arrowFunctionImplicitlyUsedVar' => [
+                '<?php
+                    function test(Exception $e): callable {
+                        return fn() => $e->getMessage();
+                    }'
+            ],
         ];
     }
 

@@ -170,10 +170,23 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
             $traverser->traverse($stmt->getStmts());
 
             foreach ($short_closure_visitor->getUsedVariables() as $use_var_id => $_) {
-                $use_context->vars_in_scope[$use_var_id] =
-                    $context->hasVariable($use_var_id)
-                    ? clone $context->vars_in_scope[$use_var_id]
-                    : Type::getMixed();
+                if ($context->hasVariable($use_var_id)) {
+                    $use_context->vars_in_scope[$use_var_id] = clone $context->vars_in_scope[$use_var_id];
+
+                    if ($statements_analyzer->data_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph) {
+                        $parent_nodes = $context->vars_in_scope[$use_var_id]->parent_nodes;
+
+                        foreach ($parent_nodes as $parent_node) {
+                            $statements_analyzer->data_flow_graph->addPath(
+                                $parent_node,
+                                new DataFlowNode('closure-use', 'closure use', null),
+                                'closure-use'
+                            );
+                        }
+                    }
+                } else {
+                    $use_context->vars_in_scope[$use_var_id] = Type::getMixed();
+                }
 
                 $use_context->vars_possibly_in_scope[$use_var_id] = true;
             }
