@@ -11221,7 +11221,7 @@ return [
 'ReflectionClass::getProperty' => ['ReflectionProperty', 'name'=>'string'],
 'ReflectionClass::getReflectionConstant' => ['ReflectionClassConstant|false', 'name'=>'string'],
 'ReflectionClass::getReflectionConstants' => ['list<ReflectionClassConstant>'],
-'ReflectionClass::getShortName' => ['class-string'],
+'ReflectionClass::getShortName' => ['string'],
 'ReflectionClass::getStartLine' => ['int|false'],
 'ReflectionClass::getStaticProperties' => ['array<string, ReflectionProperty>'],
 'ReflectionClass::getStaticPropertyValue' => ['mixed', 'name'=>'string', 'default='=>'mixed'],
