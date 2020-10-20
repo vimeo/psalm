@@ -1277,6 +1277,7 @@ class UnusedVariableTest extends TestCase
                             $a = 4;
                             throw new Exception("bad");
                         } finally {
+                            /** @psalm-suppress PossiblyUndefinedVariable */
                             echo $a;
                         }
                     }'

@@ -35,7 +35,10 @@ class UnionTypeComparator
             $union_comparison_result->scalar_type_match_found = true;
         }
 
-        if ($input_type->possibly_undefined && !$container_type->possibly_undefined) {
+        if ($input_type->possibly_undefined
+            && !$input_type->possibly_undefined_from_try
+            && !$container_type->possibly_undefined
+        ) {
             return false;
         }
 
