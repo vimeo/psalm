@@ -2203,6 +2203,27 @@ class UnusedVariableTest extends TestCase
                         return fn() => $e->getMessage();
                     }'
             ],
+            'useImmutableGetIteratorInForeach' => [
+                '<?php
+                    /**
+                     * @psalm-immutable
+                     */
+                    class A implements IteratorAggregate
+                    {
+                        /**
+                         * @return Iterator<int>
+                         */
+                        public function getIterator() {
+                            yield from [1, 2, 3];
+                        }
+                    }
+
+                    $a = new A();
+
+                    foreach ($a as $v) {
+                        echo $v;
+                    }'
+            ],
         ];
     }
 
