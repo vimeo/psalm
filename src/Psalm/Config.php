@@ -966,7 +966,7 @@ class Config
         if (isset($config_xml->universalObjectCrates) && isset($config_xml->universalObjectCrates->class)) {
             /** @var \SimpleXMLElement $universal_object_crate */
             foreach ($config_xml->universalObjectCrates->class as $universal_object_crate) {
-                /** @var class-string $classString */
+                /** @var string $classString */
                 $classString = $universal_object_crate['name'];
                 $config->addUniversalObjectCrate($classString);
             }
@@ -2007,11 +2007,11 @@ class Config
         return null;
     }
 
-    /**
-     * @param class-string $class
-     */
     public function addUniversalObjectCrate(string $class): void
     {
+        if (!class_exists($class, true)) {
+            throw new \UnexpectedValueException($class . ' is not a known class');
+        }
         $this->universal_object_crates[] = $class;
     }
 

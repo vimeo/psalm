@@ -120,16 +120,12 @@ class PropertyTypeTest extends TestCase
 
     public function testUniversalObjectCrates(): void
     {
-        /** @var class-string $classString */
-        $classString = 'Foo';
-        Config::getInstance()->addUniversalObjectCrate($classString);
+        Config::getInstance()->addUniversalObjectCrate(\DateTime::class);
 
         $this->addFile(
             'somefile.php',
             '<?php
-                class Foo { }
-
-                $f = new Foo();
+                $f = new \DateTime();
                 // reads are fine
                 $f->bar;
 

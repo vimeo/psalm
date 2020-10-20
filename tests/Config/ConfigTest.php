@@ -1300,12 +1300,12 @@ class ConfigTest extends \Psalm\Tests\TestCase
                 '<?xml version="1.0"?>
                 <psalm>
                     <universalObjectCrates>
-                        <class name="Foo" />
+                        <class name="DateTime" />
                     </universalObjectCrates>
                 </psalm>'
             )
         );
 
-        $this->assertContains('foo', $this->project_analyzer->getConfig()->getUniversalObjectCrates());
+        $this->assertContains('datetime', $this->project_analyzer->getConfig()->getUniversalObjectCrates());
     }
 }
