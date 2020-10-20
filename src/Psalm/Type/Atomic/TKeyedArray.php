@@ -123,7 +123,7 @@ class TKeyedArray extends \Psalm\Type\Atomic
                 implode(', ', $property_strings) .
                 '}'
                 . ($this->previous_value_type
-                    ? '&<' . ($this->previous_key_type ? $this->previous_key_type->getId() . ', ' : '')
+                    ? '<' . ($this->previous_key_type ? $this->previous_key_type->getId() . ', ' : '')
                         . $this->previous_value_type->getId() . '>'
                     : '');
     }
