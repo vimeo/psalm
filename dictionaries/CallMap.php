@@ -476,7 +476,7 @@ return [
 'asin' => ['float', 'number'=>'float'],
 'asinh' => ['float', 'number'=>'float'],
 'asort' => ['bool', '&rw_array'=>'array', 'sort_flags='=>'int'],
-'assert' => ['bool', 'assertion'=>'string|bool', 'description='=>'string|Throwable|null'],
+'assert' => ['bool', 'assertion'=>'string|bool|int', 'description='=>'string|Throwable|null'],
 'assert_options' => ['mixed|false', 'what'=>'int', 'value='=>'mixed'],
 'ast\get_kind_name' => ['string', 'kind'=>'int'],
 'ast\get_metadata' => ['array<int,ast\Metadata>'],

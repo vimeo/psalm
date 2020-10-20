@@ -2942,6 +2942,22 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                         ) {}
                     }'
             ],
+            'assertWithAssignmentInOr' => [
+                'function test(int $x = null): int {
+                    \assert($x || ($x = rand(0, 10)));
+                    return $x;
+                }'
+            ],
+            'noParadoxicalConditionAfterTwoAssignments' => [
+                '<?php
+                    function foo(string $str): ?int {
+                        if (rand(0, 1) || (!($pos = strpos($str, "a")) && !($pos = strpos($str, "b")))) {
+                            return null;
+                        }
+
+                        return $pos;
+                    }'
+            ],
         ];
     }
 
@@ -3321,6 +3337,19 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                         if (get_class($e) == "InvalidArgumentException") {}
                     }',
                 'error_message' => 'TypeDoesNotContainType',
+            ],
+            'assignmentInBranchOfAnd' => [
+                '<?php
+                    function foo(string $str): ?int {
+                        $pos = 5;
+
+                        if (rand(0, 1) && !($pos = $str)) {
+                            return null;
+                        }
+
+                        return $pos;
+                    }',
+                'error_message' => 'InvalidReturnStatement',
             ],
         ];
     }

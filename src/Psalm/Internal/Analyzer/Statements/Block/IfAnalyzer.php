@@ -79,10 +79,14 @@ class IfAnalyzer
         $if_scope = new IfScope();
 
         // We need to clone the original context for later use if we're exiting in this if conditional
-        if (!$stmt->else && !$stmt->elseifs && $stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr) {
+        if (!$stmt->else && !$stmt->elseifs
+            && ($stmt->cond instanceof PhpParser\Node\Expr\BinaryOp
+                || ($stmt->cond instanceof PhpParser\Node\Expr\BooleanNot
+                    && $stmt->cond->expr instanceof PhpParser\Node\Expr\BinaryOp))
+        ) {
             $final_actions = ScopeAnalyzer::getControlActions(
                 $stmt->stmts,
-                $statements_analyzer->node_data,
+                null,
                 $codebase->config->exit_functions,
                 $context->break_types
             );
@@ -881,7 +885,6 @@ class IfAnalyzer
         if ($has_leaving_statements && !$has_break_statement && !$stmt->else && !$stmt->elseifs) {
             // If we're assigning inside
             if ($if_conditional_scope->cond_assigned_var_ids
-                && $stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
                 && $if_scope->mic_drop_context
             ) {
                 self::addConditionallyAssignedVarsToContext(
@@ -1866,23 +1869,23 @@ class IfAnalyzer
         $old_node_data = $statements_analyzer->node_data;
         $statements_analyzer->node_data = clone $old_node_data;
 
-        $suppressed_issues = $statements_analyzer->getSuppressedIssues();
-
-        if (!in_array('RedundantCondition', $suppressed_issues, true)) {
-            $statements_analyzer->addSuppressedIssues(['RedundantCondition']);
-        }
-        if (!in_array('RedundantConditionGivenDocblockType', $suppressed_issues, true)) {
-            $statements_analyzer->addSuppressedIssues(['RedundantConditionGivenDocblockType']);
-        }
-        if (!in_array('TypeDoesNotContainType', $suppressed_issues, true)) {
-            $statements_analyzer->addSuppressedIssues(['TypeDoesNotContainType']);
-        }
+        IssueBuffer::startRecording();
 
         foreach ($exprs as $expr) {
+            if ($expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd) {
+                $fake_not = new PhpParser\Node\Expr\BinaryOp\BooleanOr(
+                    self::negateExpr($expr->left),
+                    self::negateExpr($expr->right),
+                    $expr->getAttributes()
+                );
+            } else {
+                $fake_not = self::negateExpr($expr);
+            }
+
             $fake_negated_expr = new PhpParser\Node\Expr\FuncCall(
                 new PhpParser\Node\Name\FullyQualified('assert'),
                 [new PhpParser\Node\Arg(
-                    new PhpParser\Node\Expr\BooleanNot($expr, $expr->getAttributes()),
+                    $fake_not,
                     false,
                     false,
                     $expr->getAttributes()
@@ -1901,15 +1904,8 @@ class IfAnalyzer
             $mic_drop_context->inside_negation = !$mic_drop_context->inside_negation;
         }
 
-        if (!in_array('RedundantCondition', $suppressed_issues, true)) {
-            $statements_analyzer->removeSuppressedIssues(['RedundantCondition']);
-        }
-        if (!in_array('RedundantConditionGivenDocblockType', $suppressed_issues, true)) {
-            $statements_analyzer->removeSuppressedIssues(['RedundantConditionGivenDocblockType']);
-        }
-        if (!in_array('TypeDoesNotContainType', $suppressed_issues, true)) {
-            $statements_analyzer->removeSuppressedIssues(['TypeDoesNotContainType']);
-        }
+        IssueBuffer::clearRecordingLevel();
+        IssueBuffer::stopRecording();
 
         $statements_analyzer->node_data = $old_node_data;
 
@@ -1918,5 +1914,14 @@ class IfAnalyzer
                 $outer_context->vars_in_scope[$var_id] = clone $mic_drop_context->vars_in_scope[$var_id];
             }
         }
+    }
+
+    private static function negateExpr(PhpParser\Node\Expr $expr) : PhpParser\Node\Expr
+    {
+        if ($expr instanceof PhpParser\Node\Expr\BooleanNot) {
+            return $expr->expr;
+        }
+
+        return new PhpParser\Node\Expr\BooleanNot($expr, $expr->getAttributes());
     }
 }
