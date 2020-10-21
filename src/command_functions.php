@@ -320,9 +320,6 @@ Basic configuration:
     --no-diff
         Turns off Psalm’s diff mode, checks all files regardless of whether they've changed
 
-    --diff-methods
-        Only checks methods that have changed since last run (and their dependents)
-
 Surfacing issues:
     --show-info[=BOOLEAN]
         Show non-exception parser findings (defaults to false).
