@@ -20,6 +20,7 @@ abstract class Report
     public const TYPE_GITHUB_ACTIONS = 'github';
     public const TYPE_PHP_STORM = 'phpstorm';
     public const TYPE_SARIF = 'sarif';
+    public const TYPE_CODECLIMATE = 'codeclimate';
 
     public const SUPPORTED_OUTPUT_TYPES = [
         self::TYPE_COMPACT,
@@ -36,6 +37,7 @@ abstract class Report
         self::TYPE_GITHUB_ACTIONS,
         self::TYPE_PHP_STORM,
         self::TYPE_SARIF,
+        self::TYPE_CODECLIMATE,
     ];
 
     /**

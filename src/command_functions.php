@@ -372,7 +372,7 @@ Output:
     --output-format=console
         Changes the output format.
         Available formats: compact, console, text, emacs, json, pylint, xml, checkstyle, junit, sonarqube, github,
-                           phpstorm
+                           phpstorm, codeclimate
 
     --no-progress
         Disable the progress indicator
