@@ -1250,6 +1250,18 @@ class ArrayFunctionCallTest extends TestCase
                     '$r' => 'array<string, int>',
                 ],
             ],
+            'arrayIntersectUKey' => [
+                '<?php
+                    /**
+                     * @var array<string, int> $a
+                     * @var array $b
+                     * @var callable(string): int $c
+                     */
+                    $r = array_intersect_ukey($a, $b, $c);',
+                'assertions' => [
+                    '$r' => 'array<string, int>'
+                ],
+            ],
             'arrayReduce' => [
                 '<?php
                     $arr = [2, 3, 4, 5];

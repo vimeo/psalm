@@ -51,23 +51,6 @@ function array_intersect_key(array $arr, array $arr2, array ...$arr3)
  * @param array<TKey, TValue> $arr
  * @param array $arr2
  * @param array ...$arr3
- * @param callable(TKey): int $keyCompareFunc
- *
- * @return array<TKey, TValue>
- *
- * @psalm-pure
- */
-function array_intersect_ukey(array $arr, array $arr2, array ...$arr3, callable $keyCompareFunc): array
-{
-}
-
-/**
- * @psalm-template TKey as array-key
- * @psalm-template TValue
- *
- * @param array<TKey, TValue> $arr
- * @param array $arr2
- * @param array ...$arr3
  *
  * @return array<TKey, TValue>
  * @psalm-pure
