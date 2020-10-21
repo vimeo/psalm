@@ -2399,6 +2399,19 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                     continue;
                 }
 
+                if (isset($class_storage->properties[$param_storage->name]) && $param_storage->location) {
+                    IssueBuffer::add(
+                        new \Psalm\Issue\ParseError(
+                            'Promoted propertty ' . $param_storage->name . ' clashes with an existing property',
+                            $param_storage->location
+                        )
+                    );
+
+                    $storage->has_visitor_issues = true;
+                    $this->file_storage->has_visitor_issues = true;
+                    continue;
+                }
+
                 $property_storage = $class_storage->properties[$param_storage->name] = new PropertyStorage();
                 $property_storage->is_static = false;
                 $property_storage->type = $param_storage->type;
@@ -2408,6 +2421,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                 $property_storage->location = $param_storage->location;
                 $property_storage->stmt_location = new CodeLocation($this->file_scanner, $param);
                 $property_storage->has_default = $param->default ? true : false;
+                $param_storage->promoted_property = true;
 
                 $property_id = $fq_classlike_name . '::$' . $param_storage->name;
 

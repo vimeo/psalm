@@ -1700,6 +1700,7 @@ class ClassLikes
                             $offset
                         )
                             && $param_storage->location
+                            && !$param_storage->promoted_property
                         ) {
                             if ($method_storage->final) {
                                 if (IssueBuffer::accepts(
