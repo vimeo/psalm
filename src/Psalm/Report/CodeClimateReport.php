@@ -38,11 +38,10 @@ class CodeClimateReport extends Report
                  * - fingerprint*
                  * - location.path*
                  * - location.lines.begin*
-                 * 
+                 *
                  * Fields with * are the one used by Gitlab for Code Quality
-                 */ 
-                // expected fields: 
-                $new = [
+                 */
+                return [
                     'type' => 'issue',
                     'check_name' => $issue->type,
                     'description' => $issue->message,
@@ -57,8 +56,6 @@ class CodeClimateReport extends Report
                         ],
                     ],
                 ];
-
-                return $new;
             },
             $this->issues_data
         );
