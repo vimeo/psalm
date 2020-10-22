@@ -2,6 +2,7 @@
 
 namespace Ds;
 
+use ArrayAccess;
 use Countable;
 use JsonSerializable;
 use OutOfBoundsException;
@@ -165,8 +166,9 @@ final class Deque implements Sequence
  * @template TKey
  * @template TValue
  * @implements Collection<TKey, TValue>
+ * @implements ArrayAccess<TKey, TValue>
  */
-final class Map implements Collection
+final class Map implements Collection, ArrayAccess
 {
     /**
      * @param iterable<TKey, TValue> $values
@@ -456,8 +458,9 @@ final class Pair implements JsonSerializable
 /**
  * @template TValue
  * @extends Collection<int, TValue>
+ * @extends ArrayAccess<int, TValue>
  */
-interface Sequence extends Collection
+interface Sequence extends Collection, ArrayAccess
 {
     /**
      * @param callable(TValue): TValue $callback
@@ -882,8 +885,9 @@ final class Set implements Collection
 /**
  * @template TValue
  * @implements Collection<int, TValue>
+ * @implements ArrayAccess<int, TValue>
  */
-final class Stack implements Collection
+final class Stack implements Collection, ArrayAccess
 {
     /**
      * @param iterable<TValue> $values
