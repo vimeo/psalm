@@ -185,7 +185,10 @@ class TypeParser
             if ($generic_type_value === 'arraylike-object') {
                 $traversable = new TGenericObject('Traversable', $generic_params);
                 $array_acccess = new TGenericObject('ArrayAccess', $generic_params);
+                $countable = new TNamedObject('Countable');
+                
                 $traversable->extra_types[$array_acccess->getKey()] = $array_acccess;
+                $traversable->extra_types[$countable->getKey()] = $countable;
 
                 return $traversable;
             }
