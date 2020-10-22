@@ -52,7 +52,7 @@ class TypeParser
     /**
      * Parses a string type representation
      *
-     * @param  list<array{0: string, 1: int}> $type_tokens
+     * @param  list<array{0: string, 1: int, 2?: string}> $type_tokens
      * @param  array{int,int}|null   $php_version
      * @param  array<string, array<string, array{Union}>> $template_type_map
      * @param  array<string, TypeAlias> $type_aliases
@@ -81,6 +81,7 @@ class TypeParser
                 $atomic = Atomic::create($only_token[0], $php_version, $template_type_map, $type_aliases);
                 $atomic->offset_start = 0;
                 $atomic->offset_end = strlen($only_token[0]);
+                $atomic->text = isset($only_token[2]) && $only_token[2] !== $only_token[0] ? $only_token[2] : null;
 
                 return new Union([$atomic]);
             }
@@ -186,7 +187,7 @@ class TypeParser
                 $traversable = new TGenericObject('Traversable', $generic_params);
                 $array_acccess = new TGenericObject('ArrayAccess', $generic_params);
                 $countable = new TNamedObject('Countable');
-                
+
                 $traversable->extra_types[$array_acccess->getKey()] = $array_acccess;
                 $traversable->extra_types[$countable->getKey()] = $countable;
 
@@ -935,6 +936,7 @@ class TypeParser
 
         $atomic_type->offset_start = $parse_tree->offset_start;
         $atomic_type->offset_end = $parse_tree->offset_end;
+        $atomic_type->text = $parse_tree->text;
 
         return $atomic_type;
     }

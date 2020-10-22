@@ -149,6 +149,15 @@ class TypeChecker extends NodeVisitor
             );
         }
 
+        if ($this->calling_method_id
+            && $atomic->text !== null
+        ) {
+            $codebase->file_reference_provider->addMethodReferenceToClassMember(
+                $this->calling_method_id,
+                'use:' . $atomic->text . ':' . \md5($this->source->getFilePath())
+            );
+        }
+
         if (!isset($this->phantom_classes[\strtolower($atomic->value)]) &&
             ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                 $this->source,

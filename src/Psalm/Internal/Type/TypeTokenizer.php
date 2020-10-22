@@ -328,7 +328,7 @@ class TypeTokenizer
      * @param  array<string, mixed>|null       $template_type_map
      * @param  array<string, TypeAlias>|null   $type_aliases
      *
-     * @return list<array{0: string, 1: int}>
+     * @return list<array{0: string, 1: int, 2?: string}>
      */
     public static function getFullyQualifiedTokens(
         string $string_type,
@@ -448,6 +448,8 @@ class TypeTokenizer
                 continue;
             }
 
+            $type_tokens[$i][2] = $string_type_token[0];
+
             if (isset($type_aliases[$string_type_token[0]])) {
                 $type_alias = $type_aliases[$string_type_token[0]];
 
@@ -472,7 +474,7 @@ class TypeTokenizer
             }
         }
 
-        /** @var list<array{0: string, 1: int}> */
+        /** @var list<array{0: string, 1: int, 2?: string}> */
         return $type_tokens;
     }
 

@@ -83,6 +83,11 @@ abstract class Atomic implements TypeNode
     public $offset_end;
 
     /**
+     * @var ?string
+     */
+    public $text;
+
+    /**
      * @param  array{int,int}|null   $php_version
      * @param  array<string, array<string, array{Union}>> $template_type_map
      * @param  array<string, TypeAlias> $type_aliases

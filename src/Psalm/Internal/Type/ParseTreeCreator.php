@@ -30,7 +30,7 @@ class ParseTreeCreator
     private $t = 0;
 
     /**
-     * @param list<array{0: string, 1: int}> $type_tokens
+     * @param list<array{0: string, 1: int, 2?: string}> $type_tokens
      */
     public function __construct(array $type_tokens)
     {
@@ -715,7 +715,7 @@ class ParseTreeCreator
         }
     }
 
-    /** @param array{0: string, 1: int} $type_token */
+    /** @param array{0: string, 1: int, 2?: string} $type_token */
     private function handleValue(array $type_token) : void
     {
         $new_parent = !$this->current_leaf instanceof ParseTree\Root ? $this->current_leaf : null;
@@ -793,6 +793,7 @@ class ParseTreeCreator
                     $type_token[0] . '::' . $nexter_token[0],
                     $type_token[1],
                     $type_token[1] + 2 + strlen($nexter_token[0]),
+                    $type_token[2] ?? null,
                     $new_parent
                 );
 
@@ -809,6 +810,7 @@ class ParseTreeCreator
                     $type_token[0],
                     $type_token[1],
                     $type_token[1] + strlen($type_token[0]),
+                    $type_token[2] ?? null,
                     $new_parent
                 );
                 break;

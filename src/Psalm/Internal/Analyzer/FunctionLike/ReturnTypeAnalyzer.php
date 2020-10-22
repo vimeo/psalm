@@ -720,7 +720,10 @@ class ReturnTypeAnalyzer
                 $storage->return_type_location,
                 $storage->suppressed_issues,
                 [],
-                false
+                false,
+                false,
+                false,
+                $context->calling_method_id
             );
 
             return null;

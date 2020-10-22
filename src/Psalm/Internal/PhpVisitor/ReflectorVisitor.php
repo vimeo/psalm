@@ -3374,13 +3374,15 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
             $hint = $hint->type;
         }
 
-        if ($hint instanceof PhpParser\Node\Identifier) {
-            $type_string = $hint->name;
-        } elseif ($hint instanceof PhpParser\Node\Name\FullyQualified) {
-            $type_string = (string)$hint;
+        $type_string = null;
 
-            $this->codebase->scanner->queueClassLikeForScanning($type_string);
-            $this->file_storage->referenced_classlikes[strtolower($type_string)] = $type_string;
+        if ($hint instanceof PhpParser\Node\Identifier) {
+            $fq_type_string = $hint->name;
+        } elseif ($hint instanceof PhpParser\Node\Name\FullyQualified) {
+            $fq_type_string = (string)$hint;
+
+            $this->codebase->scanner->queueClassLikeForScanning($fq_type_string);
+            $this->file_storage->referenced_classlikes[strtolower($fq_type_string)] = $fq_type_string;
         } else {
             $lower_hint = strtolower($hint->parts[0]);
 
@@ -3388,26 +3390,31 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                 && ($lower_hint === 'self' || $lower_hint === 'static')
                 && !end($this->classlike_storages)->is_trait
             ) {
-                $type_string = $this->fq_classlike_names[count($this->fq_classlike_names) - 1];
+                $fq_type_string = $this->fq_classlike_names[count($this->fq_classlike_names) - 1];
 
                 if ($lower_hint === 'static') {
-                    $type_string .= '&static';
+                    $fq_type_string .= '&static';
                 }
             } else {
-                $type_string = ClassLikeAnalyzer::getFQCLNFromNameObject($hint, $this->aliases);
-            }
+                $type_string = implode('\\', $hint->parts);
+                $fq_type_string = ClassLikeAnalyzer::getFQCLNFromNameObject($hint, $this->aliases);
 
-            if (!in_array($lower_hint, ['self', 'static', 'parent'], true)) {
-                $this->codebase->scanner->queueClassLikeForScanning($type_string);
-                $this->file_storage->referenced_classlikes[strtolower($type_string)] = $type_string;
+                $this->codebase->scanner->queueClassLikeForScanning($fq_type_string);
+                $this->file_storage->referenced_classlikes[strtolower($fq_type_string)] = $fq_type_string;
             }
         }
 
         $type = Type::parseString(
-            $type_string,
+            $fq_type_string,
             [$this->php_major_version, $this->php_minor_version],
             []
         );
+
+        if ($type_string) {
+            $atomic_types = $type->getAtomicTypes();
+            $atomic_type = reset($atomic_types);
+            $atomic_type->text = $type_string;
+        }
 
         if ($is_nullable) {
             $type->addType(new Type\Atomic\TNull);
