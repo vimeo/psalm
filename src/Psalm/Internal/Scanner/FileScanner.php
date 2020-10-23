@@ -80,7 +80,7 @@ class FileScanner implements FileSource
 
         $traverser = new NodeTraverser();
         $traverser->addVisitor(
-            new ReflectorVisitor($codebase, $file_storage, $this)
+            new ReflectorVisitor($codebase, $this, $file_storage)
         );
 
         $traverser->traverse($stmts);

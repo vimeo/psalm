@@ -1854,14 +1854,16 @@ class ClassTemplateTest extends TestCase
                      */
                     class Foo {
                         /**
-                         * @psalm-return callable(): ?T
+                         * @psalm-return callable(T): ?T
                          */
                         public function bar() {
                             return
-                                /** @psalm-return ?T */
-                                function() {
-                                    /** @psalm-var ?T */
-                                    $data = null;
+                                /**
+                                 * @param T $data
+                                 * @return ?T
+                                 */
+                                function($data) {
+                                    $data = rand(0, 1) ? $data : null;
                                     return $data;
                                 };
                         }
