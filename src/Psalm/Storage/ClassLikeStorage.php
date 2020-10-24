@@ -378,6 +378,11 @@ class ClassLikeStorage
      */
     public $implementation_requirements = [];
 
+    /**
+     * @var list<AttributeStorage>
+     */
+    public $attributes = [];
+
     public function __construct(string $name)
     {
         $this->name = $name;

@@ -11,6 +11,7 @@ use Psalm\Issue\InaccessibleProperty;
 use Psalm\Issue\InvalidClass;
 use Psalm\Issue\MissingDependency;
 use Psalm\Issue\ReservedWord;
+use Psalm\Issue\UndefinedAttributeClass;
 use Psalm\Issue\UndefinedClass;
 use Psalm\Issue\UndefinedDocblockClass;
 use Psalm\IssueBuffer;
@@ -210,7 +211,8 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         bool $inferred = true,
         bool $allow_trait = false,
         bool $allow_interface = true,
-        bool $from_docblock = false
+        bool $from_docblock = false,
+        bool $from_attribute = false
     ): ?bool {
         $codebase = $statements_source->getCodebase();
         if ($fq_class_name === '') {
@@ -269,12 +271,23 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
             $calling_method_id
         );
 
-        if (!$class_exists && !$interface_exists) {
+        if (!$class_exists && !($interface_exists && $allow_interface)) {
             if (!$allow_trait || !$codebase->classlikes->traitExists($fq_class_name, $code_location)) {
                 if ($from_docblock) {
                     if (IssueBuffer::accepts(
                         new UndefinedDocblockClass(
                             'Docblock-defined class or interface ' . $fq_class_name . ' does not exist',
+                            $code_location,
+                            $fq_class_name
+                        ),
+                        $suppressed_issues
+                    )) {
+                        return false;
+                    }
+                } elseif ($from_attribute) {
+                    if (IssueBuffer::accepts(
+                        new UndefinedAttributeClass(
+                            'Attribute class ' . $fq_class_name . ' does not exist',
                             $code_location,
                             $fq_class_name
                         ),
@@ -297,17 +310,6 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
             }
 
             return null;
-        } elseif ($interface_exists && !$allow_interface) {
-            if (IssueBuffer::accepts(
-                new UndefinedClass(
-                    'Class ' . $fq_class_name . ' does not exist',
-                    $code_location,
-                    $fq_class_name
-                ),
-                $suppressed_issues
-            )) {
-                return false;
-            }
         }
 
         $aliased_name = $codebase->classlikes->getUnAliasedName(

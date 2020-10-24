@@ -204,6 +204,11 @@ abstract class FunctionLikeStorage
      */
     public $allow_named_arg_calls = true;
 
+    /**
+     * @var list<AttributeStorage>
+     */
+    public $attributes = [];
+
     public function __toString(): string
     {
         return $this->getSignature(false);

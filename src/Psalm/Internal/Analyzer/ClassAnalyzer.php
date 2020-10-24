@@ -718,6 +718,14 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             }
         }
 
+        foreach ($storage->attributes as $attribute) {
+            AttributeAnalyzer::analyze(
+                $this,
+                $attribute,
+                $storage->suppressed_issues + $this->getSuppressedIssues()
+            );
+        }
+
         self::addContextProperties(
             $this,
             $storage,
@@ -1646,7 +1654,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
     }
 
     private function checkForMissingPropertyType(
-        StatementsSource $source,
+        SourceAnalyzer $source,
         PhpParser\Node\Stmt\Property $stmt,
         Context $context
     ): void {
@@ -1674,6 +1682,14 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
         $property_storage = $class_storage->properties[$property_name];
+
+        foreach ($property_storage->attributes as $attribute) {
+            AttributeAnalyzer::analyze(
+                $source,
+                $attribute,
+                $this->source->getSuppressedIssues()
+            );
+        }
 
         if ($class_property_type && ($property_storage->type_location || !$codebase->alter_code)) {
             return;

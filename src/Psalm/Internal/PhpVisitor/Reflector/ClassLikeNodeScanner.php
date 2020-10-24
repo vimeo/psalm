@@ -690,6 +690,19 @@ class ClassLikeNodeScanner
             }
         }
 
+        foreach ($node->attrGroups as $attr_group) {
+            foreach ($attr_group->attrs as $attr) {
+                $storage->attributes[] = AttributeResolver::resolve(
+                    $this->codebase,
+                    $this->file_scanner,
+                    $this->file_storage,
+                    $this->aliases,
+                    $attr,
+                    $this->storage->name ?? null
+                );
+            }
+        }
+
         return null;
     }
 
@@ -1203,6 +1216,19 @@ class ClassLikeNodeScanner
             if ($deprecated) {
                 $constant_storage->deprecated = true;
             }
+
+            foreach ($stmt->attrGroups as $attr_group) {
+                foreach ($attr_group->attrs as $attr) {
+                    $constant_storage->attributes[] = AttributeResolver::resolve(
+                        $this->codebase,
+                        $this->file_scanner,
+                        $this->file_storage,
+                        $this->aliases,
+                        $attr,
+                        $this->storage->name ?? null
+                    );
+                }
+            }
         }
     }
 
@@ -1386,6 +1412,19 @@ class ClassLikeNodeScanner
 
             if (!$stmt->isPrivate()) {
                 $storage->inheritable_property_ids[$property->name->name] = $property_id;
+            }
+
+            foreach ($stmt->attrGroups as $attr_group) {
+                foreach ($attr_group->attrs as $attr) {
+                    $property_storage->attributes[] = AttributeResolver::resolve(
+                        $this->codebase,
+                        $this->file_scanner,
+                        $this->file_storage,
+                        $this->aliases,
+                        $attr,
+                        $this->storage->name ?? null
+                    );
+                }
             }
         }
     }

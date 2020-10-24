@@ -18,7 +18,7 @@ class ExpressionResolver
     public static function getUnresolvedClassConstExpr(
         PhpParser\Node\Expr $stmt,
         Aliases $aliases,
-        string $fq_classlike_name
+        ?string $fq_classlike_name
     ) : ?UnresolvedConstantComponent {
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp) {
             $left = self::getUnresolvedClassConstExpr(

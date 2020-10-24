@@ -381,6 +381,19 @@ class FunctionLikeNodeScanner
 
             $param_storage = $this->getTranslatedFunctionParam($param, $stmt, $fake_method, $fq_classlike_name);
 
+            foreach ($param->attrGroups as $attr_group) {
+                foreach ($attr_group->attrs as $attr) {
+                    $param_storage->attributes[] = AttributeResolver::resolve(
+                        $this->codebase,
+                        $this->file_scanner,
+                        $this->file_storage,
+                        $this->aliases,
+                        $attr,
+                        $this->classlike_storage->name ?? null
+                    );
+                }
+            }
+
             if ($param_storage->name === 'haystack'
                 && (strpos($this->file_path, 'CoreGenericFunctions.phpstub')
                     || strpos($this->file_path, 'CoreGenericClasses.phpstub'))
@@ -719,6 +732,19 @@ class FunctionLikeNodeScanner
             $this->inferPropertyTypeFromConstructor($stmt, $storage, $classlike_storage);
         }
 
+        foreach ($stmt->getAttrGroups() as $attr_group) {
+            foreach ($attr_group->attrs as $attr) {
+                $storage->attributes[] = AttributeResolver::resolve(
+                    $this->codebase,
+                    $this->file_scanner,
+                    $this->file_storage,
+                    $this->aliases,
+                    $attr,
+                    $this->classlike_storage->name ?? null
+                );
+            }
+        }
+
         return $storage;
     }
 
@@ -787,7 +813,7 @@ class FunctionLikeNodeScanner
         }
     }
 
-    public function getTranslatedFunctionParam(
+    private function getTranslatedFunctionParam(
         PhpParser\Node\Param $param,
         PhpParser\Node\FunctionLike $stmt,
         bool $fake_method,

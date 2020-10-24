@@ -947,6 +947,14 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
         }
 
+        foreach ($storage->attributes as $attribute) {
+            AttributeAnalyzer::analyze(
+                $this,
+                $attribute,
+                $storage->suppressed_issues + $this->getSuppressedIssues()
+            );
+        }
+
         return null;
     }
 
@@ -1404,6 +1412,14 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 // @todo change the assignment analysis *just* for byref params
                 // so that we don't have to do this
                 $context->hasVariable('$' . $function_param->name);
+            }
+
+            foreach ($function_param->attributes as $attribute) {
+                AttributeAnalyzer::analyze(
+                    $this,
+                    $attribute,
+                    $storage->suppressed_issues
+                );
             }
         }
 

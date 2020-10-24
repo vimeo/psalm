@@ -86,6 +86,11 @@ class PropertyStorage
      */
     public $getter_method = null;
 
+    /**
+     * @var list<AttributeStorage>
+     */
+    public $attributes = [];
+
     public function getInfo() : string
     {
         switch ($this->visibility) {
