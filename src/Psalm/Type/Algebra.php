@@ -476,7 +476,10 @@ class Algebra
                             }
 
                             unset($cloned_clauses[$hash]);
-                            $cloned_clauses[$clause_a->hash] = $clause_a;
+
+                            if ($clause_a) {
+                                $cloned_clauses[$clause_a->hash] = $clause_a;
+                            }
                         }
                     }
                 }
