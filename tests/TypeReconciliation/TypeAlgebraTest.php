@@ -1271,6 +1271,19 @@ class TypeAlgebraTest extends \Psalm\Tests\TestCase
                     }',
                 'error_message' => 'ParadoxicalCondition',
             ],
+            'mismatchingChecks' => [
+                '<?php
+                    function doesntFindBug(?string $old, ?string $new): void {
+                        if (empty($old) && empty($new)) {
+                            return;
+                        }
+
+                        if (($old && empty($new)) || ($new && empty($old))) {
+                            return;
+                        }
+                    }',
+                'error_message' => 'RedundantCondition',
+            ],
         ];
     }
 }

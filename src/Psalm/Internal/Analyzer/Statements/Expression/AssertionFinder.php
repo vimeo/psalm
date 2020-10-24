@@ -484,7 +484,16 @@ class AssertionFinder
             );
 
             if ($var_name) {
-                $if_types[$var_name] = [['empty']];
+                if ($conditional->expr instanceof PhpParser\Node\Expr\Variable
+                    && $source instanceof StatementsAnalyzer
+                    && ($var_type = $source->node_data->getType($conditional->expr))
+                    && !$var_type->isMixed()
+                    && !$var_type->possibly_undefined
+                ) {
+                    $if_types[$var_name] = [['falsy']];
+                } else {
+                    $if_types[$var_name] = [['empty']];
+                }
             }
 
             return $if_types;
