@@ -143,6 +143,33 @@ class AlgebraTest extends TestCase
         $this->assertSame(['$b' => ['falsy']], $simplified_formula[1]->possibilities);
     }
 
+    public function testSimplifyCNFWithUselessTerm(): void
+    {
+        $formula = [
+            new Clause(['$a' => ['!falsy'], '$b' => ['!falsy']], 1, 1),
+            new Clause(['$a' => ['falsy'], '$b' => ['!falsy']], 1, 2),
+        ];
+
+        $simplified_formula = Algebra::simplifyCNF($formula);
+
+        $this->assertCount(1, $simplified_formula);
+        $this->assertSame(['$b' => ['!falsy']], $simplified_formula[0]->possibilities);
+    }
+
+    public function testSimplifyCNFWithUselessTermAndOneInMiddle(): void
+    {
+        $formula = [
+            new Clause(['$a' => ['!falsy'], '$b' => ['!falsy']], 1, 1),
+            new Clause(['$b' => ['!falsy']], 1, 2),
+            new Clause(['$a' => ['falsy'], '$b' => ['!falsy']], 1, 3),
+        ];
+
+        $simplified_formula = Algebra::simplifyCNF($formula);
+
+        $this->assertCount(1, $simplified_formula);
+        $this->assertSame(['$b' => ['!falsy']], $simplified_formula[0]->possibilities);
+    }
+
     public function testGroupImpossibilities() : void
     {
         $clause1 = (new \Psalm\Internal\Clause(

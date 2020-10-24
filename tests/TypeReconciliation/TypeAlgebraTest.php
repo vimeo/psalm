@@ -1039,6 +1039,30 @@ class TypeAlgebraTest extends \Psalm\Tests\TestCase
                         return $b ? "a" : ($b === null ? "foo" : "b");
                     }',
             ],
+            'cancelOutSameStatement' => [
+                '<?php
+                    function edit(?string $a, ?string $b): string {
+                        if ((!$a && !$b) || ($a && !$b)) {
+                            return "";
+                        }
+
+                        return $b;
+                    }'
+            ],
+            'cancelOutDifferentStatement' => [
+                '<?php
+                    function edit(?string $a, ?string $b): string {
+                        if (!$a && !$b) {
+                            return "";
+                        }
+
+                        if ($a && !$b) {
+                            return "";
+                        }
+
+                        return $b;
+                    }'
+            ],
         ];
     }
 

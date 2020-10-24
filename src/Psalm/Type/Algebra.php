@@ -437,12 +437,50 @@ class Algebra
         }
 
         // remove impossible types
-        foreach ($cloned_clauses as $clause_a) {
-            if (count($clause_a->possibilities) !== 1 || count(array_values($clause_a->possibilities)[0]) !== 1) {
+        foreach ($cloned_clauses as $hash => $clause_a) {
+            if (!$clause_a->reconcilable || $clause_a->wedge) {
                 continue;
             }
 
-            if (!$clause_a->reconcilable || $clause_a->wedge) {
+            if (count($clause_a->possibilities) !== 1 || count(array_values($clause_a->possibilities)[0]) !== 1) {
+                foreach ($cloned_clauses as $clause_hash => $clause_b) {
+                    if ($clause_a === $clause_b || !$clause_b->reconcilable || $clause_b->wedge) {
+                        continue;
+                    }
+
+                    if (array_keys($clause_a->possibilities) === array_keys($clause_b->possibilities)) {
+                        $opposing_keys = [];
+
+                        foreach ($clause_a->possibilities as $key => $a_possibilities) {
+                            $b_possibilities = $clause_b->possibilities[$key];
+
+                            if ($a_possibilities === $b_possibilities) {
+                                continue;
+                            }
+
+                            if (count($a_possibilities) === 1 && count($b_possibilities) === 1) {
+                                if ($a_possibilities[0] === '!' . $b_possibilities[0]
+                                    || $b_possibilities[0] === '!' . $a_possibilities[0]
+                                ) {
+                                    $opposing_keys[] = $key;
+                                    continue;
+                                }
+                            }
+
+                            continue 2;
+                        }
+
+                        if ($opposing_keys) {
+                            foreach ($opposing_keys as $key) {
+                                $clause_a = $clause_a->removePossibilities($key);
+                            }
+
+                            unset($cloned_clauses[$hash]);
+                            $cloned_clauses[$clause_a->hash] = $clause_a;
+                        }
+                    }
+                }
+
                 continue;
             }
 
@@ -644,9 +682,44 @@ class Algebra
                         $new_clause_possibilities = $grouped_clause->possibilities;
 
                         if (isset($grouped_clause->possibilities[$var])) {
-                            $new_clause_possibilities[$var][] = $impossible_type;
+                            $new_clause_possibilities[$var] = array_values(
+                                array_unique(
+                                    array_merge([$impossible_type], $new_clause_possibilities[$var])
+                                )
+                            );
+
+                            $removed_indexes = [];
+
+                            for ($i = 0, $l = count($new_clause_possibilities[$var]); $i < $l; $i++) {
+                                for ($j = $i + 1; $j < $l; $j++) {
+                                    $ith = $new_clause_possibilities[$var][$i];
+                                    $jth = $new_clause_possibilities[$var][$j];
+
+                                    if ($ith === '!' . $jth || $jth === '!' . $ith) {
+                                        $removed_indexes[$i] = true;
+                                        $removed_indexes[$j] = true;
+                                    }
+                                }
+                            }
+
+                            if ($removed_indexes) {
+                                $new_clause_possibilities[$var] = array_diff_key(
+                                    $new_clause_possibilities[$var],
+                                    $removed_indexes
+                                );
+
+                                if (!$new_clause_possibilities[$var]) {
+                                    unset($new_clause_possibilities[$var]);
+                                } else {
+                                    $new_clause_possibilities[$var] = array_values($new_clause_possibilities[$var]);
+                                }
+                            }
                         } else {
                             $new_clause_possibilities[$var] = [$impossible_type];
+                        }
+
+                        if (!$new_clause_possibilities) {
+                            continue;
                         }
 
                         $new_clause = new Clause(
