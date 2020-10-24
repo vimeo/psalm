@@ -20,7 +20,20 @@ class ContinueAnalyzer
         PhpParser\Node\Stmt\Continue_ $stmt,
         Context $context
     ): ?bool {
+        $count = $stmt->num
+            && $stmt->num instanceof PhpParser\Node\Scalar\LNumber
+            ? $stmt->num->value
+            : 1;
+
         $loop_scope = $context->loop_scope;
+
+        if ($count === 2 && isset($loop_scope->loop_parent_context->loop_scope)) {
+            $loop_scope = $loop_scope->loop_parent_context->loop_scope;
+        }
+
+        if ($count === 3 && isset($loop_scope->loop_parent_context->loop_scope)) {
+            $loop_scope = $loop_scope->loop_parent_context->loop_scope;
+        }
 
         if ($loop_scope === null) {
             if (!$context->break_types) {
@@ -37,10 +50,7 @@ class ContinueAnalyzer
         } else {
             if ($context->break_types
                 && \end($context->break_types) === 'switch'
-                && (!$stmt->num
-                    || !$stmt->num instanceof PhpParser\Node\Scalar\LNumber
-                    || $stmt->num->value < 2
-                )
+                && $count < 2
             ) {
                 $loop_scope->final_actions[] = ScopeAnalyzer::ACTION_LEAVE_SWITCH;
             } else {

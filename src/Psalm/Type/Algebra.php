@@ -437,13 +437,13 @@ class Algebra
         }
 
         // remove impossible types
-        foreach ($cloned_clauses as $hash => $clause_a) {
+        foreach ($cloned_clauses as $clause_a_hash => $clause_a) {
             if (!$clause_a->reconcilable || $clause_a->wedge) {
                 continue;
             }
 
             if (count($clause_a->possibilities) !== 1 || count(array_values($clause_a->possibilities)[0]) !== 1) {
-                foreach ($cloned_clauses as $clause_hash => $clause_b) {
+                foreach ($cloned_clauses as $clause_b) {
                     if ($clause_a === $clause_b || !$clause_b->reconcilable || $clause_b->wedge) {
                         continue;
                     }
@@ -471,15 +471,17 @@ class Algebra
                         }
 
                         if ($opposing_keys) {
-                            foreach ($opposing_keys as $key) {
-                                $clause_a = $clause_a->removePossibilities($key);
+                            unset($cloned_clauses[$clause_a_hash]);
+
+                            while ($opposing_keys && $clause_a) {
+                                $clause_a = $clause_a->removePossibilities(\array_shift($opposing_keys));
                             }
 
-                            unset($cloned_clauses[$hash]);
-
-                            if ($clause_a) {
-                                $cloned_clauses[$clause_a->hash] = $clause_a;
+                            if (!$clause_a) {
+                                continue 2;
                             }
+
+                            $cloned_clauses[$clause_a->hash] = $clause_a;
                         }
                     }
                 }
@@ -491,7 +493,7 @@ class Algebra
             $only_type = array_pop(array_values($clause_a->possibilities)[0]);
             $negated_clause_type = self::negateType($only_type);
 
-            foreach ($cloned_clauses as $clause_hash => $clause_b) {
+            foreach ($cloned_clauses as $clause_b_hash => $clause_b) {
                 if ($clause_a === $clause_b || !$clause_b->reconcilable || $clause_b->wedge) {
                     continue;
                 }
@@ -508,7 +510,7 @@ class Algebra
                         )
                     );
 
-                    unset($cloned_clauses[$clause_hash]);
+                    unset($cloned_clauses[$clause_b_hash]);
 
                     if (!$clause_var_possibilities) {
                         $updated_clause = $clause_b->removePossibilities($clause_var);
@@ -706,15 +708,17 @@ class Algebra
                             }
 
                             if ($removed_indexes) {
-                                $new_clause_possibilities[$var] = array_diff_key(
-                                    $new_clause_possibilities[$var],
-                                    $removed_indexes
+                                $new_possibilities = array_values(
+                                    \array_diff_key(
+                                        $new_clause_possibilities[$var],
+                                        $removed_indexes
+                                    )
                                 );
 
-                                if (!$new_clause_possibilities[$var]) {
+                                if (!$new_possibilities) {
                                     unset($new_clause_possibilities[$var]);
                                 } else {
-                                    $new_clause_possibilities[$var] = array_values($new_clause_possibilities[$var]);
+                                    $new_clause_possibilities[$var] = $new_possibilities;
                                 }
                             }
                         } else {
