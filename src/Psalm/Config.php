@@ -1302,6 +1302,10 @@ class Config
 
     public function shortenFileName(string $to): string
     {
+        if (!is_file($to)) {
+            return $to;
+        }
+
         $from = $this->base_dir;
 
         // some compatibility fixes for Windows paths
