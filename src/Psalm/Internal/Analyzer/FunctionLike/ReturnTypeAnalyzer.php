@@ -361,6 +361,8 @@ class ReturnTypeAnalyzer
 
         $parent_class = null;
 
+        $classlike_storage = null;
+
         if ($self_fq_class_name) {
             $classlike_storage = $codebase->classlike_storage_provider->get($self_fq_class_name);
             $parent_class = $classlike_storage->parent_class;
@@ -376,6 +378,7 @@ class ReturnTypeAnalyzer
             true,
             true,
             $function_like_storage instanceof MethodStorage && $function_like_storage->final
+                || ($classlike_storage && $classlike_storage->final)
         );
 
         if (!$inferred_return_type_parts

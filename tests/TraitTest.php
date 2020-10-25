@@ -973,6 +973,19 @@ class TraitTest extends TestCase
                         use Foo;
                     }'
             ],
+            'staticReturnWithFinal' => [
+                '<?php
+                    trait T {
+                        /** @return static */
+                        public function instance() {
+                            return new static();
+                        }
+                    }
+
+                    final class A {
+                        use T;
+                    }'
+            ],
         ];
     }
 
