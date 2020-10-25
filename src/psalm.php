@@ -372,11 +372,6 @@ if (isset($options['i'])) {
 
 $config->setIncludeCollector($include_collector);
 
-if ($config->resolve_from_config_file) {
-    $current_dir = $config->base_dir;
-    chdir($current_dir);
-}
-
 $in_ci = isset($_SERVER['TRAVIS'])
     || isset($_SERVER['CIRCLECI'])
     || isset($_SERVER['APPVEYOR'])
@@ -466,6 +461,11 @@ if (isset($options['set-baseline'])) {
 }
 
 $paths_to_check = \Psalm\getPathsToCheck(isset($options['f']) ? $options['f'] : null);
+
+if ($config->resolve_from_config_file) {
+    $current_dir = $config->base_dir;
+    chdir($current_dir);
+}
 
 $plugins = [];
 
