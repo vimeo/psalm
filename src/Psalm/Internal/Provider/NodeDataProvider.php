@@ -11,7 +11,12 @@ class NodeDataProvider implements \Psalm\NodeTypeProvider
     /** @var SplObjectStorage<PhpParser\Node, Union> */
     private $node_types;
 
-    /** @var SplObjectStorage<PhpParser\Node, array<string, non-empty-list<non-empty-list<string>>>|null> */
+    /**
+     * @var SplObjectStorage<
+     *     PhpParser\Node,
+     *     list<non-empty-array<string, non-empty-list<non-empty-list<string>>>>|null
+     * >
+     */
     private $node_assertions;
 
     /** @var SplObjectStorage<PhpParser\Node, array<int, \Psalm\Storage\Assertion>> */
@@ -52,7 +57,7 @@ class NodeDataProvider implements \Psalm\NodeTypeProvider
     }
 
     /**
-     * @param array<string, non-empty-list<non-empty-list<string>>>|null $assertions
+     * @param list<non-empty-array<string, non-empty-list<non-empty-list<string>>>>|null $assertions
      */
     public function setAssertions(PhpParser\Node\Expr $node, ?array $assertions) : void
     {
@@ -64,7 +69,7 @@ class NodeDataProvider implements \Psalm\NodeTypeProvider
     }
 
     /**
-     * @return array<string, non-empty-list<non-empty-list<string>>>|null
+     * @return list<non-empty-array<string, non-empty-list<non-empty-list<string>>>>|null
      */
     public function getAssertions(PhpParser\Node\Expr $node) : ?array
     {

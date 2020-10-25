@@ -178,14 +178,14 @@ class Algebra
             if ($conditional->expr instanceof PhpParser\Node\Expr\Isset_
                 && count($conditional->expr->vars) > 1
             ) {
-                $assertions = null;
+                $anded_assertions = null;
 
                 if ($cache && $source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
-                    $assertions = $source->node_data->getAssertions($conditional->expr);
+                    $anded_assertions = $source->node_data->getAssertions($conditional->expr);
                 }
 
-                if ($assertions === null) {
-                    $assertions = AssertionFinder::scrapeAssertions(
+                if ($anded_assertions === null) {
+                    $anded_assertions = AssertionFinder::scrapeAssertions(
                         $conditional->expr,
                         $this_class_name,
                         $source,
@@ -195,35 +195,37 @@ class Algebra
                     );
 
                     if ($cache && $source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
-                        $source->node_data->setAssertions($conditional->expr, $assertions);
+                        $source->node_data->setAssertions($conditional->expr, $anded_assertions);
                     }
                 }
 
                 $clauses = [];
 
-                foreach ($assertions as $var => $anded_types) {
-                    $redefined = false;
+                foreach ($anded_assertions as $assertions) {
+                    foreach ($assertions as $var => $anded_types) {
+                        $redefined = false;
 
-                    if ($var[0] === '=') {
-                        /** @var string */
-                        $var = substr($var, 1);
-                        $redefined = true;
-                    }
+                        if ($var[0] === '=') {
+                            /** @var string */
+                            $var = substr($var, 1);
+                            $redefined = true;
+                        }
 
-                    foreach ($anded_types as $orred_types) {
-                        $clauses[] = new Clause(
-                            [$var => $orred_types],
-                            $conditional_object_id,
-                            \spl_object_id($conditional->expr),
-                            false,
-                            true,
-                            $orred_types[0][0] === '='
-                                || $orred_types[0][0] === '~'
-                                || (strlen($orred_types[0]) > 1
-                                    && ($orred_types[0][1] === '='
-                                        || $orred_types[0][1] === '~')),
-                            $redefined ? [$var => true] : []
-                        );
+                        foreach ($anded_types as $orred_types) {
+                            $clauses[] = new Clause(
+                                [$var => $orred_types],
+                                $conditional_object_id,
+                                \spl_object_id($conditional->expr),
+                                false,
+                                true,
+                                $orred_types[0][0] === '='
+                                    || $orred_types[0][0] === '~'
+                                    || (strlen($orred_types[0]) > 1
+                                        && ($orred_types[0][1] === '='
+                                            || $orred_types[0][1] === '~')),
+                                $redefined ? [$var => true] : []
+                            );
+                        }
                     }
                 }
 
@@ -356,14 +358,14 @@ class Algebra
             );
         }
 
-        $assertions = null;
+        $anded_assertions = null;
 
         if ($cache && $source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
-            $assertions = $source->node_data->getAssertions($conditional);
+            $anded_assertions = $source->node_data->getAssertions($conditional);
         }
 
-        if ($assertions === null) {
-            $assertions = AssertionFinder::scrapeAssertions(
+        if ($anded_assertions === null) {
+            $anded_assertions = AssertionFinder::scrapeAssertions(
                 $conditional,
                 $this_class_name,
                 $source,
@@ -373,13 +375,13 @@ class Algebra
             );
 
             if ($cache && $source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
-                $source->node_data->setAssertions($conditional, $assertions);
+                $source->node_data->setAssertions($conditional, $anded_assertions);
             }
         }
 
-        if ($assertions) {
-            $clauses = [];
+        $clauses = [];
 
+        foreach ($anded_assertions as $assertions) {
             foreach ($assertions as $var => $anded_types) {
                 $redefined = false;
 
@@ -405,7 +407,9 @@ class Algebra
                     );
                 }
             }
+        }
 
+        if ($clauses) {
             return $clauses;
         }
 

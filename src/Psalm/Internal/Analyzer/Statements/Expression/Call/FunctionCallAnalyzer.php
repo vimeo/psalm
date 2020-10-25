@@ -1878,9 +1878,9 @@ class FunctionCallAnalyzer extends CallAnalyzer
             $stmt_assertions = $statements_analyzer->node_data->getAssertions($stmt);
 
             if ($stmt_assertions !== null) {
-                $assertions = $stmt_assertions;
+                $anded_assertions = $stmt_assertions;
             } else {
-                $assertions = AssertionFinder::processFunctionCall(
+                $anded_assertions = AssertionFinder::processFunctionCall(
                     $stmt,
                     $context->self,
                     $statements_analyzer,
@@ -1891,14 +1891,14 @@ class FunctionCallAnalyzer extends CallAnalyzer
 
             $changed_vars = [];
 
-            $referenced_var_ids = array_map(
-                function (array $_) : bool {
-                    return true;
-                },
-                $assertions
-            );
+            foreach ($anded_assertions as $assertions) {
+                $referenced_var_ids = array_map(
+                    function (array $_) : bool {
+                        return true;
+                    },
+                    $assertions
+                );
 
-            if ($assertions) {
                 Reconciler::reconcileKeyedTypes(
                     $assertions,
                     $assertions,

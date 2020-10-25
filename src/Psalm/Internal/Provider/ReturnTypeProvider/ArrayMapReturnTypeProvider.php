@@ -281,12 +281,14 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
         $codebase = $statements_analyzer->getCodebase();
 
         if ($assertions !== null) {
-            $assertions = AssertionFinder::scrapeAssertions(
+            $anded_assertions = AssertionFinder::scrapeAssertions(
                 $fake_call,
                 null,
                 $statements_analyzer,
                 $codebase
             );
+
+            $assertions = $anded_assertions[0] ?? [];
         }
 
         $context->inside_call = $was_inside_call;

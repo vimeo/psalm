@@ -37,7 +37,7 @@ class AssertionFinder
     /**
      * Gets all the type assertions in a conditional
      *
-     * @return array<string, non-empty-list<non-empty-list<string>>>
+     * @return list<non-empty-array<string, non-empty-list<non-empty-list<string>>>>
      */
     public static function scrapeAssertions(
         PhpParser\Node\Expr $conditional,
@@ -123,7 +123,7 @@ class AssertionFinder
                 }
             }
 
-            return $if_types;
+            return $if_types ? [$if_types] : [];
         }
 
         if ($conditional instanceof PhpParser\Node\Expr\Assign) {
@@ -147,13 +147,13 @@ class AssertionFinder
 
             if ($var_name) {
                 if ($candidate_if_types) {
-                    $if_types[$var_name] = [['>' . \json_encode($candidate_if_types)]];
+                    $if_types[$var_name] = [['>' . \json_encode($candidate_if_types[0])]];
                 } else {
                     $if_types[$var_name] = [['!falsy']];
                 }
             }
 
-            return $if_types;
+            return $if_types ? [$if_types] : [];
         }
 
         $var_name = ExpressionIdentifier::getArrayVarId(
@@ -168,7 +168,7 @@ class AssertionFinder
             if (!$conditional instanceof PhpParser\Node\Expr\MethodCall
                 && !$conditional instanceof PhpParser\Node\Expr\StaticCall
             ) {
-                return $if_types;
+                return [$if_types];
             }
         }
 
@@ -199,15 +199,21 @@ class AssertionFinder
                 return [];
             }
 
+            $expr_assertions = $expr_assertions[0];
+
+            if (count($expr_assertions) !== 1) {
+                return [];
+            }
+
             $if_types = \Psalm\Type\Algebra::negateTypes($expr_assertions);
 
-            return $if_types;
+            return $if_types ? [$if_types] : [];
         }
 
         if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical ||
             $conditional instanceof PhpParser\Node\Expr\BinaryOp\Equal
         ) {
-            $if_types = self::scrapeEqualityAssertions(
+            $and_types = self::scrapeEqualityAssertions(
                 $conditional,
                 $this_class_name,
                 $source,
@@ -217,13 +223,13 @@ class AssertionFinder
                 $inside_conditional
             );
 
-            return $if_types;
+            return $and_types;
         }
 
         if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical ||
             $conditional instanceof PhpParser\Node\Expr\BinaryOp\NotEqual
         ) {
-            $if_types = self::scrapeInequalityAssertions(
+            $and_types = self::scrapeInequalityAssertions(
                 $conditional,
                 $this_class_name,
                 $source,
@@ -233,7 +239,7 @@ class AssertionFinder
                 $inside_conditional
             );
 
-            return $if_types;
+            return $and_types;
         }
 
         if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater
@@ -272,7 +278,7 @@ class AssertionFinder
                     }
                 }
 
-                return $if_types;
+                return $if_types ? [$if_types] : [];
             }
 
             if ($count_inequality_position) {
@@ -297,7 +303,7 @@ class AssertionFinder
                     }
                 }
 
-                return $if_types;
+                return $if_types ? [$if_types] : [];
             }
 
             if ($positive_number_position) {
@@ -353,7 +359,7 @@ class AssertionFinder
                     $if_types[$var_name] = [[($min_comparison === 1 ? '' : '=') . 'positive-numeric']];
                 }
 
-                return $if_types;
+                return $if_types ? [$if_types] : [];
             }
 
             return [];
@@ -391,7 +397,7 @@ class AssertionFinder
                     }
                 }
 
-                return $if_types;
+                return $if_types ? [$if_types] : [];
             }
 
             if ($count_inequality_position) {
@@ -416,7 +422,7 @@ class AssertionFinder
                     }
                 }
 
-                return $if_types;
+                return $if_types ? [$if_types] : [];
             }
 
             if ($typed_value_position) {
@@ -452,16 +458,16 @@ class AssertionFinder
                     $if_types[$var_name] = [['=isset']];
                 }
 
-                return $if_types;
+                return $if_types ? [$if_types] : [];
             }
 
             return [];
         }
 
         if ($conditional instanceof PhpParser\Node\Expr\FuncCall) {
-            $if_types = self::processFunctionCall($conditional, $this_class_name, $source, $codebase, false);
+            $and_types = self::processFunctionCall($conditional, $this_class_name, $source, $codebase, false);
 
-            return $if_types;
+            return $and_types;
         }
 
         if ($conditional instanceof PhpParser\Node\Expr\MethodCall
@@ -473,7 +479,7 @@ class AssertionFinder
                 return $custom_assertions;
             }
 
-            return $if_types;
+            return $if_types ? [$if_types] : [];
         }
 
         if ($conditional instanceof PhpParser\Node\Expr\Empty_) {
@@ -496,7 +502,7 @@ class AssertionFinder
                 }
             }
 
-            return $if_types;
+            return $if_types ? [$if_types] : [];
         }
 
         if ($conditional instanceof PhpParser\Node\Expr\Isset_) {
@@ -529,7 +535,7 @@ class AssertionFinder
                 }
             }
 
-            return $if_types;
+            return $if_types ? [$if_types] : [];
         }
 
         if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Coalesce) {
@@ -557,7 +563,7 @@ class AssertionFinder
     /**
      * @param PhpParser\Node\Expr\BinaryOp\Identical|PhpParser\Node\Expr\BinaryOp\Equal $conditional
      *
-     * @return array<string, non-empty-list<non-empty-list<string>>>
+     * @return list<non-empty-array<string, non-empty-list<non-empty-list<string>>>>
      */
     private static function scrapeEqualityAssertions(
         PhpParser\Node\Expr\BinaryOp $conditional,
@@ -648,7 +654,7 @@ class AssertionFinder
                 }
             }
 
-            return $if_types;
+            return $if_types ? [$if_types] : [];
         }
 
         if ($true_position) {
@@ -681,6 +687,8 @@ class AssertionFinder
                     } else {
                         $if_types[$var_name] = [['!falsy']];
                     }
+
+                    $if_types = [$if_types];
                 } else {
                     $base_assertions = null;
 
@@ -823,9 +831,15 @@ class AssertionFinder
                     $notif_types = $base_assertions;
 
                     if (count($notif_types) === 1) {
-                        $if_types = \Psalm\Type\Algebra::negateTypes($notif_types);
+                        $notif_types = $notif_types[0];
+
+                        if (count($notif_types) === 1) {
+                            $if_types = \Psalm\Type\Algebra::negateTypes($notif_types);
+                        }
                     }
                 }
+
+                $if_types = $if_types ? [$if_types] : [];
             }
 
             if ($codebase
@@ -931,7 +945,7 @@ class AssertionFinder
                 }
             }
 
-            return $if_types;
+            return $if_types ? [$if_types] : [];
         }
 
         if ($gettype_position) {
@@ -970,7 +984,7 @@ class AssertionFinder
                 }
             }
 
-            return $if_types;
+            return $if_types ? [$if_types] : [];
         }
 
         if ($get_debug_type_position) {
@@ -1016,7 +1030,7 @@ class AssertionFinder
                 }
             }
 
-            return $if_types;
+            return $if_types ? [$if_types] : [];
         }
 
         if ($count_equality_position) {
@@ -1043,7 +1057,7 @@ class AssertionFinder
                 }
             }
 
-            return $if_types;
+            return $if_types ? [$if_types] : [];
         }
 
         if (!$source instanceof StatementsAnalyzer) {
@@ -1098,7 +1112,7 @@ class AssertionFinder
                         true
                     ) === false
                     ) {
-                        return $if_types;
+                        return [];
                     }
                 }
 
@@ -1117,7 +1131,7 @@ class AssertionFinder
                 }
             }
 
-            return $if_types;
+            return $if_types ? [$if_types] : [];
         }
 
         $typed_value_position = self::hasTypedValueComparison($conditional, $source);
@@ -1209,7 +1223,7 @@ class AssertionFinder
                 }
             }
 
-            return $if_types;
+            return $if_types ? [$if_types] : [];
         }
 
         $var_type = $source->node_data->getType($conditional->left);
@@ -1240,7 +1254,7 @@ class AssertionFinder
     /**
      * @param PhpParser\Node\Expr\BinaryOp\NotIdentical|PhpParser\Node\Expr\BinaryOp\NotEqual $conditional
      *
-     * @return array<string, non-empty-list<non-empty-list<string>>>
+     * @return list<non-empty-array<string, non-empty-list<non-empty-list<string>>>>
      */
     private static function scrapeInequalityAssertions(
         PhpParser\Node\Expr\BinaryOp $conditional,
@@ -1332,7 +1346,7 @@ class AssertionFinder
                 }
             }
 
-            return $if_types;
+            return $if_types ? [$if_types] : [];
         }
 
         if ($false_position) {
@@ -1382,7 +1396,11 @@ class AssertionFinder
                 $notif_types = $base_assertions;
 
                 if (count($notif_types) === 1) {
-                    $if_types = \Psalm\Type\Algebra::negateTypes($notif_types);
+                    $notif_types = $notif_types[0];
+
+                    if (count($notif_types) === 1) {
+                        $if_types = \Psalm\Type\Algebra::negateTypes($notif_types);
+                    }
                 }
             }
 
@@ -1429,7 +1447,7 @@ class AssertionFinder
                 }
             }
 
-            return $if_types;
+            return $if_types ? [$if_types] : [];
         }
 
         if ($true_position) {
@@ -1488,9 +1506,15 @@ class AssertionFinder
                     $notif_types = $base_assertions;
 
                     if (count($notif_types) === 1) {
-                        $if_types = \Psalm\Type\Algebra::negateTypes($notif_types);
+                        $notif_types = $notif_types[0];
+
+                        if (count($notif_types) === 1) {
+                            $if_types = \Psalm\Type\Algebra::negateTypes($notif_types);
+                        }
                     }
                 }
+
+                $if_types = $if_types ? [$if_types] : [];
             }
 
             if ($codebase
@@ -1563,7 +1587,7 @@ class AssertionFinder
                 }
             }
 
-            return $if_types;
+            return $if_types ? [$if_types] : [];
         }
 
         if ($empty_array_position !== null) {
@@ -1632,7 +1656,7 @@ class AssertionFinder
                 }
             }
 
-            return $if_types;
+            return $if_types ? [$if_types] : [];
         }
 
         if ($gettype_position) {
@@ -1681,7 +1705,7 @@ class AssertionFinder
                 }
             }
 
-            return $if_types;
+            return $if_types ? [$if_types] : [];
         }
 
         if ($get_debug_type_position) {
@@ -1727,7 +1751,7 @@ class AssertionFinder
                 }
             }
 
-            return $if_types;
+            return $if_types ? [$if_types] : [];
         }
 
         if (!$source instanceof StatementsAnalyzer) {
@@ -1784,7 +1808,7 @@ class AssertionFinder
                     }
                 }
 
-                return $if_types;
+                return $if_types ? [$if_types] : [];
             }
 
             if ($var_type
@@ -1805,7 +1829,7 @@ class AssertionFinder
                 }
             }
 
-            return $if_types;
+            return $if_types ? [$if_types] : [];
         }
 
         if ($typed_value_position) {
@@ -1893,14 +1917,14 @@ class AssertionFinder
                 }
             }
 
-            return $if_types;
+            return $if_types ? [$if_types] : [];
         }
 
         return [];
     }
 
     /**
-     * @return array<string, non-empty-list<non-empty-list<string>>>
+     * @return list<non-empty-array<string, non-empty-list<non-empty-list<string>>>>
      */
     public static function processFunctionCall(
         PhpParser\Node\Expr\FuncCall $expr,
@@ -1948,7 +1972,7 @@ class AssertionFinder
 
                 if ($third_arg instanceof PhpParser\Node\Expr\ConstFetch) {
                     if (!in_array(strtolower($third_arg->name->parts[0]), ['true', 'false'])) {
-                        return $if_types;
+                        return [];
                     }
 
                     $third_arg_value = strtolower($third_arg->name->parts[0]);
@@ -2321,10 +2345,10 @@ class AssertionFinder
                 $if_types[$first_var_name] = [[$prefix . 'non-empty-countable']];
             }
         } else {
-            $if_types = self::processCustomAssertion($expr, $this_class_name, $source, $negate);
+            return self::processCustomAssertion($expr, $this_class_name, $source, $negate);
         }
 
-        return $if_types;
+        return $if_types ? [$if_types] : [];
     }
 
     private static function processIrreconcilableFunctionCall(
@@ -2401,7 +2425,7 @@ class AssertionFinder
     /**
      * @param  PhpParser\Node\Expr\FuncCall|PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $expr
      *
-     * @return array<string, non-empty-list<non-empty-list<string>>>
+     * @return list<non-empty-array<string, non-empty-list<non-empty-list<string>>>>
      */
     protected static function processCustomAssertion(
         PhpParser\Node\Expr $expr,
@@ -2430,10 +2454,12 @@ class AssertionFinder
             )
             : null;
 
-        $if_types = [];
+        $anded_types = [];
 
         if ($if_true_assertions) {
             foreach ($if_true_assertions as $assertion) {
+                $if_types = [];
+
                 $assertion = clone $assertion;
 
                 foreach ($assertion->rule as $i => $and_rules) {
@@ -2493,6 +2519,10 @@ class AssertionFinder
                         $if_types[$assertion->var_id] = [[$prefix . $assertion->rule[0][0]]];
                     }
                 }
+
+                if ($if_types) {
+                    $anded_types[] = $if_types;
+                }
             }
         }
 
@@ -2500,6 +2530,8 @@ class AssertionFinder
             $negated_prefix = !$negate ? '!' : '';
 
             foreach ($if_false_assertions as $assertion) {
+                $if_types = [];
+
                 $assertion = clone $assertion;
 
                 foreach ($assertion->rule as $i => $and_rules) {
@@ -2559,10 +2591,14 @@ class AssertionFinder
                         $if_types[$assertion->var_id] = [[$negated_prefix . $assertion->rule[0][0]]];
                     }
                 }
+
+                if ($if_types) {
+                    $anded_types[] = $if_types;
+                }
             }
         }
 
-        return $if_types;
+        return $anded_types;
     }
 
     /**

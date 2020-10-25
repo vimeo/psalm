@@ -240,12 +240,14 @@ class ArrayFilterReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
                     ) {
                         $codebase = $statements_source->getCodebase();
 
-                        $assertions = AssertionFinder::scrapeAssertions(
+                        $anded_assertions = AssertionFinder::scrapeAssertions(
                             $stmt->expr,
                             null,
                             $statements_source,
                             $codebase
                         );
+
+                        $assertions = $anded_assertions[0] ?? [];
 
                         if (isset($assertions['$' . $first_param->var->name])) {
                             $changed_var_ids = [];
