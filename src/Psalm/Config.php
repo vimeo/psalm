@@ -85,6 +85,11 @@ use const LIBXML_NONET;
 use const PHP_EOL;
 use const SCANDIR_SORT_NONE;
 use function array_map;
+use function rtrim;
+use function str_replace;
+use function array_shift;
+use function array_pad;
+use function implode;
 
 /**
  * @psalm-suppress PropertyNotSetInConstructor
@@ -1295,9 +1300,38 @@ class Config
         return $fq_class_name;
     }
 
-    public function shortenFileName(string $file_name): string
+    public function shortenFileName(string $to): string
     {
-        return preg_replace('/^' . preg_quote($this->base_dir, '/') . '/', '', $file_name);
+        $from = $this->base_dir;
+
+        // some compatibility fixes for Windows paths
+        $from = is_dir($from) ? rtrim($from, '\/') . '/' : $from;
+        $to   = is_dir($to)   ? rtrim($to, '\/') . '/'   : $to;
+        $from = str_replace('\\', '/', $from);
+        $to   = str_replace('\\', '/', $to);
+
+        $from     = explode('/', $from);
+        $to       = explode('/', $to);
+        $relPath  = $to;
+
+        foreach ($from as $depth => $dir) {
+            // find first non-matching dir
+            if ($dir === $to[$depth]) {
+                // ignore this directory
+                array_shift($relPath);
+            } else {
+                // get number of remaining dirs to $from
+                $remaining = count($from) - $depth;
+                if ($remaining > 1) {
+                    // add traversals up to first matching dir
+                    $padLength = (count($relPath) + $remaining - 1) * -1;
+                    $relPath = array_pad($relPath, $padLength, '..');
+                    break;
+                }
+            }
+        }
+
+        return implode('/', $relPath);
     }
 
     public function reportIssueInFile(string $issue_type, string $file_path): bool
