@@ -1303,7 +1303,7 @@ class Config
     public function shortenFileName(string $to): string
     {
         if (!is_file($to)) {
-            return $to;
+            return preg_replace('/^' . preg_quote($this->base_dir, '/') . '/', '', $to);
         }
 
         $from = $this->base_dir;
