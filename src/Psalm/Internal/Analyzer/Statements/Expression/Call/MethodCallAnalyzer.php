@@ -136,6 +136,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             && $stmt->name instanceof PhpParser\Node\Identifier
             && $class_type->isNullable()
             && !$class_type->ignore_nullable_issues
+            && !($stmt->name->name === 'offsetGet' && $context->inside_isset)
         ) {
             if (IssueBuffer::accepts(
                 new PossiblyNullReference(
