@@ -730,8 +730,9 @@ final class Vector implements Sequence
 /**
  * @template TValue
  * @implements Collection<int, TValue>
+ * @implements ArrayAccess<int, TValue>
  */
-final class Set implements Collection
+final class Set implements Collection, ArrayAccess
 {
     /**
      * @param iterable<TValue> $values
@@ -937,8 +938,9 @@ final class Stack implements Collection, ArrayAccess
 /**
  * @template TValue
  * @implements Collection<int, TValue>
+ * @implements ArrayAccess<int, TValue>
  */
-final class Queue implements Collection
+final class Queue implements Collection, ArrayAccess
 {
     /**
      * @param iterable<TValue> $values
