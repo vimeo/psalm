@@ -311,59 +311,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                     $this->skip_if_descendants = $node->getLine();
                 }
             }
-        } elseif ($node instanceof PhpParser\Node\Expr\Assign
-            || $node instanceof PhpParser\Node\Expr\AssignOp
-            || $node instanceof PhpParser\Node\Expr\AssignRef
-            || $node instanceof PhpParser\Node\Stmt\For_
-            || $node instanceof PhpParser\Node\Stmt\Foreach_
-            || $node instanceof PhpParser\Node\Stmt\While_
-            || $node instanceof PhpParser\Node\Stmt\Do_
-            || $node instanceof PhpParser\Node\Stmt\Echo_
-        ) {
-            if ($doc_comment = $node->getDocComment()) {
-                $var_comments = [];
-
-                try {
-                    $var_comments = CommentAnalyzer::getTypeFromComment(
-                        $doc_comment,
-                        $this->file_scanner,
-                        $this->aliases,
-                        null,
-                        $this->type_aliases
-                    );
-                } catch (DocblockParseException $e) {
-                    // do nothing
-                }
-
-                foreach ($var_comments as $var_comment) {
-                    if (!$var_comment->type) {
-                        continue;
-                    }
-
-                    $var_type = $var_comment->type;
-                    $var_type->queueClassLikesForScanning($this->codebase, $this->file_storage);
-                }
-            }
-
-            if ($node instanceof PhpParser\Node\Expr\Assign
-                || $node instanceof PhpParser\Node\Expr\AssignOp
-                || $node instanceof PhpParser\Node\Expr\AssignRef
-            ) {
-                if ($node->var instanceof PhpParser\Node\Expr\PropertyFetch
-                    && $node->var->var instanceof PhpParser\Node\Expr\Variable
-                    && $node->var->var->name === 'this'
-                    && $node->var->name instanceof PhpParser\Node\Identifier
-                ) {
-                    if ($this->functionlike_node_scanners) {
-                        $functionlike_node_scanner = end($this->functionlike_node_scanners);
-                        $functionlike_storage = $functionlike_node_scanner->storage;
-
-                        if ($functionlike_storage instanceof MethodStorage) {
-                            $functionlike_storage->this_property_mutations[$node->var->name->name] = true;
-                        }
-                    }
-                }
-            }
         } elseif ($node instanceof PhpParser\Node\Expr) {
             $functionlike_storage = null;
 
@@ -381,6 +328,65 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                 $functionlike_storage,
                 $this->skip_if_descendants
             );
+        }
+
+        if ($doc_comment = $node->getDocComment()) {
+            $var_comments = [];
+
+            $template_types = [];
+
+            if ($this->classlike_node_scanners) {
+                $classlike_node_scanner = end($this->classlike_node_scanners);
+                $classlike_storage = $classlike_node_scanner->storage;
+                $template_types = $classlike_storage->template_types ?? [];
+            }
+
+            if ($this->functionlike_node_scanners) {
+                $functionlike_node_scanner = end($this->functionlike_node_scanners);
+                $functionlike_storage = $functionlike_node_scanner->storage;
+                $template_types += $functionlike_storage->template_types ?? [];
+            }
+
+            try {
+                $var_comments = CommentAnalyzer::getTypeFromComment(
+                    $doc_comment,
+                    $this->file_scanner,
+                    $this->aliases,
+                    $template_types,
+                    $this->type_aliases
+                );
+            } catch (DocblockParseException $e) {
+                // do nothing
+            }
+
+            foreach ($var_comments as $var_comment) {
+                if (!$var_comment->type) {
+                    continue;
+                }
+
+                $var_type = $var_comment->type;
+                $var_type->queueClassLikesForScanning($this->codebase, $this->file_storage);
+            }
+        }
+
+        if ($node instanceof PhpParser\Node\Expr\Assign
+            || $node instanceof PhpParser\Node\Expr\AssignOp
+            || $node instanceof PhpParser\Node\Expr\AssignRef
+        ) {
+            if ($node->var instanceof PhpParser\Node\Expr\PropertyFetch
+                && $node->var->var instanceof PhpParser\Node\Expr\Variable
+                && $node->var->var->name === 'this'
+                && $node->var->name instanceof PhpParser\Node\Identifier
+            ) {
+                if ($this->functionlike_node_scanners) {
+                    $functionlike_node_scanner = end($this->functionlike_node_scanners);
+                    $functionlike_storage = $functionlike_node_scanner->storage;
+
+                    if ($functionlike_storage instanceof MethodStorage) {
+                        $functionlike_storage->this_property_mutations[$node->var->name->name] = true;
+                    }
+                }
+            }
         }
 
         return null;
