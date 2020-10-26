@@ -384,10 +384,6 @@ class TryAnalyzer
                 $possibly_referenced_var_ids
             );
 
-            if ($codebase->find_unused_variables && $catch_actions[$i] !== [ScopeAnalyzer::ACTION_END]) {
-                // something
-            }
-
             if ($catch_context->collect_exceptions) {
                 $context->mergeExceptions($catch_context);
             }

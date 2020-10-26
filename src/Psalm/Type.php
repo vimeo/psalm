@@ -445,10 +445,6 @@ abstract class Type
                 $combined_type->initialized = false;
             }
 
-            if ($type_1->possibly_undefined_from_try || $type_2->possibly_undefined_from_try) {
-                $combined_type->possibly_undefined_from_try = true;
-            }
-
             if ($type_1->from_docblock || $type_2->from_docblock) {
                 $combined_type->from_docblock = true;
             }
@@ -480,6 +476,10 @@ abstract class Type
 
         if ($type_1->possibly_undefined || $type_2->possibly_undefined) {
             $combined_type->possibly_undefined = true;
+        }
+
+        if ($type_1->possibly_undefined_from_try || $type_2->possibly_undefined_from_try) {
+            $combined_type->possibly_undefined_from_try = true;
         }
 
         if ($type_1->parent_nodes || $type_2->parent_nodes) {
