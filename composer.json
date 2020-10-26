@@ -14,7 +14,7 @@
         }
     ],
     "require": {
-        "php": "^7.3|^8",
+        "php": "^7.1|^8",
         "ext-SimpleXML": "*",
         "ext-dom": "*",
         "ext-json": "*",
@@ -40,6 +40,7 @@
         "psalm/psalm": "self.version"
     },
     "require-dev": {
+        "php": "^7.3|^8",
         "ext-curl": "*",
         "amphp/amp": "^2.4.2",
         "bamarni/composer-bin-plugin": "^1.2",
