@@ -156,6 +156,20 @@ class AlgebraTest extends TestCase
         $this->assertSame(['$b' => ['!falsy']], $simplified_formula[0]->possibilities);
     }
 
+    public function testSimplifyCNFWithNonUselessTerm(): void
+    {
+        $formula = [
+            new Clause(['$a' => ['!falsy'], '$b' => ['!falsy']], 1, 1),
+            new Clause(['$a' => ['falsy'], '$b' => ['falsy']], 1, 2),
+        ];
+
+        $simplified_formula = Algebra::simplifyCNF($formula);
+
+        $this->assertCount(2, $simplified_formula);
+        $this->assertSame(['$a' => ['!falsy'], '$b' => ['!falsy']], $simplified_formula[0]->possibilities);
+        $this->assertSame(['$a' => ['falsy'], '$b' => ['falsy']], $simplified_formula[1]->possibilities);
+    }
+
     public function testSimplifyCNFWithUselessTermAndOneInMiddle(): void
     {
         $formula = [

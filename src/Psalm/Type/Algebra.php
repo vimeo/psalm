@@ -474,12 +474,10 @@ class Algebra
                             continue 2;
                         }
 
-                        if ($opposing_keys) {
+                        if (count($opposing_keys) === 1) {
                             unset($cloned_clauses[$clause_a_hash]);
 
-                            while ($opposing_keys && $clause_a) {
-                                $clause_a = $clause_a->removePossibilities(\array_shift($opposing_keys));
-                            }
+                            $clause_a = $clause_a->removePossibilities($opposing_keys[0]);
 
                             if (!$clause_a) {
                                 continue 2;
