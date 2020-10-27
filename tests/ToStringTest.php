@@ -389,6 +389,7 @@ class ToStringTest extends TestCase
                     foo(new Bar());',
                 'error_message' => 'InvalidArgument',
                 [],
+                false,
                 '7.4',
             ],
         ];
