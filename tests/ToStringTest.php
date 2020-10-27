@@ -169,6 +169,21 @@ class ToStringTest extends TestCase
                 [],
                 '8.0'
             ],
+            'implicitStringable' => [
+                '<?php
+                    function foo(Stringable $s): void {}
+
+                    class Bar {
+                        public function __toString() {
+                            return "foo";
+                        }
+                    }
+
+                    foo(new Bar());',
+                [],
+                [],
+                '8.0',
+            ],
         ];
     }
 
@@ -360,6 +375,21 @@ class ToStringTest extends TestCase
                     /** @psalm-suppress UndefinedFunction */
                     fora((string) $address);',
                 'error_message' => 'UndefinedGlobalVariable',
+            ],
+            'implicitStringableDisallowed' => [
+                '<?php
+                    function foo(Stringable $s): void {}
+
+                    class Bar {
+                        public function __toString() {
+                            return "foo";
+                        }
+                    }
+
+                    foo(new Bar());',
+                'error_message' => 'InvalidArgument',
+                [],
+                '7.4',
             ],
         ];
     }
