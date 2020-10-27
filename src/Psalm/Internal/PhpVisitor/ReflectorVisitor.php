@@ -215,10 +215,9 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
 
             $functionlike_types = [];
 
-            if ($this->functionlike_node_scanners) {
-                $functionlike_node_scanner = end($this->functionlike_node_scanners);
+            foreach ($this->functionlike_node_scanners as $functionlike_node_scanner) {
                 $functionlike_storage = $functionlike_node_scanner->storage;
-                $functionlike_types = $functionlike_storage->template_types ?? [];
+                $functionlike_types += $functionlike_storage->template_types ?? [];
             }
 
             $functionlike_node_scanner = new Reflector\FunctionLikeNodeScanner(
@@ -341,8 +340,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                 $template_types = $classlike_storage->template_types ?? [];
             }
 
-            if ($this->functionlike_node_scanners) {
-                $functionlike_node_scanner = end($this->functionlike_node_scanners);
+            foreach ($this->functionlike_node_scanners as $functionlike_node_scanner) {
                 $functionlike_storage = $functionlike_node_scanner->storage;
                 $template_types += $functionlike_storage->template_types ?? [];
             }
