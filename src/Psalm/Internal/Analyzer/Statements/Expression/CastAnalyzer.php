@@ -76,7 +76,17 @@ class CastAnalyzer
                 return false;
             }
 
-            $statements_analyzer->node_data->setType($stmt, Type::getFloat());
+            $maybe_type = $statements_analyzer->node_data->getType($stmt->expr);
+
+            $type = Type::getFloat();
+
+            if ($statements_analyzer->data_flow_graph
+                && $statements_analyzer->data_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph
+            ) {
+                $type->parent_nodes = $maybe_type ? $maybe_type->parent_nodes : [];
+            }
+
+            $statements_analyzer->node_data->setType($stmt, $type);
 
             return true;
         }
@@ -86,7 +96,17 @@ class CastAnalyzer
                 return false;
             }
 
-            $statements_analyzer->node_data->setType($stmt, Type::getBool());
+            $maybe_type = $statements_analyzer->node_data->getType($stmt->expr);
+
+            $type = Type::getBool();
+
+            if ($statements_analyzer->data_flow_graph
+                && $statements_analyzer->data_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph
+            ) {
+                $type->parent_nodes = $maybe_type ? $maybe_type->parent_nodes : [];
+            }
+
+            $statements_analyzer->node_data->setType($stmt, $type);
 
             return true;
         }
@@ -123,7 +143,17 @@ class CastAnalyzer
             }
             $context->inside_use = $was_inside_use;
 
-            $statements_analyzer->node_data->setType($stmt, new Type\Union([new TNamedObject('stdClass')]));
+            $type = new Type\Union([new TNamedObject('stdClass')]);
+
+            $maybe_type = $statements_analyzer->node_data->getType($stmt->expr);
+
+            if ($statements_analyzer->data_flow_graph
+                && $statements_analyzer->data_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph
+            ) {
+                $type->parent_nodes = $maybe_type ? $maybe_type->parent_nodes : [];
+            }
+
+            $statements_analyzer->node_data->setType($stmt, $type);
 
             return true;
         }
@@ -160,13 +190,18 @@ class CastAnalyzer
             }
 
             if ($permissible_atomic_types && $all_permissible) {
-                $statements_analyzer->node_data->setType(
-                    $stmt,
-                    TypeCombination::combineTypes($permissible_atomic_types)
-                );
+                $type = TypeCombination::combineTypes($permissible_atomic_types);
             } else {
-                $statements_analyzer->node_data->setType($stmt, Type::getArray());
+                $type = Type::getArray();
             }
+
+            if ($statements_analyzer->data_flow_graph
+                && $statements_analyzer->data_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph
+            ) {
+                $type->parent_nodes = $stmt_expr_type ? $stmt_expr_type->parent_nodes : [];
+            }
+
+            $statements_analyzer->node_data->setType($stmt, $type);
 
             return true;
         }
