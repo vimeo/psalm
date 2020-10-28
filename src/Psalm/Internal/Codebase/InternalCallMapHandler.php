@@ -43,7 +43,7 @@ class InternalCallMapHandler
     private static $call_map = null;
 
     /**
-     * @var array<array<int, TCallable>>|null
+     * @var array<list<TCallable>>|null
      */
     private static $call_map_callables = [];
 
@@ -215,7 +215,7 @@ class InternalCallMapHandler
     }
 
     /**
-     * @return array<int, TCallable>|null
+     * @return list<TCallable>|null
      */
     public static function getCallablesFromCallMap(string $function_id): ?array
     {

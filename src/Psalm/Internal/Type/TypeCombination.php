@@ -375,6 +375,10 @@ class TypeCombination
         }
 
         if ($generic_type_params = $combination->array_type_params) {
+            if (count($generic_type_params) !== 2) {
+                throw new \UnexpectedValueException('Unexpected number of parameters');
+            }
+
             if ($combination->objectlike_entries) {
                 $objectlike_generic_type = null;
 
@@ -761,6 +765,7 @@ class TypeCombination
 
             foreach ($type->type_params as $i => $type_param) {
                 if (isset($combination->array_type_params[$i])) {
+                    /** @psalm-suppress PropertyTypeCoercion */
                     $combination->array_type_params[$i] = Type::combineUnionTypes(
                         $combination->array_type_params[$i],
                         $type_param,

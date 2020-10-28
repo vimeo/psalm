@@ -34,7 +34,9 @@ class ArrayFilterReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
         Context $context,
         CodeLocation $code_location
     ) : Type\Union {
-        if (!$statements_source instanceof StatementsAnalyzer) {
+        if (!$statements_source instanceof StatementsAnalyzer
+            || !$call_args
+        ) {
             return Type::getMixed();
         }
 
@@ -228,9 +230,12 @@ class ArrayFilterReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
                     return Type::getArray();
                 }
 
-                if (count($function_call_arg->value->getStmts()) === 1 && count($function_call_arg->value->params)) {
+                /** @var list<PhpParser\Node\Stmt> */
+                $function_call_stmts = $function_call_arg->value->getStmts();
+
+                if (count($function_call_stmts) === 1 && count($function_call_arg->value->params)) {
                     $first_param = $function_call_arg->value->params[0];
-                    $stmt = $function_call_arg->value->getStmts()[0];
+                    $stmt = $function_call_stmts[0];
 
                     if ($first_param->variadic === false
                         && $first_param->var instanceof PhpParser\Node\Expr\Variable

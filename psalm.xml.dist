@@ -86,6 +86,12 @@
             </errorLevel>
         </MissingConstructor>
 
+        <PossiblyUndefinedIntArrayOffset errorLevel="suppress">
+            <errorLevel type="error">
+                <directory name="src/Psalm/Internal/Provider/ReturnTypeProvider"/>
+            </errorLevel>
+        </PossiblyUndefinedIntArrayOffset>
+
         <MissingThrowsDocblock errorLevel="info"/>
 
         <PossiblyUnusedMethod>

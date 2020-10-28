@@ -13,6 +13,11 @@ class TArray extends \Psalm\Type\Atomic
     use GenericTrait;
 
     /**
+     * @var array{\Psalm\Type\Union, \Psalm\Type\Union}
+     */
+    public $type_params;
+
+    /**
      * @var string
      */
     public $value = 'array';
@@ -20,7 +25,7 @@ class TArray extends \Psalm\Type\Atomic
     /**
      * Constructs a new instance of a generic type
      *
-     * @param non-empty-list<\Psalm\Type\Union> $type_params
+     * @param array{\Psalm\Type\Union, \Psalm\Type\Union} $type_params
      */
     public function __construct(array $type_params)
     {

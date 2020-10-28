@@ -26,7 +26,9 @@ class FirstArgStringReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionRet
         Context $context,
         CodeLocation $code_location
     ): ?Type\Union {
-        if (!$statements_source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
+        if (!$statements_source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer
+            || !$call_args
+        ) {
             return Type::getMixed();
         }
 

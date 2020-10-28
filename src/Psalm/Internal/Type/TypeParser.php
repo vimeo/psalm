@@ -180,6 +180,10 @@ class TypeParser
                     $generic_params[0] = \Psalm\Type::getArrayKey();
                 }
 
+                if (count($generic_params) !== 2) {
+                    throw new TypeParseTreeException('Too many template parameters for array');
+                }
+
                 return new TArray($generic_params);
             }
 
@@ -197,6 +201,10 @@ class TypeParser
             if ($generic_type_value === 'non-empty-array') {
                 if ($generic_params[0]->isMixed()) {
                     $generic_params[0] = \Psalm\Type::getArrayKey();
+                }
+
+                if (count($generic_params) !== 2) {
+                    throw new TypeParseTreeException('Too many template parameters for non-empty-array');
                 }
 
                 return new TNonEmptyArray($generic_params);

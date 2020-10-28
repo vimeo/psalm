@@ -24,7 +24,9 @@ class ArrayColumnReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
         Context $context,
         CodeLocation $code_location
     ) : Type\Union {
-        if (!$statements_source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
+        if (!$statements_source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer
+            || \count($call_args) < 2
+        ) {
             return Type::getMixed();
         }
 

@@ -28,7 +28,9 @@ class DomNodeAppendChild implements \Psalm\Plugin\Hook\MethodReturnTypeProviderI
         ?string $called_fq_classlike_name = null,
         ?string $called_method_name_lowercase = null
     ): ?Type\Union {
-        if (!$source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
+        if (!$source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer
+            || !$call_args
+        ) {
             return Type::getMixed();
         }
 

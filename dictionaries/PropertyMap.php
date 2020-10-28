@@ -460,6 +460,12 @@ return [
     'phpparser\\node\\expr\\staticcall' => [
         'args' => 'list<PhpParser\Node\Arg>',
     ],
+    'phpparser\\node\\expr\\arrowfunction' => [
+        'params' => 'list<PhpParser\Node\Param>',
+    ],
+    'phpparser\\node\\expr\\closure' => [
+        'params' => 'list<PhpParser\Node\Param>',
+    ],
     'phpparser\\node\\name' => [
         'parts' => 'non-empty-array<non-empty-string>',
     ],

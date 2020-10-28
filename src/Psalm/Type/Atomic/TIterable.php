@@ -13,6 +13,11 @@ class TIterable extends Atomic
     use GenericTrait;
 
     /**
+     * @var array{\Psalm\Type\Union, \Psalm\Type\Union}
+     */
+    public $type_params;
+
+    /**
      * @var string
      */
     public $value = 'iterable';
@@ -27,14 +32,14 @@ class TIterable extends Atomic
      */
     public function __construct(array $type_params = [])
     {
-        if ($type_params) {
+        if (count($type_params) === 2) {
             $this->has_docblock_params = true;
             $this->type_params = $type_params;
         } else {
             $this->type_params = [\Psalm\Type::getMixed(), \Psalm\Type::getMixed()];
         }
     }
-    
+
     public function getKey(bool $include_extra = true): string
     {
         if ($include_extra && $this->extra_types) {

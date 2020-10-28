@@ -30,7 +30,9 @@ class IteratorToArrayReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionRe
         Context $context,
         CodeLocation $code_location
     ) : Type\Union {
-        if (!$statements_source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
+        if (!$statements_source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer
+            || !$call_args
+        ) {
             return Type::getMixed();
         }
 
