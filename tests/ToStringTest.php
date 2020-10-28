@@ -219,6 +219,19 @@ class ToStringTest extends TestCase
                     }',
                 'error_message' => 'InvalidToString',
             ],
+            'invalidInferredToStringReturnTypeWithTruePhp8' => [
+                '<?php
+                    class A {
+                        function __toString() {
+                            /** @psalm-suppress InvalidReturnStatement */
+                            return true;
+                        }
+                    }',
+                'error_message' => 'InvalidToString',
+                [],
+                false,
+                '8.0'
+            ],
             'implicitCastWithStrictTypes' => [
                 '<?php declare(strict_types=1);
                     class A {
