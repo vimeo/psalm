@@ -270,7 +270,7 @@ class Functions
     }
 
     /**
-     * @param ?array<int, \PhpParser\Node\Arg> $args
+     * @param ?list<\PhpParser\Node\Arg> $args
      */
     public function isCallMapFunctionPure(
         Codebase $codebase,

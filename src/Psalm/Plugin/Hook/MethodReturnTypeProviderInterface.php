@@ -19,7 +19,7 @@ interface MethodReturnTypeProviderInterface
      * but another plugin may be able to determine the type, return null. Otherwise return a mixed union type if
      * something should be returned, but can't be more specific.
      *
-     * @param  array<PhpParser\Node\Arg>    $call_args
+     * @param  list<PhpParser\Node\Arg>    $call_args
      * @param  ?array<Type\Union> $template_type_parameters
      * @param lowercase-string $method_name_lowercase
      * @param lowercase-string $called_method_name_lowercase

@@ -14,7 +14,7 @@ interface FunctionParamsProviderInterface
     public static function getFunctionIds() : array;
 
     /**
-     * @param  array<PhpParser\Node\Arg>    $call_args
+     * @param  list<PhpParser\Node\Arg>    $call_args
      *
      * @return ?array<int, \Psalm\Storage\FunctionLikeParameter>
      */

@@ -15,7 +15,7 @@ class PdoStatementSetFetchMode implements \Psalm\Plugin\Hook\MethodParamsProvide
     }
 
     /**
-     * @param  array<PhpParser\Node\Arg>    $call_args
+     * @param  list<PhpParser\Node\Arg>    $call_args
      *
      * @return ?array<int, \Psalm\Storage\FunctionLikeParameter>
      */

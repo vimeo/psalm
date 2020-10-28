@@ -15,7 +15,7 @@ class PdoStatementReturnTypeProvider implements \Psalm\Plugin\Hook\MethodReturnT
     }
 
     /**
-     * @param  array<PhpParser\Node\Arg>    $call_args
+     * @param  list<PhpParser\Node\Arg>    $call_args
      */
     public static function getMethodReturnType(
         StatementsSource $source,

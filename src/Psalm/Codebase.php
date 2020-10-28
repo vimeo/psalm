@@ -801,7 +801,7 @@ class Codebase
 
     /**
      * @param  string|\Psalm\Internal\MethodIdentifier $method_id
-     * @param  array<int, PhpParser\Node\Arg> $call_args
+     * @param  list<PhpParser\Node\Arg> $call_args
      *
      */
     public function getMethodReturnType($method_id, ?string &$self_class, array $call_args = []): ?Type\Union

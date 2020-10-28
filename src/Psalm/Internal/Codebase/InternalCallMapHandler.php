@@ -53,7 +53,7 @@ class InternalCallMapHandler
     private static $taint_sink_map = [];
 
     /**
-     * @param  array<int, PhpParser\Node\Arg>   $args
+     * @param  list<PhpParser\Node\Arg>   $args
      */
     public static function getCallableFromCallMapById(
         Codebase $codebase,
@@ -80,7 +80,7 @@ class InternalCallMapHandler
 
     /**
      * @param  array<int, TCallable>  $callables
-     * @param  array<int, PhpParser\Node\Arg>                 $args
+     * @param  list<PhpParser\Node\Arg>                 $args
      *
      */
     public static function getMatchingCallableFromCallMapOptions(

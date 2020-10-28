@@ -17,7 +17,7 @@ class ClosureFromCallableReturnTypeProvider implements \Psalm\Plugin\Hook\Method
     }
 
     /**
-     * @param  array<PhpParser\Node\Arg>    $call_args
+     * @param  list<PhpParser\Node\Arg>    $call_args
      */
     public static function getMethodReturnType(
         StatementsSource $source,

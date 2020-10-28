@@ -65,7 +65,7 @@ class PropertyExistenceProvider
     }
 
     /**
-     * @param  array<PhpParser\Node\Arg>  $call_args
+     * @param  list<PhpParser\Node\Arg>  $call_args
      *
      */
     public function doesPropertyExist(

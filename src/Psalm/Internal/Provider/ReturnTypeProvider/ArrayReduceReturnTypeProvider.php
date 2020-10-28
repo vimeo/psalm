@@ -25,7 +25,7 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
     }
 
     /**
-     * @param  array<PhpParser\Node\Arg>    $call_args
+     * @param  list<PhpParser\Node\Arg>    $call_args
      */
     public static function getFunctionReturnType(
         StatementsSource $statements_source,

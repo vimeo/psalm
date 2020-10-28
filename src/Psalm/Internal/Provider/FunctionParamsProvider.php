@@ -16,7 +16,7 @@ class FunctionParamsProvider
      *   array<\Closure(
      *     StatementsSource,
      *     string,
-     *     array<PhpParser\Node\Arg>,
+     *     list<PhpParser\Node\Arg>,
      *     ?Context=,
      *     ?CodeLocation=
      *   ) : ?array<int, \Psalm\Storage\FunctionLikeParameter>>
@@ -46,7 +46,7 @@ class FunctionParamsProvider
      * @param  \Closure(
      *     StatementsSource,
      *     string,
-     *     array<PhpParser\Node\Arg>,
+     *     list<PhpParser\Node\Arg>,
      *     ?Context=,
      *     ?CodeLocation=
      *   ) : ?array<int, \Psalm\Storage\FunctionLikeParameter> $c
@@ -63,7 +63,7 @@ class FunctionParamsProvider
     }
 
     /**
-     * @param array<PhpParser\Node\Arg>  $call_args
+     * @param list<PhpParser\Node\Arg>  $call_args
      *
      * @return  ?array<int, \Psalm\Storage\FunctionLikeParameter>
      */

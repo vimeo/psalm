@@ -443,10 +443,10 @@ return [
         'name' => 'string',
     ],
     'phpparser\\node\\expr\\funccall' => [
-        'args' => 'array<int, PhpParser\Node\Arg>',
+        'args' => 'list<PhpParser\Node\Arg>',
     ],
     'phpparser\\node\\expr\\new_' => [
-        'args' => 'array<int, PhpParser\Node\Arg>',
+        'args' => 'list<PhpParser\Node\Arg>',
     ],
     'phpparser\\node\\expr\\array_' => [
         'items' => 'array<int, PhpParser\Node\Expr\ArrayItem|null>',
@@ -455,10 +455,10 @@ return [
         'items' => 'array<int, PhpParser\Node\Expr\ArrayItem|null>',
     ],
     'phpparser\\node\\expr\\methodcall' => [
-        'args' => 'array<int, PhpParser\Node\Arg>',
+        'args' => 'list<PhpParser\Node\Arg>',
     ],
     'phpparser\\node\\expr\\staticcall' => [
-        'args' => 'array<int, PhpParser\Node\Arg>',
+        'args' => 'list<PhpParser\Node\Arg>',
     ],
     'phpparser\\node\\name' => [
         'parts' => 'non-empty-array<non-empty-string>',

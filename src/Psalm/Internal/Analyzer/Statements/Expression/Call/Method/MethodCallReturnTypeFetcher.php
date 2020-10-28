@@ -21,7 +21,7 @@ class MethodCallReturnTypeFetcher
 {
     /**
      * @param  Type\Atomic\TNamedObject|Type\Atomic\TTemplateParam  $static_type
-     * @param array<int, PhpParser\Node\Arg> $args
+     * @param list<PhpParser\Node\Arg> $args
      */
     public static function fetch(
         StatementsAnalyzer $statements_analyzer,

@@ -15,7 +15,7 @@ class DomNodeAppendChild implements \Psalm\Plugin\Hook\MethodReturnTypeProviderI
     }
 
     /**
-     * @param  array<PhpParser\Node\Arg>    $call_args
+     * @param  list<PhpParser\Node\Arg>    $call_args
      */
     public static function getMethodReturnType(
         StatementsSource $source,

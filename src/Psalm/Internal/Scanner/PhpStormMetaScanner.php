@@ -18,7 +18,7 @@ use function str_replace;
 class PhpStormMetaScanner
 {
     /**
-     * @param  array<PhpParser\Node\Arg> $args
+     * @param  list<PhpParser\Node\Arg> $args
      */
     public static function handleOverride(array $args, Codebase $codebase): void
     {
@@ -89,7 +89,7 @@ class PhpStormMetaScanner
                 $codebase->methods->return_type_provider->registerClosure(
                     $meta_fq_classlike_name,
                     /**
-                     * @param array<PhpParser\Node\Arg> $call_args
+                     * @param list<PhpParser\Node\Arg> $call_args
                      */
                     function (
                         \Psalm\StatementsSource $statements_analyzer,
@@ -146,7 +146,7 @@ class PhpStormMetaScanner
                 $codebase->methods->return_type_provider->registerClosure(
                     $meta_fq_classlike_name,
                     /**
-                     * @param array<PhpParser\Node\Arg> $call_args
+                     * @param list<PhpParser\Node\Arg> $call_args
                      */
                     function (
                         \Psalm\StatementsSource $statements_analyzer,
@@ -185,7 +185,7 @@ class PhpStormMetaScanner
                 $codebase->methods->return_type_provider->registerClosure(
                     $meta_fq_classlike_name,
                     /**
-                     * @param array<PhpParser\Node\Arg> $call_args
+                     * @param list<PhpParser\Node\Arg> $call_args
                      */
                     function (
                         \Psalm\StatementsSource $statements_analyzer,
@@ -252,7 +252,7 @@ class PhpStormMetaScanner
                     $function_id,
                     /**
                      * @param non-empty-string $function_id
-                     * @param array<PhpParser\Node\Arg> $call_args
+                     * @param list<PhpParser\Node\Arg> $call_args
                      */
                     function (
                         \Psalm\StatementsSource $statements_analyzer,
@@ -307,7 +307,7 @@ class PhpStormMetaScanner
                     $function_id,
                     /**
                      * @param non-empty-string $function_id
-                     * @param array<PhpParser\Node\Arg> $call_args
+                     * @param list<PhpParser\Node\Arg> $call_args
                      */
                     function (
                         \Psalm\StatementsSource $statements_analyzer,
@@ -343,7 +343,7 @@ class PhpStormMetaScanner
                     $function_id,
                     /**
                      * @param non-empty-string $function_id
-                     * @param array<PhpParser\Node\Arg> $call_args
+                     * @param list<PhpParser\Node\Arg> $call_args
                      */
                     function (
                         \Psalm\StatementsSource $statements_analyzer,

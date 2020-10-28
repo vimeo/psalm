@@ -308,7 +308,7 @@ class Methods
     }
 
     /**
-     * @param  array<int, PhpParser\Node\Arg> $args
+     * @param  list<PhpParser\Node\Arg> $args
      *
      * @return array<int, FunctionLikeParameter>
      */
@@ -619,7 +619,7 @@ class Methods
     }
 
     /**
-     * @param  array<int, PhpParser\Node\Arg>|null $args
+     * @param  list<PhpParser\Node\Arg>|null $args
      *
      */
     public function getMethodReturnType(

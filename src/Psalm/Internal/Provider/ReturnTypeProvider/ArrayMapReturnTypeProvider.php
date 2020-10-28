@@ -23,7 +23,7 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
     }
 
     /**
-     * @param  array<PhpParser\Node\Arg>    $call_args
+     * @param  list<PhpParser\Node\Arg>    $call_args
      */
     public static function getFunctionReturnType(
         StatementsSource $statements_source,
@@ -310,7 +310,7 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
 
     /**
      * @param non-empty-array<string> $mapping_function_ids
-     * @param array<PhpParser\Node\Arg> $array_args
+     * @param list<PhpParser\Node\Arg> $array_args
      * @param-out array<string, array<array<string>>>|null $assertions
      */
     public static function getReturnTypeFromMappingIds(

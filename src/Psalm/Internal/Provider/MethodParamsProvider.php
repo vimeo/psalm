@@ -16,7 +16,7 @@ class MethodParamsProvider
      *   array<\Closure(
      *     string,
      *     string,
-     *     ?array<PhpParser\Node\Arg>=,
+     *     ?list<PhpParser\Node\Arg>=,
      *     ?StatementsSource=,
      *     ?Context=,
      *     ?CodeLocation=
@@ -49,7 +49,7 @@ class MethodParamsProvider
      * @param  \Closure(
      *     string,
      *     string,
-     *     ?array<PhpParser\Node\Arg>=,
+     *     ?list<PhpParser\Node\Arg>=,
      *     ?StatementsSource=,
      *     ?Context=,
      *     ?CodeLocation=
@@ -67,7 +67,7 @@ class MethodParamsProvider
     }
 
     /**
-     * @param ?array<PhpParser\Node\Arg>  $call_args
+     * @param ?list<PhpParser\Node\Arg>  $call_args
      *
      * @return  ?array<int, \Psalm\Storage\FunctionLikeParameter>
      */

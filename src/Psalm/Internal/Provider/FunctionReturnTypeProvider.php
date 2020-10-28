@@ -17,7 +17,7 @@ class FunctionReturnTypeProvider
      *   array<\Closure(
      *     StatementsSource,
      *     non-empty-string,
-     *     array<PhpParser\Node\Arg>,
+     *     list<PhpParser\Node\Arg>,
      *     Context,
      *     CodeLocation
      *   ) : ?Type\Union>
@@ -75,7 +75,7 @@ class FunctionReturnTypeProvider
      * @param \Closure(
      *     StatementsSource,
      *     non-empty-string,
-     *     array<PhpParser\Node\Arg>,
+     *     list<PhpParser\Node\Arg>,
      *     Context,
      *     CodeLocation
      *   ) : ?Type\Union $c
@@ -93,7 +93,7 @@ class FunctionReturnTypeProvider
 
     /**
      * @param  non-empty-string $function_id
-     * @param  array<PhpParser\Node\Arg>  $call_args
+     * @param  list<PhpParser\Node\Arg>  $call_args
      *
      */
     public function getReturnType(

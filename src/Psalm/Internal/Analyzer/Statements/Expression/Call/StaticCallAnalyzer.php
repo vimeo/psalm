@@ -1476,7 +1476,7 @@ class StaticCallAnalyzer extends CallAnalyzer
     }
 
     /**
-     * @param  array<int, PhpParser\Node\Arg> $args
+     * @param  list<PhpParser\Node\Arg> $args
      * @return false|null
      */
     private static function checkPseudoMethod(

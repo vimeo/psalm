@@ -16,7 +16,7 @@ class SimpleXmlElementAsXml implements \Psalm\Plugin\Hook\MethodReturnTypeProvid
     }
 
     /**
-     * @param  array<PhpParser\Node\Arg>    $call_args
+     * @param  list<PhpParser\Node\Arg>    $call_args
      */
     public static function getMethodReturnType(
         StatementsSource $source,

@@ -1069,7 +1069,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
     }
 
     /**
-     * @param  array<PhpParser\Node\Arg>   $call_args
+     * @param  list<PhpParser\Node\Arg>   $call_args
      */
     private static function getReturnTypeFromCallMapWithArgs(
         StatementsAnalyzer $statements_analyzer,

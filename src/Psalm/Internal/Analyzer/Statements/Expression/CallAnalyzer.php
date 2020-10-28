@@ -228,7 +228,7 @@ class CallAnalyzer
     }
 
     /**
-     * @param  array<int, PhpParser\Node\Arg>   $args
+     * @param  list<PhpParser\Node\Arg>   $args
      */
     public static function checkMethodArgs(
         ?\Psalm\Internal\MethodIdentifier $method_id,
@@ -576,7 +576,7 @@ class CallAnalyzer
      * @param PhpParser\Node\Identifier|PhpParser\Node\Name $expr
      * @param  \Psalm\Storage\Assertion[] $assertions
      * @param  string $thisName
-     * @param  array<int, PhpParser\Node\Arg> $args
+     * @param  list<PhpParser\Node\Arg> $args
      * @param  array<string, array<string, array{Type\Union}>> $template_type_map,
      *
      */

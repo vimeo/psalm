@@ -19,7 +19,7 @@ interface FunctionReturnTypeProviderInterface
      * return but another plugin may be able to determine the type, return null. Otherwise return a mixed union type
      * if something should be returned, but can't be more specific.
      *
-     * @param  array<PhpParser\Node\Arg>    $call_args
+     * @param  list<PhpParser\Node\Arg>    $call_args
      */
     public static function getFunctionReturnType(
         StatementsSource $statements_source,

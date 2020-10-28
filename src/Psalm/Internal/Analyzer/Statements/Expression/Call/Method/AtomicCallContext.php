@@ -10,7 +10,7 @@ class AtomicCallContext
     /** @var MethodIdentifier */
     public $method_id;
 
-    /** @var array<int, PhpParser\Node\Arg> */
+    /** @var list<PhpParser\Node\Arg> */
     public $args;
 
     /** @var NodeDataProvider */

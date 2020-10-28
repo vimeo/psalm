@@ -43,7 +43,7 @@ use function is_string;
 class ArgumentsAnalyzer
 {
     /**
-     * @param   array<int, PhpParser\Node\Arg>          $args
+     * @param   list<PhpParser\Node\Arg>          $args
      * @param   array<int, FunctionLikeParameter>|null  $function_params
      * @param   array<string, array<string, array{Type\Union, 1?:int}>>|null   $generic_params
      *
@@ -418,7 +418,7 @@ class ArgumentsAnalyzer
     }
 
     /**
-     * @param   array<int, PhpParser\Node\Arg>          $args
+     * @param   list<PhpParser\Node\Arg>          $args
      * @param   string|MethodIdentifier|null  $method_id
      * @param   array<int,FunctionLikeParameter>        $function_params
      *

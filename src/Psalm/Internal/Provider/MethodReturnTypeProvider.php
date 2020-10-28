@@ -18,7 +18,7 @@ class MethodReturnTypeProvider
      *     StatementsSource,
      *     string,
      *     lowercase-string,
-     *     array<PhpParser\Node\Arg>,
+     *     list<PhpParser\Node\Arg>,
      *     Context,
      *     CodeLocation,
      *     ?array<Type\Union>=,
@@ -57,7 +57,7 @@ class MethodReturnTypeProvider
      *     StatementsSource,
      *     string,
      *     lowercase-string,
-     *     array<PhpParser\Node\Arg>,
+     *     list<PhpParser\Node\Arg>,
      *     Context,
      *     CodeLocation,
      *     ?array<Type\Union>=,
@@ -77,7 +77,7 @@ class MethodReturnTypeProvider
     }
 
     /**
-     * @param array<PhpParser\Node\Arg>  $call_args
+     * @param list<PhpParser\Node\Arg>  $call_args
      * @param  ?array<Type\Union> $template_type_parameters
      *
      */
