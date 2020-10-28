@@ -586,18 +586,6 @@ class FunctionTemplateTest extends TestCase
                         [rand(0, 1) ? 5 : false]
                     );',
             ],
-            'ignoreTooManyArrayArgs' => [
-                '<?php
-
-                    function takesArray(array $arr) : void {}
-
-                    /**
-                     * @psalm-suppress TooManyTemplateParams
-                     * @var array<int, int, int>
-                     */
-                    $b = [1, 2, 3];
-                    takesArray($b);',
-            ],
             'functionTemplateUnionType' => [
                 '<?php
                     /**
