@@ -779,3 +779,14 @@ function random_int(int $min, int $max): int {}
  * @psalm-pure
  */
 function array_count_values(array $array): array {}
+
+/**
+ * @template T of object
+ * @template U of object
+ * @param class-string<T>|T $object
+ * @param class-string<U> $class_name
+ * @return ($allow_string is false ? ($object is class-string ? false : (T is U ? true : bool)) : (T is U ? true : bool))
+ */
+function is_a($object, $class_name, $allow_string = false): bool{
+    return false;
+}
