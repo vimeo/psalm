@@ -1559,10 +1559,10 @@ class ArrayFunctionCallTest extends TestCase
                         return array_map("intval", $strings);
                     }'
             ],
-            'arrayMapZip' => [
+            'SKIPPED-arrayMapZip' => [
                 '<?php
                     /**
-                     * @return array{array{string,string|null}}
+                     * @return array<int, array{string,?string}>
                      */
                     function getCharPairs(string $line) : array {
                         $chars = str_split($line);
@@ -1856,6 +1856,18 @@ class ArrayFunctionCallTest extends TestCase
                         /** @psalm-suppress MixedArgument, MixedAssignment */
                         $length = array_shift($lengths);
                         if ($length !== null) {}
+                    }'
+            ],
+            'countOnListIntoTuple' => [
+                '<?php
+                    /** @param array{string, string} $tuple */
+                    function foo(array $tuple) : void {}
+
+                    /** @param list<string> $list */
+                    function bar(array $list) : void {
+                        if (count($list) === 2) {
+                            foo($list);
+                        }
                     }'
             ],
         ];

@@ -103,9 +103,19 @@ class ArrayTypeComparator
         }
 
         if ($container_type_part instanceof TKeyedArray) {
-            $generic_container_type_part = $container_type_part->getGenericArrayType();
+            if ($container_type_part->is_list) {
+                $container_type_part = $container_type_part->getList();
 
-            $container_type_part = $generic_container_type_part;
+                return self::isContainedBy(
+                    $codebase,
+                    $input_type_part,
+                    $container_type_part,
+                    $allow_interface_equality,
+                    $atomic_comparison_result
+                );
+            }
+
+            $container_type_part = $container_type_part->getGenericArrayType();
         }
 
         if ($input_type_part instanceof TKeyedArray) {
