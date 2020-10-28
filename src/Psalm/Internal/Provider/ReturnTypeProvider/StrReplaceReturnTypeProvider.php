@@ -32,7 +32,7 @@ class StrReplaceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnT
         CodeLocation $code_location
     ) : Type\Union {
         if (!$statements_source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer
-            || count($call_args) < 3
+            || \count($call_args) < 3
         ) {
             return Type::getMixed();
         }
