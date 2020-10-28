@@ -1741,6 +1741,16 @@ class Config
             $core_generic_files[] = $ext_ds_path;
         }
 
+        if (!\interface_exists('Stringable', false) && $codebase->php_major_version >= 8) {
+            $stringable_path = dirname(__DIR__, 2) . '/stubs/Stringable.php';
+
+            if (!file_exists($stringable_path)) {
+                throw new \UnexpectedValueException('Cannot locate core generic classes');
+            }
+
+            $core_generic_files[] = $stringable_path;
+        }
+
         $stub_files = array_merge($core_generic_files, $this->stub_files);
 
         $phpstorm_meta_path = $this->base_dir . DIRECTORY_SEPARATOR . '.phpstorm.meta.php';
