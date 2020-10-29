@@ -1741,7 +1741,7 @@ class Config
             $core_generic_files[] = $ext_ds_path;
         }
 
-        if (!\interface_exists('Stringable', false) && $codebase->php_major_version >= 8) {
+        if (\version_compare(\PHP_VERSION, '8.0', '<') && $codebase->php_major_version >= 8) {
             $stringable_path = dirname(__DIR__, 2) . '/stubs/Stringable.php';
 
             if (!file_exists($stringable_path)) {
