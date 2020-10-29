@@ -2,5 +2,6 @@
 
 interface Stringable
 {
-    function __toString() : string;
+    /** @return string */
+    function __toString();
 }
