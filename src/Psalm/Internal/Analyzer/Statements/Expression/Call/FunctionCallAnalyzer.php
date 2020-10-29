@@ -236,7 +236,9 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     $function_params = $codebase->functions->params_provider->getFunctionParams(
                         $statements_analyzer,
                         $function_id,
-                        $stmt->args
+                        $stmt->args,
+                        null,
+                        $code_location
                     );
                 }
 
