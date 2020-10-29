@@ -84,6 +84,9 @@ trait InvalidCodeAnalysisTestTrait
             $this->expectExceptionMessageRegExp('/\b' . preg_quote($error_message, '/') . '\b/');
         }
 
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->config->visitPreloadedStubFiles($codebase);
+
         $this->addFile($file_path, $code);
         $this->analyzeFile($file_path, new Context());
     }

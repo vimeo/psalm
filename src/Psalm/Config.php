@@ -261,6 +261,11 @@ class Config
     /**
      * @var array<string, string>
      */
+    private $preloaded_stub_files = [];
+
+    /**
+     * @var array<string, string>
+     */
     private $stub_files = [];
 
     /**
@@ -1031,7 +1036,17 @@ class Config
                     );
                 }
 
-                $config->addStubFile($file_path);
+                if (isset($stub_file['preloadClasses'])) {
+                    $preload_classes = (string)$stub_file['preloadClasses'];
+
+                    if ($preload_classes === 'true' || $preload_classes === '1') {
+                        $config->addPreloadedStubFile($file_path);
+                    } else {
+                        $config->addStubFile($file_path);
+                    }
+                } else {
+                    $config->addStubFile($file_path);
+                }
             }
         }
 
@@ -1700,6 +1715,56 @@ class Config
         return $this->mock_classes;
     }
 
+    public function visitPreloadedStubFiles(Codebase $codebase, ?Progress $progress = null): void
+    {
+        if ($progress === null) {
+            $progress = new VoidProgress();
+        }
+
+        $core_generic_files = [];
+
+        if (\PHP_VERSION_ID < 80000 && $codebase->php_major_version >= 8) {
+            $stringable_path = dirname(__DIR__, 2) . '/stubs/Stringable.php';
+
+            if (!file_exists($stringable_path)) {
+                throw new \UnexpectedValueException('Cannot locate core generic classes');
+            }
+
+            $core_generic_files[] = $stringable_path;
+        }
+
+        $stub_files = array_merge($core_generic_files, $this->preloaded_stub_files);
+
+        if ($this->load_xdebug_stub) {
+            $xdebug_stub_path = dirname(__DIR__, 2) . '/stubs/Xdebug.php';
+
+            if (!file_exists($xdebug_stub_path)) {
+                throw new \UnexpectedValueException('Cannot locate XDebug stub');
+            }
+
+            $stub_files[] = $xdebug_stub_path;
+        }
+
+        if (!$stub_files) {
+            return;
+        }
+
+        foreach ($stub_files as $file_path) {
+            $file_path = \str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $file_path);
+            $codebase->scanner->addFileToDeepScan($file_path);
+        }
+
+        $progress->debug('Registering preloaded stub files' . "\n");
+
+        $codebase->register_stub_files = true;
+
+        $codebase->scanFiles();
+
+        $codebase->register_stub_files = false;
+
+        $progress->debug('Finished registering preloaded stub files' . "\n");
+    }
+
     public function visitStubFiles(Codebase $codebase, ?Progress $progress = null): void
     {
         if ($progress === null) {
@@ -1741,16 +1806,6 @@ class Config
             $core_generic_files[] = $ext_ds_path;
         }
 
-        if (\version_compare(\PHP_VERSION, '8.0', '<') && $codebase->php_major_version >= 8) {
-            $stringable_path = dirname(__DIR__, 2) . '/stubs/Stringable.php';
-
-            if (!file_exists($stringable_path)) {
-                throw new \UnexpectedValueException('Cannot locate core generic classes');
-            }
-
-            $core_generic_files[] = $stringable_path;
-        }
-
         $stub_files = array_merge($core_generic_files, $this->stub_files);
 
         $phpstorm_meta_path = $this->base_dir . DIRECTORY_SEPARATOR . '.phpstorm.meta.php';
@@ -1767,16 +1822,6 @@ class Config
                     }
                 }
             }
-        }
-
-        if ($this->load_xdebug_stub) {
-            $xdebug_stub_path = dirname(__DIR__, 2) . '/stubs/Xdebug.php';
-
-            if (!file_exists($xdebug_stub_path)) {
-                throw new \UnexpectedValueException('Cannot locate XDebug stub');
-            }
-
-            $stub_files[] = $xdebug_stub_path;
         }
 
         foreach ($stub_files as $file_path) {
@@ -2014,6 +2059,11 @@ class Config
     public function getStubFiles(): array
     {
         return $this->stub_files;
+    }
+
+    public function addPreloadedStubFile(string $stub_file): void
+    {
+        $this->preloaded_stub_files[$stub_file] = $stub_file;
     }
 
     public function getPhpVersion(): ?string

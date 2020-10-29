@@ -582,6 +582,8 @@ class ProjectAnalyzer
 
             $this->config->initializePlugins($this);
 
+            $this->config->visitPreloadedStubFiles($this->codebase, $this->progress);
+
             $this->codebase->scanFiles($this->threads);
 
             $this->codebase->infer_types_from_usage = true;
@@ -603,6 +605,8 @@ class ProjectAnalyzer
                     $this->checkDiffFilesWithConfig($this->config, $file_list);
 
                     $this->config->initializePlugins($this);
+
+                    $this->config->visitPreloadedStubFiles($this->codebase, $this->progress);
 
                     $this->codebase->scanFiles($this->threads);
                 } else {
@@ -987,6 +991,8 @@ class ProjectAnalyzer
 
         $this->config->initializePlugins($this);
 
+        $this->config->visitPreloadedStubFiles($this->codebase, $this->progress);
+
         $this->codebase->scanFiles($this->threads);
 
         $this->config->visitStubFiles($this->codebase, $this->progress);
@@ -1120,6 +1126,8 @@ class ProjectAnalyzer
 
         $this->config->initializePlugins($this);
 
+        $this->config->visitPreloadedStubFiles($this->codebase, $this->progress);
+
         $this->codebase->scanFiles($this->threads);
 
         $this->config->visitStubFiles($this->codebase, $this->progress);
@@ -1157,6 +1165,8 @@ class ProjectAnalyzer
         $this->progress->startScanningFiles();
 
         $this->config->initializePlugins($this);
+
+        $this->config->visitPreloadedStubFiles($this->codebase, $this->progress);
 
         $this->codebase->scanFiles($this->threads);
 

@@ -96,6 +96,11 @@
         <xs:attribute name="name" type="xs:string" use="required" />
     </xs:complexType>
 
+    <xs:complexType name="StubsAttributeType">
+        <xs:attribute name="name" type="xs:string" use="required" />
+        <xs:attribute name="preloadClasses" type="xs:boolean" default="false" />
+    </xs:complexType>
+
     <xs:complexType name="IgnoreFilesType">
         <xs:choice maxOccurs="unbounded">
             <xs:element name="directory" minOccurs="0" maxOccurs="unbounded" type="NameAttributeType" />
@@ -144,7 +149,7 @@
 
     <xs:complexType name="StubsType">
         <xs:sequence>
-            <xs:element name="file" maxOccurs="unbounded" type="NameAttributeType" />
+            <xs:element name="file" maxOccurs="unbounded" type="StubsAttributeType" />
         </xs:sequence>
     </xs:complexType>
 

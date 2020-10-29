@@ -391,6 +391,9 @@ class ToStringTest extends TestCase
             ],
             'implicitStringableDisallowed' => [
                 '<?php
+                    interface Stringable {
+                        function __toString() {}
+                    }
                     function foo(Stringable $s): void {}
 
                     class Bar {

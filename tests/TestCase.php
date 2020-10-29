@@ -94,6 +94,7 @@ class TestCase extends BaseTestCase
     public function analyzeFile($file_path, \Psalm\Context $context, bool $track_unused_suppressions = true): void
     {
         $codebase = $this->project_analyzer->getCodebase();
+
         $codebase->addFilesToAnalyze([$file_path => $file_path]);
 
         $codebase->scanFiles();

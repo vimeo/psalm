@@ -171,6 +171,9 @@ class DocumentationTest extends TestCase
         $this->expectException(\Psalm\Exception\CodeException::class);
         $this->expectExceptionMessageRegExp('/\b' . preg_quote($error_message, '/') . '\b/');
 
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->config->visitPreloadedStubFiles($codebase);
+
         $file_path = self::$src_dir_path . 'somefile.php';
 
         $this->addFile($file_path, $code);
