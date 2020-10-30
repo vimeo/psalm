@@ -1735,16 +1735,6 @@ class Config
 
         $stub_files = array_merge($core_generic_files, $this->preloaded_stub_files);
 
-        if ($this->load_xdebug_stub) {
-            $xdebug_stub_path = dirname(__DIR__, 2) . '/stubs/Xdebug.php';
-
-            if (!file_exists($xdebug_stub_path)) {
-                throw new \UnexpectedValueException('Cannot locate XDebug stub');
-            }
-
-            $stub_files[] = $xdebug_stub_path;
-        }
-
         if (!$stub_files) {
             return;
         }
@@ -1817,6 +1807,16 @@ class Config
         }
 
         $stub_files = array_merge($core_generic_files, $this->stub_files);
+
+        if ($this->load_xdebug_stub) {
+            $xdebug_stub_path = dirname(__DIR__, 2) . '/stubs/Xdebug.php';
+
+            if (!file_exists($xdebug_stub_path)) {
+                throw new \UnexpectedValueException('Cannot locate XDebug stub');
+            }
+
+            $stub_files[] = $xdebug_stub_path;
+        }
 
         $phpstorm_meta_path = $this->base_dir . DIRECTORY_SEPARATOR . '.phpstorm.meta.php';
 
