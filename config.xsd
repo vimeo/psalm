@@ -230,6 +230,7 @@
             <xs:element name="InvalidArrayAccess" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidArrayAssignment" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidArrayOffset" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="InvalidAttribute" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidCast" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidCatch" type="ClassIssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidClass" type="ClassIssueHandlerType" minOccurs="0" />

@@ -951,7 +951,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             AttributeAnalyzer::analyze(
                 $this,
                 $attribute,
-                $storage->suppressed_issues + $this->getSuppressedIssues()
+                $storage->suppressed_issues + $this->getSuppressedIssues(),
+                $storage instanceof MethodStorage ? 4 : 2
             );
         }
 
@@ -1418,7 +1419,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 AttributeAnalyzer::analyze(
                     $this,
                     $attribute,
-                    $storage->suppressed_issues
+                    $storage->suppressed_issues,
+                    $function_param->promoted_property ? 8 : 32
                 );
             }
         }

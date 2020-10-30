@@ -722,7 +722,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             AttributeAnalyzer::analyze(
                 $this,
                 $attribute,
-                $storage->suppressed_issues + $this->getSuppressedIssues()
+                $storage->suppressed_issues + $this->getSuppressedIssues(),
+                1
             );
         }
 
@@ -1687,7 +1688,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             AttributeAnalyzer::analyze(
                 $source,
                 $attribute,
-                $this->source->getSuppressedIssues()
+                $this->source->getSuppressedIssues(),
+                8
             );
         }
 

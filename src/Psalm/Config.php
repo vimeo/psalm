@@ -1724,10 +1724,10 @@ class Config
         $core_generic_files = [];
 
         if (\PHP_VERSION_ID < 80000 && $codebase->php_major_version >= 8) {
-            $stringable_path = dirname(__DIR__, 2) . '/stubs/Stringable.php';
+            $stringable_path = dirname(__DIR__, 2) . '/stubs/Php80.php';
 
             if (!file_exists($stringable_path)) {
-                throw new \UnexpectedValueException('Cannot locate core generic classes');
+                throw new \UnexpectedValueException('Cannot locate PHP 8.0 classes');
             }
 
             $core_generic_files[] = $stringable_path;
@@ -1795,6 +1795,16 @@ class Config
         }
 
         $core_generic_files = [$generic_stubs_path, $generic_classes_path, $immutable_classes_path];
+
+        if (\PHP_VERSION_ID >= 80000 && $codebase->php_major_version >= 8) {
+            $stringable_path = dirname(__DIR__, 2) . '/stubs/Php80.php';
+
+            if (!file_exists($stringable_path)) {
+                throw new \UnexpectedValueException('Cannot locate PHP 8.0 classes');
+            }
+
+            $core_generic_files[] = $stringable_path;
+        }
 
         if (\extension_loaded('ds')) {
             $ext_ds_path = dirname(__DIR__, 2) . '/stubs/ext-ds.php';

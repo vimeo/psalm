@@ -20,12 +20,12 @@ class AttributeTest extends TestCase
                 '<?php
                     namespace Foo;
 
-                    #[\Attribute]
+                    #[\Attribute(\Attribute::TARGET_CLASS)]
                     class Table {
                         public function __construct(public string $name) {}
                     }
 
-                    #[\Attribute]
+                    #[\Attribute(\Attribute::TARGET_PROPERTY)]
                     class Column {
                         public function __construct(public string $name) {}
                     }
@@ -56,7 +56,7 @@ class AttributeTest extends TestCase
             'functionAttributeExists' => [
                 '<?php
                     namespace {
-                        #[Attribute]
+                        #[Attribute(Attribute::TARGET_CLASS | Attribute::TARGET_FUNCTION | Attribute::TARGET_PARAMETER)]
                         class Deprecated {}
                     }
 
@@ -71,7 +71,7 @@ class AttributeTest extends TestCase
             'paramAttributeExists' => [
                 '<?php
                     namespace {
-                        #[Attribute]
+                        #[Attribute(Attribute::TARGET_CLASS | Attribute::TARGET_FUNCTION | Attribute::TARGET_PARAMETER)]
                         class Deprecated {}
                     }
 
@@ -127,7 +127,7 @@ class AttributeTest extends TestCase
                 '<?php
                     namespace Foo;
 
-                    #[\Attribute]
+                    #[\Attribute(\Attribute::TARGET_CLASS)]
                     class Table {
                         public function __construct(public string $name) {}
                     }
@@ -135,6 +135,22 @@ class AttributeTest extends TestCase
                     #[Table()]
                     class Video {}',
                 'error_message' => 'TooFewArguments',
+                [],
+                false,
+                '8.0'
+            ],
+            'classAttributeUsedOnFunction' => [
+                '<?php
+                    namespace Foo;
+
+                    #[\Attribute(\Attribute::TARGET_CLASS)]
+                    class Table {
+                        public function __construct(public string $name) {}
+                    }
+
+                    #[Table("videos")]
+                    function foo() : void {}',
+                'error_message' => 'InvalidAttribute',
                 [],
                 false,
                 '8.0'
