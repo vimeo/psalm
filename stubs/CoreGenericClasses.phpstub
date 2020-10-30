@@ -218,7 +218,7 @@ class CachingIterator extends IteratorIterator implements OuterIterator , ArrayA
     /**
      * @param Iterator<TKey, TValue> $iterator
      */
-    public function __construct(Iterator $iterator, int $flags = self::CALL_TOSTRING) {} 
+    public function __construct(Iterator $iterator, int $flags = self::CALL_TOSTRING) {}
 
     /** @return bool */
     public function hasNext () {}
@@ -246,7 +246,7 @@ class InfiniteIterator extends IteratorIterator implements OuterIterator {
     /**
      * @param Iterator<TKey, TValue> $iterator
      */
-    public function __construct(Iterator $iterator) {} 
+    public function __construct(Iterator $iterator) {}
 
     /**
      * @return TValue Can return any type.
@@ -267,11 +267,11 @@ class InfiniteIterator extends IteratorIterator implements OuterIterator {
  *
  * @template-extends IteratorIterator<TKey, TValue>
  */
-class LimitIterator extends IteratorIterator implements OuterIterator {   
+class LimitIterator extends IteratorIterator implements OuterIterator {
     /**
      * @param Iterator<TKey, TValue> $iterator
      */
-    public function __construct(Iterator $iterator, int $offset = 0, int $count = -1) {} 
+    public function __construct(Iterator $iterator, int $offset = 0, int $count = -1) {}
 
     /**
      * @return TValue Can return any type.
@@ -292,12 +292,12 @@ class LimitIterator extends IteratorIterator implements OuterIterator {
  *
  * @template-extends FilterIterator<TKey, TValue>
  */
-class CallbackFilterIterator extends FilterIterator implements OuterIterator  {   
+class CallbackFilterIterator extends FilterIterator implements OuterIterator  {
     /**
      * @param Iterator<TKey, TValue> $iterator
      * @param callable(TValue, TKey, Iterator<TKey, TValue>): bool $callback
      */
-    public function __construct(Iterator $iterator, callable $callback) {} 
+    public function __construct(Iterator $iterator, callable $callback) {}
 
     /**
      * @return TValue Can return any type.
@@ -316,11 +316,11 @@ class CallbackFilterIterator extends FilterIterator implements OuterIterator  {
  *
  * @template-extends IteratorIterator<TKey, TValue>
  */
-class NoRewindIterator extends IteratorIterator {   
+class NoRewindIterator extends IteratorIterator {
     /**
      * @param Iterator<TKey, TValue> $iterator
      */
-    public function __construct(Iterator $iterator) {} 
+    public function __construct(Iterator $iterator) {}
 
     /**
      * @return TValue Can return any type.
@@ -1131,7 +1131,7 @@ class DOMNamedNodeMap implements Traversable, Countable {
  * @template TKey
  * @template TValue
  * @template-implements Iterator<TKey, TValue>
- * @template-implements ArrayAccess<TKey, TValue> 
+ * @template-implements ArrayAccess<TKey, TValue>
  */
 class SplDoublyLinkedList implements Iterator, Countable, ArrayAccess, Serializable
 {
@@ -1298,9 +1298,9 @@ class SplDoublyLinkedList implements Iterator, Countable, ArrayAccess, Serializa
 }
 
 /**
- * The SplFixedArray class provides the main functionalities of array. 
- * The main differences between a SplFixedArray and a normal PHP array is that 
- * the SplFixedArray is of fixed length and allows only integers within the range as indexes. 
+ * The SplFixedArray class provides the main functionalities of array.
+ * The main differences between a SplFixedArray and a normal PHP array is that
+ * the SplFixedArray is of fixed length and allows only integers within the range as indexes.
  * The advantage is that it uses less memory than a standard array.
  *
  * @link https://php.net/manual/en/class.splfixedarray.php
@@ -1313,7 +1313,7 @@ class SplFixedArray implements Iterator, ArrayAccess, Countable {
     /**
      * Constructs a new fixed array
      *
-     * Initializes a fixed array with a number of NULL values equal to size. 
+     * Initializes a fixed array with a number of NULL values equal to size.
      * @link https://php.net/manual/en/splfixedarray.construct.php
      *
      * @param int $size The size of the fixed array. This expects a number between 0 and PHP_INT_MAX.
@@ -1329,7 +1329,7 @@ class SplFixedArray implements Iterator, ArrayAccess, Countable {
      * @template TInValue
      * @param array<int, TInValue> $array The array to import
      * @param bool $save_indexes [optional] Try to save the numeric indexes used in the original array.
-     * 
+     *
      * @return SplFixedArray<TInValue> Instance of SplFixedArray containing the array content
 
      * @since 5.3.0
@@ -1417,7 +1417,7 @@ class SplFixedArray implements Iterator, ArrayAccess, Countable {
      * @since 5.3.0
      */
     public function next(): void {}
-    
+
     /**
      * Returns whether the specified index exists
      * @link https://php.net/manual/en/splfixedarray.offsetexists.php
@@ -1521,22 +1521,22 @@ class SplHeap implements Iterator, Countable {
      *
      * @param TValue $value1 The value of the first node being compared.
      * @param TValue $value2 The value of the second node being compared.
-     * @return int Positive integer if value1 is greater than value2, 0 if they are equal, negative integer otherwise. 
+     * @return int Positive integer if value1 is greater than value2, 0 if they are equal, negative integer otherwise.
      *
      * @since 5.3.0
      */
     protected abstract function compare($value1, $value2): int {}
-    
+
     /**
      * Counts the number of elements in the heap
      * @link https://php.net/manual/en/splheap.count.php
      *
-     * @return int The number of elements in the heap. 
+     * @return int The number of elements in the heap.
      *
      * @since 5.3.0
      */
     public function count(): int {}
-    
+
     /**
      * Get the current datastructure node.
      * @link https://php.net/manual/en/splheap.current.php
@@ -1546,7 +1546,7 @@ class SplHeap implements Iterator, Countable {
      * @since 5.3.0
      */
     public function current() {}
-    
+
     /**
      * Extracts a node from top of the heap and sift up
      * @link https://php.net/manual/en/splheap.extract.php
@@ -1589,7 +1589,7 @@ class SplHeap implements Iterator, Countable {
     public function isEmpty(): bool {}
 
     /**
-     * Return current node index 
+     * Return current node index
      * @link https://php.net/manual/en/splheap.key.php
      *
      * @return int The current node index
@@ -1599,7 +1599,7 @@ class SplHeap implements Iterator, Countable {
     public function key() {}
 
     /**
-     * Move to the next node. This will delete the top node of the heap. 
+     * Move to the next node. This will delete the top node of the heap.
      * @link https://php.net/manual/en/splheap.next.php
      *
      * @return void
@@ -1617,7 +1617,7 @@ class SplHeap implements Iterator, Countable {
      * @since 5.3.0
      */
     public function recoverFromCorruption(): void {}
-    
+
     /**
      * Rewind iterator back to the start (no-op)
      * @link https://php.net/manual/en/splheap.rewind.php
@@ -1627,7 +1627,7 @@ class SplHeap implements Iterator, Countable {
      * @since 5.3.0
      */
     public function rewind(): void {}
-    
+
     /**
      * Peeks at the node from the top of the heap
      * @link https://php.net/manual/en/splheap.top.php
@@ -1637,12 +1637,12 @@ class SplHeap implements Iterator, Countable {
      * @since 5.3.0
      */
     public function top() {}
-    
+
     /**
      * Check whether the heap contains any more nodes
      * @link https://php.net/manual/en/splheap.valid.php
      *
-     * @return bool Returns true if the heap contains any more nodes, false otherwise. 
+     * @return bool Returns true if the heap contains any more nodes, false otherwise.
      *
      * @since 5.3.0
      */
@@ -1700,22 +1700,22 @@ class SplPriorityQueue implements Iterator, Countable {
      *
      * @param TValue $priority1 The priority of the first node being compared.
      * @param TValue $priority2 The priority of the second node being compared.
-     * @return int Positive integer if priority1 is greater than priority2, 0 if they are equal, negative integer otherwise. 
+     * @return int Positive integer if priority1 is greater than priority2, 0 if they are equal, negative integer otherwise.
      *
      * @since 5.3.0
      */
     public function compare($priority1, $priority2): int {}
-    
+
     /**
      * Counts the number of elements in the queue
      * @link https://php.net/manual/en/splpriorityqueue.count.php
      *
-     * @return int The number of elements in the queue. 
+     * @return int The number of elements in the queue.
      *
      * @since 5.3.0
      */
     public function count(): int {}
-    
+
     /**
      * Get the current datastructure node.
      * @link https://php.net/manual/en/splpriorityqueue.current.php
@@ -1725,7 +1725,7 @@ class SplPriorityQueue implements Iterator, Countable {
      * @since 5.3.0
      */
     public function current() {}
-    
+
     /**
      * Extracts a node from top of the queue and sift up
      * @link https://php.net/manual/en/splpriorityqueue.extract.php
@@ -1781,7 +1781,7 @@ class SplPriorityQueue implements Iterator, Countable {
     public function isEmpty(): bool {}
 
     /**
-     * Return current node index 
+     * Return current node index
      * @link https://php.net/manual/en/splpriorityqueue.key.php
      *
      * @return int The current node index
@@ -1809,7 +1809,7 @@ class SplPriorityQueue implements Iterator, Countable {
      * @since 5.3.0
      */
     public function recoverFromCorruption(): void {}
-    
+
     /**
      * Rewind iterator back to the start (no-op)
      * @link https://php.net/manual/en/splpriorityqueue.rewind.php
@@ -1819,12 +1819,12 @@ class SplPriorityQueue implements Iterator, Countable {
      * @since 5.3.0
      */
     public function rewind(): void {}
-    
+
     /**
      * Sets the mode of extraction
      * @link https://php.net/manual/en/splpriorityqueue.setextractflags.php
      *
-     * @param SplPriorityQueue::EXTR_* $flags Defines what is extracted by SplPriorityQueue::current(), SplPriorityQueue::top() and SplPriorityQueue::extract(). 
+     * @param SplPriorityQueue::EXTR_* $flags Defines what is extracted by SplPriorityQueue::current(), SplPriorityQueue::top() and SplPriorityQueue::extract().
      *
      * @return void
      *
@@ -1841,12 +1841,12 @@ class SplPriorityQueue implements Iterator, Countable {
      * @since 5.3.0
      */
     public function top() {}
-    
+
     /**
      * Check whether the queue contains any more nodes
      * @link https://php.net/manual/en/splpriorityqueue.valid.php
      *
-     * @return bool Returns true if the queue contains any more nodes, false otherwise. 
+     * @return bool Returns true if the queue contains any more nodes, false otherwise.
      *
      * @since 5.3.0
      */
@@ -2141,6 +2141,58 @@ class ReflectionClass implements Reflector {
      * @psalm-ignore-nullable-return
      */
     public function getTraitNames(): array {}
+
+    /**
+     * @since 8.0
+     * @template TClass as object
+     * @param class-string<TClass>|null $name
+     * @return array<ReflectionAttribute<TClass>>
+     */
+    public function getAttributes(?string $name = null, int $flags = 0): array {}
+}
+
+class ReflectionFunction
+{
+    /**
+     * @since 8.0
+     * @template TClass as object
+     * @param class-string<TClass>|null $name
+     * @return array<ReflectionAttribute<TClass>>
+     */
+    public function getAttributes(?string $name = null, int $flags = 0): array {}
+}
+
+class ReflectionProperty
+{
+    /**
+     * @since 8.0
+     * @template TClass as object
+     * @param class-string<TClass>|null $name
+     * @return array<ReflectionAttribute<TClass>>
+     */
+    public function getAttributes(?string $name = null, int $flags = 0): array {}
+}
+
+class ReflectionMethod
+{
+    /**
+     * @since 8.0
+     * @template TClass as object
+     * @param class-string<TClass>|null $name
+     * @return array<ReflectionAttribute<TClass>>
+     */
+    public function getAttributes(?string $name = null, int $flags = 0): array {}
+}
+
+class ReflectionClassConstant
+{
+    /**
+     * @since 8.0
+     * @template TClass as object
+     * @param class-string<TClass>|null $name
+     * @return array<ReflectionAttribute<TClass>>
+     */
+    public function getAttributes(?string $name = null, int $flags = 0): array {}
 }
 
 /**

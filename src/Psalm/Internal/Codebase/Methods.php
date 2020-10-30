@@ -343,7 +343,9 @@ class Methods
         if (InternalCallMapHandler::inCallMap((string) $callmap_id)) {
             $class_storage = $this->classlike_storage_provider->get($callmap_id->fq_class_name);
 
-            if (!$class_storage->stubbed) {
+            $declaring_method_name = $declaring_method_id ? $declaring_method_id->method_name : $method_name;
+
+            if (!$class_storage->stubbed || empty($class_storage->methods[$declaring_method_name]->stubbed)) {
                 $function_callables = InternalCallMapHandler::getCallablesFromCallMap((string) $callmap_id);
 
                 if ($function_callables === null) {

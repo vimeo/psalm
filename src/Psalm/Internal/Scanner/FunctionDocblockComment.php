@@ -196,4 +196,14 @@ class FunctionDocblockComment
 
     /** @var bool */
     public $stub_override = false;
+
+    /**
+     * @var int
+     */
+    public $since_php_major_version = 0;
+
+    /**
+     * @var int
+     */
+    public $since_php_minor_version = 0;
 }
