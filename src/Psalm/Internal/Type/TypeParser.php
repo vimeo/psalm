@@ -46,6 +46,10 @@ use function strlen;
 use function strpos;
 use function strtolower;
 use function substr;
+use function reset;
+use function is_int;
+use function array_merge;
+use function array_unique;
 
 class TypeParser
 {
@@ -346,6 +350,91 @@ class TypeParser
                     $param_union_types[0]->fq_classlike_name,
                     $param_union_types[0]->const_name
                 );
+            }
+
+            if ($generic_type_value === 'int-mask') {
+                $atomic_types = [];
+
+                foreach ($generic_params as $generic_param) {
+                    if (!$generic_param->isSingle()) {
+                        throw new TypeParseTreeException(
+                            'int-mask types must all be non-union'
+                        );
+                    }
+
+                    $generic_param_atomics = $generic_param->getAtomicTypes();
+
+                    $atomic_type = reset($generic_param_atomics);
+
+                    if ($atomic_type instanceof TNamedObject) {
+                        if (\defined($atomic_type->value)) {
+                            /** @var mixed */
+                            $constant_value = \constant($atomic_type->value);
+
+                            if (!is_int($constant_value)) {
+                                throw new TypeParseTreeException(
+                                    'int-mask types must all be integer values'
+                                );
+                            }
+
+                            $atomic_type = new TLiteralInt($constant_value);
+                        } else {
+                            throw new TypeParseTreeException(
+                                'int-mask types must all be integer values'
+                            );
+                        }
+                    }
+
+                    if (!$atomic_type instanceof TLiteralInt
+                        && !($atomic_type instanceof Atomic\TScalarClassConstant
+                            && strpos($atomic_type->const_name, '*') === false)
+                    ) {
+                        throw new TypeParseTreeException(
+                            'int-mask types must all be integer values or scalar class constants'
+                        );
+                    }
+
+                    $atomic_types[] = $atomic_type;
+                }
+
+                $potential_ints = [];
+
+                foreach ($atomic_types as $atomic_type) {
+                    if (!$atomic_type instanceof TLiteralInt) {
+                        return new Atomic\TIntMask($atomic_types);
+                    }
+
+                    $potential_ints[] = $atomic_type->value;
+                }
+
+                return new Union(self::getComputedIntsFromMask($potential_ints));
+            }
+
+            if ($generic_type_value === 'int-mask-of') {
+                $param_union_types = array_values($generic_params[0]->getAtomicTypes());
+
+                if (count($param_union_types) > 1) {
+                    throw new TypeParseTreeException('Union types are not allowed in value-of type');
+                }
+
+                $param_type = $param_union_types[0];
+
+                if (!$param_type instanceof Atomic\TScalarClassConstant
+                    && !$param_type instanceof Atomic\TValueOfClassConstant
+                    && !$param_type instanceof Atomic\TKeyOfClassConstant
+                ) {
+                    throw new TypeParseTreeException(
+                        'Invalid reference passed to int-mask-of'
+                    );
+                } elseif ($param_type instanceof Atomic\TScalarClassConstant
+                    && strpos($param_type->const_name, '*') === false
+                ) {
+                    throw new TypeParseTreeException(
+                        'Class constant passed to int-mask-of must be a wildcard type'
+                    );
+                }
+
+                return new Atomic\TIntMaskOf($param_type);
             }
 
             if (isset(TypeTokenizer::PSALM_RESERVED_WORDS[$generic_type_value])
@@ -1026,5 +1115,37 @@ class TypeParser
         }
 
         throw new \LogicException('Should never get here');
+    }
+
+    /**
+     * @param  non-empty-list<int>  $potential_ints
+     * @return  non-empty-list<TLiteralInt>
+     */
+    public static function getComputedIntsFromMask(array $potential_ints) : array
+    {
+        $potential_values = [];
+
+        foreach ($potential_ints as $ith) {
+            $new_values = [];
+
+            $new_values[] = $ith;
+
+            if ($ith !== 0) {
+                for ($j = 0; $j < count($potential_values); $j++) {
+                    $new_values[] = $ith | $potential_values[$j];
+                }
+            }
+
+            $potential_values = array_merge($new_values, $potential_values);
+        }
+
+        $potential_values = array_unique($potential_values);
+
+        return array_map(
+            function ($int) {
+                return new TLiteralInt($int);
+            },
+            array_values($potential_values)
+        );
     }
 }

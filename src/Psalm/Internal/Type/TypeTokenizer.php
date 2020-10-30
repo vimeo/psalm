@@ -73,6 +73,8 @@ class TypeTokenizer
         'closed-resource' => true,
         'associative-array' => true,
         'arraylike-object' => true,
+        'int-mask' => true,
+        'int-mask-of' => true,
     ];
 
     /**

@@ -360,6 +360,35 @@ class TypeExpander
             return $return_type;
         }
 
+        if ($return_type instanceof Type\Atomic\TIntMask) {
+            if (!$evaluate_class_constants) {
+                return new Type\Atomic\TInt();
+            }
+
+            $potential_ints = [];
+
+            foreach ($return_type->values as $value_type) {
+                $new_value_type = self::expandAtomic(
+                    $codebase,
+                    $value_type,
+                    $self_class,
+                    $static_class_type,
+                    $parent_class,
+                    $evaluate_class_constants,
+                    $evaluate_conditional_types,
+                    $final
+                );
+
+                if (\is_array($new_value_type) || !$new_value_type instanceof Type\Atomic\TLiteralInt) {
+                    return new Type\Atomic\TInt();
+                }
+
+                $potential_ints[] = $new_value_type->value;
+            }
+
+            return \Psalm\Internal\Type\TypeParser::getComputedIntsFromMask($potential_ints);
+        }
+
         if ($return_type instanceof Type\Atomic\TArray
             || $return_type instanceof Type\Atomic\TGenericObject
             || $return_type instanceof Type\Atomic\TIterable

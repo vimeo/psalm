@@ -543,7 +543,7 @@ function explode(string $delimiter, string $string, int $limit = -1) : array {}
  *
  * @psalm-flow ($subject) -(array-assignment)-> return
  *
- * @template TFlags as 0|1|2|3|4|5|6|7
+ * @template TFlags as int-mask<0, 1, 2, 4>
  *
  * @param TFlags $flags
  *
