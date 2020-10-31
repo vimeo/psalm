@@ -15,6 +15,7 @@ use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\IncorrectDocblockException;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
+use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Internal\Type\TypeAlias;
@@ -768,7 +769,7 @@ class FunctionLikeNodeScanner
 
         foreach ($stmt->getAttrGroups() as $attr_group) {
             foreach ($attr_group->attrs as $attr) {
-                $storage->attributes[] = AttributeResolver::resolve(
+                $attribute = AttributeResolver::resolve(
                     $this->codebase,
                     $this->file_scanner,
                     $this->file_storage,
@@ -776,6 +777,38 @@ class FunctionLikeNodeScanner
                     $attr,
                     $this->classlike_storage->name ?? null
                 );
+
+                if ($attribute->fq_class_name === 'Psalm\\Pure'
+                    || $attribute->fq_class_name === 'JetBrains\\PhpStorm\\Pure'
+                ) {
+                    $storage->specialize_call = true;
+                    $storage->mutation_free = true;
+                    if ($storage instanceof MethodStorage) {
+                        $storage->external_mutation_free = true;
+                    }
+                }
+
+                if ($attribute->fq_class_name === 'Psalm\\Deprecated'
+                    || $attribute->fq_class_name === 'JetBrains\\PhpStorm\\Deprecated'
+                ) {
+                    $storage->deprecated = true;
+                }
+
+                if ($attribute->fq_class_name === 'Psalm\\Internal' && !$storage->internal && $fq_classlike_name) {
+                    $storage->internal = NamespaceAnalyzer::getNameSpaceRoot($fq_classlike_name);
+                }
+
+                if ($attribute->fq_class_name === 'Psalm\\ExternalMutationFree'
+                    && $storage instanceof MethodStorage
+                ) {
+                    $storage->external_mutation_free = true;
+                }
+
+                if ($attribute->fq_class_name === 'JetBrains\\PhpStorm\\NoReturn') {
+                    $storage->return_type = new Type\Union([new Type\Atomic\TNever()]);
+                }
+
+                $storage->attributes[] = $attribute;
             }
         }
 

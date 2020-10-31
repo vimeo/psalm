@@ -692,7 +692,7 @@ class ClassLikeNodeScanner
 
         foreach ($node->attrGroups as $attr_group) {
             foreach ($attr_group->attrs as $attr) {
-                $storage->attributes[] = AttributeResolver::resolve(
+                $attribute = AttributeResolver::resolve(
                     $this->codebase,
                     $this->file_scanner,
                     $this->file_storage,
@@ -700,6 +700,29 @@ class ClassLikeNodeScanner
                     $attr,
                     $this->storage->name ?? null
                 );
+
+                if ($attribute->fq_class_name === 'Psalm\\Deprecated'
+                    || $attribute->fq_class_name === 'JetBrains\\PhpStorm\\Deprecated'
+                ) {
+                    $storage->deprecated = true;
+                }
+
+                if ($attribute->fq_class_name === 'Psalm\\Internal' && !$storage->internal) {
+                    $storage->internal = NamespaceAnalyzer::getNameSpaceRoot($fq_classlike_name);
+                }
+
+                if ($attribute->fq_class_name === 'Psalm\\Immutable'
+                    || $attribute->fq_class_name === 'JetBrains\\PhpStorm\\Immutable'
+                ) {
+                    $storage->mutation_free = true;
+                    $storage->external_mutation_free = true;
+                }
+
+                if ($attribute->fq_class_name === 'Psalm\\ExternalMutationFree') {
+                    $storage->external_mutation_free = true;
+                }
+
+                $storage->attributes[] = $attribute;
             }
         }
 
@@ -1416,7 +1439,7 @@ class ClassLikeNodeScanner
 
             foreach ($stmt->attrGroups as $attr_group) {
                 foreach ($attr_group->attrs as $attr) {
-                    $property_storage->attributes[] = AttributeResolver::resolve(
+                    $attribute = AttributeResolver::resolve(
                         $this->codebase,
                         $this->file_scanner,
                         $this->file_storage,
@@ -1424,6 +1447,22 @@ class ClassLikeNodeScanner
                         $attr,
                         $this->storage->name ?? null
                     );
+
+                    if ($attribute->fq_class_name === 'Psalm\\Deprecated'
+                        || $attribute->fq_class_name === 'JetBrains\\PhpStorm\\Deprecated'
+                    ) {
+                        $property_storage->deprecated = true;
+                    }
+
+                    if ($attribute->fq_class_name === 'Psalm\\Internal' && !$property_storage->internal) {
+                        $property_storage->internal = NamespaceAnalyzer::getNameSpaceRoot($fq_classlike_name);
+                    }
+
+                    if ($attribute->fq_class_name === 'Psalm\\Readonly') {
+                        $property_storage->readonly = true;
+                    }
+
+                    $property_storage->attributes[] = $attribute;
                 }
             }
         }
