@@ -907,6 +907,43 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
                 ],
                 'error_message' => 'PropertyNotSetInConstructor',
             ],
+            'invalidateChildMethodWhenSignatureChanges' => [
+                'file_stages' => [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {
+                                public function foo(string $s) : void {
+                                    echo $s;
+                                }
+                            }
+
+                            class AChild extends A {
+                                public function foo(string $s) : void {
+                                    echo $s;
+                                }
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {
+                                public function foo(string $s = "") : void {
+                                    echo $s;
+                                }
+                            }
+
+                            class AChild extends A {
+                                public function foo(string $s) : void {
+                                    echo $s;
+                                }
+                            }',
+                    ],
+                ],
+                'error_message' => 'MethodSignatureMismatch',
+            ],
         ];
     }
 }

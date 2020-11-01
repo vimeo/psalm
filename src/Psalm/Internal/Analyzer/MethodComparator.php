@@ -50,17 +50,24 @@ class MethodComparator
         bool $prevent_abstract_override = true,
         bool $prevent_method_signature_mismatch = true
     ): ?bool {
+        $implementer_method_id = new MethodIdentifier(
+            $implementer_classlike_storage->name,
+            strtolower($guide_method_storage->cased_name ?: '')
+        );
+
         $implementer_declaring_method_id = $codebase->methods->getDeclaringMethodId(
-            new MethodIdentifier(
-                $implementer_classlike_storage->name,
-                strtolower($guide_method_storage->cased_name ?: '')
-            )
+            $implementer_method_id
         );
 
         $cased_implementer_method_id = $implementer_classlike_storage->name . '::'
             . $implementer_method_storage->cased_name;
 
         $cased_guide_method_id = $guide_classlike_storage->name . '::' . $guide_method_storage->cased_name;
+
+        $codebase->methods->file_reference_provider->addMethodReferenceToClassMember(
+            strtolower((string)($implementer_declaring_method_id ?: $implementer_method_id)),
+            strtolower($guide_classlike_storage->name . '::' . $guide_method_storage->cased_name)
+        );
 
         self::checkForObviousMethodMismatches(
             $guide_classlike_storage,
