@@ -142,7 +142,7 @@ class InstancePropertyAssignmentAnalyzer
             );
 
             if ($var_id) {
-                $context->assigned_var_ids[$var_id] = true;
+                $context->assigned_var_ids[$var_id] = (int) $stmt->var->getAttribute('startFilePos');
 
                 if ($direct_assignment && isset($context->protected_var_ids[$var_id])) {
                     if (IssueBuffer::accepts(

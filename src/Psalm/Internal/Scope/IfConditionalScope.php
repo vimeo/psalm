@@ -18,7 +18,7 @@ class IfConditionalScope
     public $cond_referenced_var_ids;
 
     /**
-     * @var array<string, bool>
+     * @var array<string, int>
      */
     public $cond_assigned_var_ids;
 
@@ -27,7 +27,7 @@ class IfConditionalScope
 
     /**
      * @param array<string, bool>   $cond_referenced_var_ids
-     * @param array<string, bool>   $cond_assigned_var_ids
+     * @param array<string, int>   $cond_assigned_var_ids
      * @param list<\Psalm\Internal\Clause> $entry_clauses
      */
     public function __construct(

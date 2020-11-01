@@ -658,7 +658,7 @@ class IfAnalyzer
                 $more_cond_referenced_var_ids
             );
 
-            /** @var array<string, bool> */
+            /** @var array<string, int> */
             $more_cond_assigned_var_ids = $if_conditional_context->assigned_var_ids;
             $if_conditional_context->assigned_var_ids = array_merge(
                 $more_cond_assigned_var_ids,
@@ -809,7 +809,7 @@ class IfAnalyzer
 
         $if_scope->final_actions = $final_actions;
 
-        /** @var array<string, bool> */
+        /** @var array<string, int> */
         $new_assigned_var_ids = $if_context->assigned_var_ids;
         /** @var array<string, bool> */
         $new_possibly_assigned_var_ids = $if_context->possibly_assigned_var_ids;
@@ -1268,7 +1268,7 @@ class IfAnalyzer
             return false;
         }
 
-        /** @var array<string, bool> */
+        /** @var array<string, int> */
         $new_stmts_assigned_var_ids = $elseif_context->assigned_var_ids;
         $elseif_context->assigned_var_ids = $pre_stmts_assigned_var_ids + $new_stmts_assigned_var_ids;
 
@@ -1573,7 +1573,7 @@ class IfAnalyzer
             }
         }
 
-        /** @var array<string, bool> */
+        /** @var array<string, int> */
         $new_assigned_var_ids = $else_context->assigned_var_ids;
         $else_context->assigned_var_ids = $pre_stmts_assigned_var_ids;
 
@@ -1847,7 +1847,7 @@ class IfAnalyzer
     }
 
     /**
-     * @param array<string, bool> $cond_assigned_var_ids
+     * @param array<string, int> $cond_assigned_var_ids
      */
     public static function addConditionallyAssignedVarsToContext(
         StatementsAnalyzer $statements_analyzer,

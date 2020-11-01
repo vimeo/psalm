@@ -25,7 +25,7 @@ class IfScope
     public $redefined_vars = null;
 
     /**
-     * @var array<string, bool>|null
+     * @var array<string, int>|null
      */
     public $assigned_var_ids = null;
 

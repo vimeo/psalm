@@ -236,7 +236,7 @@ class Context
     /**
      * A list of vars that have been assigned to
      *
-     * @var array<string, bool>
+     * @var array<string, int>
      */
     public $assigned_var_ids = [];
 
@@ -483,6 +483,8 @@ class Context
 
         foreach ($new_context->vars_in_scope as $var_id => $context_type) {
             if (!isset($original_context->vars_in_scope[$var_id])
+                || ($original_context->assigned_var_ids[$var_id] ?? 0)
+                    !== ($new_context->assigned_var_ids[$var_id] ?? 0)
                 || !$original_context->vars_in_scope[$var_id]->equals($context_type)
             ) {
                 $redefined_var_ids[] = $var_id;

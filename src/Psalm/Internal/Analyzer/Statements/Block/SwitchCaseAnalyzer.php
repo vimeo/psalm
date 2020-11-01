@@ -433,7 +433,7 @@ class SwitchCaseAnalyzer
 
         $statements_analyzer->node_data = $old_node_data;
 
-        /** @var array<string, bool> */
+        /** @var array<string, int> */
         $new_case_assigned_var_ids = $case_context->assigned_var_ids;
         $case_context->assigned_var_ids = $pre_assigned_var_ids + $new_case_assigned_var_ids;
 

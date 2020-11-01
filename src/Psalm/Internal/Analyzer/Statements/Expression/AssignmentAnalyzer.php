@@ -158,7 +158,7 @@ class AssignmentAnalyzer
 
         if ($array_var_id) {
             unset($context->referenced_var_ids[$array_var_id]);
-            $context->assigned_var_ids[$array_var_id] = true;
+            $context->assigned_var_ids[$array_var_id] = (int) $assign_var->getAttribute('startFilePos');
             $context->possibly_assigned_var_ids[$array_var_id] = true;
         }
 
@@ -725,7 +725,7 @@ class AssignmentAnalyzer
 
                     if ($list_var_id) {
                         $context->vars_possibly_in_scope[$list_var_id] = true;
-                        $context->assigned_var_ids[$list_var_id] = true;
+                        $context->assigned_var_ids[$list_var_id] = (int) $var->getAttribute('startFilePos');
                         $context->possibly_assigned_var_ids[$list_var_id] = true;
 
                         $already_in_scope = isset($context->vars_in_scope[$list_var_id]);
@@ -1362,7 +1362,7 @@ class AssignmentAnalyzer
         $codebase = $statements_analyzer->getCodebase();
 
         if ($array_var_id) {
-            $context->assigned_var_ids[$array_var_id] = true;
+            $context->assigned_var_ids[$array_var_id] = (int) $stmt->var->getAttribute('startFilePos');;
             $context->possibly_assigned_var_ids[$array_var_id] = true;
 
             if ($codebase->find_unused_variables && $stmt->var instanceof PhpParser\Node\Expr\Variable) {
@@ -1750,7 +1750,7 @@ class AssignmentAnalyzer
                 }
             }
 
-            $context->assigned_var_ids[$var_id] = true;
+            $context->assigned_var_ids[$var_id] = (int) $stmt->getAttribute('startFilePos');;
 
             $context->vars_in_scope[$var_id] = $by_ref_out_type;
 

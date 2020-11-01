@@ -108,7 +108,7 @@ class TryAnalyzer
             $context->break_types
         );
 
-        /** @var array<string, bool> */
+        /** @var array<string, int> */
         $newly_assigned_var_ids = $context->assigned_var_ids;
 
         $context->assigned_var_ids = array_merge(
