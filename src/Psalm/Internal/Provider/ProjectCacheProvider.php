@@ -40,7 +40,7 @@ class ProjectCacheProvider
         return $cache_directory && file_exists($cache_directory . DIRECTORY_SEPARATOR . self::GOOD_RUN_NAME);
     }
 
-    public function processSuccessfulRun(float $start_time): void
+    public function processSuccessfulRun(float $start_time, string $psalm_version): void
     {
         $cache_directory = Config::getInstance()->getCacheDirectory();
 
@@ -50,16 +50,20 @@ class ProjectCacheProvider
 
         $run_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::GOOD_RUN_NAME;
 
+        file_put_contents($run_cache_location, $psalm_version);
+
         \touch($run_cache_location, (int)$start_time);
     }
 
-    public function getLastRun(): int
+    public function getLastRun(string $psalm_version): int
     {
         if ($this->last_run === null) {
             $cache_directory = Config::getInstance()->getCacheDirectory();
 
-            if (file_exists($cache_directory . DIRECTORY_SEPARATOR . self::GOOD_RUN_NAME)) {
-                $this->last_run = \filemtime($cache_directory . DIRECTORY_SEPARATOR . self::GOOD_RUN_NAME);
+            $run_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::GOOD_RUN_NAME;
+
+            if (file_exists($run_cache_location) && file_get_contents($run_cache_location) === $psalm_version) {
+                $this->last_run = \filemtime($run_cache_location);
             } else {
                 $this->last_run = 0;
             }

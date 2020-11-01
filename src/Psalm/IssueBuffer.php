@@ -669,7 +669,7 @@ class IssueBuffer
             $codebase->file_reference_provider->removeDeletedFilesFromReferences();
 
             if ($project_analyzer->project_cache_provider) {
-                $project_analyzer->project_cache_provider->processSuccessfulRun($start_time);
+                $project_analyzer->project_cache_provider->processSuccessfulRun($start_time, \PSALM_VERSION);
             }
 
             if ($codebase->statements_provider->parser_cache_provider) {

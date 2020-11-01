@@ -12,12 +12,12 @@ class ProjectCacheProvider extends \Psalm\Internal\Provider\ProjectCacheProvider
     {
     }
 
-    public function getLastRun(): int
+    public function getLastRun(string $psalm_version): int
     {
         return $this->last_run;
     }
 
-    public function processSuccessfulRun(float $start_time): void
+    public function processSuccessfulRun(float $start_time, string $psalm_version): void
     {
         $this->last_run = (int) $start_time;
     }

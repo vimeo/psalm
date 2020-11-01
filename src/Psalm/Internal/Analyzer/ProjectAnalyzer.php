@@ -640,7 +640,7 @@ class ProjectAnalyzer
 
         if ($this->project_cache_provider && $this->parser_cache_provider) {
             $removed_parser_files = $this->parser_cache_provider->deleteOldParserCaches(
-                $is_diff ? $this->project_cache_provider->getLastRun() : $start_checks
+                $is_diff ? $this->project_cache_provider->getLastRun(\PSALM_VERSION) : $start_checks
             );
 
             if ($removed_parser_files) {
@@ -1069,7 +1069,7 @@ class ProjectAnalyzer
 
         $diff_files = [];
 
-        $last_run = $this->project_cache_provider->getLastRun();
+        $last_run = $this->project_cache_provider->getLastRun(\PSALM_VERSION);
 
         $file_paths = $this->file_provider->getFilesInDir($dir_name, $file_extensions);
 
