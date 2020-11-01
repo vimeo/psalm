@@ -1181,7 +1181,7 @@ class ArgumentAnalyzer
             }
 
             if ($context->inside_conditional && !isset($context->assigned_var_ids[$var_id])) {
-                $context->assigned_var_ids[$var_id] = (int) $input_expr->getAttribute('startFilePos');;
+                $context->assigned_var_ids[$var_id] = (int) $input_expr->getAttribute('startFilePos');
             }
 
             if ($was_cloned) {
