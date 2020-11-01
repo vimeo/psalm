@@ -2215,11 +2215,8 @@ class AssertionFinder
             }
         } elseif ($class_exists_check_type = self::hasClassExistsCheck($expr)) {
             if ($first_var_name) {
-                if ($class_exists_check_type === 2 || $prefix) {
-                    $if_types[$first_var_name] = [[$prefix . 'class-string']];
-                } else {
-                    $if_types[$first_var_name] = [['=class-string']];
-                }
+                $class_string_type = ($class_exists_check_type === 1 ? 'loaded-' : '') . 'class-string';
+                $if_types[$first_var_name] = [[$prefix . $class_string_type]];
             }
         } elseif ($class_exists_check_type = self::hasTraitExistsCheck($expr)) {
             if ($first_var_name) {

@@ -83,6 +83,8 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
             $is_equality = true;
         }
 
+        $original_assertion = $assertion;
+
         if ($assertion[0] === '>') {
             $assertion = 'falsy';
             $is_negation = true;
@@ -323,6 +325,10 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                 );
             }
 
+            if ($assertion === 'loaded-class-string') {
+                $assertion = 'class-string';
+            }
+
             $new_type = Type::parseString($assertion, null, $template_type_map);
         }
 
@@ -339,6 +345,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
         return self::refine(
             $statements_analyzer,
             $assertion,
+            $original_assertion,
             $new_type,
             $existing_var_type,
             $template_type_map,
@@ -361,6 +368,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
     private static function refine(
         StatementsAnalyzer $statements_analyzer,
         string $assertion,
+        string $original_assertion,
         Union $new_type,
         Union $existing_var_type,
         array $template_type_map,
@@ -538,6 +546,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                 && $code_location
                 && $new_type->getId() === $existing_var_type->getId()
                 && !$is_equality
+                && !($original_assertion === 'loaded-class-string' && $old_var_type_string === 'class-string')
                 && (!($statements_analyzer->getSource()->getSource() instanceof TraitAnalyzer)
                     || ($key !== '$this'
                         && !($existing_var_type->hasLiteralClassString() && $new_type->hasLiteralClassString())))
@@ -546,7 +555,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                     $existing_var_type,
                     $old_var_type_string,
                     $key,
-                    $assertion,
+                    $original_assertion,
                     true,
                     $negated,
                     $code_location,
@@ -574,7 +583,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                     $existing_var_type,
                     $old_var_type_string,
                     $key,
-                    $assertion,
+                    $original_assertion,
                     true,
                     $negated,
                     $code_location,

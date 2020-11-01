@@ -412,6 +412,15 @@ class ClassTest extends TestCase
                         return $class;
                     }',
             ],
+            'allowNegatingClassExistsWithoutAutloading' => [
+                '<?php
+                    function specifyString(string $className): void{
+                        if (!class_exists($className, false)) {
+                            return;
+                        }
+                        new ReflectionClass($className);
+                    }'
+            ],
             'classExistsWithFalseArgInside' => [
                 '<?php
                     function foo(string $s) : void {
