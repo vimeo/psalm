@@ -272,6 +272,12 @@ class ScalarTypeComparator
             return true;
         }
 
+        if (get_class($container_type_part) === TInt::class
+            && $input_type_part instanceof TInt
+        ) {
+            return true;
+        }
+
         if ((get_class($input_type_part) === TInt::class && $container_type_part instanceof TLiteralInt)
             || (get_class($input_type_part) === TPositiveInt::class
                 && $container_type_part instanceof TLiteralInt

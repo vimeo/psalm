@@ -379,7 +379,46 @@ class TypeExpander
                     $final
                 );
 
-                if (\is_array($new_value_type) || !$new_value_type instanceof Type\Atomic\TLiteralInt) {
+                if (\is_array($new_value_type)) {
+                    $new_value_type = reset($new_value_type);
+                }
+
+                if (!$new_value_type instanceof Type\Atomic\TLiteralInt) {
+                    return new Type\Atomic\TInt();
+                }
+
+                $potential_ints[] = $new_value_type->value;
+            }
+
+            return \Psalm\Internal\Type\TypeParser::getComputedIntsFromMask($potential_ints);
+        }
+
+        if ($return_type instanceof Type\Atomic\TIntMaskOf) {
+            if (!$evaluate_class_constants) {
+                return new Type\Atomic\TInt();
+            }
+
+            $value_type = $return_type->value;
+
+            $new_value_types = self::expandAtomic(
+                $codebase,
+                $value_type,
+                $self_class,
+                $static_class_type,
+                $parent_class,
+                $evaluate_class_constants,
+                $evaluate_conditional_types,
+                $final
+            );
+
+            if (!is_array($new_value_types)) {
+                return new Type\Atomic\TInt();
+            }
+
+            $potential_ints = [];
+
+            foreach ($new_value_types as $new_value_type) {
+                if (!$new_value_type instanceof Type\Atomic\TLiteralInt) {
                     return new Type\Atomic\TInt();
                 }
 

@@ -290,8 +290,12 @@ class NonDivArithmeticOpAnalyzer
     ): ?Type\Union {
         if ($left_type_part instanceof TLiteralInt
             && $right_type_part instanceof TLiteralInt
-            && ($left instanceof PhpParser\Node\Scalar || $left instanceof PhpParser\Node\Expr\ConstFetch)
-            && ($right instanceof PhpParser\Node\Scalar || $right instanceof PhpParser\Node\Expr\ConstFetch)
+            && ($left instanceof PhpParser\Node\Scalar
+                || $left instanceof PhpParser\Node\Expr\ConstFetch
+                || $left instanceof PhpParser\Node\Expr\ClassConstFetch)
+            && ($right instanceof PhpParser\Node\Scalar
+                || $right instanceof PhpParser\Node\Expr\ConstFetch
+                || $right instanceof PhpParser\Node\Expr\ClassConstFetch)
         ) {
             // time for some arithmetic!
 
