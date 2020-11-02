@@ -7211,7 +7211,7 @@ return [
 'mb_strripos' => ['int|false', 'haystack'=>'string', 'needle'=>'string', 'offset='=>'int', 'encoding='=>'string'],
 'mb_strrpos' => ['int|false', 'haystack'=>'string', 'needle'=>'string', 'offset='=>'int', 'encoding='=>'string'],
 'mb_strstr' => ['string|false', 'haystack'=>'string', 'needle'=>'string', 'part='=>'bool', 'encoding='=>'string'],
-'mb_strtolower' => ['string|false', 'string'=>'string', 'encoding='=>'string'],
+'mb_strtolower' => ['lowercase-string|false', 'string'=>'string', 'encoding='=>'string'],
 'mb_strtoupper' => ['string|false', 'string'=>'string', 'encoding='=>'string'],
 'mb_strwidth' => ['int|false', 'string'=>'string', 'encoding='=>'string'],
 'mb_substitute_character' => ['bool|int|string', 'substchar='=>'mixed'],
