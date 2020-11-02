@@ -12,6 +12,7 @@ use function count;
 use function is_array;
 use function array_merge;
 use function array_values;
+use function reset;
 
 /**
  * @internal
