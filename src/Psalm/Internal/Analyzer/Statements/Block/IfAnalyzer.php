@@ -307,6 +307,8 @@ class IfAnalyzer
             $if_scope->if_cond_changed_var_ids = $changed_var_ids;
         }
 
+        $if_context->reconciled_expression_clauses = [];
+
         $old_if_context = clone $if_context;
         $context->vars_possibly_in_scope = array_merge(
             $if_context->vars_possibly_in_scope,

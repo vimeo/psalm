@@ -350,6 +350,10 @@ class FormulaGenerator
             return $clauses;
         }
 
-        return [new Clause([], $conditional_object_id, $creating_object_id, true)];
+        /** @psalm-suppress MixedOperand */
+        $conditional_ref = '*' . $conditional->getAttribute('startFilePos')
+            . ':' . $conditional->getAttribute('endFilePos');
+
+        return [new Clause([$conditional_ref => ['!falsy']], $conditional_object_id, $creating_object_id)];
     }
 }

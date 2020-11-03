@@ -55,6 +55,19 @@ class AlgebraTest extends TestCase
         $this->assertSame(['$b' => ['falsy']], $negated_formula[2]->possibilities);
     }
 
+    public function testNegateFormulaWithUnreconcilableTerm(): void
+    {
+        $formula = [
+            new Clause(['$a' => ['int']], 1, 1),
+            new Clause(['$b' => ['int']], 1, 2, false, false),
+        ];
+
+        $negated_formula = Algebra::negateFormula($formula);
+
+        $this->assertCount(1, $negated_formula);
+        $this->assertSame(['$a' => ['!int']], $negated_formula[0]->possibilities);
+    }
+
     public function testCombinatorialExpansion(): void
     {
         $dnf = '<?php ($b0 === true && $b4 === true && $b8 === true)

@@ -248,6 +248,10 @@ class Algebra
             }
 
             foreach ($clause->possibilities as $var => $possible_types) {
+                if ($var[0] === '*') {
+                    continue;
+                }
+
                 // if there's only one possible type, return it
                 if (count($clause->possibilities) === 1 && count($possible_types) === 1) {
                     $possible_type = array_pop($possible_types);
@@ -551,6 +555,13 @@ class Algebra
      */
     public static function negateFormula(array $clauses): array
     {
+        $clauses = array_filter(
+            $clauses,
+            function ($clause) {
+                return $clause->reconcilable;
+            }
+        );
+
         if (!$clauses) {
             $cond_id = \mt_rand(0, 100000000);
             return [new Clause([], $cond_id, $cond_id, true)];

@@ -27,7 +27,7 @@ class AlgebraAnalyzer
      *
      * @param  list<Clause>   $formula_1
      * @param  list<Clause>   $formula_2
-     * @param  array<string, mixed>  $new_assigned_var_ids
+     * @param  array<string, int>  $new_assigned_var_ids
      */
     public static function checkForParadox(
         array $formula_1,

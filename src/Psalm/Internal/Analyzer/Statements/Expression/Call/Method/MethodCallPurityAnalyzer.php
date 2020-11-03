@@ -120,10 +120,7 @@ class MethodCallPurityAnalyzer
             && !$method_storage->mutation_free
             && !$method_pure_compatible
         ) {
-            if (!$method_storage->mutation_free) {
-                $statements_analyzer->getSource()->inferred_has_mutation = true;
-            }
-
+            $statements_analyzer->getSource()->inferred_has_mutation = true;
             $statements_analyzer->getSource()->inferred_impure = true;
         }
 
