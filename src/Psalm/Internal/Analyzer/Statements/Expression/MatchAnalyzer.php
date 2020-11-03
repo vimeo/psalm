@@ -2,6 +2,7 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
+use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Issue\UnhandledMatchCondition;
@@ -154,7 +155,7 @@ class MatchAnalyzer
 
             ExpressionAnalyzer::analyze($statements_analyzer, $all_match_condition, $context);
 
-            $clauses = \Psalm\Type\Algebra::getFormula(
+            $clauses = FormulaGenerator::getFormula(
                 \spl_object_id($all_match_condition),
                 \spl_object_id($all_match_condition),
                 $all_match_condition,
@@ -165,8 +166,8 @@ class MatchAnalyzer
                 false
             );
 
-            $reconcilable_types = \Psalm\Type\Algebra::getTruthsFromFormula(
-                \Psalm\Type\Algebra::negateFormula($clauses)
+            $reconcilable_types = \Psalm\Internal\Algebra::getTruthsFromFormula(
+                \Psalm\Internal\Algebra::negateFormula($clauses)
             );
 
             // if the if has an || in the conditional, we cannot easily reason about it

@@ -264,7 +264,7 @@ class Clause
                     || strpos($type, '(')
                     || strpos($type, 'getclass-')
                 ) {
-                    $impossibility[] = \Psalm\Type\Algebra::negateType($type);
+                    $impossibility[] = \Psalm\Internal\Algebra::negateType($type);
                 }
             }
 

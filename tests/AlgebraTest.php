@@ -3,11 +3,12 @@ namespace Psalm\Tests;
 
 use PhpParser;
 use Psalm\Context;
+use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Algebra;
 use Psalm\Internal\Clause;
 use Psalm\Internal\Provider\StatementsProvider;
-use Psalm\Type\Algebra;
 
 class AlgebraTest extends TestCase
 {
@@ -73,7 +74,7 @@ class AlgebraTest extends TestCase
         $file_analyzer->context = new Context();
         $statements_analyzer = new StatementsAnalyzer($file_analyzer, new \Psalm\Internal\Provider\NodeDataProvider());
 
-        $dnf_clauses = Algebra::getFormula(
+        $dnf_clauses = FormulaGenerator::getFormula(
             \spl_object_id($dnf_stmt->expr),
             \spl_object_id($dnf_stmt->expr),
             $dnf_stmt->expr,

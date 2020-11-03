@@ -13,6 +13,7 @@ use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\DataFlow\TaintSource;
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -38,7 +39,7 @@ use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TString;
-use Psalm\Type\Algebra;
+use Psalm\Internal\Algebra;
 use Psalm\Type\Reconciler;
 use function count;
 use function in_array;
@@ -835,7 +836,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
     ) : void {
         $first_arg_value_id = \spl_object_id($first_arg->value);
 
-        $assert_clauses = \Psalm\Type\Algebra::getFormula(
+        $assert_clauses = FormulaGenerator::getFormula(
             $first_arg_value_id,
             $first_arg_value_id,
             $first_arg->value,

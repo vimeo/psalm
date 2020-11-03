@@ -2,6 +2,7 @@
 namespace Psalm\Internal\Analyzer\Statements\Block;
 
 use PhpParser;
+use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -12,7 +13,7 @@ use Psalm\Context;
 use Psalm\IssueBuffer;
 use Psalm\Internal\Scope\LoopScope;
 use Psalm\Type;
-use Psalm\Type\Algebra;
+use Psalm\Internal\Algebra;
 use Psalm\Type\Reconciler;
 use function array_merge;
 use function array_keys;
@@ -69,7 +70,7 @@ class LoopAnalyzer
             foreach ($pre_conditions as $i => $pre_condition) {
                 $pre_condition_id = \spl_object_id($pre_condition);
 
-                $pre_condition_clauses[$i] = Algebra::getFormula(
+                $pre_condition_clauses[$i] = FormulaGenerator::getFormula(
                     $pre_condition_id,
                     $pre_condition_id,
                     $pre_condition,

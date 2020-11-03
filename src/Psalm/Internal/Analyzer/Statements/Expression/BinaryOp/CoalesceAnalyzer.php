@@ -2,6 +2,7 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression\BinaryOp;
 
 use PhpParser;
+use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -9,7 +10,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\IssueBuffer;
 use Psalm\Type;
-use Psalm\Type\Algebra;
+use Psalm\Internal\Algebra;
 use Psalm\Type\Reconciler;
 use Psalm\Internal\Type\AssertionReconciler;
 use function array_merge;
@@ -35,7 +36,7 @@ class CoalesceAnalyzer
 
         $stmt_id = \spl_object_id($stmt);
 
-        $if_clauses = Algebra::getFormula(
+        $if_clauses = FormulaGenerator::getFormula(
             $stmt_id,
             $stmt_id,
             $stmt,

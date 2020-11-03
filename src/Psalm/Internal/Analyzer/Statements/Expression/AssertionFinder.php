@@ -205,7 +205,7 @@ class AssertionFinder
                 return [];
             }
 
-            $if_types = \Psalm\Type\Algebra::negateTypes($expr_assertions);
+            $if_types = \Psalm\Internal\Algebra::negateTypes($expr_assertions);
 
             return $if_types ? [$if_types] : [];
         }
@@ -834,7 +834,7 @@ class AssertionFinder
                         $notif_types = $notif_types[0];
 
                         if (count($notif_types) === 1) {
-                            $if_types = \Psalm\Type\Algebra::negateTypes($notif_types);
+                            $if_types = \Psalm\Internal\Algebra::negateTypes($notif_types);
                         }
                     }
                 }
@@ -1399,7 +1399,7 @@ class AssertionFinder
                     $notif_types = $notif_types[0];
 
                     if (count($notif_types) === 1) {
-                        $if_types = \Psalm\Type\Algebra::negateTypes($notif_types);
+                        $if_types = \Psalm\Internal\Algebra::negateTypes($notif_types);
                     }
                 }
             }
@@ -1509,7 +1509,7 @@ class AssertionFinder
                         $notif_types = $notif_types[0];
 
                         if (count($notif_types) === 1) {
-                            $if_types = \Psalm\Type\Algebra::negateTypes($notif_types);
+                            $if_types = \Psalm\Internal\Algebra::negateTypes($notif_types);
                         }
                     }
                 }
@@ -2278,7 +2278,7 @@ class AssertionFinder
                             }
 
                             if ($negate) {
-                                $if_types = \Psalm\Type\Algebra::negateTypes([
+                                $if_types = \Psalm\Internal\Algebra::negateTypes([
                                     $first_var_name => [$literal_assertions]
                                 ]);
                             } else {

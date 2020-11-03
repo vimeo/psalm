@@ -2,13 +2,14 @@
 namespace Psalm\Internal\Analyzer\Statements\Block;
 
 use PhpParser;
+use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Context;
 use Psalm\Internal\Scope\LoopScope;
 use Psalm\Type;
-use Psalm\Type\Algebra;
+use Psalm\Internal\Algebra;
 use function in_array;
 use function array_values;
 use function array_filter;
@@ -51,7 +52,7 @@ class DoAnalyzer
 
         $cond_id = \spl_object_id($stmt->cond);
 
-        $while_clauses = Algebra::getFormula(
+        $while_clauses = FormulaGenerator::getFormula(
             $cond_id,
             $cond_id,
             $stmt->cond,

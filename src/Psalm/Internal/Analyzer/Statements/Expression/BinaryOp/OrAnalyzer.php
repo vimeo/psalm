@@ -2,6 +2,7 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression\BinaryOp;
 
 use PhpParser;
+use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -9,7 +10,7 @@ use Psalm\Internal\Analyzer\Statements\Block\IfAnalyzer;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Type;
-use Psalm\Type\Algebra;
+use Psalm\Internal\Algebra;
 use Psalm\Type\Reconciler;
 use Psalm\Internal\Type\AssertionReconciler;
 use function array_merge;
@@ -118,7 +119,7 @@ class OrAnalyzer
 
         $left_cond_id = \spl_object_id($stmt->left);
 
-        $left_clauses = Algebra::getFormula(
+        $left_clauses = FormulaGenerator::getFormula(
             $left_cond_id,
             $left_cond_id,
             $stmt->left,
@@ -131,7 +132,7 @@ class OrAnalyzer
             $negated_left_clauses = Algebra::negateFormula($left_clauses);
         } catch (\Psalm\Exception\ComplicatedExpressionException $e) {
             try {
-                $negated_left_clauses = Algebra::getFormula(
+                $negated_left_clauses = FormulaGenerator::getFormula(
                     $left_cond_id,
                     $left_cond_id,
                     new PhpParser\Node\Expr\BooleanNot($stmt->left),
@@ -258,7 +259,7 @@ class OrAnalyzer
 
         $right_cond_id = \spl_object_id($stmt->right);
 
-        $right_clauses = Algebra::getFormula(
+        $right_clauses = FormulaGenerator::getFormula(
             $right_cond_id,
             $right_cond_id,
             $stmt->right,

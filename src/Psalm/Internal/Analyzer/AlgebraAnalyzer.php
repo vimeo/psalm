@@ -7,7 +7,7 @@ use Psalm\CodeLocation;
 use Psalm\Issue\ParadoxicalCondition;
 use Psalm\Issue\RedundantCondition;
 use Psalm\IssueBuffer;
-use Psalm\Type\Algebra;
+use Psalm\Internal\Algebra;
 use function array_intersect_key;
 use function count;
 use function array_unique;

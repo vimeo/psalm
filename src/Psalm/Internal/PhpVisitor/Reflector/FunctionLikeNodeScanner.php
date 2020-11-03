@@ -13,6 +13,7 @@ use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\IncorrectDocblockException;
+use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
@@ -460,7 +461,7 @@ class FunctionLikeNodeScanner
 
                         $cond_id = \spl_object_id($function_stmt->cond);
 
-                        $if_clauses = \Psalm\Type\Algebra::getFormula(
+                        $if_clauses = FormulaGenerator::getFormula(
                             $cond_id,
                             $cond_id,
                             $function_stmt->cond,
@@ -469,9 +470,9 @@ class FunctionLikeNodeScanner
                             null
                         );
 
-                        $negated_formula = \Psalm\Type\Algebra::negateFormula($if_clauses);
+                        $negated_formula = \Psalm\Internal\Algebra::negateFormula($if_clauses);
 
-                        $rules = \Psalm\Type\Algebra::getTruthsFromFormula($negated_formula);
+                        $rules = \Psalm\Internal\Algebra::getTruthsFromFormula($negated_formula);
 
                         if (!$rules) {
                             $var_assertions = [];

@@ -3,6 +3,7 @@ namespace Psalm\Internal\Analyzer\Statements\Block;
 
 use PhpParser;
 use Psalm\Codebase;
+use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\AlgebraAnalyzer;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -20,7 +21,7 @@ use Psalm\IssueBuffer;
 use Psalm\Internal\Scope\IfScope;
 use Psalm\Internal\Scope\IfConditionalScope;
 use Psalm\Type;
-use Psalm\Type\Algebra;
+use Psalm\Internal\Algebra;
 use Psalm\Type\Reconciler;
 use function array_merge;
 use function array_map;
@@ -128,7 +129,7 @@ class IfAnalyzer
 
         $cond_object_id = \spl_object_id($stmt->cond);
 
-        $if_clauses = Algebra::getFormula(
+        $if_clauses = FormulaGenerator::getFormula(
             $cond_object_id,
             $cond_object_id,
             $stmt->cond,
@@ -213,7 +214,7 @@ class IfAnalyzer
             $if_scope->negated_clauses = Algebra::negateFormula($if_clauses);
         } catch (\Psalm\Exception\ComplicatedExpressionException $e) {
             try {
-                $if_scope->negated_clauses = Algebra::getFormula(
+                $if_scope->negated_clauses = FormulaGenerator::getFormula(
                     $cond_object_id,
                     $cond_object_id,
                     new PhpParser\Node\Expr\BooleanNot($stmt->cond),
@@ -1083,7 +1084,7 @@ class IfAnalyzer
 
         $elseif_cond_id = \spl_object_id($elseif->cond);
 
-        $elseif_clauses = Algebra::getFormula(
+        $elseif_clauses = FormulaGenerator::getFormula(
             $elseif_cond_id,
             $elseif_cond_id,
             $elseif->cond,

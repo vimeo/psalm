@@ -2,6 +2,7 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
+use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\AlgebraAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use \Psalm\Internal\Analyzer\Statements\Block\IfAnalyzer;
@@ -9,7 +10,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Type;
-use Psalm\Type\Algebra;
+use Psalm\Internal\Algebra;
 use Psalm\Type\Reconciler;
 use Psalm\Internal\Type\AssertionReconciler;
 use function array_merge;
@@ -56,7 +57,7 @@ class TernaryAnalyzer
 
         $cond_id = \spl_object_id($stmt->cond);
 
-        $if_clauses = \Psalm\Type\Algebra::getFormula(
+        $if_clauses = FormulaGenerator::getFormula(
             $cond_id,
             $cond_id,
             $stmt->cond,

@@ -9,7 +9,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Context;
 use Psalm\Internal\Scope\SwitchScope;
 use Psalm\Type;
-use Psalm\Type\Algebra;
+use Psalm\Internal\Algebra;
 use Psalm\Type\Reconciler;
 use function count;
 use function in_array;

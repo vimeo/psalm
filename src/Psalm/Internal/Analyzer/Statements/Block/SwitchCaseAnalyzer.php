@@ -3,6 +3,7 @@ namespace Psalm\Internal\Analyzer\Statements\Block;
 
 use PhpParser;
 use Psalm\Codebase;
+use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\AlgebraAnalyzer;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -15,7 +16,7 @@ use Psalm\IssueBuffer;
 use Psalm\Internal\Scope\CaseScope;
 use Psalm\Internal\Scope\SwitchScope;
 use Psalm\Type;
-use Psalm\Type\Algebra;
+use Psalm\Internal\Algebra;
 use Psalm\Type\Reconciler;
 use function count;
 use function in_array;
@@ -292,7 +293,7 @@ class SwitchCaseAnalyzer
 
         if ($case_equality_expr) {
             $case_equality_expr_id = \spl_object_id($case_equality_expr);
-            $case_clauses = Algebra::getFormula(
+            $case_clauses = FormulaGenerator::getFormula(
                 $case_equality_expr_id,
                 $case_equality_expr_id,
                 $case_equality_expr,
@@ -392,7 +393,7 @@ class SwitchCaseAnalyzer
                 $case_equality_expr_id = \spl_object_id($case_equality_expr);
 
                 try {
-                    $negated_case_clauses = Algebra::getFormula(
+                    $negated_case_clauses = FormulaGenerator::getFormula(
                         $case_equality_expr_id,
                         $case_equality_expr_id,
                         new PhpParser\Node\Expr\BooleanNot($case_equality_expr),

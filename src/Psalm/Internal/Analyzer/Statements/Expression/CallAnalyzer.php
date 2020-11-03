@@ -2,6 +2,7 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
+use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -690,7 +691,7 @@ class CallAnalyzer
                         new PhpParser\Node\Expr\ConstFetch(new PhpParser\Node\Name('true'))
                     );
 
-                    $assert_clauses = \Psalm\Type\Algebra::getFormula(
+                    $assert_clauses = FormulaGenerator::getFormula(
                         \mt_rand(0, 1000000),
                         \mt_rand(0, 1000000),
                         $conditional,
@@ -699,7 +700,7 @@ class CallAnalyzer
                         $statements_analyzer->getCodebase()
                     );
                 } else {
-                    $assert_clauses = \Psalm\Type\Algebra::getFormula(
+                    $assert_clauses = FormulaGenerator::getFormula(
                         \spl_object_id($arg_value),
                         \spl_object_id($arg_value),
                         $arg_value,
@@ -709,18 +710,18 @@ class CallAnalyzer
                     );
                 }
 
-                $simplified_clauses = \Psalm\Type\Algebra::simplifyCNF(
+                $simplified_clauses = \Psalm\Internal\Algebra::simplifyCNF(
                     array_merge($context->clauses, $assert_clauses)
                 );
 
-                $assert_type_assertions = \Psalm\Type\Algebra::getTruthsFromFormula(
+                $assert_type_assertions = \Psalm\Internal\Algebra::getTruthsFromFormula(
                     $simplified_clauses
                 );
 
                 $type_assertions = array_merge($type_assertions, $assert_type_assertions);
             } elseif ($arg_value && $assertion->rule === [['falsy']]) {
-                $assert_clauses = \Psalm\Type\Algebra::negateFormula(
-                    \Psalm\Type\Algebra::getFormula(
+                $assert_clauses = \Psalm\Internal\Algebra::negateFormula(
+                    FormulaGenerator::getFormula(
                         \spl_object_id($arg_value),
                         \spl_object_id($arg_value),
                         $arg_value,
@@ -730,11 +731,11 @@ class CallAnalyzer
                     )
                 );
 
-                $simplified_clauses = \Psalm\Type\Algebra::simplifyCNF(
+                $simplified_clauses = \Psalm\Internal\Algebra::simplifyCNF(
                     array_merge($context->clauses, $assert_clauses)
                 );
 
-                $assert_type_assertions = \Psalm\Type\Algebra::getTruthsFromFormula(
+                $assert_type_assertions = \Psalm\Internal\Algebra::getTruthsFromFormula(
                     $simplified_clauses
                 );
 
