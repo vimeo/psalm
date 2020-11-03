@@ -137,6 +137,10 @@ class Clause
              * @return string
              */
             function ($var_id, $values): string {
+                if ($var_id[0] === '*') {
+                    $var_id = '<expr>';
+                }
+
                 $var_id_clauses = array_map(
                     /**
                      * @param string $value
