@@ -62,6 +62,7 @@ class TypeTokenizer
         'no-return' => true,
         'never-return' => true,
         'never-returns' => true,
+        'never' => true,
         'array-key' => true,
         'key-of' => true,
         'value-of' => true,

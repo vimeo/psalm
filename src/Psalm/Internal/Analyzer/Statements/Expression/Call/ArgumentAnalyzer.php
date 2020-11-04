@@ -137,7 +137,7 @@ class ArgumentAnalyzer
             $gt_count = 0;
 
             foreach ($values as $value) {
-                $ord = ord($value);
+                $ord = \ord($value);
 
                 if ($ord > $prev_ord) {
                     $gt_count++;
