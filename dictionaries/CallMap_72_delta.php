@@ -35,7 +35,7 @@ return [
     'ldap_exop_whoami' => ['string', 'link'=>'resource'],
     'ldap_parse_exop' => ['bool', 'link'=>'resource', 'result'=>'resource', 'retdata='=>'string', 'retoid='=>'string'],
     'mb_chr' => ['string', 'cp'=>'int', 'encoding='=>'string'],
-    'mb_ord' => ['int', 'str'=>'string', 'enc='=>'string'],
+    'mb_ord' => ['int|false', 'str'=>'string', 'enc='=>'string'],
     'mb_scrub' => ['string', 'str'=>'string', 'enc='=>'string'],
     'oci_register_taf_callback' => ['bool', 'connection'=>'resource', 'callback='=>'callable'],
     'oci_unregister_taf_callback' => ['bool', 'connection'=>'resource'],

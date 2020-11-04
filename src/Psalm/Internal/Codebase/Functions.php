@@ -6,6 +6,7 @@ use function explode;
 use function implode;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Internal\Provider\FunctionExistenceProvider;
 use Psalm\Internal\Provider\FunctionParamsProvider;
@@ -419,7 +420,7 @@ class Functions
             }
         }
 
-        $function_callable = \Psalm\Internal\Codebase\InternalCallMapHandler::getCallableFromCallMapById(
+        $function_callable = InternalCallMapHandler::getCallableFromCallMapById(
             $codebase,
             $function_id,
             $args ?: [],
