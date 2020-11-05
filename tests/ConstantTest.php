@@ -1198,6 +1198,21 @@ class ConstantTest extends TestCase
                     ',
                 'error_message' => 'InvalidArgument'
             ],
+            'correctMessage' => [
+                '<?php
+                    class S {
+                        public const ZERO = 0;
+                        public const ONE  = 1;
+                    }
+
+                    /**
+                     * @param S::* $s
+                     */
+                    function foo(int $s): string {
+                        return [1 => "a", 2 => "b"][$s];
+                    }',
+                'error_message' => 'offset value of 1|0'
+            ],
         ];
     }
 }

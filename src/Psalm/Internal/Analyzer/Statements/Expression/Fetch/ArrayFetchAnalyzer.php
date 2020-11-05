@@ -987,15 +987,27 @@ class ArrayFetchAnalyzer
                                 if ($type->sealed || !$context->inside_isset) {
                                     $object_like_keys = array_keys($type->properties);
 
-                                    if (count($object_like_keys) === 1) {
-                                        $expected_keys_string = '\'' . $object_like_keys[0] . '\'';
-                                    } else {
-                                        $last_key = array_pop($object_like_keys);
-                                        $expected_keys_string = '\'' . implode('\', \'', $object_like_keys) .
-                                            '\' or \'' . $last_key . '\'';
+                                    $last_key = array_pop($object_like_keys);
+
+                                    $key_string = '';
+
+                                    if ($object_like_keys) {
+                                        $formatted_keys = implode(
+                                            ', ',
+                                            array_map(
+                                                function($key) {
+                                                    return is_int($key) ? $key : '\'' . $key . '\'';
+                                                },
+                                                $object_like_keys
+                                            )
+                                        );
+
+                                        $key_string = $formatted_keys . ' or ';
                                     }
 
-                                    $expected_offset_types[] = $expected_keys_string;
+                                    $key_string .= is_int($last_key) ? $last_key : '\'' . $last_key . '\'';
+
+                                    $expected_offset_types[] = $key_string;
                                 }
 
                                 $array_access_type = Type::getMixed();
@@ -1447,8 +1459,7 @@ class ArrayFetchAnalyzer
                 $used_offset = 'using a ' . $offset_type->getId() . ' offset';
 
                 if ($key_values) {
-                    $used_offset = 'using offset value of '
-                        . (is_int($key_values[0]) ? $key_values[0] : '\'' . $key_values[0] . '\'');
+                    $used_offset = 'using offset value of ' . implode('|', $key_values);
                 }
 
                 if ($has_valid_offset && $context->inside_isset) {
