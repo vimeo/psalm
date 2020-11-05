@@ -23,8 +23,17 @@ class DocblockParser
         // Strip off comments.
         $docblock = trim($docblock);
 
-        $docblock = preg_replace('@^/\*\*@', '', $docblock);
-        $docblock = preg_replace('@\*\*?/$@', '', $docblock);
+        if (substr($docblock, 0, 3) === '/**') {
+            $docblock = substr($docblock, 3);
+        }
+
+        if (substr($docblock, -2) === '*/') {
+            $docblock = substr($docblock, 0, -2);
+
+            if (substr($docblock, -1) === '*') {
+                $docblock = substr($docblock, 0, -1);
+            }
+        }
 
         // Normalize multi-line @specials.
         $lines = explode("\n", $docblock);
