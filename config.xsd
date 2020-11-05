@@ -76,6 +76,7 @@
         <xs:attribute name="allowInternalNamedArgumentCalls" type="xs:boolean" default="true" />
         <xs:attribute name="allowNamedArgumentCalls" type="xs:boolean" default="true" />
         <xs:attribute name="reportInfo" type="xs:boolean" default="true" />
+        <xs:attribute name="restrictReturnTypes" type="xs:boolean" default="false" />
     </xs:complexType>
 
     <xs:complexType name="ProjectFilesType">

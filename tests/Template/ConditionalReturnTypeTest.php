@@ -597,7 +597,6 @@ class ConditionalReturnTypeTest extends TestCase
                      * @template T of mixed|false|null
                      * @param T $i
                      * @return (T is false ? no-return : T is null ? no-return : T)
-                     * @psalm-suppress LessSpecificReturnType
                      */
                     function orThrow($i) {
                         if ($i === false || $i === null) {

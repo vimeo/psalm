@@ -434,6 +434,11 @@ class Config
     public $resolve_from_config_file = true;
 
     /**
+     * @var bool
+     */
+    public $restrict_return_types = false;
+
+    /**
      * @var string[]
      */
     public $plugin_paths = [];
@@ -835,6 +840,7 @@ class Config
             'allowNamedArgumentCalls' => 'allow_named_arg_calls',
             'findUnusedPsalmSuppress' => 'find_unused_psalm_suppress',
             'reportInfo' => 'report_info',
+            'restrictReturnTypes' => 'restrict_return_types',
         ];
 
         foreach ($booleanAttributes as $xmlName => $internalName) {
