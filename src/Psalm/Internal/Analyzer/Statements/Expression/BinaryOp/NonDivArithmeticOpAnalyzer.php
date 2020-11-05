@@ -315,6 +315,14 @@ class NonDivArithmeticOpAnalyzer
                 $calculated_type = Type::getInt(false, $left_type_part->value | $right_type_part->value);
             } elseif ($parent instanceof PhpParser\Node\Expr\BinaryOp\BitwiseAnd) {
                 $calculated_type = Type::getInt(false, $left_type_part->value & $right_type_part->value);
+            } elseif ($parent instanceof PhpParser\Node\Expr\BinaryOp\Div) {
+                $value = $left_type_part->value / $right_type_part->value;
+
+                if (is_int($value)) {
+                    $calculated_type = Type::getInt(false, $value);
+                } else {
+                    $calculated_type = Type::getFloat($value);
+                }
             }
 
             if ($calculated_type) {
