@@ -36,6 +36,7 @@ use function array_diff_key;
 use function array_values;
 use function preg_match;
 use function strtolower;
+use function is_int;
 
 /**
  * @internal

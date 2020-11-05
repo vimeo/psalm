@@ -40,6 +40,11 @@ use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
 use function strtolower;
 use function trim;
+use function str_replace;
+use function preg_split;
+use const PREG_SPLIT_DELIM_CAPTURE;
+use const PREG_SPLIT_NO_EMPTY;
+use function array_shift;
 
 class ClassLikeNodeScanner
 {
