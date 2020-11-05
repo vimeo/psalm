@@ -124,8 +124,6 @@ class NonComparisonOpAnalyzer
 
             if (!$result_type) {
                 $result_type = new Type\Union([new Type\Atomic\TInt(), new Type\Atomic\TFloat()]);
-            } elseif ($result_type->hasInt()) {
-                $result_type->addType(new TFloat);
             }
 
             $statements_analyzer->node_data->setType($stmt, $result_type);
