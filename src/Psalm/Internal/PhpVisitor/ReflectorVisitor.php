@@ -132,7 +132,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                     : null;
 
                 try {
-                    $type_aliases = CommentAnalyzer::getTypeAliasesFromComment(
+                    $type_aliases = Reflector\ClassLikeNodeScanner::getTypeAliasesFromComment(
                         $comment,
                         $this->aliases,
                         $this->type_aliases,

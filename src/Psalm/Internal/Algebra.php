@@ -10,12 +10,7 @@ use function array_unique;
 use function array_values;
 use function count;
 use function in_array;
-use PhpParser;
-use Psalm\Codebase;
 use Psalm\Exception\ComplicatedExpressionException;
-use Psalm\FileSource;
-use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
-use function strlen;
 use function substr;
 
 class Algebra

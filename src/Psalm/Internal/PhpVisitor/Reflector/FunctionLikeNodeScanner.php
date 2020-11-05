@@ -15,7 +15,6 @@ use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\IncorrectDocblockException;
 use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
-use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
 use Psalm\Internal\Scanner\FileScanner;
@@ -593,7 +592,7 @@ class FunctionLikeNodeScanner
 
         if ($doc_comment) {
             try {
-                $docblock_info = CommentAnalyzer::extractFunctionDocblockInfo($doc_comment);
+                $docblock_info = FunctionLikeDocblockParser::parse($doc_comment);
             } catch (IncorrectDocblockException $e) {
                 $storage->docblock_issues[] = new MissingDocblockType(
                     $e->getMessage() . ' in docblock for ' . $cased_function_id,
@@ -623,7 +622,7 @@ class FunctionLikeNodeScanner
                     }
                 }
 
-                FunctionLike\DocblockScanner::addDocblockInfo(
+                FunctionLikeDocblockScanner::addDocblockInfo(
                     $this->codebase,
                     $this->file_scanner,
                     $this->file_storage,

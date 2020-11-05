@@ -6,7 +6,6 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOpAnalyzer;
 use Psalm\Context;
 use Psalm\Type;
-use Psalm\Type\Atomic\TFloat;
 
 /**
  * @internal

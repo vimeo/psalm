@@ -1,10 +1,6 @@
 <?php
 namespace Psalm\Internal\PhpVisitor\Reflector;
 
-use function class_exists;
-use function function_exists;
-use function implode;
-use function interface_exists;
 use PhpParser;
 use Psalm\Codebase;
 use Psalm\CodeLocation;

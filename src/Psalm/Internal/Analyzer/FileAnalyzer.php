@@ -11,7 +11,6 @@ use Psalm\Internal\Type\TypeAlias\LinkableTypeAlias;
 use Psalm\Issue\InvalidTypeImport;
 use Psalm\Issue\UncaughtThrowInGlobalScope;
 use Psalm\IssueBuffer;
-use Psalm\StatementsSource;
 use Psalm\Type;
 use function implode;
 use function strtolower;

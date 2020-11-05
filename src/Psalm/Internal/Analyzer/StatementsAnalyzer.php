@@ -38,7 +38,6 @@ use Psalm\Issue\UnevaluatedCode;
 use Psalm\Issue\UnrecognizedStatement;
 use Psalm\Issue\UnusedVariable;
 use Psalm\IssueBuffer;
-use Psalm\StatementsSource;
 use Psalm\Type;
 use function strtolower;
 use function fwrite;

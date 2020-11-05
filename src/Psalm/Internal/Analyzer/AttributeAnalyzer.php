@@ -2,7 +2,6 @@
 namespace Psalm\Internal\Analyzer;
 
 use PhpParser;
-use Psalm\Internal\Analyzer\SourceAnalyzer;
 use Psalm\Storage\AttributeStorage;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Issue\InvalidAttribute;

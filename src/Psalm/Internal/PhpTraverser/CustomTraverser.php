@@ -6,7 +6,6 @@ use function array_pop;
 use function array_splice;
 use function gettype;
 use PhpParser\Node;
-use PhpParser\NodeTraverserInterface;
 
 /**
  * @internal

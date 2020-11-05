@@ -16,8 +16,6 @@ use Psalm\Internal\Type\TypeCombination;
 use Psalm\StatementsSource;
 use Psalm\Storage\FileStorage;
 use Psalm\Type;
-use Psalm\Type\Atomic\TCallable;
-use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIterable;

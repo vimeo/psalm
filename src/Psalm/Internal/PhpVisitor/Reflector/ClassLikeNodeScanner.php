@@ -272,7 +272,7 @@ class ClassLikeNodeScanner
         if ($doc_comment) {
             $docblock_info = null;
             try {
-                $docblock_info = CommentAnalyzer::extractClassLikeDocblockInfo(
+                $docblock_info = ClassLikeDocblockParser::parse(
                     $node,
                     $doc_comment,
                     $this->aliases
@@ -648,7 +648,7 @@ class ClassLikeNodeScanner
             }
 
             try {
-                $type_aliases = CommentAnalyzer::getTypeAliasesFromComment(
+                $type_aliases = self::getTypeAliasesFromComment(
                     $comment,
                     $this->aliases,
                     $this->type_aliases,
@@ -1466,5 +1466,110 @@ class ClassLikeNodeScanner
                 }
             }
         }
+    }
+
+    /**
+     * @param  array<string, TypeAlias> $type_aliases
+     *
+     * @return array<string, TypeAlias\InlineTypeAlias>
+     *
+     * @throws DocblockParseException if there was a problem parsing the docblock
+     */
+    public static function getTypeAliasesFromComment(
+        PhpParser\Comment\Doc $comment,
+        Aliases $aliases,
+        ?array $type_aliases,
+        ?string $self_fqcln
+    ): array {
+        $parsed_docblock = DocComment::parsePreservingLength($comment);
+
+        if (!isset($parsed_docblock->tags['psalm-type'])) {
+            return [];
+        }
+
+        return self::getTypeAliasesFromCommentLines(
+            $parsed_docblock->tags['psalm-type'],
+            $aliases,
+            $type_aliases,
+            $self_fqcln
+        );
+    }
+
+    /**
+     * @param  array<string>    $type_alias_comment_lines
+     * @param  array<string, TypeAlias> $type_aliases
+     *
+     * @return array<string, TypeAlias\InlineTypeAlias>
+     *
+     * @throws DocblockParseException if there was a problem parsing the docblock
+     */
+    private static function getTypeAliasesFromCommentLines(
+        array $type_alias_comment_lines,
+        Aliases $aliases,
+        ?array $type_aliases,
+        ?string $self_fqcln
+    ): array {
+        $type_alias_tokens = [];
+
+        foreach ($type_alias_comment_lines as $var_line) {
+            $var_line = trim($var_line);
+
+            if (!$var_line) {
+                continue;
+            }
+
+            $var_line = preg_replace('/[ \t]+/', ' ', preg_replace('@^[ \t]*\*@m', '', $var_line));
+            $var_line = preg_replace('/,\n\s+\}/', '}', $var_line);
+            $var_line = str_replace("\n", '', $var_line);
+
+            $var_line_parts = preg_split('/( |=)/', $var_line, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);
+
+            if (!$var_line_parts) {
+                continue;
+            }
+
+            $type_alias = array_shift($var_line_parts);
+
+            if (!isset($var_line_parts[0])) {
+                continue;
+            }
+
+            if ($var_line_parts[0] === ' ') {
+                array_shift($var_line_parts);
+            }
+
+            if ($var_line_parts[0] === '=') {
+                array_shift($var_line_parts);
+            }
+
+            if (!isset($var_line_parts[0])) {
+                continue;
+            }
+
+            if ($var_line_parts[0] === ' ') {
+                array_shift($var_line_parts);
+            }
+
+            $type_string = str_replace("\n", '', implode('', $var_line_parts));
+
+            $type_string = preg_replace('/>[^>^\}]*$/', '>', $type_string);
+            $type_string = preg_replace('/\}[^>^\}]*$/', '}', $type_string);
+
+            try {
+                $type_tokens = TypeTokenizer::getFullyQualifiedTokens(
+                    $type_string,
+                    $aliases,
+                    null,
+                    $type_alias_tokens + $type_aliases,
+                    $self_fqcln
+                );
+            } catch (TypeParseTreeException $e) {
+                throw new DocblockParseException($type_string . ' is not a valid type');
+            }
+
+            $type_alias_tokens[$type_alias] = new TypeAlias\InlineTypeAlias($type_tokens);
+        }
+
+        return $type_alias_tokens;
     }
 }

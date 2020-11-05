@@ -20,7 +20,6 @@ use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Progress\Progress;
-use Psalm\Internal\Codebase\TaintFlowGraph;
 use function realpath;
 use function strtolower;
 use function substr;

@@ -24,7 +24,6 @@ use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\IssueBuffer;
 use Psalm\Progress\Progress;
-use Psalm\Internal\Codebase\TaintFlowGraph;
 use function strpos;
 use function substr;
 use function usort;

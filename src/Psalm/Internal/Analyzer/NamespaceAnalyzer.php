@@ -4,7 +4,6 @@ namespace Psalm\Internal\Analyzer;
 use PhpParser;
 use PhpParser\Node\Stmt\Namespace_;
 use Psalm\Context;
-use Psalm\StatementsSource;
 use Psalm\Type;
 use function implode;
 use function strtolower;

@@ -2,48 +2,24 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression\Fetch;
 
 use PhpParser;
-use Psalm\Config;
-use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
-use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
-use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
-use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Type\TemplateResult;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\Issue\DeprecatedProperty;
 use Psalm\Issue\ImpurePropertyFetch;
 use Psalm\Issue\InvalidPropertyFetch;
-use Psalm\Issue\InternalProperty;
-use Psalm\Issue\MissingPropertyType;
 use Psalm\Issue\MixedPropertyFetch;
-use Psalm\Issue\NoInterfaceProperties;
 use Psalm\Issue\NullPropertyFetch;
 use Psalm\Issue\PossiblyInvalidPropertyFetch;
 use Psalm\Issue\PossiblyNullPropertyFetch;
-use Psalm\Issue\UndefinedClass;
-use Psalm\Issue\UndefinedDocblockClass;
-use Psalm\Issue\UndefinedMagicPropertyFetch;
-use Psalm\Issue\UndefinedPropertyFetch;
-use Psalm\Issue\UndefinedThisPropertyFetch;
 use Psalm\Issue\UninitializedProperty;
 use Psalm\IssueBuffer;
 use Psalm\Type;
-use Psalm\Storage\ClassLikeStorage;
-use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
-use Psalm\Type\Atomic\TObject;
-use Psalm\Type\Atomic\TObjectWithProperties;
 use function strtolower;
-use function array_values;
-use function in_array;
-use function array_keys;
-use Psalm\Internal\DataFlow\DataFlowNode;
-use Psalm\Internal\Codebase\TaintFlowGraph;
 
 /**
  * @internal

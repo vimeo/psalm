@@ -1,5 +1,5 @@
 <?php
-namespace Psalm\Internal\PhpVisitor\Reflector\FunctionLike;
+namespace Psalm\Internal\PhpVisitor\Reflector;
 
 use function array_filter;
 use function array_merge;
@@ -32,7 +32,7 @@ use function trim;
 use function preg_split;
 use function strlen;
 
-class DocblockScanner
+class FunctionLikeDocblockScanner
 {
     /**
      * @param array<string, non-empty-array<string, array{Type\Union}>> $existing_function_template_types
