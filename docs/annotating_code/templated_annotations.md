@@ -128,10 +128,14 @@ function instantiator(string $class) {
     return new $class();
 }
 
-/** @psalm-consistent-constructor */
-class Foo {}
+class Foo {
+    public final function __construct() {}
+}
 
-$_a = instantiator(Foo::class); // Psalm knows the result is an object of type Foo
+class FooChild extends Foo {}
+
+$r = instantiator(FooChild::class);
+// Psalm knows $r is an object of type FooChild
 ```
 
 ## Template inheritance
