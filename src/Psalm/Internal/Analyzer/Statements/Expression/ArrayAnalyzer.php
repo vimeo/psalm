@@ -106,7 +106,12 @@ class ArrayAnalyzer
                     } else {
                         $can_create_objectlike = false;
 
-                        if ($unpacked_atomic_type instanceof Type\Atomic\TArray) {
+                        if ($unpacked_atomic_type instanceof Type\Atomic\TArray
+                            || $unpacked_atomic_type instanceof Type\Atomic\TIterable
+                            || (
+                                $unpacked_atomic_type instanceof Type\Atomic\TGenericObject
+                                && $unpacked_atomic_type->hasTraversableInterface($codebase)
+                        )) {
                             if ($unpacked_atomic_type->type_params[0]->hasString()) {
                                 if (IssueBuffer::accepts(
                                     new DuplicateArrayKey(
