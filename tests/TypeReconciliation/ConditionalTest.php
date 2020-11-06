@@ -524,19 +524,6 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                         print_field($array);
                     }',
             ],
-            'numericOrStringPropertySet' => [
-                '<?php
-                    /**
-                     * @param string|null $b
-                     */
-                    function foo($b = null) : void {
-                        if (is_numeric($b) || is_string($b)) {
-                            takesNullableString($b);
-                        }
-                    }
-
-                    function takesNullableString(?string $s) : void {}',
-            ],
             'falsyScalar' => [
                 '<?php
                     /**
@@ -1487,28 +1474,6 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                         if ($c && $c["a"] !== "b") {}
                     }',
             ],
-            'assertOnRemainderOfArray' => [
-                '<?php
-                    /**
-                     * @psalm-suppress MixedInferredReturnType
-                     * @psalm-suppress MixedReturnStatement
-                     */
-                    function foo(string $file_name) : int {
-                        while ($data = getData()) {
-                            if (is_numeric($data[0])) {
-                                for ($i = 1; $i < count($data); $i++) {
-                                    return $data[$i];
-                                }
-                            }
-                        }
-
-                        return 5;
-                    }
-
-                    function getData() : ?array {
-                        return rand(0, 1) ? ["a", "b", "c"] : null;
-                    }',
-            ],
             'notEmptyCheck' => [
                 '<?php
                     /**
@@ -1855,139 +1820,6 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                         return false;
                     }'
             ],
-            'assertVarRedefinedInIfWithAnd' => [
-                '<?php
-                    class O {}
-
-                    /**
-                     * @param mixed $value
-                     */
-                    function exampleWithAnd($value): O {
-                        if (is_string($value) && ($value = rand(0, 1) ? new O : null) !== null) {
-                            return $value;
-                        }
-
-                        return new O();
-                    }'
-            ],
-            'assertVarRedefinedInIfWithAndAndMethodCall' => [
-                '<?php
-                    class O {
-                        public function foo() : bool { return true; }
-                    }
-
-                    /**
-                     * @param mixed $value
-                     */
-                    function anotherExampleWithAnd($value): O {
-                        if (is_string($value) && (($value = rand(0, 1) ? new O : null) !== null) && $value->foo()) {
-                            return $value;
-                        }
-
-                        return new O();
-                    }'
-            ],
-            'assertVarRedefinedInIfWithOr' => [
-                '<?php
-                    class O {}
-
-                    /**
-                     * @param mixed $value
-                     */
-                    function exampleWithOr($value): O {
-                        if (!is_string($value) || ($value = rand(0, 1) ? new O : null) === null) {
-                            return new O();
-                        }
-
-                        return $value;
-                    }'
-            ],
-            'assertVarRedefinedInIfWithOrAndConversion' => [
-                '<?php
-                    interface Convertor {
-                        function maybeConvert(string $value): ?SomeObject;
-                    }
-
-                    interface SomeObject
-                    {
-                        function isValid(): bool;
-                    }
-
-                    /**
-                     * @param mixed $value
-                     */
-                    function exampleWithOr(Convertor $convertor, $value): SomeObject
-                    {
-                        if (
-                          !\is_string($value)
-                          || ($value = $convertor->maybeConvert($value)) === null
-                          || !$value->isValid()
-                        ) {
-                            throw new Exception();
-                        }
-
-                        return $value;
-                    }'
-            ],
-            'assertVarRedefinedInIfWithExtraIf' => [
-                '<?php
-                    class O {}
-
-                    /**
-                     * @param mixed $value
-                     */
-                    function exampleWithOr($value): O {
-                        if (!is_string($value)) {
-                            return new O();
-                        }
-
-                        if (($value = rand(0, 1) ? new O : null) === null) {
-                            return new O();
-                        }
-
-                        return $value;
-                    }'
-            ],
-            'SKIPPED-assertVarRedefinedInOpWithAnd' => [
-                '<?php
-                    class O {
-                        public function foo() : bool { return true; }
-                    }
-
-                    /** @var mixed */
-                    $value = $_GET["foo"];
-
-                    $a = is_string($value) && (($value = rand(0, 1) ? new O : null) !== null) && $value->foo();',
-                [
-                    '$a' => 'bool',
-                ]
-            ],
-            'assertVarRedefinedInOpWithOr' => [
-                '<?php
-                    class O {
-                        public function foo() : bool { return true; }
-                    }
-
-                    /** @var mixed */
-                    $value = $_GET["foo"];
-
-                    $a = !is_string($value) || (($value = rand(0, 1) ? new O : null) === null) || $value->foo();',
-                [
-                    '$a' => 'bool',
-                ]
-            ],
-            'assertVarInOrAfterAnd' => [
-                '<?php
-                    class A {}
-                    class B extends A {}
-                    class C extends A {}
-
-                    function takesA(A $a): void {}
-
-                    function foo(?A $a, ?A $b): void {
-                        $c = ($a instanceof B && $b instanceof B) || ($a instanceof C && $b instanceof C);
-                    }'
-            ],
             'assertVarAfterNakedBinaryOp' => [
                 '<?php
                     class A {
@@ -1997,71 +1829,6 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                     function foo(A $a, A $b): void {
                         $c = !$a->b && !$b->b;
                         echo $a->b ? 1 : 0;
-                    }'
-            ],
-            'assertAssertionsWithCreation' => [
-                '<?php
-                    class A {}
-                    class B extends A {}
-                    class C extends A {}
-
-                    function getA(A $a): ?A {
-                        return rand(0, 1) ? $a : null;
-                    }
-
-                    function foo(?A $a, ?A $c): void {
-                        $c = $a && ($b = getA($a)) && $c ? 1 : 0;
-                    }'
-            ],
-            'definedInBothBranchesOfConditional' => [
-                '<?php
-                    class A {
-                        public function foo() : void {}
-                    }
-
-                    function getA(): ?A {
-                        return rand(0, 1) ? new A() : null;
-                    }
-
-                    function foo(): void {
-                        $a = null;
-                        if (($a = getA()) || ($a = getA())) {
-                            $a->foo();
-                        }
-                    }'
-            ],
-            'definedInConditionalAndCheckedInSubbranch' => [
-                '<?php
-                    class A {
-                        public function foo() : void {}
-                    }
-
-                    function getA(): ?A {
-                        return rand(0, 1) ? new A() : null;
-                    }
-
-                    function foo(): void {
-                        if (($a = getA()) || rand(0, 1)) {
-                            if ($a) {
-                                $a->foo();
-                            }
-                        }
-                    }'
-            ],
-            'definedInRhsOfConditionalInNegation' => [
-                '<?php
-                    class A {
-                        public function foo() : void {}
-                    }
-
-                    function getA(): ?A {
-                        return rand(0, 1) ? new A() : null;
-                    }
-
-                    function foo(): void {
-                        if (rand(0, 1) && ($a = getA()) !== null) {
-                            $a->foo();
-                        }
                     }'
             ],
             'literalStringComparisonInIf' => [
@@ -2104,24 +1871,6 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                         } else {
                             if ($t === "b" || $b) {}
                         }
-                    }'
-            ],
-            'definedInOrRHS' => [
-                '<?php
-                    class A {
-                        public function foo() : void {}
-                    }
-
-                    function getA(): ?A {
-                        return rand(0, 1) ? new A() : null;
-                    }
-
-                    function foo(bool $b): void {
-                        $a = null;
-                        if (!$b || !($a = getA())) {
-                            return;
-                        }
-                        $a->foo();
                     }'
             ],
             'assertOnArrayThings' => [
@@ -2268,22 +2017,6 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                         return $v;
                     }'
             ],
-            'possiblyDefinedVarInAssertion' => [
-                '<?php
-                    class A {
-                        public function test() : bool { return true; }
-                    }
-
-                    function getMaybeA() : ?A { return rand(0, 1) ? new A : null; }
-
-                    function foo() : void {
-                        if (rand(0, 10) && ($a = getMaybeA()) && !$a->test()) {
-                            return;
-                        }
-
-                        echo isset($a);
-                    }'
-            ],
             'assertOnVarStaticClassKey' => [
                 '<?php
                     abstract class Obj {
@@ -2395,32 +2128,6 @@ class ConditionalTest extends \Psalm\Tests\TestCase
 
                             return static::$cache[$k1][$k2];
                         }
-                    }'
-            ],
-            'orWithAssignment' => [
-                '<?php
-                    function maybeString(): ?string {
-                        return rand(0, 10) > 4 ? "test" : null;
-                    }
-
-                    function test(): string {
-                        $foo = maybeString();
-                        ($foo !== null) || ($foo = "");
-
-                        return $foo;
-                    }'
-            ],
-            'andWithAssignment' => [
-                '<?php
-                    function maybeString(): ?string {
-                        return rand(0, 10) > 4 ? "test" : null;
-                    }
-
-                    function test(): string {
-                        $foo = maybeString();
-                        ($foo === null) && ($foo = "");
-
-                        return $foo;
                     }'
             ],
             'isNotTraversable' => [
@@ -2543,24 +2250,6 @@ class ConditionalTest extends \Psalm\Tests\TestCase
 
                         return 0;
                     }',
-            ],
-            'assertHardConditionalWithString' => [
-                '<?php
-                    interface Converter {
-                        function maybeConvert(string $value): ?SomeObject;
-                    }
-
-                    interface SomeObject {
-                        function isValid(): bool;
-                    }
-
-                    function exampleWithOr(Converter $converter, string $value): SomeObject {
-                        if (($value = $converter->maybeConvert($value)) === null || !$value->isValid()) {
-                            throw new Exception();
-                        }
-
-                        return $value; // $value is SomeObject here and cannot be a string
-                    }'
             ],
             'nonEmptyStringFromConcat' => [
                 '<?php
@@ -2806,39 +2495,6 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                         }
                     }',
             ],
-            'applyTruthyAssertionsToRightHandSideOfAssignment' => [
-                '<?php
-                    function takesAString(string $name): void {}
-
-                    function randomReturn(): ?string {
-                        return rand(1,2) === 1 ? "foo" : null;
-                    }
-
-                    $name = randomReturn();
-
-                    if ($foo = ($name !== null)) {
-                        takesAString($name);
-                    }'
-            ],
-            'maintainTruthinessInsideAssignment' => [
-                '<?php
-                    class C {
-                        public function foo() : void {}
-                    }
-
-                    class B {
-                        public ?C $c = null;
-                    }
-
-                    function updateBackgroundClip(?B $b): void {
-                        if (!$b || !($a = $b->c)) {
-                            // do something
-                        } else {
-                            /** @psalm-suppress MixedMethodCall */
-                            $a->foo();
-                        }
-                    }'
-            ],
             'getClassInterfaceCanBeClass' => [
                 '<?php
                     interface Id {}
@@ -2893,24 +2549,6 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                 [],
                 '8.0'
             ],
-            'allowBasicOrAssignment' => [
-                '<?php
-                    function test(): int {
-                        if (rand(0, 1) || ($a = rand(0, 10)) === 0) {
-                            return 0;
-                        }
-
-                        return $a;
-                    }
-
-                    function test2(?string $comment): ?string {
-                        if ($comment === null || preg_match("/.*/", $comment, $match) === 0) {
-                            return null;
-                        }
-
-                        return $match[0];
-                    }'
-            ],
             'onlySingleErrorForEarlyExit' => [
                 '<?php
                     class App {
@@ -2940,22 +2578,6 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                             || ($b !== null && $a->takes($b))
                             || $b === null
                         ) {}
-                    }'
-            ],
-            'assertWithAssignmentInOr' => [
-                'function test(int $x = null): int {
-                    \assert($x || ($x = rand(0, 10)));
-                    return $x;
-                }'
-            ],
-            'noParadoxicalConditionAfterTwoAssignments' => [
-                '<?php
-                    function foo(string $str): ?int {
-                        if (rand(0, 1) || (!($pos = strpos($str, "a")) && !($pos = strpos($str, "b")))) {
-                            return null;
-                        }
-
-                        return $pos;
                     }'
             ],
             'usedAssertedVarButNotWithStrongerTypeGuarantee' => [
@@ -3353,19 +2975,6 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                         if (get_class($e) == "InvalidArgumentException") {}
                     }',
                 'error_message' => 'TypeDoesNotContainType',
-            ],
-            'assignmentInBranchOfAnd' => [
-                '<?php
-                    function foo(string $str): ?int {
-                        $pos = 5;
-
-                        if (rand(0, 1) && !($pos = $str)) {
-                            return null;
-                        }
-
-                        return $pos;
-                    }',
-                'error_message' => 'InvalidReturnStatement',
             ],
         ];
     }

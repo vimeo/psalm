@@ -237,38 +237,6 @@ class TypeAlgebraTest extends \Psalm\Tests\TestCase
                         }
                     }',
             ],
-            'repeatedSet' => [
-                '<?php
-                    function foo(): void {
-                        if ($a = rand(0, 1) ? "" : null) {
-                            return;
-                        }
-
-                        if (rand(0, 1)) {
-                            $a = rand(0, 1) ? "hello" : null;
-
-                            if ($a) {
-
-                            }
-                        }
-                    }',
-            ],
-            'repeatedSetInsideWhile' => [
-                '<?php
-                    function foo(): void {
-                        if ($a = rand(0, 1) ? "" : null) {
-                            return;
-                        } else {
-                            while (rand(0, 1)) {
-                                $a = rand(0, 1) ? "hello" : null;
-                            }
-
-                            if ($a) {
-
-                            }
-                        }
-                    }',
-            ],
             'byRefAssignment' => [
                 '<?php
                     function foo(): void {
@@ -564,16 +532,6 @@ class TypeAlgebraTest extends \Psalm\Tests\TestCase
 
                     if ($a->foo === "somestring") {}',
             ],
-            'propertyFetchAfterNotNullCheckInElseif' => [
-                '<?php
-                    class A {
-                        /** @var ?string */
-                        public $foo;
-                    }
-
-                    if (rand(0, 10) > 5) {
-                    } elseif (($a = rand(0, 1) ? new A : null) && $a->foo) {}',
-            ],
             'noParadoxForGetopt' => [
                 '<?php
                     $options = getopt("t:");
@@ -716,14 +674,6 @@ class TypeAlgebraTest extends \Psalm\Tests\TestCase
                                 $foo->bar();
                             }
                         }
-                    }',
-            ],
-            'noParadoxAfterConditionalAssignment' => [
-                '<?php
-                    if ($a = rand(0, 5)) {
-                        echo $a;
-                    } elseif ($a = rand(0, 5)) {
-                        echo $a;
                     }',
             ],
             'callWithNonNullInTernary' => [
