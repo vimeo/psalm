@@ -128,7 +128,11 @@ class ArrayAnalyzer
 
                             $item_value_atomic_types = array_merge(
                                 $item_value_atomic_types,
-                                array_values($unpacked_atomic_type->type_params[1]->getAtomicTypes())
+                                array_values(
+                                    isset($unpacked_atomic_type->type_params[1])
+                                        ? $unpacked_atomic_type->type_params[1]->getAtomicTypes()
+                                        : [new Type\Atomic\TMixed()]
+                                )
                             );
                         } elseif ($unpacked_atomic_type instanceof Type\Atomic\TList) {
                             $item_key_atomic_types[] = new Type\Atomic\TInt();
