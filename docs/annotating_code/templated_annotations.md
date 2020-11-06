@@ -120,7 +120,7 @@ Psalm also allows you to parameterize class types
 ```php
 <?php
 /**
- * @template T
+ * @template T of Foo
  * @psalm-param class-string<T> $class
  * @return T
  */
@@ -128,9 +128,10 @@ function instantiator(string $class) {
     return new $class();
 }
 
+/** @psalm-consistent-constructor */
 class Foo {}
 
-$a = instantiator(Foo::class); // Psalm knows the result is an object of type Foo
+$_a = instantiator(Foo::class); // Psalm knows the result is an object of type Foo
 ```
 
 ## Template inheritance
