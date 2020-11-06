@@ -1549,6 +1549,54 @@ class TaintTest extends TestCase
                     echo $params["foo"];',
                 'error_message' => 'TaintedInput',
             ],
+            'taintFlow' => [
+                '<?php
+
+                /**
+                 * @psalm-flow ($r) -> return
+                 */
+                function some_stub(string $r): string {}
+
+                $r = $_GET["untrusted"];
+
+                echo some_stub($r);',
+                'error_message' => 'TaintedInput',
+            ],
+            'taintFlowPassthru' => [
+                '<?php
+
+                /**
+                 * @psalm-taint-sink text $in
+                 */
+                function dummy_taint_sink(string $in): void {}
+
+                /**
+                 * @psalm-flow passthru dummy_taint_sink($r)
+                 */
+                function some_stub(string $r): string {}
+
+                $r = $_GET["untrusted"];
+
+                some_stub($r);',
+                'error_message' => 'TaintedInput',
+            ],
+            'taintFlowPassthruAndReturn' => [
+                '<?php
+
+                function dummy_taintable(string $in): string {
+                    return $in;
+                }
+
+                /**
+                 * @psalm-flow passthru dummy_taintable($r) -> return
+                 */
+                function some_stub(string $r): string {}
+
+                $r = $_GET["untrusted"];
+
+                echo some_stub($r);',
+                'error_message' => 'TaintedInput',
+            ]
             /*
             // TODO: Stubs do not support this type of inference even with $this->message = $message.
             // Most uses of getMessage() would be with caught exceptions, so this is not representative of real code.

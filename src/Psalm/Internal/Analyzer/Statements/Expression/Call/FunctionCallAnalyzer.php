@@ -1062,7 +1062,32 @@ class FunctionCallAnalyzer extends CallAnalyzer
         }
 
         if ($function_storage) {
-            self::taintReturnType($statements_analyzer, $stmt, $function_id, $function_storage, $stmt_type);
+            $return_node = self::taintReturnType(
+                $statements_analyzer,
+                $stmt,
+                $function_id,
+                $function_storage,
+                $stmt_type
+            );
+
+            foreach ($function_storage->passthru_calls as $passthru_call) {
+                $pass_arguments = [];
+                foreach ($passthru_call['params'] as $i) {
+                    $pass_arguments[] = $stmt->args[$i];
+                }
+
+                $fake_call = new PhpParser\Node\Expr\FuncCall(
+                    new PhpParser\Node\Name\FullyQualified($passthru_call['fqcn']),
+                    $pass_arguments
+                );
+                ExpressionAnalyzer::analyze($statements_analyzer, $fake_call, $context);
+
+                if (null !== $return_node && $passthru_call['return'] === true) {
+                    foreach ($statements_analyzer->node_data->getType($fake_call)->parent_nodes as $fake_call_node) {
+                        $statements_analyzer->data_flow_graph->addPath($fake_call_node, $return_node, 'return');
+                    }
+                }
+            }
         }
 
 
@@ -1301,11 +1326,11 @@ class FunctionCallAnalyzer extends CallAnalyzer
         string $function_id,
         FunctionLikeStorage $function_storage,
         Type\Union $stmt_type
-    ) : void {
+    ) : ?DataFlowNode {
         if (!$statements_analyzer->data_flow_graph instanceof TaintFlowGraph
             || \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
         ) {
-            return;
+            return null;
         }
 
         $node_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
@@ -1392,6 +1417,8 @@ class FunctionCallAnalyzer extends CallAnalyzer
 
             $statements_analyzer->data_flow_graph->addSource($method_node);
         }
+
+        return $function_call_node;
     }
 
     /**
