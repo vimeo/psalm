@@ -1525,6 +1525,30 @@ class ArrayAssignmentTest extends TestCase
                         return $l;
                     }'
             ],
+            'unpackTypedIterableIntoArray' => [
+                '<?php
+
+                /**
+                 * @param iterable<int, string> $data
+                 * @return list<string>
+                 */
+                function unpackIterable(iterable $data): array
+                {
+                    return [...$data];
+                }'
+            ],
+            'unpackTypedTraversableIntoArray' => [
+                '<?php
+
+                /**
+                 * @param Traversable<int, string> $data
+                 * @return list<string>
+                 */
+                function unpackIterable(Traversable $data): array
+                {
+                    return [...$data];
+                }'
+            ]
         ];
     }
 
@@ -1802,6 +1826,32 @@ class ArrayAssignmentTest extends TestCase
                     }',
                 'error_message' => 'NullableReturnStatement',
             ],
+            'unpackTypedIterableWithStringKeysIntoArray' => [
+                '<?php
+
+                /**
+                 * @param iterable<string, string> $data
+                 * @return list<string>
+                 */
+                function unpackIterable(iterable $data): array
+                {
+                    return [...$data];
+                }',
+                'error_message' => 'DuplicateArrayKey'
+            ],
+            'unpackTypedTraversableWithStringKeysIntoArray' => [
+                '<?php
+
+                /**
+                 * @param Traversable<string, string> $data
+                 * @return list<string>
+                 */
+                function unpackIterable(Traversable $data): array
+                {
+                    return [...$data];
+                }',
+                'error_message' => 'DuplicateArrayKey'
+            ]
         ];
     }
 }
