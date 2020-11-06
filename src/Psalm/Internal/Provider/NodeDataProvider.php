@@ -81,8 +81,11 @@ class NodeDataProvider implements \Psalm\NodeTypeProvider
     }
 
     /**
-     * @param PhpParser\Node\Expr\FuncCall|PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $node
-     * @param array<int, \Psalm\Storage\Assertion> $assertions
+     * @param PhpParser\Node\Expr\FuncCall
+     *        |PhpParser\Node\Expr\MethodCall
+     *        |PhpParser\Node\Expr\StaticCall
+     *        |PhpParser\Node\Expr\New_             $node
+     * @param array<int, \Psalm\Storage\Assertion>  $assertions
      */
     public function setIfTrueAssertions(PhpParser\Node\Expr $node, array $assertions) : void
     {
@@ -90,7 +93,10 @@ class NodeDataProvider implements \Psalm\NodeTypeProvider
     }
 
     /**
-     * @param PhpParser\Node\Expr\FuncCall|PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $node
+     * @param PhpParser\Node\Expr\FuncCall
+     *        |PhpParser\Node\Expr\MethodCall
+     *        |PhpParser\Node\Expr\StaticCall
+     *        |PhpParser\Node\Expr\New_             $node
      * @return array<int, \Psalm\Storage\Assertion>|null
      */
     public function getIfTrueAssertions(PhpParser\Node\Expr $node) : ?array
@@ -99,8 +105,11 @@ class NodeDataProvider implements \Psalm\NodeTypeProvider
     }
 
     /**
-     * @param PhpParser\Node\Expr\FuncCall|PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $node
-     * @param array<int, \Psalm\Storage\Assertion> $assertions
+     * @param PhpParser\Node\Expr\FuncCall
+     *        |PhpParser\Node\Expr\MethodCall
+     *        |PhpParser\Node\Expr\StaticCall
+     *        |PhpParser\Node\Expr\New_             $node
+     * @param array<int, \Psalm\Storage\Assertion>  $assertions
      */
     public function setIfFalseAssertions(PhpParser\Node\Expr $node, array $assertions) : void
     {
@@ -108,7 +117,10 @@ class NodeDataProvider implements \Psalm\NodeTypeProvider
     }
 
     /**
-     * @param PhpParser\Node\Expr\FuncCall|PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $node
+     * @param PhpParser\Node\Expr\FuncCall
+     *        |PhpParser\Node\Expr\MethodCall
+     *        |PhpParser\Node\Expr\StaticCall
+     *        |PhpParser\Node\Expr\New_             $node
      * @return array<int, \Psalm\Storage\Assertion>|null
      */
     public function getIfFalseAssertions(PhpParser\Node\Expr $node) : ?array

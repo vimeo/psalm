@@ -578,6 +578,44 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                                 $statements_analyzer->getSource()->inferred_impure = true;
                             }
                         }
+
+                        $generic_params = $template_result->upper_bounds;
+
+                        if ($method_storage->assertions && $stmt->class instanceof PhpParser\Node\Name) {
+                            self::applyAssertionsToContext(
+                                $stmt->class,
+                                null,
+                                $method_storage->assertions,
+                                $stmt->args,
+                                $generic_params,
+                                $context,
+                                $statements_analyzer
+                            );
+                        }
+
+                        if ($method_storage->if_true_assertions) {
+                            $statements_analyzer->node_data->setIfTrueAssertions(
+                                $stmt,
+                                \array_map(
+                                    function ($assertion) use ($generic_params) {
+                                        return $assertion->getUntemplatedCopy($generic_params, null);
+                                    },
+                                    $method_storage->if_true_assertions
+                                )
+                            );
+                        }
+
+                        if ($method_storage->if_false_assertions) {
+                            $statements_analyzer->node_data->setIfFalseAssertions(
+                                $stmt,
+                                \array_map(
+                                    function ($assertion) use ($generic_params) {
+                                        return $assertion->getUntemplatedCopy($generic_params, null);
+                                    },
+                                    $method_storage->if_false_assertions
+                                )
+                            );
+                        }
                     }
 
                     $generic_param_types = null;
