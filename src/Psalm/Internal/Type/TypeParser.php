@@ -826,7 +826,7 @@ class TypeParser
             );
             $pure = strpos($parse_tree->value, 'pure-') === 0 ? true : null;
 
-            if (in_array(strtolower($parse_tree->value), ['closure', '\closure'], true)) {
+            if (in_array(strtolower($parse_tree->value), ['closure', '\closure', 'pure-closure'], true)) {
                 return new TClosure('Closure', $params, null, $pure);
             }
 
