@@ -513,7 +513,7 @@ class Context
      * @param Clause[]             $clauses
      * @param array<string, bool>  $changed_var_ids
      *
-     * @return array{0: list<Clause>, list<Clause>}
+     * @return array{list<Clause>, list<Clause>}
      *
      * @psalm-pure
      */

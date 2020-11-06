@@ -430,6 +430,25 @@ class AssignmentInConditionalTest extends \Psalm\Tests\TestCase
                         echo $a;
                     }',
             ],
+            'assignmentInBranchWithReference' => [
+                '<?php
+                    class A {}
+
+                    function getAOrFalse(bool $b) : A|false {
+                        return false;
+                    }
+
+                    function foo(A|false $a): void
+                    {
+                        if ($a instanceof A
+                            || ($a = getAOrFalse($a))
+                        ) {
+                        }
+                    }',
+                [],
+                [],
+                '8.0'
+            ],
         ];
     }
 
