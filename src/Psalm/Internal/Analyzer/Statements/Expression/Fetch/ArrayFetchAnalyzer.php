@@ -994,8 +994,8 @@ class ArrayFetchAnalyzer
                                     if ($object_like_keys) {
                                         $formatted_keys = implode(
                                             ', ',
-                                            array_map(
-                                                function($key) {
+                                            \array_map(
+                                                function ($key) {
                                                     return is_int($key) ? $key : '\'' . $key . '\'';
                                                 },
                                                 $object_like_keys
