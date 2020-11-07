@@ -101,7 +101,7 @@ class IfElseAnalyzer
 
             $original_context = $if_conditional_scope->original_context;
             $cond_referenced_var_ids = $if_conditional_scope->cond_referenced_var_ids;
-            $cond_assigned_var_ids = $if_conditional_scope->cond_assigned_var_ids;
+            $assigned_in_conditional_var_ids = $if_conditional_scope->assigned_in_conditional_var_ids;
         } catch (\Psalm\Exception\ScopeAnalysisException $e) {
             return false;
         }
@@ -161,11 +161,11 @@ class IfElseAnalyzer
             $if_clauses,
             $statements_analyzer,
             $stmt->cond,
-            $cond_assigned_var_ids
+            $assigned_in_conditional_var_ids
         );
 
         // if we have assignments in the if, we may have duplicate clauses
-        if ($cond_assigned_var_ids) {
+        if ($assigned_in_conditional_var_ids) {
             $if_clauses = Algebra::simplifyCNF($if_clauses);
         }
 

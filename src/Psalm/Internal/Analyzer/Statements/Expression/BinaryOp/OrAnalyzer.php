@@ -71,7 +71,7 @@ class OrAnalyzer
                 $left_context = $if_conditional_scope->if_context;
 
                 $left_referenced_var_ids = $if_conditional_scope->cond_referenced_var_ids;
-                $left_assigned_var_ids = $if_conditional_scope->cond_assigned_var_ids;
+                $left_assigned_var_ids = $if_conditional_scope->assigned_in_conditional_var_ids;
 
                 if ($stmt->left instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr) {
                     $mic_drop_context = clone $context;

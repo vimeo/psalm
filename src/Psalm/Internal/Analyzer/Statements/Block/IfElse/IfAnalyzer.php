@@ -6,6 +6,7 @@ use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\ConflictingReferenceConstraint;
@@ -114,27 +115,19 @@ class IfAnalyzer
         $mic_drop = false;
 
         if (!$has_leaving_statements) {
-            $if_scope->new_vars = array_diff_key($if_context->vars_in_scope, $outer_context->vars_in_scope);
-
-            $if_scope->redefined_vars = $if_context->getRedefinedVars($outer_context->vars_in_scope);
-            $if_scope->possibly_redefined_vars = $if_scope->redefined_vars;
-            $if_scope->assigned_var_ids = $new_assigned_var_ids;
-            $if_scope->possibly_assigned_var_ids = $new_possibly_assigned_var_ids;
-
-            $changed_var_ids = $new_assigned_var_ids;
-
-            // if the variable was only set in the conditional, it's not possibly redefined
-            foreach ($if_scope->possibly_redefined_vars as $var_id => $_) {
-                if (!isset($new_possibly_assigned_var_ids[$var_id])
-                    && isset($if_scope->if_cond_changed_var_ids[$var_id])
-                ) {
-                    unset($if_scope->possibly_redefined_vars[$var_id]);
-                }
-            }
+            self::updateIfScope(
+                $codebase,
+                $if_scope,
+                $if_context,
+                $outer_context,
+                $new_assigned_var_ids,
+                $new_possibly_assigned_var_ids,
+                $if_scope->if_cond_changed_var_ids
+            );
 
             if ($if_scope->reasonable_clauses) {
                 // remove all reasonable clauses that would be negated by the if stmts
-                foreach ($changed_var_ids as $var_id => $_) {
+                foreach ($new_assigned_var_ids as $var_id => $_) {
                     $if_scope->reasonable_clauses = Context::filterClauses(
                         $var_id,
                         $if_scope->reasonable_clauses,
@@ -251,7 +244,7 @@ class IfAnalyzer
         array $new_assigned_var_ids
     ) : bool {
         // If we're assigning inside
-        if ($if_conditional_scope->cond_assigned_var_ids
+        if ($if_conditional_scope->assigned_in_conditional_var_ids
             && $if_scope->mic_drop_context
         ) {
             self::addConditionallyAssignedVarsToContext(
@@ -259,7 +252,7 @@ class IfAnalyzer
                 $cond,
                 $if_scope->mic_drop_context,
                 $outer_context,
-                $if_conditional_scope->cond_assigned_var_ids
+                $if_conditional_scope->assigned_in_conditional_var_ids
             );
         }
 
@@ -267,13 +260,13 @@ class IfAnalyzer
             return false;
         }
 
-        $changed_var_ids = [];
+        $newly_reconciled_var_ids = [];
 
         $outer_context_vars_reconciled = Reconciler::reconcileKeyedTypes(
             $if_scope->negated_types,
             [],
             $outer_context->vars_in_scope,
-            $changed_var_ids,
+            $newly_reconciled_var_ids,
             [],
             $statements_analyzer,
             $statements_analyzer->getTemplateTypeMap() ?: [],
@@ -288,20 +281,20 @@ class IfAnalyzer
             )
         );
 
-        foreach ($changed_var_ids as $changed_var_id => $_) {
+        foreach ($newly_reconciled_var_ids as $changed_var_id => $_) {
             $outer_context->removeVarFromConflictingClauses($changed_var_id);
         }
 
-        $changed_var_ids += $new_assigned_var_ids;
+        $newly_reconciled_var_ids += $new_assigned_var_ids;
 
-        foreach ($changed_var_ids as $var_id => $_) {
+        foreach ($newly_reconciled_var_ids as $var_id => $_) {
             $if_scope->negated_clauses = Context::filterClauses(
                 $var_id,
                 $if_scope->negated_clauses
             );
         }
 
-        foreach ($changed_var_ids as $var_id => $_) {
+        foreach ($newly_reconciled_var_ids as $var_id => $_) {
             $first_appearance = $statements_analyzer->getFirstAppearance($var_id);
 
             if ($first_appearance
@@ -335,19 +328,19 @@ class IfAnalyzer
     }
 
     /**
-     * @param array<string, int> $cond_assigned_var_ids
+     * @param array<string, int> $assigned_in_conditional_var_ids
      */
     public static function addConditionallyAssignedVarsToContext(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $cond,
         Context $mic_drop_context,
         Context $outer_context,
-        array $cond_assigned_var_ids
+        array $assigned_in_conditional_var_ids
     ) : void {
         // this filters out coercions to expeccted types in ArgumentAnalyzer
-        $cond_assigned_var_ids = \array_filter($cond_assigned_var_ids);
+        $assigned_in_conditional_var_ids = \array_filter($assigned_in_conditional_var_ids);
 
-        if (!$cond_assigned_var_ids) {
+        if (!$assigned_in_conditional_var_ids) {
             return;
         }
 
@@ -397,7 +390,7 @@ class IfAnalyzer
 
         $statements_analyzer->node_data = $old_node_data;
 
-        foreach ($cond_assigned_var_ids as $var_id => $_) {
+        foreach ($assigned_in_conditional_var_ids as $var_id => $_) {
             if (isset($mic_drop_context->vars_in_scope[$var_id])) {
                 $outer_context->vars_in_scope[$var_id] = clone $mic_drop_context->vars_in_scope[$var_id];
             }
@@ -430,5 +423,96 @@ class IfAnalyzer
         }
 
         return new PhpParser\Node\Expr\BooleanNot($expr, $expr->getAttributes());
+    }
+
+    /**
+     * @param  array<string, int>    $assigned_var_ids
+     * @param  array<string, bool>   $possibly_assigned_var_ids
+     * @param  array<string, bool>   $newly_reconciled_var_ids
+     */
+    public static function updateIfScope(
+        Codebase $codebase,
+        IfScope $if_scope,
+        Context $if_context,
+        Context $outer_context,
+        array $assigned_var_ids,
+        array $possibly_assigned_var_ids,
+        array $newly_reconciled_var_ids,
+        bool $update_new_vars = true
+    ) : void {
+        $redefined_vars = $if_context->getRedefinedVars($outer_context->vars_in_scope);
+
+        if ($if_scope->new_vars === null) {
+            if ($update_new_vars) {
+                $if_scope->new_vars = array_diff_key($if_context->vars_in_scope, $outer_context->vars_in_scope);
+            }
+        } else {
+            foreach ($if_scope->new_vars as $new_var => $type) {
+                if (!$if_context->hasVariable($new_var)) {
+                    unset($if_scope->new_vars[$new_var]);
+                } else {
+                    $if_scope->new_vars[$new_var] = Type::combineUnionTypes(
+                        $type,
+                        $if_context->vars_in_scope[$new_var],
+                        $codebase
+                    );
+                }
+            }
+        }
+
+        $possibly_redefined_vars = $redefined_vars;
+
+        foreach ($possibly_redefined_vars as $var_id => $_) {
+            if (!isset($possibly_assigned_var_ids[$var_id])
+                && isset($newly_reconciled_var_ids[$var_id])
+            ) {
+                unset($possibly_redefined_vars[$var_id]);
+            }
+        }
+
+        if ($if_scope->assigned_var_ids === null) {
+            $if_scope->assigned_var_ids = $assigned_var_ids;
+        } else {
+            $if_scope->assigned_var_ids = \array_intersect_key($assigned_var_ids, $if_scope->assigned_var_ids);
+        }
+
+        $if_scope->possibly_assigned_var_ids += $possibly_assigned_var_ids;
+
+        if ($if_scope->redefined_vars === null) {
+            $if_scope->redefined_vars = $redefined_vars;
+            $if_scope->possibly_redefined_vars = $possibly_redefined_vars;
+        } else {
+            foreach ($if_scope->redefined_vars as $redefined_var => $type) {
+                if (!isset($redefined_vars[$redefined_var])) {
+                    unset($if_scope->redefined_vars[$redefined_var]);
+                } else {
+                    $if_scope->redefined_vars[$redefined_var] = Type::combineUnionTypes(
+                        $redefined_vars[$redefined_var],
+                        $type,
+                        $codebase
+                    );
+
+                    if (isset($outer_context->vars_in_scope[$redefined_var])
+                        && $if_scope->redefined_vars[$redefined_var]->equals(
+                            $outer_context->vars_in_scope[$redefined_var]
+                        )
+                    ) {
+                        unset($if_scope->redefined_vars[$redefined_var]);
+                    }
+                }
+            }
+
+            foreach ($possibly_redefined_vars as $var => $type) {
+                if (isset($if_scope->possibly_redefined_vars[$var])) {
+                    $if_scope->possibly_redefined_vars[$var] = Type::combineUnionTypes(
+                        $type,
+                        $if_scope->possibly_redefined_vars[$var],
+                        $codebase
+                    );
+                } else {
+                    $if_scope->possibly_redefined_vars[$var] = $type;
+                }
+            }
+        }
     }
 }

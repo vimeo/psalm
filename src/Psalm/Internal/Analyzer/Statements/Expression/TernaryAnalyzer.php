@@ -48,7 +48,7 @@ class TernaryAnalyzer
             $if_context = $if_conditional_scope->if_context;
 
             $cond_referenced_var_ids = $if_conditional_scope->cond_referenced_var_ids;
-            $cond_assigned_var_ids = $if_conditional_scope->cond_assigned_var_ids;
+            $assigned_in_conditional_var_ids = $if_conditional_scope->assigned_in_conditional_var_ids;
         } catch (\Psalm\Exception\ScopeAnalysisException $e) {
             return false;
         }
@@ -110,7 +110,7 @@ class TernaryAnalyzer
             $if_clauses,
             $statements_analyzer,
             $stmt->cond,
-            $cond_assigned_var_ids
+            $assigned_in_conditional_var_ids
         );
 
         $ternary_clauses = array_merge($context->clauses, $if_clauses);

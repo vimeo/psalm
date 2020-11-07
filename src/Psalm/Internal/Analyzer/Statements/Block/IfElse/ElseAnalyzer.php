@@ -157,60 +157,18 @@ class ElseAnalyzer
 
         $if_scope->final_actions = array_merge($final_actions, $if_scope->final_actions);
 
-        $else_redefined_vars = $else_context->getRedefinedVars($original_context->vars_in_scope);
-
         // if it doesn't end in a return
         if (!$has_leaving_statements) {
-            if ($if_scope->new_vars === null && $else) {
-                $if_scope->new_vars = array_diff_key($else_context->vars_in_scope, $outer_context->vars_in_scope);
-            } elseif ($if_scope->new_vars !== null) {
-                foreach ($if_scope->new_vars as $new_var => $type) {
-                    if (!$else_context->hasVariable($new_var)) {
-                        unset($if_scope->new_vars[$new_var]);
-                    } else {
-                        $if_scope->new_vars[$new_var] = Type::combineUnionTypes(
-                            $type,
-                            $else_context->vars_in_scope[$new_var],
-                            $codebase
-                        );
-                    }
-                }
-            }
-
-            if ($if_scope->assigned_var_ids === null) {
-                $if_scope->assigned_var_ids = $new_assigned_var_ids;
-            } else {
-                $if_scope->assigned_var_ids = array_intersect_key($new_assigned_var_ids, $if_scope->assigned_var_ids);
-            }
-
-            if ($if_scope->redefined_vars === null) {
-                $if_scope->redefined_vars = $else_redefined_vars;
-                $if_scope->possibly_redefined_vars = $if_scope->redefined_vars;
-            } else {
-                foreach ($if_scope->redefined_vars as $redefined_var => $type) {
-                    if (!isset($else_redefined_vars[$redefined_var])) {
-                        unset($if_scope->redefined_vars[$redefined_var]);
-                    } else {
-                        $if_scope->redefined_vars[$redefined_var] = Type::combineUnionTypes(
-                            $else_redefined_vars[$redefined_var],
-                            $type,
-                            $codebase
-                        );
-                    }
-                }
-
-                foreach ($else_redefined_vars as $var => $type) {
-                    if (isset($if_scope->possibly_redefined_vars[$var])) {
-                        $if_scope->possibly_redefined_vars[$var] = Type::combineUnionTypes(
-                            $type,
-                            $if_scope->possibly_redefined_vars[$var],
-                            $codebase
-                        );
-                    } else {
-                        $if_scope->possibly_redefined_vars[$var] = $type;
-                    }
-                }
-            }
+            IfAnalyzer::updateIfScope(
+                $codebase,
+                $if_scope,
+                $else_context,
+                $original_context,
+                $new_assigned_var_ids,
+                $new_possibly_assigned_var_ids,
+                [],
+                (bool) $else
+            );
 
             $if_scope->reasonable_clauses = [];
         }

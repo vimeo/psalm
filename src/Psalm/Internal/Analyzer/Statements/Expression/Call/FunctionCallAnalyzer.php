@@ -845,14 +845,12 @@ class FunctionCallAnalyzer extends CallAnalyzer
             $codebase
         );
 
-        $cond_assigned_var_ids = [];
-
         \Psalm\Internal\Analyzer\AlgebraAnalyzer::checkForParadox(
             $context->clauses,
             $assert_clauses,
             $statements_analyzer,
             $stmt,
-            $cond_assigned_var_ids
+            []
         );
 
         $simplified_clauses = Algebra::simplifyCNF(array_merge($context->clauses, $assert_clauses));

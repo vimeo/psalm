@@ -188,14 +188,14 @@ class IfConditionalAnalyzer
                 $assigned_var_ids
             );
 
-            $cond_assigned_var_ids = array_merge(
+            $assigned_in_conditional_var_ids = array_merge(
                 $first_cond_assigned_var_ids,
                 $more_cond_assigned_var_ids
             );
         } else {
             $cond_referenced_var_ids = $first_cond_referenced_var_ids;
 
-            $cond_assigned_var_ids = $first_cond_assigned_var_ids;
+            $assigned_in_conditional_var_ids = $first_cond_assigned_var_ids;
         }
 
         $newish_var_ids = array_map(
@@ -211,7 +211,7 @@ class IfConditionalAnalyzer
                 $if_conditional_context->vars_in_scope,
                 $pre_condition_vars_in_scope,
                 $cond_referenced_var_ids,
-                $cond_assigned_var_ids
+                $assigned_in_conditional_var_ids
             )
         );
 
@@ -270,7 +270,7 @@ class IfConditionalAnalyzer
         }
 
         // get all the var ids that were referened in the conditional, but not assigned in it
-        $cond_referenced_var_ids = array_diff_key($cond_referenced_var_ids, $cond_assigned_var_ids);
+        $cond_referenced_var_ids = array_diff_key($cond_referenced_var_ids, $assigned_in_conditional_var_ids);
 
         $cond_referenced_var_ids = array_merge($newish_var_ids, $cond_referenced_var_ids);
 
@@ -278,7 +278,7 @@ class IfConditionalAnalyzer
             $if_context,
             $original_context,
             $cond_referenced_var_ids,
-            $cond_assigned_var_ids,
+            $assigned_in_conditional_var_ids,
             $entry_clauses
         );
     }
