@@ -5,7 +5,7 @@ use PhpParser;
 use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\Statements\Block\IfAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Block\IfElseAnalyzer;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Algebra;
@@ -40,7 +40,7 @@ class AndAnalyzer
                 $stmt->getAttributes()
             );
 
-            return IfAnalyzer::analyze($statements_analyzer, $fake_if_stmt, $context) !== false;
+            return IfElseAnalyzer::analyze($statements_analyzer, $fake_if_stmt, $context) !== false;
         }
 
         $pre_referenced_var_ids = $context->referenced_var_ids;

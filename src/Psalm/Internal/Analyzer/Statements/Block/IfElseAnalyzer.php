@@ -44,7 +44,7 @@ use function array_intersect_key;
 /**
  * @internal
  */
-class IfAnalyzer
+class IfElseAnalyzer
 {
     /**
      * System of type substitution and deletion

@@ -5,7 +5,7 @@ use PhpParser;
 use Psalm\Internal\Analyzer\Statements\Block\DoAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\ForAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
-use Psalm\Internal\Analyzer\Statements\Block\IfAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Block\IfElseAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\SwitchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\TryAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\WhileAnalyzer;
@@ -463,7 +463,7 @@ class StatementsAnalyzer extends SourceAnalyzer
         }
 
         if ($stmt instanceof PhpParser\Node\Stmt\If_) {
-            if (IfAnalyzer::analyze($statements_analyzer, $stmt, $context) === false) {
+            if (IfElseAnalyzer::analyze($statements_analyzer, $stmt, $context) === false) {
                 return false;
             }
         } elseif ($stmt instanceof PhpParser\Node\Stmt\TryCatch) {

@@ -5,7 +5,7 @@ use PhpParser;
 use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\AlgebraAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
-use \Psalm\Internal\Analyzer\Statements\Block\IfAnalyzer;
+use \Psalm\Internal\Analyzer\Statements\Block\IfElseAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\CodeLocation;
 use Psalm\Context;
@@ -36,7 +36,7 @@ class TernaryAnalyzer
         $if_scope = new \Psalm\Internal\Scope\IfScope();
 
         try {
-            $if_conditional_scope = IfAnalyzer::analyzeIfConditional(
+            $if_conditional_scope = IfElseAnalyzer::analyzeIfConditional(
                 $statements_analyzer,
                 $stmt->cond,
                 $context,
