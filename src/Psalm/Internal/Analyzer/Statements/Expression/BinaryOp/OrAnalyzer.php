@@ -7,6 +7,8 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\IfElseAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Block\IfElse\IfAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Block\IfConditionalAnalyzer;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Type;
@@ -57,7 +59,7 @@ class OrAnalyzer
             $if_scope = new \Psalm\Internal\Scope\IfScope();
 
             try {
-                $if_conditional_scope = IfElseAnalyzer::analyzeIfConditional(
+                $if_conditional_scope = IfConditionalAnalyzer::analyze(
                     $statements_analyzer,
                     $stmt->left,
                     $context,
@@ -190,7 +192,7 @@ class OrAnalyzer
             && $left_assigned_var_ids
             && $mic_drop_context
         ) {
-            IfElseAnalyzer::addConditionallyAssignedVarsToContext(
+            IfAnalyzer::addConditionallyAssignedVarsToContext(
                 $statements_analyzer,
                 $stmt->left,
                 $mic_drop_context,
