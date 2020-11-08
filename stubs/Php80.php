@@ -65,3 +65,10 @@ class Attribute
     {
     }
 }
+
+class ReflectionUnionType extends ReflectionType {
+    /**
+     * @return non-empty-list<ReflectionType>
+     */
+    public function getTypes() {}
+}
