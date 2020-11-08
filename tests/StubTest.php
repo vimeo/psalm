@@ -510,6 +510,7 @@ class StubTest extends TestCase
         $this->addFile(
             $file_path,
             '<?php
+                /** @psalm-suppress MixedArgument */
                 echo CODE_DIR;'
         );
 
