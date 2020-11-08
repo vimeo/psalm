@@ -413,9 +413,9 @@ class Reflection
             $type = $reflection_type->getName();
         } elseif ($reflection_type instanceof \ReflectionUnionType) {
             /** @psalm-suppress MixedArgument */
-            $type = implode(
+            $type = \implode(
                 '|',
-                array_map(
+                \array_map(
                     function (\ReflectionNamedType $reflection) {
                         return $reflection->getName();
                     },
