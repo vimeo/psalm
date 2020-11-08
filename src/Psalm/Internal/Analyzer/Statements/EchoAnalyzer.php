@@ -35,7 +35,7 @@ class EchoAnalyzer
             ExpressionAnalyzer::analyze($statements_analyzer, $expr, $context);
             $context->inside_call = false;
 
-            $expr_type = $statements_analyzer->node_data->getType($expr) ?: Type::getMixed();
+            $expr_type = $statements_analyzer->node_data->getType($expr);
 
             if ($statements_analyzer->data_flow_graph
                 && $expr_type
