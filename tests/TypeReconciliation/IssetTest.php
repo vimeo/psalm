@@ -996,6 +996,25 @@ class IssetTest extends \Psalm\Tests\TestCase
                         echo $a["b"];
                     }'
             ],
+            'issetOnNullableMixed' => [
+                '<?php
+                    function processParam(mixed $param) : void {
+                        if (rand(0, 1)) {
+                            $param = null;
+                        }
+
+                        if (isset($param["name"])) {
+                            /**
+                             * @psalm-suppress MixedArgument
+                             * @psalm-suppress MixedArrayAccess
+                             */
+                            echo $param["name"];
+                        }
+                    }',
+                [],
+                [],
+                '8.0'
+            ],
         ];
     }
 

@@ -35,7 +35,7 @@ class EchoAnalyzer
             ExpressionAnalyzer::analyze($statements_analyzer, $expr, $context);
             $context->inside_call = false;
 
-            $expr_type = $statements_analyzer->node_data->getType($expr);
+            $expr_type = $statements_analyzer->node_data->getType($expr) ?: Type::getMixed();
 
             if ($statements_analyzer->data_flow_graph
                 && $expr_type
@@ -69,26 +69,24 @@ class EchoAnalyzer
                 $statements_analyzer->data_flow_graph->addSink($echo_param_sink);
             }
 
-            if ($expr_type) {
-                if (ArgumentAnalyzer::verifyType(
-                    $statements_analyzer,
-                    $expr_type,
-                    Type::getString(),
-                    null,
-                    'echo',
-                    (int)$i,
-                    new CodeLocation($statements_analyzer->getSource(), $expr),
-                    $expr,
-                    $context,
-                    $echo_param,
-                    false,
-                    null,
-                    true,
-                    true,
-                    new CodeLocation($statements_analyzer, $stmt)
-                ) === false) {
-                    return false;
-                }
+            if (ArgumentAnalyzer::verifyType(
+                $statements_analyzer,
+                $expr_type ?: Type::getMixed(),
+                Type::getString(),
+                null,
+                'echo',
+                (int)$i,
+                new CodeLocation($statements_analyzer->getSource(), $expr),
+                $expr,
+                $context,
+                $echo_param,
+                false,
+                null,
+                true,
+                true,
+                new CodeLocation($statements_analyzer, $stmt)
+            ) === false) {
+                return false;
             }
         }
 
