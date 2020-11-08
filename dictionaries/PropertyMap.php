@@ -527,4 +527,12 @@ return [
         'timestamp' => 'int',
         'headers' => 'array<string, string>|null',
     ],
+    'soapfault' => [
+        'faultcode' => 'string',
+        'faultstring' => 'string',
+        'faultactor' => 'string',
+        'detail' => 'string',
+        '_name' => 'string',
+        'headerfault' => 'string',
+    ],
 ];
