@@ -145,6 +145,23 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                     }
 
                     $this->type_aliases += $type_aliases;
+
+                    $var_comments = CommentAnalyzer::getTypeFromComment(
+                        $comment,
+                        $this->file_scanner,
+                        $this->aliases,
+                        null,
+                        $this->type_aliases
+                    );
+
+                    foreach ($var_comments as $var_comment) {
+                        if (!$var_comment->type) {
+                            continue;
+                        }
+
+                        $var_type = $var_comment->type;
+                        $var_type->queueClassLikesForScanning($this->codebase, $this->file_storage);
+                    }
                 } catch (DocblockParseException $e) {
                     $this->file_storage->docblock_issues[] = new InvalidDocblock(
                         (string)$e->getMessage(),
