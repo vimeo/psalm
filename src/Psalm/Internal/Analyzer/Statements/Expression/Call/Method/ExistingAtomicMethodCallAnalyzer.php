@@ -84,12 +84,6 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
 
         $source = $statements_analyzer->getSource();
 
-        /**
-         * @var \Psalm\Internal\Analyzer\ClassLikeAnalyzer|null
-         */
-        $classlike_source = $source->getSource();
-        $classlike_source_fqcln = $classlike_source ? $classlike_source->getFQCLN() : null;
-
         if ($codebase->store_node_types
             && !$context->collect_initializations
             && !$context->collect_mutations

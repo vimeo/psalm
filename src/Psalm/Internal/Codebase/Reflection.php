@@ -406,13 +406,22 @@ class Reflection
             return Type::getMixed();
         }
 
-
+        /**
+         * @psalm-suppress UndefinedClass,TypeDoesNotContainType
+         */
         if ($reflection_type instanceof \ReflectionNamedType) {
             $type = $reflection_type->getName();
         } elseif ($reflection_type instanceof \ReflectionUnionType) {
-            $type = implode('|', array_map(function (\ReflectionNamedType $reflection) {
-                return $reflection->getName();
-            }, $reflection_type->getTypes()));
+            /** @psalm-suppress MixedArgument */
+            $type = implode(
+                '|',
+                array_map(
+                    function (\ReflectionNamedType $reflection) {
+                        return $reflection->getName();
+                    },
+                    $reflection_type->getTypes()
+                )
+            );
         } else {
             throw new \LogicException('Unexpected reflection class ' . \get_class($reflection_type) . ' found.');
         }
