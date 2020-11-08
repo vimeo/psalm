@@ -1534,6 +1534,21 @@ class TaintTest extends TestCase
                     }',
                 'error_message' => 'TaintedInput',
             ],
+            'taintReturnedArray' => [
+                '<?php
+                    function processParams(array $params) : array {
+                        if (isset($params["foo"])) {
+                            return $params;
+                        }
+
+                        return [];
+                    }
+
+                    $params = processParams($_GET);
+
+                    echo $params["foo"];',
+                'error_message' => 'TaintedInput',
+            ],
             /*
             // TODO: Stubs do not support this type of inference even with $this->message = $message.
             // Most uses of getMessage() would be with caught exceptions, so this is not representative of real code.
