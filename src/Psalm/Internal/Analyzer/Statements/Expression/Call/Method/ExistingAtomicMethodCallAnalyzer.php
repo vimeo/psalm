@@ -90,19 +90,6 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
         $classlike_source = $source->getSource();
         $classlike_source_fqcln = $classlike_source ? $classlike_source->getFQCLN() : null;
 
-        if ($lhs_var_id === '$this'
-            && $context->self
-            && $classlike_source_fqcln
-            && $fq_class_name !== $context->self
-            && $codebase->methods->methodExists(
-                new MethodIdentifier($context->self, $method_name_lc)
-            )
-        ) {
-            $method_id = new MethodIdentifier($context->self, $method_name_lc);
-            $cased_method_id = $context->self . '::' . $stmt_name->name;
-            $fq_class_name = $context->self;
-        }
-
         if ($codebase->store_node_types
             && !$context->collect_initializations
             && !$context->collect_mutations

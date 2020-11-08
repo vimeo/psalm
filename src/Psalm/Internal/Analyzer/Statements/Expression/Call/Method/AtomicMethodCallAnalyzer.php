@@ -27,6 +27,13 @@ use function strtolower;
 use function array_merge;
 use function explode;
 
+/**
+ * This is a bunch of complex logic to handle the potential for missing methods,
+ * use of intersection types and/or mixins, together with handling for fallback magic
+ * methods.
+ *
+ * The happy path (i.e 99% of method calls) is handled in ExistingAtomicMethodCallAnalyzer
+ */
 class AtomicMethodCallAnalyzer extends CallAnalyzer
 {
     /**
