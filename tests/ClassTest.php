@@ -541,6 +541,7 @@ class ClassTest extends TestCase
                 '<?php
                     if (class_exists(A::class)) {
                         if (method_exists(A::class, "method")) {
+                            /** @psalm-suppress MixedArgument */
                             echo A::method();
                         }
 

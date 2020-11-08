@@ -987,7 +987,7 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
                             }',
                     ],
                 ],
-                'error_positions' => [[], [238], [], [238], []],
+                'error_positions' => [[], [238, 231], [], [238, 231], []],
             ],
             'traitMethodRenameSameFile' => [
                 [
@@ -1077,7 +1077,7 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
                             }',
                     ],
                 ],
-                'error_positions' => [[], [238], [], [238], []],
+                'error_positions' => [[], [238, 231], [], [238, 231], []],
             ],
             'duplicateMethodThenRemove' => [
                 [

@@ -506,7 +506,6 @@ class ArrayAccessTest extends TestCase
                 '<?php
                     /**
                      * @psalm-suppress MixedAssignment
-                     * @psalm-suppress MixedArrayAccess
                      * @psalm-suppress MixedOperand
                      * @psalm-suppress MixedArrayAssignment
                      * @param mixed[] $line

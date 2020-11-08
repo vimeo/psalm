@@ -898,7 +898,6 @@ class IssetTest extends \Psalm\Tests\TestCase
                     }
 
                     /**
-                     * @psalm-suppress MixedArrayAccess
                      * @psalm-suppress MixedArgument
                      */
                     echo $payload["b"];'
@@ -1006,7 +1005,6 @@ class IssetTest extends \Psalm\Tests\TestCase
                         if (isset($param["name"])) {
                             /**
                              * @psalm-suppress MixedArgument
-                             * @psalm-suppress MixedArrayAccess
                              */
                             echo $param["name"];
                         }

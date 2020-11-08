@@ -73,6 +73,7 @@ function psalmCanVerify(int $your_code): ?string {
 }
 
 // and it supports PHP 5.4 - 7.1
+/** @psalm-suppress MixedArgument */
 echo CHANGE_ME;
 
 if (rand(0, 100) > 10) {
@@ -162,18 +163,18 @@ echo $a;';
             ],
             [
                 'severity' => 'error',
-                'line_from' => 7,
-                'line_to' => 7,
+                'line_from' => 8,
+                'line_to' => 8,
                 'type' => 'UndefinedConstant',
                 'message' => 'Const CHANGE_ME is not defined',
                 'file_name' => 'somefile.php',
                 'file_path' => 'somefile.php',
                 'snippet' => 'echo CHANGE_ME;',
                 'selected_text' => 'CHANGE_ME',
-                'from' => 125,
-                'to' => 134,
-                'snippet_from' => 120,
-                'snippet_to' => 135,
+                'from' => 162,
+                'to' => 171,
+                'snippet_from' => 157,
+                'snippet_to' => 172,
                 'column_from' => 6,
                 'column_to' => 15,
                 'error_level' => -1,
@@ -183,18 +184,18 @@ echo $a;';
             ],
             [
                 'severity' => 'info',
-                'line_from' => 16,
-                'line_to' => 16,
+                'line_from' => 17,
+                'line_to' => 17,
                 'type' => 'PossiblyUndefinedGlobalVariable',
-                'message' => 'Possibly undefined global variable $a, first seen on line 10',
+                'message' => 'Possibly undefined global variable $a, first seen on line 11',
                 'file_name' => 'somefile.php',
                 'file_path' => 'somefile.php',
                 'snippet' => 'echo $a',
                 'selected_text' => '$a',
-                'from' => 238,
-                'to' => 240,
-                'snippet_from' => 233,
-                'snippet_to' => 240,
+                'from' => 275,
+                'to' => 277,
+                'snippet_from' => 270,
+                'snippet_to' => 277,
                 'column_from' => 6,
                 'column_to' => 8,
                 'error_level' => 3,
@@ -220,7 +221,7 @@ echo $a;';
                 15,
                 15,
                 'PossiblyUndefinedGlobalVariable',
-                'Possibly undefined global variable $a, first seen on line 10',
+                'Possibly undefined global variable $a, first seen on line 11',
                 'somefile.php',
                 'somefile.php',
                 'echo $a',
@@ -306,8 +307,8 @@ echo $a;';
                         'message' => 'Const CHANGE_ME is not defined',
                         'filePath' => 'somefile.php',
                         'textRange' => [
-                            'startLine' => 7,
-                            'endLine' => 7,
+                            'startLine' => 8,
+                            'endLine' => 8,
                             'startColumn' => 5,
                             'endColumn' => 14,
                         ],
@@ -319,11 +320,11 @@ echo $a;';
                     'engineId' => 'Psalm',
                     'ruleId' => 'PossiblyUndefinedGlobalVariable',
                     'primaryLocation' => [
-                        'message' => 'Possibly undefined global variable $a, first seen on line 10',
+                        'message' => 'Possibly undefined global variable $a, first seen on line 11',
                         'filePath' => 'somefile.php',
                         'textRange' => [
-                            'startLine' => 16,
-                            'endLine' => 16,
+                            'startLine' => 17,
+                            'endLine' => 17,
                             'startColumn' => 5,
                             'endColumn' => 7,
                         ],
@@ -353,8 +354,8 @@ echo $a;';
             'somefile.php:3:10:error - Cannot find referenced variable $as_you_____type
 somefile.php:3:10:error - Could not infer a return type
 somefile.php:2:42:error - Could not verify return type \'null|string\' for psalmCanVerify
-somefile.php:7:6:error - Const CHANGE_ME is not defined
-somefile.php:16:6:warning - Possibly undefined global variable $a, first seen on line 10
+somefile.php:8:6:error - Const CHANGE_ME is not defined
+somefile.php:17:6:warning - Possibly undefined global variable $a, first seen on line 11
 ',
             IssueBuffer::getOutput(IssueBuffer::getIssuesData(), $emacs_report_options)
         );
@@ -370,8 +371,8 @@ somefile.php:16:6:warning - Possibly undefined global variable $a, first seen on
             'somefile.php:3: [E0001] UndefinedVariable: Cannot find referenced variable $as_you_____type (column 10)
 somefile.php:3: [E0001] MixedReturnStatement: Could not infer a return type (column 10)
 somefile.php:2: [E0001] MixedInferredReturnType: Could not verify return type \'null|string\' for psalmCanVerify (column 42)
-somefile.php:7: [E0001] UndefinedConstant: Const CHANGE_ME is not defined (column 6)
-somefile.php:16: [W0001] PossiblyUndefinedGlobalVariable: Possibly undefined global variable $a, first seen on line 10 (column 6)
+somefile.php:8: [E0001] UndefinedConstant: Const CHANGE_ME is not defined (column 6)
+somefile.php:17: [W0001] PossiblyUndefinedGlobalVariable: Possibly undefined global variable $a, first seen on line 11 (column 6)
 ',
             IssueBuffer::getOutput(IssueBuffer::getIssuesData(), $pylint_report_options)
         );
@@ -394,10 +395,10 @@ ERROR: MixedReturnStatement - somefile.php:3:10 - Could not infer a return type 
 ERROR: MixedInferredReturnType - somefile.php:2:42 - Could not verify return type \'null|string\' for psalmCanVerify (see https://psalm.dev/047)
 function psalmCanVerify(int $your_code): ?string {
 
-ERROR: UndefinedConstant - somefile.php:7:6 - Const CHANGE_ME is not defined (see https://psalm.dev/020)
+ERROR: UndefinedConstant - somefile.php:8:6 - Const CHANGE_ME is not defined (see https://psalm.dev/020)
 echo CHANGE_ME;
 
-INFO: PossiblyUndefinedGlobalVariable - somefile.php:16:6 - Possibly undefined global variable $a, first seen on line 10 (see https://psalm.dev/126)
+INFO: PossiblyUndefinedGlobalVariable - somefile.php:17:6 - Possibly undefined global variable $a, first seen on line 11 (see https://psalm.dev/126)
 echo $a
 
 ',
@@ -423,7 +424,7 @@ ERROR: MixedReturnStatement - somefile.php:3:10 - Could not infer a return type 
 ERROR: MixedInferredReturnType - somefile.php:2:42 - Could not verify return type \'null|string\' for psalmCanVerify (see https://psalm.dev/047)
 function psalmCanVerify(int $your_code): ?string {
 
-ERROR: UndefinedConstant - somefile.php:7:6 - Const CHANGE_ME is not defined (see https://psalm.dev/020)
+ERROR: UndefinedConstant - somefile.php:8:6 - Const CHANGE_ME is not defined (see https://psalm.dev/020)
 echo CHANGE_ME;
 
 ',
@@ -449,10 +450,10 @@ ERROR: MixedReturnStatement - somefile.php:3:10 - Could not infer a return type 
 ERROR: MixedInferredReturnType - somefile.php:2:42 - Could not verify return type \'null|string\' for psalmCanVerify (see https://psalm.dev/047)
 
 
-ERROR: UndefinedConstant - somefile.php:7:6 - Const CHANGE_ME is not defined (see https://psalm.dev/020)
+ERROR: UndefinedConstant - somefile.php:8:6 - Const CHANGE_ME is not defined (see https://psalm.dev/020)
 
 
-INFO: PossiblyUndefinedGlobalVariable - somefile.php:16:6 - Possibly undefined global variable $a, first seen on line 10 (see https://psalm.dev/126)
+INFO: PossiblyUndefinedGlobalVariable - somefile.php:17:6 - Possibly undefined global variable $a, first seen on line 11 (see https://psalm.dev/126)
 
 
 ',
@@ -477,8 +478,8 @@ INFO: PossiblyUndefinedGlobalVariable - somefile.php:16:6 - Possibly undefined g
             '| ERROR    | 3    | UndefinedVariable               | Cannot find referenced variable $as_you_____type              |' . "\n" .
             '| ERROR    | 3    | MixedReturnStatement            | Could not infer a return type                                 |' . "\n" .
             '| ERROR    | 2    | MixedInferredReturnType         | Could not verify return type \'null|string\' for psalmCanVerify |' . "\n" .
-            '| ERROR    | 7    | UndefinedConstant               | Const CHANGE_ME is not defined                                |' . "\n" .
-            '| INFO     | 16   | PossiblyUndefinedGlobalVariable | Possibly undefined global variable $a, first seen on line 10  |' . "\n" .
+            '| ERROR    | 8    | UndefinedConstant               | Const CHANGE_ME is not defined                                |' . "\n" .
+            '| INFO     | 17   | PossiblyUndefinedGlobalVariable | Possibly undefined global variable $a, first seen on line 11  |' . "\n" .
             '+----------+------+---------------------------------+---------------------------------------------------------------+' . "\n",
             $this->toUnixLineEndings(IssueBuffer::getOutput(IssueBuffer::getIssuesData(), $compact_report_options))
         );
@@ -503,10 +504,10 @@ INFO: PossiblyUndefinedGlobalVariable - somefile.php:16:6 - Possibly undefined g
  <error line="2" column="42" severity="error" message="MixedInferredReturnType: Could not verify return type \'null|string\' for psalmCanVerify"/>
 </file>
 <file name="somefile.php">
- <error line="7" column="6" severity="error" message="UndefinedConstant: Const CHANGE_ME is not defined"/>
+ <error line="8" column="6" severity="error" message="UndefinedConstant: Const CHANGE_ME is not defined"/>
 </file>
 <file name="somefile.php">
- <error line="16" column="6" severity="info" message="PossiblyUndefinedGlobalVariable: Possibly undefined global variable $a, first seen on line 10"/>
+ <error line="17" column="6" severity="info" message="PossiblyUndefinedGlobalVariable: Possibly undefined global variable $a, first seen on line 11"/>
 </file>
 </checkstyle>
 ',
@@ -562,22 +563,22 @@ column_from: 42
 column_to: 49
 </failure>
     </testcase>
-    <testcase name="somefile.php:7" classname="UndefinedConstant" assertions="1">
+    <testcase name="somefile.php:8" classname="UndefinedConstant" assertions="1">
       <failure type="UndefinedConstant">message: Const CHANGE_ME is not defined
 type: UndefinedConstant
 snippet: echo CHANGE_ME;
 selected_text: CHANGE_ME
-line: 7
+line: 8
 column_from: 6
 column_to: 15
 </failure>
     </testcase>
-    <testcase name="somefile.php:16" classname="PossiblyUndefinedGlobalVariable" assertions="1">
-      <skipped>message: Possibly undefined global variable $a, first seen on line 10
+    <testcase name="somefile.php:17" classname="PossiblyUndefinedGlobalVariable" assertions="1">
+      <skipped>message: Possibly undefined global variable $a, first seen on line 11
 type: PossiblyUndefinedGlobalVariable
 snippet: echo $a
 selected_text: $a
-line: 16
+line: 17
 column_from: 6
 column_to: 8
 </skipped>

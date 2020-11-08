@@ -248,7 +248,7 @@ class ErrorFixTest extends \Psalm\Tests\TestCase
                             }',
                     ],
                 ],
-                'error_counts' => [0, 1, 0],
+                'error_counts' => [0, 2, 0],
             ],
             'traitMethodRenameFirstError' => [
                 'files' => [
@@ -310,7 +310,7 @@ class ErrorFixTest extends \Psalm\Tests\TestCase
                             }',
                     ],
                 ],
-                'error_counts' => [1, 0, 0],
+                'error_counts' => [2, 0, 0],
             ],
             'addSuppressions' => [
                 'files' => [
