@@ -10,36 +10,22 @@ use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentMapPopulator;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentsAnalyzer;
-use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallAnalyzer;
-use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\MethodIdentifier;
-use Psalm\Internal\FileManipulation\FileManipulationBuffer;
-use Psalm\Issue\InvalidPropertyAssignmentValue;
 use Psalm\Issue\MixedMethodCall;
-use Psalm\Issue\MixedPropertyTypeCoercion;
-use Psalm\Issue\PossiblyInvalidPropertyAssignmentValue;
-use Psalm\Issue\PropertyTypeCoercion;
-use Psalm\Issue\UndefinedThisPropertyAssignment;
-use Psalm\Issue\UndefinedThisPropertyFetch;
 use Psalm\IssueBuffer;
-use Psalm\Storage\Assertion;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use function array_values;
 use function array_shift;
 use function get_class;
 use function strtolower;
-use function array_map;
 use function array_merge;
 use function explode;
-use function in_array;
-use function count;
 
 class AtomicMethodCallAnalyzer extends CallAnalyzer
 {

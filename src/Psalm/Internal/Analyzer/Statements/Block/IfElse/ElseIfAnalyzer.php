@@ -15,7 +15,6 @@ use Psalm\Context;
 use Psalm\Issue\ConflictingReferenceConstraint;
 use Psalm\IssueBuffer;
 use Psalm\Internal\Scope\IfScope;
-use Psalm\Type;
 use Psalm\Internal\Algebra;
 use Psalm\Type\Reconciler;
 use function array_merge;
@@ -31,7 +30,6 @@ use function preg_quote;
 use function array_unique;
 use function count;
 use function in_array;
-use function array_intersect_key;
 
 class ElseIfAnalyzer
 {
