@@ -1596,6 +1596,25 @@ class TaintTest extends TestCase
 
                 echo some_stub($r);',
                 'error_message' => 'TaintedInput',
+            ],
+            'taintFlowMethodProxyAndReturn' => [
+                '<?php
+
+                class dummy {
+                    public function taintable(string $in): string {
+                        return $in;
+                    }
+                }
+
+                /**
+                 * @psalm-flow proxy dummy::taintable($r) -> return
+                 */
+                function some_stub(string $r): string {}
+
+                $r = $_GET["untrusted"];
+
+                echo some_stub($r);',
+                'error_message' => 'TaintedInput',
             ]
             /*
             // TODO: Stubs do not support this type of inference even with $this->message = $message.

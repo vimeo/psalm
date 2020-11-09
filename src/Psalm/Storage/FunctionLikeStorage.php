@@ -210,7 +210,7 @@ abstract class FunctionLikeStorage
     public $attributes = [];
 
     /**
-     * @var list<array{fqcn: string, params: array<int>, return: bool}>|null
+     * @var list<array{fqn: string, params: array<int>, return: bool}>|null
      */
     public $proxy_calls = [];
 

@@ -2,6 +2,7 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use PhpParser;
+use PhpParser\BuilderFactory;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
@@ -1072,15 +1073,18 @@ class FunctionCallAnalyzer extends CallAnalyzer
 
             if ($function_storage->proxy_calls !== null) {
                 foreach ($function_storage->proxy_calls as $proxy_call) {
-                    $pass_arguments = [];
+                    $fake_call_arguments = [];
                     foreach ($proxy_call['params'] as $i) {
-                        $pass_arguments[] = $stmt->args[$i];
+                        $fake_call_arguments[] = $stmt->args[$i];
                     }
 
-                    $fake_call = new PhpParser\Node\Expr\FuncCall(
-                        new PhpParser\Node\Name\FullyQualified($proxy_call['fqcn']),
-                        $pass_arguments
-                    );
+                    $fake_call_factory = new BuilderFactory();
+                    if (strpos($proxy_call['fqn'], '::') !== false) {
+                        list($fqcn, $method) = explode('::', $proxy_call['fqn']);
+                        $fake_call = $fake_call_factory->staticCall($fqcn, $method, $fake_call_arguments);
+                    } else {
+                        $fake_call = $fake_call_factory->funcCall($proxy_call['fqn'], $fake_call_arguments);
+                    }
                     ExpressionAnalyzer::analyze($statements_analyzer, $fake_call, $context);
 
                     if (null !== $statements_analyzer->data_flow_graph

@@ -529,7 +529,7 @@ class FunctionLikeDocblockScanner
                         }
 
                         $storage->proxy_calls[] = [
-                            'fqcn' => $fully_qualified_name,
+                            'fqn' => $fully_qualified_name,
                             'params' => $call_params,
                             'return' => isset($flow_parts[1]) && trim($flow_parts[1]) === 'return'
                         ];
