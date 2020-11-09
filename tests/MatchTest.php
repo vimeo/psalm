@@ -188,6 +188,23 @@ class MatchTest extends TestCase
                 false,
                 '8.0',
             ],
+            'exitIsLikeThrow' => [
+                '<?php
+                    /**
+                     * @param 1|2|3 $i
+                     */
+                    function foo(int $i): void {
+                        $a = match ($i) {
+                            1 => exit(),
+                            2, 3 => $i,
+                        };
+                        $a === "aaa";
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+                [],
+                false,
+                '8.0',
+            ],
         ];
     }
 }

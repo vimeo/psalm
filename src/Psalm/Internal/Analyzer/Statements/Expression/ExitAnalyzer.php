@@ -78,6 +78,8 @@ class ExitAnalyzer
             $context->inside_call = false;
         }
 
+        $statements_analyzer->node_data->setType($stmt, \Psalm\Type::getEmpty());
+
         return true;
     }
 }
