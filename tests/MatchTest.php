@@ -176,6 +176,18 @@ class MatchTest extends TestCase
                 false,
                 '8.0',
             ],
+            'noCrashWithEmptyMatch' => [
+                '<?php
+                    function foo(int $i) {
+                        match ($i) {
+
+                        };
+                    }',
+                'error_message' => 'UnhandledMatchCondition',
+                [],
+                false,
+                '8.0',
+            ],
         ];
     }
 }

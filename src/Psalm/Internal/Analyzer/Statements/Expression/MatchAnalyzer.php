@@ -79,6 +79,20 @@ class MatchAnalyzer
 
         $last_arm = array_shift($arms);
 
+        if (!$last_arm) {
+            if (\Psalm\IssueBuffer::accepts(
+                new UnhandledMatchCondition(
+                    'This match expression does not match anything',
+                    new \Psalm\CodeLocation($statements_analyzer->getSource(), $match_condition)
+                ),
+                $statements_analyzer->getSuppressedIssues()
+            )) {
+                // continue
+            }
+
+            return false;
+        }
+
         $old_node_data = $statements_analyzer->node_data;
 
         $statements_analyzer->node_data = clone $statements_analyzer->node_data;
