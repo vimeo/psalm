@@ -210,9 +210,9 @@ abstract class FunctionLikeStorage
     public $attributes = [];
 
     /**
-     * @var list<array{fqcn: string, params: array<int>, return: bool}>
+     * @var list<array{fqcn: string, params: array<int>, return: bool}>|null
      */
-    public $passthru_calls = [];
+    public $proxy_calls = [];
 
     public function __toString(): string
     {

@@ -1070,21 +1070,29 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 $stmt_type
             );
 
-            foreach ($function_storage->passthru_calls as $passthru_call) {
-                $pass_arguments = [];
-                foreach ($passthru_call['params'] as $i) {
-                    $pass_arguments[] = $stmt->args[$i];
-                }
+            if ($function_storage->proxy_calls !== null) {
+                foreach ($function_storage->proxy_calls as $proxy_call) {
+                    $pass_arguments = [];
+                    foreach ($proxy_call['params'] as $i) {
+                        $pass_arguments[] = $stmt->args[$i];
+                    }
 
-                $fake_call = new PhpParser\Node\Expr\FuncCall(
-                    new PhpParser\Node\Name\FullyQualified($passthru_call['fqcn']),
-                    $pass_arguments
-                );
-                ExpressionAnalyzer::analyze($statements_analyzer, $fake_call, $context);
+                    $fake_call = new PhpParser\Node\Expr\FuncCall(
+                        new PhpParser\Node\Name\FullyQualified($proxy_call['fqcn']),
+                        $pass_arguments
+                    );
+                    ExpressionAnalyzer::analyze($statements_analyzer, $fake_call, $context);
 
-                if (null !== $return_node && $passthru_call['return'] === true) {
-                    foreach ($statements_analyzer->node_data->getType($fake_call)->parent_nodes as $fake_call_node) {
-                        $statements_analyzer->data_flow_graph->addPath($fake_call_node, $return_node, 'return');
+                    if (null !== $statements_analyzer->data_flow_graph
+                        && null !== $return_node
+                        && $proxy_call['return']
+                    ) {
+                        $fake_call_type = $statements_analyzer->node_data->getType($fake_call);
+                        if (null !== $fake_call_type) {
+                            foreach ($fake_call_type->parent_nodes as $fake_call_node) {
+                                $statements_analyzer->data_flow_graph->addPath($fake_call_node, $return_node, 'return');
+                            }
+                        }
                     }
                 }
             }

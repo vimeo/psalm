@@ -1562,7 +1562,7 @@ class TaintTest extends TestCase
                 echo some_stub($r);',
                 'error_message' => 'TaintedInput',
             ],
-            'taintFlowPassthru' => [
+            'taintFlowProxy' => [
                 '<?php
 
                 /**
@@ -1571,7 +1571,7 @@ class TaintTest extends TestCase
                 function dummy_taint_sink(string $in): void {}
 
                 /**
-                 * @psalm-flow passthru dummy_taint_sink($r)
+                 * @psalm-flow proxy dummy_taint_sink($r)
                  */
                 function some_stub(string $r): string {}
 
@@ -1580,7 +1580,7 @@ class TaintTest extends TestCase
                 some_stub($r);',
                 'error_message' => 'TaintedInput',
             ],
-            'taintFlowPassthruAndReturn' => [
+            'taintFlowProxyAndReturn' => [
                 '<?php
 
                 function dummy_taintable(string $in): string {
@@ -1588,7 +1588,7 @@ class TaintTest extends TestCase
                 }
 
                 /**
-                 * @psalm-flow passthru dummy_taintable($r) -> return
+                 * @psalm-flow proxy dummy_taintable($r) -> return
                  */
                 function some_stub(string $r): string {}
 
