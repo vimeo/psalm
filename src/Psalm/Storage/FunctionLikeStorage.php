@@ -209,6 +209,11 @@ abstract class FunctionLikeStorage
      */
     public $attributes = [];
 
+    /**
+     * @var list<array{fqn: string, params: array<int>, return: bool}>|null
+     */
+    public $proxy_calls = [];
+
     public function __toString(): string
     {
         return $this->getSignature(false);

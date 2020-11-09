@@ -2,6 +2,7 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use PhpParser;
+use PhpParser\BuilderFactory;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
@@ -1062,7 +1063,43 @@ class FunctionCallAnalyzer extends CallAnalyzer
         }
 
         if ($function_storage) {
-            self::taintReturnType($statements_analyzer, $stmt, $function_id, $function_storage, $stmt_type);
+            $return_node = self::taintReturnType(
+                $statements_analyzer,
+                $stmt,
+                $function_id,
+                $function_storage,
+                $stmt_type
+            );
+
+            if ($function_storage->proxy_calls !== null) {
+                foreach ($function_storage->proxy_calls as $proxy_call) {
+                    $fake_call_arguments = [];
+                    foreach ($proxy_call['params'] as $i) {
+                        $fake_call_arguments[] = $stmt->args[$i];
+                    }
+
+                    $fake_call_factory = new BuilderFactory();
+                    if (strpos($proxy_call['fqn'], '::') !== false) {
+                        list($fqcn, $method) = explode('::', $proxy_call['fqn']);
+                        $fake_call = $fake_call_factory->staticCall($fqcn, $method, $fake_call_arguments);
+                    } else {
+                        $fake_call = $fake_call_factory->funcCall($proxy_call['fqn'], $fake_call_arguments);
+                    }
+                    ExpressionAnalyzer::analyze($statements_analyzer, $fake_call, $context);
+
+                    if (null !== $statements_analyzer->data_flow_graph
+                        && null !== $return_node
+                        && $proxy_call['return']
+                    ) {
+                        $fake_call_type = $statements_analyzer->node_data->getType($fake_call);
+                        if (null !== $fake_call_type) {
+                            foreach ($fake_call_type->parent_nodes as $fake_call_node) {
+                                $statements_analyzer->data_flow_graph->addPath($fake_call_node, $return_node, 'return');
+                            }
+                        }
+                    }
+                }
+            }
         }
 
 
@@ -1301,11 +1338,11 @@ class FunctionCallAnalyzer extends CallAnalyzer
         string $function_id,
         FunctionLikeStorage $function_storage,
         Type\Union $stmt_type
-    ) : void {
+    ) : ?DataFlowNode {
         if (!$statements_analyzer->data_flow_graph instanceof TaintFlowGraph
             || \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
         ) {
-            return;
+            return null;
         }
 
         $node_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
@@ -1392,6 +1429,8 @@ class FunctionCallAnalyzer extends CallAnalyzer
 
             $statements_analyzer->data_flow_graph->addSource($method_node);
         }
+
+        return $function_call_node;
     }
 
     /**

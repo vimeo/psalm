@@ -506,6 +506,35 @@ class FunctionLikeDocblockScanner
                         }
                     }
                 }
+
+                if (isset($flow_parts[0]) && \strpos(trim($flow_parts[0]), 'proxy') === 0) {
+                    $proxy_call = trim(substr($flow_parts[0], strlen('proxy')));
+                    list($fully_qualified_name, $source_param_string) = explode('(', $proxy_call, 2);
+
+                    if (!empty($fully_qualified_name) && !empty($source_param_string)) {
+                        $source_params = preg_split('/, ?/', substr($source_param_string, 0, -1)) ?: [];
+                        $call_params = [];
+                        foreach ($source_params as $source_param) {
+                            $source_param = substr($source_param, 1);
+
+                            foreach ($storage->params as $i => $param_storage) {
+                                if ($param_storage->name === $source_param) {
+                                    $call_params[] = $i;
+                                }
+                            }
+                        }
+
+                        if ($storage->proxy_calls === null) {
+                            $storage->proxy_calls = [];
+                        }
+
+                        $storage->proxy_calls[] = [
+                            'fqn' => $fully_qualified_name,
+                            'params' => $call_params,
+                            'return' => isset($flow_parts[1]) && trim($flow_parts[1]) === 'return'
+                        ];
+                    }
+                }
             }
         }
 
