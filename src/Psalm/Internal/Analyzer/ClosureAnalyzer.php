@@ -160,6 +160,13 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
                     : Type::getMixed();
 
                 $use_context->vars_possibly_in_scope[$use_var_id] = true;
+
+                foreach ($context->vars_in_scope as $var_id => $type) {
+                    if (preg_match('/^\$' . $use->var->name . '[\[\-]/', $var_id)) {
+                        $use_context->vars_in_scope[$var_id] = clone $type;
+                        $use_context->vars_possibly_in_scope[$var_id] = true;
+                    }
+                }
             }
         } else {
             $traverser = new PhpParser\NodeTraverser;
