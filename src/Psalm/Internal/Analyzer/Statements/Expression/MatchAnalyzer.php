@@ -106,10 +106,14 @@ class MatchAnalyzer
                 new PhpParser\Node\Expr\Throw_(
                     new PhpParser\Node\Expr\New_(
                         new PhpParser\Node\Name\FullyQualified(
-                            'UnhandledMatchError'
-                        )
+                            'UnhandledMatchError',
+                            $stmt->getAttributes()
+                        ),
+                        [],
+                        $stmt->getAttributes()
                     )
-                )
+                ),
+                $stmt->getAttributes()
             );
         }
 
@@ -255,17 +259,28 @@ class MatchAnalyzer
             new PhpParser\Node\Name\FullyQualified(['in_array']),
             [
                 new PhpParser\Node\Arg(
-                    $match_condition
+                    $match_condition,
+                    false,
+                    false,
+                    $attributes
                 ),
                 new PhpParser\Node\Arg(
                     new PhpParser\Node\Expr\Array_(
-                        $array_items
-                    )
+                        $array_items,
+                        $attributes
+                    ),
+                    false,
+                    false,
+                    $attributes
                 ),
                 new PhpParser\Node\Arg(
                     new PhpParser\Node\Expr\ConstFetch(
-                        new PhpParser\Node\Name\FullyQualified(['true'])
-                    )
+                        new PhpParser\Node\Name\FullyQualified(['true']),
+                        $attributes
+                    ),
+                    false,
+                    false,
+                    $attributes
                 ),
             ],
             $attributes

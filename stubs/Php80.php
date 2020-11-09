@@ -72,3 +72,5 @@ class ReflectionUnionType extends ReflectionType {
      */
     public function getTypes() {}
 }
+
+class UnhandledMatchError extends Error {}

@@ -205,6 +205,18 @@ class MatchTest extends TestCase
                 false,
                 '8.0',
             ],
+            'matchTrueImpossible' => [
+                '<?php
+                    $foo = new \stdClass();
+                    $a = match (true) {
+                        $foo instanceof \stdClass => 1,
+                        $foo instanceof \Exception => 1,
+                    };',
+                'error_message' => 'TypeDoesNotContainType',
+                [],
+                false,
+                '8.0',
+            ],
         ];
     }
 }
