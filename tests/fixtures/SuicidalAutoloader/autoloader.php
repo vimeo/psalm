@@ -15,6 +15,7 @@ spl_autoload_register(function (string $className) {
         'PHPUnit\Framework\Countable',
         'PHPUnit\Framework\DOMDocument',
         'PHPUnit\Framework\DOMElement',
+        'Stringable',
     ];
 
     if (in_array($className, $knownBadClasses)) {

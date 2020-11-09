@@ -581,7 +581,7 @@ class CallAnalyzer
      * @param  array<string, array<string, array{Type\Union}>> $template_type_map,
      *
      */
-    protected static function applyAssertionsToContext(
+    public static function applyAssertionsToContext(
         PhpParser\NodeAbstract $expr,
         ?string $thisName,
         array $assertions,
