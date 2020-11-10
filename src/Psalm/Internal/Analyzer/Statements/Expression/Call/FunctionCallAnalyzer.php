@@ -1700,6 +1700,8 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     ])
                 );
             }
+
+            return;
         }
 
         if ($function_name->parts === ['method_exists']) {
@@ -1714,7 +1716,11 @@ class FunctionCallAnalyzer extends CallAnalyzer
             } else {
                 $context->check_methods = false;
             }
-        } elseif ($function_name->parts === ['class_exists']) {
+
+            return;
+        }
+
+        if ($function_name->parts === ['class_exists']) {
             if ($first_arg) {
                 if ($first_arg->value instanceof PhpParser\Node\Scalar\String_) {
                     if (!$codebase->classlikes->classExists($first_arg->value->value)) {
@@ -1732,7 +1738,11 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     }
                 }
             }
-        } elseif ($function_name->parts === ['interface_exists']) {
+
+            return;
+        }
+
+        if ($function_name->parts === ['interface_exists']) {
             if ($first_arg) {
                 if ($first_arg->value instanceof PhpParser\Node\Scalar\String_) {
                     $context->phantom_classes[strtolower($first_arg->value->value)] = true;
@@ -1748,13 +1758,21 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     }
                 }
             }
-        } elseif ($function_name->parts === ['file_exists'] && $first_arg) {
+
+            return;
+        }
+
+        if ($function_name->parts === ['file_exists'] && $first_arg) {
             $var_id = ExpressionIdentifier::getArrayVarId($first_arg->value, null);
 
             if ($var_id) {
                 $context->phantom_files[$var_id] = true;
             }
-        } elseif ($function_name->parts === ['extension_loaded']) {
+
+            return;
+        }
+
+        if ($function_name->parts === ['extension_loaded']) {
             if ($first_arg
                 && $first_arg->value instanceof PhpParser\Node\Scalar\String_
             ) {
@@ -1764,14 +1782,27 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     $context->check_classes = false;
                 }
             }
-        } elseif ($function_name->parts === ['function_exists']) {
+
+            return;
+        }
+
+        if ($function_name->parts === ['function_exists']) {
             $context->check_functions = false;
-        } elseif ($function_name->parts === ['is_callable']) {
+            return;
+        }
+
+        if ($function_name->parts === ['is_callable']) {
             $context->check_methods = false;
             $context->check_functions = false;
-        } elseif ($function_name->parts === ['defined']) {
+            return;
+        }
+
+        if ($function_name->parts === ['defined']) {
             $context->check_consts = false;
-        } elseif ($function_name->parts === ['extract']) {
+            return;
+        }
+
+        if ($function_name->parts === ['extract']) {
             $context->check_variables = false;
 
             foreach ($context->vars_in_scope as $var_id => $_) {
@@ -1786,7 +1817,11 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 $context->assigned_var_ids[$var_id] = (int) $stmt->getAttribute('startFilePos');
                 $context->possibly_assigned_var_ids[$var_id] = true;
             }
-        } elseif ($function_name->parts === ['compact']) {
+
+            return;
+        }
+
+        if ($function_name->parts === ['compact']) {
             $all_args_string_literals = true;
             $new_items = [];
 
@@ -1823,7 +1858,11 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     $statements_analyzer->node_data->setType($stmt, $arr_type);
                 }
             }
-        } elseif ($function_name->parts === ['func_get_args']) {
+
+            return;
+        }
+
+        if ($function_name->parts === ['func_get_args']) {
             $source = $statements_analyzer->getSource();
 
             if ($statements_analyzer->data_flow_graph
@@ -1839,7 +1878,11 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     }
                 }
             }
-        } elseif (strtolower($function_name->parts[0]) === 'var_dump'
+
+            return;
+        }
+
+        if (strtolower($function_name->parts[0]) === 'var_dump'
             || strtolower($function_name->parts[0]) === 'shell_exec') {
             if (IssueBuffer::accepts(
                 new ForbiddenCode(
@@ -1850,7 +1893,9 @@ class FunctionCallAnalyzer extends CallAnalyzer
             )) {
                 // continue
             }
-        } elseif (isset($codebase->config->forbidden_functions[strtolower((string) $function_name)])) {
+        }
+
+        if (isset($codebase->config->forbidden_functions[strtolower((string) $function_name)])) {
             if (IssueBuffer::accepts(
                 new ForbiddenCode(
                     'You have forbidden the use of ' . $function_name,
@@ -1860,7 +1905,11 @@ class FunctionCallAnalyzer extends CallAnalyzer
             )) {
                 // continue
             }
-        } elseif ($function_name->parts === ['define']) {
+
+            return;
+        }
+
+        if ($function_name->parts === ['define']) {
             if ($first_arg) {
                 $fq_const_name = ConstFetchAnalyzer::getConstName(
                     $first_arg->value,
@@ -1886,7 +1935,11 @@ class FunctionCallAnalyzer extends CallAnalyzer
             } else {
                 $context->check_consts = false;
             }
-        } elseif ($function_name->parts === ['constant']) {
+
+            return;
+        }
+
+        if ($function_name->parts === ['constant']) {
             if ($first_arg) {
                 $fq_const_name = ConstFetchAnalyzer::getConstName(
                     $first_arg->value,
@@ -1910,7 +1963,9 @@ class FunctionCallAnalyzer extends CallAnalyzer
             } else {
                 $context->check_consts = false;
             }
-        } elseif ($first_arg
+        }
+
+        if ($first_arg
             && $function_id
             && strpos($function_id, 'is_') === 0
             && $function_id !== 'is_a'
@@ -1951,7 +2006,11 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     new CodeLocation($statements_analyzer->getSource(), $stmt)
                 );
             }
-        } elseif ($first_arg && $function_id === 'strtolower') {
+
+            return;
+        }
+
+        if ($first_arg && $function_id === 'strtolower') {
             $first_arg_type = $statements_analyzer->node_data->getType($first_arg->value);
 
             if ($first_arg_type

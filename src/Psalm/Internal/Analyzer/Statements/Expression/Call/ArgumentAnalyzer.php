@@ -1267,7 +1267,7 @@ class ArgumentAnalyzer
                 $function_param->location
             );
 
-            if (strpos($cased_method_id, '::')) {
+            if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph && strpos($cased_method_id, '::')) {
                 [$fq_classlike_name, $cased_method_name] = explode('::', $cased_method_id);
                 $method_name = strtolower($cased_method_name);
                 $class_storage = $codebase->classlike_storage_provider->get($fq_classlike_name);

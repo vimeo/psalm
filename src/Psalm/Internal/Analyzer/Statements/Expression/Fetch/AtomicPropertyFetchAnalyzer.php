@@ -840,13 +840,16 @@ class AtomicPropertyFetchAnalyzer
                 $type->parent_nodes = [$property_node->id => $property_node];
             }
         } else {
-            $code_location = new CodeLocation($statements_analyzer, $stmt->name);
+            $var_property_id = ExpressionIdentifier::getArrayVarId(
+                $stmt,
+                null,
+                $statements_analyzer
+            );
 
-            $localized_property_node = new DataFlowNode(
-                $property_id . '-' . $code_location->file_name . ':' . $code_location->raw_file_start,
-                $property_id,
-                $code_location,
-                null
+            $localized_property_node = DataFlowNode::getForAssignment(
+                $var_property_id
+                    ?: $property_id . '-' . $property_location->file_name . ':' . $property_location->raw_file_start,
+                $property_location
             );
 
             $data_flow_graph->addNode($localized_property_node);
@@ -866,7 +869,7 @@ class AtomicPropertyFetchAnalyzer
                 $data_flow_graph->addPath($property_node, $localized_property_node, 'property-fetch');
             }
 
-            $type->parent_nodes[$localized_property_node->id] = $localized_property_node;
+            $type->parent_nodes = [$localized_property_node->id => $localized_property_node];
         }
     }
 

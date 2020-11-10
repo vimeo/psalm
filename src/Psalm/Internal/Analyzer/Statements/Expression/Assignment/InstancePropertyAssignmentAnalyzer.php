@@ -1235,13 +1235,16 @@ class InstancePropertyAssignmentAnalyzer
                 return;
             }
 
-            $code_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
+            $var_property_id = ExpressionIdentifier::getArrayVarId(
+                $stmt,
+                null,
+                $statements_analyzer
+            );
 
-            $localized_property_node = new DataFlowNode(
-                $property_id . '-' . $code_location->file_name . ':' . $code_location->raw_file_start,
-                $property_id,
-                $code_location,
-                null
+            $localized_property_node = DataFlowNode::getForAssignment(
+                $var_property_id
+                    ?: $property_id . '-' . $property_location->file_name . ':' . $property_location->raw_file_start,
+                $property_location
             );
 
             $data_flow_graph->addNode($localized_property_node);

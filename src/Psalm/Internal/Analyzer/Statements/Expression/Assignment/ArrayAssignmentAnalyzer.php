@@ -792,17 +792,33 @@ class ArrayAssignmentAnalyzer
             && ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
                 || !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues()))
         ) {
-            if (!$stmt_type->parent_nodes) {
-                $var_location = new \Psalm\CodeLocation($statements_analyzer->getSource(), $expr->var);
+            $var_location = new \Psalm\CodeLocation($statements_analyzer->getSource(), $expr->var);
 
-                $parent_node = \Psalm\Internal\DataFlow\DataFlowNode::getForAssignment(
-                    $var_var_id ?: 'assignment',
-                    $var_location
+            $parent_node = \Psalm\Internal\DataFlow\DataFlowNode::getForAssignment(
+                $var_var_id ?: 'assignment',
+                $var_location
+            );
+
+            $statements_analyzer->data_flow_graph->addNode($parent_node);
+
+            $old_parent_nodes = $stmt_type->parent_nodes;
+
+            $stmt_type->parent_nodes = [$parent_node->id => $parent_node];
+
+            foreach ($old_parent_nodes as $old_parent_node) {
+                $statements_analyzer->data_flow_graph->addPath(
+                    $old_parent_node,
+                    $parent_node,
+                    '='
                 );
 
-                $statements_analyzer->data_flow_graph->addNode($parent_node);
-
-                $stmt_type->parent_nodes = [$parent_node->id => $parent_node];
+                if ($stmt_type->by_ref) {
+                    $statements_analyzer->data_flow_graph->addPath(
+                        $parent_node,
+                        $old_parent_node,
+                        '='
+                    );
+                }
             }
 
             foreach ($stmt_type->parent_nodes as $parent_node) {
