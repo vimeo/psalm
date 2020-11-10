@@ -7,6 +7,7 @@ use Psalm\Internal\DataFlow\DataFlowNode;
 use function substr;
 use function strlen;
 use function array_reverse;
+use function array_sum;
 
 abstract class DataFlowGraph
 {

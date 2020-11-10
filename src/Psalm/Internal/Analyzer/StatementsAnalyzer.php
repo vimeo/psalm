@@ -705,7 +705,7 @@ class StatementsAnalyzer extends SourceAnalyzer
                 && $mean > $codebase->config->max_avg_path_length
                 && $branching > 1.1
             ) {
-                echo($source->getId() . ' ' . $count . ' ' . round($mean) . ' ' . number_format($branching, 2). "   \n\n");
+                // do something
             }
         }
 
