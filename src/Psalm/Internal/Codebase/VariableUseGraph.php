@@ -18,7 +18,7 @@ class VariableUseGraph extends DataFlowGraph
 
         $sources = [$assignment_node];
 
-        for ($i = 0; count($sources) && $i < 100; $i++) {
+        for ($i = 0; count($sources) && $i < 200; $i++) {
             $new_sources = [];
 
             foreach ($sources as $source) {
