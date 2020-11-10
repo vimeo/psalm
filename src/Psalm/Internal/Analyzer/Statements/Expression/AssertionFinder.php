@@ -577,13 +577,6 @@ class AssertionFinder
         $if_types = [];
 
         $null_position = self::hasNullVariable($conditional, $source);
-        $false_position = self::hasFalseVariable($conditional);
-        $true_position = self::hasTrueVariable($conditional);
-        $empty_array_position = self::hasEmptyArrayVariable($conditional);
-        $gettype_position = self::hasGetTypeCheck($conditional);
-        $get_debug_type_position = self::hasGetDebugTypeCheck($conditional);
-        $min_count = null;
-        $count_equality_position = self::hasNonEmptyCountEqualityCheck($conditional, $min_count);
 
         if ($null_position !== null) {
             if ($null_position === self::ASSIGNMENT_TO_RIGHT) {
@@ -656,6 +649,8 @@ class AssertionFinder
 
             return $if_types ? [$if_types] : [];
         }
+
+        $true_position = self::hasTrueVariable($conditional);
 
         if ($true_position) {
             if ($true_position === self::ASSIGNMENT_TO_RIGHT) {
@@ -775,6 +770,8 @@ class AssertionFinder
             return $if_types;
         }
 
+        $false_position = self::hasFalseVariable($conditional);
+
         if ($false_position) {
             if ($false_position === self::ASSIGNMENT_TO_RIGHT) {
                 $base_conditional = $conditional->left;
@@ -884,6 +881,8 @@ class AssertionFinder
             return $if_types;
         }
 
+        $empty_array_position = self::hasEmptyArrayVariable($conditional);
+
         if ($empty_array_position !== null) {
             if ($empty_array_position === self::ASSIGNMENT_TO_RIGHT) {
                 $base_conditional = $conditional->left;
@@ -948,6 +947,8 @@ class AssertionFinder
             return $if_types ? [$if_types] : [];
         }
 
+        $gettype_position = self::hasGetTypeCheck($conditional);
+
         if ($gettype_position) {
             if ($gettype_position === self::ASSIGNMENT_TO_RIGHT) {
                 $string_expr = $conditional->left;
@@ -986,6 +987,8 @@ class AssertionFinder
 
             return $if_types ? [$if_types] : [];
         }
+
+        $get_debug_type_position = self::hasGetDebugTypeCheck($conditional);
 
         if ($get_debug_type_position) {
             if ($get_debug_type_position === self::ASSIGNMENT_TO_RIGHT) {
@@ -1032,6 +1035,9 @@ class AssertionFinder
 
             return $if_types ? [$if_types] : [];
         }
+
+        $min_count = null;
+        $count_equality_position = self::hasNonEmptyCountEqualityCheck($conditional, $min_count);
 
         if ($count_equality_position) {
             if ($count_equality_position === self::ASSIGNMENT_TO_RIGHT) {
@@ -1268,13 +1274,6 @@ class AssertionFinder
         $if_types = [];
 
         $null_position = self::hasNullVariable($conditional, $source);
-        $false_position = self::hasFalseVariable($conditional);
-        $true_position = self::hasTrueVariable($conditional);
-        $empty_array_position = self::hasEmptyArrayVariable($conditional);
-        $gettype_position = self::hasGetTypeCheck($conditional);
-        $get_debug_type_position = self::hasGetDebugTypeCheck($conditional);
-        $count = null;
-        $count_inequality_position = self::hasNotCountEqualityCheck($conditional, $count);
 
         if ($null_position !== null) {
             if ($null_position === self::ASSIGNMENT_TO_RIGHT) {
@@ -1348,6 +1347,8 @@ class AssertionFinder
 
             return $if_types ? [$if_types] : [];
         }
+
+        $false_position = self::hasFalseVariable($conditional);
 
         if ($false_position) {
             if ($false_position === self::ASSIGNMENT_TO_RIGHT) {
@@ -1449,6 +1450,8 @@ class AssertionFinder
 
             return $if_types ? [$if_types] : [];
         }
+
+        $true_position = self::hasTrueVariable($conditional);
 
         if ($true_position) {
             if ($true_position === self::ASSIGNMENT_TO_RIGHT) {
@@ -1563,6 +1566,9 @@ class AssertionFinder
             return $if_types;
         }
 
+        $count = null;
+        $count_inequality_position = self::hasNotCountEqualityCheck($conditional, $count);
+
         if ($count_inequality_position) {
             if ($count_inequality_position === self::ASSIGNMENT_TO_RIGHT) {
                 $count_expr = $conditional->left;
@@ -1589,6 +1595,8 @@ class AssertionFinder
 
             return $if_types ? [$if_types] : [];
         }
+
+        $empty_array_position = self::hasEmptyArrayVariable($conditional);
 
         if ($empty_array_position !== null) {
             if ($empty_array_position === self::ASSIGNMENT_TO_RIGHT) {
@@ -1659,6 +1667,8 @@ class AssertionFinder
             return $if_types ? [$if_types] : [];
         }
 
+        $gettype_position = self::hasGetTypeCheck($conditional);
+
         if ($gettype_position) {
             if ($gettype_position === self::ASSIGNMENT_TO_RIGHT) {
                 $whichclass_expr = $conditional->left;
@@ -1707,6 +1717,8 @@ class AssertionFinder
 
             return $if_types ? [$if_types] : [];
         }
+
+        $get_debug_type_position = self::hasGetDebugTypeCheck($conditional);
 
         if ($get_debug_type_position) {
             if ($get_debug_type_position === self::ASSIGNMENT_TO_RIGHT) {
@@ -1759,7 +1771,6 @@ class AssertionFinder
         }
 
         $getclass_position = self::hasGetClassCheck($conditional, $source);
-        $typed_value_position = self::hasTypedValueComparison($conditional, $source);
 
         if ($getclass_position) {
             if ($getclass_position === self::ASSIGNMENT_TO_RIGHT) {
@@ -1831,6 +1842,8 @@ class AssertionFinder
 
             return $if_types ? [$if_types] : [];
         }
+
+        $typed_value_position = self::hasTypedValueComparison($conditional, $source);
 
         if ($typed_value_position) {
             if ($typed_value_position === self::ASSIGNMENT_TO_RIGHT) {
