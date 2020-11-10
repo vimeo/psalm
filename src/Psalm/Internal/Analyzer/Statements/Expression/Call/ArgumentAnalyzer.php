@@ -1256,7 +1256,9 @@ class ArgumentAnalyzer
                 $cased_method_id,
                 $cased_method_id,
                 $argument_offset,
-                $function_param->location,
+                $statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+                    ? $function_param->location
+                    : null,
                 $function_call_location
             );
         } else {
@@ -1264,7 +1266,9 @@ class ArgumentAnalyzer
                 $cased_method_id,
                 $cased_method_id,
                 $argument_offset,
-                $function_param->location
+                $statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+                    ? $function_param->location
+                    : null
             );
 
             if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph && strpos($cased_method_id, '::')) {

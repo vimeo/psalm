@@ -13,13 +13,16 @@ class Path
 
     public $escaped_taints;
 
+    public $length;
+
     /**
      * @param ?array<string> $unescaped_taints
      * @param ?array<string> $escaped_taints
      */
-    public function __construct(string $type, ?array $unescaped_taints, ?array $escaped_taints)
+    public function __construct(string $type, int $length, ?array $unescaped_taints, ?array $escaped_taints)
     {
         $this->type = $type;
+        $this->length = $length;
         $this->unescaped_taints = $unescaped_taints;
         $this->escaped_taints = $escaped_taints;
     }

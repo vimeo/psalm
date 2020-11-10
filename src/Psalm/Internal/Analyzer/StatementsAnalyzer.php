@@ -172,6 +172,7 @@ class StatementsAnalyzer extends SourceAnalyzer
 
         if ($root_scope
             && !$context->collect_initializations
+            && !$context->collect_mutations
             && $codebase->find_unused_variables
             && $context->check_variables
         ) {
@@ -692,6 +693,21 @@ class StatementsAnalyzer extends SourceAnalyzer
         $project_analyzer = $this->getProjectAnalyzer();
 
         $unused_var_remover = new Statements\UnusedAssignmentRemover();
+
+        if ($this->data_flow_graph instanceof VariableUseGraph
+            && $codebase->config->limit_method_complexity
+            && $source instanceof FunctionLikeAnalyzer
+            && !$source instanceof ClosureAnalyzer
+        ) {
+            [$count, $branching, $mean] = $this->data_flow_graph->getEdgeStats();
+
+            if ($count > $codebase->config->max_graph_size
+                && $mean > $codebase->config->max_avg_path_length
+                && $branching > 1.1
+            ) {
+                echo($source->getId() . ' ' . $count . ' ' . round($mean) . ' ' . number_format($branching, 2). "   \n\n");
+            }
+        }
 
         foreach ($this->unused_var_locations as [$var_id, $original_location]) {
             if (substr($var_id, 0, 2) === '$_') {

@@ -439,6 +439,21 @@ class Config
     public $restrict_return_types = false;
 
     /**
+     * @var bool
+     */
+    public $limit_method_complexity = false;
+
+    /**
+     * @var int
+     */
+    public $max_graph_size = 200;
+
+    /**
+     * @var int
+     */
+    public $max_avg_path_length = 60;
+
+    /**
      * @var string[]
      */
     public $plugin_paths = [];
@@ -841,6 +856,7 @@ class Config
             'findUnusedPsalmSuppress' => 'find_unused_psalm_suppress',
             'reportInfo' => 'report_info',
             'restrictReturnTypes' => 'restrict_return_types',
+            'limitMethodComplexity' => 'limit_method_complexity',
         ];
 
         foreach ($booleanAttributes as $xmlName => $internalName) {
