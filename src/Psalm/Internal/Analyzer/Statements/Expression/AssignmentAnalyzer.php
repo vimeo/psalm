@@ -1092,6 +1092,8 @@ class AssignmentAnalyzer
                 $data_flow_graph = $statements_analyzer->data_flow_graph;
 
                 if ($context->vars_in_scope[$var_id]->parent_nodes) {
+                    $context->vars_in_scope[$var_id] = clone $context->vars_in_scope[$var_id];
+
                     if ($data_flow_graph instanceof TaintFlowGraph
                         && \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
                     ) {
