@@ -1268,10 +1268,6 @@ class AssignmentAnalyzer
             $statements_analyzer->node_data = $old_data_provider;
 
             if ($fake_coalesce_type) {
-                if ($array_var_id) {
-                    $context->vars_in_scope[$array_var_id] = $fake_coalesce_type;
-                }
-
                 $statements_analyzer->node_data->setType($stmt, $fake_coalesce_type);
             }
 
