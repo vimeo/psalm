@@ -362,20 +362,13 @@ class CallAnalyzer
                             $output_type = null;
 
                             foreach ($type->getAtomicTypes() as $atomic_type) {
-                                if ($atomic_type instanceof Type\Atomic\TTemplateParam
-                                    && isset(
-                                        $calling_class_storage
-                                            ->template_type_extends
-                                                [$atomic_type->defining_class]
-                                                [$atomic_type->param_name]
-                                    )
-                                ) {
-                                    $output_type_candidate = $calling_class_storage
-                                        ->template_type_extends
-                                            [$atomic_type->defining_class]
-                                            [$atomic_type->param_name];
-                                } elseif ($atomic_type instanceof Type\Atomic\TTemplateParam) {
-                                    $output_type_candidate = $atomic_type->as;
+                                if ($atomic_type instanceof Type\Atomic\TTemplateParam) {
+                                    $output_type_candidate = self::getGenericParamForOffset(
+                                        $atomic_type->defining_class,
+                                        $atomic_type->param_name,
+                                        $calling_class_storage->template_type_extends,
+                                        $template_types
+                                    );
                                 } else {
                                     $output_type_candidate = new Type\Union([$atomic_type]);
                                 }
@@ -419,6 +412,54 @@ class CallAnalyzer
         }
 
         return $template_types;
+    }
+
+    /**
+     * @param  array<string, array<int|string, Type\Union>>  $template_type_extends
+     * @param  array<string, array<string, array{Type\Union}>>  $found_generic_params
+     */
+    public static function getGenericParamForOffset(
+        string $fq_class_name,
+        string $template_name,
+        array $template_type_extends,
+        array $found_generic_params,
+        bool $mapped = false
+    ): Type\Union {
+        if (isset($found_generic_params[$template_name][$fq_class_name])) {
+            if (!$mapped && isset($template_type_extends[$fq_class_name][$template_name])) {
+                foreach ($template_type_extends[$fq_class_name][$template_name]->getAtomicTypes() as $t) {
+                    if ($t instanceof Type\Atomic\TTemplateParam) {
+                        if ($t->param_name !== $template_name) {
+                            return $t->as;
+                        }
+                    }
+                }
+            }
+
+            return $found_generic_params[$template_name][$fq_class_name][0];
+        }
+
+        foreach ($template_type_extends as $type_map) {
+            foreach ($type_map as $extended_template_name => $extended_type) {
+                foreach ($extended_type->getAtomicTypes() as $extended_atomic_type) {
+                    if (is_string($extended_template_name)
+                        && $extended_atomic_type instanceof Type\Atomic\TTemplateParam
+                        && $extended_atomic_type->param_name === $template_name
+                        && $extended_template_name !== $template_name
+                    ) {
+                        return self::getGenericParamForOffset(
+                            $fq_class_name,
+                            $extended_template_name,
+                            $template_type_extends,
+                            $found_generic_params,
+                            true
+                        );
+                    }
+                }
+            }
+        }
+
+        return Type::getMixed();
     }
 
     /**
