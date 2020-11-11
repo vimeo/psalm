@@ -18,7 +18,15 @@ class EncapsulatedStringAnalyzer
     ) : bool {
         $stmt_type = Type::getString();
 
+        $non_empty = false;
+
         foreach ($stmt->parts as $part) {
+            if ($part instanceof PhpParser\Node\Scalar\EncapsedStringPart
+                && $part->value
+            ) {
+                $non_empty = true;
+            }
+
             if (ExpressionAnalyzer::analyze($statements_analyzer, $part, $context) === false) {
                 return false;
             }
@@ -50,6 +58,12 @@ class EncapsulatedStringAnalyzer
                     }
                 }
             }
+        }
+
+        if ($non_empty) {
+            $new_type = new Type\Union([new Type\Atomic\TNonEmptyString()]);
+            $new_type->parent_nodes = $stmt_type->parent_nodes;
+            $stmt_type = $new_type;
         }
 
         $statements_analyzer->node_data->setType($stmt, $stmt_type);
