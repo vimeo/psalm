@@ -307,17 +307,24 @@ class ArgumentAnalyzer
                     $template_result->upper_bounds
                         [$template_type->param_name]
                         [$template_type->defining_class]
-                )
-                    && !isset(
+                )) {
+                    if (isset(
                         $template_result->lower_bounds
-                        [$template_type->param_name]
-                        [$template_type->defining_class]
-                    )
-                ) {
-                    $template_result->upper_bounds[$template_type->param_name][$template_type->defining_class] = [
-                        clone $template_type->as,
-                        0
-                    ];
+                            [$template_type->param_name]
+                            [$template_type->defining_class]
+                    )) {
+                        $template_result->upper_bounds[$template_type->param_name][$template_type->defining_class] = [
+                            clone $template_result->lower_bounds
+                                [$template_type->param_name]
+                                [$template_type->defining_class][0],
+                            0
+                        ];
+                    } else {
+                        $template_result->upper_bounds[$template_type->param_name][$template_type->defining_class] = [
+                            clone $template_type->as,
+                            0
+                        ];
+                    }
                 }
             }
         }
