@@ -327,9 +327,7 @@ class Populator
                             if (\in_array(
                                 $storage->documenting_method_ids[$method_name]->fq_class_name,
                                 $declaring_class_storage->parent_interfaces
-                            ) || $storage->documenting_method_ids[$method_name]->fq_class_name
-                                === $declaring_class_storage->name
-                            ) {
+                            )) {
                                 $storage->documenting_method_ids[$method_name] = $declaring_method_id;
                                 $method_storage->inherited_return_type = true;
                             } else {
@@ -339,7 +337,8 @@ class Populator
                                 if (!\in_array(
                                     $declaring_class,
                                     $documenting_class_storage->parent_interfaces
-                                )) {
+                                ) && $documenting_class_storage->is_interface
+                                ) {
                                     unset($storage->documenting_method_ids[$method_name]);
                                     $method_storage->inherited_return_type = null;
                                 }
@@ -834,19 +833,6 @@ class Populator
                                 && (!$method_storage->throws || $method_storage->inheritdoc)
                             ) {
                                 $method_storage->throws += $interface_method_storage->throws;
-                            }
-
-                            if ($interface_method_storage->return_type
-                                && $interface_method_storage->signature_return_type
-                                && $interface_method_storage->return_type
-                                    !== $interface_method_storage->signature_return_type
-                                && UnionTypeComparator::isSimplyContainedBy(
-                                    $interface_method_storage->signature_return_type,
-                                    $method_storage->signature_return_type
-                                )
-                            ) {
-                                //$method_storage->return_type = $interface_method_storage->return_type;
-                                //$method_storage->inherited_return_type = true;
                             }
                         }
                     }

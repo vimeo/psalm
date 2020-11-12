@@ -731,10 +731,10 @@ class Methods
         $candidate_type = $storage->return_type;
 
         if ($candidate_type && $candidate_type->isVoid()) {
-            return $candidate_type;
+            return clone $candidate_type;
         }
 
-        if (isset($class_storage->documenting_method_ids[$appearing_method_name]) && $source_analyzer) {
+        if (isset($class_storage->documenting_method_ids[$appearing_method_name])) {
             $overridden_method_id = $class_storage->documenting_method_ids[$appearing_method_name];
 
             // special override to allow inference of Iterator types
@@ -752,7 +752,7 @@ class Methods
                     return Type::getVoid();
                 }
 
-                if (!$candidate_type) {
+                if (!$candidate_type || !$source_analyzer) {
                     $self_class = $overridden_method_id->fq_class_name;
 
                     return clone $overridden_storage->return_type;

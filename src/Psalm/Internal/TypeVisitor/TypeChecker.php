@@ -93,6 +93,7 @@ class TypeChecker extends NodeVisitor
      * @psalm-suppress MoreSpecificImplementedParamType
      *
      * @param  \Psalm\Type\Atomic|\Psalm\Type\Union $type
+     * @return self::STOP_TRAVERSAL|self::DONT_TRAVERSE_CHILDREN|null
      */
     protected function enterNode(TypeNode $type) : ?int
     {
