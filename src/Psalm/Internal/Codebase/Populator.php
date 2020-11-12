@@ -320,7 +320,10 @@ class Populator
                                     === $declaring_method_storage->signature_return_type->getId()))
                         && $method_storage->inherited_return_type !== null
                     ) {
-                        if (!isset($storage->documenting_method_ids[$method_name])) {
+                        if (!isset($storage->documenting_method_ids[$method_name])
+                            || (string) $storage->documenting_method_ids[$method_name]
+                                === (string) $declaring_method_id
+                        ) {
                             $storage->documenting_method_ids[$method_name] = $declaring_method_id;
                             $method_storage->inherited_return_type = true;
                         } else {
