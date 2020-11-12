@@ -303,7 +303,7 @@ class InterfaceTest extends TestCase
                 '<?php
                     class SomeIterator extends IteratorIterator {}',
             ],
-            'suppressMismatch' => [
+            'SKIPPED-suppressMismatch' => [
                 '<?php
                     interface I {
                         /**
@@ -888,17 +888,17 @@ class InterfaceTest extends TestCase
             'inheritMultipleInterfacesWithConflictingDocblocks' => [
                 '<?php
                     interface I1 {
-                      /** @return string */
-                      public function foo();
+                        /** @return string */
+                        public function foo();
                     }
                     interface I2 {
-                      /** @return int */
-                      public function foo();
+                        /** @return int */
+                        public function foo();
                     }
                     class A implements I1, I2 {
-                      public function foo() {
-                        return "hello";
-                      }
+                        public function foo() {
+                            return "hello";
+                        }
                     }',
                 'error_message' => 'InvalidReturnType',
             ],

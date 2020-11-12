@@ -457,30 +457,30 @@ class MethodSignatureTest extends TestCase
             'allowVoidToNullConversion' => [
                 '<?php
                     class A {
-                      /** @return ?string */
-                      public function foo() {
-                        return rand(0, 1) ? "hello" : null;
-                      }
+                        /** @return ?string */
+                        public function foo() {
+                            return rand(0, 1) ? "hello" : null;
+                        }
                     }
 
                     class B extends A {
-                      public function foo(): void {
-                        return;
-                      }
+                        public function foo(): void {
+                            return;
+                        }
                     }
 
                     class C extends A {
-                      /** @return void */
-                      public function foo() {
-                        return;
-                      }
+                        /** @return void */
+                        public function foo() {
+                            return;
+                        }
                     }
 
                     class D extends A {
-                      /** @return null */
-                      public function foo() {
-                        return null;
-                      }
+                        /** @return null */
+                        public function foo() {
+                            return null;
+                        }
                     }',
             ],
             'allowNoChildClassPropertyWhenMixed' => [
@@ -955,18 +955,18 @@ class MethodSignatureTest extends TestCase
                     }',
                 'error_message' => 'MoreSpecificImplementedParamType',
             ],
-            'disallowVoidToNullConversionSignature' => [
+            'preventVoidToNullConversionSignature' => [
                 '<?php
                     class A {
-                      public function foo(): ?string {
-                        return rand(0, 1) ? "hello" : null;
-                      }
+                        public function foo(): ?string {
+                            return rand(0, 1) ? "hello" : null;
+                        }
                     }
 
                     class B extends A {
-                      public function foo(): void {
-                        return;
-                      }
+                        public function foo(): void {
+                            return;
+                        }
                     }',
                 'error_message' => 'MethodSignatureMismatch',
             ],

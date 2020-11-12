@@ -3339,9 +3339,6 @@ class ClassTemplateExtendsTest extends TestCase
                      * @implements X<T>
                      */
                     class A implements X {
-                        /**
-                         * @return T
-                         */
                         public function boo($x) {
                             return $x[0];
                         }

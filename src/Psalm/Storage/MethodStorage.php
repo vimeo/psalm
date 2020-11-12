@@ -41,7 +41,7 @@ class MethodStorage extends FunctionLikeStorage
     public $inheritdoc = false;
 
     /**
-     * @var bool
+     * @var ?bool
      */
     public $inherited_return_type = false;
 

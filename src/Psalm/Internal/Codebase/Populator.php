@@ -309,16 +309,42 @@ class Populator
 
                     $declaring_method_storage = $declaring_class_storage->methods[$declaring_method_name];
 
-                    if ($declaring_method_storage->has_docblock_param_types
+                    if (($declaring_method_storage->has_docblock_param_types
+                            || $declaring_method_storage->return_type
+                                !== $declaring_method_storage->signature_return_type)
                         && !$method_storage->has_docblock_param_types
-                        && (!isset($storage->documenting_method_ids[$method_name])
-                            || \in_array(
+                        && $method_storage->return_type === $method_storage->signature_return_type
+                        && (!$declaring_method_storage->signature_return_type
+                            || ($method_storage->signature_return_type
+                                && $method_storage->signature_return_type->getId()
+                                    === $declaring_method_storage->signature_return_type->getId()))
+                        && $method_storage->inherited_return_type !== null
+                    ) {
+                        if (!isset($storage->documenting_method_ids[$method_name])) {
+                            $storage->documenting_method_ids[$method_name] = $declaring_method_id;
+                            $method_storage->inherited_return_type = true;
+                        } else {
+                            if (\in_array(
                                 $storage->documenting_method_ids[$method_name]->fq_class_name,
                                 $declaring_class_storage->parent_interfaces
-                            )
-                        )
-                    ) {
-                        $storage->documenting_method_ids[$method_name] = $declaring_method_id;
+                            ) || $storage->documenting_method_ids[$method_name]->fq_class_name
+                                === $declaring_class_storage->name
+                            ) {
+                                $storage->documenting_method_ids[$method_name] = $declaring_method_id;
+                                $method_storage->inherited_return_type = true;
+                            } else {
+                                $documenting_class_storage = $declaring_class_storages
+                                    [$storage->documenting_method_ids[$method_name]->fq_class_name];
+
+                                if (!\in_array(
+                                    $declaring_class,
+                                    $documenting_class_storage->parent_interfaces
+                                )) {
+                                    unset($storage->documenting_method_ids[$method_name]);
+                                    $method_storage->inherited_return_type = null;
+                                }
+                            }
+                        }
                     }
 
                     // tell the declaring class it's overridden downstream
@@ -335,40 +361,6 @@ class Populator
                         && (!$method_storage->throws || $method_storage->inheritdoc)
                     ) {
                         $method_storage->throws += $declaring_method_storage->throws;
-                    }
-
-                    if ((count($overridden_method_ids) === 1
-                            || $candidate_overridden_ids)
-                        && $method_storage->signature_return_type
-                        && !$method_storage->signature_return_type->isVoid()
-                        && ($method_storage->return_type === $method_storage->signature_return_type
-                            || $method_storage->inherited_return_type)
-                    ) {
-                        if (isset($declaring_class_storage->methods[$method_name])) {
-                            $declaring_method_storage = $declaring_class_storage->methods[$method_name];
-
-                            if ($declaring_method_storage->return_type
-                                && $declaring_method_storage->return_type
-                                    !== $declaring_method_storage->signature_return_type
-                            ) {
-                                if ($declaring_method_storage->signature_return_type
-                                    && UnionTypeComparator::isSimplyContainedBy(
-                                        $method_storage->signature_return_type,
-                                        $declaring_method_storage->signature_return_type
-                                    )
-                                ) {
-                                    $method_storage->return_type = clone $declaring_method_storage->return_type;
-                                    $method_storage->inherited_return_type = true;
-                                } elseif (UnionTypeComparator::isSimplyContainedBy(
-                                    $declaring_method_storage->return_type,
-                                    $method_storage->signature_return_type
-                                )) {
-                                    $method_storage->return_type = clone $declaring_method_storage->return_type;
-                                    $method_storage->inherited_return_type = true;
-                                    $method_storage->return_type->from_docblock = false;
-                                }
-                            }
-                        }
                     }
                 }
             }
@@ -853,8 +845,8 @@ class Populator
                                     $method_storage->signature_return_type
                                 )
                             ) {
-                                $method_storage->return_type = $interface_method_storage->return_type;
-                                $method_storage->inherited_return_type = true;
+                                //$method_storage->return_type = $interface_method_storage->return_type;
+                                //$method_storage->inherited_return_type = true;
                             }
                         }
                     }
