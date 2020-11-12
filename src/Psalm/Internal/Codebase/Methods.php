@@ -740,6 +740,20 @@ class Methods
 
         $candidate_type = null;
 
+        if (isset($class_storage->documenting_method_ids[$appearing_method_name])) {
+            $overridden_method_id = $class_storage->documenting_method_ids[$appearing_method_name];
+
+            $overridden_storage = $this->getStorage($overridden_method_id);
+
+            if ($overridden_storage->return_type) {
+                if ($overridden_storage->return_type->isNull()) {
+                    return Type::getVoid();
+                }
+
+                return clone $overridden_storage->return_type;
+            }
+        }
+
         foreach ($class_storage->overridden_method_ids[$appearing_method_name] as $overridden_method_id) {
             $overridden_storage = $this->getStorage($overridden_method_id);
 
