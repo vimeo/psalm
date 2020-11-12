@@ -311,7 +311,12 @@ class Populator
 
                     if ($declaring_method_storage->has_docblock_param_types
                         && !$method_storage->has_docblock_param_types
-                        && !isset($storage->documenting_method_ids[$method_name])
+                        && (!isset($storage->documenting_method_ids[$method_name])
+                            || \in_array(
+                                $storage->documenting_method_ids[$method_name]->fq_class_name,
+                                $declaring_class_storage->parent_interfaces
+                            )
+                        )
                     ) {
                         $storage->documenting_method_ids[$method_name] = $declaring_method_id;
                     }

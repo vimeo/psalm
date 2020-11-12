@@ -762,9 +762,7 @@ class Methods
 
                 $self_class = $overridden_class_storage->name;
 
-                if ($candidate_type
-                    && $source_analyzer
-                ) {
+                if ($candidate_type && $source_analyzer && !$candidate_type->isMixed()) {
                     $old_contained_by_new = UnionTypeComparator::isContainedBy(
                         $source_analyzer->getCodebase(),
                         $candidate_type,
