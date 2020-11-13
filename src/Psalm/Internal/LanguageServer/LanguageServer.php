@@ -190,7 +190,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
     ): Promise {
         return call(
             /** @return \Generator<int, true, mixed, InitializeResult> */
-            function () use ($capabilities, $rootPath, $processId) {
+            function () {
                 $this->verboseLog("Initializing...");
                 $this->clientStatus('initializing');
 
@@ -330,7 +330,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
 
         foreach ($uris as $file_path => $uri) {
             $diagnostics = array_map(
-                function (IssueData $issue_data) use ($file_path) : Diagnostic {
+                function (IssueData $issue_data) : Diagnostic {
                     //$check_name = $issue->check_name;
                     $description = $issue_data->message;
                     $severity = $issue_data->severity;

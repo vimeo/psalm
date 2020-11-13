@@ -156,7 +156,6 @@ class PhpStormMetaScanner
                         Context $_context,
                         CodeLocation $_code_location
                     ) use (
-                        $map,
                         $type_offset,
                         $meta_fq_classlike_name,
                         $meta_method_name
@@ -195,7 +194,6 @@ class PhpStormMetaScanner
                         Context $_context,
                         CodeLocation $_code_location
                     ) use (
-                        $map,
                         $element_type_offset,
                         $meta_fq_classlike_name,
                         $meta_method_name
@@ -316,7 +314,6 @@ class PhpStormMetaScanner
                         Context $_context,
                         CodeLocation $_code_location
                     ) use (
-                        $map,
                         $type_offset
                     ) : Type\Union {
                         if (!$statements_analyzer instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
@@ -352,7 +349,6 @@ class PhpStormMetaScanner
                         Context $_context,
                         CodeLocation $_code_location
                     ) use (
-                        $map,
                         $element_type_offset
                     ) : Type\Union {
                         if (!$statements_analyzer instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {

@@ -76,7 +76,7 @@ array_map(
     /**
      * @param string $arg
      */
-    function ($arg) use ($valid_long_options, $valid_short_options): void {
+    function ($arg) use ($valid_long_options): void {
         if (substr($arg, 0, 2) === '--' && $arg !== '--') {
             $arg_name = preg_replace('/=.*$/', '', substr($arg, 2));
 
