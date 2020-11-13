@@ -2236,6 +2236,25 @@ class UnusedVariableTest extends TestCase
                         return $b;
                     }'
             ],
+            'allowUseByRef' => [
+                '<?php
+                    /**
+                     * @psalm-suppress MixedReturnStatement
+                     * @psalm-suppress MixedInferredReturnType
+                     */
+                    function foo(array $data) : array {
+                        $output = [];
+
+                        array_map(
+                            function (array $row) use (&$output) {
+                                $output = $row;
+                            },
+                            $data
+                        );
+
+                        return $output;
+                    }'
+            ],
         ];
     }
 

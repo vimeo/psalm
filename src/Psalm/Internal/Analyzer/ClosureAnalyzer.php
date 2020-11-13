@@ -160,6 +160,10 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
                     ? clone $context->vars_in_scope[$use_var_id]
                     : Type::getMixed();
 
+                if ($use->byRef) {
+                    $use_context->vars_in_scope[$use_var_id]->by_ref = true;
+                }
+
                 $use_context->vars_possibly_in_scope[$use_var_id] = true;
 
                 foreach ($context->vars_in_scope as $var_id => $type) {
