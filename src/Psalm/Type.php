@@ -41,6 +41,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Atomic\TVoid;
 use Psalm\Type\Union;
+use function get_class;
 use function stripos;
 use function strlen;
 use function strpos;

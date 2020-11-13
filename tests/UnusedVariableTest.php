@@ -3060,6 +3060,15 @@ class UnusedVariableTest extends TestCase
                     }',
                 'error_message' => 'PossiblyNullArgument'
             ],
+            'useArrayAssignmentNeverUsed' => [
+                '<?php
+                    $data = [];
+
+                    return function () use ($data) {
+                        $data[] = 1;
+                    };',
+                'error_message' => 'UnusedVariable',
+            ],
         ];
     }
 }

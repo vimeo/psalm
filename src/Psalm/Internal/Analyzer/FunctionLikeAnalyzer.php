@@ -144,8 +144,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         Context $context,
         \Psalm\Internal\Provider\NodeDataProvider $type_provider,
         ?Context $global_context = null,
-        bool $add_mutations = false,
-        ?array $byref_uses = null
+        bool $add_mutations = false
     ): ?bool {
         $storage = $this->storage;
 
@@ -403,7 +402,36 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
         $statements_analyzer = new StatementsAnalyzer($this, $type_provider);
 
-        if ($byref_uses) {
+        if ($this->function instanceof Closure) {
+            $byref_uses = [];
+
+            foreach ($this->function->uses as $use) {
+                if (!\is_string($use->var->name)) {
+                    continue;
+                }
+
+                $use_var_id = '$' . $use->var->name;
+
+                if ($use->byRef) {
+                    $byref_uses[$use_var_id] = true;
+                } else {
+                    $use_location = new CodeLocation($this, $use);
+
+                    $statements_analyzer->registerVariable($use_var_id, $use_location, null);
+
+                    if ($statements_analyzer->data_flow_graph && isset($context->vars_in_scope[$use_var_id])) {
+                        $use_assignment = DataFlowNode::getForAssignment(
+                            $use_var_id,
+                            $use_location
+                        );
+
+                        $statements_analyzer->data_flow_graph->addNode($use_assignment);
+
+                        $context->vars_in_scope[$use_var_id]->parent_nodes += [$use_assignment->id => $use_assignment];
+                    }
+                }
+            }
+
             $statements_analyzer->setByRefUses($byref_uses);
         }
 
