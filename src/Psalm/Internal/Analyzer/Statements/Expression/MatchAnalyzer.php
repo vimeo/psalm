@@ -47,22 +47,54 @@ class MatchAnalyzer
 
         $match_condition = $stmt->cond;
 
-        if (!$switch_var_id
-            && ($stmt->cond instanceof PhpParser\Node\Expr\FuncCall
+        if (!$switch_var_id) {
+            if ($stmt->cond instanceof PhpParser\Node\Expr\FuncCall
+                && $stmt->cond->name instanceof PhpParser\Node\Name
+                && ($stmt->cond->name->parts === ['get_class']
+                    || $stmt->cond->name->parts === ['gettype']
+                    || $stmt->cond->name->parts === ['get_debug_type'])
+                && $stmt->cond->args
+            ) {
+                $first_arg = $stmt->cond->args[0];
+
+                if (!$first_arg->value instanceof PhpParser\Node\Expr\Variable) {
+                    $switch_var_id = '$__tmp_switch__' . (int) $first_arg->value->getAttribute('startFilePos');
+
+                    $condition_type = $statements_analyzer->node_data->getType($first_arg->value) ?: Type::getMixed();
+
+                    $context->vars_in_scope[$switch_var_id] = $condition_type;
+
+                    $match_condition = new PhpParser\Node\Expr\FuncCall(
+                        $stmt->cond->name,
+                        [
+                            new PhpParser\Node\Arg(
+                                new PhpParser\Node\Expr\Variable(
+                                    substr($switch_var_id, 1),
+                                    $first_arg->value->getAttributes()
+                                ),
+                                false,
+                                false,
+                                $first_arg->getAttributes()
+                            )
+                        ],
+                        $stmt->cond->getAttributes()
+                    );
+                }
+            } elseif ($stmt->cond instanceof PhpParser\Node\Expr\FuncCall
                 || $stmt->cond instanceof PhpParser\Node\Expr\MethodCall
                 || $stmt->cond instanceof PhpParser\Node\Expr\StaticCall
-            )
-        ) {
-            $switch_var_id = '$__tmp_switch__' . (int) $stmt->cond->getAttribute('startFilePos');
+            ) {
+                $switch_var_id = '$__tmp_switch__' . (int) $stmt->cond->getAttribute('startFilePos');
 
-            $condition_type = $statements_analyzer->node_data->getType($stmt->cond) ?: Type::getMixed();
+                $condition_type = $statements_analyzer->node_data->getType($stmt->cond) ?: Type::getMixed();
 
-            $context->vars_in_scope[$switch_var_id] = $condition_type;
+                $context->vars_in_scope[$switch_var_id] = $condition_type;
 
-            $match_condition = new PhpParser\Node\Expr\Variable(
-                substr($switch_var_id, 1),
-                $stmt->cond->getAttributes()
-            );
+                $match_condition = new PhpParser\Node\Expr\Variable(
+                    substr($switch_var_id, 1),
+                    $stmt->cond->getAttributes()
+                );
+            }
         }
 
         $arms = $stmt->arms;
