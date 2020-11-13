@@ -80,7 +80,7 @@ class ExistingAtomicStaticCallAnalyzer
                 $file_analyzer = $statements_analyzer->getFileAnalyzer();
 
                 if ($context->collect_mutations) {
-                    $file_analyzer->getMethodMutations($method_id, $context);
+                    $file_analyzer->getMethodMutations($appearing_method_id, $context);
                 } else {
                     // collecting initializations
                     $local_vars_in_scope = [];
@@ -98,14 +98,14 @@ class ExistingAtomicStaticCallAnalyzer
                         }
                     }
 
-                    if (!isset($context->initialized_methods[(string) $method_id])) {
+                    if (!isset($context->initialized_methods[(string) $appearing_method_id])) {
                         if ($context->initialized_methods === null) {
                             $context->initialized_methods = [];
                         }
 
-                        $context->initialized_methods[(string) $method_id] = true;
+                        $context->initialized_methods[(string) $appearing_method_id] = true;
 
-                        $file_analyzer->getMethodMutations($method_id, $context);
+                        $file_analyzer->getMethodMutations($appearing_method_id, $context);
 
                         foreach ($local_vars_in_scope as $var => $type) {
                             $context->vars_in_scope[$var] = $type;
