@@ -534,7 +534,21 @@ abstract class Type
                         if ($type_1_atomic instanceof TNamedObject
                             && $type_2_atomic instanceof TNamedObject
                         ) {
-                            if (AtomicTypeComparator::isContainedBy(
+                            if (($type_1_atomic->value === $type_2_atomic->value
+                                && get_class($type_1_atomic) === TNamedObject::class
+                                && get_class($type_2_atomic) !== TNamedObject::class)
+                            ) {
+                                $combined_type->removeType($t1_key);
+                                $combined_type->addType(clone $type_2_atomic);
+                                $intersection_performed = true;
+                            } elseif (($type_1_atomic->value === $type_2_atomic->value
+                                && get_class($type_2_atomic) === TNamedObject::class
+                                && get_class($type_1_atomic) !== TNamedObject::class)
+                            ) {
+                                $combined_type->removeType($t2_key);
+                                $combined_type->addType(clone $type_1_atomic);
+                                $intersection_performed = true;
+                            } elseif (AtomicTypeComparator::isContainedBy(
                                 $codebase,
                                 $type_2_atomic,
                                 $type_1_atomic

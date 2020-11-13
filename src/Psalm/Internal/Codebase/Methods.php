@@ -758,6 +758,12 @@ class Methods
                     return clone $overridden_storage->return_type;
                 }
 
+                if ($candidate_type->getId() === $overridden_storage->return_type->getId()) {
+                    $self_class = $appearing_fq_class_storage->name;
+
+                    return clone $candidate_type;
+                }
+
                 $old_contained_by_new = UnionTypeComparator::isContainedBy(
                     $source_analyzer->getCodebase(),
                     $candidate_type,
@@ -770,7 +776,9 @@ class Methods
                     $candidate_type
                 );
 
-                if (!$old_contained_by_new && !$new_contained_by_old) {
+                if ((!$old_contained_by_new && !$new_contained_by_old)
+                    || ($old_contained_by_new && $new_contained_by_old)
+                ) {
                     $attempted_intersection = Type::intersectUnionTypes(
                         $overridden_storage->return_type,
                         $candidate_type,
@@ -847,7 +855,9 @@ class Methods
                         $candidate_type
                     );
 
-                    if (!$old_contained_by_new && !$new_contained_by_old) {
+                    if ((!$old_contained_by_new && !$new_contained_by_old)
+                        || ($old_contained_by_new && $new_contained_by_old)
+                    ) {
                         $attempted_intersection = Type::intersectUnionTypes(
                             $candidate_type,
                             $overridden_return_type,

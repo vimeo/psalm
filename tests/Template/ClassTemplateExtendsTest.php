@@ -2764,9 +2764,6 @@ class ClassTemplateExtendsTest extends TestCase
                          */
                         protected $c;
 
-                        /**
-                         * @param T $p
-                         */
                         public function filter($p) : C {
                             return $this->c->filter($p);
                         }
@@ -4129,6 +4126,55 @@ class ClassTemplateExtendsTest extends TestCase
 
                     function bar(Foo $f, string $s) : string {
                         return $f::of($s);
+                    }'
+            ],
+            'functor' => [
+                '<?php
+                    /**
+                     * @template T
+                     */
+                    interface Functor
+                    {
+                        /**
+                         * @template F
+                         * @param callable(T): F $function
+                         * @return Functor<F>
+                         */
+                        public function map(callable $function): Functor;
+                    }
+
+                    /**
+                     * @template T
+                     * @implements Functor<T>
+                     */
+                    class FakeFunctor implements Functor
+                    {
+                        /**
+                         * @var T
+                         */
+                        private $value;
+
+                        /**
+                         * @psalm-param T $value
+                         */
+                        public function __construct($value)
+                        {
+                            $this->value = $value;
+                        }
+
+                        public function map(callable $function): Functor
+                        {
+                            return new FakeFunctor($function($this->value));
+                        }
+                    }
+
+                    /** @return Functor<int> */
+                    function foo(string $s) : Functor {
+                        $foo = new FakeFunctor($s);
+                        $function = function (string $a): int {
+                            return strlen($a);
+                        };
+                        return $foo->map($function);
                     }'
             ],
         ];
