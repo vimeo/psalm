@@ -736,7 +736,7 @@ class StatementsAnalyzer extends SourceAnalyzer
                 && !$this->data_flow_graph->isVariableUsed($assignment_node)
             ) {
                 $issue = new UnusedVariable(
-                    'Variable ' . $var_id . ' is never referenced',
+                    $var_id . ' is never referenced or the value is not used',
                     $original_location
                 );
 
