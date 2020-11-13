@@ -440,8 +440,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 } else {
                     $statements_analyzer->registerVariable($use_var_id, $use_location, null);
                 }
-
-
             }
 
             $statements_analyzer->setByRefUses($byref_uses);
