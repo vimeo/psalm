@@ -2255,6 +2255,19 @@ class UnusedVariableTest extends TestCase
                         return $output;
                     }'
             ],
+            'allowedUseByRefArrayAssignment' => [
+                '<?php
+                    $output_rows = [];
+
+                    $a = function() use (&$output_rows) : void {
+                        $output_row = 5;
+                        /** @psalm-suppress MixedArrayAssignment */
+                        $output_rows[] = $output_row;
+                    };
+                    $a();
+
+                    print_r($output_rows);'
+            ],
         ];
     }
 

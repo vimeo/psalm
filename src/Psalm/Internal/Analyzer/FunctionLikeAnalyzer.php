@@ -412,24 +412,36 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
                 $use_var_id = '$' . $use->var->name;
 
+                $use_location = new CodeLocation($this, $use);
+
+                $use_assignment = null;
+
+                if ($statements_analyzer->data_flow_graph) {
+                    $use_assignment = DataFlowNode::getForAssignment(
+                        $use_var_id,
+                        $use_location
+                    );
+
+                    $statements_analyzer->data_flow_graph->addNode($use_assignment);
+
+                    $context->vars_in_scope[$use_var_id]->parent_nodes += [$use_assignment->id => $use_assignment];
+                }
+
                 if ($use->byRef) {
                     $byref_uses[$use_var_id] = true;
-                } else {
-                    $use_location = new CodeLocation($this, $use);
 
-                    $statements_analyzer->registerVariable($use_var_id, $use_location, null);
-
-                    if ($statements_analyzer->data_flow_graph && isset($context->vars_in_scope[$use_var_id])) {
-                        $use_assignment = DataFlowNode::getForAssignment(
-                            $use_var_id,
-                            $use_location
+                    if ($statements_analyzer->data_flow_graph && $use_assignment) {
+                        $statements_analyzer->data_flow_graph->addPath(
+                            $use_assignment,
+                            new DataFlowNode('closure-use', 'closure use', null),
+                            'closure-use'
                         );
-
-                        $statements_analyzer->data_flow_graph->addNode($use_assignment);
-
-                        $context->vars_in_scope[$use_var_id]->parent_nodes += [$use_assignment->id => $use_assignment];
                     }
+                } else {
+                    $statements_analyzer->registerVariable($use_var_id, $use_location, null);
                 }
+
+
             }
 
             $statements_analyzer->setByRefUses($byref_uses);
