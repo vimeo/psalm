@@ -68,7 +68,7 @@ class SomePlugin implements \Psalm\Plugin\Hook\AfterStatementAnalysisInterface
 - `AfterCodebasePopulatedInterface` - called after Psalm has scanned necessary files and populated codebase data.
 - `AfterEveryFunctionCallAnalysisInterface` - called after Psalm evaluates any function call. Cannot influence the call further.
 - `AfterExpressionAnalysisInterface` - called after Psalm evaluates an expression.
-- `AfterFileAnalyisisInterface` - called after Psalm analyzes a file.
+- `AfterFileAnalysisInterface` - called after Psalm analyzes a file.
 - `AfterFunctionCallAnalysisInterface` - called after Psalm evaluates a function call to any function defined within the project itself. Can alter the return type or perform modifications of the call.
 - `AfterFunctionLikeAnalysisInterface` - called after Psalm has completed its analysis of a given function-like.
 - `AfterMethodCallAnalysisInterface` - called after Psalm analyzes a method call.
