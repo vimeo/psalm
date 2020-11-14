@@ -53,7 +53,7 @@ class BadSqlTainter implements AfterExpressionAnalysisInterface
         array &$file_replacements = []
     ) {
         if ($expr instanceof PhpParser\Node\Expr\Variable
-            && $expr->name === '$bad_data'
+            && $expr->name === 'bad_data'
         ) {
             $expr_type = $statements_source->getNodeTypeProvider()->getType($expr);
 
