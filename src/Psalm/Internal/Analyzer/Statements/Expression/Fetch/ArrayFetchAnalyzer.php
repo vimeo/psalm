@@ -79,9 +79,16 @@ class ArrayFetchAnalyzer
         if ($stmt->dim) {
             $was_inside_use = $context->inside_use;
             $context->inside_use = true;
+
+            $was_inside_unset = $context->inside_unset;
+            $context->inside_unset = false;
+
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->dim, $context) === false) {
                 return false;
             }
+
+            $context->inside_unset = $was_inside_unset;
+
             $context->inside_use = $was_inside_use;
         }
 
