@@ -324,16 +324,6 @@ class TypeParser
             if ($generic_type_value === 'value-of') {
                 $param_name = (string) $generic_params[0];
 
-                if (isset($template_type_map[$param_name])) {
-                    $defining_class = array_keys($template_type_map[$param_name])[0];
-
-                    return new Atomic\TTemplateKeyOf(
-                        $param_name,
-                        $defining_class,
-                        $template_type_map[$param_name][$defining_class][0]
-                    );
-                }
-
                 $param_union_types = array_values($generic_params[0]->getAtomicTypes());
 
                 if (count($param_union_types) > 1) {
