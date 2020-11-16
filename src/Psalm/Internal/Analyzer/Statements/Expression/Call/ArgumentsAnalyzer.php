@@ -661,7 +661,7 @@ class ArgumentsAnalyzer
                 }
             } elseif ($arg->name && $function_storage && $function_storage->allow_named_arg_calls) {
                 foreach ($function_params as $candidate_param) {
-                    if ($candidate_param->name === $arg->name->name) {
+                    if ($candidate_param->name === $arg->name->name || $candidate_param->is_variadic) {
                         $arg_function_params = [$candidate_param];
                         break;
                     }
