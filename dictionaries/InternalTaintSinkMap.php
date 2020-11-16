@@ -39,4 +39,6 @@ return [
 'shell_exec' => [['shell']],
 'system' => [['shell']],
 'unserialize' => [['text']],
+'popen' => [['shell']],
+'proc_open' => [['shell']],
 ];
