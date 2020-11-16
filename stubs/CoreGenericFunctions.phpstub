@@ -443,6 +443,7 @@ function date(string $format, int $timestamp = 0) {}
  *
  * @param mixed $vars
  * @param-out string|int|float $vars
+ * @psalm-flow ($str, $format) -> return
  * @return (func_num_args() is 2 ? list<float|int|string> : int)
  */
 function sscanf(string $str, string $format, &...$vars) {}
@@ -530,6 +531,26 @@ function rtrim(string $str, string $character_mask = " \t\n\r\0\x0B") : string {
  * @psalm-flow ($pieces) -(array-fetch)-> return
  */
 function implode($glue, array $pieces = []) : string {}
+
+/**
+ * @psalm-pure
+ *
+ * @param string|array $glue
+ *
+ * @return (
+ *     $glue is non-empty-string
+ *     ? ($pieces is non-empty-array
+ *         ? non-empty-string
+ *         : string)
+ *     : string
+ * )
+ *
+ * @psalm-flow ($glue) -> return
+ * @psalm-flow ($pieces) -(array-fetch)-> return
+ */
+function join($glue, array $pieces = []): string 
+{
+}
 
 /**
  * @psalm-pure
@@ -730,6 +751,15 @@ function sprintf(string $format, ...$args) : string {}
 /**
  * @psalm-pure
  *
+ * @param string|int|float $args
+ *
+ * @psalm-flow ($format, $values) -> return
+ */
+function printf(string $format, ...$values) : string {}
+
+/**
+ * @psalm-pure
+ *
  * @return string|false
  * @psalm-ignore-falsable-return
  *
@@ -779,3 +809,119 @@ function random_int(int $min, int $max): int {}
  * @psalm-pure
  */
 function array_count_values(array $array): array {}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-flow ($str) -> return
+ */
+function addcslashes(string $str, string $charlist) : string 
+{
+}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-flow ($str) -> return
+ */
+function addslashes(string $str): string 
+{
+}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-flow ($str) -> return
+ */
+function ucfirst(string $str): string
+{
+}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-flow ($str, $delimiters) -> return
+ */
+function ucwords (string $str, string $delimiters = " \t\r\n\f\v"): string 
+{
+}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-flow ($str) -> return
+ */
+function lcfirst(string $str): string
+{
+}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-flow ($str) -> return
+ */
+function nl2br(string $str, bool $is_xhtml = false): string 
+{
+}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-flow ($str) -> return
+ */
+function quoted_printable_decode(string $str): string
+{
+}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-flow ($str) -> return
+ */
+function quoted_printable_encode(string $str): string
+{
+}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-flow ($str) -> return
+ */
+function quotemeta(string $str): string 
+{
+}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-flow ($str) -> return
+ */
+function chop(string $str, string $character_mask = " \t\n\r\0\x0B"): string 
+{
+}
+
+/**
+ * @psalm-pure
+ * @psalm-flow ($str, $end) -> return
+ */
+function chunk_split(string $str, int $chunklen = 76, string $end= ''): string 
+{
+}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-flow ($data) -> return
+ */
+function convert_uudecode(string $data): string 
+{
+}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-flow ($data) -> return
+ */
+function convert_uuencode(string $data) : string 
+{
+}
