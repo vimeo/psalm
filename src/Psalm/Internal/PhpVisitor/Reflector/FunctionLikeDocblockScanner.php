@@ -698,6 +698,21 @@ class FunctionLikeDocblockScanner
 
                         $fixed_type_tokens[$i][0] = $template_name;
                     }
+
+                    if ($token_body === 'PHP_MAJOR_VERSION') {
+                        $template_name = 'TPhpMajorVersion';
+
+                        $storage->template_types[$template_name] = [
+                            $template_function_id => [
+                                Type::getInt()
+                            ],
+                        ];
+
+                        $function_template_types[$template_name]
+                            = $storage->template_types[$template_name];
+
+                        $fixed_type_tokens[$i][0] = $template_name;
+                    }
                 }
 
                 $storage->return_type = TypeParser::parseTokens(

@@ -447,7 +447,7 @@ class TypeTokenizer
                 continue;
             }
 
-            if ($string_type_token[0] === 'func_num_args()') {
+            if ($string_type_token[0] === 'func_num_args()' || $string_type_token[0] === 'PHP_MAJOR_VERSION') {
                 continue;
             }
 

@@ -951,6 +951,10 @@ class FunctionCallAnalyzer extends CallAnalyzer
                                 $template_result->upper_bounds[$template_name] = [
                                     'fn-' . $function_id => [Type::getInt(false, count($stmt->args)), 0]
                                 ];
+                            } elseif ($template_name === 'TPhpMajorVersion') {
+                                $template_result->upper_bounds[$template_name] = [
+                                    'fn-' . $function_id => [Type::getInt(false, $codebase->php_major_version), 0]
+                                ];
                             } else {
                                 $template_result->upper_bounds[$template_name] = [
                                     'fn-' . $function_id => [Type::getEmpty(), 0]

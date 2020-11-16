@@ -324,6 +324,13 @@ class MethodCallReturnTypeFetcher
                                 0
                             ]
                         ];
+                    } elseif ($template_type->param_name === 'TPhpMajorVersion') {
+                        $template_result->upper_bounds[$template_type->param_name] = [
+                            'fn-' . strtolower((string) $method_id) => [
+                                Type::getInt(false, $codebase->php_major_version),
+                                0
+                            ]
+                        ];
                     } else {
                         $template_result->upper_bounds[$template_type->param_name] = [
                             ($template_type->defining_class) => [Type::getEmpty(), 0]
