@@ -779,11 +779,19 @@ class Methods
                 if ((!$old_contained_by_new && !$new_contained_by_old)
                     || ($old_contained_by_new && $new_contained_by_old)
                 ) {
-                    $attempted_intersection = Type::intersectUnionTypes(
-                        $overridden_storage->return_type,
-                        $candidate_type,
-                        $source_analyzer->getCodebase()
-                    );
+                    if ($old_contained_by_new && $new_contained_by_old) {
+                        $attempted_intersection = Type::intersectUnionTypes(
+                            $candidate_type,
+                            $overridden_storage->return_type,
+                            $source_analyzer->getCodebase()
+                        );
+                    } else {
+                        $attempted_intersection = Type::intersectUnionTypes(
+                            $overridden_storage->return_type,
+                            $candidate_type,
+                            $source_analyzer->getCodebase()
+                        );
+                    }
 
                     if ($attempted_intersection) {
                         $self_class = $overridden_method_id->fq_class_name;
