@@ -259,6 +259,15 @@ class ArgTest extends TestCase
                 [],
                 '8.0'
             ],
+            'useNamedVariadicArguments' => [
+                '<?php
+                    function takesArguments(int ...$args) : void {}
+
+                    takesArguments(age: 5);',
+                [],
+                [],
+                '8.0'
+            ],
         ];
     }
 
@@ -428,6 +437,16 @@ class ArgTest extends TestCase
                         return new User(...$data);
                     }',
                 'error_message' => 'TooFewArguments',
+                [],
+                false,
+                '8.0'
+            ],
+            'wrongTypeVariadicArguments' => [
+                '<?php
+                    function takesArguments(int ...$args) : void {}
+
+                    takesArguments(age: "abc");',
+                'error_message' => 'InvalidScalarArgument',
                 [],
                 false,
                 '8.0'
