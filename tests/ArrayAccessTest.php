@@ -1270,6 +1270,19 @@ class ArrayAccessTest extends TestCase
                     [$width, $height, $depth] = size();',
                 'error_message' => 'InvalidArrayOffset',
             ],
+            'negativeListAccess' => [
+                '<?php
+                    class HelloWorld
+                    {
+                        public function sayHello(): void
+                        {
+                            $a = explode("/", "a/b/c");
+                            $x = $a[-3];
+                            echo $x;
+                        }
+                    }',
+                'error_message' => 'InvalidArrayOffset'
+            ]
         ];
     }
 }

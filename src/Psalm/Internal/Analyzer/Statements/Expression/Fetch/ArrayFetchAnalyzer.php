@@ -797,9 +797,16 @@ class ArrayFetchAnalyzer
                                     $statements_analyzer
                                 );
                             }
+                            $has_valid_offset = true;
+                        } elseif (count($key_values) === 1
+                            && is_int($key_values[0])
+                            && $key_values[0] < 0
+                        ) {
+                            $expected_offset_types[] = Type::getPositiveInt();
+                            $has_valid_offset = false;
+                        } else {
+                            $has_valid_offset = true;
                         }
-
-                        $has_valid_offset = true;
                     }
 
                     if ($in_assignment && $type instanceof Type\Atomic\TNonEmptyList && $type->count !== null) {
