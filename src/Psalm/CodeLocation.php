@@ -379,7 +379,7 @@ class CodeLocation
 
     public function getHash(): string
     {
-        return (string) $this->file_start;
+        return $this->file_name . ' ' . $this->raw_file_start . $this->raw_file_end;
     }
 
     public function getShortSummary() : string
