@@ -1673,7 +1673,7 @@ return [
 'curl_multi_close' => ['void', 'mh'=>'CurlMultiHandle'],
 'curl_multi_errno' => ['int', 'mh'=>'CurlMultiHandle'],
 'curl_multi_exec' => ['int', 'mh'=>'CurlMultiHandle', '&w_still_running'=>'int'],
-'curl_multi_getcontent' => ['string', 'ch'=>'CurlMultiHandle'],
+'curl_multi_getcontent' => ['string', 'ch'=>'CurlHandle'],
 'curl_multi_info_read' => ['array|false', 'mh'=>'CurlMultiHandle', '&w_msgs_in_queue='=>'int'],
 'curl_multi_init' => ['CurlMultiHandle|false'],
 'curl_multi_remove_handle' => ['int', 'mh'=>'CurlMultiHandle', 'ch'=>'CurlHandle'],
