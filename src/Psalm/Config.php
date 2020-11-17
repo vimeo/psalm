@@ -1521,6 +1521,10 @@ class Config
             return $stripped_issue_type;
         }
 
+        if (strpos($issue_type, 'Tainted') === 0) {
+            return 'TaintedInput';
+        }
+
         if (preg_match('/^(False|Null)[A-Z]/', $issue_type) && !strpos($issue_type, 'Reference')) {
             return preg_replace('/^(False|Null)/', 'Invalid', $issue_type);
         }
