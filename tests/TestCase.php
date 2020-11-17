@@ -91,9 +91,13 @@ class TestCase extends BaseTestCase
      * @param  string         $file_path
      *
      */
-    public function analyzeFile($file_path, \Psalm\Context $context, bool $track_unused_suppressions = true): void
+    public function analyzeFile($file_path, \Psalm\Context $context, bool $track_unused_suppressions = true, bool $taint_flow_tracking = false): void
     {
         $codebase = $this->project_analyzer->getCodebase();
+
+        if ($taint_flow_tracking) {
+            $this->project_analyzer->trackTaintedInputs();
+        }
 
         $codebase->addFilesToAnalyze([$file_path => $file_path]);
 
