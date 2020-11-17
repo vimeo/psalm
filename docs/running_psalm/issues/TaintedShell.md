@@ -1,6 +1,6 @@
 # TaintedShell
 
-Emitted when tainted input detection is turned on and tainted shell code is detected.
+Emitted when user-controlled input can be passed into to an `exec` call or similar.
 
 ```php
 <?php

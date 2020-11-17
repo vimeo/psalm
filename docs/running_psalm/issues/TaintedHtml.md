@@ -1,6 +1,6 @@
 # TaintedHtml
 
-Emitted when tainted input detection is turned on and tainted HTML is detected.
+Emitted when user-controlled input can be passed into to an `echo` statement.
 
 ```php
 <?php

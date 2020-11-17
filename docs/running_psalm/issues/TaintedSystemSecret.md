@@ -1,6 +1,6 @@
 # TaintedSystemSecret
 
-Emitted when tainted input detection is turned on and data marked as a system secret is detected somewhere it shouldn’t be.
+Emitted when data marked as a system secret is detected somewhere it shouldn’t be.
 
 ```php
 <?php

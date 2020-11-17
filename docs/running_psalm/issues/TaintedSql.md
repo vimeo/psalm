@@ -1,6 +1,6 @@
 # TaintedSql
 
-Emitted when tainted input detection is turned on and tainted SQL is detected.
+Emitted when user-controlled input can be passed into to a SQL command.
 
 ```php
 <?php
