@@ -14,6 +14,7 @@ class TaintKind
     public const INPUT_SQL = 'sql';
     public const INPUT_HTML = 'html';
     public const INPUT_SHELL = 'shell';
+    public const INPUT_SSRF = 'ssrf';
     public const USER_SECRET = 'user_secret';
     public const SYSTEM_SECRET = 'system_secret';
 }

@@ -15,5 +15,6 @@ class TaintKindGroup
         TaintKind::INPUT_EVAL,
         TaintKind::INPUT_UNSERIALIZE,
         TaintKind::INPUT_INCLUDE,
+        TaintKind::INPUT_SSRF,
     ];
 }

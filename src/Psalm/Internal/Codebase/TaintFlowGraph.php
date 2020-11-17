@@ -11,6 +11,7 @@ use Psalm\Issue\TaintedEval;
 use Psalm\Issue\TaintedHtml;
 use Psalm\Issue\TaintedInclude;
 use Psalm\Issue\TaintedShell;
+use Psalm\Issue\TaintedSSRF;
 use Psalm\Issue\TaintedSql;
 use Psalm\Issue\TaintedSystemSecret;
 use Psalm\Issue\TaintedText;
@@ -355,6 +356,15 @@ class TaintFlowGraph extends DataFlowGraph
                                 );
                                 break;
 
+                            case TaintKind::INPUT_SSRF:
+                                $issue = new TaintedSSRF(
+                                    'Detected tainted network request',
+                                    $issue_location,
+                                    $issue_trace,
+                                    $path
+                                );
+                                break;
+                                
                             default:
                                 $issue = new TaintedCustom(
                                     'Detected tainted ' . $matching_taint,
