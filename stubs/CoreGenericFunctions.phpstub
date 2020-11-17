@@ -664,6 +664,19 @@ function str_replace($search, $replace, $subject, &$count = null) {}
 /**
  * @psalm-pure
  *
+ * @param string|string[] $pattern
+ * @param string|array<string|int|float> $replacement
+ * @param string|array<string|int|float> $subject
+ * @param int $count
+ * @return ($subject is array ? array<string> : string)
+ *
+ * @psalm-flow ($replacement, $subject) -> return
+ */
+function preg_filter($pattern, $replacement, $subject, int $limit = -1, &$count = null) {}
+
+/**
+ * @psalm-pure
+ *
  * @param string|string[] $search
  * @param string|array<string|int|float> $replace
  * @param string|array<string|int|float> $subject
