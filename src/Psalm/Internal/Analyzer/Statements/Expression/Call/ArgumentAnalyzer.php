@@ -1283,20 +1283,22 @@ class ArgumentAnalyzer
                 $method_name = strtolower($cased_method_name);
                 $class_storage = $codebase->classlike_storage_provider->get($fq_classlike_name);
 
-                foreach ($class_storage->dependent_classlikes as $dependent_classlike_lc => $_) {
-                    $dependent_classlike_storage = $codebase->classlike_storage_provider->get(
-                        $dependent_classlike_lc
-                    );
-                    $new_sink = DataFlowNode::getForMethodArgument(
-                        $dependent_classlike_lc . '::' . $method_name,
-                        $dependent_classlike_storage->name . '::' . $cased_method_name,
-                        $argument_offset,
-                        $arg_location,
-                        null
-                    );
+                if (!strpos($cased_method_id, '::__construct')) {
+                    foreach ($class_storage->dependent_classlikes as $dependent_classlike_lc => $_) {
+                        $dependent_classlike_storage = $codebase->classlike_storage_provider->get(
+                            $dependent_classlike_lc
+                        );
+                        $new_sink = DataFlowNode::getForMethodArgument(
+                            $dependent_classlike_lc . '::' . $method_name,
+                            $dependent_classlike_storage->name . '::' . $cased_method_name,
+                            $argument_offset,
+                            $arg_location,
+                            null
+                        );
 
-                    $statements_analyzer->data_flow_graph->addNode($new_sink);
-                    $statements_analyzer->data_flow_graph->addPath($method_node, $new_sink, 'arg');
+                        $statements_analyzer->data_flow_graph->addNode($new_sink);
+                        $statements_analyzer->data_flow_graph->addPath($method_node, $new_sink, 'arg');
+                    }
                 }
 
                 if (isset($class_storage->overridden_method_ids[$method_name])) {
