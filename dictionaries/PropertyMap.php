@@ -260,7 +260,7 @@ return [
         'field_count' => 'int',
         'host_info' => 'string',
         'info' => 'string',
-        'insert_id' => 'int',
+        'insert_id' => 'int|string',
         'protocol_version' => 'string',
         'server_info' => 'string',
         'server_version' => 'int',
