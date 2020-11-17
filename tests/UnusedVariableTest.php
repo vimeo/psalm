@@ -2268,6 +2268,13 @@ class UnusedVariableTest extends TestCase
 
                     print_r($output_rows);'
             ],
+            'usedInAssignOpToByRef' => [
+                '<?php
+                    function foo(int &$d): void  {
+                        $l = 4;
+                        $d += $l;
+                    }',
+            ],
         ];
     }
 

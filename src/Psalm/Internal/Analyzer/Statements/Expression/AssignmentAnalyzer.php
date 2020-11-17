@@ -1494,13 +1494,11 @@ class AssignmentAnalyzer
             );
         }
 
-        if ($statements_analyzer->data_flow_graph
+        if (($data_flow_graph = $statements_analyzer->data_flow_graph)
             && $array_var_id
             && isset($context->vars_in_scope[$array_var_id])
             && ($stmt_type = $statements_analyzer->node_data->getType($stmt))
         ) {
-            $data_flow_graph = $statements_analyzer->data_flow_graph;
-
             if ($stmt_type->parent_nodes) {
                 if ($data_flow_graph instanceof TaintFlowGraph
                     && \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
@@ -1515,6 +1513,14 @@ class AssignmentAnalyzer
 
                     foreach ($stmt_type->parent_nodes as $parent_node) {
                         $data_flow_graph->addPath($parent_node, $new_parent_node, '=');
+
+                        if ($stmt_var_type && $stmt_var_type->by_ref) {
+                            $data_flow_graph->addPath(
+                                $parent_node,
+                                new DataFlowNode('variable-use', 'variable use', null),
+                                'variable-use'
+                            );
+                        }
                     }
 
                     $context->vars_in_scope[$array_var_id]->parent_nodes = [
