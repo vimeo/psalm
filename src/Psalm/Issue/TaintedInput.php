@@ -4,7 +4,7 @@ namespace Psalm\Issue;
 use Psalm\Internal\Analyzer\DataFlowNodeData;
 use Psalm\CodeLocation;
 
-class TaintedInput extends CodeIssue
+abstract class TaintedInput extends CodeIssue
 {
     public const ERROR_LEVEL = -2;
     public const SHORTCODE = 205;

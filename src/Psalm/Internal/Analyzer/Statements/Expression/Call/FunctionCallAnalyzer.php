@@ -741,6 +741,29 @@ class FunctionCallAnalyzer extends CallAnalyzer
 
                 return [false, null, null, null];
             }
+
+            if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+                && $stmt_name_type->parent_nodes
+                && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
+            ) {
+                $arg_location = new CodeLocation($statements_analyzer->getSource(), $function_name);
+
+                $custom_call_sink = \Psalm\Internal\DataFlow\TaintSink::getForMethodArgument(
+                    'variable-call',
+                    'variable-call',
+                    0,
+                    $arg_location,
+                    $arg_location
+                );
+
+                $custom_call_sink->taints = [\Psalm\Type\TaintKind::INPUT_TEXT];
+
+                $statements_analyzer->data_flow_graph->addSink($custom_call_sink);
+
+                foreach ($stmt_name_type->parent_nodes as $parent_node) {
+                    $statements_analyzer->data_flow_graph->addPath($parent_node, $custom_call_sink, 'call');
+                }
+            }
         }
 
         if (!$statements_analyzer->node_data->getType($real_stmt)) {

@@ -371,7 +371,17 @@
             <xs:element name="ReferenceConstraintViolation" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ReservedWord" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="StringIncrement" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="TaintedCustom" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="TaintedEval" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="TaintedHtml" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="TaintedInclude" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedInput" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="TaintedShell" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="TaintedSql" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="TaintedSystemSecret" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="TaintedText" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="TaintedUnserialize" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="TaintedUserSecret" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TooFewArguments" type="ArgumentIssueHandlerType" minOccurs="0" />
             <xs:element name="TooManyArguments" type="ArgumentIssueHandlerType" minOccurs="0" />
             <xs:element name="TooManyTemplateParams" type="FunctionIssueHandlerType" minOccurs="0" />

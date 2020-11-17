@@ -8,6 +8,9 @@ namespace Psalm\Type;
 class TaintKind
 {
     public const INPUT_TEXT = 'text';
+    public const INPUT_UNSERIALIZE = 'unserialize';
+    public const INPUT_INCLUDE = 'include';
+    public const INPUT_EVAL = 'eval';
     public const INPUT_SQL = 'sql';
     public const INPUT_HTML = 'html';
     public const INPUT_SHELL = 'shell';

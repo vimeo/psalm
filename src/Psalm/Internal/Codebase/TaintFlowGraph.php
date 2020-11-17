@@ -3,11 +3,21 @@
 namespace Psalm\Internal\Codebase;
 
 use Psalm\CodeLocation;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\DataFlow\TaintSink;
 use Psalm\Internal\DataFlow\TaintSource;
-use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Issue\TaintedCustom;
+use Psalm\Issue\TaintedEval;
+use Psalm\Issue\TaintedHtml;
+use Psalm\Issue\TaintedInclude;
+use Psalm\Issue\TaintedShell;
+use Psalm\Issue\TaintedSql;
+use Psalm\Issue\TaintedSystemSecret;
+use Psalm\Issue\TaintedText;
+use Psalm\Issue\TaintedUnserialize;
+use Psalm\Issue\TaintedUserSecret;
 use Psalm\IssueBuffer;
-use Psalm\Issue\TaintedInput;
+use Psalm\Type\TaintKind;
 use function array_merge;
 use function count;
 use function implode;
@@ -242,16 +252,103 @@ class TaintFlowGraph extends DataFlowGraph
                         $issue_location = $generated_source->code_location;
                     }
 
-                    if (IssueBuffer::accepts(
-                        new TaintedInput(
-                            'Detected tainted ' . implode(', ', $matching_taints),
-                            $issue_location,
-                            $this->getIssueTrace($generated_source),
-                            $this->getPredecessorPath($generated_source)
-                                . ' -> ' . $this->getSuccessorPath($sinks[$to_id])
-                        )
-                    )) {
-                        // fall through
+                    $issue_trace = $this->getIssueTrace($generated_source);
+                    $path = $this->getPredecessorPath($generated_source)
+                        . ' -> ' . $this->getSuccessorPath($sinks[$to_id]);
+
+                    foreach ($matching_taints as $matching_taint) {
+                        switch ($matching_taint) {
+                            case TaintKind::INPUT_TEXT:
+                                $issue = new TaintedText(
+                                    'Detected tainted text',
+                                    $issue_location,
+                                    $issue_trace,
+                                    $path
+                                );
+                                break;
+
+                            case TaintKind::INPUT_UNSERIALIZE:
+                                $issue = new TaintedUnserialize(
+                                    'Detected tainted code passed to unserialize or similar',
+                                    $issue_location,
+                                    $issue_trace,
+                                    $path
+                                );
+                                break;
+
+                            case TaintKind::INPUT_INCLUDE:
+                                $issue = new TaintedInclude(
+                                    'Detected tainted code passed to include or similar',
+                                    $issue_location,
+                                    $issue_trace,
+                                    $path
+                                );
+                                break;
+
+                            case TaintKind::INPUT_EVAL:
+                                $issue = new TaintedEval(
+                                    'Detected tainted code passed to eval or similar',
+                                    $issue_location,
+                                    $issue_trace,
+                                    $path
+                                );
+                                break;
+
+                            case TaintKind::INPUT_SQL:
+                                $issue = new TaintedSql(
+                                    'Detected tainted SQL',
+                                    $issue_location,
+                                    $issue_trace,
+                                    $path
+                                );
+                                break;
+
+                            case TaintKind::INPUT_HTML:
+                                $issue = new TaintedHtml(
+                                    'Detected tainted HTML',
+                                    $issue_location,
+                                    $issue_trace,
+                                    $path
+                                );
+                                break;
+
+                            case TaintKind::INPUT_SHELL:
+                                $issue = new TaintedShell(
+                                    'Detected tainted shell code',
+                                    $issue_location,
+                                    $issue_trace,
+                                    $path
+                                );
+                                break;
+
+                            case TaintKind::USER_SECRET:
+                                $issue = new TaintedUserSecret(
+                                    'Detected tainted user secret leaking',
+                                    $issue_location,
+                                    $issue_trace,
+                                    $path
+                                );
+                                break;
+
+                            case TaintKind::SYSTEM_SECRET:
+                                $issue = new TaintedSystemSecret(
+                                    'Detected tainted system secret leaking',
+                                    $issue_location,
+                                    $issue_trace,
+                                    $path
+                                );
+                                break;
+
+                            default:
+                                $issue = new TaintedCustom(
+                                    'Detected tainted ' . $matching_taint,
+                                    $issue_location,
+                                    $issue_trace,
+                                    $path
+                                );
+                        }
+
+                        IssueBuffer::accepts($issue);
                     }
 
                     continue;

@@ -38,7 +38,7 @@ class EvalAnalyzer
                     $arg_location
                 );
 
-                $eval_param_sink->taints = [\Psalm\Type\TaintKind::INPUT_TEXT];
+                $eval_param_sink->taints = [\Psalm\Type\TaintKind::INPUT_EVAL];
 
                 $statements_analyzer->data_flow_graph->addSink($eval_param_sink);
 

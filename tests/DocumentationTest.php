@@ -131,6 +131,7 @@ class DocumentationTest extends TestCase
         $code_blocks['UnrecognizedStatement'] = true;
         $code_blocks['PluginIssue'] = true;
         $code_blocks['TaintedInput'] = true;
+        $code_blocks['TaintedCustom'] = true;
 
         $documented_issues = array_keys($code_blocks);
         sort($documented_issues);
@@ -159,6 +160,8 @@ class DocumentationTest extends TestCase
             $this->project_analyzer->trackUnusedSuppressions();
         }
 
+        $is_taint_test = strpos($error_message, 'Tainted') !== false;
+
         $is_array_offset_test = strpos($error_message, 'ArrayOffset') && strpos($error_message, 'PossiblyUndefined') !== false;
 
         $this->project_analyzer->getConfig()->ensure_array_string_offsets_exist = $is_array_offset_test;
@@ -177,6 +180,10 @@ class DocumentationTest extends TestCase
         $file_path = self::$src_dir_path . 'somefile.php';
 
         $this->addFile($file_path, $code);
+
+        if ($is_taint_test) {
+            $this->project_analyzer->trackTaintedInputs();
+        }
 
         $this->analyzeFile($file_path, new Context());
 

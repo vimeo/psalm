@@ -4,12 +4,12 @@
 
 return [
 'exec' => [['shell']],
-'create_function' => [['text'], ['text']],
+'create_function' => [['text'], ['eval']],
 'file_get_contents' => [['text']],
 'file_put_contents' => [['shell']],
 'fopen' => [['shell']],
 'header' => [['text']],
-'igbinary_unserialize' => [['text']],
+'igbinary_unserialize' => [['unserialize']],
 'ldap_search' => [['text']],
 'mysqli_query' => [[], ['sql']],
 'mysqli::query' => [['sql']],
@@ -38,7 +38,7 @@ return [
 'setcookie' => [['text'], ['text']],
 'shell_exec' => [['shell']],
 'system' => [['shell']],
-'unserialize' => [['text']],
+'unserialize' => [['unserialize']],
 'popen' => [['shell']],
 'proc_open' => [['shell']],
 ];

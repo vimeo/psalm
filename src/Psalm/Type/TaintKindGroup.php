@@ -12,5 +12,8 @@ class TaintKindGroup
         TaintKind::INPUT_SHELL,
         TaintKind::INPUT_SQL,
         TaintKind::INPUT_TEXT,
+        TaintKind::INPUT_EVAL,
+        TaintKind::INPUT_UNSERIALIZE,
+        TaintKind::INPUT_INCLUDE,
     ];
 }

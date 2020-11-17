@@ -104,7 +104,7 @@ class IssueBuffer
 
     public static function addUnusedSuppression(string $file_path, int $offset, string $issue_type) : void
     {
-        if ($issue_type === 'TaintedInput') {
+        if (\substr($issue_type, 0, 7) === 'Tainted') {
             return;
         }
 
@@ -204,7 +204,9 @@ class IssueBuffer
             return false;
         }
 
-        if ($project_analyzer->getCodebase()->taint_flow_graph && $issue_type !== 'TaintedInput') {
+        $is_tainted = \substr($issue_type, 0, 7) === 'Tainted';
+
+        if ($project_analyzer->getCodebase()->taint_flow_graph && !$is_tainted) {
             return false;
         }
 
@@ -227,7 +229,7 @@ class IssueBuffer
             . ' ' . $e->dupe_key;
 
         if ($reporting_level === Config::REPORT_INFO) {
-            if ($issue_type === 'TaintedInput' || !self::alreadyEmitted($emitted_key)) {
+            if ($is_tainted || !self::alreadyEmitted($emitted_key)) {
                 self::$issues_data[$e->getFilePath()][] = $e->toIssueData(Config::REPORT_INFO);
 
                 if ($is_fixable) {
@@ -253,7 +255,7 @@ class IssueBuffer
             );
         }
 
-        if ($issue_type === 'TaintedInput' || !self::alreadyEmitted($emitted_key)) {
+        if ($is_tainted || !self::alreadyEmitted($emitted_key)) {
             ++self::$error_count;
             self::$issues_data[$e->getFilePath()][] = $e->toIssueData(Config::REPORT_ERROR);
 

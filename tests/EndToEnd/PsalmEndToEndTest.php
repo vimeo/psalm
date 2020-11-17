@@ -155,7 +155,7 @@ class PsalmEndToEndTest extends TestCase
         $this->runPsalmInit(1);
         $result = $this->runPsalm(['--taint-analysis'], self::$tmpDir, true);
 
-        $this->assertStringContainsString('TaintedInput', $result['STDOUT']);
+        $this->assertStringContainsString('TaintedHtml', $result['STDOUT']);
         $this->assertStringContainsString('1 errors', $result['STDOUT']);
         $this->assertSame(1, $result['CODE']);
     }
