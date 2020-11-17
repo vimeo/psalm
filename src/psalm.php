@@ -659,6 +659,7 @@ if ($config->run_taint_analysis || (isset($options['track-tainted-input'])
     || isset($options['security-analysis'])
     || isset($options['taint-analysis']))
 ) {
+    $is_diff = false;
     $project_analyzer->trackTaintedInputs();
 }
 
