@@ -105,6 +105,13 @@ class TaintFlowGraph extends DataFlowGraph
                 return '';
             }
 
+            if ($source->code_location
+                && $previous_source->code_location === $source->code_location
+                && $previous_source->previous
+            ) {
+                return $this->getPredecessorPath($previous_source->previous) . ' -> ' . $source_descriptor;
+            }
+
             return $this->getPredecessorPath($previous_source) . ' -> ' . $source_descriptor;
         }
 
@@ -126,6 +133,13 @@ class TaintFlowGraph extends DataFlowGraph
         if ($next_sink) {
             if ($next_sink === $sink) {
                 return '';
+            }
+
+            if ($sink->code_location
+                && $next_sink->code_location === $sink->code_location
+                && $next_sink->previous
+            ) {
+                return $sink_descriptor . ' -> ' . $this->getSuccessorPath($next_sink->previous);
             }
 
             return $sink_descriptor . ' -> ' . $this->getSuccessorPath($next_sink);
