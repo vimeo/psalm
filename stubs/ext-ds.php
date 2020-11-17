@@ -98,7 +98,7 @@ final class Deque implements Sequence
     }
 
     /**
-     * @return number
+     * @return float|int
      * @psalm-mutation-free
      */
     public function sum()
@@ -631,7 +631,7 @@ interface Sequence extends Collection, ArrayAccess
     public function capacity(): int;
 
     /**
-     * @return number
+     * @return float|int
      * @psalm-mutation-free
      */
     public function sum();
@@ -836,7 +836,7 @@ final class Vector implements Sequence
     }
 
     /**
-     * @return number
+     * @return float|int
      * @psalm-mutation-free
      */
     public function sum()
