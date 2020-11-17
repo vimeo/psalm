@@ -368,6 +368,7 @@ class ProjectAnalyzer
             '.emacs' => Report::TYPE_EMACS,
             '.pylint' => Report::TYPE_PYLINT,
             '.console' => Report::TYPE_CONSOLE,
+            '.sarif' => Report::TYPE_SARIF,
         ];
 
         foreach ($report_file_paths as $report_file_path) {
