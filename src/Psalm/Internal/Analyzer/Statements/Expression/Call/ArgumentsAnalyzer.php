@@ -446,7 +446,7 @@ class ArgumentsAnalyzer
         $codebase = $statements_analyzer->getCodebase();
 
         if ($method_id) {
-            if (!$in_call_map && $method_id instanceof \Psalm\Internal\MethodIdentifier) {
+            if (!$in_call_map && $method_id instanceof MethodIdentifier) {
                 $fq_class_name = $method_id->fq_class_name;
             }
 
@@ -463,7 +463,7 @@ class ArgumentsAnalyzer
             }
         }
 
-        if ($method_id instanceof \Psalm\Internal\MethodIdentifier) {
+        if ($method_id instanceof MethodIdentifier) {
             $cased_method_id = $codebase->methods->getCasedMethodId($method_id);
         } elseif ($function_storage) {
             $cased_method_id = $function_storage->cased_name;
@@ -474,7 +474,7 @@ class ArgumentsAnalyzer
         $static_fq_class_name = $fq_class_name;
         $self_fq_class_name = $fq_class_name;
 
-        if ($method_id instanceof \Psalm\Internal\MethodIdentifier) {
+        if ($method_id instanceof MethodIdentifier) {
             $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
             if ($declaring_method_id && (string)$declaring_method_id !== (string)$method_id) {
@@ -627,6 +627,7 @@ class ArgumentsAnalyzer
                     ArgumentAnalyzer::checkArgumentMatches(
                         $statements_analyzer,
                         $cased_method_id,
+                        $method_id instanceof MethodIdentifier ? $method_id : null,
                         $self_fq_class_name,
                         $static_fq_class_name,
                         $code_location,
@@ -712,6 +713,7 @@ class ArgumentsAnalyzer
                 if (ArgumentAnalyzer::checkArgumentMatches(
                     $statements_analyzer,
                     $cased_method_id,
+                    $method_id instanceof MethodIdentifier ? $method_id : null,
                     $self_fq_class_name,
                     $static_fq_class_name,
                     $code_location,

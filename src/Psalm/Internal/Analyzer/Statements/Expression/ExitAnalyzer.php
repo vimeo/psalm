@@ -60,6 +60,7 @@ class ExitAnalyzer
                     new Type\Union([new TInt(), new TString()]),
                     null,
                     'exit',
+                    null,
                     0,
                     new CodeLocation($statements_analyzer->getSource(), $stmt->expr),
                     $stmt->expr,

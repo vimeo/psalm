@@ -237,12 +237,32 @@ class MethodCallReturnTypeFetcher
 
             $node_location = new CodeLocation($statements_analyzer, $name_expr);
 
+            $is_declaring = (string) $declaring_method_id === (string) $method_id;
+
             $method_call_node = DataFlowNode::getForMethodReturn(
                 (string) $method_id,
                 $cased_method_id,
-                $method_storage->signature_return_type_location ?: $method_storage->location,
+                $is_declaring ? ($method_storage->signature_return_type_location ?: $method_storage->location) : null,
                 $method_storage->specialize_call ? $node_location : null
             );
+
+            if (!$is_declaring) {
+                $cased_declaring_method_id = $codebase->methods->getCasedMethodId($declaring_method_id);
+
+                $declaring_method_call_node = DataFlowNode::getForMethodReturn(
+                    (string) $declaring_method_id,
+                    $cased_declaring_method_id,
+                    $method_storage->signature_return_type_location ?: $method_storage->location,
+                    $method_storage->specialize_call ? $node_location : null
+                );
+
+                $statements_analyzer->data_flow_graph->addNode($declaring_method_call_node);
+                $statements_analyzer->data_flow_graph->addPath(
+                    $declaring_method_call_node,
+                    $method_call_node,
+                    'parent'
+                );
+            }
 
             $statements_analyzer->data_flow_graph->addNode($method_call_node);
 

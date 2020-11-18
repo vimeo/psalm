@@ -15,6 +15,7 @@ use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\DataFlow\TaintSink;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Codebase\TaintFlowGraph;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\UnionTemplateHandler;
 use Psalm\CodeLocation;
@@ -55,6 +56,7 @@ class ArgumentAnalyzer
     public static function checkArgumentMatches(
         StatementsAnalyzer $statements_analyzer,
         ?string $cased_method_id,
+        ?MethodIdentifier $method_id,
         ?string $self_fq_class_name,
         ?string $static_fq_class_name,
         CodeLocation $function_call_location,
@@ -165,6 +167,7 @@ class ArgumentAnalyzer
             $statements_analyzer,
             $codebase,
             $cased_method_id,
+            $method_id,
             $self_fq_class_name,
             $static_fq_class_name,
             $function_call_location,
@@ -196,6 +199,7 @@ class ArgumentAnalyzer
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
         ?string $cased_method_id,
+        ?MethodIdentifier $method_id,
         ?string $self_fq_class_name,
         ?string $static_fq_class_name,
         CodeLocation $function_call_location,
@@ -397,6 +401,7 @@ class ArgumentAnalyzer
                     self::processTaintedness(
                         $statements_analyzer,
                         $cased_method_id,
+                        $method_id,
                         $argument_offset,
                         $arg_location,
                         $function_call_location,
@@ -467,6 +472,7 @@ class ArgumentAnalyzer
             $fleshed_out_type,
             $fleshed_out_signature_type,
             $cased_method_id,
+            $method_id,
             $argument_offset,
             new CodeLocation($statements_analyzer->getSource(), $arg->value),
             $arg->value,
@@ -494,6 +500,7 @@ class ArgumentAnalyzer
         Type\Union $param_type,
         ?Type\Union $signature_param_type,
         ?string $cased_method_id,
+        ?MethodIdentifier $method_id,
         int $argument_offset,
         CodeLocation $arg_location,
         PhpParser\Node\Expr $input_expr,
@@ -512,13 +519,9 @@ class ArgumentAnalyzer
                 && !$input_type->hasMixed()
                 && !$param_type->from_docblock
                 && !$param_type->had_template
-                && $cased_method_id
-                && strpos($cased_method_id, '::')
-                && !strpos($cased_method_id, '__')
+                && $method_id
+                && strpos($method_id->method_name, '__') !== 0
             ) {
-                $method_parts = explode('::', $cased_method_id);
-
-                $method_id = new \Psalm\Internal\MethodIdentifier($method_parts[0], strtolower($method_parts[1]));
                 $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
                 if ($declaring_method_id) {
@@ -541,6 +544,7 @@ class ArgumentAnalyzer
                 self::processTaintedness(
                     $statements_analyzer,
                     $cased_method_id,
+                    $method_id,
                     $argument_offset,
                     $arg_location,
                     $function_call_location,
@@ -606,6 +610,7 @@ class ArgumentAnalyzer
                 $input_type = self::processTaintedness(
                     $statements_analyzer,
                     $cased_method_id,
+                    $method_id,
                     $argument_offset,
                     $arg_location,
                     $function_call_location,
@@ -694,6 +699,7 @@ class ArgumentAnalyzer
             $input_type = self::processTaintedness(
                 $statements_analyzer,
                 $cased_method_id,
+                $method_id,
                 $argument_offset,
                 $arg_location,
                 $function_call_location,
@@ -1227,6 +1233,7 @@ class ArgumentAnalyzer
     private static function processTaintedness(
         StatementsAnalyzer $statements_analyzer,
         string $cased_method_id,
+        ?MethodIdentifier $method_id,
         int $argument_offset,
         CodeLocation $arg_location,
         CodeLocation $function_call_location,
@@ -1279,11 +1286,13 @@ class ArgumentAnalyzer
             );
 
             if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
-                && strpos($cased_method_id, '::')
-                && !strpos($cased_method_id, '::__construct')
+                && $method_id
+                && $method_id->method_name !== '__construct'
             ) {
-                [$fq_classlike_name, $cased_method_name] = explode('::', $cased_method_id);
-                $method_name = strtolower($cased_method_name);
+                $fq_classlike_name = $method_id->fq_class_name;
+                $method_name = $method_id->method_name;
+                $cased_method_name = explode('::', $cased_method_id)[1];
+
                 $class_storage = $codebase->classlike_storage_provider->get($fq_classlike_name);
 
                 foreach ($class_storage->dependent_classlikes as $dependent_classlike_lc => $_) {
@@ -1301,21 +1310,23 @@ class ArgumentAnalyzer
                     $statements_analyzer->data_flow_graph->addNode($new_sink);
                     $statements_analyzer->data_flow_graph->addPath($method_node, $new_sink, 'arg');
                 }
+            }
+        }
 
-                if (isset($class_storage->overridden_method_ids[$method_name])) {
-                    foreach ($class_storage->overridden_method_ids[$method_name] as $parent_method_id) {
-                        $new_sink = DataFlowNode::getForMethodArgument(
-                            (string) $parent_method_id,
-                            $codebase->methods->getCasedMethodId($parent_method_id),
-                            $argument_offset,
-                            $arg_location,
-                            null
-                        );
+        if ($method_id && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+            $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
-                        $statements_analyzer->data_flow_graph->addNode($new_sink);
-                        $statements_analyzer->data_flow_graph->addPath($method_node, $new_sink, 'arg');
-                    }
-                }
+            if ($declaring_method_id && (string) $declaring_method_id !== (string) $method_id) {
+                $new_sink = DataFlowNode::getForMethodArgument(
+                    (string) $declaring_method_id,
+                    $codebase->methods->getCasedMethodId($declaring_method_id),
+                    $argument_offset,
+                    $arg_location,
+                    null
+                );
+
+                $statements_analyzer->data_flow_graph->addNode($new_sink);
+                $statements_analyzer->data_flow_graph->addPath($method_node, $new_sink, 'arg');
             }
         }
 

@@ -53,6 +53,7 @@ class PrintAnalyzer
                 Type::getString(),
                 null,
                 'print',
+                null,
                 0,
                 new CodeLocation($statements_analyzer->getSource(), $stmt->expr),
                 $stmt->expr,

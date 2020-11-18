@@ -495,6 +495,27 @@ class TaintTest extends TestCase
 
                     new A($_GET["foo"]);'
             ],
+            'dontTaintThroughChildConstructorWhenMethodOverridden' => [
+                '<?php //--taint-analysis
+                    class A {
+                        private $taint;
+
+                        public function __construct($taint) {
+                            $this->taint = $taint;
+                        }
+
+                        public function getTaint() : string {
+                            return $this->taint;
+                        }
+                    }
+
+                    class B extends A {
+                        public function __construct($taint) {}
+                    }
+
+                    $b = new B($_GET["bar"]);
+                    echo $b->getTaint();'
+            ],
         ];
     }
 
@@ -1650,6 +1671,101 @@ class TaintTest extends TestCase
                     $ch = curl_init();
                     curl_setopt($ch, CURLOPT_URL, $_GET[\'url\']);',
                 'error_message' => 'TaintedSSRF',
+            ],
+            'taintThroughChildConstructorWithoutMethodOverride' => [
+                '<?php //--taint-analysis
+                    class A {
+                        private $taint;
+
+                        public function __construct($taint) {
+                            $this->taint = $taint;
+                        }
+
+                        public function getTaint() : string {
+                            return $this->taint;
+                        }
+                    }
+
+                    class B extends A {}
+
+
+                    $b = new B($_GET["bar"]);
+                    echo $b->getTaint();',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughChildConstructorCallingParentMethod' => [
+                '<?php //--taint-analysis
+                    class A {
+                        private $taint;
+
+                        public function __construct($taint) {
+                            $this->taint = $taint;
+                        }
+
+                        public function getTaint() : string {
+                            return $this->taint;
+                        }
+                    }
+
+                    class B extends A {}
+
+                    class C extends B {}
+
+                    $c = new C($_GET["bar"]);
+
+                    function foo(B $b) {
+                        echo $b->getTaint();
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughChildConstructorCallingGrandParentMethod' => [
+                '<?php //--taint-analysis
+                    class A {
+                        private $taint;
+
+                        public function __construct($taint) {
+                            $this->taint = $taint;
+                        }
+
+                        public function getTaint() : string {
+                            return $this->taint;
+                        }
+                    }
+
+                    class B extends A {}
+
+                    class C extends B {}
+
+                    $c = new C($_GET["bar"]);
+
+                    function foo(A $a) {
+                        echo $a->getTaint();
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughChildConstructorWhenMethodOverriddenWithParentConstructorCall' => [
+                '<?php //--taint-analysis
+                    class A {
+                        private $taint;
+
+                        public function __construct($taint) {
+                            $this->taint = $taint;
+                        }
+
+                        public function getTaint() : string {
+                            return $this->taint;
+                        }
+                    }
+
+                    class B extends A {
+                        public function __construct($taint) {
+                            parent::__construct($taint);
+                        }
+                    }
+
+                    $b = new B($_GET["bar"]);
+                    echo $b->getTaint();',
+                'error_message' => 'TaintedHtml',
             ],
             /*
             // TODO: Stubs do not support this type of inference even with $this->message = $message.

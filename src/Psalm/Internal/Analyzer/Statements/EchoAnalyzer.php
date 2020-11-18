@@ -75,6 +75,7 @@ class EchoAnalyzer
                 Type::getString(),
                 null,
                 'echo',
+                null,
                 (int)$i,
                 new CodeLocation($statements_analyzer->getSource(), $expr),
                 $expr,
