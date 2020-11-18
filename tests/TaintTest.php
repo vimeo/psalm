@@ -1640,6 +1640,17 @@ class TaintTest extends TestCase
                     $cb = proc_open($_POST[\'x\'], [], []);',
                 'error_message' => 'TaintedShell',
             ],
+            'taintedCurlInit' => [
+                '<?php
+                    $ch = curl_init($_GET[\'url\']);',
+                'error_message' => 'TaintedSSRF',
+            ],
+            'taintedCurlSetOpt' => [
+                '<?php
+                    $ch = curl_init();
+                    curl_setopt($ch, CURLOPT_URL, $_GET[\'url\']);',
+                'error_message' => 'TaintedSSRF',
+            ],
             /*
             // TODO: Stubs do not support this type of inference even with $this->message = $message.
             // Most uses of getMessage() would be with caught exceptions, so this is not representative of real code.
