@@ -644,6 +644,25 @@ class UnusedVariableManipulationTest extends FileManipulationTest
                 ['UnusedVariable'],
                 true,
             ],
+            'dontRemoveUnusedClosureUse' => [
+                '<?php
+                    $b = 5;
+                    echo $b;
+                    $a = function() use ($b) : void {
+                        echo 4;
+                    };
+                    $a();',
+                '<?php
+                    $b = 5;
+                    echo $b;
+                    $a = function() use ($b) : void {
+                        echo 4;
+                    };
+                    $a();',
+                '7.1',
+                ['UnusedVariable'],
+                true,
+            ],
         ];
     }
 }
