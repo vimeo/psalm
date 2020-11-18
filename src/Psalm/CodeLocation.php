@@ -308,13 +308,17 @@ class CodeLocation
         $newlines = substr_count($this->text, "\n");
 
         if ($newlines) {
-            $this->column_to = $this->selection_end -
-                (int)strrpos($file_contents, "\n", $this->selection_end - strlen($file_contents));
+            $last_newline_pos = strrpos($file_contents, "\n", $this->selection_end - strlen($file_contents) - 1);
+            $this->column_to = $this->selection_end - (int)$last_newline_pos;
         } else {
             $this->column_to = $this->column_from + strlen($this->text);
         }
 
         $this->end_line_number = $this->getLineNumber() + $newlines;
+
+        if ($this->column_to === 0) {
+            throw new \UnexpectedValueException('bad');
+        }
     }
 
     public function getLineNumber(): int
