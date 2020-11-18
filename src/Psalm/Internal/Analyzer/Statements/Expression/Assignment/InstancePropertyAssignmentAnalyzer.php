@@ -412,7 +412,7 @@ class InstancePropertyAssignmentAnalyzer
                             $has_regular_setter = true;
                             $property_exists = true;
 
-                            if (!$context->collect_initializations) {
+                            if (!$context->collect_initializations && !$context->collect_mutations) {
                                 self::taintProperty(
                                     $statements_analyzer,
                                     $stmt,
@@ -483,7 +483,7 @@ class InstancePropertyAssignmentAnalyzer
                      * not in that list, fall through
                      */
                     if (!$var_id || !$class_storage->sealed_properties) {
-                        if (!$context->collect_initializations) {
+                        if (!$context->collect_initializations && !$context->collect_mutations) {
                             self::taintProperty(
                                 $statements_analyzer,
                                 $stmt,
@@ -535,7 +535,10 @@ class InstancePropertyAssignmentAnalyzer
                     }
                 }
 
-                if ($statements_analyzer->data_flow_graph && !$context->collect_initializations) {
+                if ($statements_analyzer->data_flow_graph
+                    && !$context->collect_initializations
+                    && !$context->collect_mutations
+                ) {
                     $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
                     self::taintProperty(
@@ -1162,6 +1165,8 @@ class InstancePropertyAssignmentAnalyzer
             return;
         }
 
+        $codebase = $statements_analyzer->getCodebase();
+
         $data_flow_graph = $statements_analyzer->data_flow_graph;
 
         $var_location = new CodeLocation($statements_analyzer->getSource(), $stmt->var);
@@ -1264,6 +1269,29 @@ class InstancePropertyAssignmentAnalyzer
                 foreach ($assignment_value_type->parent_nodes as $parent_node) {
                     $data_flow_graph->addPath($parent_node, $localized_property_node, '=');
                 }
+            }
+
+            $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
+                $property_id,
+                false,
+                $statements_analyzer
+            );
+
+            if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+                && $declaring_property_class
+                && $declaring_property_class !== $class_storage->name
+                && $stmt->name instanceof PhpParser\Node\Identifier
+            ) {
+                $declaring_property_node = new DataFlowNode(
+                    $declaring_property_class . '::$' . $stmt->name,
+                    $declaring_property_class . '::$' . $stmt->name,
+                    null,
+                    null
+                );
+
+                $data_flow_graph->addNode($declaring_property_node);
+
+                $data_flow_graph->addPath($property_node, $declaring_property_node, 'property-assignment');
             }
         }
     }

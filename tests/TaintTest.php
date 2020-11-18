@@ -1782,6 +1782,26 @@ class TaintTest extends TestCase
                     ldap_search($ds, $dn, $filter, []);',
                 'error_message' => 'TaintedLdap',
             ],
+            'potentialTaintThroughChildClassSettingProperty' => [
+                '<?php
+                    class A {
+                        public string $taint = "";
+
+                        public function getTaint() : string {
+                            return $this->taint;
+                        }
+                    }
+
+                    class B extends A {
+                        public function __construct(string $taint) {
+                            $this->taint = $taint;
+                        }
+                    }
+
+                    $b = new B($_GET["bar"]);
+                    echo $b->getTaint();',
+                'error_message' => 'TaintedHtml',
+            ],
             /*
             // TODO: Stubs do not support this type of inference even with $this->message = $message.
             // Most uses of getMessage() would be with caught exceptions, so this is not representative of real code.
