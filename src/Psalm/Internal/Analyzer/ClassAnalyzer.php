@@ -1292,45 +1292,67 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                             $fake_param->setType((string)$param->signature_type);
                         }
 
-                        return $fake_param->getNode();
+                        $node = $fake_param->getNode();
+
+                        $attributes = $param->location
+                            ? [
+                                'startFilePos' => $param->location->raw_file_start,
+                                'endFilePos' => $param->location->raw_file_end,
+                                'startLine' => $param->location->raw_line_number
+                            ]
+                            : [];
+
+                        $node->setAttributes($attributes);
+
+                        return $node;
                     },
                     $constructor_storage->params
                 );
 
                 $fake_constructor_stmt_args = array_map(
                     function (FunctionLikeParameter $param) : PhpParser\Node\Arg {
-                        return new PhpParser\Node\Arg(new PhpParser\Node\Expr\Variable($param->name));
+                        $attributes = $param->location
+                            ? [
+                                'startFilePos' => $param->location->raw_file_start,
+                                'endFilePos' => $param->location->raw_file_end,
+                                'startLine' => $param->location->raw_line_number
+                            ]
+                            : [];
+
+                        return new PhpParser\Node\Arg(
+                            new PhpParser\Node\Expr\Variable($param->name, $attributes),
+                            false,
+                            false,
+                            $attributes
+                        );
                     },
                     $constructor_storage->params
                 );
+
+                $fake_constructor_attributes = [
+                    'startLine' => $class->extends->getLine(),
+                    'startFilePos' => $class->extends->getAttribute('startFilePos'),
+                    'endFilePos' => $class->extends->getAttribute('endFilePos'),
+                ];
+
+                $fake_call_attributes = $fake_constructor_attributes
+                    + [
+                        'comments' => [new PhpParser\Comment\Doc(
+                            '/** @psalm-suppress InaccessibleMethod */',
+                            $class->extends->getLine(),
+                            (int) $class->extends->getAttribute('startFilePos')
+                        )],
+                    ];
 
                 $fake_constructor_stmts = [
                     new PhpParser\Node\Stmt\Expression(
                         new PhpParser\Node\Expr\StaticCall(
                             new PhpParser\Node\Name\FullyQualified($constructor_declaring_fqcln),
-                            new PhpParser\Node\Identifier('__construct'),
+                            new PhpParser\Node\Identifier('__construct', $fake_constructor_attributes),
                             $fake_constructor_stmt_args,
-                            [
-                                'startLine' => $class->extends->getLine(),
-                                'startFilePos' => $class->extends->getAttribute('startFilePos'),
-                                'endFilePos' => $class->extends->getAttribute('endFilePos'),
-                                'comments' => [new PhpParser\Comment\Doc(
-                                    '/** @psalm-suppress InaccessibleMethod */',
-                                    $class->extends->getLine(),
-                                    (int) $class->extends->getAttribute('startFilePos')
-                                )],
-                            ]
+                            $fake_call_attributes
                         ),
-                        [
-                            'startLine' => $class->extends->getLine(),
-                            'startFilePos' => $class->extends->getAttribute('startFilePos'),
-                            'endFilePos' => $class->extends->getAttribute('endFilePos'),
-                            'comments' => [new PhpParser\Comment\Doc(
-                                '/** @psalm-suppress InaccessibleMethod */',
-                                $class->extends->getLine(),
-                                (int) $class->extends->getAttribute('startFilePos')
-                            )],
-                        ]
+                        $fake_call_attributes
                     ),
                 ];
 
@@ -1341,11 +1363,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         'params' => $fake_constructor_params,
                         'stmts' => $fake_constructor_stmts,
                     ],
-                    [
-                        'startLine' => $class->extends->getLine(),
-                        'startFilePos' => $class->extends->getAttribute('startFilePos'),
-                        'endFilePos' => $class->extends->getAttribute('endFilePos'),
-                    ]
+                    $fake_constructor_attributes
                 );
 
                 $codebase->analyzer->disableMixedCounts();
