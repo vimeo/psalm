@@ -128,27 +128,48 @@ class SwitchCaseAnalyzer
                             new PhpParser\Node\Name(['get_class']),
                             [
                                 new PhpParser\Node\Arg(
-                                    new PhpParser\Node\Expr\Variable(substr($type->typeof, 1))
+                                    new PhpParser\Node\Expr\Variable(
+                                        substr($type->typeof, 1),
+                                        $stmt->cond->getAttributes()
+                                    ),
+                                    false,
+                                    false,
+                                    $stmt->cond->getAttributes()
                                 ),
-                            ]
+                            ],
+                            $stmt->cond->getAttributes()
                         );
                     } elseif ($type instanceof Type\Atomic\TDependentGetType) {
                         $type_statements[] = new PhpParser\Node\Expr\FuncCall(
                             new PhpParser\Node\Name(['gettype']),
                             [
                                 new PhpParser\Node\Arg(
-                                    new PhpParser\Node\Expr\Variable(substr($type->typeof, 1))
+                                    new PhpParser\Node\Expr\Variable(
+                                        substr($type->typeof, 1),
+                                        $stmt->cond->getAttributes()
+                                    ),
+                                    false,
+                                    false,
+                                    $stmt->cond->getAttributes()
                                 ),
-                            ]
+                            ],
+                            $stmt->cond->getAttributes()
                         );
                     } elseif ($type instanceof Type\Atomic\TDependentGetDebugType) {
                         $type_statements[] = new PhpParser\Node\Expr\FuncCall(
                             new PhpParser\Node\Name(['get_debug_type']),
                             [
                                 new PhpParser\Node\Arg(
-                                    new PhpParser\Node\Expr\Variable(substr($type->typeof, 1))
+                                    new PhpParser\Node\Expr\Variable(
+                                        substr($type->typeof, 1),
+                                        $stmt->cond->getAttributes()
+                                    ),
+                                    false,
+                                    false,
+                                    $stmt->cond->getAttributes()
                                 ),
-                            ]
+                            ],
+                            $stmt->cond->getAttributes()
                         );
                     } else {
                         $type_statements = null;
@@ -226,7 +247,8 @@ class SwitchCaseAnalyzer
             } else {
                 $case_if_stmt = new PhpParser\Node\Stmt\If_(
                     $switch_scope->leftover_case_equality_expr,
-                    ['stmts' => $case_stmts]
+                    ['stmts' => $case_stmts],
+                    $case->getAttributes()
                 );
 
                 $switch_scope->leftover_statements = [$case_if_stmt];
@@ -652,12 +674,19 @@ class SwitchCaseAnalyzer
                     new PhpParser\Node\Name\FullyQualified(['in_array']),
                     [
                         new PhpParser\Node\Arg(
-                            $var
+                            $var,
+                            false,
+                            false,
+                            $var->getAttributes()
                         ),
                         new PhpParser\Node\Arg(
                             new PhpParser\Node\Expr\Array_(
-                                $nested_or_options
-                            )
+                                $nested_or_options,
+                                $case_equality_expr->getAttributes()
+                            ),
+                            false,
+                            false,
+                            $case_equality_expr->getAttributes()
                         ),
                         new PhpParser\Node\Arg(
                             new PhpParser\Node\Expr\ConstFetch(
@@ -686,7 +715,10 @@ class SwitchCaseAnalyzer
             && $case_equality_expr->left->name === $var->name
         ) {
             $in_array_values[] = new PhpParser\Node\Expr\ArrayItem(
-                $case_equality_expr->right
+                $case_equality_expr->right,
+                null,
+                false,
+                $case_equality_expr->right->getAttributes()
             );
 
             return $in_array_values;
@@ -703,7 +735,12 @@ class SwitchCaseAnalyzer
             return null;
         }
 
-        $in_array_values[] = new PhpParser\Node\Expr\ArrayItem($case_equality_expr->right->right);
+        $in_array_values[] = new PhpParser\Node\Expr\ArrayItem(
+            $case_equality_expr->right->right,
+            null,
+            false,
+            $case_equality_expr->right->right->getAttributes()
+        );
 
         return self::getOptionsFromNestedOr(
             $case_equality_expr->left,

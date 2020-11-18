@@ -214,12 +214,16 @@ class ArrayAnalyzer
                 $array_keys[$item_key_value] = true;
             }
 
-            if ($statements_analyzer->data_flow_graph
-                && ($statements_analyzer->data_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph
+            if (($data_flow_graph = $statements_analyzer->data_flow_graph)
+                && ($data_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph
                     || !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues()))
             ) {
                 if ($item_value_type = $statements_analyzer->node_data->getType($item->value)) {
-                    if ($item_value_type->parent_nodes) {
+                    if ($item_value_type->parent_nodes
+                        && !($item_value_type->isSingle()
+                            && $item_value_type->hasLiteralValue()
+                            && $data_flow_graph instanceof \Psalm\Internal\Codebase\TaintFlowGraph)
+                    ) {
                         $var_location = new CodeLocation($statements_analyzer->getSource(), $item);
 
                         $new_parent_node = \Psalm\Internal\DataFlow\DataFlowNode::getForAssignment(
@@ -228,10 +232,10 @@ class ArrayAnalyzer
                             $var_location
                         );
 
-                        $statements_analyzer->data_flow_graph->addNode($new_parent_node);
+                        $data_flow_graph->addNode($new_parent_node);
 
                         foreach ($item_value_type->parent_nodes as $parent_node) {
-                            $statements_analyzer->data_flow_graph->addPath(
+                            $data_flow_graph->addPath(
                                 $parent_node,
                                 $new_parent_node,
                                 'array-assignment'

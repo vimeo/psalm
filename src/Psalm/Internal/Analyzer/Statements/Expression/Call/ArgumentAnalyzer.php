@@ -1252,6 +1252,11 @@ class ArgumentAnalyzer
             return $input_type;
         }
 
+        // literal data can’t be tainted
+        if ($input_type->isSingle() && $input_type->hasLiteralValue()) {
+            return $input_type;
+        }
+
         if ($function_param->type && $function_param->type->isString() && !$input_type->isString()) {
             $cast_type = CastAnalyzer::castStringAttempt(
                 $statements_analyzer,

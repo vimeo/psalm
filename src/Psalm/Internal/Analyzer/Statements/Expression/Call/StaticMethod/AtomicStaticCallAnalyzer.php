@@ -518,14 +518,29 @@ class AtomicStaticCallAnalyzer
 
                 $array_values = array_map(
                     function (PhpParser\Node\Arg $arg): PhpParser\Node\Expr\ArrayItem {
-                        return new PhpParser\Node\Expr\ArrayItem($arg->value);
+                        return new PhpParser\Node\Expr\ArrayItem(
+                            $arg->value,
+                            null,
+                            false,
+                            $arg->getAttributes()
+                        );
                     },
                     $args
                 );
 
                 $args = [
-                    new PhpParser\Node\Arg(new PhpParser\Node\Scalar\String_((string) $method_id)),
-                    new PhpParser\Node\Arg(new PhpParser\Node\Expr\Array_($array_values)),
+                    new PhpParser\Node\Arg(
+                        new PhpParser\Node\Scalar\String_((string) $method_id, $stmt_name->getAttributes()),
+                        false,
+                        false,
+                        $stmt_name->getAttributes()
+                    ),
+                    new PhpParser\Node\Arg(
+                        new PhpParser\Node\Expr\Array_($array_values, $stmt->getAttributes()),
+                        false,
+                        false,
+                        $stmt->getAttributes()
+                    ),
                 ];
 
                 $method_id = new MethodIdentifier(

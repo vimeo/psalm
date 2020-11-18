@@ -153,7 +153,12 @@ class MissingMethodCallHandler
              * @return PhpParser\Node\Expr\ArrayItem
              */
             function (PhpParser\Node\Arg $arg): PhpParser\Node\Expr\ArrayItem {
-                return new PhpParser\Node\Expr\ArrayItem($arg->value);
+                return new PhpParser\Node\Expr\ArrayItem(
+                    $arg->value,
+                    null,
+                    false,
+                    $arg->getAttributes()
+                );
             },
             $stmt->args
         );
@@ -162,13 +167,23 @@ class MissingMethodCallHandler
         $statements_analyzer->node_data = clone $statements_analyzer->node_data;
 
         return new AtomicCallContext(
-            new MethodIdentifier(
-                $fq_class_name,
-                '__call'
-            ),
+            new MethodIdentifier($fq_class_name, '__call'),
             [
-                new PhpParser\Node\Arg(new PhpParser\Node\Scalar\String_($method_name_lc)),
-                new PhpParser\Node\Arg(new PhpParser\Node\Expr\Array_($array_values)),
+                new PhpParser\Node\Arg(
+                    new PhpParser\Node\Scalar\String_($method_name_lc),
+                    false,
+                    false,
+                    $stmt->getAttributes()
+                ),
+                new PhpParser\Node\Arg(
+                    new PhpParser\Node\Expr\Array_(
+                        $array_values,
+                        $stmt->getAttributes()
+                    ),
+                    false,
+                    false,
+                    $stmt->getAttributes()
+                ),
             ],
             $old_node_data
         );
