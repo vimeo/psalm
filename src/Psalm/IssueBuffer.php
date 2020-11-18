@@ -680,7 +680,11 @@ class IssueBuffer
             }
         }
 
-        if ($error_count) {
+        if ($error_count
+            && !($codebase->taint_flow_graph
+                && $project_analyzer->generated_report_options
+                && isset($_SERVER['GITHUB_WORKFLOW']))
+        ) {
             exit(1);
         }
     }
@@ -758,7 +762,7 @@ class IssueBuffer
             case Report::TYPE_PHP_STORM:
                 $output = new PhpStormReport($normalized_data, self::$fixable_issue_counts, $report_options);
                 break;
-            
+
             case Report::TYPE_SARIF:
                 $output = new SarifReport($normalized_data, self::$fixable_issue_counts, $report_options);
                 break;
