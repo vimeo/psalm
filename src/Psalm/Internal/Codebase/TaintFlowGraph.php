@@ -10,6 +10,7 @@ use Psalm\Issue\TaintedCustom;
 use Psalm\Issue\TaintedEval;
 use Psalm\Issue\TaintedHtml;
 use Psalm\Issue\TaintedInclude;
+use Psalm\Issue\TaintedLdap;
 use Psalm\Issue\TaintedShell;
 use Psalm\Issue\TaintedSSRF;
 use Psalm\Issue\TaintedSql;
@@ -365,6 +366,15 @@ class TaintFlowGraph extends DataFlowGraph
                                 );
                                 break;
 
+                            case TaintKind::INPUT_LDAP:
+                                $issue = new TaintedLdap(
+                                    'Detected tainted LDAP request',
+                                    $issue_location,
+                                    $issue_trace,
+                                    $path
+                                );
+                                break;
+                                
                             default:
                                 $issue = new TaintedCustom(
                                     'Detected tainted ' . $matching_taint,

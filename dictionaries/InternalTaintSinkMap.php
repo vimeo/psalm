@@ -10,7 +10,7 @@ return [
 'fopen' => [['shell']],
 'header' => [['text']],
 'igbinary_unserialize' => [['unserialize']],
-'ldap_search' => [['text']],
+'ldap_search' => [[], ['ldap'], ['ldap']],
 'mysqli_query' => [[], ['sql']],
 'mysqli::query' => [['sql']],
 'mysqli_real_query' => [[], ['sql']],
