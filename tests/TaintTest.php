@@ -230,6 +230,13 @@ class TaintTest extends TestCase
                         echo $a;
                     }'
             ],
+            'taintLdapEscape' => [
+                '<?php
+                    $ds = ldap_connect(\'example.com\');
+                    $dn = \'o=Psalm, c=US\';
+                    $filter = ldap_escape($_GET[\'filter\']);
+                    ldap_search($ds, $dn, $filter, []);'
+            ],
             'taintOnStrReplaceCallRemovedInFunction' => [
                 '<?php
                     class U {
@@ -1766,6 +1773,14 @@ class TaintTest extends TestCase
                     $b = new B($_GET["bar"]);
                     echo $b->getTaint();',
                 'error_message' => 'TaintedHtml',
+            ],
+            'taintedLdapSearch' => [
+                '<?php
+                    $ds = ldap_connect(\'example.com\');
+                    $dn = \'o=Psalm, c=US\';
+                    $filter = $_GET[\'filter\'];
+                    ldap_search($ds, $dn, $filter, []);',
+                'error_message' => 'TaintedLdap',
             ],
             /*
             // TODO: Stubs do not support this type of inference even with $this->message = $message.

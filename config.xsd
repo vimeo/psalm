@@ -379,6 +379,7 @@
             <xs:element name="TaintedShell" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedSql" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedSSRF" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="TaintedLdap" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedSystemSecret" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedText" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedUnserialize" type="IssueHandlerType" minOccurs="0" />

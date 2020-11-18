@@ -938,3 +938,11 @@ function convert_uudecode(string $data): string
 function convert_uuencode(string $data) : string 
 {
 }
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-taint-escape ldap
+ * @psalm-flow ($value) -> return
+ */
+function ldap_escape(string $value, string $ignore = "", int $flag = 0) : string {}
