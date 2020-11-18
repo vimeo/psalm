@@ -38,12 +38,11 @@ class ArrayAssignmentAnalyzer
         ?PhpParser\Node\Expr $assign_value,
         Type\Union $assignment_value_type
     ): void {
-        $nesting = 0;
         $var_id = ExpressionIdentifier::getVarId(
             $stmt->var,
             $statements_analyzer->getFQCLN(),
             $statements_analyzer,
-            $nesting
+            0
         );
 
         self::updateArrayType(

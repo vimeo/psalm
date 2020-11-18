@@ -1253,7 +1253,10 @@ class ArgumentAnalyzer
         }
 
         // literal data can’t be tainted
-        if ($input_type->isSingle() && $input_type->hasLiteralValue()) {
+        if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+            && $input_type->isSingle()
+            && $input_type->hasLiteralValue()
+        ) {
             return $input_type;
         }
 
