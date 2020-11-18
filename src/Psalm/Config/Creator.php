@@ -60,11 +60,19 @@ class Creator
             self::TEMPLATE
         );
 
-        $template = str_replace(
-            '<directory name="vendor" />',
-            '<directory name="' . $vendor_dir . '" />',
-            $template
-        );
+        if (is_dir($current_dir . DIRECTORY_SEPARATOR . $vendor_dir)) {
+            $template = str_replace(
+                '<directory name="vendor" />',
+                '<directory name="' . $vendor_dir . '" />',
+                $template
+            );
+        } else {
+            $template = str_replace(
+                '<directory name="vendor" />',
+                '',
+                $template
+            );
+        }
 
         $template = str_replace(
             'errorLevel="1"',
