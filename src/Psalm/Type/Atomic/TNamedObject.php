@@ -88,8 +88,14 @@ class TNamedObject extends Atomic
             $use_phpdoc_format
         );
 
-        return Type::getStringFromFQCLN($this->value, $namespace, $aliased_classes, $this_class, true)
-            . $intersection_types;
+        return Type::getStringFromFQCLN(
+            $this->value,
+            $namespace,
+            $aliased_classes,
+            $this_class,
+            true,
+            $this->was_static
+        ) . $intersection_types;
     }
 
     /**
@@ -106,12 +112,16 @@ class TNamedObject extends Atomic
             return null;
         }
 
+        if ($this->was_static) {
+            return 'self';
+        }
+
         return $this->toNamespacedString($namespace, $aliased_classes, $this_class, false);
     }
 
     public function canBeFullyExpressedInPhp(): bool
     {
-        return $this->value !== 'static';
+        return $this->value !== 'static' && $this->was_static === false;
     }
 
     public function replaceTemplateTypesWithArgTypes(
