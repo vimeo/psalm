@@ -2262,24 +2262,19 @@ class AssertionFinder
                 foreach ($second_arg_type->getAtomicTypes() as $atomic_type) {
                     if ($atomic_type instanceof Type\Atomic\TArray
                         || $atomic_type instanceof Type\Atomic\TKeyedArray
-                        || $atomic_type instanceof Type\Atomic\TList
                     ) {
-                        if ($atomic_type instanceof Type\Atomic\TList) {
-                            $key_type = $atomic_type->type_param;
-                        } elseif ($atomic_type instanceof Type\Atomic\TKeyedArray) {
-                            $key_type = $atomic_type->getGenericKeyType();
-                        } else {
-                            $key_type = $atomic_type->type_params[1];
+                        if ($atomic_type instanceof Type\Atomic\TKeyedArray) {
+                            $atomic_type = $atomic_type->getGenericArrayType();
                         }
 
                         $array_literal_types = array_merge(
-                            $key_type->getLiteralStrings(),
-                            $key_type->getLiteralInts(),
-                            $key_type->getLiteralFloats()
+                            $atomic_type->type_params[1]->getLiteralStrings(),
+                            $atomic_type->type_params[1]->getLiteralInts(),
+                            $atomic_type->type_params[1]->getLiteralFloats()
                         );
 
                         if ($array_literal_types
-                            && count($key_type->getAtomicTypes())
+                            && count($atomic_type->type_params[1]->getAtomicTypes())
                         ) {
                             $literal_assertions = [];
 
@@ -2287,11 +2282,11 @@ class AssertionFinder
                                 $literal_assertions[] = '=' . $array_literal_type->getId();
                             }
 
-                            if ($key_type->isFalsable()) {
+                            if ($atomic_type->type_params[1]->isFalsable()) {
                                 $literal_assertions[] = 'false';
                             }
 
-                            if ($key_type->isNullable()) {
+                            if ($atomic_type->type_params[1]->isNullable()) {
                                 $literal_assertions[] = 'null';
                             }
 

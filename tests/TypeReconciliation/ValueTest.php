@@ -781,26 +781,6 @@ class ValueTest extends \Psalm\Tests\TestCase
                         if (false === ($a > 1)){}
                     }'
             ],
-            'returnFromUnionLiteral' => [
-                '<?php
-                    /**
-                     * @return list<"a1"|"a2">
-                     */
-                    function getSupportedConsts() {
-                        return ["a1", "a2"];
-                    }
-
-                    function foo(mixed $file) : string {
-                        if (in_array($file, getSupportedConsts(), true)) {
-                            return $file;
-                        }
-
-                        return "";
-                    }',
-                [],
-                [],
-                '8.0'
-            ],
         ];
     }
 
