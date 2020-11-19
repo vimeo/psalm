@@ -96,7 +96,7 @@ Whether or not to use types as defined in docblocks. Defaults to `true`.
   useDocblockPropertyTypes="[bool]"
 >
 ```
-If not using all docblock types, you can still use docblock property types. Defaults to `false` (though only relevant if `useDocblockTypes` is `false`.
+If not using all docblock types, you can still use docblock property types. Defaults to `false` (though only relevant if `useDocblockTypes` is `false`).
 
 #### usePhpDocMethodsWithoutMagicCall
 
