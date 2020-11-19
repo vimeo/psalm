@@ -309,7 +309,8 @@ class Reconciler
             }
 
             if (($statements_analyzer->data_flow_graph instanceof \Psalm\Internal\Codebase\TaintFlowGraph
-                    && (!$result_type->hasScalarType()) || $result_type->hasString())
+                    && (!$result_type->hasScalarType())
+                        || ($result_type->hasString() && !$result_type->hasLiteralString()))
                 || $statements_analyzer->data_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph
             ) {
                 if ($before_adjustment && $before_adjustment->parent_nodes) {
