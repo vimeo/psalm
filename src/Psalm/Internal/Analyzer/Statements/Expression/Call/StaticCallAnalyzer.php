@@ -193,6 +193,8 @@ class StaticCallAnalyzer extends CallAnalyzer
             return true;
         }
 
+        $has_mock = false;
+        $moved_call = false;
         $has_existing_method = false;
 
         foreach ($lhs_type->getAtomicTypes() as $lhs_type_part) {
@@ -202,8 +204,8 @@ class StaticCallAnalyzer extends CallAnalyzer
                 $context,
                 $lhs_type_part,
                 $lhs_type->ignore_nullable_issues,
-                false,
-                false,
+                $moved_call,
+                $has_mock,
                 $has_existing_method
             );
         }
