@@ -2301,10 +2301,8 @@ class AssertionFinder
                 }
 
                 if ($literal_assertions) {
-                    return [[$first_var_name => [$literal_assertions]]];
+                   $if_types[$first_var_name] = [$literal_assertions];
                 }
-
-                return [];
             }
 
             $array_root = isset($expr->args[1]->value)
@@ -2315,45 +2313,46 @@ class AssertionFinder
                 )
                 : null;
 
-            if ($first_var_name === null && isset($expr->args[0])) {
-                $first_arg = $expr->args[0];
+            if ($array_root) {
+                if ($first_var_name === null && isset($expr->args[0])) {
+                    $first_arg = $expr->args[0];
 
-                if ($first_arg->value instanceof PhpParser\Node\Scalar\String_) {
-                    $first_var_name = '\'' . $first_arg->value->value . '\'';
-                } elseif ($first_arg->value instanceof PhpParser\Node\Scalar\LNumber) {
-                    $first_var_name = (string) $first_arg->value->value;
-                }
-            }
-
-            if ($expr->args[0]->value instanceof PhpParser\Node\Expr\ClassConstFetch
-                && $expr->args[0]->value->name instanceof PhpParser\Node\Identifier
-                && $expr->args[0]->value->name->name !== 'class'
-            ) {
-                $const_type = null;
-
-                if ($source instanceof StatementsAnalyzer) {
-                    $const_type = $source->node_data->getType($expr->args[0]->value);
+                    if ($first_arg->value instanceof PhpParser\Node\Scalar\String_) {
+                        $first_var_name = '\'' . $first_arg->value->value . '\'';
+                    } elseif ($first_arg->value instanceof PhpParser\Node\Scalar\LNumber) {
+                        $first_var_name = (string) $first_arg->value->value;
+                    }
                 }
 
-                if ($const_type) {
-                    if ($const_type->isSingleStringLiteral()) {
-                        $first_var_name = $const_type->getSingleStringLiteral()->value;
-                    } elseif ($const_type->isSingleIntLiteral()) {
-                        $first_var_name = (string) $const_type->getSingleIntLiteral()->value;
+                if ($expr->args[0]->value instanceof PhpParser\Node\Expr\ClassConstFetch
+                    && $expr->args[0]->value->name instanceof PhpParser\Node\Identifier
+                    && $expr->args[0]->value->name->name !== 'class'
+                ) {
+                    $const_type = null;
+
+                    if ($source instanceof StatementsAnalyzer) {
+                        $const_type = $source->node_data->getType($expr->args[0]->value);
+                    }
+
+                    if ($const_type) {
+                        if ($const_type->isSingleStringLiteral()) {
+                            $first_var_name = $const_type->getSingleStringLiteral()->value;
+                        } elseif ($const_type->isSingleIntLiteral()) {
+                            $first_var_name = (string) $const_type->getSingleIntLiteral()->value;
+                        } else {
+                            $first_var_name = null;
+                        }
                     } else {
                         $first_var_name = null;
                     }
-                } else {
-                    $first_var_name = null;
                 }
-            }
 
-            if ($first_var_name !== null
-                && $array_root
-                && !strpos($first_var_name, '->')
-                && !strpos($first_var_name, '[')
-            ) {
-                $if_types[$array_root . '[' . $first_var_name . ']'] = [['array-key-exists']];
+                if ($first_var_name !== null
+                    && !strpos($first_var_name, '->')
+                    && !strpos($first_var_name, '[')
+                ) {
+                    $if_types[$array_root . '[' . $first_var_name . ']'] = [['array-key-exists']];
+                }
             }
         } elseif (self::hasNonEmptyCountCheck($expr)) {
             if ($first_var_name) {
