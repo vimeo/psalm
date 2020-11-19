@@ -781,6 +781,61 @@ class ValueTest extends \Psalm\Tests\TestCase
                         if (false === ($a > 1)){}
                     }'
             ],
+            'returnFromUnionLiteral' => [
+                '<?php
+                    /**
+                     * @return list<"a1"|"a2">
+                     */
+                    function getSupportedConsts() {
+                        return ["a1", "a2"];
+                    }
+
+                    function foo(mixed $file) : string {
+                        if (in_array($file, getSupportedConsts(), true)) {
+                            return $file;
+                        }
+
+                        return "";
+                    }',
+                [],
+                [],
+                '8.0'
+            ],
+            'returnFromUnionLiteralNegated' => [
+                '<?php
+                    /**
+                     * @return list<"a1"|"a2">
+                     */
+                    function getSupportedConsts() {
+                        return ["a1", "a2"];
+                    }
+
+                    function foo(mixed $file) : string {
+                        if (!in_array($file, getSupportedConsts(), true)) {
+                            return "";
+                        }
+
+                        return $file;
+                    }',
+                [],
+                [],
+                '8.0'
+            ],
+            'inArrayInsideLoop' => [
+                '<?php
+                    class A {
+                        const ACTION_ONE = "one";
+                        const ACTION_TWO = "two";
+                        const ACTION_THREE = "two";
+                    }
+
+                    while (rand(0, 1)) {
+                        /** @var list<A::ACTION_*> */
+                        $case_actions = [];
+
+                        if (!in_array(A::ACTION_ONE, $case_actions, true)) {}
+                    }'
+            ],
         ];
     }
 

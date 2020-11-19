@@ -23,17 +23,8 @@ class ScopeAnalyzer
     public const ACTION_NONE = 'NONE';
     public const ACTION_RETURN = 'RETURN';
 
-    private const ACTIONS = [
-        self::ACTION_END,
-        self::ACTION_BREAK,
-        self::ACTION_CONTINUE,
-        self::ACTION_LEAVE_SWITCH,
-        self::ACTION_NONE,
-        self::ACTION_RETURN
-    ];
-
     /**
-     * @param   array<PhpParser\Node\Stmt>   $stmts
+     * @param array<PhpParser\Node\Stmt>   $stmts
      *
      */
     public static function doesEverBreak(array $stmts): bool
@@ -74,7 +65,7 @@ class ScopeAnalyzer
      * @param   bool $return_is_exit Exit and Throw statements are treated differently from return if this is false
      * @param   list<'loop'|'switch'> $break_types
      *
-     * @return  list<value-of<self::ACTIONS>>
+     * @return  list<self::ACTION_*>
      */
     public static function getControlActions(
         array $stmts,

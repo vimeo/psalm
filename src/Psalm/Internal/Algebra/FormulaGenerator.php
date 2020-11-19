@@ -214,44 +214,50 @@ class FormulaGenerator
             $true_pos = AssertionFinder::hasTrueVariable($conditional);
 
             if ($false_pos === AssertionFinder::ASSIGNMENT_TO_RIGHT
-                && ($conditional->left instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd
-                    || $conditional->left instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr)
+                && ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Equal
+                    || $conditional->left instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd
+                    || $conditional->left instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+                    || $conditional->left instanceof PhpParser\Node\Expr\BooleanNot)
             ) {
-                $inside_negation = !$inside_negation;
-
-                return self::getFormula(
-                    $conditional_object_id,
-                    \spl_object_id($conditional->left),
-                    $conditional->left,
-                    $this_class_name,
-                    $source,
-                    $codebase,
-                    $inside_negation,
-                    $cache
+                return Algebra::negateFormula(
+                    self::getFormula(
+                        $conditional_object_id,
+                        \spl_object_id($conditional->left),
+                        $conditional->left,
+                        $this_class_name,
+                        $source,
+                        $codebase,
+                        !$inside_negation,
+                        $cache
+                    )
                 );
             }
 
             if ($false_pos === AssertionFinder::ASSIGNMENT_TO_LEFT
-                && ($conditional->right instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd
-                    || $conditional->right instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr)
+                && ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Equal
+                    || $conditional->right instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd
+                    || $conditional->right instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+                    || $conditional->right instanceof PhpParser\Node\Expr\BooleanNot)
             ) {
-                $inside_negation = !$inside_negation;
-
-                return self::getFormula(
-                    $conditional_object_id,
-                    \spl_object_id($conditional->right),
-                    $conditional->right,
-                    $this_class_name,
-                    $source,
-                    $codebase,
-                    $inside_negation,
-                    $cache
+                return Algebra::negateFormula(
+                    self::getFormula(
+                        $conditional_object_id,
+                        \spl_object_id($conditional->right),
+                        $conditional->right,
+                        $this_class_name,
+                        $source,
+                        $codebase,
+                        !$inside_negation,
+                        $cache
+                    )
                 );
             }
 
             if ($true_pos === AssertionFinder::ASSIGNMENT_TO_RIGHT
-                && ($conditional->left instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd
-                    || $conditional->left instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr)
+                && ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Equal
+                    || $conditional->left instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd
+                    || $conditional->left instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+                    || $conditional->left instanceof PhpParser\Node\Expr\BooleanNot)
             ) {
                 return self::getFormula(
                     $conditional_object_id,
@@ -266,8 +272,93 @@ class FormulaGenerator
             }
 
             if ($true_pos === AssertionFinder::ASSIGNMENT_TO_LEFT
-                && ($conditional->right instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd
-                    || $conditional->right instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr)
+                && ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Equal
+                    || $conditional->right instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd
+                    || $conditional->right instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+                    || $conditional->right instanceof PhpParser\Node\Expr\BooleanNot)
+            ) {
+                return self::getFormula(
+                    $conditional_object_id,
+                    \spl_object_id($conditional->right),
+                    $conditional->right,
+                    $this_class_name,
+                    $source,
+                    $codebase,
+                    $inside_negation,
+                    $cache
+                );
+            }
+        }
+
+        if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical
+            || $conditional instanceof PhpParser\Node\Expr\BinaryOp\NotEqual
+        ) {
+            $false_pos = AssertionFinder::hasFalseVariable($conditional);
+            $true_pos = AssertionFinder::hasTrueVariable($conditional);
+
+            if ($true_pos === AssertionFinder::ASSIGNMENT_TO_RIGHT
+                && ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotEqual
+                    || $conditional->left instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd
+                    || $conditional->left instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+                    || $conditional->left instanceof PhpParser\Node\Expr\BooleanNot)
+            ) {
+                return Algebra::negateFormula(
+                    self::getFormula(
+                        $conditional_object_id,
+                        \spl_object_id($conditional->left),
+                        $conditional->left,
+                        $this_class_name,
+                        $source,
+                        $codebase,
+                        !$inside_negation,
+                        $cache
+                    )
+                );
+            }
+
+            if ($true_pos === AssertionFinder::ASSIGNMENT_TO_LEFT
+                && ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotEqual
+                    || $conditional->right instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd
+                    || $conditional->right instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+                    || $conditional->right instanceof PhpParser\Node\Expr\BooleanNot)
+            ) {
+                return Algebra::negateFormula(
+                    self::getFormula(
+                        $conditional_object_id,
+                        \spl_object_id($conditional->right),
+                        $conditional->right,
+                        $this_class_name,
+                        $source,
+                        $codebase,
+                        !$inside_negation,
+                        $cache
+                    )
+                );
+            }
+
+            if ($false_pos === AssertionFinder::ASSIGNMENT_TO_RIGHT
+                && ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotEqual
+                    || $conditional->left instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd
+                    || $conditional->left instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+                    || $conditional->left instanceof PhpParser\Node\Expr\BooleanNot)
+            ) {
+                return self::getFormula(
+                    $conditional_object_id,
+                    \spl_object_id($conditional->left),
+                    $conditional->left,
+                    $this_class_name,
+                    $source,
+                    $codebase,
+                    $inside_negation,
+                    $cache
+                );
+            }
+
+            if ($false_pos === AssertionFinder::ASSIGNMENT_TO_LEFT
+                && ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotEqual
+                    || $conditional->right instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd
+                    || $conditional->right instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+                    || $conditional->right instanceof PhpParser\Node\Expr\BooleanNot)
             ) {
                 return self::getFormula(
                     $conditional_object_id,

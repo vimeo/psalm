@@ -245,14 +245,21 @@ class ArrayFilterReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
                     ) {
                         $codebase = $statements_source->getCodebase();
 
-                        $anded_assertions = AssertionFinder::scrapeAssertions(
+                        $cond_object_id = \spl_object_id($stmt->expr);
+
+                        $filter_clauses = \Psalm\Internal\Algebra\FormulaGenerator::getFormula(
+                            $cond_object_id,
+                            $cond_object_id,
                             $stmt->expr,
-                            null,
+                            $context->self,
                             $statements_source,
                             $codebase
                         );
 
-                        $assertions = $anded_assertions[0] ?? [];
+                        $assertions = \Psalm\Internal\Algebra::getTruthsFromFormula(
+                            $filter_clauses,
+                            $cond_object_id
+                        );
 
                         if (isset($assertions['$' . $first_param->var->name])) {
                             $changed_var_ids = [];

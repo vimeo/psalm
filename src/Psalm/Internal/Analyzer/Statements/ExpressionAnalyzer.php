@@ -59,12 +59,19 @@ class ExpressionAnalyzer
             $assertions = $statements_analyzer->node_data->getAssertions($stmt);
 
             if ($assertions === null) {
+                $negate = $context->inside_negation;
+
+                while ($stmt instanceof PhpParser\Node\Expr\BooleanNot) {
+                    $stmt = $stmt->expr;
+                    $negate = !$negate;
+                }
+
                 Expression\AssertionFinder::scrapeAssertions(
                     $stmt,
                     $context->self,
                     $statements_analyzer,
                     $codebase,
-                    false,
+                    $negate,
                     true,
                     false
                 );

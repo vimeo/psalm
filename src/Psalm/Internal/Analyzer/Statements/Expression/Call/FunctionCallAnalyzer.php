@@ -1996,6 +1996,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
             && $function_id
             && strpos($function_id, 'is_') === 0
             && $function_id !== 'is_a'
+            && !$context->inside_negation
         ) {
             $stmt_assertions = $statements_analyzer->node_data->getAssertions($stmt);
 
