@@ -16,6 +16,9 @@ class TaintKind
     public const INPUT_HTML = 'html';
     public const INPUT_SHELL = 'shell';
     public const INPUT_SSRF = 'ssrf';
+    public const INPUT_FILE = 'file';
+    public const INPUT_COOKIE = 'cookie';
+    public const INPUT_HEADER = 'header';
     public const USER_SECRET = 'user_secret';
     public const SYSTEM_SECRET = 'system_secret';
 }
