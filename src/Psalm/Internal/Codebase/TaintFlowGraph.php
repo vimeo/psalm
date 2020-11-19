@@ -374,7 +374,7 @@ class TaintFlowGraph extends DataFlowGraph
                                     $path
                                 );
                                 break;
-                                
+
                             default:
                                 $issue = new TaintedCustom(
                                     'Detected tainted ' . $matching_taint,

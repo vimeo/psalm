@@ -242,6 +242,16 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
                 $context->vars_in_scope['$this'] = new Type\Union([$this_object_type]);
 
+                if ($codebase->taint_flow_graph
+                    && $storage->specialize_call
+                    && $storage->location
+                ) {
+                    $new_parent_node = DataFlowNode::getForAssignment('$this in ' . $method_id, $storage->location);
+
+                    $codebase->taint_flow_graph->addNode($new_parent_node);
+                    $context->vars_in_scope['$this']->parent_nodes += [$new_parent_node->id => $new_parent_node];
+                }
+
                 if ($storage->external_mutation_free
                     && !$storage->mutation_free_inferred
                 ) {

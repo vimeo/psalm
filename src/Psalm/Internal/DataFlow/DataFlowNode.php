@@ -95,14 +95,15 @@ class DataFlowNode
      */
     final public static function getForAssignment(
         string $var_id,
-        CodeLocation $assignment_location
+        CodeLocation $assignment_location,
+        ?string $specialization_key = null
     ): self {
         $id = $var_id
             . '-' . $assignment_location->file_name
             . ':' . $assignment_location->raw_file_start
             . '-' . $assignment_location->raw_file_end;
 
-        return new static($id, $var_id, $assignment_location, null);
+        return new static($id, $var_id, $assignment_location, $specialization_key);
     }
 
     /**

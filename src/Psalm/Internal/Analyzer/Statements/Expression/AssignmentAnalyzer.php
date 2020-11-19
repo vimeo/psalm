@@ -901,23 +901,13 @@ class AssignmentAnalyzer
                                 ) {
                                     $context->vars_in_scope[$list_var_id]->parent_nodes = [];
                                 } else {
-                                    $new_parent_node = DataFlowNode::getForAssignment($list_var_id, $var_location);
-
-                                    $statements_analyzer->data_flow_graph->addNode($new_parent_node);
-
-                                    foreach ($context->vars_in_scope[$list_var_id]->parent_nodes as $parent_node) {
-                                        $data_flow_graph->addPath(
-                                            $parent_node,
-                                            $new_parent_node,
-                                            '=',
-                                            [],
-                                            $removed_taints
-                                        );
-                                    }
-
-                                    $context->vars_in_scope[$list_var_id]->parent_nodes = [
-                                        $new_parent_node->id => $new_parent_node
-                                    ];
+                                    self::taintAssignment(
+                                        $context->vars_in_scope[$list_var_id],
+                                        $data_flow_graph,
+                                        $list_var_id,
+                                        $var_location,
+                                        $removed_taints
+                                    );
                                 }
                             }
                         }
@@ -1101,17 +1091,13 @@ class AssignmentAnalyzer
                     } else {
                         $var_location = new CodeLocation($statements_analyzer->getSource(), $assign_var);
 
-                        $new_parent_node = DataFlowNode::getForAssignment($var_id, $var_location);
-
-                        $data_flow_graph->addNode($new_parent_node);
-
-                        foreach ($context->vars_in_scope[$var_id]->parent_nodes as $parent_node) {
-                            $data_flow_graph->addPath($parent_node, $new_parent_node, '=', [], $removed_taints);
-                        }
-
-                        $context->vars_in_scope[$var_id]->parent_nodes = [
-                            $new_parent_node->id => $new_parent_node
-                        ];
+                        self::taintAssignment(
+                            $context->vars_in_scope[$var_id],
+                            $data_flow_graph,
+                            $var_id,
+                            $var_location,
+                            $removed_taints
+                        );
                     }
                 }
             }
@@ -1232,6 +1218,68 @@ class AssignmentAnalyzer
                 // fall through
             }
         }
+    }
+
+    /**
+     * @param  array<string> $removed_taints
+     */
+    private static function taintAssignment(
+        Type\Union $type,
+        \Psalm\Internal\Codebase\DataFlowGraph $data_flow_graph,
+        string $var_id,
+        CodeLocation $var_location,
+        array $removed_taints
+    ) : void {
+        $parent_nodes = $type->parent_nodes;
+
+        $unspecialized_parent_nodes = \array_filter(
+            $parent_nodes,
+            function ($parent_node) {
+                return !$parent_node->specialization_key;
+            }
+        );
+
+        $specialized_parent_nodes = \array_filter(
+            $parent_nodes,
+            function ($parent_node) {
+                return (bool) $parent_node->specialization_key;
+            }
+        );
+
+        $new_parent_nodes = [];
+
+        foreach ($specialized_parent_nodes as $parent_node) {
+            $new_parent_node = DataFlowNode::getForAssignment($var_id, $var_location);
+            $new_parent_node->specialization_key = $parent_node->specialization_key;
+
+            $data_flow_graph->addNode($new_parent_node);
+            $new_parent_nodes += [$new_parent_node->id => $new_parent_node];
+            $data_flow_graph->addPath(
+                $parent_node,
+                $new_parent_node,
+                '=',
+                [],
+                $removed_taints
+            );
+        }
+
+        if ($unspecialized_parent_nodes) {
+            $new_parent_node = DataFlowNode::getForAssignment($var_id, $var_location);
+            $data_flow_graph->addNode($new_parent_node);
+            $new_parent_nodes += [$new_parent_node->id => $new_parent_node];
+
+            foreach ($unspecialized_parent_nodes as $parent_node) {
+                $data_flow_graph->addPath(
+                    $parent_node,
+                    $new_parent_node,
+                    '=',
+                    [],
+                    $removed_taints
+                );
+            }
+        }
+
+        $type->parent_nodes = $new_parent_nodes;
     }
 
     public static function analyzeAssignmentOperation(

@@ -383,27 +383,27 @@ class TaintTest extends TestCase
                     UserUpdater::doDelete(new PDO(), $userObj);'
             ],
             'taintPropertyWithoutPassingObject' => [
-                '<?phps
-                    /** @psalm-immutable */
+                '<?php
+                    /** @psalm-taint-specialize */
                     class User {
                         public string $id;
 
                         public function __construct(string $userId) {
                             $this->id = $userId;
                         }
-                    }
 
-                    class UserUpdater {
-                        public static function doDelete(PDO $pdo, User $user) : void {
-                            self::deleteUser($pdo, $user->id);
-                        }
-
-                        public static function deleteUser(PDO $pdo, string $userId) : void {
-                            $pdo->exec("delete from users where user_id = " . $userId);
+                        public function setId(string $userId) : void {
+                            $this->id = $userId;
                         }
                     }
 
-                    $userObj = new User((string) $_GET["user_id"]);',
+                    function echoId(User $u2) : void {
+                        echo $u2->id;
+                    }
+
+                    $u = new User("5");
+                    echoId($u);
+                    $u->setId($_GET["user_id"]);',
             ],
             'specializeStaticMethod' => [
                 '<?php
@@ -522,6 +522,27 @@ class TaintTest extends TestCase
 
                     $b = new B($_GET["bar"]);
                     echo $b->getTaint();'
+            ],
+            'immutableClassTrackInputThroughMethod' => [
+                '<?php
+                    /**
+                     * @psalm-immutable
+                     */
+                    class A {
+                        private string $taint = "";
+
+                        public function __construct(string $taint) {
+                            $this->taint = $taint;
+                        }
+
+                        public function getTaint() : string {
+                            return $this->taint;
+                        }
+                    }
+
+                    $b = new A($_GET["bar"]);
+                    $a = new A("bar");
+                    echo $a->getTaint();',
             ],
         ];
     }
@@ -1236,20 +1257,14 @@ class TaintTest extends TestCase
                         }
                     }
 
-                    class UserUpdater {
-                        public static function doDelete(PDO $pdo, User $user) : void {
-                            self::deleteUser($pdo, $user->id);
-                        }
-
-                        public static function deleteUser(PDO $pdo, string $userId) : void {
-                            $pdo->exec("delete from users where user_id = " . $userId);
-                        }
+                    function echoId(User $u2) : void {
+                        echo $u2->id;
                     }
 
-                    $userObj = new User("5");
-                    $userObj->setId((string) $_GET["user_id"]);
-                    UserUpdater::doDelete(new PDO(), $userObj);',
-                'error_message' => 'TaintedSql',
+                    $u = new User("5");
+                    $u->setId($_GET["user_id"]);
+                    echoId($u);',
+                'error_message' => 'TaintedHtml',
             ],
             'ImplodeExplode' => [
                 '<?php
@@ -1524,7 +1539,7 @@ class TaintTest extends TestCase
                     echo $a->isUnsafe();',
                 'error_message' => 'TaintedHtml',
             ],
-            'taintSpecializedInstanceProperty' => [
+            'doTaintSpecializedInstanceProperty' => [
                 '<?php
                     /** @psalm-taint-specialize */
                     class StringHolder {
@@ -1800,6 +1815,27 @@ class TaintTest extends TestCase
 
                     $b = new B($_GET["bar"]);
                     echo $b->getTaint();',
+                'error_message' => 'TaintedHtml',
+            ],
+            'immutableClassTrackInputThroughMethod' => [
+                '<?php
+                    /**
+                     * @psalm-immutable
+                     */
+                    class A {
+                        private string $taint = "";
+
+                        public function __construct(string $taint) {
+                            $this->taint = $taint;
+                        }
+
+                        public function getTaint() : string {
+                            return $this->taint;
+                        }
+                    }
+
+                    $a = new A($_GET["bar"]);
+                    echo $a->getTaint();',
                 'error_message' => 'TaintedHtml',
             ],
             /*
