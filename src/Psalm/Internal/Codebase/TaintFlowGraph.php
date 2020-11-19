@@ -6,8 +6,11 @@ use Psalm\CodeLocation;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\DataFlow\TaintSink;
 use Psalm\Internal\DataFlow\TaintSource;
+use Psalm\Issue\TaintedCookie;
 use Psalm\Issue\TaintedCustom;
 use Psalm\Issue\TaintedEval;
+use Psalm\Issue\TaintedFile;
+use Psalm\Issue\TaintedHeader;
 use Psalm\Issue\TaintedHtml;
 use Psalm\Issue\TaintedInclude;
 use Psalm\Issue\TaintedLdap;
@@ -369,6 +372,33 @@ class TaintFlowGraph extends DataFlowGraph
                             case TaintKind::INPUT_LDAP:
                                 $issue = new TaintedLdap(
                                     'Detected tainted LDAP request',
+                                    $issue_location,
+                                    $issue_trace,
+                                    $path
+                                );
+                                break;
+
+                            case TaintKind::INPUT_COOKIE:
+                                $issue = new TaintedCookie(
+                                    'Detected tainted cookie',
+                                    $issue_location,
+                                    $issue_trace,
+                                    $path
+                                );
+                                break;
+
+                            case TaintKind::INPUT_FILE:
+                                $issue = new TaintedFile(
+                                    'Detected tainted file handling',
+                                    $issue_location,
+                                    $issue_trace,
+                                    $path
+                                );
+                                break;
+
+                            case TaintKind::INPUT_HEADER:
+                                $issue = new TaintedHeader(
+                                    'Detected tainted header',
                                     $issue_location,
                                     $issue_trace,
                                     $path

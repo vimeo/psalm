@@ -17,5 +17,8 @@ class TaintKindGroup
         TaintKind::INPUT_INCLUDE,
         TaintKind::INPUT_SSRF,
         TaintKind::INPUT_LDAP,
+        TaintKind::INPUT_FILE,
+        TaintKind::INPUT_HEADER,
+        TaintKind::INPUT_COOKIE,
     ];
 }

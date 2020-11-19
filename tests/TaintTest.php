@@ -1810,6 +1810,21 @@ class TaintTest extends TestCase
                     ldap_search($ds, $dn, $filter, []);',
                 'error_message' => 'TaintedLdap',
             ],
+            'taintedFile' => [
+                '<?php
+                file_get_contents($_GET[\'taint\']);',
+            'error_message' => 'TaintedFile',
+            ],
+            'taintedHeader' => [
+                '<?php
+                header($_GET[\'taint\']);',
+            'error_message' => 'TaintedHeader',
+            ],
+            'taintedCookie' => [
+                '<?php
+                setcookie($_GET[\'taint\'], \'value\');',
+            'error_message' => 'TaintedCookie',
+            ],
             'potentialTaintThroughChildClassSettingProperty' => [
                 '<?php
                     class A {
