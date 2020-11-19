@@ -744,6 +744,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
 
             if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
                 && $stmt_name_type->parent_nodes
+                && $stmt_name_type->hasString()
                 && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
             ) {
                 $arg_location = new CodeLocation($statements_analyzer->getSource(), $function_name);
@@ -1089,46 +1090,51 @@ class FunctionCallAnalyzer extends CallAnalyzer
             $stmt_type = Type::getMixed();
         }
 
-        if ($function_storage) {
-            $return_node = self::taintReturnType(
-                $statements_analyzer,
-                $stmt,
-                $function_id,
-                $function_storage,
-                $stmt_type
-            );
+        if (!$statements_analyzer->data_flow_graph instanceof TaintFlowGraph || !$function_storage) {
+            return $stmt_type;
+        }
 
-            if ($function_storage->proxy_calls !== null) {
-                foreach ($function_storage->proxy_calls as $proxy_call) {
-                    $fake_call_arguments = [];
-                    foreach ($proxy_call['params'] as $i) {
-                        $fake_call_arguments[] = $stmt->args[$i];
-                    }
+        $return_node = self::taintReturnType(
+            $statements_analyzer,
+            $stmt,
+            $function_id,
+            $function_storage,
+            $stmt_type
+        );
 
-                    $fake_call_factory = new BuilderFactory();
-                    if (strpos($proxy_call['fqn'], '::') !== false) {
-                        list($fqcn, $method) = explode('::', $proxy_call['fqn']);
-                        $fake_call = $fake_call_factory->staticCall($fqcn, $method, $fake_call_arguments);
-                    } else {
-                        $fake_call = $fake_call_factory->funcCall($proxy_call['fqn'], $fake_call_arguments);
-                    }
-                    ExpressionAnalyzer::analyze($statements_analyzer, $fake_call, $context);
+        if ($function_storage->proxy_calls !== null) {
+            foreach ($function_storage->proxy_calls as $proxy_call) {
+                $fake_call_arguments = [];
+                foreach ($proxy_call['params'] as $i) {
+                    $fake_call_arguments[] = $stmt->args[$i];
+                }
 
-                    if (null !== $statements_analyzer->data_flow_graph
-                        && null !== $return_node
-                        && $proxy_call['return']
-                    ) {
-                        $fake_call_type = $statements_analyzer->node_data->getType($fake_call);
-                        if (null !== $fake_call_type) {
-                            foreach ($fake_call_type->parent_nodes as $fake_call_node) {
-                                $statements_analyzer->data_flow_graph->addPath($fake_call_node, $return_node, 'return');
-                            }
+                $fake_call_factory = new BuilderFactory();
+
+                if (strpos($proxy_call['fqn'], '::') !== false) {
+                    list($fqcn, $method) = explode('::', $proxy_call['fqn']);
+                    $fake_call = $fake_call_factory->staticCall($fqcn, $method, $fake_call_arguments);
+                } else {
+                    $fake_call = $fake_call_factory->funcCall($proxy_call['fqn'], $fake_call_arguments);
+                }
+
+                $old_node_data = $statements_analyzer->node_data;
+                $statements_analyzer->node_data = clone $statements_analyzer->node_data;
+
+                ExpressionAnalyzer::analyze($statements_analyzer, $fake_call, $context);
+
+                $statements_analyzer->node_data = $old_node_data;
+
+                if ($return_node && $proxy_call['return']) {
+                    $fake_call_type = $statements_analyzer->node_data->getType($fake_call);
+                    if (null !== $fake_call_type) {
+                        foreach ($fake_call_type->parent_nodes as $fake_call_node) {
+                            $statements_analyzer->data_flow_graph->addPath($fake_call_node, $return_node, 'return');
                         }
                     }
                 }
             }
         }
-
 
         return $stmt_type;
     }
