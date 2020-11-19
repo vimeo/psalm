@@ -115,7 +115,7 @@ abstract class Type
     ) : string {
         if ($allow_self && $value === $this_class) {
             if ($was_static) {
-                return '$this';
+                return 'static';
             }
             return 'self';
         }

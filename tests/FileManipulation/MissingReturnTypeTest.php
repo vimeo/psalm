@@ -449,7 +449,7 @@ class MissingReturnTypeTest extends FileManipulationTest
                 '<?php
                     class A {
                         /**
-                         * @return $this
+                         * @return static
                          */
                         public function foo(): self {
                             return $this;
@@ -653,7 +653,7 @@ class MissingReturnTypeTest extends FileManipulationTest
                 '<?php
                     class A {
                         /**
-                         * @return $this
+                         * @return static
                          */
                         public function foo() {
                             return $this;
@@ -662,7 +662,7 @@ class MissingReturnTypeTest extends FileManipulationTest
 
                     class B extends A {
                         /**
-                         * @return $this
+                         * @return static
                          */
                         public function foo() {
                             return $this;
@@ -690,7 +690,7 @@ class MissingReturnTypeTest extends FileManipulationTest
                 '<?php
                     class A {
                         /**
-                         * @return $this
+                         * @return static
                          */
                         public function foo() {
                             return $this;
@@ -701,7 +701,7 @@ class MissingReturnTypeTest extends FileManipulationTest
 
                     class C extends B {
                         /**
-                         * @return $this
+                         * @return static
                          */
                         public function foo() {
                             return $this;
