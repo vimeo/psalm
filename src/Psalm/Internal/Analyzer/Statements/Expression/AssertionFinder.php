@@ -2301,7 +2301,7 @@ class AssertionFinder
                 }
 
                 if ($literal_assertions) {
-                   $if_types[$first_var_name] = [$literal_assertions];
+                    $if_types[$first_var_name] = [$literal_assertions];
                 }
             }
 
