@@ -173,7 +173,7 @@ class AssertionFinder
         }
 
         if ($conditional instanceof PhpParser\Node\Expr\BooleanNot) {
-            throw new \UnexpectedValueException('Not expecting this');
+            return [];
         }
 
         if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical ||
