@@ -53,3 +53,23 @@ Nobody likes to wade through a ton of false-positives – [here’s a guide to a
 Since taint analysis is performed separately from other static code analysis, it makes sense to use a separate baseline for it.
 
 You can use --use-baseline=PATH option to set a different baseline for taint analysis.
+
+## Viewing Results in a User Interface
+
+Psalm supports the [SARIF](http://docs.oasis-open.org/sarif/sarif/v2.0/csprd01/sarif-v2.0-csprd01.html) standard for exchanging static analysis results. This enables you to view the results in any SARIF compatible software, including the taint flow.
+
+### GitHub Code Scanning
+
+[GitHub code scanning](https://docs.github.com/en/free-pro-team@latest/github/finding-security-vulnerabilities-and-errors-in-your-code/about-code-scanning) can be set up by using the [Psalm GitHub Action](https://github.com/marketplace/actions/psalm-static-analysis-for-php).
+
+Alternatively, the generated SARIF file can be manually uploaded as described in [the GitHub documentation](https://docs.github.com/en/free-pro-team@latest/github/finding-security-vulnerabilities-and-errors-in-your-code/uploading-a-sarif-file-to-github).
+
+The results will then be avaible in the "Security" tab of your repository.
+
+### Other SARIF compatible software
+
+To generate a SARIF report run Psalm with the `--report` flag and a `.sarif` extension. For example:
+
+```bash
+psalm --report=results.sarif
+```
