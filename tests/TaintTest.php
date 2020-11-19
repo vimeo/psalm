@@ -1822,7 +1822,7 @@ class TaintTest extends TestCase
             ],
             'taintedCookie' => [
                 '<?php
-                set_cookie($_GET[\'taint\'], \'value\');',
+                setcookie($_GET[\'taint\'], \'value\');',
             'error_message' => 'TaintedCookie',
             ],
             'potentialTaintThroughChildClassSettingProperty' => [
