@@ -836,6 +836,20 @@ class ValueTest extends \Psalm\Tests\TestCase
                         if (!in_array(A::ACTION_ONE, $case_actions, true)) {}
                     }'
             ],
+            'arrayKeyExistsInferString' => [
+                '<?php
+                    function foo(mixed $file) : string {
+                        /** @psalm-suppress MixedArgument */
+                        if (array_key_exists($file, ["a" => 1, "b" => 2])) {
+                            return $file;
+                        }
+
+                        return "";
+                    }',
+                [],
+                [],
+                '8.0'
+            ],
         ];
     }
 

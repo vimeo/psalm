@@ -2236,21 +2236,21 @@ class AssertionFinder
                         || $atomic_type instanceof Type\Atomic\TList
                     ) {
                         if ($atomic_type instanceof Type\Atomic\TList) {
-                            $key_type = $atomic_type->type_param;
+                            $value_type = $atomic_type->type_param;
                         } elseif ($atomic_type instanceof Type\Atomic\TKeyedArray) {
-                            $key_type = $atomic_type->getGenericValueType();
+                            $value_type = $atomic_type->getGenericValueType();
                         } else {
-                            $key_type = $atomic_type->type_params[1];
+                            $value_type = $atomic_type->type_params[1];
                         }
 
                         $array_literal_types = array_merge(
-                            $key_type->getLiteralStrings(),
-                            $key_type->getLiteralInts(),
-                            $key_type->getLiteralFloats()
+                            $value_type->getLiteralStrings(),
+                            $value_type->getLiteralInts(),
+                            $value_type->getLiteralFloats()
                         );
 
                         if ($array_literal_types
-                            && count($key_type->getAtomicTypes())
+                            && count($value_type->getAtomicTypes())
                         ) {
                             $literal_assertions = [];
 
@@ -2258,11 +2258,11 @@ class AssertionFinder
                                 $literal_assertions[] = '=' . $array_literal_type->getId();
                             }
 
-                            if ($key_type->isFalsable()) {
+                            if ($value_type->isFalsable()) {
                                 $literal_assertions[] = 'false';
                             }
 
-                            if ($key_type->isNullable()) {
+                            if ($value_type->isNullable()) {
                                 $literal_assertions[] = 'null';
                             }
 
@@ -2272,6 +2272,41 @@ class AssertionFinder
                 }
             }
         } elseif (self::hasArrayKeyExistsCheck($expr)) {
+            if (isset($expr->args[0])
+                && isset($expr->args[1])
+                && $first_var_type
+                && $first_var_name
+                && !$expr->args[0]->value instanceof PhpParser\Node\Expr\ClassConstFetch
+                && $source instanceof StatementsAnalyzer
+                && ($second_var_type = $source->node_data->getType($expr->args[1]->value))
+            ) {
+                $literal_assertions = [];
+
+                foreach ($second_var_type->getAtomicTypes() as $atomic_type) {
+                    if ($atomic_type instanceof Type\Atomic\TArray
+                        || $atomic_type instanceof Type\Atomic\TKeyedArray
+                    ) {
+                        if ($atomic_type instanceof Type\Atomic\TKeyedArray) {
+                            $key_type = $atomic_type->getGenericKeyType();
+                        } else {
+                            $key_type = $atomic_type->type_params[0];
+                        }
+
+                        if ($key_type->allStringLiterals()) {
+                            foreach ($key_type->getLiteralStrings() as $array_literal_type) {
+                                $literal_assertions[] = '=' . $array_literal_type->getId();
+                            }
+                        }
+                    }
+                }
+
+                if ($literal_assertions) {
+                    return [[$first_var_name => [$literal_assertions]]];
+                }
+
+                return [];
+            }
+
             $array_root = isset($expr->args[1]->value)
                 ? ExpressionIdentifier::getArrayVarId(
                     $expr->args[1]->value,
