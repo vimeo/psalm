@@ -112,9 +112,12 @@ class ClassConstFetchAnalyzer
                 );
             }
 
+            if ($codebase->classlikes->classExists($fq_class_name)) {
+                $fq_class_name = $codebase->classlikes->getUnAliasedName($fq_class_name);
+            }
+
             if ($stmt->name instanceof PhpParser\Node\Identifier && $stmt->name->name === 'class') {
                 if ($codebase->classlikes->classExists($fq_class_name)) {
-                    $fq_class_name = $codebase->classlikes->getUnAliasedName($fq_class_name);
                     $const_class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
                     $fq_class_name = $const_class_storage->name;
 

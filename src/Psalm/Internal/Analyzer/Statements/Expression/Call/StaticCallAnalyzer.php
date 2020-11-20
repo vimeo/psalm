@@ -69,6 +69,8 @@ class StaticCallAnalyzer extends CallAnalyzer
 
                     $fq_class_name = $class_storage->parent_class;
 
+                    $fq_class_name = $codebase->classlikes->getUnAliasedName($fq_class_name);
+
                     $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
                     $fq_class_name = $class_storage->name;
