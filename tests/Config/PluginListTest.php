@@ -121,6 +121,23 @@ class PluginListTest extends \Psalm\Tests\TestCase
     /**
      * @test
      */
+    public function canShowAvailablePluginsWithoutAConfigFile(): void
+    {
+        $this->composer_lock->getPlugins()->willReturn([
+            'vendor/package' => 'a\b\c',
+            'another-vendor/another-package' => 'c\d\e',
+        ]);
+        $plugin_list = new PluginList(null, $this->composer_lock->reveal());
+
+        $this->assertSame([
+            'a\b\c' => 'vendor/package',
+            'c\d\e' => 'another-vendor/another-package',
+        ], $plugin_list->getAvailable());
+    }
+
+    /**
+     * @test
+     */
     public function enabledPackageIsEnabled(): void
     {
         $this->config->getPluginClasses()->willReturn([
