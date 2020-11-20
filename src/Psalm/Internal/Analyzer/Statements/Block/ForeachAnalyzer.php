@@ -448,14 +448,6 @@ class ForeachAnalyzer
                     $key_type = Type::combineUnionTypes($key_type, $key_type_part);
                 }
 
-                ArrayFetchAnalyzer::taintArrayFetch(
-                    $statements_analyzer,
-                    $stmt->expr,
-                    null,
-                    $key_type,
-                    Type::getMixed()
-                );
-
                 $has_valid_iterator = true;
                 continue;
             }
