@@ -2,6 +2,9 @@
 
 // This maps internal function names to sink types that we don’t want to end up there
 
+/**
+ * @var array<string, list<list<Type\TaintKind::*>>>
+ */
 return [
 'exec' => [['shell']],
 'create_function' => [['text'], ['eval']],
