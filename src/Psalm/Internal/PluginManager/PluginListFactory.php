@@ -24,7 +24,11 @@ class PluginListFactory
 
     public function __invoke(string $current_dir, ?string $config_file_path = null): PluginList
     {
-        $config_file = new ConfigFile($current_dir, $config_file_path);
+        try {
+            $config_file = new ConfigFile($current_dir, $config_file_path);
+        } catch (\RuntimeException $exception) {
+            $config_file = null;
+        }
         $composer_lock = new ComposerLock($this->findLockFiles());
 
         return new PluginList($config_file, $composer_lock);
