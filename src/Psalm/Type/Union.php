@@ -475,7 +475,7 @@ class Union implements TypeNode
         return null;
     }
 
-    public function canBeFullyExpressedInPhp(): bool
+    public function canBeFullyExpressedInPhp(int $php_major_version, int $php_minor_version): bool
     {
         if (!$this->isSingleAndMaybeNullable()) {
             return false;
@@ -493,7 +493,7 @@ class Union implements TypeNode
 
         $atomic_type = array_values($types)[0];
 
-        return $atomic_type->canBeFullyExpressedInPhp();
+        return $atomic_type->canBeFullyExpressedInPhp($php_major_version, $php_minor_version);
     }
 
     public function removeType(string $type_string): bool

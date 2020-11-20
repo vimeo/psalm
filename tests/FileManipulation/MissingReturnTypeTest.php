@@ -893,6 +893,78 @@ class MissingReturnTypeTest extends FileManipulationTest
                 ['MissingReturnType'],
                 false,
             ],
+            'staticReturn5.6' => [
+                '<?php
+                    class HelloWorld
+                    {
+                        public function sayHello()
+                        {
+                            return $this;
+                        }
+                    }',
+                '<?php
+                    class HelloWorld
+                    {
+                        /**
+                         * @return static
+                         */
+                        public function sayHello()
+                        {
+                            return $this;
+                        }
+                    }',
+                '5.6',
+                ['MissingReturnType'],
+                false,
+                true,
+            ],
+            'staticReturn7.0' => [
+                '<?php
+                    class HelloWorld
+                    {
+                        public function sayHello()
+                        {
+                            return $this;
+                        }
+                    }',
+                '<?php
+                    class HelloWorld
+                    {
+                        /**
+                         * @return static
+                         */
+                        public function sayHello(): self
+                        {
+                            return $this;
+                        }
+                    }',
+                '7.0',
+                ['MissingReturnType'],
+                false,
+                true,
+            ],
+            'staticReturn8.0' => [
+                '<?php
+                    class HelloWorld
+                    {
+                        public function sayHello()
+                        {
+                            return $this;
+                        }
+                    }',
+                '<?php
+                    class HelloWorld
+                    {
+                        public function sayHello(): static
+                        {
+                            return $this;
+                        }
+                    }',
+                '8.0',
+                ['MissingReturnType'],
+                false,
+                true,
+            ],
         ];
     }
 }

@@ -1819,7 +1819,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 $source->getFQCLN(),
                 true
             ),
-            $inferred_type->canBeFullyExpressedInPhp()
+            $inferred_type->canBeFullyExpressedInPhp($codebase->php_major_version, $codebase->php_minor_version)
         );
     }
 
