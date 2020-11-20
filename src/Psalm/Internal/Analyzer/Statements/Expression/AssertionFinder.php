@@ -753,7 +753,7 @@ class AssertionFinder
             }
 
             if ($base_conditional instanceof PhpParser\Node\Expr\FuncCall) {
-                $if_types = self::processFunctionCall(
+                $notif_types = self::processFunctionCall(
                     $base_conditional,
                     $this_class_name,
                     $source,
@@ -773,15 +773,17 @@ class AssertionFinder
                     } else {
                         $if_types[$var_name] = [['falsy']];
                     }
+
+                    $notif_types = [];
                 } else {
-                    $base_assertions = null;
+                    $notif_types = null;
 
                     if ($source instanceof StatementsAnalyzer && $cache) {
-                        $base_assertions = $source->node_data->getAssertions($base_conditional);
+                        $notif_types = $source->node_data->getAssertions($base_conditional);
                     }
 
-                    if ($base_assertions === null) {
-                        $base_assertions = self::scrapeAssertions(
+                    if ($notif_types === null) {
+                        $notif_types = self::scrapeAssertions(
                             $base_conditional,
                             $this_class_name,
                             $source,
@@ -792,23 +794,21 @@ class AssertionFinder
                         );
 
                         if ($source instanceof StatementsAnalyzer && $cache) {
-                            $source->node_data->setAssertions($base_conditional, $base_assertions);
-                        }
-                    }
-
-                    $notif_types = $base_assertions;
-
-                    if (count($notif_types) === 1) {
-                        $notif_types = $notif_types[0];
-
-                        if (count($notif_types) === 1) {
-                            $if_types = \Psalm\Internal\Algebra::negateTypes($notif_types);
+                            $source->node_data->setAssertions($base_conditional, $notif_types);
                         }
                     }
                 }
-
-                $if_types = $if_types ? [$if_types] : [];
             }
+
+            if (count($notif_types) === 1) {
+                $notif_types = $notif_types[0];
+
+                if (count($notif_types) === 1) {
+                    $if_types = \Psalm\Internal\Algebra::negateTypes($notif_types);
+                }
+            }
+
+            $if_types = $if_types ? [$if_types] : [];
 
             if ($codebase
                 && $source instanceof StatementsAnalyzer
@@ -1342,15 +1342,17 @@ class AssertionFinder
                 } else {
                     $if_types[$var_name] = [['!falsy']];
                 }
+
+                $if_types = [$if_types];
             } else {
-                $base_assertions = null;
+                $if_types = null;
 
                 if ($source instanceof StatementsAnalyzer && $cache) {
-                    $base_assertions = $source->node_data->getAssertions($base_conditional);
+                    $if_types = $source->node_data->getAssertions($base_conditional);
                 }
 
-                if ($base_assertions === null) {
-                    $base_assertions = self::scrapeAssertions(
+                if ($if_types === null) {
+                    $if_types = self::scrapeAssertions(
                         $base_conditional,
                         $this_class_name,
                         $source,
@@ -1361,17 +1363,7 @@ class AssertionFinder
                     );
 
                     if ($source instanceof StatementsAnalyzer && $cache) {
-                        $source->node_data->setAssertions($base_conditional, $base_assertions);
-                    }
-                }
-
-                $notif_types = $base_assertions;
-
-                if (count($notif_types) === 1) {
-                    $notif_types = $notif_types[0];
-
-                    if (count($notif_types) === 1) {
-                        $if_types = \Psalm\Internal\Algebra::negateTypes($notif_types);
+                        $source->node_data->setAssertions($base_conditional, $if_types);
                     }
                 }
             }
@@ -1419,7 +1411,7 @@ class AssertionFinder
                 }
             }
 
-            return $if_types ? [$if_types] : [];
+            return $if_types;
         }
 
         $true_position = self::hasTrueVariable($conditional);
@@ -1434,12 +1426,12 @@ class AssertionFinder
             }
 
             if ($base_conditional instanceof PhpParser\Node\Expr\FuncCall) {
-                $if_types = self::processFunctionCall(
+                $notif_types = self::processFunctionCall(
                     $base_conditional,
                     $this_class_name,
                     $source,
                     $codebase,
-                    $inside_negation
+                    !$inside_negation
                 );
             } else {
                 $var_name = ExpressionIdentifier::getArrayVarId(
@@ -1454,15 +1446,17 @@ class AssertionFinder
                     } else {
                         $if_types[$var_name] = [['falsy']];
                     }
+
+                    $notif_types = [];
                 } else {
-                    $base_assertions = null;
+                    $notif_types = null;
 
                     if ($source instanceof StatementsAnalyzer && $cache) {
-                        $base_assertions = $source->node_data->getAssertions($base_conditional);
+                        $notif_types = $source->node_data->getAssertions($base_conditional);
                     }
 
-                    if ($base_assertions === null) {
-                        $base_assertions = self::scrapeAssertions(
+                    if ($notif_types === null) {
+                        $notif_types = self::scrapeAssertions(
                             $base_conditional,
                             $this_class_name,
                             $source,
@@ -1473,23 +1467,21 @@ class AssertionFinder
                         );
 
                         if ($source instanceof StatementsAnalyzer && $cache) {
-                            $source->node_data->setAssertions($base_conditional, $base_assertions);
-                        }
-                    }
-
-                    $notif_types = $base_assertions;
-
-                    if (count($notif_types) === 1) {
-                        $notif_types = $notif_types[0];
-
-                        if (count($notif_types) === 1) {
-                            $if_types = \Psalm\Internal\Algebra::negateTypes($notif_types);
+                            $source->node_data->setAssertions($base_conditional, $notif_types);
                         }
                     }
                 }
-
-                $if_types = $if_types ? [$if_types] : [];
             }
+
+            if (count($notif_types) === 1) {
+                $notif_types = $notif_types[0];
+
+                if (count($notif_types) === 1) {
+                    $if_types = \Psalm\Internal\Algebra::negateTypes($notif_types);
+                }
+            }
+
+            $if_types = $if_types ? [$if_types] : [];
 
             if ($codebase
                 && $source instanceof StatementsAnalyzer
