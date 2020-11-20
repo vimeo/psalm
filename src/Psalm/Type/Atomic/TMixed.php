@@ -31,12 +31,12 @@ class TMixed extends \Psalm\Type\Atomic
         int $php_major_version,
         int $php_minor_version
     ): ?string {
-        return null;
+        return $php_major_version >= 8 ? 'mixed' : null;
     }
 
     public function canBeFullyExpressedInPhp(int $php_major_version, int $php_minor_version): bool
     {
-        return false;
+        return $php_major_version >= 8;
     }
 
     public function getAssertionString(): string
