@@ -371,6 +371,7 @@
             <xs:element name="ReferenceConstraintViolation" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ReservedWord" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="StringIncrement" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="TaintedCallable" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedCookie" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedCustom" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedEval" type="IssueHandlerType" minOccurs="0" />
@@ -384,7 +385,6 @@
             <xs:element name="TaintedSSRF" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedLdap" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedSystemSecret" type="IssueHandlerType" minOccurs="0" />
-            <xs:element name="TaintedText" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedUnserialize" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedUserSecret" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TooFewArguments" type="ArgumentIssueHandlerType" minOccurs="0" />

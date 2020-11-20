@@ -11,7 +11,7 @@ class TaintKindGroup
         TaintKind::INPUT_HTML,
         TaintKind::INPUT_SHELL,
         TaintKind::INPUT_SQL,
-        TaintKind::INPUT_TEXT,
+        TaintKind::INPUT_CALLABLE,
         TaintKind::INPUT_EVAL,
         TaintKind::INPUT_UNSERIALIZE,
         TaintKind::INPUT_INCLUDE,

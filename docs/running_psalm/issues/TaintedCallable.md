@@ -1,6 +1,6 @@
-# TaintedText
+# TaintedCallable
 
-Emitted when tainted text is detected somewhere unexpected.
+Emitted when tainted text is used in an aribtary function call.
 
 This can lead to dangerous situations, like running arbitrary functions.
 

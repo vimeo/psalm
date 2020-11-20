@@ -1621,69 +1621,65 @@ class TaintTest extends TestCase
             ],
             'taintFlow' => [
                 '<?php
+                    /**
+                     * @psalm-flow ($r) -> return
+                     */
+                    function some_stub(string $r): string {}
 
-                /**
-                 * @psalm-flow ($r) -> return
-                 */
-                function some_stub(string $r): string {}
+                    $r = $_GET["untrusted"];
 
-                $r = $_GET["untrusted"];
-
-                echo some_stub($r);',
+                    echo some_stub($r);',
                 'error_message' => 'TaintedHtml',
             ],
             'taintFlowProxy' => [
                 '<?php
+                    /**
+                     * @psalm-taint-sink callable $in
+                     */
+                    function dummy_taint_sink(string $in): void {}
 
-                /**
-                 * @psalm-taint-sink text $in
-                 */
-                function dummy_taint_sink(string $in): void {}
+                    /**
+                     * @psalm-flow proxy dummy_taint_sink($r)
+                     */
+                    function some_stub(string $r): string {}
 
-                /**
-                 * @psalm-flow proxy dummy_taint_sink($r)
-                 */
-                function some_stub(string $r): string {}
+                    $r = $_GET["untrusted"];
 
-                $r = $_GET["untrusted"];
-
-                some_stub($r);',
-                'error_message' => 'TaintedText',
+                    some_stub($r);',
+                'error_message' => 'TaintedCallable',
             ],
             'taintFlowProxyAndReturn' => [
                 '<?php
+                    function dummy_taintable(string $in): string {
+                        return $in;
+                    }
 
-                function dummy_taintable(string $in): string {
-                    return $in;
-                }
+                    /**
+                     * @psalm-flow proxy dummy_taintable($r) -> return
+                     */
+                    function some_stub(string $r): string {}
 
-                /**
-                 * @psalm-flow proxy dummy_taintable($r) -> return
-                 */
-                function some_stub(string $r): string {}
+                    $r = $_GET["untrusted"];
 
-                $r = $_GET["untrusted"];
-
-                echo some_stub($r);',
+                    echo some_stub($r);',
                 'error_message' => 'TaintedHtml',
             ],
             'taintFlowMethodProxyAndReturn' => [
                 '<?php
-
-                class dummy {
-                    public function taintable(string $in): string {
-                        return $in;
+                    class dummy {
+                        public function taintable(string $in): string {
+                            return $in;
+                        }
                     }
-                }
 
-                /**
-                 * @psalm-flow proxy dummy::taintable($r) -> return
-                 */
-                function some_stub(string $r): string {}
+                    /**
+                     * @psalm-flow proxy dummy::taintable($r) -> return
+                     */
+                    function some_stub(string $r): string {}
 
-                $r = $_GET["untrusted"];
+                    $r = $_GET["untrusted"];
 
-                echo some_stub($r);',
+                    echo some_stub($r);',
                 'error_message' => 'TaintedHtml',
             ],
             'taintPopen' => [

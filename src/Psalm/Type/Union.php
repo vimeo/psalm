@@ -736,6 +736,7 @@ class Union implements TypeNode
             || isset($this->types['class-string'])
             || isset($this->types['trait-string'])
             || isset($this->types['numeric-string'])
+            || isset($this->types['callable-string'])
             || $this->literal_string_types
             || $this->typed_class_strings;
     }

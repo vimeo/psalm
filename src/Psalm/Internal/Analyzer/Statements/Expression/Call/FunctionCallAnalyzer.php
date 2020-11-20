@@ -757,7 +757,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     $arg_location
                 );
 
-                $custom_call_sink->taints = [\Psalm\Type\TaintKind::INPUT_TEXT];
+                $custom_call_sink->taints = [\Psalm\Type\TaintKind::INPUT_CALLABLE];
 
                 $statements_analyzer->data_flow_graph->addSink($custom_call_sink);
 

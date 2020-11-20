@@ -1,7 +1,7 @@
 <?php
 namespace Psalm\Issue;
 
-class TaintedText extends TaintedInput
+class TaintedCallable extends TaintedInput
 {
     public const SHORTCODE = 243;
 }

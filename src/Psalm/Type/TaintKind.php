@@ -7,7 +7,7 @@ namespace Psalm\Type;
  */
 class TaintKind
 {
-    public const INPUT_TEXT = 'text';
+    public const INPUT_CALLABLE = 'callable';
     public const INPUT_UNSERIALIZE = 'unserialize';
     public const INPUT_INCLUDE = 'include';
     public const INPUT_EVAL = 'eval';

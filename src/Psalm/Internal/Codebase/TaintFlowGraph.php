@@ -6,6 +6,7 @@ use Psalm\CodeLocation;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\DataFlow\TaintSink;
 use Psalm\Internal\DataFlow\TaintSource;
+use Psalm\Issue\TaintedCallable;
 use Psalm\Issue\TaintedCookie;
 use Psalm\Issue\TaintedCustom;
 use Psalm\Issue\TaintedEval;
@@ -18,7 +19,6 @@ use Psalm\Issue\TaintedShell;
 use Psalm\Issue\TaintedSSRF;
 use Psalm\Issue\TaintedSql;
 use Psalm\Issue\TaintedSystemSecret;
-use Psalm\Issue\TaintedText;
 use Psalm\Issue\TaintedUnserialize;
 use Psalm\Issue\TaintedUserSecret;
 use Psalm\IssueBuffer;
@@ -279,8 +279,8 @@ class TaintFlowGraph extends DataFlowGraph
 
                     foreach ($matching_taints as $matching_taint) {
                         switch ($matching_taint) {
-                            case TaintKind::INPUT_TEXT:
-                                $issue = new TaintedText(
+                            case TaintKind::INPUT_CALLABLE:
+                                $issue = new TaintedCallable(
                                     'Detected tainted text',
                                     $issue_location,
                                     $issue_trace,
