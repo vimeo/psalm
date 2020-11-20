@@ -8,5 +8,6 @@
 	"conflict": {
 		"vimeo/psalm" : "*"
 	},
-	"bin": ["psalm.phar"]
+	"bin": ["psalm.phar"],
+	"platform-check": false
 }
