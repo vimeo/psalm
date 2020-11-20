@@ -14,7 +14,7 @@ To get started, check out the [installation guide](docs/running_psalm/installati
 
 ## Live Demo
 
-You can play around with Psalm [on the website](https://psalm.dev/).
+You can play around with Psalm [on its website](https://psalm.dev/).
 
 ## Documentation
 
