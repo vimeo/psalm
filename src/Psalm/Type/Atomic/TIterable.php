@@ -91,7 +91,7 @@ class TIterable extends Atomic
             : null;
     }
 
-    public function canBeFullyExpressedInPhp(): bool
+    public function canBeFullyExpressedInPhp(int $php_major_version, int $php_minor_version): bool
     {
         return $this->type_params[0]->isMixed() && $this->type_params[1]->isMixed();
     }

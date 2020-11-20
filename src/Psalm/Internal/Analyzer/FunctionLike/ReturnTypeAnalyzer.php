@@ -900,7 +900,7 @@ class ReturnTypeAnalyzer
                 $source->getFQCLN(),
                 true
             ),
-            $inferred_return_type->canBeFullyExpressedInPhp(),
+            $inferred_return_type->canBeFullyExpressedInPhp($codebase->php_major_version, $codebase->php_minor_version),
             $function_like_storage ? $function_like_storage->return_type_description : null
         );
     }

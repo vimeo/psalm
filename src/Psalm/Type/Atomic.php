@@ -571,7 +571,7 @@ abstract class Atomic implements TypeNode
         int $php_minor_version
     ): ?string;
 
-    abstract public function canBeFullyExpressedInPhp(): bool;
+    abstract public function canBeFullyExpressedInPhp(int $php_major_version, int $php_minor_version): bool;
 
     public function replaceTemplateTypesWithStandins(
         TemplateResult $template_result,

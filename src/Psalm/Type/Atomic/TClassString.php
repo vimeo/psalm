@@ -96,7 +96,7 @@ class TClassString extends TString
         return 'class-string<\\' . $this->as . '>';
     }
 
-    public function canBeFullyExpressedInPhp(): bool
+    public function canBeFullyExpressedInPhp(int $php_major_version, int $php_minor_version): bool
     {
         return false;
     }

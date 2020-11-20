@@ -37,7 +37,7 @@ class TDependentGetClass extends TString
             : 'class-string<' . $this->as_type->getId() . '>';
     }
 
-    public function canBeFullyExpressedInPhp(): bool
+    public function canBeFullyExpressedInPhp(int $php_major_version, int $php_minor_version): bool
     {
         return false;
     }

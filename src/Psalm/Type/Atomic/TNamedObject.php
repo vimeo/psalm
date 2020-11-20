@@ -109,19 +109,19 @@ class TNamedObject extends Atomic
         int $php_minor_version
     ): ?string {
         if ($this->value === 'static') {
-            return null;
+            return $php_major_version >= 8 ? 'static' : null;
         }
 
         if ($this->was_static) {
-            return 'self';
+            return $php_major_version >= 8 ? 'static' : 'self';
         }
 
         return $this->toNamespacedString($namespace, $aliased_classes, $this_class, false);
     }
 
-    public function canBeFullyExpressedInPhp(): bool
+    public function canBeFullyExpressedInPhp(int $php_major_version, int $php_minor_version): bool
     {
-        return $this->value !== 'static' && $this->was_static === false;
+        return ($this->value !== 'static' && $this->was_static === false) || $php_major_version >= 8;
     }
 
     public function replaceTemplateTypesWithArgTypes(

@@ -50,7 +50,7 @@ class TArray extends \Psalm\Type\Atomic
         return $this->getKey();
     }
 
-    public function canBeFullyExpressedInPhp(): bool
+    public function canBeFullyExpressedInPhp(int $php_major_version, int $php_minor_version): bool
     {
         return $this->type_params[0]->isArrayKey() && $this->type_params[1]->isMixed();
     }

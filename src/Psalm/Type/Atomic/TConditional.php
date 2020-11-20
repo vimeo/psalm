@@ -124,7 +124,7 @@ class TConditional extends \Psalm\Type\Atomic
         return [$this->conditional_type, $this->if_type, $this->else_type];
     }
 
-    public function canBeFullyExpressedInPhp(): bool
+    public function canBeFullyExpressedInPhp(int $php_major_version, int $php_minor_version): bool
     {
         return false;
     }
