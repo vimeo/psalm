@@ -7,7 +7,7 @@
  */
 return [
 'exec' => [['shell']],
-'create_function' => [['text'], ['eval']],
+'create_function' => [[], ['eval']],
 'file_get_contents' => [['file']],
 'file_put_contents' => [['file']],
 'fopen' => [['file']],
