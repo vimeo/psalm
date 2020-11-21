@@ -1219,7 +1219,7 @@ class TypeCombiner
                 }
 
                 if ($combination->ints !== null && count($combination->ints) < $literal_limit) {
-                    $combination->ints[(string) $type_key] = $type;
+                    $combination->ints[$type_key] = $type;
                 } else {
                     $combination->ints[$type_key] = $type;
 
