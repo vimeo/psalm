@@ -572,7 +572,6 @@ class ReturnAnalyzer
             ->getCodebase()
             ->getFunctionLikeStorage($statements_analyzer, $closure_id);
 
-        /** @psalm-suppress ArgumentTypeCoercion */
         $parent_fn_storage = $statements_analyzer
             ->getCodebase()
             ->getFunctionLikeStorage(

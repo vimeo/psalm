@@ -54,9 +54,7 @@ class OffsetShifterVisitor extends PhpParser\NodeVisitorAbstract
          * @psalm-suppress MixedOperand
          */
         $node->setAttribute('startFilePos', $attrs['startFilePos'] + $this->file_offset);
-        /** @psalm-suppress MixedOperand */
         $node->setAttribute('endFilePos', $attrs['endFilePos'] + $this->file_offset);
-        /** @psalm-suppress MixedOperand */
         $node->setAttribute('startLine', $attrs['startLine'] + $this->line_offset);
     }
 }

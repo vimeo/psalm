@@ -26,7 +26,6 @@ class CaseScope
 
     public function __destruct()
     {
-        /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
         $this->parent_context = null;
     }
 }

@@ -653,7 +653,6 @@ class ArrayFetchAnalyzer
                                     && $offset_as->param_name === $original_type->param_name
                                     && $offset_as->defining_class === $original_type->defining_class
                                 ) {
-                                    /** @psalm-suppress PropertyTypeCoercion */
                                     $type->type_params[1] = new Type\Union([
                                         new Type\Atomic\TTemplateIndexedAccess(
                                             $offset_as->param_name,
@@ -740,7 +739,6 @@ class ArrayFetchAnalyzer
                     }
 
                     if ($in_assignment && $replacement_type) {
-                        /** @psalm-suppress PropertyTypeCoercion */
                         $type->type_params[1] = Type::combineUnionTypes(
                             $type->type_params[1],
                             $replacement_type,

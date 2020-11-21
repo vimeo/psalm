@@ -30,13 +30,9 @@ class NodeDataProvider implements \Psalm\NodeTypeProvider
 
     public function __construct()
     {
-        /** @psalm-suppress PropertyTypeCoercion */
         $this->node_types = new SplObjectStorage();
-        /** @psalm-suppress PropertyTypeCoercion */
         $this->node_assertions = new SplObjectStorage();
-        /** @psalm-suppress PropertyTypeCoercion */
         $this->node_if_true_assertions = new SplObjectStorage();
-        /** @psalm-suppress PropertyTypeCoercion */
         $this->node_if_false_assertions = new SplObjectStorage();
     }
 
