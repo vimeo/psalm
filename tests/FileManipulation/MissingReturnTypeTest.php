@@ -965,6 +965,25 @@ class MissingReturnTypeTest extends FileManipulationTest
                 false,
                 true,
             ],
+            'arrayKeyReturn' => [
+                '<?php
+                    function scope(array $array) {
+                        return (array_keys($array))[0] ?? null;
+                    }',
+                '<?php
+                    /**
+                     * @return (int|string)|null
+                     *
+                     * @psalm-return array-key|null
+                     */
+                    function scope(array $array) {
+                        return (array_keys($array))[0] ?? null;
+                    }',
+                '7.1',
+                ['MissingReturnType'],
+                false,
+                true,
+            ],
         ];
     }
 }
