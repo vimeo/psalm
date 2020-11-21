@@ -65,6 +65,10 @@ class TLiteralClassString extends TLiteralString
         ?string $this_class,
         bool $use_phpdoc_format
     ): string {
+        if ($use_phpdoc_format) {
+            return 'string';
+        }
+
         if ($this->value === 'static') {
             return 'static::class';
         }
