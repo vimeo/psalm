@@ -410,14 +410,14 @@ class Union implements TypeNode
         $multi_floats = count($this->literal_float_types) > 1;
 
         foreach ($this->types as $type) {
-            $type_string = $type->toNamespacedString($namespace, $aliased_classes, $this_class, $use_phpdoc_format);
-
             if ($type instanceof TLiteralInt && !$multi_ints) {
                 $type_string = 'int';
             } elseif ($type instanceof TLiteralFloat && !$multi_floats) {
                 $type_string = 'float';
             } elseif ($type instanceof TLiteralString && !$multi_strings) {
                 $type_string = 'string';
+            } else {
+                $type_string = $type->toNamespacedString($namespace, $aliased_classes, $this_class, $use_phpdoc_format);
             }
 
             $types[] = $type_string;
