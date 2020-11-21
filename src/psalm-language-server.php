@@ -168,6 +168,7 @@ Options:
 
     --verbose
         Will send log messages to the client with information.
+
 HELP;
 
     exit;
