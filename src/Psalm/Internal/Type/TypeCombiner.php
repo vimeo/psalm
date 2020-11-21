@@ -1219,7 +1219,7 @@ class TypeCombiner
                 }
 
                 if ($combination->ints !== null && count($combination->ints) < $literal_limit) {
-                    $combination->ints[$type_key] = $type;
+                    $combination->ints[(string) $type_key] = $type;
                 } else {
                     $combination->ints[$type_key] = $type;
 
@@ -1269,7 +1269,12 @@ class TypeCombiner
                 && isset($combination->value_types['int'])
                 && $combination->value_types['int'] instanceof TPositiveInt
             ) {
-                $combination->ints = ['int(0)' => new TLiteralInt(0)];
+                if ($combination->ints === null) {
+                    $combination->ints = ['int(0)' => new TLiteralInt(0)];
+                } elseif ($type->value < 0) {
+                    $combination->ints = null;
+                    $combination->value_types['int'] = new TInt();
+                }
             }
 
             return null;

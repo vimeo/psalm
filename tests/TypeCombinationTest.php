@@ -591,6 +591,14 @@ class TypeCombinationTest extends TestCase
                     '-1',
                 ],
             ],
+            'combinePositiveIntZeroAndMinusOne' => [
+                'int',
+                [
+                    '0',
+                    'positive-int',
+                    '-1',
+                ],
+            ],
             'combineMinusOneAndPositiveInt' => [
                 'int',
                 [
