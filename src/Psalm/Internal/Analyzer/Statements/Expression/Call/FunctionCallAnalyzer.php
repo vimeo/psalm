@@ -1426,28 +1426,40 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     continue;
                 }
 
-                $arg_location = new CodeLocation(
-                    $statements_analyzer->getSource(),
-                    $stmt->args[$i]->value
-                );
+                $current_arg_is_variadic = $function_storage->params[$i]->is_variadic;
+                $taintableArgIndex = [$i];
 
-                $function_param_sink = DataFlowNode::getForMethodArgument(
-                    $function_id,
-                    $function_id,
-                    $i,
-                    $arg_location,
-                    $function_storage->specialize_call ? $node_location : null
-                );
+                if ($current_arg_is_variadic) {
+                    $max_params = count($stmt->args) - 1;
+                    for ($arg_index = $i + 1; $arg_index <= $max_params; $arg_index++) {
+                        $taintableArgIndex[] = $arg_index;
+                    }
+                }
 
-                $statements_analyzer->data_flow_graph->addNode($function_param_sink);
+                foreach ($taintableArgIndex as $argIndex) {
+                    $arg_location = new CodeLocation(
+                        $statements_analyzer->getSource(),
+                        $stmt->args[$argIndex]->value
+                    );
 
-                $statements_analyzer->data_flow_graph->addPath(
-                    $function_param_sink,
-                    $function_call_node,
-                    $path_type,
-                    $function_storage->added_taints,
-                    $removed_taints
-                );
+                    $function_param_sink = DataFlowNode::getForMethodArgument(
+                        $function_id,
+                        $function_id,
+                        $argIndex,
+                        $arg_location,
+                        $function_storage->specialize_call ? $node_location : null
+                    );
+
+                    $statements_analyzer->data_flow_graph->addNode($function_param_sink);
+
+                    $statements_analyzer->data_flow_graph->addPath(
+                        $function_param_sink,
+                        $function_call_node,
+                        $path_type,
+                        $function_storage->added_taints,
+                        $removed_taints
+                    );
+                }
             }
         }
 
