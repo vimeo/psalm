@@ -33,7 +33,8 @@ class StrTrReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypePr
 
         $type = Type::getString();
 
-        if ($statements_source->data_flow_graph && !\in_array('TaintedInput', $statements_source->getSuppressedIssues())) {
+        if ($statements_source->data_flow_graph
+            && !\in_array('TaintedInput', $statements_source->getSuppressedIssues())) {
             $function_return_sink = DataFlowNode::getForMethodReturn(
                 $function_id,
                 $function_id,
