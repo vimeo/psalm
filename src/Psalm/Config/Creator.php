@@ -181,7 +181,6 @@ class Creator
                 );
             }
 
-            /** @psalm-suppress MixedAssignment */
             if (!$composer_json = json_decode(file_get_contents($composer_json_location), true)) {
                 throw new ConfigCreationException('Invalid composer.json at ' . $composer_json_location);
             }

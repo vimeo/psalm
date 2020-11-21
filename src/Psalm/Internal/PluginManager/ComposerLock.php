@@ -57,7 +57,6 @@ class ComposerLock
 
     private function read(string $file_name): array
     {
-        /** @psalm-suppress MixedAssignment */
         $contents = json_decode(file_get_contents($file_name), true);
 
         if ($error = json_last_error()) {

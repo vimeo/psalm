@@ -191,7 +191,6 @@ class ParserCacheProvider
                     return [];
                 }
 
-                /** @psalm-suppress MixedAssignment */
                 $hashes_decoded = json_decode($hashes_encoded, true);
 
                 if (!is_array($hashes_decoded)) {

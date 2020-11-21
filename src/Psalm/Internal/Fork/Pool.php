@@ -217,7 +217,6 @@ class Pool
         } catch (\Throwable $t) {
             // This can happen when developing Psalm from source without running `composer update`,
             // or because of rare bugs in Psalm.
-            /** @psalm-suppress MixedArgument on Windows, for some reason */
             $process_done_message = new ForkProcessErrorMessage(
                 $t->getMessage() . "\nStack trace in the forked worker:\n" . $t->getTraceAsString()
             );

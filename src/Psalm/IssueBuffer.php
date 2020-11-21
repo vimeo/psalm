@@ -517,7 +517,6 @@ class IssueBuffer
                             }
                         }
 
-                        /** @psalm-suppress PropertyTypeCoercion due to Psalm bug */
                         $issues_data[$file_path][$key] = $issue_data;
                     }
                 }

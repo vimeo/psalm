@@ -216,7 +216,6 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
                                 if ($error->hasColumnInfo()) {
                                     /** @var array{startFilePos: int, endFilePos: int} */
                                     $error_attrs = $error->getAttributes();
-                                    /** @psalm-suppress MixedOperand */
                                     $error = new PhpParser\Error(
                                         $error->getRawMessage(),
                                         [
@@ -297,7 +296,6 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
 
                     $node->setAttribute('comments', $new_comments);
 
-                    /** @psalm-suppress MixedOperand */
                     $node->setAttribute('startFilePos', $attrs['startFilePos'] + $start_offset);
                 } else {
                     $node->setAttribute('startFilePos', $stmt_start_pos + $start_offset);
@@ -309,7 +307,6 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
             }
 
             if ($line_offset !== 0) {
-                /** @psalm-suppress MixedOperand */
                 $node->setAttribute('startLine', $attrs['startLine'] + $line_offset);
             }
 

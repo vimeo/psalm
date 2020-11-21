@@ -185,7 +185,6 @@ class Populator
             && !$storage->is_interface
             && !$storage->is_trait
         ) {
-            /** @psalm-suppress PropertyTypeCoercion */
             $storage->methods['__construct'] = $storage->methods[$fq_classlike_name_lc];
         }
 
@@ -1144,9 +1143,7 @@ class Populator
                     }
                 }
 
-                /** @psalm-suppress PropertyTypeCoercion */
                 $storage->declaring_method_ids[$aliased_method_name] = $declaring_method_id;
-                /** @psalm-suppress PropertyTypeCoercion */
                 $storage->inheritable_method_ids[$aliased_method_name] = $declaring_method_id;
             }
         }

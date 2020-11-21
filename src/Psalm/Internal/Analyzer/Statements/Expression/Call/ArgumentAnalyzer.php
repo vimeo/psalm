@@ -1205,7 +1205,6 @@ class ArgumentAnalyzer
                     $context->vars_in_scope[$var_id] = new Type\Union([$unpacked_atomic_array]);
                 } elseif ($unpacked_atomic_array instanceof Type\Atomic\TArray) {
                     $unpacked_atomic_array = clone $unpacked_atomic_array;
-                    /** @psalm-suppress PropertyTypeCoercion */
                     $unpacked_atomic_array->type_params[1] = $input_type;
 
                     $context->vars_in_scope[$var_id] = new Type\Union([$unpacked_atomic_array]);

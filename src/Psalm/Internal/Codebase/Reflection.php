@@ -65,7 +65,6 @@ class Reflection
         $storage->abstract = $reflected_class->isAbstract();
         $storage->is_interface = $reflected_class->isInterface();
 
-        /** @psalm-suppress PropertyTypeCoercion */
         $storage->potential_declaring_method_ids['__construct'][$class_name_lower . '::__construct'] = true;
 
         if ($reflected_parent_class) {
