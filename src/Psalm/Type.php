@@ -10,7 +10,7 @@ use function implode;
 use function preg_quote;
 use function preg_replace;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
-use Psalm\Internal\Type\TypeCombination;
+use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\Type\Atomic\TArray;
@@ -435,7 +435,7 @@ abstract class Type
                 return $type_1;
             }
 
-            $combined_type = TypeCombination::combineTypes(
+            $combined_type = TypeCombiner::combine(
                 array_merge(
                     array_values($type_1->getAtomicTypes()),
                     array_values($type_2->getAtomicTypes())

@@ -12,7 +12,7 @@ use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateResult;
-use Psalm\Internal\Type\TypeCombination;
+use Psalm\Internal\Type\TypeCombiner;
 use Psalm\StatementsSource;
 use Psalm\Storage\FileStorage;
 use Psalm\Type;
@@ -1011,7 +1011,7 @@ class Union implements TypeNode
                 ) {
                     $this->types[$key] = $new_type_part;
                 } else {
-                    $combined = TypeCombination::combineTypes([$new_type_part, $this->types[$key]]);
+                    $combined = TypeCombiner::combine([$new_type_part, $this->types[$key]]);
                     $this->types[$key] = array_values($combined->types)[0];
                 }
             }
@@ -1304,7 +1304,7 @@ class Union implements TypeNode
         $atomic_types = array_values(array_merge($this->types, $new_types));
 
         if ($atomic_types) {
-            $this->types = TypeCombination::combineTypes(
+            $this->types = TypeCombiner::combine(
                 $atomic_types,
                 $codebase
             )->getAtomicTypes();

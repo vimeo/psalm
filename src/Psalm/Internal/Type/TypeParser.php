@@ -487,7 +487,7 @@ class TypeParser
                 );
             }
 
-            return TypeCombination::combineTypes($atomic_types);
+            return TypeCombiner::combine($atomic_types);
         }
 
         if ($parse_tree instanceof ParseTree\IntersectionTree) {
@@ -852,7 +852,7 @@ class TypeParser
                 return $non_nullable_type;
             }
 
-            return TypeCombination::combineTypes([
+            return TypeCombiner::combine([
                 new TNull,
                 $non_nullable_type,
             ]);

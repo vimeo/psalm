@@ -9,7 +9,7 @@ use Psalm\Context;
 use Psalm\Issue\DuplicateArrayKey;
 use Psalm\IssueBuffer;
 use Psalm\Type;
-use Psalm\Internal\Type\TypeCombination;
+use Psalm\Internal\Type\TypeCombiner;
 use function preg_match;
 use function array_merge;
 use function array_values;
@@ -294,7 +294,7 @@ class ArrayAnalyzer
         }
 
         if ($item_key_atomic_types) {
-            $item_key_type = TypeCombination::combineTypes(
+            $item_key_type = TypeCombiner::combine(
                 $item_key_atomic_types,
                 $codebase,
                 false,
@@ -306,7 +306,7 @@ class ArrayAnalyzer
         }
 
         if ($item_value_atomic_types) {
-            $item_value_type = TypeCombination::combineTypes(
+            $item_value_type = TypeCombiner::combine(
                 $item_value_atomic_types,
                 $codebase,
                 false,

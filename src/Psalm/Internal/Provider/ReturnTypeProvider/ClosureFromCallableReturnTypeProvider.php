@@ -5,7 +5,7 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
-use Psalm\Internal\Type\TypeCombination;
+use Psalm\Internal\Type\TypeCombiner;
 use Psalm\StatementsSource;
 use Psalm\Type;
 
@@ -65,7 +65,7 @@ class ClosureFromCallableReturnTypeProvider implements \Psalm\Plugin\Hook\Method
             }
 
             if ($closure_types) {
-                return TypeCombination::combineTypes($closure_types, $codebase);
+                return TypeCombiner::combine($closure_types, $codebase);
             }
 
             return Type::getClosure();

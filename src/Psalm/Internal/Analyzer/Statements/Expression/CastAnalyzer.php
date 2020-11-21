@@ -22,7 +22,7 @@ use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TString;
-use Psalm\Internal\Type\TypeCombination;
+use Psalm\Internal\Type\TypeCombiner;
 use function get_class;
 use function count;
 use function array_merge;
@@ -190,7 +190,7 @@ class CastAnalyzer
             }
 
             if ($permissible_atomic_types && $all_permissible) {
-                $type = TypeCombination::combineTypes($permissible_atomic_types);
+                $type = TypeCombiner::combine($permissible_atomic_types);
             } else {
                 $type = Type::getArray();
             }
@@ -387,7 +387,7 @@ class CastAnalyzer
         if (!$valid_types) {
             $str_type = Type::getString();
         } else {
-            $str_type = \Psalm\Internal\Type\TypeCombination::combineTypes(
+            $str_type = \Psalm\Internal\Type\TypeCombiner::combine(
                 $valid_types,
                 $codebase
             );

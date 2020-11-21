@@ -9,7 +9,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
-use Psalm\Internal\Type\TypeCombination;
+use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\UnionTemplateHandler;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\CodeLocation;
@@ -441,7 +441,7 @@ class ArrayFunctionArgumentsAnalyzer
                 }
             }
 
-            $by_ref_type = TypeCombination::combineTypes([$array_type, $replacement_array_type]);
+            $by_ref_type = TypeCombiner::combine([$array_type, $replacement_array_type]);
 
             AssignmentAnalyzer::assignByRefParam(
                 $statements_analyzer,

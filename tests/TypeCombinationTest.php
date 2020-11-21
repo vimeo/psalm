@@ -2,7 +2,7 @@
 namespace Psalm\Tests;
 
 use function array_values;
-use Psalm\Internal\Type\TypeCombination;
+use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Type;
 
 class TypeCombinationTest extends TestCase
@@ -28,7 +28,7 @@ class TypeCombinationTest extends TestCase
 
         $this->assertSame(
             $expected,
-            TypeCombination::combineTypes($converted_types)->getId()
+            TypeCombiner::combine($converted_types)->getId()
         );
     }
 

@@ -60,7 +60,7 @@ class TypeExpander
         }
 
         if ($has_array_output) {
-            $fleshed_out_type = TypeCombination::combineTypes(
+            $fleshed_out_type = TypeCombiner::combine(
                 $new_return_type_parts,
                 $codebase
             );
@@ -588,7 +588,7 @@ class TypeExpander
                 }
 
                 if ($assertion && $return_type->param_name === (string) $return_type->if_type) {
-                    $if_conditional_return_type = TypeCombination::combineTypes(
+                    $if_conditional_return_type = TypeCombiner::combine(
                         $if_conditional_return_types,
                         $codebase
                     );
@@ -606,7 +606,7 @@ class TypeExpander
                 }
 
                 if ($assertion && $return_type->param_name === (string) $return_type->else_type) {
-                    $else_conditional_return_type = TypeCombination::combineTypes(
+                    $else_conditional_return_type = TypeCombiner::combine(
                         $else_conditional_return_types,
                         $codebase
                     );
@@ -635,7 +635,7 @@ class TypeExpander
                     }
                 }
 
-                $combined = TypeCombination::combineTypes(
+                $combined = TypeCombiner::combine(
                     array_values($all_conditional_return_types),
                     $codebase
                 );

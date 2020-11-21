@@ -31,7 +31,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TPositiveInt;
 use Psalm\Type\Atomic\TNumeric;
-use Psalm\Internal\Type\TypeCombination;
+use Psalm\Internal\Type\TypeCombiner;
 use function array_diff_key;
 use function array_values;
 use function preg_match;
@@ -537,7 +537,7 @@ class NonDivArithmeticOpAnalyzer
 
                 $result_type_member = new Type\Union([new TKeyedArray($properties)]);
             } else {
-                $result_type_member = TypeCombination::combineTypes(
+                $result_type_member = TypeCombiner::combine(
                     [$left_type_part, $right_type_part],
                     $codebase,
                     true

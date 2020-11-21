@@ -6,7 +6,7 @@ use function array_values;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\Internal\Type\TypeCombination;
+use Psalm\Internal\Type\TypeCombiner;
 use Psalm\StatementsSource;
 use Psalm\Type;
 
@@ -184,11 +184,11 @@ class ArrayMergeReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnT
         $inner_value_type = null;
 
         if ($inner_key_types) {
-            $inner_key_type = TypeCombination::combineTypes($inner_key_types, $codebase, true);
+            $inner_key_type = TypeCombiner::combine($inner_key_types, $codebase, true);
         }
 
         if ($inner_value_types) {
-            $inner_value_type = TypeCombination::combineTypes($inner_value_types, $codebase, true);
+            $inner_value_type = TypeCombiner::combine($inner_value_types, $codebase, true);
         }
 
         if ($generic_properties) {

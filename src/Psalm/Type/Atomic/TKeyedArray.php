@@ -10,7 +10,7 @@ use function is_int;
 use function sort;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Type\TypeCombination;
+use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\UnionTemplateHandler;
 use Psalm\Type;
@@ -213,7 +213,7 @@ class TKeyedArray extends \Psalm\Type\Atomic
             }
         }
 
-        $key_type = TypeCombination::combineTypes($key_types);
+        $key_type = TypeCombiner::combine($key_types);
 
         $key_type->possibly_undefined = false;
 
@@ -272,7 +272,7 @@ class TKeyedArray extends \Psalm\Type\Atomic
             }
         }
 
-        $key_type = TypeCombination::combineTypes($key_types);
+        $key_type = TypeCombiner::combine($key_types);
 
         if ($this->previous_value_type) {
             $value_type = Type::combineUnionTypes($this->previous_value_type, $value_type);
