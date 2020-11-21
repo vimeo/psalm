@@ -487,6 +487,20 @@ function strtoupper(string $str) : string {}
 /**
  * @psalm-pure
  *
+ * @param string|array<string> $string
+ * @param string|array<string> $replacement
+ * @param int|array<int> $start
+ * @param null|int|array<int> $length
+ *
+ * @return ($string is array<string> ? array<string> : string) 
+ *
+ * @psalm-flow ($string, $replacement) -> return
+ */
+function substr_replace($string, $replacement, $start, $length) {}
+
+/**
+ * @psalm-pure
+ *
  * @param string $haystack
  *
  * @psalm-return positive-int|0|false
@@ -613,6 +627,20 @@ function strip_tags(string $str, ?string $allowable_tags = null) : string {}
 /**
  * @psalm-pure
  *
+ * @psalm-flow ($str) -> return
+ */
+function stripcslashes(string $str) : string {}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-flow ($str) -> return
+ */
+function stripslashes(string $str) : string {}
+
+/**
+ * @psalm-pure
+ *
  * @psalm-taint-escape html
  *
  * @psalm-flow ($string) -> return
@@ -664,6 +692,104 @@ function str_replace($search, $replace, $subject, &$count = null) {}
 /**
  * @psalm-pure
  *
+ * @param string|array<string|int|float> $search
+ * @param string|array<string|int|float> $replace
+ * @param string|array<string|int|float> $subject
+ * @param int $count
+ * @return ($subject is array ? array<string> : string)
+ *
+ * @psalm-flow ($replace, $subject) -> return
+ */
+function str_ireplace($search, $replace, $subject, &$count = null) {}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-flow ($input, $pad_string) -> return
+ */
+function str_pad(string $input, int $pad_length, $pad_string = '', int $pad_type = STR_PAD_RIGHT): string {}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-flow ($input) -> return
+ */
+function str_repeat(string $input, int $multiplier): string {}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-flow ($str) -> return
+ */
+function str_rot13(string $str): string {}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-flow ($str) -> return
+ */
+function str_shuffle(string $str): string {}
+
+/**
+ * @psalm-pure
+ * @return array<string>
+ *
+ * @psalm-flow ($string) -> return
+ */
+function str_split(string $string, int $split_length = 1) {}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-flow ($haystack) -> return
+ */
+function strstr(string $haystack, string $needle, bool $before_needle = false): string {}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-flow ($haystack) -> return
+ */
+function stristr(string $haystack, string $needle, bool $before_needle = false): string {}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-flow ($haystack) -> return
+ */
+function strchr(string $haystack, string $needle, bool $before_needle = false): string {}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-flow ($haystack) -> return
+ */
+function strpbrk(string $haystack, string $char_list): string {}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-flow ($haystack) -> return
+ */
+function strrchr(string $haystack, string $needle): string {}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-flow ($string) -> return
+ */
+function strrev(string $string): string {}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-flow ($string) -> return
+ */
+function strtok(string $str, string $token): string {}
+
+/**
+ * @psalm-pure
+ *
  * @param string|string[] $pattern
  * @param string|array<string|int|float> $replacement
  * @param string|array<string|int|float> $subject
@@ -681,7 +807,7 @@ function preg_filter($pattern, $replacement, $subject, int $limit = -1, &$count 
  * @param string|array<string|int|float> $replace
  * @param string|array<string|int|float> $subject
  * @param int $count
- * @return ($subject is array ? array<string> : string)
+ * @return ($subject is array ? array<string>|null : string|null)
  *
  * @psalm-flow ($replace, $subject) -> return
  */
@@ -692,7 +818,7 @@ function preg_replace($search, $replace, $subject, int $limit = -1, &$count = nu
  * @param callable(array<int, string>):string $replace
  * @param string|array<string|int|float> $subject
  * @param int $count
- * @return ($subject is array ? array<string> : string)
+ * @return ($subject is array ? array<string>|null : string|null)
  *
  * @psalm-taint-specialize
  * @psalm-flow ($subject) -> return
@@ -763,6 +889,23 @@ function sprintf(string $format, ...$args) : string {}
 
 /**
  * @psalm-pure
+ * @return string|false
+ * @psalm-ignore-falsable-return
+ * 
+ * @psalm-flow ($format, $args) -> return
+ */
+function vsprintf(string $format, array $args) {}
+
+/**
+ * @psalm-pure
+ * @return string
+ * 
+ * @psalm-flow ($str) -> return
+ */
+function wordwrap(string $str, int $width = 75, string $break = "\n", bool $cut = false) : string {}
+
+/**
+ * @psalm-pure
  *
  * @param string|int|float $args
  *
@@ -802,6 +945,8 @@ function strval ($var): string {}
 /**
  * @return ($input is non-empty-string ? non-empty-list<string> : non-empty-list<string>|array{null})
  * @psalm-pure
+ *
+ * @psalm-flow ($input) -> return
  */
 function str_getcsv(string $input, string $delimiter = ',', string $enclosure = '"', string $escape = '\\\\')
 {

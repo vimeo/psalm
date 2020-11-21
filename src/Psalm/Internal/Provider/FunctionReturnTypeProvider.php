@@ -48,6 +48,7 @@ class FunctionReturnTypeProvider
         $this->registerClass(ReturnTypeProvider\IteratorToArrayReturnTypeProvider::class);
         $this->registerClass(ReturnTypeProvider\ParseUrlReturnTypeProvider::class);
         $this->registerClass(ReturnTypeProvider\StrReplaceReturnTypeProvider::class);
+        $this->registerClass(ReturnTypeProvider\StrTrReturnTypeProvider::class);
         $this->registerClass(ReturnTypeProvider\VersionCompareReturnTypeProvider::class);
         $this->registerClass(ReturnTypeProvider\MktimeReturnTypeProvider::class);
         $this->registerClass(ReturnTypeProvider\ExplodeReturnTypeProvider::class);
