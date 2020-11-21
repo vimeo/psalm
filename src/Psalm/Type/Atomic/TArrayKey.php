@@ -30,4 +30,16 @@ class TArrayKey extends Scalar
     {
         return false;
     }
+
+    /**
+     * @param array<string> $aliased_classes
+     */
+    public function toNamespacedString(
+        ?string $namespace,
+        array $aliased_classes,
+        ?string $this_class,
+        bool $use_phpdoc_format
+    ): string {
+        return $use_phpdoc_format ? '(int|string)' : 'array-key';
+    }
 }

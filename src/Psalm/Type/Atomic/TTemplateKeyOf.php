@@ -67,8 +67,7 @@ class TTemplateKeyOf extends TArrayKey
     }
 
     /**
-     * @param  array<string> $aliased_classes
-     *
+     * @param array<string> $aliased_classes
      */
     public function toNamespacedString(
         ?string $namespace,
