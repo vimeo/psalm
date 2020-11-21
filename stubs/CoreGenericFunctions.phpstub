@@ -890,6 +890,7 @@ function sprintf(string $format, ...$args) : string {}
 /**
  * @psalm-pure
  * @return string|false
+ * @psalm-ignore-falsable-return
  * 
  * @psalm-flow ($format, $args) -> return
  */
