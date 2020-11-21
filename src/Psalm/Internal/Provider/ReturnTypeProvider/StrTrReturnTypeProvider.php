@@ -26,10 +26,11 @@ class StrTrReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypePr
         array $call_args,
         Context $context,
         CodeLocation $code_location
-    ) : Type\Union {
-        $code_base = $statements_source->getCodebase($statements_source, $function_id);
-        $function_like_storage = $code_base->getFunctionLikeStorage($statements_source, $function_id);
-        
+    ) : Type\Union {        
+        if (!$statements_source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
+            throw new \UnexpectedValueException();
+        }
+
         $type = Type::getString();
 
         if ($statements_source->data_flow_graph && !\in_array('TaintedInput', $statements_source->getSuppressedIssues())) {
