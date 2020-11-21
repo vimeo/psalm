@@ -557,6 +557,11 @@ class TaintTest extends TestCase
 
                     echo $file;'
             ],
+            'strTrNotTainted' => [
+                '<?php
+                $input = strtr(\'data\', \'data\', \'data\');
+                setcookie($input, \'value\');',
+            ],
         ];
     }
 
@@ -1861,6 +1866,12 @@ class TaintTest extends TestCase
                     $a = new A($_GET["bar"]);
                     echo $a->getTaint();',
                 'error_message' => 'TaintedHtml',
+            ],
+            'strTrReturnTypeTaint' => [
+                '<?php
+                $input = strtr(\'data\', $_GET[\'taint\'], \'data\');
+                setcookie($input, \'value\');',
+            'error_message' => 'TaintedCookie',         
             ],
             /*
             // TODO: Stubs do not support this type of inference even with $this->message = $message.
