@@ -23,10 +23,10 @@ Example sinks:
 
 Psalm recognises a number of taint types by default, defined in the [Psalm\Type\TaintKind](https://github.com/vimeo/psalm/blob/master/src/Psalm/Type/TaintKind.php) class:
 
-- `text` - used for strings that could be user-controlled
 - `sql` - used for strings that could contain SQL
 - `html` - used for strings that could contain angle brackets or unquoted strings
 - `shell` - used for strings that could contain shell commands
+- `callable` - used for callable strings that could be user-controlled
 - `user_secret` - used for strings that could contain user-supplied secrets
 - `system_secret` - used for strings that could contain system secrets
 
