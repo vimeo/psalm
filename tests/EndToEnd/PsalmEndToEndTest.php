@@ -162,7 +162,7 @@ class PsalmEndToEndTest extends TestCase
 
     public function testTaintingWithoutInit(): void
     {
-        $result = $this->runPsalm(['--taint-analysis'], self::$tmpDir, true);
+        $result = $this->runPsalm(['--taint-analysis'], self::$tmpDir, true, false);
 
         $this->assertStringContainsString('TaintedHtml', $result['STDOUT']);
         $this->assertStringContainsString('1 errors', $result['STDOUT']);
