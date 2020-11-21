@@ -1429,14 +1429,14 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 $current_arg_is_variadic = $function_storage->params[$i]->is_variadic;
                 $taintableArgIndex = [$i];
 
-                if($current_arg_is_variadic) {
+                if ($current_arg_is_variadic) {
                     $max_params = count($stmt->args) - 1;
                     for ($arg_index = $i + 1; $arg_index <= $max_params; $arg_index++) {
                         $taintableArgIndex[] = $arg_index;
                     }
                 }
 
-                foreach($taintableArgIndex as $argIndex) {
+                foreach ($taintableArgIndex as $argIndex) {
                     $arg_location = new CodeLocation(
                         $statements_analyzer->getSource(),
                         $stmt->args[$argIndex]->value
