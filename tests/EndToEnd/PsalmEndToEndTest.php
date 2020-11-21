@@ -160,6 +160,15 @@ class PsalmEndToEndTest extends TestCase
         $this->assertSame(1, $result['CODE']);
     }
 
+    public function testTaintingWithoutInit(): void
+    {
+        $result = $this->runPsalm(['--taint-analysis'], self::$tmpDir, true);
+
+        $this->assertStringContainsString('TaintedHtml', $result['STDOUT']);
+        $this->assertStringContainsString('1 errors', $result['STDOUT']);
+        $this->assertSame(1, $result['CODE']);
+    }
+
     public function testLegacyConfigWithoutresolveFromConfigFile(): void
     {
         $this->runPsalmInit(1);

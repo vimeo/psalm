@@ -278,6 +278,9 @@ $first_autoloader = $include_collector->runAndCollect(
     }
 );
 
+$run_taint_analysis = (isset($options['track-tainted-input'])
+    || isset($options['security-analysis'])
+    || isset($options['taint-analysis']));
 
 if (array_key_exists('v', $options)) {
     echo 'Psalm ' . PSALM_VERSION . PHP_EOL;
@@ -353,7 +356,7 @@ if (isset($options['i'])) {
         exit('Config file created successfully. Please re-run psalm.' . PHP_EOL);
     }
 } else {
-    $config = initialiseConfig($path_to_config, $current_dir, $output_format, $first_autoloader);
+    $config = initialiseConfig($path_to_config, $current_dir, $output_format, $first_autoloader, $run_taint_analysis);
 
     if (isset($options['error-level'])
         && is_numeric($options['error-level'])
@@ -655,10 +658,7 @@ if ($config->find_unused_variables || $find_unused_variables) {
     $project_analyzer->getCodebase()->reportUnusedVariables();
 }
 
-if ($config->run_taint_analysis || (isset($options['track-tainted-input'])
-    || isset($options['security-analysis'])
-    || isset($options['taint-analysis']))
-) {
+if ($config->run_taint_analysis || $run_taint_analysis) {
     $is_diff = false;
     $project_analyzer->trackTaintedInputs();
 }

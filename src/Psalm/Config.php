@@ -10,6 +10,7 @@ use Psalm\Config\IssueHandler;
 use Psalm\Config\ProjectFileFilter;
 use Psalm\Config\TaintAnalysisFileFilter;
 use Psalm\Exception\ConfigException;
+use Psalm\Exception\ConfigNotFoundException;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
@@ -651,17 +652,12 @@ class Config
      * @throws ConfigException if a config path is not found
      *
      */
-    public static function getConfigForPath(string $path, string $current_dir, string $output_format): Config
+    public static function getConfigForPath(string $path, string $current_dir): Config
     {
         $config_path = self::locateConfigFile($path);
 
         if (!$config_path) {
-            if (in_array($output_format, [\Psalm\Report::TYPE_CONSOLE, \Psalm\Report::TYPE_PHP_STORM])) {
-                echo 'Could not locate a config XML file in path ' . $path
-                    . '. Have you run \'psalm --init\' ?' . PHP_EOL;
-                exit(1);
-            }
-            throw new ConfigException('Config not found for path ' . $path);
+            throw new ConfigNotFoundException('Config not found for path ' . $path);
         }
 
         return self::loadFromXMLFile($config_path, $current_dir);
@@ -678,7 +674,7 @@ class Config
         $dir_path = realpath($path);
 
         if ($dir_path === false) {
-            throw new ConfigException('Config not found for path ' . $path);
+            throw new ConfigNotFoundException('Config not found for path ' . $path);
         }
 
         if (!is_dir($dir_path)) {

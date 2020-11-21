@@ -87,10 +87,10 @@ class Creator
         string $current_dir,
         ?string $suggested_dir,
         string $vendor_dir
-    ) : void {
+    ) : \Psalm\Config {
         $config_contents = self::getContents($current_dir, $suggested_dir, 1, $vendor_dir);
 
-        \Psalm\Config::loadFromXML($current_dir, $config_contents);
+        return \Psalm\Config::loadFromXML($current_dir, $config_contents);
     }
 
     /**

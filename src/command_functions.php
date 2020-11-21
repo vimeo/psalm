@@ -455,16 +455,41 @@ function initialiseConfig(
     ?string $path_to_config,
     string $current_dir,
     string $output_format,
-    ?ClassLoader $first_autoloader
+    ?ClassLoader $first_autoloader,
+    bool $create_if_non_existent = false
 ): Config {
     try {
         if ($path_to_config) {
             $config = Config::loadFromXMLFile($path_to_config, $current_dir);
         } else {
-            $config = Config::getConfigForPath($current_dir, $current_dir, $output_format);
+            try {
+                $config = Config::getConfigForPath($current_dir, $current_dir);
+            } catch (\Psalm\Exception\ConfigNotFoundException $e) {
+                if (!$create_if_non_existent) {
+                    if (in_array($output_format, [\Psalm\Report::TYPE_CONSOLE, \Psalm\Report::TYPE_PHP_STORM])) {
+                        fwrite(
+                            STDERR,
+                            'Could not locate a config XML file in path ' . $current_dir
+                                . '. Have you run \'psalm --init\' ?' . PHP_EOL
+                        );
+                        exit(1);
+                    }
+
+                    throw $e;
+                }
+
+                $config = \Psalm\Config\Creator::createBareConfig(
+                    $current_dir,
+                    null,
+                    \Psalm\getVendorDir($current_dir)
+                );
+            }
         }
     } catch (\Psalm\Exception\ConfigException $e) {
-        fwrite(STDERR, $e->getMessage() . PHP_EOL);
+        fwrite(
+            STDERR,
+            $e->getMessage() . PHP_EOL
+        );
         exit(1);
     }
 
