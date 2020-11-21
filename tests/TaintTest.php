@@ -1871,7 +1871,7 @@ class TaintTest extends TestCase
                 '<?php
                 $input = strtr(\'data\', $_GET[\'taint\'], \'data\');
                 setcookie($input, \'value\');',
-            'error_message' => 'TaintedCookie',         
+            'error_message' => 'TaintedCookie',
             ],
             /*
             // TODO: Stubs do not support this type of inference even with $this->message = $message.

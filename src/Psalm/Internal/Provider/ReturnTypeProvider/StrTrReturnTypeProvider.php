@@ -26,7 +26,7 @@ class StrTrReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypePr
         array $call_args,
         Context $context,
         CodeLocation $code_location
-    ) : Type\Union {        
+    ) : Type\Union {
         if (!$statements_source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
             throw new \UnexpectedValueException();
         }
@@ -42,7 +42,7 @@ class StrTrReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypePr
             );
             
             $statements_source->data_flow_graph->addNode($function_return_sink);
-            foreach($call_args as $i => $_) {
+            foreach ($call_args as $i => $_) {
                 $function_param_sink = DataFlowNode::getForMethodArgument(
                     $function_id,
                     $function_id,
