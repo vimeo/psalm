@@ -81,7 +81,9 @@ abstract class FileManipulationTest extends \Psalm\Tests\TestCase
         );
         $this->project_analyzer->getCodebase()->allow_backwards_incompatible_changes = $allow_backwards_incompatible_changes;
 
-        $this->project_analyzer->getCodebase()->reportUnusedCode();
+        if (strpos(static::class, 'Unused') || strpos(static::class, 'Unnecessary')) {
+            $this->project_analyzer->getCodebase()->reportUnusedCode();
+        }
 
         $this->analyzeFile($file_path, $context);
 
