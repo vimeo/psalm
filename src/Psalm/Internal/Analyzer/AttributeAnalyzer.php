@@ -3,6 +3,7 @@ namespace Psalm\Internal\Analyzer;
 
 use PhpParser;
 use Psalm\Storage\AttributeStorage;
+use Psalm\Storage\ClassLikeStorage;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Issue\InvalidAttribute;
 use Psalm\Type\Union;
@@ -18,7 +19,8 @@ class AttributeAnalyzer
         SourceAnalyzer $source,
         AttributeStorage $attribute,
         array $suppressed_issues,
-        int $target
+        int $target,
+        ?ClassLikeStorage $classlike_storage = null
     ) : void {
         if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
             $source,
@@ -40,6 +42,52 @@ class AttributeAnalyzer
 
         if (!$codebase->classlikes->classExists($attribute->fq_class_name)) {
             return;
+        }
+
+        if ($attribute->fq_class_name === 'Attribute' && $classlike_storage) {
+            if ($classlike_storage->is_trait) {
+                if (\Psalm\IssueBuffer::accepts(
+                    new InvalidAttribute(
+                        'Traits cannot act a attribute classes',
+                        $attribute->name_location
+                    ),
+                    $source->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            } elseif ($classlike_storage->is_interface) {
+                if (\Psalm\IssueBuffer::accepts(
+                    new InvalidAttribute(
+                        'Interfaces cannot act a attribute classes',
+                        $attribute->name_location
+                    ),
+                    $source->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            } elseif ($classlike_storage->abstract) {
+                if (\Psalm\IssueBuffer::accepts(
+                    new InvalidAttribute(
+                        'Abstract classes cannot act a attribute classes',
+                        $attribute->name_location
+                    ),
+                    $source->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            } elseif (isset($classlike_storage->methods['__construct'])
+                && $classlike_storage->methods['__construct']->visibility !== ClassLikeAnalyzer::VISIBILITY_PUBLIC
+            ) {
+                if (\Psalm\IssueBuffer::accepts(
+                    new InvalidAttribute(
+                        'Classes with protected/private constructors cannot act a attribute classes',
+                        $attribute->name_location
+                    ),
+                    $source->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            }
         }
 
         self::checkAttributeTargets($source, $attribute, $target);

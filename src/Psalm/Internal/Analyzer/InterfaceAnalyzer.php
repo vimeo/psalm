@@ -90,6 +90,16 @@ class InterfaceAnalyzer extends ClassLikeAnalyzer
 
         $class_storage = $codebase->classlike_storage_provider->get($fq_interface_name);
 
+        foreach ($class_storage->attributes as $attribute) {
+            AttributeAnalyzer::analyze(
+                $this,
+                $attribute,
+                $class_storage->suppressed_issues + $this->getSuppressedIssues(),
+                1,
+                $class_storage
+            );
+        }
+
         foreach ($this->class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
                 $method_analyzer = new MethodAnalyzer($stmt, $this);

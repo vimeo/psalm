@@ -723,7 +723,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 $this,
                 $attribute,
                 $storage->suppressed_issues + $this->getSuppressedIssues(),
-                1
+                1,
+                $storage
             );
         }
 

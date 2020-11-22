@@ -224,6 +224,44 @@ class AttributeTest extends TestCase
                 false,
                 '7.4'
             ],
+            'interfaceCannotBeAttributeClass' => [
+                '<?php
+                    #[Attribute]
+                    interface Foo {}',
+                'error_message' => 'InvalidAttribute',
+                [],
+                false,
+                '8.0'
+            ],
+            'traitCannotBeAttributeClass' => [
+                '<?php
+                    #[Attribute]
+                    interface Foo {}',
+                'error_message' => 'InvalidAttribute',
+                [],
+                false,
+                '8.0'
+            ],
+            'abstractClassCannotBeAttributeClass' => [
+                '<?php
+                    #[Attribute]
+                    abstract class Baz {}',
+                'error_message' => 'InvalidAttribute',
+                [],
+                false,
+                '8.0'
+            ],
+            'abstractClassCannotHavePrivateConstructor' => [
+                '<?php
+                    #[Attribute]
+                    class Baz {
+                        private function __construct() {}
+                    }',
+                'error_message' => 'InvalidAttribute',
+                [],
+                false,
+                '8.0'
+            ],
         ];
     }
 }
