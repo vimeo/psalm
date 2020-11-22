@@ -30,6 +30,7 @@ use function sort;
 use function strpos;
 use function strval;
 use function substr;
+use function array_unique;
 
 class Union implements TypeNode
 {
