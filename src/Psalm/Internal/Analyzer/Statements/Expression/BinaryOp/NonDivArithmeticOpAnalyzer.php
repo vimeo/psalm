@@ -75,6 +75,7 @@ class NonDivArithmeticOpAnalyzer
                 )) {
                     // fall through
                 }
+                $result_type = Type::getMixed();
 
                 return;
             }
@@ -101,6 +102,7 @@ class NonDivArithmeticOpAnalyzer
                 )) {
                     // fall through
                 }
+                $result_type = Type::getMixed();
 
                 return;
             }
