@@ -12,6 +12,7 @@ use function str_replace;
 use function strlen;
 use function strrpos;
 use function substr;
+use function in_array;
 
 /**
  * @internal
@@ -93,7 +94,13 @@ class PropertyDocblockManipulator
         $file_contents = $codebase->getFileContents($file_path);
 
         if (count($stmt->props) > 1) {
-            throw new \UnexpectedValueException('Cannot replace multiple inline properties in ' . $file_path);
+            if (in_array($file_path, $project_analyzer->getConfig()->getProjectFiles())) {
+                throw new \UnexpectedValueException('Cannot replace multiple inline properties in ' . $file_path);
+            }
+
+            $this->indentation = '';
+
+            return;
         }
 
         $prop = $stmt->props[0];
