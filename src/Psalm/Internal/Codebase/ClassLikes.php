@@ -26,6 +26,7 @@ use Psalm\Issue\PossiblyUnusedMethod;
 use Psalm\Issue\PossiblyUnusedParam;
 use Psalm\Issue\PossiblyUnusedProperty;
 use Psalm\Issue\UnusedClass;
+use Psalm\Issue\UnusedConstructor;
 use Psalm\Issue\UnusedMethod;
 use Psalm\Issue\UnusedProperty;
 use Psalm\IssueBuffer;
@@ -1659,13 +1660,23 @@ class ClassLikes
                         strtolower($classlike_storage->name . '::')
                     ) || $codebase->analyzer->hasMixedMemberName($method_name);
 
-                    $issue = new UnusedMethod(
-                        'Cannot find ' . ($has_variable_calls ? 'explicit' : 'any')
-                            . ' calls to private method ' . $method_id
-                            . ($has_variable_calls ? ' (but did find some potential callers)' : ''),
-                        $method_location,
-                        $method_id
-                    );
+                    if ($method_name === '__construct') {
+                        $issue = new UnusedConstructor(
+                            'Cannot find ' . ($has_variable_calls ? 'explicit' : 'any')
+                                . ' calls to private constructor ' . $method_id
+                                . ($has_variable_calls ? ' (but did find some potential callers)' : ''),
+                            $method_location,
+                            $method_id
+                        );
+                    } else {
+                        $issue = new UnusedMethod(
+                            'Cannot find ' . ($has_variable_calls ? 'explicit' : 'any')
+                                . ' calls to private method ' . $method_id
+                                . ($has_variable_calls ? ' (but did find some potential callers)' : ''),
+                            $method_location,
+                            $method_id
+                        );
+                    }
 
                     if ($codebase->alter_code) {
                         if ($method_storage->stmt_location

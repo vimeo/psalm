@@ -1557,6 +1557,10 @@ class Config
             return 'UnusedParam';
         }
 
+        if ($issue_type === 'UnusedConstructor') {
+            return 'UnusedMethod';
+        }
+
         if ($issue_type === 'StringIncrement') {
             return 'InvalidOperand';
         }
