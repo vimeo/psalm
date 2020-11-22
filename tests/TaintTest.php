@@ -562,6 +562,22 @@ class TaintTest extends TestCase
                 $input = strtr(\'data\', \'data\', \'data\');
                 setcookie($input, \'value\');',
             ],
+            'conditionallyEscapedTaintPassedTrue' => [
+                '<?php
+                    /**
+                     * @psalm-taint-escape ($escape is true ? "html" : null)
+                     */
+                    function foo(string $string, bool $escape = true): string {
+                        if ($escape) {
+                            $string = htmlspecialchars($string);
+                        }
+
+                        return $string;
+                    }
+
+                    echo foo($_GET["foo"], true);
+                    echo foo($_GET["foo"]);'
+            ],
         ];
     }
 
@@ -1838,7 +1854,7 @@ class TaintTest extends TestCase
                  */
                 function variadic_test(string $format, ...$args) : string {
                 }
-                
+
                 echo variadic_test(\'\', \'\', $_GET[\'taint\'], \'\');',
                 'error_message' => 'TaintedHtml'
             ],
@@ -1885,9 +1901,25 @@ class TaintTest extends TestCase
             ],
             'strTrReturnTypeTaint' => [
                 '<?php
-                $input = strtr(\'data\', $_GET[\'taint\'], \'data\');
-                setcookie($input, \'value\');',
-            'error_message' => 'TaintedCookie',
+                    $input = strtr(\'data\', $_GET[\'taint\'], \'data\');
+                    setcookie($input, \'value\');',
+                'error_message' => 'TaintedCookie',
+            ],
+            'conditionallyEscapedTaintPassedFalse' => [
+                '<?php
+                    /**
+                     * @psalm-taint-escape ($escape is true ? "html" : null)
+                     */
+                    function foo(string $string, bool $escape = true): string {
+                        if ($escape) {
+                            $string = htmlspecialchars($string);
+                        }
+
+                        return $string;
+                    }
+
+                    echo foo($_GET["foo"], false);',
+                'error_message' => 'TaintedHtml',
             ],
             /*
             // TODO: Stubs do not support this type of inference even with $this->message = $message.

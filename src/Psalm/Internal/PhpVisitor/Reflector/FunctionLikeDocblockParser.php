@@ -226,7 +226,13 @@ class FunctionLikeDocblockParser
         if (isset($parsed_docblock->tags['psalm-taint-escape'])) {
             foreach ($parsed_docblock->tags['psalm-taint-escape'] as $param) {
                 $param = trim($param);
-                $info->removed_taints[] = $param;
+                if ($param[0] === '(') {
+                    $line_parts = CommentAnalyzer::splitDocLine($param);
+
+                    $info->removed_taints[] = CommentAnalyzer::sanitizeDocblockType($line_parts[0]);
+                } else {
+                    $info->removed_taints[] = explode(' ', $param)[0];
+                }
             }
         }
 

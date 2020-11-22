@@ -471,7 +471,47 @@ class FunctionLikeDocblockScanner
         }
 
         $storage->added_taints = $docblock_info->added_taints;
-        $storage->removed_taints = $docblock_info->removed_taints;
+
+        foreach ($docblock_info->removed_taints as $removed_taint) {
+            if ($removed_taint[0] === '(') {
+                try {
+                    [$fixed_type_tokens, $function_template_types] = self::getConditionalSanitizedTypeTokens(
+                        $removed_taint,
+                        $aliases,
+                        $function_template_types + $class_template_types,
+                        $type_aliases,
+                        $storage,
+                        $classlike_storage,
+                        $cased_function_id,
+                        $function_template_types
+                    );
+
+                    $removed_taint = TypeParser::parseTokens(
+                        \array_values($fixed_type_tokens),
+                        null,
+                        $function_template_types + $class_template_types,
+                        $type_aliases
+                    );
+
+                    $removed_taint->queueClassLikesForScanning($codebase, $file_storage);
+
+                    $removed_taint_single = \array_values($removed_taint->getAtomicTypes())[0];
+
+                    if (!$removed_taint_single instanceof Type\Atomic\TConditional) {
+                        throw new TypeParseTreeException('Escaped taint must be a conditional');
+                    }
+
+                    $storage->conditionally_removed_taints[] = $removed_taint;
+                } catch (TypeParseTreeException $e) {
+                    $storage->docblock_issues[] = new InvalidDocblock(
+                        $e->getMessage() . ' in docblock for ' . $cased_function_id,
+                        new CodeLocation($file_scanner, $stmt, null, true)
+                    );
+                }
+            } else {
+                $storage->removed_taints[] = $removed_taint;
+            }
+        }
 
         if ($docblock_info->flows) {
             foreach ($docblock_info->flows as $flow) {

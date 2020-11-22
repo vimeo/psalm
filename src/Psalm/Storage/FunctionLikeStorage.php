@@ -195,6 +195,11 @@ abstract class FunctionLikeStorage
     public $removed_taints = [];
 
     /**
+     * @var array<Type\Union>
+     */
+    public $conditionally_removed_taints = [];
+
+    /**
      * @var array<int, string>
      */
     public $return_source_params = [];

@@ -19,6 +19,7 @@ use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\DataFlow\TaintSource;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Codebase\TaintFlowGraph;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\DeprecatedFunction;
 use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\MixedFunctionCall;
@@ -1000,7 +1001,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                         $return_type = clone $function_storage->return_type;
 
                         if ($template_result->upper_bounds && $function_storage->template_types) {
-                            $return_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                            $return_type = TypeExpander::expandUnion(
                                 $codebase,
                                 $return_type,
                                 null,
@@ -1014,7 +1015,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                             );
                         }
 
-                        $return_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                        $return_type = TypeExpander::expandUnion(
                             $codebase,
                             $return_type,
                             null,
@@ -1099,7 +1100,8 @@ class FunctionCallAnalyzer extends CallAnalyzer
             $stmt,
             $function_id,
             $function_storage,
-            $stmt_type
+            $stmt_type,
+            $template_result
         );
 
         if ($function_storage->proxy_calls !== null) {
@@ -1370,7 +1372,8 @@ class FunctionCallAnalyzer extends CallAnalyzer
         PhpParser\Node\Expr\FuncCall $stmt,
         string $function_id,
         FunctionLikeStorage $function_storage,
-        Type\Union $stmt_type
+        Type\Union $stmt_type,
+        TemplateResult $template_result
     ) : ?DataFlowNode {
         if (!$statements_analyzer->data_flow_graph instanceof TaintFlowGraph
             || \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
@@ -1389,7 +1392,52 @@ class FunctionCallAnalyzer extends CallAnalyzer
 
         $statements_analyzer->data_flow_graph->addNode($function_call_node);
 
-        $stmt_type->parent_nodes[$function_call_node->id] = $function_call_node;
+        $codebase = $statements_analyzer->getCodebase();
+
+        $conditionally_removed_taints = [];
+
+        foreach ($function_storage->conditionally_removed_taints as $conditionally_removed_taint) {
+            $conditionally_removed_taint = clone $conditionally_removed_taint;
+
+            $conditionally_removed_taint->replaceTemplateTypesWithArgTypes(
+                $template_result,
+                $codebase
+            );
+
+            $expanded_type = TypeExpander::expandUnion(
+                $statements_analyzer->getCodebase(),
+                $conditionally_removed_taint,
+                null,
+                null,
+                null,
+                true,
+                true
+            );
+
+            foreach ($expanded_type->getLiteralStrings() as $literal_string) {
+                $conditionally_removed_taints[] = $literal_string->value;
+            }
+        }
+
+        if ($conditionally_removed_taints && $function_storage->location) {
+            $assignment_node = DataFlowNode::getForAssignment(
+                $function_id . '-escaped',
+                $function_storage->signature_return_type_location ?: $function_storage->location,
+                $function_call_node->specialization_key
+            );
+
+            $statements_analyzer->data_flow_graph->addPath(
+                $function_call_node,
+                $assignment_node,
+                'conditionally-escaped',
+                [],
+                $conditionally_removed_taints
+            );
+
+            $stmt_type->parent_nodes[$assignment_node->id] = $assignment_node;
+        } else {
+            $stmt_type->parent_nodes[$function_call_node->id] = $function_call_node;
+        }
 
         if ($function_storage->return_source_params) {
             $removed_taints = $function_storage->removed_taints;
