@@ -623,97 +623,16 @@ class FunctionLikeDocblockScanner
             }
 
             try {
-                $fixed_type_tokens = TypeTokenizer::getFullyQualifiedTokens(
+                [$fixed_type_tokens, $function_template_types] = self::getConditionalSanitizedTypeTokens(
                     $docblock_return_type,
                     $aliases,
                     $function_template_types + $class_template_types,
                     $type_aliases,
-                    $classlike_storage && !$classlike_storage->is_trait ? $classlike_storage->name : null
+                    $storage,
+                    $classlike_storage,
+                    $cased_function_id,
+                    $function_template_types
                 );
-
-                $param_type_mapping = [];
-
-                // This checks for param references in the return type tokens
-                // If found, the param is replaced with a generated template param
-                foreach ($fixed_type_tokens as $i => $type_token) {
-                    $token_body = $type_token[0];
-                    $template_function_id = 'fn-' . strtolower($cased_function_id);
-
-                    if ($token_body[0] === '$') {
-                        foreach ($storage->params as $j => $param_storage) {
-                            if ('$' . $param_storage->name === $token_body) {
-                                if (!isset($param_type_mapping[$token_body])) {
-                                    $template_name = 'TGeneratedFromParam' . $j;
-
-                                    $template_as_type = $param_storage->type
-                                        ? clone $param_storage->type
-                                        : Type::getMixed();
-
-                                    $storage->template_types[$template_name] = [
-                                        $template_function_id => [
-                                            $template_as_type
-                                        ],
-                                    ];
-
-                                    $function_template_types[$template_name]
-                                        = $storage->template_types[$template_name];
-
-                                    $param_type_mapping[$token_body] = $template_name;
-
-                                    $param_storage->type = new Type\Union([
-                                        new Type\Atomic\TTemplateParam(
-                                            $template_name,
-                                            $template_as_type,
-                                            $template_function_id
-                                        )
-                                    ]);
-                                }
-
-                                // spaces are allowed before $foo in get(string $foo) magic method
-                                // definitions, but we want to remove them in this instance
-                                if (isset($fixed_type_tokens[$i - 1])
-                                    && $fixed_type_tokens[$i - 1][0][0] === ' '
-                                ) {
-                                    unset($fixed_type_tokens[$i - 1]);
-                                }
-
-                                $fixed_type_tokens[$i][0] = $param_type_mapping[$token_body];
-
-                                continue 2;
-                            }
-                        }
-                    }
-
-                    if ($token_body === 'func_num_args()') {
-                        $template_name = 'TFunctionArgCount';
-
-                        $storage->template_types[$template_name] = [
-                            $template_function_id => [
-                                Type::getInt()
-                            ],
-                        ];
-
-                        $function_template_types[$template_name]
-                            = $storage->template_types[$template_name];
-
-                        $fixed_type_tokens[$i][0] = $template_name;
-                    }
-
-                    if ($token_body === 'PHP_MAJOR_VERSION') {
-                        $template_name = 'TPhpMajorVersion';
-
-                        $storage->template_types[$template_name] = [
-                            $template_function_id => [
-                                Type::getInt()
-                            ],
-                        ];
-
-                        $function_template_types[$template_name]
-                            = $storage->template_types[$template_name];
-
-                        $fixed_type_tokens[$i][0] = $template_name;
-                    }
-                }
 
                 $storage->return_type = TypeParser::parseTokens(
                     \array_values($fixed_type_tokens),
@@ -775,6 +694,118 @@ class FunctionLikeDocblockScanner
 
             $storage->return_type_description = $docblock_info->return_type_description;
         }
+    }
+
+    /**
+     * @param  array<string, array<string, array{Type\Union}>> $template_types
+     * @param  array<string, TypeAlias>|null   $type_aliases
+     * @param  array<string, array<string, array{Type\Union}>> $function_template_types
+     *
+     * @return array{array<int, array{0: string, 1: int, 2?: string}>, array<string, array<string, array{Type\Union}>>}
+     */
+    private static function getConditionalSanitizedTypeTokens(
+        string $docblock_return_type,
+        Aliases $aliases,
+        array $template_types,
+        ?array $type_aliases,
+        FunctionLikeStorage $storage,
+        ?ClassLikeStorage $classlike_storage,
+        string $cased_function_id,
+        array $function_template_types
+    ) : array {
+        $fixed_type_tokens = TypeTokenizer::getFullyQualifiedTokens(
+            $docblock_return_type,
+            $aliases,
+            $template_types,
+            $type_aliases,
+            $classlike_storage && !$classlike_storage->is_trait ? $classlike_storage->name : null
+        );
+
+        $param_type_mapping = [];
+
+        // This checks for param references in the return type tokens
+        // If found, the param is replaced with a generated template param
+        foreach ($fixed_type_tokens as $i => $type_token) {
+            $token_body = $type_token[0];
+            $template_function_id = 'fn-' . strtolower($cased_function_id);
+
+            if ($token_body[0] === '$') {
+                foreach ($storage->params as $j => $param_storage) {
+                    if ('$' . $param_storage->name === $token_body) {
+                        if (!isset($param_type_mapping[$token_body])) {
+                            $template_name = 'TGeneratedFromParam' . $j;
+
+                            $template_as_type = $param_storage->type
+                                ? clone $param_storage->type
+                                : Type::getMixed();
+
+                            $storage->template_types[$template_name] = [
+                                $template_function_id => [
+                                    $template_as_type
+                                ],
+                            ];
+
+                            $function_template_types[$template_name]
+                                = $storage->template_types[$template_name];
+
+                            $param_type_mapping[$token_body] = $template_name;
+
+                            $param_storage->type = new Type\Union([
+                                new Type\Atomic\TTemplateParam(
+                                    $template_name,
+                                    $template_as_type,
+                                    $template_function_id
+                                )
+                            ]);
+                        }
+
+                        // spaces are allowed before $foo in get(string $foo) magic method
+                        // definitions, but we want to remove them in this instance
+                        if (isset($fixed_type_tokens[$i - 1])
+                            && $fixed_type_tokens[$i - 1][0][0] === ' '
+                        ) {
+                            unset($fixed_type_tokens[$i - 1]);
+                        }
+
+                        $fixed_type_tokens[$i][0] = $param_type_mapping[$token_body];
+
+                        continue 2;
+                    }
+                }
+            }
+
+            if ($token_body === 'func_num_args()') {
+                $template_name = 'TFunctionArgCount';
+
+                $storage->template_types[$template_name] = [
+                    $template_function_id => [
+                        Type::getInt()
+                    ],
+                ];
+
+                $function_template_types[$template_name]
+                    = $storage->template_types[$template_name];
+
+                $fixed_type_tokens[$i][0] = $template_name;
+            }
+
+            if ($token_body === 'PHP_MAJOR_VERSION') {
+                $template_name = 'TPhpMajorVersion';
+
+                $storage->template_types[$template_name] = [
+                    $template_function_id => [
+                        Type::getInt()
+                    ],
+                ];
+
+                $function_template_types[$template_name]
+                    = $storage->template_types[$template_name];
+
+                $fixed_type_tokens[$i][0] = $template_name;
+            }
+        }
+
+        return [$fixed_type_tokens, $function_template_types];
     }
 
     /**
