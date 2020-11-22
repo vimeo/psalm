@@ -159,6 +159,23 @@ class AttributeTest extends TestCase
                 false,
                 '8.0'
             ],
+            'invalidArgument' => [
+                '<?php
+                    #[Attribute]
+                    class Foo
+                    {
+                        public function __construct(int $i)
+                        {
+                        }
+                    }
+
+                    #[Foo("foo")]
+                    class Bar{}',
+                'error_message' => 'InvalidScalarArgument',
+                [],
+                false,
+                '8.0'
+            ],
             'classAttributeUsedOnFunction' => [
                 '<?php
                     namespace Foo;

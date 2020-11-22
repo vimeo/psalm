@@ -63,25 +63,27 @@ class AttributeAnalyzer
                 return;
             }
 
+            $type_expr = \Psalm\Internal\Stubs\Generator\StubsGenerator::getExpressionFromType(
+                $type
+            );
+
+            $arg_attributes = [
+                'startFilePos' => $storage_arg->location->raw_file_start,
+                'endFilePos' => $storage_arg->location->raw_file_end,
+                'startLine' => $storage_arg->location->raw_line_number
+            ];
+
+            $type_expr->setAttributes($arg_attributes);
+
             $node_args[] = new PhpParser\Node\Arg(
-                \Psalm\Internal\Stubs\Generator\StubsGenerator::getExpressionFromType(
-                    $type
-                ),
+                $type_expr,
                 false,
                 false,
-                [
-                    'startFilePos' => $storage_arg->location->raw_file_start,
-                    'endFilePos' => $storage_arg->location->raw_file_end,
-                    'startLine' => $storage_arg->location->raw_line_number
-                ],
+                $arg_attributes,
                 $storage_arg->name
                     ? new PhpParser\Node\Identifier(
                         $storage_arg->name,
-                        [
-                            'startFilePos' => $storage_arg->location->raw_file_start,
-                            'endFilePos' => $storage_arg->location->raw_file_end,
-                            'startLine' => $storage_arg->location->raw_line_number
-                        ]
+                        $arg_attributes
                     )
                     : null
             );
