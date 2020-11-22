@@ -508,7 +508,8 @@ class ExistingAtomicStaticCallAnalyzer
             $method_id,
             $cased_method_id,
             $return_type_candidate,
-            $method_storage
+            $method_storage,
+            $template_result
         );
 
         if ($stmt_type = $statements_analyzer->node_data->getType($stmt)) {

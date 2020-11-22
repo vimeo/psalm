@@ -825,7 +825,8 @@ class AtomicStaticCallAnalyzer
                     $method_id,
                     (string) $method_id,
                     $return_type_candidate,
-                    $method_storage
+                    $method_storage,
+                    null
                 );
             }
 

@@ -240,7 +240,8 @@ class StaticCallAnalyzer extends CallAnalyzer
         MethodIdentifier $method_id,
         string $cased_method_id,
         Type\Union $return_type_candidate,
-        ?\Psalm\Storage\MethodStorage $method_storage
+        ?\Psalm\Storage\MethodStorage $method_storage,
+        ?\Psalm\Internal\Type\TemplateResult $template_result
     ) : void {
         if (!$statements_analyzer->data_flow_graph instanceof TaintFlowGraph
             || \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
@@ -271,7 +272,54 @@ class StaticCallAnalyzer extends CallAnalyzer
 
         $statements_analyzer->data_flow_graph->addNode($method_source);
 
-        $return_type_candidate->parent_nodes = [$method_source->id => $method_source];
+        $codebase = $statements_analyzer->getCodebase();
+
+        $conditionally_removed_taints = [];
+
+        if ($method_storage && $template_result) {
+            foreach ($method_storage->conditionally_removed_taints as $conditionally_removed_taint) {
+                $conditionally_removed_taint = clone $conditionally_removed_taint;
+
+                $conditionally_removed_taint->replaceTemplateTypesWithArgTypes(
+                    $template_result,
+                    $codebase
+                );
+
+                $expanded_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                    $statements_analyzer->getCodebase(),
+                    $conditionally_removed_taint,
+                    null,
+                    null,
+                    null,
+                    true,
+                    true
+                );
+
+                foreach ($expanded_type->getLiteralStrings() as $literal_string) {
+                    $conditionally_removed_taints[] = $literal_string->value;
+                }
+            }
+        }
+
+        if ($conditionally_removed_taints && $method_location) {
+            $assignment_node = DataFlowNode::getForAssignment(
+                $method_id . '-escaped',
+                $method_location,
+                $method_source->specialization_key
+            );
+
+            $statements_analyzer->data_flow_graph->addPath(
+                $method_source,
+                $assignment_node,
+                'conditionally-escaped',
+                [],
+                $conditionally_removed_taints
+            );
+
+            $return_type_candidate->parent_nodes[$assignment_node->id] = $assignment_node;
+        } else {
+            $return_type_candidate->parent_nodes = [$method_source->id => $method_source];
+        }
 
         if ($method_storage && $method_storage->taint_source_types) {
             $method_node = TaintSource::getForMethodReturn(
