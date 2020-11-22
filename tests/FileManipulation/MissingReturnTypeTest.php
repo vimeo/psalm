@@ -984,6 +984,34 @@ class MissingReturnTypeTest extends FileManipulationTest
                 false,
                 true,
             ],
+            'returnIntOrString' => [
+                '<?php
+                    function scope(int $i, string $s) {
+                        return rand(0, 1) ? $i : $s;
+                    }',
+                '<?php
+                    function scope(int $i, string $s): int|string {
+                        return rand(0, 1) ? $i : $s;
+                    }',
+                '8.0',
+                ['MissingReturnType'],
+                false,
+                true,
+            ],
+            'returnIntOrString80' => [
+                '<?php
+                    function scope(int $i, string $s) {
+                        return rand(0, 1) ? $i : $s;
+                    }',
+                '<?php
+                    function scope(int $i, string $s): int|string {
+                        return rand(0, 1) ? $i : $s;
+                    }',
+                '8.0',
+                ['MissingReturnType'],
+                false,
+                true,
+            ],
         ];
     }
 }

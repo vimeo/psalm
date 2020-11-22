@@ -437,10 +437,11 @@ class Union implements TypeNode
         int $php_major_version,
         int $php_minor_version
     ): ?string {
-        $nullable = false;
-
-        if (!$this->isSingleAndMaybeNullable()
-            || $php_major_version < 7
+        if (!$this->isSingleAndMaybeNullable()) {
+            if ($php_major_version < 8) {
+                return null;
+            }
+        } elseif ($php_major_version < 7
             || (isset($this->types['null']) && $php_major_version === 7 && $php_minor_version < 1)
         ) {
             return null;
@@ -448,36 +449,38 @@ class Union implements TypeNode
 
         $types = $this->types;
 
-        if (isset($types['null'])) {
-            if (count($types) === 1) {
-                return null;
-            }
+        $nullable = false;
 
+        if (isset($types['null']) && count($types) === 2) {
             unset($types['null']);
 
             $nullable = true;
         }
 
-        $atomic_type = array_values($types)[0];
+        $php_types = [];
 
-        $atomic_type_string = $atomic_type->toPhpString(
-            $namespace,
-            $aliased_classes,
-            $this_class,
-            $php_major_version,
-            $php_minor_version
-        );
+        foreach ($types as $atomic_type) {
+            $php_type = $atomic_type->toPhpString(
+                $namespace,
+                $aliased_classes,
+                $this_class,
+                $php_major_version,
+                $php_minor_version
+            );
 
-        if ($atomic_type_string) {
-            return ($nullable ? '?' : '') . $atomic_type_string;
+            if (!$php_type) {
+                return null;
+            }
+
+            $php_types[] = $php_type;
         }
 
-        return null;
+        return ($nullable ? '?' : '') . implode('|', array_unique($php_types));
     }
 
     public function canBeFullyExpressedInPhp(int $php_major_version, int $php_minor_version): bool
     {
-        if (!$this->isSingleAndMaybeNullable()) {
+        if (!$this->isSingleAndMaybeNullable() && $php_major_version < 8) {
             return false;
         }
 
@@ -491,9 +494,12 @@ class Union implements TypeNode
             }
         }
 
-        $atomic_type = array_values($types)[0];
-
-        return $atomic_type->canBeFullyExpressedInPhp($php_major_version, $php_minor_version);
+        return !array_filter(
+            $types,
+            function ($atomic_type) use ($php_major_version, $php_minor_version) {
+                return !$atomic_type->canBeFullyExpressedInPhp($php_major_version, $php_minor_version);
+            }
+        );
     }
 
     public function removeType(string $type_string): bool
