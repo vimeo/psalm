@@ -90,7 +90,7 @@ abstract class Atomic implements TypeNode
     /**
      * @param  array{int,int}|null   $php_version
      * @param  array<string, array<string, array{Union}>> $template_type_map
-     * @param  array<string, TypeAlias> $type_aliases
+     * @param  array<string, TypeAlias\LinkableTypeAlias> $type_aliases
      */
     public static function create(
         string $value,
@@ -277,7 +277,7 @@ abstract class Atomic implements TypeNode
                 return new TTypeAlias($type_alias->declaring_fq_classlike_name, $type_alias->alias_name);
             }
 
-            throw new \UnexpectedValueException('This should never happen');
+            throw new \Psalm\Exception\TypeParseTreeException('Invalid type alias ' . $value . ' provided');
         }
 
         return new TNamedObject($value);

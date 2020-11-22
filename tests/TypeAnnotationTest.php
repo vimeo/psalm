@@ -521,6 +521,18 @@ class TypeAnnotationTest extends TestCase
                     }',
                 'error_message' => 'PossiblyUndefinedArrayOffset',
             ],
+            'noCrashWithSelfReferencingType' => [
+                '<?php
+                    /**
+                     * @psalm-type SomeType = array{
+                     *     parent?: SomeType,
+                     *     foo?: int,
+                     * }
+                     * @psalm-param SomeType $input
+                     */
+                    function test(array $input):void {}',
+                'error_message' => 'InvalidDocblock',
+            ],
         ];
     }
 }
