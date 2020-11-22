@@ -111,6 +111,17 @@ class AttributeTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'attributeClassHasNoAttributeAnnotation' => [
+                '<?php
+                    class A {}
+
+                    #[A]
+                    class B {}',
+                'error_message' => 'InvalidAttribute',
+                [],
+                false,
+                '8.0'
+            ],
             'missingAttributeOnClass' => [
                 '<?php
                     use Foo\Bar\Pure;

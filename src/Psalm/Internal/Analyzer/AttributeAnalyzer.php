@@ -129,54 +129,68 @@ class AttributeAnalyzer
 
         $attribute_class_storage = $codebase->classlike_storage_provider->get($attribute->fq_class_name);
 
-        if ($attribute_class_storage->attributes) {
-            foreach ($attribute_class_storage->attributes as $attribute_attribute) {
-                if ($attribute_attribute->fq_class_name === 'Attribute') {
-                    if (!$attribute_attribute->args) {
-                        return;
-                    }
+        $has_attribute_attribute = $attribute->fq_class_name === 'Attribute';
 
-                    $first_arg = reset($attribute_attribute->args);
+        foreach ($attribute_class_storage->attributes as $attribute_attribute) {
+            if ($attribute_attribute->fq_class_name === 'Attribute') {
+                $has_attribute_attribute = true;
 
-                    $first_arg_type = $first_arg->type;
+                if (!$attribute_attribute->args) {
+                    return;
+                }
 
-                    if ($first_arg_type instanceof UnresolvedConstantComponent) {
-                        $first_arg_type = new Union([
-                            \Psalm\Internal\Codebase\ConstantTypeResolver::resolve(
-                                $codebase->classlikes,
-                                $first_arg_type,
-                                $source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer ? $source : null
-                            )
-                        ]);
-                    }
+                $first_arg = reset($attribute_attribute->args);
 
-                    if (!$first_arg_type->isSingleIntLiteral()) {
-                        return;
-                    }
+                $first_arg_type = $first_arg->type;
 
-                    $acceptable_mask = $first_arg_type->getSingleIntLiteral()->value;
+                if ($first_arg_type instanceof UnresolvedConstantComponent) {
+                    $first_arg_type = new Union([
+                        \Psalm\Internal\Codebase\ConstantTypeResolver::resolve(
+                            $codebase->classlikes,
+                            $first_arg_type,
+                            $source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer ? $source : null
+                        )
+                    ]);
+                }
 
-                    if (($acceptable_mask & $target) !== $target) {
-                        $target_map = [
-                            1 => 'class',
-                            2 => 'function',
-                            4 => 'method',
-                            8 => 'property',
-                            16 => 'class constant',
-                            32 => 'function/method parameter'
-                        ];
+                if (!$first_arg_type->isSingleIntLiteral()) {
+                    return;
+                }
 
-                        if (\Psalm\IssueBuffer::accepts(
-                            new InvalidAttribute(
-                                'This attribute can not be used on a ' . $target_map[$target],
-                                $attribute->name_location
-                            ),
-                            $source->getSuppressedIssues()
-                        )) {
-                            // fall through
-                        }
+                $acceptable_mask = $first_arg_type->getSingleIntLiteral()->value;
+
+                if (($acceptable_mask & $target) !== $target) {
+                    $target_map = [
+                        1 => 'class',
+                        2 => 'function',
+                        4 => 'method',
+                        8 => 'property',
+                        16 => 'class constant',
+                        32 => 'function/method parameter'
+                    ];
+
+                    if (\Psalm\IssueBuffer::accepts(
+                        new InvalidAttribute(
+                            'This attribute can not be used on a ' . $target_map[$target],
+                            $attribute->name_location
+                        ),
+                        $source->getSuppressedIssues()
+                    )) {
+                        // fall through
                     }
                 }
+            }
+        }
+
+        if (!$has_attribute_attribute) {
+            if (\Psalm\IssueBuffer::accepts(
+                new InvalidAttribute(
+                    'The class ' . $attribute->fq_class_name . ' doesn’t have the Attribute attribute',
+                    $attribute->name_location
+                ),
+                $source->getSuppressedIssues()
+            )) {
+                // fall through
             }
         }
     }

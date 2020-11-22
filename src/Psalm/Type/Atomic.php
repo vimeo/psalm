@@ -90,7 +90,7 @@ abstract class Atomic implements TypeNode
     /**
      * @param  array{int,int}|null   $php_version
      * @param  array<string, array<string, array{Union}>> $template_type_map
-     * @param  array<string, TypeAlias\LinkableTypeAlias> $type_aliases
+     * @param  array<string, TypeAlias> $type_aliases
      */
     public static function create(
         string $value,
