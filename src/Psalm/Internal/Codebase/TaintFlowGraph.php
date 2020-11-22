@@ -227,6 +227,8 @@ class TaintFlowGraph extends DataFlowGraph
     ) : array {
         $new_sources = [];
 
+        $config = \Psalm\Config::getInstance();
+
         foreach ($this->forward_edges[$generated_source->id] as $to_id => $path) {
             $path_type = $path->type;
             $added_taints = $path->unescaped_taints ?: [];
@@ -259,12 +261,16 @@ class TaintFlowGraph extends DataFlowGraph
                 continue;
             }
 
+            if ($generated_source->code_location
+                && !$config->reportIssueInFile('TaintedInput', $generated_source->code_location->file_path)
+            ) {
+                continue;
+            }
+
             if (isset($sinks[$to_id])) {
                 $matching_taints = array_intersect($sinks[$to_id]->taints, $new_taints);
 
                 if ($matching_taints && $generated_source->code_location) {
-                    $config = \Psalm\Config::getInstance();
-
                     if ($sinks[$to_id]->code_location
                         && $config->reportIssueInFile('TaintedInput', $sinks[$to_id]->code_location->file_path)
                     ) {
