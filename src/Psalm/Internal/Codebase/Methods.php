@@ -1040,7 +1040,7 @@ class Methods
         $method_id = $this->getDeclaringMethodId($original_method_id);
 
         if ($method_id === null) {
-            return $original_method_id;
+            return (string) $original_method_id;
         }
 
         $fq_class_name = $method_id->fq_class_name;
