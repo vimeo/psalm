@@ -18,6 +18,7 @@ use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\FileManipulation\FunctionDocblockManipulator;
+use Psalm\Issue\ImplicitToStringCast;
 use Psalm\Issue\InvalidFalsableReturnType;
 use Psalm\Issue\InvalidNullableReturnType;
 use Psalm\Issue\InvalidParent;
@@ -588,6 +589,20 @@ class ReturnTypeAnalyzer
                             return false;
                         }
                     }
+                }
+            }
+
+            if ($union_comparison_results->to_string_cast) {
+                if (IssueBuffer::accepts(
+                    new ImplicitToStringCast(
+                        'The declared return type for ' . $cased_method_id . ' expects \'' .
+                        $declared_return_type . '\', ' . '\'' . $inferred_return_type .
+                        '\' provided with a __toString method',
+                        $return_type_location
+                    ),
+                    $suppressed_issues
+                )) {
+                    // fall through
                 }
             }
 
