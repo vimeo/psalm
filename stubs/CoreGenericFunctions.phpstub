@@ -362,10 +362,27 @@ function print_r($var, bool $return = false) {}
 /**
  * @psalm-pure
  *
+ * @psalm-taint-sink file $var
  * @param mixed $var
  * @return ($return is true ? string : bool)
  */
 function highlight_file($var, bool $return = false) {}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-taint-sink file $var
+ * @param mixed $var
+ * @return ($return is true ? string : bool)
+ */
+function show_source($var, bool $return = false) {}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-taint-sink file $filename
+ */
+function php_strip_whitespace(string $filename) : string {}
 
 /**
  * @psalm-pure
@@ -1091,3 +1108,89 @@ function convert_uuencode(string $data) : string
  * @psalm-flow ($value) -> return
  */
 function ldap_escape(string $value, string $ignore = "", int $flag = 0) : string {}
+
+/**
+ * @psalm-pure
+ *
+ * @return mixed
+ * @psalm-flow ($json) -> return
+ */
+function json_decode(string $json, ?bool $associative = null, int $depth = 512, int $flags = 0) {}
+
+/**
+ * @psalm-pure
+ *
+ * @return string|false
+ *
+ * @psalm-flow ($value) -> return
+ * @psalm-ignore-falsable-return
+ */
+function json_encode(mixed $value, int $flags = 0, int $depth = 512) {}
+
+/**
+ * @psalm-pure
+ *
+ * @return string|false
+ *
+ * @psalm-flow ($values) -> return
+ * @psalm-ignore-falsable-return
+ */
+function pack(string $format, mixed ...$values) {}
+
+/**
+ * @psalm-pure
+ *
+ * @param string|int $in_codepage
+ * @param string|int $out_codepage
+ * @psalm-flow ($subject) -> return
+ */
+function sapi_windows_cp_conv($in_codepage, $out_codepage, string $subject) : string {}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-flow ($prefix) -> return
+ */
+function uniqid(string $prefix = "", bool $more_entropy = false) : string {}
+
+/**
+ * @psalm-pure
+ *
+ * @return array
+ *
+ * @psalm-flow ($data) -> return
+ */
+function unpack(string $format, string $data, int $offset = 0) {}
+
+/**
+ * @psalm-pure
+ *
+ * @return string|false
+ *
+ * @psalm-flow ($data) -> return
+ * @psalm-ignore-falsable-return
+ */
+function base64_decode(string $data, bool $strict = false) {}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-flow ($data) -> return
+ */
+function base64_encode(string $data) : string {}
+
+/**
+ * @psalm-pure
+ *
+ * @param resource $context
+ *
+ * @psalm-taint-sink ssrf $url
+ */
+function get_headers(string $url, int $format = 0, $context) : array {}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-taint-sink ssrf $filename
+ */
+function get_meta_tags(string $filename, bool $use_include_path = false) : array {}
