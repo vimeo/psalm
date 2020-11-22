@@ -1033,6 +1033,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 $property_type = clone $property_storage->type;
 
                 if (!$property_type->isMixed()
+                    && !$property_storage->is_promoted
                     && !$property_storage->has_default
                     && !($property_type->isNullable() && $property_type->from_docblock)
                 ) {
@@ -1041,7 +1042,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             } else {
                 $property_type = Type::getMixed();
 
-                if (!$property_storage->has_default) {
+                if (!$property_storage->has_default && !$property_storage->is_promoted) {
                     $property_type->initialized = false;
                 }
             }

@@ -728,6 +728,7 @@ class FunctionLikeNodeScanner
                 $property_storage->stmt_location = new CodeLocation($this->file_scanner, $param);
                 $property_storage->has_default = $param->default ? true : false;
                 $param_storage->promoted_property = true;
+                $property_storage->is_promoted = true;
 
                 $property_id = $fq_classlike_name . '::$' . $param_storage->name;
 
