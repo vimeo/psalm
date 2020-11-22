@@ -229,6 +229,8 @@ class TaintFlowGraph extends DataFlowGraph
 
         $config = \Psalm\Config::getInstance();
 
+        $project_analyzer = \Psalm\Internal\Analyzer\ProjectAnalyzer::getInstance();
+
         foreach ($this->forward_edges[$generated_source->id] as $to_id => $path) {
             $path_type = $path->type;
             $added_taints = $path->unescaped_taints ?: [];
@@ -262,6 +264,7 @@ class TaintFlowGraph extends DataFlowGraph
             }
 
             if ($generated_source->code_location
+                && $project_analyzer->canReportIssues($generated_source->code_location->file_path)
                 && !$config->reportIssueInFile('TaintedInput', $generated_source->code_location->file_path)
             ) {
                 continue;
