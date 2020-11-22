@@ -2,6 +2,7 @@
 namespace Psalm\Tests;
 
 use Psalm\Context;
+use Psalm\Issue\InvalidArrayOffset;
 
 class ArrayAssignmentTest extends TestCase
 {
@@ -1548,7 +1549,20 @@ class ArrayAssignmentTest extends TestCase
                 {
                     return [...$data];
                 }'
-            ]
+            ],
+            'ArrayCreateOffsetStringable' => [
+                '<?php
+                    $a = new class{public function __toString(){return "";}};
+                    $_a = [$a => "a"];
+                ',
+            ],
+            'ArrayCreateOffsetMixed' => [
+                '<?php
+                    /** @var mixed $b */
+                    $b = "";
+                    $_a = [$b => "a"];
+                ',
+            ],
         ];
     }
 
@@ -1851,7 +1865,25 @@ class ArrayAssignmentTest extends TestCase
                     return [...$data];
                 }',
                 'error_message' => 'DuplicateArrayKey'
-            ]
+            ],
+            'ArrayCreateOffsetObject' => [
+                '<?php
+                    $_a = [new stdClass => "a"];
+                ',
+                'error_message' => 'InvalidArrayOffset'
+            ],
+            'ArrayCreateOffsetResource' => [
+                '<?php
+                    $_a = [fopen("", "") => "a"];
+                ',
+                'error_message' => 'InvalidArrayOffset'
+            ],
+            'ArrayCreateOffsetBool' => [
+                '<?php
+                    $_a = [true => "a"];
+                ',
+                'error_message' => 'InvalidArrayOffset'
+            ],
         ];
     }
 }
