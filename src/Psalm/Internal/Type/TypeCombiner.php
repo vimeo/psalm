@@ -1271,7 +1271,7 @@ class TypeCombiner
             ) {
                 if ($combination->ints === null) {
                     $combination->ints = ['int(0)' => new TLiteralInt(0)];
-                } elseif ($type->value < 0) {
+                } elseif ($type instanceof TLiteralInt && $type->value < 0) {
                     $combination->ints = null;
                     $combination->value_types['int'] = new TInt();
                 }
