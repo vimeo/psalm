@@ -8,14 +8,15 @@ use Psalm\Report;
 use Psalm\Internal\Analyzer\IssueData;
 
 use function array_values;
+use function md5;
 
 /**
  * CodeClimate format
  * This is the format used by Gitlab for CodeQuality
- * 
+ *
  * @see https://docs.gitlab.com/ee/user/project/merge_requests/code_quality.html
  * @see https://github.com/codeclimate/platform/blob/master/spec/analyzers/SPEC.md#data-types
- * 
+ *
  * @author Olivier Doucet <webmaster@ajeux.com>
  */
 class CodeClimateReport extends Report
@@ -27,8 +28,8 @@ class CodeClimateReport extends Report
         $issues_data = \array_map(
             function (IssueData $issue): array {
                 /**
-                 * map fields to new structure. 
-                 * Expected fields: 
+                 * map fields to new structure.
+                 * Expected fields:
                  * - type
                  * - check_name
                  * - description*
@@ -70,9 +71,15 @@ class CodeClimateReport extends Report
      */
     protected function convertSeverity(string $input): string
     {
-        if (Config::REPORT_INFO === $input) return 'info';
-        if (Config::REPORT_ERROR === $input) return 'critical';
-        if (Config::REPORT_SUPPRESS === $input) return 'minor';
+        if (Config::REPORT_INFO === $input) {
+            return 'info';
+        }
+        if (Config::REPORT_ERROR === $input) {
+            return 'critical';
+        }
+        if (Config::REPORT_SUPPRESS === $input) {
+            return 'minor';
+        }
 
         // unknown cases ? fallback
         return 'critical';
