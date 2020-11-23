@@ -7,6 +7,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\DuplicateArrayKey;
+use Psalm\Issue\InvalidArrayOffset;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Internal\Type\TypeCombiner;
@@ -354,6 +355,30 @@ class ArrayAnalyzer
             $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
             return true;
+        }
+
+        if ($item_key_type) {
+            foreach ($item_key_type->getAtomicTypes() as $atomic_key_type) {
+                if (!$atomic_key_type instanceof Type\Atomic\TString &&
+                    !$atomic_key_type instanceof Type\Atomic\TInt &&
+                    !$atomic_key_type instanceof Type\Atomic\TArrayKey &&
+                    !$atomic_key_type instanceof Type\Atomic\TMixed &&
+                    !(
+                        $atomic_key_type instanceof Type\Atomic\TObjectWithProperties &&
+                        isset($atomic_key_type->methods['__toString'])
+                    )
+                ) {
+                    if (IssueBuffer::accepts(
+                        new InvalidArrayOffset(
+                            'Cannot create offset of type ' . $item_key_type->getKey() . ', expecting array-key',
+                            new CodeLocation($statements_analyzer->getSource(), $stmt)
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        $item_key_type = Type::getArrayKey();
+                    }
+                }
+            }
         }
 
         $array_type = new Type\Atomic\TNonEmptyArray([
