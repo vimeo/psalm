@@ -25,6 +25,7 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Issue\CodeIssue;
 use Psalm\Issue\UnusedPsalmSuppress;
 use Psalm\Report\CheckstyleReport;
+use Psalm\Report\CodeClimateReport;
 use Psalm\Report\CompactReport;
 use Psalm\Report\ConsoleReport;
 use Psalm\Report\EmacsReport;
@@ -764,6 +765,10 @@ class IssueBuffer
 
             case Report::TYPE_SARIF:
                 $output = new SarifReport($normalized_data, self::$fixable_issue_counts, $report_options);
+                break;
+
+            case Report::TYPE_CODECLIMATE:
+                $output = new CodeClimateReport($normalized_data, self::$fixable_issue_counts, $report_options);
                 break;
         }
 
