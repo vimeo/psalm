@@ -107,6 +107,7 @@ class UnusedVariableManipulationTest extends FileManipulationTest
                     class A {
                         public function foo() : void {
                             $b = "b";
+                            file_get_contents("foo.php");
                             echo $b;
                         }
                     }',
