@@ -1728,7 +1728,8 @@ class TaintTest extends TestCase
             ],
             'taintProcOpen' => [
                 '<?php
-                    $cb = proc_open($_POST[\'x\'], [], []);',
+                    $arr = [];
+                    $cb = proc_open($_POST[\'x\'], [], $arr);',
                 'error_message' => 'TaintedShell',
             ],
             'taintedCurlInit' => [

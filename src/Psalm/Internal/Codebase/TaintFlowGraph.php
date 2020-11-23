@@ -186,8 +186,13 @@ class TaintFlowGraph extends DataFlowGraph
         $sources = $this->sources;
         $sinks = $this->sinks;
 
+        \ksort($this->specializations);
+        \ksort($this->forward_edges);
+
         for ($i = 0; count($sinks) && count($sources) && $i < 40; $i++) {
             $new_sources = [];
+
+            \ksort($sources);
 
             foreach ($sources as $source) {
                 $source_taints = $source->taints;

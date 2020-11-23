@@ -1348,29 +1348,6 @@ class ArgumentAnalyzer
 
         $statements_analyzer->data_flow_graph->addPath($argument_value_node, $method_node, 'arg');
 
-        if ($function_param->sinks && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
-            if ($specialize_taint) {
-                $sink = TaintSink::getForMethodArgument(
-                    $cased_method_id,
-                    $cased_method_id,
-                    $argument_offset,
-                    $function_param->location,
-                    $function_call_location
-                );
-            } else {
-                $sink = TaintSink::getForMethodArgument(
-                    $cased_method_id,
-                    $cased_method_id,
-                    $argument_offset,
-                    $function_param->location
-                );
-            }
-
-            $sink->taints = $function_param->sinks;
-
-            $statements_analyzer->data_flow_graph->addSink($sink);
-        }
-
         foreach ($input_type->parent_nodes as $parent_node) {
             $statements_analyzer->data_flow_graph->addNode($method_node);
             $statements_analyzer->data_flow_graph->addPath($parent_node, $argument_value_node, 'arg');
