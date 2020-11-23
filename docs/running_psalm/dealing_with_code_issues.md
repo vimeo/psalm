@@ -3,14 +3,15 @@
 Psalm has a large number of [code issues](issues.md). Each project can specify its own reporting level for a given issue.
 
 Code issue levels in Psalm fall into three categories:
-<dl>
-  <dt>error</dt>
-  <dd>This will cause Psalm to print a message, and to ultimately terminate with a non-zero exit status</dd>
-  <dt>info</dt>
-  <dd>This will cause Psalm to print a message</dd>
-  <dt>suppress</dt>
-  <dd>This will cause Psalm to ignore the code issue entirely</dd>
-</dl>
+
+- `error`<br>
+  This will cause Psalm to print a message, and to ultimately terminate with a non-zero exit status
+
+- `info`<br>
+  This will cause Psalm to print a message
+  
+- `suppress`<br>
+  This will cause Psalm to ignore the code issue entirely
 
 The third category, `suppress`, is the one you will probably be most interested in, especially when introducing Psalm to a large codebase.
 
@@ -91,7 +92,7 @@ If you wish to suppress all issues, you can use `@psalm-suppress all` instead of
 
 ## Using a baseline file
 
-If you have a bunch of errors and you don't want to fix them all at once, Psalm can now grandfather-in errors in existing code, while ensuring that new code doesn't have those same sorts of errors.
+If you have a bunch of errors and you don't want to fix them all at once, Psalm can grandfather-in errors in existing code, while ensuring that new code doesn't have those same sorts of errors.
 
 ```
 vendor/bin/psalm --set-baseline=your-baseline.xml
@@ -103,4 +104,43 @@ will generate a file containing the current errors. You can commit that generate
 vendor/bin/psalm --update-baseline
 ```
 
-Your mileage may vary, but we've found baseline files to be a great way to gradually improve a codebase.
+Baseline files are a great way to gradually improve a codebase.
+
+## Using a plugin
+
+If you want something more custom, like suppressing a certain type of error on classes that implement a particular interface, you can use a plugin that implements `AfterClassLikeVisitInterface`
+
+```php
+<?php
+namespace Foo\Bar;
+
+use PhpParser\Node;
+use Psalm\Codebase;
+use Psalm\FileSource;
+use Psalm\Plugin\Hook\AfterClassLikeVisitInterface;
+use Psalm\Storage\ClassLikeStorage;
+use ReflectionClass;
+
+/**
+ * Suppress issues dynamically based on interface implementation
+ */
+class DynamicallySuppressClassIssueBasedOnInterface implements AfterClassLikeVisitInterface
+{
+    public static function afterClassLikeVisit(
+        Node\Stmt\ClassLike $stmt,
+        ClassLikeStorage $storage,
+        FileSource $statements_source,
+        Codebase $codebase,
+        array &$file_replacements = []
+    )
+    {
+        if ($storage->user_defined
+            && !$storage->is_interface
+            && \class_exists($storage->name)
+            && (new ReflectionClass($storage->name))->implementsInterface(\Your\Interface::class)
+        ) {
+            $storage->suppressed_issues[-1] = 'PropertyNotSetInConstructor';
+        }
+    }
+}
+```
