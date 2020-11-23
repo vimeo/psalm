@@ -37,20 +37,26 @@ class PdoStatementReturnTypeProvider implements \Psalm\Plugin\Hook\MethodReturnT
             $fetch_mode = $first_arg_type->getSingleIntLiteral()->value;
 
             switch ($fetch_mode) {
-                case \PDO::FETCH_ASSOC: // array<string,scalar>|false
+                case \PDO::FETCH_ASSOC: // array<string,scalar|null>|false
                     return new Type\Union([
                         new Type\Atomic\TArray([
                             Type::getString(),
-                            Type::getScalar(),
+                            new Type\Union([
+                                new Type\Atomic\TScalar(),
+                                new Type\Atomic\TNull()
+                            ])
                         ]),
                         new Type\Atomic\TFalse(),
                     ]);
 
-                case \PDO::FETCH_BOTH: // array<array-key,scalar>|false
+                case \PDO::FETCH_BOTH: // array<array-key,scalar|null>|false
                     return new Type\Union([
                         new Type\Atomic\TArray([
                             Type::getArrayKey(),
-                            Type::getScalar()
+                            new Type\Union([
+                                new Type\Atomic\TScalar(),
+                                new Type\Atomic\TNull()
+                            ])
                         ]),
                         new Type\Atomic\TFalse(),
                     ]);
@@ -84,9 +90,14 @@ class PdoStatementReturnTypeProvider implements \Psalm\Plugin\Hook\MethodReturnT
                         new Type\Atomic\TFalse(),
                     ]);
 
-                case \PDO::FETCH_NUM: // list<scalar>|false
+                case \PDO::FETCH_NUM: // list<scalar|null>|false
                     return new Type\Union([
-                        new Type\Atomic\TList(Type::getScalar()),
+                        new Type\Atomic\TList(
+                            new Type\Union([
+                                new Type\Atomic\TScalar(),
+                                new Type\Atomic\TNull()
+                            ])
+                        ),
                         new Type\Atomic\TFalse(),
                     ]);
 
