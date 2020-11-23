@@ -1550,12 +1550,6 @@ class ArrayAssignmentTest extends TestCase
                     return [...$data];
                 }'
             ],
-            'ArrayCreateOffsetStringable' => [
-                '<?php
-                    $a = new class{public function __toString(){return "";}};
-                    $_a = [$a => "a"];
-                ',
-            ],
             'ArrayCreateOffsetMixed' => [
                 '<?php
                     /** @var mixed $b */
@@ -1883,6 +1877,12 @@ class ArrayAssignmentTest extends TestCase
                     $_a = [true => "a"];
                 ',
                 'error_message' => 'InvalidArrayOffset'
+            ],
+            'ArrayCreateOffsetStringable' => [
+                '<?php
+                    $a = new class{public function __toString(){return "";}};
+                    $_a = [$a => "a"];',
+                'error_message' => 'InvalidArrayOffset',
             ],
         ];
     }
