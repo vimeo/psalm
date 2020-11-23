@@ -285,9 +285,9 @@ class Functions
             'opendir', 'readdir', 'closedir', 'rewinddir', 'scandir',
             'fopen', 'fread', 'fwrite', 'fclose', 'touch', 'fpassthru', 'fputs', 'fscanf', 'fseek',
             'ftruncate', 'fprintf', 'symlink', 'mkdir', 'unlink', 'rename', 'rmdir', 'popen', 'pclose',
-            'fgetcsv', 'fputcsv', 'umask', 'finfo_close', 'readline_add_history', 'stream_set_timeout',
-            'fgets', 'fflush', 'move_uploaded_file', 'file_exists', 'realpath', 'glob', 'is_readable',
-            'is_dir', 'is_file',
+            'fgetcsv', 'fputcsv', 'umask', 'finfo_open', 'finfo_close', 'finfo_file', 'readline_add_history',
+            'stream_set_timeout', 'fgets', 'fflush', 'move_uploaded_file', 'file_exists', 'realpath', 'glob',
+            'is_readable', 'is_dir', 'is_file',
 
             // stream/socket io
             'stream_context_set_option', 'socket_write', 'stream_set_blocking', 'socket_close',
