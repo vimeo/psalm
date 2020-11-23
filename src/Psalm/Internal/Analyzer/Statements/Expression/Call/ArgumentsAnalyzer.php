@@ -671,7 +671,7 @@ class ArgumentsAnalyzer
                     }
                 }
 
-                if (!$arg_function_params) {
+                if (!isset($arg_function_params[$argument_offset])) {
                     if (IssueBuffer::accepts(
                         new InvalidNamedArgument(
                             'Parameter $' . $arg->name->name . ' does not exist on function '
@@ -692,8 +692,11 @@ class ArgumentsAnalyzer
         }
 
         foreach ($args as $argument_offset => $arg) {
-            if ($arg_function_params
-                && $arg_function_params[$argument_offset][0]->by_ref
+            if (!isset($arg_function_params[$argument_offset])) {
+                continue;
+            }
+
+            if ($arg_function_params[$argument_offset][0]->by_ref
                 && $method_id !== 'extract'
             ) {
                 if (self::handlePossiblyMatchingByRefParam(
