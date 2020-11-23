@@ -79,6 +79,11 @@ class FunctionLikeParameter
     public $sinks;
 
     /**
+     * @var array<Type\Union>|null
+     */
+    public $conditional_sinks;
+
+    /**
      * @var bool
      */
     public $assert_untainted = false;
