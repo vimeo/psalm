@@ -765,6 +765,7 @@ class IssueBuffer
 
             case Report::TYPE_SARIF:
                 $output = new SarifReport($normalized_data, self::$fixable_issue_counts, $report_options);
+                break;
 
             case Report::TYPE_CODECLIMATE:
                 $output = new CodeClimateReport($normalized_data, self::$fixable_issue_counts, $report_options);
