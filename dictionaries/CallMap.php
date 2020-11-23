@@ -9796,7 +9796,7 @@ return [
 'PDOStatement::fetch' => ['mixed', 'how='=>'int', 'orientation='=>'int', 'offset='=>'int'],
 'PDOStatement::fetchAll' => ['array|false', 'how='=>'int', 'fetch_argument='=>'int|string|callable', 'ctor_args='=>'?array'],
 'PDOStatement::fetchColumn' => ['string|int|float|bool|null', 'column_number='=>'int'],
-'PDOStatement::fetchObject' => ['mixed|false', 'class_name='=>'string', 'ctor_args='=>'?array'],
+'PDOStatement::fetchObject' => ['object|false', 'class_name='=>'string', 'ctor_args='=>'?array'],
 'PDOStatement::getAttribute' => ['mixed', 'attribute'=>'int'],
 'PDOStatement::getColumnMeta' => ['array|false', 'column'=>'int'],
 'PDOStatement::nextRowset' => ['bool'],
