@@ -739,29 +739,33 @@ class ArgumentsAnalyzer
             }
         }
 
-        foreach ($args as $argument_offset => $arg) {
-            foreach ($arg_function_params[$argument_offset] as $i => $function_param) {
-                if ($function_param->sinks && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
-                    if (!$function_storage || $function_storage->specialize_call) {
-                        $sink = TaintSink::getForMethodArgument(
-                            $cased_method_id,
-                            $cased_method_id,
-                            $argument_offset,
-                            $function_param->location,
-                            $code_location
-                        );
-                    } else {
-                        $sink = TaintSink::getForMethodArgument(
-                            $cased_method_id,
-                            $cased_method_id,
-                            $argument_offset,
-                            $function_param->location
-                        );
+        if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+            && $cased_method_id
+        ) {
+            foreach ($args as $argument_offset => $_) {
+                foreach ($arg_function_params[$argument_offset] as $function_param) {
+                    if ($function_param->sinks) {
+                        if (!$function_storage || $function_storage->specialize_call) {
+                            $sink = TaintSink::getForMethodArgument(
+                                $cased_method_id,
+                                $cased_method_id,
+                                $argument_offset,
+                                $function_param->location,
+                                $code_location
+                            );
+                        } else {
+                            $sink = TaintSink::getForMethodArgument(
+                                $cased_method_id,
+                                $cased_method_id,
+                                $argument_offset,
+                                $function_param->location
+                            );
+                        }
+
+                        $sink->taints = $function_param->sinks;
+
+                        $statements_analyzer->data_flow_graph->addSink($sink);
                     }
-
-                    $sink->taints = $function_param->sinks;
-
-                    $statements_analyzer->data_flow_graph->addSink($sink);
                 }
             }
         }
