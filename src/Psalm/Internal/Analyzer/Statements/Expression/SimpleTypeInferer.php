@@ -100,7 +100,13 @@ class SimpleTypeInferer
             }
 
             if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Spaceship) {
-                return Type::getInt();
+                return new Type\Union(
+                    [
+                        new Type\Atomic\TLiteralInt(-1),
+                        new Type\Atomic\TLiteralInt(0),
+                        new Type\Atomic\TLiteralInt(1)
+                    ]
+                );
             }
 
             $stmt_left_type = self::infer(

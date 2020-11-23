@@ -161,7 +161,16 @@ class BinaryOpAnalyzer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Spaceship) {
-            $statements_analyzer->node_data->setType($stmt, Type::getInt());
+            $statements_analyzer->node_data->setType(
+                $stmt,
+                new Type\Union(
+                    [
+                        new Type\Atomic\TLiteralInt(-1),
+                        new Type\Atomic\TLiteralInt(0),
+                        new Type\Atomic\TLiteralInt(1)
+                    ]
+                )
+            );
 
             self::addDataFlow(
                 $statements_analyzer,
