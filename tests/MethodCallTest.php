@@ -603,7 +603,7 @@ class MethodCallTest extends TestCase
             ],
             'pdoStatementFetchAssoc' => [
                 '<?php
-                    /** @return array<string,scalar>|false */
+                    /** @return array<string,null|scalar>|false */
                     function fetch_assoc() {
                         $p = new PDO("sqlite::memory:");
                         $sth = $p->prepare("SELECT 1");
@@ -613,7 +613,7 @@ class MethodCallTest extends TestCase
             ],
             'pdoStatementFetchBoth' => [
                 '<?php
-                    /** @return array<scalar>|false */
+                    /** @return array<null|scalar>|false */
                     function fetch_both() {
                         $p = new PDO("sqlite::memory:");
                         $sth = $p->prepare("SELECT 1");
@@ -663,7 +663,7 @@ class MethodCallTest extends TestCase
             ],
             'pdoStatementFetchNum' => [
                 '<?php
-                    /** @return list<scalar>|false */
+                    /** @return list<null|scalar>|false */
                     function fetch_named() {
                         $p = new PDO("sqlite::memory:");
                         $sth = $p->prepare("SELECT 1");
