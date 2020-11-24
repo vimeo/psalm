@@ -1826,7 +1826,7 @@ class Config
             $ext_ds_path = dirname(__DIR__, 2) . '/stubs/ext-ds.php';
 
             if (!file_exists($ext_ds_path)) {
-                throw new \UnexpectedValueException('Cannot locate core generic classes');
+                throw new \UnexpectedValueException('Cannot locate ext-ds classes');
             }
 
             $core_generic_files[] = $ext_ds_path;
