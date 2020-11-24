@@ -2923,8 +2923,8 @@ class AssertionFinder
             || $conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller;
 
         if ($left_count
-            && $conditional->right instanceof PhpParser\Node\Scalar\LNumber
             && $operator_less_than_or_equal
+            && $conditional->right instanceof PhpParser\Node\Scalar\LNumber
         ) {
             $max_count = $conditional->right->value -
                 ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller ? 1 : 0);
@@ -2942,8 +2942,8 @@ class AssertionFinder
             || $conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater;
 
         if ($right_count
-            && $conditional->left instanceof PhpParser\Node\Scalar\LNumber
             && $operator_greater_than_or_equal
+            && $conditional->left instanceof PhpParser\Node\Scalar\LNumber
         ) {
             $max_count = $conditional->left->value -
                 ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater ? 1 : 0);
