@@ -129,7 +129,7 @@ function requireAutoloaders(string $current_dir, bool $has_explicit_root, string
         exit(1);
     }
 
-    define('PSALM_VERSION', (string)\PackageVersions\Versions::getVersion('vimeo/psalm'));
+    define('PSALM_VERSION', \PackageVersions\Versions::getVersion('vimeo/psalm'));
     define('PHP_PARSER_VERSION', \PackageVersions\Versions::getVersion('nikic/php-parser'));
 
     return $first_autoloader;
