@@ -1421,6 +1421,30 @@ class Union implements TypeNode
     }
 
     /**
+     * @return bool true if this is a boolean
+     */
+    public function isBool(): bool
+    {
+        if (!$this->isSingle()) {
+            return false;
+        }
+
+        return isset($this->types['bool']);
+    }
+
+    /**
+     * @return bool true if this is an array
+     */
+    public function isArray(): bool
+    {
+        if (!$this->isSingle()) {
+            return false;
+        }
+
+        return isset($this->types['array']);
+    }
+
+    /**
      * @return bool true if this is a string literal with only one possible value
      */
     public function isSingleStringLiteral(): bool

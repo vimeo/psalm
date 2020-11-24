@@ -9,6 +9,8 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\InvalidCast;
 use Psalm\Issue\PossiblyInvalidCast;
+use Psalm\Issue\RedundantCondition;
+use Psalm\Issue\RedundantConditionGivenDocblockType;
 use Psalm\Issue\UnrecognizedExpression;
 use Psalm\IssueBuffer;
 use Psalm\Type;
@@ -45,6 +47,26 @@ class CastAnalyzer
             $maybe_type = $statements_analyzer->node_data->getType($stmt->expr);
 
             if ($maybe_type) {
+                if ($maybe_type->isInt()) {
+                    if ($maybe_type->from_docblock) {
+                        $issue = new RedundantConditionGivenDocblockType(
+                            'Redundant cast to ' . $maybe_type->getKey(),
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
+                            $maybe_type->getKey()
+                        );
+                    } else {
+                        $issue = new RedundantCondition(
+                            'Redundant cast to ' . $maybe_type->getKey(),
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
+                            $maybe_type->getKey()
+                        );
+                    }
+
+                    if (IssueBuffer::accepts($issue, $statements_analyzer->getSuppressedIssues())) {
+                        // fall through
+                    }
+                }
+
                 $maybe = $maybe_type->getAtomicTypes();
 
                 if (count($maybe) === 1 && current($maybe) instanceof Type\Atomic\TBool) {
@@ -78,6 +100,28 @@ class CastAnalyzer
 
             $maybe_type = $statements_analyzer->node_data->getType($stmt->expr);
 
+            if ($maybe_type) {
+                if ($maybe_type->isFloat()) {
+                    if ($maybe_type->from_docblock) {
+                        $issue = new RedundantConditionGivenDocblockType(
+                            'Redundant cast to ' . $maybe_type->getKey(),
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
+                            $maybe_type->getKey()
+                        );
+                    } else {
+                        $issue = new RedundantCondition(
+                            'Redundant cast to ' . $maybe_type->getKey(),
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
+                            $maybe_type->getKey()
+                        );
+                    }
+
+                    if (IssueBuffer::accepts($issue, $statements_analyzer->getSuppressedIssues())) {
+                        // fall through
+                    }
+                }
+            }
+
             $type = Type::getFloat();
 
             if ($statements_analyzer->data_flow_graph
@@ -97,6 +141,28 @@ class CastAnalyzer
             }
 
             $maybe_type = $statements_analyzer->node_data->getType($stmt->expr);
+
+            if ($maybe_type) {
+                if ($maybe_type->isBool()) {
+                    if ($maybe_type->from_docblock) {
+                        $issue = new RedundantConditionGivenDocblockType(
+                            'Redundant cast to ' . $maybe_type->getKey(),
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
+                            $maybe_type->getKey()
+                        );
+                    } else {
+                        $issue = new RedundantCondition(
+                            'Redundant cast to ' . $maybe_type->getKey(),
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
+                            $maybe_type->getKey()
+                        );
+                    }
+
+                    if (IssueBuffer::accepts($issue, $statements_analyzer->getSuppressedIssues())) {
+                        // fall through
+                    }
+                }
+            }
 
             $type = Type::getBool();
 
@@ -119,6 +185,26 @@ class CastAnalyzer
             $stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr);
 
             if ($stmt_expr_type) {
+                if ($stmt_expr_type->isString()) {
+                    if ($stmt_expr_type->from_docblock) {
+                        $issue = new RedundantConditionGivenDocblockType(
+                            'Redundant cast to ' . $stmt_expr_type->getKey(),
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
+                            $stmt_expr_type->getKey()
+                        );
+                    } else {
+                        $issue = new RedundantCondition(
+                            'Redundant cast to ' . $stmt_expr_type->getKey(),
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
+                            $stmt_expr_type->getKey()
+                        );
+                    }
+
+                    if (IssueBuffer::accepts($issue, $statements_analyzer->getSuppressedIssues())) {
+                        // fall through
+                    }
+                }
+
                 $stmt_type = self::castStringAttempt(
                     $statements_analyzer,
                     $context,
@@ -170,6 +256,26 @@ class CastAnalyzer
             $all_permissible = false;
 
             if ($stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr)) {
+                if ($stmt_expr_type->isArray()) {
+                    if ($stmt_expr_type->from_docblock) {
+                        $issue = new RedundantConditionGivenDocblockType(
+                            'Redundant cast to ' . $stmt_expr_type->getKey(),
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
+                            $stmt_expr_type->getKey()
+                        );
+                    } else {
+                        $issue = new RedundantCondition(
+                            'Redundant cast to ' . $stmt_expr_type->getKey(),
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
+                            $stmt_expr_type->getKey()
+                        );
+                    }
+
+                    if (IssueBuffer::accepts($issue, $statements_analyzer->getSuppressedIssues())) {
+                        // fall through
+                    }
+                }
+
                 $all_permissible = true;
 
                 foreach ($stmt_expr_type->getAtomicTypes() as $type) {
