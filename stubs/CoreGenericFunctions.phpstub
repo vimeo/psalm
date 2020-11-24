@@ -749,7 +749,7 @@ function str_shuffle(string $str): string {}
 
 /**
  * @psalm-pure
- * @return array<string>
+ * @return list<string>
  *
  * @psalm-flow ($string) -> return
  */
