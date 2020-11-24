@@ -40,7 +40,7 @@ class ScopeTest extends \Psalm\Tests\TestCase
                 '<?php
                     $a = preg_match("/bad/", "badger", $matches) > 0;
                     if ($a) {
-                        echo (string)$matches[1];
+                        echo $matches[1];
                     }',
             ],
             'functionExists' => [

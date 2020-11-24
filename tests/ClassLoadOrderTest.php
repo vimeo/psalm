@@ -107,7 +107,7 @@ class ClassLoadOrderTest extends TestCase
                     class B extends A {
                         /** @return void */
                         public function foo() {
-                            echo (string)(new C)->bar;
+                            echo (new C)->bar;
                         }
                     }
 
