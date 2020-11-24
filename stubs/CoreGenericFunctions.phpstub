@@ -509,11 +509,11 @@ function strtoupper(string $str) : string {}
  * @param int|array<int> $start
  * @param null|int|array<int> $length
  *
- * @return ($string is array<string> ? array<string> : string) 
+ * @return ($string is array<string> ? array<string> : string)
  *
  * @psalm-flow ($string, $replacement) -> return
  */
-function substr_replace($string, $replacement, $start, $length) {}
+function substr_replace($string, $replacement, $start, $length = null) {}
 
 /**
  * @psalm-pure
@@ -579,7 +579,7 @@ function implode($glue, array $pieces = []) : string {}
  * @psalm-flow ($glue) -> return
  * @psalm-flow ($pieces) -(array-fetch)-> return
  */
-function join($glue, array $pieces = []): string 
+function join($glue, array $pieces = []): string
 {
 }
 
@@ -771,20 +771,23 @@ function stristr(string $haystack, string $needle, bool $before_needle = false):
 
 /**
  * @psalm-pure
+ * @return string|false
  *
  * @psalm-flow ($haystack) -> return
  */
-function strchr(string $haystack, string $needle, bool $before_needle = false): string {}
+function strchr(string $haystack, string $needle, bool $before_needle = false) {}
 
 /**
  * @psalm-pure
+ * @return string|false
  *
  * @psalm-flow ($haystack) -> return
  */
-function strpbrk(string $haystack, string $char_list): string {}
+function strpbrk(string $haystack, string $char_list) {}
 
 /**
  * @psalm-pure
+ * @return string|false
  *
  * @psalm-flow ($haystack) -> return
  */
@@ -908,7 +911,7 @@ function sprintf(string $format, ...$args) : string {}
  * @psalm-pure
  * @return string|false
  * @psalm-ignore-falsable-return
- * 
+ *
  * @psalm-flow ($format, $args) -> return
  */
 function vsprintf(string $format, array $args) {}
@@ -916,7 +919,7 @@ function vsprintf(string $format, array $args) {}
 /**
  * @psalm-pure
  * @return string
- * 
+ *
  * @psalm-flow ($str) -> return
  */
 function wordwrap(string $str, int $width = 75, string $break = "\n", bool $cut = false) : string {}
@@ -990,7 +993,7 @@ function array_count_values(array $array): array {}
  *
  * @psalm-flow ($str) -> return
  */
-function addcslashes(string $str, string $charlist) : string 
+function addcslashes(string $str, string $charlist) : string
 {
 }
 
@@ -999,7 +1002,7 @@ function addcslashes(string $str, string $charlist) : string
  *
  * @psalm-flow ($str) -> return
  */
-function addslashes(string $str): string 
+function addslashes(string $str): string
 {
 }
 
@@ -1017,7 +1020,7 @@ function ucfirst(string $str): string
  *
  * @psalm-flow ($str, $delimiters) -> return
  */
-function ucwords (string $str, string $delimiters = " \t\r\n\f\v"): string 
+function ucwords (string $str, string $delimiters = " \t\r\n\f\v"): string
 {
 }
 
@@ -1035,7 +1038,7 @@ function lcfirst(string $str): string
  *
  * @psalm-flow ($str) -> return
  */
-function nl2br(string $str, bool $is_xhtml = false): string 
+function nl2br(string $str, bool $is_xhtml = false): string
 {
 }
 
@@ -1062,7 +1065,7 @@ function quoted_printable_encode(string $str): string
  *
  * @psalm-flow ($str) -> return
  */
-function quotemeta(string $str): string 
+function quotemeta(string $str): string
 {
 }
 
@@ -1071,7 +1074,7 @@ function quotemeta(string $str): string
  *
  * @psalm-flow ($str) -> return
  */
-function chop(string $str, string $character_mask = " \t\n\r\0\x0B"): string 
+function chop(string $str, string $character_mask = " \t\n\r\0\x0B"): string
 {
 }
 
@@ -1079,7 +1082,7 @@ function chop(string $str, string $character_mask = " \t\n\r\0\x0B"): string
  * @psalm-pure
  * @psalm-flow ($str, $end) -> return
  */
-function chunk_split(string $str, int $chunklen = 76, string $end= ''): string 
+function chunk_split(string $str, int $chunklen = 76, string $end= ''): string
 {
 }
 
@@ -1088,7 +1091,7 @@ function chunk_split(string $str, int $chunklen = 76, string $end= ''): string
  *
  * @psalm-flow ($data) -> return
  */
-function convert_uudecode(string $data): string 
+function convert_uudecode(string $data): string
 {
 }
 
@@ -1097,7 +1100,7 @@ function convert_uudecode(string $data): string
  *
  * @psalm-flow ($data) -> return
  */
-function convert_uuencode(string $data) : string 
+function convert_uuencode(string $data) : string
 {
 }
 
