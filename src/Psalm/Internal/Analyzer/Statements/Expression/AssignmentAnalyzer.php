@@ -496,7 +496,7 @@ class AssignmentAnalyzer
                             $cond_object_id
                         );
 
-                        $context->clauses = array_merge($context->clauses, $assignment_clauses);
+                        $context->clauses = \array_merge($context->clauses, $assignment_clauses);
                     }
                 }
             } else {
