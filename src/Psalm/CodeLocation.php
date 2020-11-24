@@ -315,10 +315,6 @@ class CodeLocation
         }
 
         $this->end_line_number = $this->getLineNumber() + $newlines;
-
-        if ($this->column_to === 0) {
-            throw new \UnexpectedValueException('bad');
-        }
     }
 
     public function getLineNumber(): int
