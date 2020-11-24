@@ -472,6 +472,32 @@ class AssignmentAnalyzer
                             }
                         }
                     }
+
+                    if ($assign_value_type->getId() === 'bool'
+                        && ($assign_value instanceof PhpParser\Node\Expr\BinaryOp
+                            || ($assign_value instanceof PhpParser\Node\Expr\BooleanNot
+                                && $assign_value->expr instanceof PhpParser\Node\Expr\BinaryOp))
+                    ) {
+                        $var_object_id = \spl_object_id($assign_var);
+                        $cond_object_id = \spl_object_id($assign_value);
+
+                        $right_clauses = \Psalm\Internal\Algebra\FormulaGenerator::getFormula(
+                            $cond_object_id,
+                            $cond_object_id,
+                            $assign_value,
+                            $context->self,
+                            $statements_analyzer,
+                            $codebase
+                        );
+
+                        $assignment_clauses = \Psalm\Internal\Algebra::combineOredClauses(
+                            [new \Psalm\Internal\Clause([$var_id => ['falsy']], $var_object_id, $var_object_id)],
+                            $right_clauses,
+                            $cond_object_id
+                        );
+
+                        $context->clauses = array_merge($context->clauses, $assignment_clauses);
+                    }
                 }
             } else {
                 $was_inside_use = $context->inside_use;
