@@ -2,7 +2,7 @@
 
 class PdoStatement {
     /**
-     * @psalm-taint-sink text $class
+     * @psalm-taint-sink callable $class
      *
      * @template T
      * @param class-string<T> $class
