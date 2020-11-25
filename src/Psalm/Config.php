@@ -1822,6 +1822,16 @@ class Config
             $core_generic_files[] = $stringable_path;
         }
 
+        if (\extension_loaded('PDO')) {
+            $ext_pdo_path = dirname(__DIR__, 2) . '/stubs/pdo.php';
+
+            if (!file_exists($ext_pdo_path)) {
+                throw new \UnexpectedValueException('Cannot locate pdo classes');
+            }
+
+            $core_generic_files[] = $ext_pdo_path;
+        }
+
         if (\extension_loaded('ds')) {
             $ext_ds_path = dirname(__DIR__, 2) . '/stubs/ext-ds.php';
 
@@ -1838,7 +1848,7 @@ class Config
             $xdebug_stub_path = dirname(__DIR__, 2) . '/stubs/Xdebug.php';
 
             if (!file_exists($xdebug_stub_path)) {
-                throw new \UnexpectedValueException('Cannot locate XDebug stub');
+                throw new \UnexpectedValueException('Cannot locate Xdebug stub');
             }
 
             $stub_files[] = $xdebug_stub_path;
