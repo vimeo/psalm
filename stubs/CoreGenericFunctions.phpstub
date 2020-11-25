@@ -749,7 +749,7 @@ function str_shuffle(string $str): string {}
 
 /**
  * @psalm-pure
- * @return list<string>
+ * @return ($split_length is positive-int ? list<string> : false)
  *
  * @psalm-flow ($string) -> return
  */
@@ -757,21 +757,26 @@ function str_split(string $string, int $split_length = 1) {}
 
 /**
  * @psalm-pure
+ * @return string|false
+ * @psalm-ignore-falsable-return
  *
  * @psalm-flow ($haystack) -> return
  */
-function strstr(string $haystack, string $needle, bool $before_needle = false): string {}
-
-/**
- * @psalm-pure
- *
- * @psalm-flow ($haystack) -> return
- */
-function stristr(string $haystack, string $needle, bool $before_needle = false): string {}
+function strstr(string $haystack, string $needle, bool $before_needle = false) {}
 
 /**
  * @psalm-pure
  * @return string|false
+ * @psalm-ignore-falsable-return
+ *
+ * @psalm-flow ($haystack) -> return
+ */
+function stristr(string $haystack, string $needle, bool $before_needle = false) {}
+
+/**
+ * @psalm-pure
+ * @return string|false
+ * @psalm-ignore-falsable-return
  *
  * @psalm-flow ($haystack) -> return
  */
@@ -780,6 +785,7 @@ function strchr(string $haystack, string $needle, bool $before_needle = false) {
 /**
  * @psalm-pure
  * @return string|false
+ * @psalm-ignore-falsable-return
  *
  * @psalm-flow ($haystack) -> return
  */
@@ -788,10 +794,11 @@ function strpbrk(string $haystack, string $char_list) {}
 /**
  * @psalm-pure
  * @return string|false
+ * @psalm-ignore-falsable-return
  *
  * @psalm-flow ($haystack) -> return
  */
-function strrchr(string $haystack, string $needle): string {}
+function strrchr(string $haystack, string $needle) {}
 
 /**
  * @psalm-pure
@@ -802,10 +809,12 @@ function strrev(string $string): string {}
 
 /**
  * @psalm-pure
+ * @return string|false
+ * @psalm-ignore-falsable-return
  *
  * @psalm-flow ($string) -> return
  */
-function strtok(string $str, string $token): string {}
+function strtok(string $str, string $token) {}
 
 /**
  * @psalm-pure
