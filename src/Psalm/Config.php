@@ -1848,7 +1848,7 @@ class Config
             $xdebug_stub_path = dirname(__DIR__, 2) . '/stubs/Xdebug.php';
 
             if (!file_exists($xdebug_stub_path)) {
-                throw new \UnexpectedValueException('Cannot locate XDebug stub');
+                throw new \UnexpectedValueException('Cannot locate Xdebug stub');
             }
 
             $stub_files[] = $xdebug_stub_path;
