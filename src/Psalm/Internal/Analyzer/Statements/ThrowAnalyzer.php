@@ -43,6 +43,8 @@ class ThrowAnalyzer
                     }
                 } else {
                     $context->finally_scope->vars_in_scope[$var_id] = $type;
+                    $type->possibly_undefined = true;
+                    $type->possibly_undefined_from_try = true;
                 }
             }
         }
