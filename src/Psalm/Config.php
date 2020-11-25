@@ -1822,7 +1822,7 @@ class Config
             $core_generic_files[] = $stringable_path;
         }
 
-        if (class_exists('PDO', false)) {
+        if (\extension_loaded('PDO')) {
             $ext_pdo_path = dirname(__DIR__, 2) . '/stubs/pdo.php';
 
             if (!file_exists($ext_pdo_path)) {
