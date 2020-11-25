@@ -520,25 +520,6 @@ class AssertionFinder
             return $if_types ? [$if_types] : [];
         }
 
-        if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Coalesce) {
-            return self::scrapeAssertions(
-                new PhpParser\Node\Expr\Ternary(
-                    new PhpParser\Node\Expr\Isset_(
-                        [$conditional->left]
-                    ),
-                    $conditional->left,
-                    $conditional->right,
-                    $conditional->getAttributes()
-                ),
-                $this_class_name,
-                $source,
-                $codebase,
-                $inside_negation,
-                false,
-                $inside_conditional
-            );
-        }
-
         return [];
     }
 

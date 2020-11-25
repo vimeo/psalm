@@ -2895,7 +2895,7 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                     function foo(?string $s) : string {
                         return ((string) $s) ?? "bar";
                     }',
-                'error_message' => 'TypeDoesNotContainType'
+                'error_message' => 'RedundantCondition'
             ],
             'allowEmptyScalarAndNonEmptyScalarAssertions1' => [
                 '<?php

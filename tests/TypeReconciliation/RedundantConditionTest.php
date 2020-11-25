@@ -373,6 +373,7 @@ class RedundantConditionTest extends \Psalm\Tests\TestCase
                         $options = ["option" => true];
                     }
 
+                    /** @psalm-suppress PossiblyUndefinedGlobalVariable */
                     $option = $options["option"] ?? false;
 
                     if ($option) {}',
