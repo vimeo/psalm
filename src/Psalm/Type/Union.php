@@ -897,11 +897,7 @@ class Union implements TypeNode
 
     public function isVanillaMixed(): bool
     {
-        /**
-         * @psalm-suppress UndefinedPropertyFetch
-         */
         return isset($this->types['mixed'])
-            && !$this->types['mixed']->from_loop_isset
             && get_class($this->types['mixed']) === Type\Atomic\TMixed::class
             && !$this->types['mixed']->from_loop_isset
             && count($this->types) === 1;
