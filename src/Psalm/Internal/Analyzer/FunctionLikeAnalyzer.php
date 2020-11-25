@@ -1502,7 +1502,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $parent_fqcln = $this->getParentFQCLN();
 
                 if ($resolved_name === 'self' && $context->self) {
-                    $resolved_name = (string) $context->self;
+                    $resolved_name = $context->self;
                 } elseif ($resolved_name === 'parent' && $parent_fqcln) {
                     $resolved_name = $parent_fqcln;
                 }
@@ -1536,7 +1536,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $parent_fqcln = $this->getParentFQCLN();
 
                 if ($resolved_name === 'self' && $context->self) {
-                    $resolved_name = (string) $context->self;
+                    $resolved_name = $context->self;
                 } elseif ($resolved_name === 'parent' && $parent_fqcln) {
                     $resolved_name = $parent_fqcln;
                 }

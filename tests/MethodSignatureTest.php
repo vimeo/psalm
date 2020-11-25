@@ -496,7 +496,7 @@ class MethodSignatureTest extends TestCase
                         {
                             [
                                 $this->id,
-                            ] = (array) \unserialize((string) $serialized);
+                            ] = (array) \unserialize($serialized);
                         }
 
                         public function serialize() : string

@@ -315,13 +315,13 @@ class Reflection
     private function getReflectionParamData(\ReflectionParameter $param): FunctionLikeParameter
     {
         $param_type = self::getPsalmTypeFromReflectionType($param->getType());
-        $param_name = (string)$param->getName();
+        $param_name = $param->getName();
 
-        $is_optional = (bool)$param->isOptional();
+        $is_optional = $param->isOptional();
 
         $parameter = new FunctionLikeParameter(
             $param_name,
-            (bool)$param->isPassedByReference(),
+            $param->isPassedByReference(),
             $param_type,
             null,
             null,

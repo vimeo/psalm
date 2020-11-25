@@ -745,7 +745,7 @@ class ArrayAssignmentAnalyzer
                 $object_like = new TKeyedArray(
                     [$key_value->value => clone $current_type],
                     $key_value instanceof Type\Atomic\TLiteralClassString
-                        ? [(string) $key_value->value => true]
+                        ? [$key_value->value => true]
                         : null
                 );
 

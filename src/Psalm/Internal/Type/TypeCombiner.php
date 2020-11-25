@@ -569,7 +569,7 @@ class TypeCombiner
             }
 
             if (!$allow_mixed_union) {
-                return Type::getMixed((bool) $combination->mixed_from_loop_isset);
+                return Type::getMixed($combination->mixed_from_loop_isset);
             }
         }
 

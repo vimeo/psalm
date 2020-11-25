@@ -355,7 +355,7 @@ class AssignmentInConditionalTest extends \Psalm\Tests\TestCase
             'passedByRefInIf' => [
                 '<?php
                     if (preg_match("/bad/", "badger", $matches)) {
-                        echo (string)$matches[0];
+                        echo $matches[0];
                     }',
             ],
             'passByRefInIfCheckAfter' => [
@@ -363,13 +363,13 @@ class AssignmentInConditionalTest extends \Psalm\Tests\TestCase
                     if (!preg_match("/bad/", "badger", $matches)) {
                         exit();
                     }
-                    echo (string)$matches[0];',
+                    echo $matches[0];',
             ],
             'passByRefInIfWithBoolean' => [
                 '<?php
                     $a = (bool)rand(0, 1);
                     if ($a && preg_match("/bad/", "badger", $matches)) {
-                        echo (string)$matches[0];
+                        echo $matches[0];
                     }',
             ],
             'bleedElseifAssignedVarsIntoElseScope' => [

@@ -821,7 +821,7 @@ if (!isset($options['i'])) {
 
         $init_level = \Psalm\Config\Creator::getLevel(
             array_merge(...array_values($issues_by_file)),
-            (int) array_sum($mixed_counts)
+            array_sum($mixed_counts)
         );
     }
 

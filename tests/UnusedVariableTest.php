@@ -147,10 +147,10 @@ class UnusedVariableTest extends TestCase
             ],
             'varRedefinedInIfWithReference' => [
                 '<?php
-                    $a = (string) "fdf";
+                    $a = (string) 5;
 
                     if (rand(0, 1)) {
-                        $a = (string) "ard";
+                        $a = (string) 6;
                     }
 
                     echo $a;',

@@ -166,8 +166,8 @@ class ObjectComparator
                     && $intersection_input_type instanceof TTemplateParam
                 ) {
                     if ($intersection_container_type->param_name !== $intersection_input_type->param_name
-                        || ((string)$intersection_container_type->defining_class
-                            !== (string)$intersection_input_type->defining_class
+                        || ($intersection_container_type->defining_class
+                            !== $intersection_input_type->defining_class
                             && \substr($intersection_input_type->defining_class, 0, 3) !== 'fn-'
                             && \substr($intersection_container_type->defining_class, 0, 3) !== 'fn-')
                     ) {

@@ -891,7 +891,7 @@ class TypeParser
                 $offset_template_type = array_values($offset_template_data[''][0]->getAtomicTypes())[0];
 
                 if ($offset_template_type instanceof Atomic\TTemplateKeyOf) {
-                    $offset_defining_class = (string) $offset_template_type->defining_class;
+                    $offset_defining_class = $offset_template_type->defining_class;
                 }
             }
 

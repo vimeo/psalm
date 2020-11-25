@@ -1032,18 +1032,6 @@ class ArrayAssignmentTest extends TestCase
                     '$b' => 'array<empty, empty>',
                 ],
             ],
-            'coerceListToArray' => [
-                '<?php
-                    /**
-                     * @param list<int> $_bar
-                     */
-                    function foo(array $_bar) : void {}
-
-                    /**
-                     * @param list<int> $bar
-                     */
-                    function baz(array $bar) : void { foo((array) $bar); }',
-            ],
             'getOnCoercedArray' => [
                 '<?php
                     function getArray() : array {
@@ -1883,6 +1871,19 @@ class ArrayAssignmentTest extends TestCase
                     $a = new class{public function __toString(){return "";}};
                     $_a = [$a => "a"];',
                 'error_message' => 'InvalidArrayOffset',
+            ],
+            'coerceListToArray' => [
+                '<?php
+                    /**
+                     * @param list<int> $_bar
+                     */
+                    function foo(array $_bar) : void {}
+
+                    /**
+                     * @param list<int> $bar
+                     */
+                    function baz(array $bar) : void { foo((array) $bar); }',
+                'error_message' => 'RedundantCondition',
             ],
         ];
     }

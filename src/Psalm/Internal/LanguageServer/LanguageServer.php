@@ -506,7 +506,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
             throw new \InvalidArgumentException("Not a valid file URI: $uri");
         }
 
-        $filepath = urldecode((string) $fragments['path']);
+        $filepath = urldecode($fragments['path']);
 
         if (strpos($filepath, ':') !== false) {
             if ($filepath[0] === '/') {
