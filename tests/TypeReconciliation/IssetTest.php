@@ -1013,6 +1013,13 @@ class IssetTest extends \Psalm\Tests\TestCase
                 [],
                 '8.0'
             ],
+            'assertComplex' => [
+                '<?php
+                    function returnsInt(?int $a, ?int $b): int {
+                        assert($a !== null || $b !== null);
+                        return isset($a) ? $a : $b;
+                    }'
+            ],
         ];
     }
 
@@ -1090,7 +1097,7 @@ class IssetTest extends \Psalm\Tests\TestCase
                         }
                         return "bar";
                     }',
-                'error_message' => 'TypeDoesNotContainType'
+                'error_message' => 'TypeDoesNotContainNull'
             ],
             'issetOnArrayOfArraysReturningString' => [
                 '<?php

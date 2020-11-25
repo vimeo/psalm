@@ -883,9 +883,9 @@ class FunctionCallAnalyzer extends CallAnalyzer
 
         $assert_type_assertions = Algebra::getTruthsFromFormula($simplified_clauses);
 
-        if ($assert_type_assertions) {
-            $changed_var_ids = [];
+        $changed_var_ids = [];
 
+        if ($assert_type_assertions) {
             // while in an and, we allow scope to boil over to support
             // statements of the form if ($x && $x->foo())
             $op_vars_in_scope = Reconciler::reconcileKeyedTypes(
@@ -936,6 +936,12 @@ class FunctionCallAnalyzer extends CallAnalyzer
 
             $context->vars_in_scope = $op_vars_in_scope;
         }
+
+        if ($changed_var_ids) {
+            $simplified_clauses = Context::removeReconciledClauses($simplified_clauses, $changed_var_ids)[0];
+        }
+
+        $context->clauses = $simplified_clauses;
     }
 
     /**

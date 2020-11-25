@@ -486,7 +486,17 @@ class AssertionFinder
                 );
 
                 if ($var_name) {
-                    $if_types[$var_name] = [['isset']];
+                    if ($isset_var instanceof PhpParser\Node\Expr\Variable
+                        && $source instanceof StatementsAnalyzer
+                        && ($var_type = $source->node_data->getType($isset_var))
+                        && !$var_type->isMixed()
+                        && !$var_type->possibly_undefined
+                        && $var_name !== '$_SESSION'
+                    ) {
+                        $if_types[$var_name] = [['!null']];
+                    } else {
+                        $if_types[$var_name] = [['isset']];
+                    }
                 } else {
                     // look for any variables we *can* use for an isset assertion
                     $array_root = $isset_var;
