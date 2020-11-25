@@ -22,7 +22,7 @@ return [
 'lchown' => [['file']],
 'readfile' => [['file']],
 'rename' => [['file'], ['file']],
-'rmdir' => ['file'],
+'rmdir' => [['file']],
 'header' => [['header']],
 'symlink' => [['file']],
 'tempnam' => [['file']],
