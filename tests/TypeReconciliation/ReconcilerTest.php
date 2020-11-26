@@ -37,16 +37,12 @@ class ReconcilerTest extends \Psalm\Tests\TestCase
     /**
      * @dataProvider providerTestReconcilation
      *
-     * @param string $expected
-     * @param string $type
-     * @param string $string
-     *
      */
-    public function testReconcilation($expected, $type, $string): void
+    public function testReconcilation(string $expected_type, string $assertion, string $original_type): void
     {
         $reconciled = \Psalm\Internal\Type\AssertionReconciler::reconcile(
-            $type,
-            Type::parseString($string),
+            $assertion,
+            Type::parseString($original_type),
             null,
             $this->statements_analyzer,
             false,
@@ -54,7 +50,7 @@ class ReconcilerTest extends \Psalm\Tests\TestCase
         );
 
         $this->assertSame(
-            $expected,
+            $expected_type,
             $reconciled->getId()
         );
 
@@ -134,7 +130,7 @@ class ReconcilerTest extends \Psalm\Tests\TestCase
             'traversableToIntersection' => ['Countable&Traversable', 'Traversable', 'Countable'],
             'iterableWithoutParamsToTraversableWithoutParams' => ['Traversable', '!array', 'iterable'],
             'iterableWithParamsToTraversableWithParams' => ['Traversable<int, string>', '!array', 'iterable<int, string>'],
-            'iterableAndObject' => ['ArrayAccess|array<int, string>', 'object', 'iterable<int, string>'],
+            'iterableAndObject' => ['ArrayAccess<int, string>', 'object', 'iterable<int, string>'],
             'iterableAndNotObject' => ['array<int, string>', '!object', 'iterable<int, string>'],
         ];
     }
