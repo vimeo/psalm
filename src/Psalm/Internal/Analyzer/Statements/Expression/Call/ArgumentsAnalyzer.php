@@ -746,6 +746,10 @@ class ArgumentsAnalyzer
             && $cased_method_id
         ) {
             foreach ($args as $argument_offset => $_) {
+                if (!isset($arg_function_params[$argument_offset])) {
+                    continue;
+                }
+
                 foreach ($arg_function_params[$argument_offset] as $function_param) {
                     if ($function_param->sinks) {
                         if (!$function_storage || $function_storage->specialize_call) {
