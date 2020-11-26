@@ -941,6 +941,14 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                 ]);
                 $non_object_types[] = new Atomic\TCallableString();
                 $did_remove_type = true;
+            } elseif ($type instanceof Atomic\TIterable) {
+                $clone_type = clone $type;
+
+                self::refineArrayKey($clone_type->type_params[0]);
+
+                $non_object_types[] = new TArray($clone_type->type_params);
+
+                $did_remove_type = true;
             } elseif (!$type->isObjectType()) {
                 $non_object_types[] = $type;
             } else {

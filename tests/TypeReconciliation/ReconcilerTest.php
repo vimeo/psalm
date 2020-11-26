@@ -134,6 +134,8 @@ class ReconcilerTest extends \Psalm\Tests\TestCase
             'traversableToIntersection' => ['Countable&Traversable', 'Traversable', 'Countable'],
             'iterableWithoutParamsToTraversableWithoutParams' => ['Traversable', '!array', 'iterable'],
             'iterableWithParamsToTraversableWithParams' => ['Traversable<int, string>', '!array', 'iterable<int, string>'],
+            'iterableAndObject' => ['ArrayAccess|array<int, string>', 'object', 'iterable<int, string>'],
+            'iterableAndNotObject' => ['array<int, string>', '!object', 'iterable<int, string>'],
         ];
     }
 

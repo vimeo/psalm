@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Type;
 
+use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TScalar;
 use function array_pop;
 use function array_shift;
 use function count;
@@ -1013,6 +1015,27 @@ class Reconciler
                     break;
                 }
             }
+        }
+    }
+
+    protected static function refineArrayKey(Union $key_type) : void
+    {
+        foreach ($key_type->getAtomicTypes() as $key => $cat) {
+            if ($cat instanceof TTemplateParam) {
+                self::refineArrayKey($cat->as);
+                $key_type->bustCache();
+            } elseif ($cat instanceof TScalar || $cat instanceof TMixed) {
+                $key_type->removeType($key);
+                $key_type->addType(new Type\Atomic\TArrayKey());
+            } elseif (!$cat instanceof TString && !$cat instanceof TInt) {
+                $key_type->removeType($key);
+                $key_type->addType(new Type\Atomic\TArrayKey());
+            }
+        }
+
+        if (!$key_type->getAtomicTypes()) {
+            // this should ideally prompt some sort of error
+            $key_type->addType(new Type\Atomic\TArrayKey());
         }
     }
 }
