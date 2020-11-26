@@ -544,7 +544,8 @@ class FunctionCallTest extends TestCase
             'parseUrlArray' => [
                 '<?php
                     function foo(string $s) : string {
-                        return parse_url($s)["host"] ?? "";
+                        $parts = parse_url($s);
+                        return $parts["host"] ?? "";
                     }
 
                     function hereisanotherone(string $s) : string {
@@ -1818,7 +1819,7 @@ class FunctionCallTest extends TestCase
                         $c = "prefix " . (strtoupper($g ?? "") === "x" ? "xa" : "ya");
                         echo "$x, $c\n";
                     }',
-                'error_message' => 'TypeDoesNotContainType',
+                'error_message' => 'RedundantCondition',
             ],
             'noCrashOnEmptyArrayPush' => [
                 '<?php

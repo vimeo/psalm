@@ -543,7 +543,16 @@ class Reconciler
                 if (!isset($existing_keys[$new_base_key])) {
                     $new_base_type = null;
 
-                    foreach ($existing_keys[$base_key]->getAtomicTypes() as $existing_key_type_part) {
+                    $atomic_types = $existing_keys[$base_key]->getAtomicTypes();
+
+                    while ($atomic_types) {
+                        $existing_key_type_part = array_pop($atomic_types);
+
+                        if ($existing_key_type_part instanceof TTemplateParam) {
+                            $atomic_types = array_merge($atomic_types, $existing_key_type_part->as->getAtomicTypes());
+                            continue;
+                        }
+
                         if ($existing_key_type_part instanceof Type\Atomic\TArray) {
                             if ($has_empty) {
                                 return null;
@@ -632,9 +641,9 @@ class Reconciler
                                 $codebase
                             );
                         }
-                    }
 
-                    $existing_keys[$new_base_key] = $new_base_type;
+                        $existing_keys[$new_base_key] = $new_base_type;
+                    }
                 }
 
                 $base_key = $new_base_key;
@@ -645,7 +654,16 @@ class Reconciler
                 if (!isset($existing_keys[$new_base_key])) {
                     $new_base_type = null;
 
-                    foreach ($existing_keys[$base_key]->getAtomicTypes() as $existing_key_type_part) {
+                    $atomic_types = $existing_keys[$base_key]->getAtomicTypes();
+
+                    while ($atomic_types) {
+                        $existing_key_type_part = array_pop($atomic_types);
+
+                        if ($existing_key_type_part instanceof TTemplateParam) {
+                            $atomic_types = array_merge($atomic_types, $existing_key_type_part->as->getAtomicTypes());
+                            continue;
+                        }
+
                         if ($existing_key_type_part instanceof TNull) {
                             $class_property_type = Type::getNull();
                         } elseif ($existing_key_type_part instanceof TMixed

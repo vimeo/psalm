@@ -1594,7 +1594,7 @@ class ClassTemplateTest extends TestCase
                          * @return scalar|array|object|null
                          */
                         public function __get(string $property) {
-                            return $this->data[$property] ?? null;
+                            return isset($this->data[$property]) ? $this->data[$property] : null;
                         }
 
                         /**

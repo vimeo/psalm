@@ -410,7 +410,6 @@ class WhileTest extends \Psalm\Tests\TestCase
             'possiblyUndefinedInWhile' => [
                 '<?php
                     function getRenderersForClass(string $a): void {
-                        /** @psalm-suppress MixedArgument */
                         while ($b = getString($b ?? $a)) {
                             $c = "hello";
                         }
