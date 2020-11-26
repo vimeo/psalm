@@ -19,6 +19,7 @@ use function array_map;
 use function array_keys;
 use function preg_match;
 use function preg_quote;
+use function substr;
 
 /**
  * @internal

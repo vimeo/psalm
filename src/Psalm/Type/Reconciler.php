@@ -33,6 +33,7 @@ use function strtolower;
 use function substr;
 use function preg_match;
 use function preg_quote;
+use function array_merge;
 
 class Reconciler
 {
