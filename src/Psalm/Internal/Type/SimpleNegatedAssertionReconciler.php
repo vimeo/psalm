@@ -165,7 +165,8 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                 $suppressed_issues,
                 $failed_reconciliation,
                 $is_equality,
-                $is_strict_equality
+                $is_strict_equality,
+                false
             );
         }
 
@@ -540,7 +541,8 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         array $suppressed_issues,
         int &$failed_reconciliation,
         bool $is_equality,
-        bool $is_strict_equality
+        bool $is_strict_equality,
+        bool $recursive_check
     ) : Type\Union {
         $old_var_type_string = $existing_var_type->getId();
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
@@ -757,7 +759,8 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                         $suppressed_issues,
                         $template_did_fail,
                         $is_equality,
-                        $is_strict_equality
+                        $is_strict_equality,
+                        true
                     );
 
                     $did_remove_type = true;
@@ -777,7 +780,10 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         $existing_var_type->possibly_undefined = false;
         $existing_var_type->possibly_undefined_from_try = false;
 
-        if ((!$did_remove_type || empty($existing_var_type->getAtomicTypes())) && !$existing_var_type->hasTemplate()) {
+        if ((!$did_remove_type || empty($existing_var_type->getAtomicTypes())) &&
+            !$existing_var_type->hasTemplate() &&
+            !$recursive_check //don't emit issue if we're checking a subtype
+        ) {
             if ($key && $code_location && !$is_equality) {
                 self::triggerIssueForImpossible(
                     $existing_var_type,
