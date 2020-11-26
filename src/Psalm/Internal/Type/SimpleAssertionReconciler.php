@@ -1213,7 +1213,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
 
                 self::refineArrayKey($clone_type->type_params[0]);
 
-                $object_types[] = new Type\Atomic\TGenericObject('ArrayAccess', $clone_type->type_params);
+                $object_types[] = new Type\Atomic\TGenericObject('Traversable', $clone_type->type_params);
 
                 $did_remove_type = true;
             } else {
