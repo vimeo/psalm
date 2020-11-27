@@ -14,7 +14,7 @@
     ensureArrayIntOffsetsExist="false"
     resolveFromConfigFile="true"
     xsi:schemaLocation="https://getpsalm.org/schema/config config.xsd"
-    limitMethodComplexity="false"
+    limitMethodComplexity="true"
 >
     <projectFiles>
         <directory name="src"/>
@@ -89,6 +89,8 @@
                 <directory name="src/Psalm/Internal/Provider/ReturnTypeProvider"/>
             </errorLevel>
         </PossiblyUndefinedIntArrayOffset>
+
+        <ComplexMethod errorLevel="info" />
 
         <MissingThrowsDocblock errorLevel="info"/>
 
