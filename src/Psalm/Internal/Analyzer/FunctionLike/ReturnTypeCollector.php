@@ -2,6 +2,7 @@
 namespace Psalm\Internal\Analyzer\FunctionLike;
 
 use PhpParser;
+use Psalm\Codebase;
 use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -21,7 +22,7 @@ class ReturnTypeCollector
      * @return list<Type\Union>    a list of return types
      */
     public static function getReturnTypes(
-        \Psalm\Codebase $codebase,
+        Codebase $codebase,
         \Psalm\Internal\Provider\NodeDataProvider $nodes,
         array $stmts,
         array &$yield_types,
@@ -193,63 +194,76 @@ class ReturnTypeCollector
         if ($collapse_types) {
             // if it's a generator, boil everything down to a single generator return type
             if ($yield_types) {
-                $key_type = null;
-                $value_type = null;
-
-                $yield_type = Type::combineUnionTypeArray($yield_types, null);
-
-                foreach ($yield_type->getAtomicTypes() as $type) {
-                    if ($type instanceof Type\Atomic\TKeyedArray) {
-                        $type = $type->getGenericArrayType();
-                    }
-
-                    if ($type instanceof Type\Atomic\TList) {
-                        $type = new Type\Atomic\TArray([Type::getInt(), $type->type_param]);
-                    }
-
-                    if ($type instanceof Type\Atomic\TArray) {
-                        [$key_type_param, $value_type_param] = $type->type_params;
-
-                        if (!$key_type) {
-                            $key_type = clone $key_type_param;
-                        } else {
-                            $key_type = Type::combineUnionTypes($key_type_param, $key_type);
-                        }
-
-                        if (!$value_type) {
-                            $value_type = clone $value_type_param;
-                        } else {
-                            $value_type = Type::combineUnionTypes($value_type_param, $value_type);
-                        }
-                    } elseif ($type instanceof Type\Atomic\TIterable
-                        || $type instanceof Type\Atomic\TNamedObject
-                    ) {
-                        ForeachAnalyzer::getKeyValueParamsForTraversableObject(
-                            $type,
-                            $codebase,
-                            $key_type,
-                            $value_type
-                        );
-                    }
-                }
-
-                $yield_types = [
-                    new Type\Union([
-                        new Atomic\TGenericObject(
-                            'Generator',
-                            [
-                                $key_type ?: Type::getMixed(),
-                                $value_type ?: Type::getMixed(),
-                                Type::getMixed(),
-                                $return_types ? Type::combineUnionTypeArray($return_types, null) : Type::getVoid()
-                            ]
-                        ),
-                    ])
-                ];
+                $yield_types = self::processYieldTypes($codebase, $return_types, $yield_types);
             }
         }
 
         return $return_types;
+    }
+
+    /**
+     * @param  list<Type\Union>    $return_types
+     * @param  non-empty-list<Type\Union>    $yield_types
+     * @return non-empty-list<Type\Union>
+     */
+    private static function processYieldTypes(
+        Codebase $codebase,
+        array $return_types,
+        array $yield_types
+    ) : array {
+        $key_type = null;
+        $value_type = null;
+
+        $yield_type = Type::combineUnionTypeArray($yield_types, null);
+
+        foreach ($yield_type->getAtomicTypes() as $type) {
+            if ($type instanceof Type\Atomic\TKeyedArray) {
+                $type = $type->getGenericArrayType();
+            }
+
+            if ($type instanceof Type\Atomic\TList) {
+                $type = new Type\Atomic\TArray([Type::getInt(), $type->type_param]);
+            }
+
+            if ($type instanceof Type\Atomic\TArray) {
+                [$key_type_param, $value_type_param] = $type->type_params;
+
+                if (!$key_type) {
+                    $key_type = clone $key_type_param;
+                } else {
+                    $key_type = Type::combineUnionTypes($key_type_param, $key_type);
+                }
+
+                if (!$value_type) {
+                    $value_type = clone $value_type_param;
+                } else {
+                    $value_type = Type::combineUnionTypes($value_type_param, $value_type);
+                }
+            } elseif ($type instanceof Type\Atomic\TIterable
+                || $type instanceof Type\Atomic\TNamedObject
+            ) {
+                ForeachAnalyzer::getKeyValueParamsForTraversableObject(
+                    $type,
+                    $codebase,
+                    $key_type,
+                    $value_type
+                );
+            }
+        }
+
+        return [
+            new Type\Union([
+                new Atomic\TGenericObject(
+                    'Generator',
+                    [
+                        $key_type ?: Type::getMixed(),
+                        $value_type ?: Type::getMixed(),
+                        Type::getMixed(),
+                        $return_types ? Type::combineUnionTypeArray($return_types, null) : Type::getVoid()
+                    ]
+                ),
+            ])
+        ];
     }
 
     /**

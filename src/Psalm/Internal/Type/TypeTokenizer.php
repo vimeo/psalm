@@ -84,7 +84,12 @@ class TypeTokenizer
     private static $memoized_tokens = [];
 
     /**
-     * @return list<array{0: string, 1: int}>
+     * Tokenises a type string into an array of tuples where the first element
+     * contains the string token and the second element contains its offset,
+     *
+     * @return list<array{string, int}>
+     *
+     * @psalm-suppress ComplexMethod
      */
     public static function tokenize(string $string_type, bool $ignore_space = true): array
     {

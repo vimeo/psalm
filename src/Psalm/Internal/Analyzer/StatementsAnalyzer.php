@@ -704,11 +704,13 @@ class StatementsAnalyzer extends SourceAnalyzer
             && $function_storage
             && $function_storage->location
         ) {
-            [$count, $branching, $mean] = $this->data_flow_graph->getEdgeStats();
+            [$count, , $unique_destinations, $mean] = $this->data_flow_graph->getEdgeStats();
+
+            $average_destination_branches_converging = $unique_destinations > 0 ? $count / $unique_destinations : 0;
 
             if ($count > $codebase->config->max_graph_size
                 && $mean > $codebase->config->max_avg_path_length
-                && $branching > 1.1
+                && $average_destination_branches_converging > 1.1
             ) {
                 if ($source instanceof FunctionAnalyzer) {
                     if (IssueBuffer::accepts(
@@ -723,7 +725,7 @@ class StatementsAnalyzer extends SourceAnalyzer
                         // fall through
                     }
                 } elseif ($source instanceof MethodAnalyzer) {
-                   if (IssueBuffer::accepts(
+                    if (IssueBuffer::accepts(
                         new ComplexMethod(
                             'This method’s complexity is greater than the project limit'
                                 . ' (method graph size = ' . $count .', average path length = ' . round($mean) . ')',

@@ -452,7 +452,7 @@ class Config
     /**
      * @var int
      */
-    public $max_avg_path_length = 60;
+    public $max_avg_path_length = 70;
 
     /**
      * @var string[]

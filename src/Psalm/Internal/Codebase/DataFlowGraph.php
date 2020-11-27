@@ -97,38 +97,41 @@ abstract class DataFlowGraph
     }
 
     /**
-     * @return array{int, float, float}
+     * @return array{int, int, int, float}
      */
     public function getEdgeStats() : array
     {
         $lengths = 0;
 
         $destination_counts = [];
+        $origin_counts = [];
 
-        foreach ($this->forward_edges as $destinations) {
-            foreach ($destinations as $id => $path) {
+        foreach ($this->forward_edges as $from_id => $destinations) {
+            foreach ($destinations as $to_id => $path) {
                 if ($path->length === 0) {
                     continue;
                 }
 
                 $lengths += $path->length;
 
-                if (!isset($destination_counts[$id])) {
-                    $destination_counts[$id] = 0;
+                if (!isset($destination_counts[$to_id])) {
+                    $destination_counts[$to_id] = 0;
                 }
 
-                $destination_counts[$id]++;
+                $destination_counts[$to_id]++;
+
+                $origin_counts[$from_id] = true;
             }
         }
 
         $count = array_sum($destination_counts);
 
         if (!$count) {
-            return [0, 0, 0.0, 0.0];
+            return [0, 0, 0, 0.0];
         }
 
         $mean = $lengths / $count;
 
-        return [$count, $count / \count($destination_counts), $mean];
+        return [$count, \count($origin_counts), \count($destination_counts), $mean];
     }
 }
