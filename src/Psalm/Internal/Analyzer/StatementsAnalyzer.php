@@ -30,6 +30,8 @@ use Psalm\DocComment;
 use Psalm\Exception\DocblockParseException;
 use Psalm\FileManipulation;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
+use Psalm\Issue\ComplexFunction;
+use Psalm\Issue\ComplexMethod;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\MissingDocblockType;
 use Psalm\Issue\Trace;
@@ -699,6 +701,8 @@ class StatementsAnalyzer extends SourceAnalyzer
             && $codebase->config->limit_method_complexity
             && $source instanceof FunctionLikeAnalyzer
             && !$source instanceof ClosureAnalyzer
+            && $function_storage
+            && $function_storage->location
         ) {
             [$count, $branching, $mean] = $this->data_flow_graph->getEdgeStats();
 
@@ -706,8 +710,31 @@ class StatementsAnalyzer extends SourceAnalyzer
                 && $mean > $codebase->config->max_avg_path_length
                 && $branching > 1.1
             ) {
-                echo $source->getId() . ' ' . $count . ' ' . round($mean) . ' ' . $branching . "\n";
-                // do something else
+                if ($source instanceof FunctionAnalyzer) {
+                    if (IssueBuffer::accepts(
+                        new ComplexFunction(
+                            'This function’s complexity is greater than the project limit'
+                                . ' (method graph size = ' . $count .', average path length = ' . round($mean). ')',
+                            $function_storage->location
+                        ),
+                        $this->getSuppressedIssues(),
+                        true
+                    )) {
+                        // fall through
+                    }
+                } elseif ($source instanceof MethodAnalyzer) {
+                   if (IssueBuffer::accepts(
+                        new ComplexMethod(
+                            'This method’s complexity is greater than the project limit'
+                                . ' (method graph size = ' . $count .', average path length = ' . round($mean) . ')',
+                            $function_storage->location
+                        ),
+                        $this->getSuppressedIssues(),
+                        true
+                    )) {
+                        // fall through
+                    }
+                }
             }
         }
 

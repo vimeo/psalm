@@ -132,6 +132,8 @@ class DocumentationTest extends TestCase
         $code_blocks['PluginIssue'] = true;
         $code_blocks['TaintedInput'] = true;
         $code_blocks['TaintedCustom'] = true;
+        $code_blocks['ComplexFunction'] = true;
+        $code_blocks['ComplexMethod'] = true;
 
         $documented_issues = array_keys($code_blocks);
         sort($documented_issues);
