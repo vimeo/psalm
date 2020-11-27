@@ -1706,12 +1706,13 @@ class ClassLikes
                     && !$classlike_storage->is_interface
                 ) {
                     foreach ($method_storage->params as $offset => $param_storage) {
-                        if (!$this->file_reference_provider->isMethodParamUsed(
-                            strtolower((string) $method_id),
-                            $offset
-                        )
+                        if (empty($classlike_storage->overridden_method_ids[$method_name])
                             && $param_storage->location
                             && !$param_storage->promoted_property
+                            && !$this->file_reference_provider->isMethodParamUsed(
+                                strtolower((string) $method_id),
+                                $offset
+                            )
                         ) {
                             if ($method_storage->final) {
                                 if (IssueBuffer::accepts(

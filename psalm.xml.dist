@@ -67,9 +67,6 @@
             <errorLevel type="suppress">
                 <directory name="examples"/>
             </errorLevel>
-            <errorLevel type="info">
-                <directory name="src/Psalm/Type/Atomic"/>
-            </errorLevel>
         </PossiblyUnusedParam>
 
         <UnusedClass>
