@@ -91,8 +91,8 @@ class FunctionLikeDocblockParser
             }
         }
 
-        if (isset($parsed_docblock->tags['param-out'])) {
-            foreach ($parsed_docblock->tags['param-out'] as $offset => $param) {
+        if (isset($parsed_docblock->combined_tags['param-out'])) {
+            foreach ($parsed_docblock->combined_tags['param-out'] as $offset => $param) {
                 $line_parts = CommentAnalyzer::splitDocLine($param);
 
                 if (count($line_parts) === 1 && isset($line_parts[0][0]) && $line_parts[0][0] === '$') {

@@ -2135,7 +2135,7 @@ class UnusedVariableTest extends TestCase
                     }
 
                     /**
-                     * @param-out int $c
+                     * @psalm-param-out int $c
                      */
                     function takesByRef(?int &$c) : void {
                         $c = 7;
