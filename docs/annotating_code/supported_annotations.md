@@ -51,7 +51,7 @@ function bat(): string {
 
 There are a number of custom tags that determine how Psalm treats your code.
 
-### `@param-out`
+### `@param-out`, `@psalm-param-out`
 
 This is used to specify that a by-ref type is different from the one that entered. In the function below the first param can be null, but once the function has executed the by-ref value is not null.
 
