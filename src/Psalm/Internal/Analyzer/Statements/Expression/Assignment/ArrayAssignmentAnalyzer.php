@@ -508,17 +508,15 @@ class ArrayAssignmentAnalyzer
                             [],
                             [
                                 $offset_type_part->param_name => [
-                                    $offset_type_part->defining_class => [
-                                        new Type\Union([
-                                            new Type\Atomic\TTemplateParam(
-                                                $class_string_map->param_name,
-                                                $offset_type_part->as_type
-                                                    ? new Type\Union([$offset_type_part->as_type])
-                                                    : Type::getObject(),
-                                                'class-string-map'
-                                            )
-                                        ])
-                                    ]
+                                    $offset_type_part->defining_class => new Type\Union([
+                                        new Type\Atomic\TTemplateParam(
+                                            $class_string_map->param_name,
+                                            $offset_type_part->as_type
+                                                ? new Type\Union([$offset_type_part->as_type])
+                                                : Type::getObject(),
+                                            'class-string-map'
+                                        )
+                                    ])
                                 ]
                             ]
                         );

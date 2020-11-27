@@ -54,7 +54,7 @@ abstract class Type
      * Parses a string type representation
      *
      * @param  array{int,int}|null   $php_version
-     * @param  array<string, array<string, array{Type\Union}>> $template_type_map
+     * @param  array<string, array<string, Type\Union>> $template_type_map
      */
     public static function parseString(
         string $type_string,

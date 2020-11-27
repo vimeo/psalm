@@ -299,7 +299,7 @@ class AtomicPropertyFetchAnalyzer
                         $type_params = [];
 
                         foreach ($class_storage->template_types as $type_map) {
-                            $type_params[] = clone array_values($type_map)[0][0];
+                            $type_params[] = clone array_values($type_map)[0];
                         }
 
                         $lhs_type_part = new TGenericObject($lhs_type_part->value, $type_params);
@@ -434,7 +434,7 @@ class AtomicPropertyFetchAnalyzer
                         $type_params = [];
 
                         foreach ($class_storage->template_types as $type_map) {
-                            $type_params[] = clone array_values($type_map)[0][0];
+                            $type_params[] = clone array_values($type_map)[0];
                         }
 
                         $lhs_type_part = new TGenericObject($lhs_type_part->value, $type_params);
@@ -625,7 +625,7 @@ class AtomicPropertyFetchAnalyzer
                     $type_params = [];
 
                     foreach ($declaring_class_storage->template_types as $type_map) {
-                        $type_params[] = clone array_values($type_map)[0][0];
+                        $type_params[] = clone array_values($type_map)[0];
                     }
 
                     $lhs_type_part = new TGenericObject($lhs_type_part->value, $type_params);
@@ -716,10 +716,7 @@ class AtomicPropertyFetchAnalyzer
                         $i++;
 
                         if ($i === $param_offset) {
-                            $template_types[$calling_param_name][$calling_class_storage->name] = [
-                                $lhs_param_type,
-                                0
-                            ];
+                            $template_types[$calling_param_name][$calling_class_storage->name] = $lhs_param_type;
                             break;
                         }
                     }
@@ -747,10 +744,8 @@ class AtomicPropertyFetchAnalyzer
                         }
 
                         if ($position !== false && isset($lhs_type_part->type_params[$position])) {
-                            $template_types[$type_name][$declaring_class_storage->name] = [
-                                $lhs_type_part->type_params[$position],
-                                0
-                            ];
+                            $template_types[$type_name][$declaring_class_storage->name]
+                                = $lhs_type_part->type_params[$position];
                         }
                     }
                 }

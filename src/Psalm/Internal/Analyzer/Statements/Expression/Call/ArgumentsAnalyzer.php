@@ -39,6 +39,7 @@ use function count;
 use function in_array;
 use function array_reverse;
 use function is_string;
+use function array_map;
 
 /**
  * @internal
@@ -48,7 +49,6 @@ class ArgumentsAnalyzer
     /**
      * @param   list<PhpParser\Node\Arg>          $args
      * @param   array<int, FunctionLikeParameter>|null  $function_params
-     * @param   array<string, array<string, array{Type\Union, 1?:int}>>|null   $generic_params
      *
      * @return  false|null
      */
@@ -246,7 +246,7 @@ class ArgumentsAnalyzer
             ])
         ]);
 
-        $template_types = ['ArrayValue' . $argument_offset => [$method_id => [Type::getMixed()]]];
+        $template_types = ['ArrayValue' . $argument_offset => [$method_id => Type::getMixed()]];
 
         $replace_template_result = new \Psalm\Internal\Type\TemplateResult(
             $template_types,
@@ -323,7 +323,17 @@ class ArgumentsAnalyzer
         }
 
         $replace_template_result = new \Psalm\Internal\Type\TemplateResult(
-            $template_result->upper_bounds,
+            array_map(
+                function ($template_map) {
+                    return array_map(
+                        function ($bound) {
+                            return $bound->type;
+                        },
+                        $template_map
+                    );
+                },
+                $template_result->upper_bounds
+            ),
             []
         );
 
@@ -543,9 +553,15 @@ class ArgumentsAnalyzer
 
         $template_result = null;
 
-        $class_generic_params = $class_template_result
-            ? $class_template_result->upper_bounds
-            : [];
+        $class_generic_params = [];
+
+        if ($class_template_result) {
+            foreach ($class_template_result->upper_bounds as $template_name => $type_map) {
+                foreach ($type_map as $class => $bound) {
+                    $class_generic_params[$template_name][$class] = clone $bound->type;
+                }
+            }
+        }
 
         if ($function_storage) {
             $template_types = CallAnalyzer::getTemplateTypesForCall(
@@ -609,12 +625,6 @@ class ArgumentsAnalyzer
                         $template_result->upper_bounds = [];
                     }
                 }
-            }
-        }
-
-        foreach ($class_generic_params as $template_name => $type_map) {
-            foreach ($type_map as $class => $type) {
-                $class_generic_params[$template_name][$class][0] = clone $type[0];
             }
         }
 

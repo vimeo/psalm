@@ -250,7 +250,7 @@ class TypeChecker extends NodeVisitor
                 && empty($expected_param_covariants[$i]);
 
             if (isset(\array_values($expected_type_params)[$i])) {
-                $expected_type_param = \reset(\array_values($expected_type_params)[$i])[0];
+                $expected_type_param = \reset(\array_values($expected_type_params)[$i]);
 
                 $expected_type_param = \Psalm\Internal\Type\TypeExpander::expandUnion(
                     $codebase,

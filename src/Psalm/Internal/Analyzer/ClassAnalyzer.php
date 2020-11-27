@@ -2046,7 +2046,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     $template_params[] = new Type\Union([
                         new Type\Atomic\TTemplateParam(
                             $param_name,
-                            \reset($template_map)[0],
+                            \reset($template_map),
                             $key
                         )
                     ]);
@@ -2212,8 +2212,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                             }
                         }
 
-                        if (!$template_type[0]->isMixed()) {
-                            $template_type_copy = clone $template_type[0];
+                        if (!$template_type->isMixed()) {
+                            $template_type_copy = clone $template_type;
 
                             $template_result = new \Psalm\Internal\Type\TemplateResult(
                                 $previous_extended ?: [],
@@ -2244,12 +2244,12 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                                 }
                             } else {
                                 $previous_extended[$template_name] = [
-                                    $declaring_class => [$extended_type]
+                                    $declaring_class => $extended_type
                                 ];
                             }
                         } else {
                             $previous_extended[$template_name] = [
-                                $declaring_class => [$extended_type]
+                                $declaring_class => $extended_type
                             ];
                         }
                     }

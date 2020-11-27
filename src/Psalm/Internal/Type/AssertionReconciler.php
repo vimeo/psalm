@@ -43,7 +43,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
      *  - notEmpty(Object|false) => Object
      *
      * @param   string[]            $suppressed_issues
-     * @param   array<string, array<string, array{Type\Union}>> $template_type_map
+     * @param   array<string, array<string, Type\Union>> $template_type_map
      * @param-out   0|1|2   $failed_reconciliation
      */
     public static function reconcile(
@@ -362,7 +362,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
     /**
      * @param 0|1|2         $failed_reconciliation
      * @param   string[]    $suppressed_issues
-     * @param   array<string, array<string, array{Type\Union}>> $template_type_map
+     * @param   array<string, array<string, Type\Union>> $template_type_map
      * @param-out   0|1|2   $failed_reconciliation
      */
     private static function refine(
@@ -671,7 +671,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
 
 
     /**
-     * @param array<string, array<string, array{0:Type\Union, 1?: int}>> $template_type_map
+     * @param array<string, array<string, Type\Union>> $template_type_map
      */
     private static function filterTypeWithAnother(
         Codebase $codebase,

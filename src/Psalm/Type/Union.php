@@ -1035,7 +1035,7 @@ class Union implements TypeNode
 
         $is_mixed = false;
 
-        $found_generic_params = $template_result->upper_bounds ?: [];
+        $inferred_upper_bounds = $template_result->upper_bounds ?: [];
 
         foreach ($this->types as $key => $atomic_type) {
             $atomic_type->replaceTemplateTypesWithArgTypes($template_result, $codebase);
@@ -1044,13 +1044,13 @@ class Union implements TypeNode
                 $template_type = null;
 
                 $traversed_type = \Psalm\Internal\Type\UnionTemplateHandler::getRootTemplateType(
-                    $found_generic_params,
+                    $inferred_upper_bounds,
                     $atomic_type->param_name,
                     $atomic_type->defining_class
                 );
 
                 if ($traversed_type) {
-                    $template_type = $traversed_type[0];
+                    $template_type = $traversed_type;
 
                     if (!$atomic_type->as->isMixed() && $template_type->isMixed()) {
                         $template_type = clone $atomic_type->as;
@@ -1082,7 +1082,7 @@ class Union implements TypeNode
                         }
                     }
                 } elseif ($codebase) {
-                    foreach ($found_generic_params as $template_type_map) {
+                    foreach ($inferred_upper_bounds as $template_type_map) {
                         foreach ($template_type_map as $template_class => $_) {
                             if (substr($template_class, 0, 3) === 'fn-') {
                                 continue;
@@ -1098,11 +1098,12 @@ class Union implements TypeNode
                                         $param_map = $classlike_storage->template_type_extends[$defining_class];
 
                                         if (isset($param_map[$key])
-                                            && isset($found_generic_params[(string) $param_map[$key]][$template_class])
+                                            && isset($inferred_upper_bounds[(string) $param_map[$key]][$template_class])
                                         ) {
+                                            $template_name = (string) $param_map[$key];
+
                                             $template_type
-                                                = clone $found_generic_params
-                                                    [(string) $param_map[$key]][$template_class][0];
+                                                = clone $inferred_upper_bounds[$template_name][$template_class]->type;
                                         }
                                     }
                                 }
@@ -1124,8 +1125,8 @@ class Union implements TypeNode
                     }
                 }
             } elseif ($atomic_type instanceof Type\Atomic\TTemplateParamClass) {
-                $template_type = isset($found_generic_params[$atomic_type->param_name][$atomic_type->defining_class])
-                    ? clone $found_generic_params[$atomic_type->param_name][$atomic_type->defining_class][0]
+                $template_type = isset($inferred_upper_bounds[$atomic_type->param_name][$atomic_type->defining_class])
+                    ? clone $inferred_upper_bounds[$atomic_type->param_name][$atomic_type->defining_class]->type
                     : null;
 
                 $class_template_type = null;
@@ -1163,15 +1164,15 @@ class Union implements TypeNode
 
                 $template_type = null;
 
-                if (isset($found_generic_params[$atomic_type->array_param_name][$atomic_type->defining_class])
-                    && !empty($found_generic_params[$atomic_type->offset_param_name])
+                if (isset($inferred_upper_bounds[$atomic_type->array_param_name][$atomic_type->defining_class])
+                    && !empty($inferred_upper_bounds[$atomic_type->offset_param_name])
                 ) {
                     $array_template_type
-                        = $found_generic_params[$atomic_type->array_param_name][$atomic_type->defining_class][0];
+                        = $inferred_upper_bounds[$atomic_type->array_param_name][$atomic_type->defining_class]->type;
                     $offset_template_type
                         = array_values(
-                            $found_generic_params[$atomic_type->offset_param_name]
-                        )[0][0];
+                            $inferred_upper_bounds[$atomic_type->offset_param_name]
+                        )[0]->type;
 
                     if ($array_template_type->isSingle()
                         && $offset_template_type->isSingle()
@@ -1205,8 +1206,8 @@ class Union implements TypeNode
             } elseif ($atomic_type instanceof Type\Atomic\TConditional
                 && $codebase
             ) {
-                $template_type = isset($found_generic_params[$atomic_type->param_name][$atomic_type->defining_class])
-                    ? clone $found_generic_params[$atomic_type->param_name][$atomic_type->defining_class][0]
+                $template_type = isset($inferred_upper_bounds[$atomic_type->param_name][$atomic_type->defining_class])
+                    ? clone $inferred_upper_bounds[$atomic_type->param_name][$atomic_type->defining_class]->type
                     : null;
 
                 $class_template_type = null;

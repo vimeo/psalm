@@ -178,7 +178,7 @@ class StubsGenerator
         $docblock = new ParsedDocblock('', []);
 
         foreach ($function_storage->template_types ?: [] as $template_name => $map) {
-            $type = array_values($map)[0][0];
+            $type = array_values($map)[0];
 
             $docblock->tags['template'][] = $template_name . ' as ' . $type->toNamespacedString(
                 $namespace_name,

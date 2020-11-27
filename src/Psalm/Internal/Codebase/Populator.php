@@ -421,7 +421,7 @@ class Populator
 
                     foreach ($trait_storage->template_types as $template_name => $template_type_map) {
                         foreach ($template_type_map as $template_type) {
-                            $default_param = clone $template_type[0];
+                            $default_param = clone $template_type;
                             $default_param->from_docblock = false;
                             $storage->template_type_extends[$trait_storage->name][$template_name]
                                 = $default_param;
@@ -533,7 +533,7 @@ class Populator
 
                 foreach ($parent_storage->template_types as $template_name => $template_type_map) {
                     foreach ($template_type_map as $template_type) {
-                        $default_param = clone $template_type[0];
+                        $default_param = clone $template_type;
                         $default_param->from_docblock = false;
                         $storage->template_type_extends[$parent_storage->name][$template_name]
                             = $default_param;
@@ -674,7 +674,7 @@ class Populator
 
                     foreach ($parent_interface_storage->template_types as $template_name => $template_type_map) {
                         foreach ($template_type_map as $template_type) {
-                            $default_param = clone $template_type[0];
+                            $default_param = clone $template_type;
                             $default_param->from_docblock = false;
                             $storage->template_type_extends[$parent_interface_storage->name][$template_name]
                                 = $default_param;
@@ -771,7 +771,7 @@ class Populator
 
                     foreach ($implemented_interface_storage->template_types as $template_name => $template_type_map) {
                         foreach ($template_type_map as $template_type) {
-                            $default_param = clone $template_type[0];
+                            $default_param = clone $template_type;
                             $default_param->from_docblock = false;
                             $storage->template_type_extends[$implemented_interface_storage->name][$template_name]
                                 = $default_param;

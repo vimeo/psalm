@@ -224,7 +224,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         $template_params[] = new Type\Union([
                             new Type\Atomic\TTemplateParam(
                                 $param_name,
-                                \reset($template_map)[0],
+                                \reset($template_map),
                                 $key
                             )
                         ]);
@@ -1874,7 +1874,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * @return array<string, array<string, array{Type\Union}>>|null
+     * @return array<string, array<string, Type\Union>>|null
      */
     public function getTemplateTypeMap(): ?array
     {

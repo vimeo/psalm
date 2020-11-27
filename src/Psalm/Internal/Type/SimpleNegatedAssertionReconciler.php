@@ -30,7 +30,7 @@ use function substr;
 class SimpleNegatedAssertionReconciler extends Reconciler
 {
     /**
-     * @param  array<string, array<string, array{Type\Union}>> $template_type_map
+     * @param  array<string, array<string, Type\Union>> $template_type_map
      * @param  string[]   $suppressed_issues
      * @param  0|1|2      $failed_reconciliation
      *

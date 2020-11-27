@@ -603,7 +603,7 @@ class FileAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * @return array<string, array<string, array{Type\Union}>>|null
+     * @return array<string, array<string, Type\Union>>|null
      */
     public function getTemplateTypeMap(): ?array
     {

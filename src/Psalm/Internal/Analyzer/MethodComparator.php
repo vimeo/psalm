@@ -1064,7 +1064,7 @@ class MethodComparator
                         }
                     }
 
-                    $template_types[$key][$base_class_name] = [$mapped_type];
+                    $template_types[$key][$base_class_name] = $mapped_type;
                 }
             }
 

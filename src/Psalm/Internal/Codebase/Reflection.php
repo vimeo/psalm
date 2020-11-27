@@ -170,8 +170,8 @@ class Reflection
 
         if ($class_name_lower === 'generator') {
             $storage->template_types = [
-                'TKey' => ['Generator' => [Type::getMixed()]],
-                'TValue' => ['Generator' => [Type::getMixed()]],
+                'TKey' => ['Generator' => Type::getMixed()],
+                'TValue' => ['Generator' => Type::getMixed()],
             ];
         }
 

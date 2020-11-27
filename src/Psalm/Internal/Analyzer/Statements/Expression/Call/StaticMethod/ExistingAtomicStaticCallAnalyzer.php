@@ -10,6 +10,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\TemplateBound;
 use Psalm\Issue\AbstractMethodCall;
 use Psalm\Issue\ImpureMethodCall;
 use Psalm\IssueBuffer;
@@ -145,7 +146,7 @@ class ExistingAtomicStaticCallAnalyzer
                     }
 
                     if (isset($found_generic_params[$type_key][$template_fq_class_name])) {
-                        $found_generic_params[$type_key][$template_fq_class_name][0] = clone $extended_type;
+                        $found_generic_params[$type_key][$template_fq_class_name] = clone $extended_type;
                         continue;
                     }
 
@@ -153,13 +154,11 @@ class ExistingAtomicStaticCallAnalyzer
                         if ($t instanceof Type\Atomic\TTemplateParam
                             && isset($found_generic_params[$t->param_name][$t->defining_class])
                         ) {
-                            $found_generic_params[$type_key][$template_fq_class_name] = [
-                                $found_generic_params[$t->param_name][$t->defining_class][0]
-                            ];
+                            $found_generic_params[$type_key][$template_fq_class_name]
+                                = $found_generic_params[$t->param_name][$t->defining_class];
                         } else {
-                            $found_generic_params[$type_key][$template_fq_class_name] = [
-                                clone $extended_type
-                            ];
+                            $found_generic_params[$type_key][$template_fq_class_name]
+                                = clone $extended_type;
                             break;
                         }
                     }
@@ -245,21 +244,19 @@ class ExistingAtomicStaticCallAnalyzer
                         )) {
                             if ($template_type->param_name === 'TFunctionArgCount') {
                                 $template_result->upper_bounds[$template_type->param_name] = [
-                                    'fn-' . strtolower((string) $method_id) => [
-                                        Type::getInt(false, count($stmt->args)),
-                                        0
-                                    ]
+                                    'fn-' . strtolower((string) $method_id) => new TemplateBound(
+                                        Type::getInt(false, count($stmt->args))
+                                    )
                                 ];
                             } elseif ($template_type->param_name === 'TPhpMajorVersion') {
                                 $template_result->upper_bounds[$template_type->param_name] = [
-                                    'fn-' . strtolower((string) $method_id) => [
+                                    'fn-' . strtolower((string) $method_id) => new TemplateBound(
                                         Type::getInt(false, $codebase->php_major_version),
-                                        0
-                                    ]
+                                    )
                                 ];
                             } else {
                                 $template_result->upper_bounds[$template_type->param_name] = [
-                                    ($template_type->defining_class) => [Type::getEmpty(), 0]
+                                    ($template_type->defining_class) => new TemplateBound(Type::getEmpty())
                                 ];
                             }
                         }

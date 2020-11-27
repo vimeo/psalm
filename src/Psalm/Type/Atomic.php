@@ -89,7 +89,7 @@ abstract class Atomic implements TypeNode
 
     /**
      * @param  array{int,int}|null   $php_version
-     * @param  array<string, array<string, array{Union}>> $template_type_map
+     * @param  array<string, array<string, Union>> $template_type_map
      * @param  array<string, TypeAlias> $type_aliases
      */
     public static function create(
@@ -265,7 +265,7 @@ abstract class Atomic implements TypeNode
 
             return new TTemplateParam(
                 $value,
-                $template_type_map[$value][$first_class][0],
+                $template_type_map[$value][$first_class],
                 $first_class
             );
         }

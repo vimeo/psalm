@@ -7,6 +7,7 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\CodeLocation;
 use Psalm\Context;
@@ -30,6 +31,7 @@ use function str_replace;
 use function is_int;
 use function substr;
 use function array_merge;
+use function array_map;
 
 /**
  * @internal
@@ -339,8 +341,8 @@ class CallAnalyzer
     }
 
     /**
-     * @return array<string, array<string, array{Type\Union}>>
-     * @param array<string, non-empty-array<string, array{Type\Union}>> $existing_template_types
+     * @return array<string, array<string, Type\Union>>
+     * @param array<string, non-empty-array<string, Type\Union>> $existing_template_types
      */
     public static function getTemplateTypesForCall(
         \Psalm\Codebase $codebase,
@@ -383,14 +385,14 @@ class CallAnalyzer
                                 }
                             }
 
-                            $template_types[$template_name][$declaring_class_storage->name] = [$output_type];
+                            $template_types[$template_name][$declaring_class_storage->name] = $output_type;
                         }
                     }
                 }
             } elseif ($declaring_class_storage->template_types) {
                 foreach ($declaring_class_storage->template_types as $template_name => $type_map) {
-                    foreach ($type_map as $key => [$type]) {
-                        $template_types[$template_name][$key] = [$type];
+                    foreach ($type_map as $key => $type) {
+                        $template_types[$template_name][$key] = $type;
                     }
                 }
             }
@@ -398,9 +400,9 @@ class CallAnalyzer
 
         foreach ($template_types as $key => $type_map) {
             foreach ($type_map as $class => $type) {
-                $template_types[$key][$class][0] = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                $template_types[$key][$class] = \Psalm\Internal\Type\TypeExpander::expandUnion(
                     $codebase,
-                    $type[0],
+                    $type,
                     $appearing_class_name,
                     $calling_class_storage ? $calling_class_storage->name : null,
                     null,
@@ -416,7 +418,7 @@ class CallAnalyzer
 
     /**
      * @param  array<string, array<int|string, Type\Union>>  $template_type_extends
-     * @param  array<string, array<string, array{Type\Union}>>  $found_generic_params
+     * @param  array<string, array<string, Type\Union>>  $found_generic_params
      */
     public static function getGenericParamForOffset(
         string $fq_class_name,
@@ -436,7 +438,7 @@ class CallAnalyzer
                 }
             }
 
-            return $found_generic_params[$template_name][$fq_class_name][0];
+            return $found_generic_params[$template_name][$fq_class_name];
         }
 
         foreach ($template_type_extends as $type_map) {
@@ -619,7 +621,7 @@ class CallAnalyzer
      * @param  \Psalm\Storage\Assertion[] $assertions
      * @param  string $thisName
      * @param  list<PhpParser\Node\Arg> $args
-     * @param  array<string, array<string, array{Type\Union}>> $template_type_map,
+     * @param  array<string, array<string, TemplateBound>> $inferred_upper_bouunds,
      *
      */
     public static function applyAssertionsToContext(
@@ -627,7 +629,7 @@ class CallAnalyzer
         ?string $thisName,
         array $assertions,
         array $args,
-        array $template_type_map,
+        array $inferred_upper_bouunds,
         Context $context,
         StatementsAnalyzer $statements_analyzer
     ): void {
@@ -677,13 +679,13 @@ class CallAnalyzer
                     $rule = substr($rule, 1);
                 }
 
-                if (isset($template_type_map[$rule])) {
-                    foreach ($template_type_map[$rule] as $template_map) {
-                        if ($template_map[0]->hasMixed()) {
+                if (isset($inferred_upper_bouunds[$rule])) {
+                    foreach ($inferred_upper_bouunds[$rule] as $template_map) {
+                        if ($template_map->type->hasMixed()) {
                             continue 2;
                         }
 
-                        $replacement_atomic_types = $template_map[0]->getAtomicTypes();
+                        $replacement_atomic_types = $template_map->type->getAtomicTypes();
 
                         if (count($replacement_atomic_types) > 1) {
                             continue 2;
@@ -791,17 +793,27 @@ class CallAnalyzer
         }
 
         if ($type_assertions) {
+            $template_type_map = array_map(
+                function ($type_map) {
+                    return array_map(
+                        function ($bound) {
+                            return $bound->type;
+                        },
+                        $type_map
+                    );
+                },
+                $inferred_upper_bouunds
+            );
+
             foreach (($statements_analyzer->getTemplateTypeMap() ?: []) as $template_name => $map) {
-                foreach ($map as $ref => [$type]) {
-                    $template_type_map[$template_name][$ref] = [
-                        new Type\Union([
-                            new Type\Atomic\TTemplateParam(
-                                $template_name,
-                                $type,
-                                $ref
-                            )
-                        ])
-                    ];
+                foreach ($map as $ref => $type) {
+                    $template_type_map[$template_name][$ref] = new Type\Union([
+                        new Type\Atomic\TTemplateParam(
+                            $template_name,
+                            $type,
+                            $ref
+                        )
+                    ]);
                 }
             }
 
@@ -874,21 +886,21 @@ class CallAnalyzer
     ) : void {
         if ($template_result->upper_bounds && $template_result->lower_bounds) {
             foreach ($template_result->lower_bounds as $template_name => $defining_map) {
-                foreach ($defining_map as $defining_id => [$lower_bound_type]) {
+                foreach ($defining_map as $defining_id => $lower_bound) {
                     if (isset($template_result->upper_bounds[$template_name][$defining_id])) {
-                        $upper_bound_type = $template_result->upper_bounds[$template_name][$defining_id][0];
+                        $upper_bound = $template_result->upper_bounds[$template_name][$defining_id];
 
                         $union_comparison_result = new \Psalm\Internal\Type\Comparator\TypeComparisonResult();
 
                         if (count($template_result->lower_bounds_unintersectable_types) > 1) {
-                            [$upper_bound_type, $lower_bound_type]
+                            [$upper_bound->type, $lower_bound->type]
                                 = $template_result->lower_bounds_unintersectable_types;
                         }
 
                         if (!UnionTypeComparator::isContainedBy(
                             $statements_analyzer->getCodebase(),
-                            $upper_bound_type,
-                            $lower_bound_type,
+                            $upper_bound->type,
+                            $lower_bound->type,
                             false,
                             false,
                             $union_comparison_result
@@ -897,8 +909,8 @@ class CallAnalyzer
                                 if ($union_comparison_result->type_coerced_from_mixed) {
                                     if (IssueBuffer::accepts(
                                         new MixedArgumentTypeCoercion(
-                                            'Type ' . $upper_bound_type->getId() . ' should be a subtype of '
-                                                . $lower_bound_type->getId(),
+                                            'Type ' . $upper_bound->type->getId() . ' should be a subtype of '
+                                                . $lower_bound->type->getId(),
                                             $code_location,
                                             $function_id
                                         ),
@@ -909,8 +921,8 @@ class CallAnalyzer
                                 } else {
                                     if (IssueBuffer::accepts(
                                         new ArgumentTypeCoercion(
-                                            'Type ' . $upper_bound_type->getId() . ' should be a subtype of '
-                                                . $lower_bound_type->getId(),
+                                            'Type ' . $upper_bound->type->getId() . ' should be a subtype of '
+                                                . $lower_bound->type->getId(),
                                             $code_location,
                                             $function_id
                                         ),
@@ -922,8 +934,8 @@ class CallAnalyzer
                             } elseif ($union_comparison_result->scalar_type_match_found) {
                                 if (IssueBuffer::accepts(
                                     new InvalidScalarArgument(
-                                        'Type ' . $upper_bound_type->getId() . ' should be a subtype of '
-                                                . $lower_bound_type->getId(),
+                                        'Type ' . $upper_bound->type->getId() . ' should be a subtype of '
+                                                . $lower_bound->type->getId(),
                                         $code_location,
                                         $function_id
                                     ),
@@ -934,8 +946,8 @@ class CallAnalyzer
                             } else {
                                 if (IssueBuffer::accepts(
                                     new InvalidArgument(
-                                        'Type ' . $upper_bound_type->getId() . ' should be a subtype of '
-                                                . $lower_bound_type->getId(),
+                                        'Type ' . $upper_bound->type->getId() . ' should be a subtype of '
+                                                . $lower_bound->type->getId(),
                                         $code_location,
                                         $function_id
                                     ),
@@ -946,7 +958,9 @@ class CallAnalyzer
                             }
                         }
                     } else {
-                        $template_result->upper_bounds[$template_name][$defining_id][0] = clone $lower_bound_type;
+                        $template_result->upper_bounds[$template_name][$defining_id] = new TemplateBound(
+                            clone $lower_bound->type
+                        );
                     }
                 }
             }

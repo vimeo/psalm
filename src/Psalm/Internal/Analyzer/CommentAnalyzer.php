@@ -35,7 +35,7 @@ class CommentAnalyzer
     public const TYPE_REGEX = '(\??\\\?[\(\)A-Za-z0-9_&\<\.=,\>\[\]\-\{\}:|?\\\\]*|\$[a-zA-Z_0-9_]+)';
 
     /**
-     * @param  array<string, array<string, array{Type\Union}>>|null   $template_type_map
+     * @param  array<string, array<string, Type\Union>>|null   $template_type_map
      * @param  array<string, TypeAlias> $type_aliases
      *
      * @throws DocblockParseException if there was a problem parsing the docblock
@@ -62,7 +62,7 @@ class CommentAnalyzer
     }
 
     /**
-     * @param  array<string, array<string, array{Type\Union}>>|null   $template_type_map
+     * @param  array<string, array<string, Type\Union>>|null   $template_type_map
      * @param  array<string, TypeAlias> $type_aliases
      *
      * @return list<VarDocblockComment>

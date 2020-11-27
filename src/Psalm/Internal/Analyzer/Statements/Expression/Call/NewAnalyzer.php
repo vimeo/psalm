@@ -29,6 +29,7 @@ use function strtolower;
 use function implode;
 use function array_values;
 use function is_string;
+use function array_map;
 
 /**
  * @internal
@@ -628,19 +629,29 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                         foreach ($storage->template_types as $template_name => $base_type) {
                             if (isset($template_result->upper_bounds[$template_name][$fq_class_name])) {
                                 $generic_param_type
-                                    = $template_result->upper_bounds[$template_name][$fq_class_name][0];
+                                    = $template_result->upper_bounds[$template_name][$fq_class_name]->type;
                             } elseif ($storage->template_type_extends && $template_result->upper_bounds) {
                                 $generic_param_type = self::getGenericParamForOffset(
                                     $declaring_fq_class_name,
                                     $template_name,
                                     $storage->template_type_extends,
-                                    $template_result->upper_bounds
+                                    array_map(
+                                        function ($type_map) {
+                                            return array_map(
+                                                function ($bound) {
+                                                    return $bound->type;
+                                                },
+                                                $type_map
+                                            );
+                                        },
+                                        $template_result->upper_bounds
+                                    )
                                 );
                             } else {
                                 if ($fq_class_name === 'SplObjectStorage') {
                                     $generic_param_type = Type::getEmpty();
                                 } else {
-                                    $generic_param_type = array_values($base_type)[0][0];
+                                    $generic_param_type = array_values($base_type)[0];
                                 }
                             }
 

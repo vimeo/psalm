@@ -70,7 +70,7 @@ class FunctionLikeNodeScanner
     private $classlike_storage;
 
     /**
-     * @var array<string, non-empty-array<string, array{Type\Union}>>
+     * @var array<string, non-empty-array<string, Type\Union>>
      */
     private $existing_function_template_types;
 
@@ -90,7 +90,7 @@ class FunctionLikeNodeScanner
     public $storage;
 
     /**
-     * @param array<string, non-empty-array<string, array{Type\Union}>> $existing_function_template_types
+     * @param array<string, non-empty-array<string, Type\Union>> $existing_function_template_types
      * @param array<string, TypeAlias> $type_aliases
      */
     public function __construct(

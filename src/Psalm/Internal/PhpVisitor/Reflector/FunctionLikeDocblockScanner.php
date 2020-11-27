@@ -35,7 +35,7 @@ use function strlen;
 class FunctionLikeDocblockScanner
 {
     /**
-     * @param array<string, non-empty-array<string, array{Type\Union}>> $existing_function_template_types
+     * @param array<string, non-empty-array<string, Type\Union>> $existing_function_template_types
      * @param array<string, TypeAlias> $type_aliases
      */
     public static function addDocblockInfo(
@@ -217,7 +217,7 @@ class FunctionLikeDocblockScanner
                     );
                 } else {
                     $storage->template_types[$template_name] = [
-                        'fn-' . strtolower($cased_function_id) => [$template_type],
+                        'fn-' . strtolower($cased_function_id) => $template_type,
                     ];
                 }
 
@@ -599,7 +599,7 @@ class FunctionLikeDocblockScanner
 
                         if (isset($template_types[$template_typeof['template_type']])) {
                             foreach ($template_types[$template_typeof['template_type']] as $class => $map) {
-                                $template_type = $map[0];
+                                $template_type = $map;
                                 $template_class = $class;
                             }
                         }
@@ -737,11 +737,11 @@ class FunctionLikeDocblockScanner
     }
 
     /**
-     * @param  array<string, array<string, array{Type\Union}>> $template_types
+     * @param  array<string, array<string, Type\Union>> $template_types
      * @param  array<string, TypeAlias>|null   $type_aliases
-     * @param  array<string, array<string, array{Type\Union}>> $function_template_types
+     * @param  array<string, array<string, Type\Union>> $function_template_types
      *
-     * @return array{array<int, array{0: string, 1: int, 2?: string}>, array<string, array<string, array{Type\Union}>>}
+     * @return array{array<int, array{0: string, 1: int, 2?: string}>, array<string, array<string, Type\Union>>}
      */
     private static function getConditionalSanitizedTypeTokens(
         string $docblock_return_type,
@@ -780,9 +780,7 @@ class FunctionLikeDocblockScanner
                                 : Type::getMixed();
 
                             $storage->template_types[$template_name] = [
-                                $template_function_id => [
-                                    $template_as_type
-                                ],
+                                $template_function_id => $template_as_type,
                             ];
 
                             $function_template_types[$template_name]
@@ -818,9 +816,7 @@ class FunctionLikeDocblockScanner
                 $template_name = 'TFunctionArgCount';
 
                 $storage->template_types[$template_name] = [
-                    $template_function_id => [
-                        Type::getInt()
-                    ],
+                    $template_function_id => Type::getInt(),
                 ];
 
                 $function_template_types[$template_name]
@@ -833,9 +829,7 @@ class FunctionLikeDocblockScanner
                 $template_name = 'TPhpMajorVersion';
 
                 $storage->template_types[$template_name] = [
-                    $template_function_id => [
-                        Type::getInt()
-                    ],
+                    $template_function_id => Type::getInt(),
                 ];
 
                 $function_template_types[$template_name]
@@ -849,8 +843,8 @@ class FunctionLikeDocblockScanner
     }
 
     /**
-     * @param array<string, array<string, array{Type\Union}>> $class_template_types
-     * @param array<string, array<string, array{Type\Union}>> $function_template_types
+     * @param array<string, array<string, Type\Union>> $class_template_types
+     * @param array<string, array<string, Type\Union>> $function_template_types
      * @param array<string, TypeAlias> $type_aliases
      * @return non-empty-list<string>|null
      */
@@ -948,8 +942,8 @@ class FunctionLikeDocblockScanner
     }
 
     /**
-     * @param array<string, array<string, array{Type\Union}>> $class_template_types
-     * @param array<string, array<string, array{Type\Union}>> $function_template_types
+     * @param array<string, array<string, Type\Union>> $class_template_types
+     * @param array<string, array<string, Type\Union>> $function_template_types
      * @param array<string, TypeAlias> $type_aliases
      * @param array<int, array{type:string,name:string,line_number:int,start:int,end:int}>  $docblock_params
      */
@@ -1080,9 +1074,9 @@ class FunctionLikeDocblockScanner
 
             if ($storage->template_types) {
                 foreach ($storage->template_types as $t => $type_map) {
-                    foreach ($type_map as $obj => [$type]) {
+                    foreach ($type_map as $obj => $type) {
                         if ($type->isMixed() && $docblock_param['type'] === 'class-string<' . $t . '>') {
-                            $storage->template_types[$t][$obj] = [Type::getObject()];
+                            $storage->template_types[$t][$obj] = Type::getObject();
 
                             if (isset($function_template_types[$t])) {
                                 $function_template_types[$t][$obj] = $storage->template_types[$t][$obj];

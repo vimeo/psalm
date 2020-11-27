@@ -79,7 +79,7 @@ class ClassLikeNodeScanner
     private $classlike_type_aliases = [];
 
     /**
-     * @var array<string, array<string, array{Type\Union}>>
+     * @var array<string, array<string, Type\Union>>
      */
     public $class_template_types = [];
 
@@ -334,7 +334,7 @@ class ClassLikeNodeScanner
                                 }
 
                                 $storage->template_types[$template_name] = [
-                                    $fq_classlike_name => [$template_type],
+                                    $fq_classlike_name => $template_type,
                                 ];
                             } else {
                                 $storage->docblock_issues[] = new InvalidDocblock(
@@ -344,7 +344,7 @@ class ClassLikeNodeScanner
                             }
                         } else {
                             /** @psalm-suppress PropertyTypeCoercion due to a Psalm bug */
-                            $storage->template_types[$template_name][$fq_classlike_name] = [Type::getMixed()];
+                            $storage->template_types[$template_name][$fq_classlike_name] = Type::getMixed();
                         }
 
                         $storage->template_covariants[$i] = $template_map[3];

@@ -9,6 +9,7 @@ use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Type;
 use Psalm\Type\Atomic\TGenericObject;
@@ -432,21 +433,19 @@ class MethodCallReturnTypeFetcher
                 ) {
                     if ($template_type->param_name === 'TFunctionArgCount') {
                         $template_result->upper_bounds[$template_type->param_name] = [
-                            'fn-' . strtolower((string) $method_id) => [
-                                Type::getInt(false, $arg_count),
-                                0
-                            ]
+                            'fn-' . strtolower((string) $method_id) => new TemplateBound(
+                                Type::getInt(false, $arg_count)
+                            )
                         ];
                     } elseif ($template_type->param_name === 'TPhpMajorVersion') {
                         $template_result->upper_bounds[$template_type->param_name] = [
-                            'fn-' . strtolower((string) $method_id) => [
-                                Type::getInt(false, $codebase->php_major_version),
-                                0
-                            ]
+                            'fn-' . strtolower((string) $method_id) => new TemplateBound(
+                                Type::getInt(false, $codebase->php_major_version)
+                            )
                         ];
                     } else {
                         $template_result->upper_bounds[$template_type->param_name] = [
-                            ($template_type->defining_class) => [Type::getEmpty(), 0]
+                            ($template_type->defining_class) => new TemplateBound(Type::getEmpty())
                         ];
                     }
                 }

@@ -102,7 +102,7 @@ abstract class FunctionLikeStorage
     public $global_types = [];
 
     /**
-     * @var array<string, non-empty-array<string, array{Type\Union}>>|null
+     * @var array<string, non-empty-array<string, Type\Union>>|null
      */
     public $template_types;
 

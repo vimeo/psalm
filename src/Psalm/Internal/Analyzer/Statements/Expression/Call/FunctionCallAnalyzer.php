@@ -53,6 +53,7 @@ use function is_string;
 use function array_map;
 use function extension_loaded;
 use function strpos;
+use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Storage\FunctionLikeParameter;
 use function explode;
@@ -439,7 +440,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
         );
 
         if ($function_storage) {
-            $generic_params = $template_result ? $template_result->upper_bounds : [];
+            $inferred_upper_bouunds = $template_result ? $template_result->upper_bounds : [];
 
             if ($function_storage->assertions && $function_name instanceof PhpParser\Node\Name) {
                 self::applyAssertionsToContext(
@@ -447,7 +448,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     null,
                     $function_storage->assertions,
                     $stmt->args,
-                    $generic_params,
+                    $inferred_upper_bouunds,
                     $context,
                     $statements_analyzer
                 );
@@ -457,8 +458,8 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 $statements_analyzer->node_data->setIfTrueAssertions(
                     $stmt,
                     array_map(
-                        function (Assertion $assertion) use ($generic_params) : Assertion {
-                            return $assertion->getUntemplatedCopy($generic_params ?: [], null);
+                        function (Assertion $assertion) use ($inferred_upper_bouunds) : Assertion {
+                            return $assertion->getUntemplatedCopy($inferred_upper_bouunds ?: [], null);
                         },
                         $function_storage->if_true_assertions
                     )
@@ -469,8 +470,8 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 $statements_analyzer->node_data->setIfFalseAssertions(
                     $stmt,
                     array_map(
-                        function (Assertion $assertion) use ($generic_params) : Assertion {
-                            return $assertion->getUntemplatedCopy($generic_params ?: [], null);
+                        function (Assertion $assertion) use ($inferred_upper_bouunds) : Assertion {
+                            return $assertion->getUntemplatedCopy($inferred_upper_bouunds ?: [], null);
                         },
                         $function_storage->if_false_assertions
                     )
@@ -980,15 +981,21 @@ class FunctionCallAnalyzer extends CallAnalyzer
                         if (!isset($template_result->upper_bounds[$template_name])) {
                             if ($template_name === 'TFunctionArgCount') {
                                 $template_result->upper_bounds[$template_name] = [
-                                    'fn-' . $function_id => [Type::getInt(false, count($stmt->args)), 0]
+                                    'fn-' . $function_id => new TemplateBound(
+                                        Type::getInt(false, count($stmt->args))
+                                    )
                                 ];
                             } elseif ($template_name === 'TPhpMajorVersion') {
                                 $template_result->upper_bounds[$template_name] = [
-                                    'fn-' . $function_id => [Type::getInt(false, $codebase->php_major_version), 0]
+                                    'fn-' . $function_id => new TemplateBound(
+                                        Type::getInt(false, $codebase->php_major_version)
+                                    )
                                 ];
                             } else {
                                 $template_result->upper_bounds[$template_name] = [
-                                    'fn-' . $function_id => [Type::getEmpty(), 0]
+                                    'fn-' . $function_id => new TemplateBound(
+                                        Type::getEmpty()
+                                    )
                                 ];
                             }
                         }

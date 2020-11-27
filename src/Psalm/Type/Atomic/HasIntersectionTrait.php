@@ -85,7 +85,7 @@ trait HasIntersectionTrait
                 && isset($template_result->upper_bounds[$extra_type->param_name][$extra_type->defining_class])
             ) {
                 $template_type = clone $template_result->upper_bounds
-                    [$extra_type->param_name][$extra_type->defining_class][0];
+                    [$extra_type->param_name][$extra_type->defining_class]->type;
 
                 foreach ($template_type->getAtomicTypes() as $template_type_part) {
                     if ($template_type_part instanceof TNamedObject) {

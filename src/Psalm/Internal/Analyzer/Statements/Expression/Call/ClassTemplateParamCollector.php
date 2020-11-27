@@ -17,7 +17,7 @@ class ClassTemplateParamCollector
 {
     /**
      * @param lowercase-string $method_name
-     * @return array<string, array<string, array{Type\Union, 1?:int}>>|null
+     * @return array<string, array<string, Type\Union>>|null
      */
     public static function collect(
         Codebase $codebase,
@@ -94,9 +94,8 @@ class ClassTemplateParamCollector
                 foreach ($static_class_storage->template_types as $type_name => $_) {
                     if (isset($lhs_type_part->type_params[$i])) {
                         if ($lhs_var_id !== '$this' || $static_fq_class_name !== $static_class_storage->name) {
-                            $class_template_params[$type_name][$static_class_storage->name] = [
-                                $lhs_type_part->type_params[$i]
-                            ];
+                            $class_template_params[$type_name][$static_class_storage->name]
+                                = $lhs_type_part->type_params[$i];
                         }
                     }
 
@@ -175,46 +174,41 @@ class ClassTemplateParamCollector
                     }
 
                     if ($lhs_var_id !== '$this' || $static_fq_class_name !== $class_storage->name) {
-                        $class_template_params[$type_name][$class_storage->name] = [
-                            $output_type_extends ?: Type::getMixed()
-                        ];
+                        $class_template_params[$type_name][$class_storage->name]
+                            = $output_type_extends ?: Type::getMixed();
                     }
                 }
 
                 if (($lhs_var_id !== '$this' || $static_fq_class_name !== $class_storage->name)
                     && !isset($class_template_params[$type_name])
                 ) {
-                    $class_template_params[$type_name] = [
-                        $class_storage->name => [Type::getMixed()]
-                    ];
+                    $class_template_params[$type_name] = [$class_storage->name => Type::getMixed()];
                 }
             }
         }
 
         foreach ($template_types as $type_name => $type_map) {
-            foreach ($type_map as [$type]) {
+            foreach ($type_map as $type) {
                 foreach ($candidate_class_storages as $candidate_class_storage) {
                     if ($candidate_class_storage !== $static_class_storage
                         && isset($e[$candidate_class_storage->name][$type_name])
                         && !isset($class_template_params[$type_name][$candidate_class_storage->name])
                     ) {
-                        $class_template_params[$type_name][$candidate_class_storage->name] = [
-                            new Type\Union(
-                                self::expandType(
-                                    $codebase,
-                                    $e[$candidate_class_storage->name][$type_name],
-                                    $e,
-                                    $static_class_storage->name,
-                                    $static_class_storage->template_types
-                                )
+                        $class_template_params[$type_name][$candidate_class_storage->name] = new Type\Union(
+                            self::expandType(
+                                $codebase,
+                                $e[$candidate_class_storage->name][$type_name],
+                                $e,
+                                $static_class_storage->name,
+                                $static_class_storage->template_types
                             )
-                        ];
+                        );
                     }
                 }
 
                 if ($lhs_var_id !== '$this') {
                     if (!isset($class_template_params[$type_name])) {
-                        $class_template_params[$type_name][$class_storage->name] = [$type];
+                        $class_template_params[$type_name][$class_storage->name] = $type;
                     }
                 }
             }

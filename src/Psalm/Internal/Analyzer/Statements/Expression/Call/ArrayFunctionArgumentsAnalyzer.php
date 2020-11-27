@@ -826,7 +826,7 @@ class ArrayFunctionArgumentsAnalyzer
 
                 foreach ($closure_param_type->getTemplateTypes() as $template_type) {
                     $template_result->template_types[$template_type->param_name] = [
-                        ($template_type->defining_class) => [$template_type->as]
+                        ($template_type->defining_class) => $template_type->as
                     ];
                 }
 

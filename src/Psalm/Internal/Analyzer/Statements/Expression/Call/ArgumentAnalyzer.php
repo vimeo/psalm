@@ -16,6 +16,7 @@ use Psalm\Internal\DataFlow\TaintSink;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\UnionTemplateHandler;
 use Psalm\CodeLocation;
@@ -50,7 +51,7 @@ use function count;
 class ArgumentAnalyzer
 {
     /**
-     * @param  array<string, array<string, array{Type\Union, 1?:int}>> $class_generic_params
+     * @param  array<string, array<string, Type\Union>> $class_generic_params
      * @return false|null
      */
     public static function checkArgumentMatches(
@@ -190,9 +191,7 @@ class ArgumentAnalyzer
     }
 
     /**
-     * @param  array<string, array<string, array{Type\Union, 1?:int}>> $class_generic_params
-     * @param  array<string, array<string, array{Type\Union, 1?:int}>> $generic_params
-     * @param  array<string, array<string, array{Type\Union}>> $template_types
+     * @param  array<string, array<string, Type\Union>> $class_generic_params
      * @return false|null
      */
     private static function checkFunctionLikeTypeMatches(
@@ -317,17 +316,17 @@ class ArgumentAnalyzer
                             [$template_type->param_name]
                             [$template_type->defining_class]
                     )) {
-                        $template_result->upper_bounds[$template_type->param_name][$template_type->defining_class] = [
-                            clone $template_result->lower_bounds
-                                [$template_type->param_name]
-                                [$template_type->defining_class][0],
-                            0
-                        ];
+                        $template_result->upper_bounds[$template_type->param_name][$template_type->defining_class]
+                            = new TemplateBound(
+                                clone $template_result->lower_bounds
+                                    [$template_type->param_name]
+                                    [$template_type->defining_class]->type
+                            );
                     } else {
-                        $template_result->upper_bounds[$template_type->param_name][$template_type->defining_class] = [
-                            clone $template_type->as,
-                            0
-                        ];
+                        $template_result->upper_bounds[$template_type->param_name][$template_type->defining_class]
+                            = new TemplateBound(
+                                clone $template_type->as
+                            );
                     }
                 }
             }

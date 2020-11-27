@@ -3,21 +3,22 @@
 namespace Psalm\Internal\Type;
 
 use Psalm\Type\Union;
+use function array_map;
 
 class TemplateResult
 {
     /**
-     * @var array<string, array<string, array{0: Union}>>
+     * @var array<string, array<string, Union>>
      */
     public $template_types;
 
     /**
-     * @var array<string, array<string, array{0: Union, 1?: int, 2?: ?int}>>
+     * @var array<string, array<string, TemplateBound>>
      */
     public $upper_bounds;
 
     /**
-     * @var array<string, array<string, array{0: Union, 1?: int, 2?: ?int}>>
+     * @var array<string, array<string, TemplateBound>>
      */
     public $lower_bounds = [];
 
@@ -27,12 +28,23 @@ class TemplateResult
     public $lower_bounds_unintersectable_types = [];
 
     /**
-     * @param  array<string, array<string, array{0: Union}>> $template_types
-     * @param  array<string, array<string, array{0: Union, 1?: int, 2?: ?int}>> $upper_bounds
+     * @param  array<string, array<string, Union>> $template_types
+     * @param  array<string, array<string, Union>> $upper_bounds
      */
     public function __construct(array $template_types, array $upper_bounds)
     {
         $this->template_types = $template_types;
-        $this->upper_bounds = $upper_bounds;
+
+        $this->upper_bounds = array_map(
+            function ($type_map) {
+                return array_map(
+                    function ($type) {
+                        return new TemplateBound($type);
+                    },
+                    $type_map
+                );
+            },
+            $upper_bounds
+        );
     }
 }

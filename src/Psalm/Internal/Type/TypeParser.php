@@ -58,7 +58,7 @@ class TypeParser
      *
      * @param  list<array{0: string, 1: int, 2?: string}> $type_tokens
      * @param  array{int,int}|null   $php_version
-     * @param  array<string, array<string, array{Union}>> $template_type_map
+     * @param  array<string, array<string, Union>> $template_type_map
      * @param  array<string, TypeAlias> $type_aliases
      *
      */
@@ -110,7 +110,7 @@ class TypeParser
 
     /**
      * @param  array{int,int}|null   $php_version
-     * @param  array<string, array<string, array{Union}>> $template_type_map
+     * @param  array<string, array<string, Union>> $template_type_map
      * @param  array<string, TypeAlias> $type_aliases
      *
      * @return  Atomic|Union
@@ -140,9 +140,9 @@ class TypeParser
                     && $i === 0
                 ) {
                     if ($tree_type instanceof TTemplateParam) {
-                        $template_type_map[$tree_type->param_name] = ['class-string-map' => [$tree_type->as]];
+                        $template_type_map[$tree_type->param_name] = ['class-string-map' => $tree_type->as];
                     } elseif ($tree_type instanceof TNamedObject) {
-                        $template_type_map[$tree_type->value] = ['class-string-map' => [\Psalm\Type::getObject()]];
+                        $template_type_map[$tree_type->value] = ['class-string-map' => \Psalm\Type::getObject()];
                     }
                 }
 
@@ -234,7 +234,7 @@ class TypeParser
 
                     return self::getGenericParamClass(
                         $class_name,
-                        $template_type_map[$class_name][$first_class][0],
+                        $template_type_map[$class_name][$first_class],
                         $first_class
                     );
                 }
@@ -299,7 +299,7 @@ class TypeParser
                     return new Atomic\TTemplateKeyOf(
                         $param_name,
                         $defining_class,
-                        $template_type_map[$param_name][$defining_class][0]
+                        $template_type_map[$param_name][$defining_class]
                     );
                 }
 
@@ -886,9 +886,9 @@ class TypeParser
 
             if (!$offset_defining_class
                 && isset($offset_template_data[''])
-                && $offset_template_data[''][0]->isSingle()
+                && $offset_template_data['']->isSingle()
             ) {
-                $offset_template_type = array_values($offset_template_data[''][0]->getAtomicTypes())[0];
+                $offset_template_type = array_values($offset_template_data['']->getAtomicTypes())[0];
 
                 if ($offset_template_type instanceof Atomic\TTemplateKeyOf) {
                     $offset_defining_class = $offset_template_type->defining_class;
@@ -970,7 +970,7 @@ class TypeParser
             return new Atomic\TConditional(
                 $template_param_name,
                 $first_class,
-                $template_type_map[$template_param_name][$first_class][0],
+                $template_type_map[$template_param_name][$first_class],
                 $conditional_type,
                 $if_type,
                 $else_type
@@ -993,7 +993,7 @@ class TypeParser
 
                 return self::getGenericParamClass(
                     $fq_classlike_name,
-                    $template_type_map[$fq_classlike_name][$first_class][0],
+                    $template_type_map[$fq_classlike_name][$first_class],
                     $first_class
                 );
             }
