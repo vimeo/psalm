@@ -96,6 +96,9 @@ class ArrayColumnReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
                     $have_at_least_one_res = true;
                 }
                 $result_element_type = $row_shape->properties[$value_column_name];
+                if ($result_element_type->isSingle()) {
+                    $result_element_type = $result_element_type->getAtomicTypes()[0];
+                }
             } else {
                 $result_element_type = Type::getMixed();
             }

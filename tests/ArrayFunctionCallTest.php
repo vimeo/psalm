@@ -1151,6 +1151,8 @@ class ArrayFunctionCallTest extends TestCase
                     function makeShapeArray(): array { return []; }
                     /** @return array<array{0:string}|int> */
                     function makeUnionArray(): array { return []; }
+                    /** @return array<string, array{x?:int, y?:int, width?:int, height?:int}> */
+                    function makeKeyedArray(): array { return []; }
                     $a = array_column([[1], [2], [3]], 0);
                     $b = array_column([["a" => 1], ["a" => 2], ["a" => 3]], "a");
                     $c = array_column([["k" => "a", "v" => 1], ["k" => "b", "v" => 2]], "v", "k");
@@ -1162,6 +1164,7 @@ class ArrayFunctionCallTest extends TestCase
                     $i = array_column(makeShapeArray(), 0);
                     $j = array_column(makeUnionArray(), 0);
                     $k = array_column([[0 => "test"]], 0);
+                    $l = array_column(makeKeyedArray(), "y");
                 ',
                 'assertions' => [
                     '$a' => 'non-empty-list<int>',
@@ -1175,6 +1178,7 @@ class ArrayFunctionCallTest extends TestCase
                     '$i' => 'list<string>',
                     '$j' => 'list<mixed>',
                     '$k' => 'non-empty-list<string>',
+                    '$l' => 'list<int>',
                 ],
             ],
             'splatArrayIntersect' => [
@@ -1868,6 +1872,15 @@ class ArrayFunctionCallTest extends TestCase
                         if (count($list) === 2) {
                             foo($list);
                         }
+                    }'
+            ],
+            'arrayColumnwithKeyedArrayWithoutRedundantUnion' => [
+                '<?php
+                    /**
+                     * @param array<string, array{x?:int, y?:int, width?:int, height?:int}> $foos
+                     */
+                    function foo(array $foos): void {
+                        array_multisort($formLayoutFields, SORT_ASC, array_column($foos, "y"));
                     }'
             ],
         ];
