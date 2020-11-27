@@ -705,7 +705,8 @@ class StatementsAnalyzer extends SourceAnalyzer
                 && $mean > $codebase->config->max_avg_path_length
                 && $branching > 1.1
             ) {
-                // do something
+                echo $source->getId() . "\n";
+                // do something else
             }
         }
 
