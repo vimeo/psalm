@@ -888,19 +888,20 @@ class CallAnalyzer
             foreach ($template_result->lower_bounds as $template_name => $defining_map) {
                 foreach ($defining_map as $defining_id => $lower_bound) {
                     if (isset($template_result->upper_bounds[$template_name][$defining_id])) {
-                        $upper_bound = $template_result->upper_bounds[$template_name][$defining_id];
+                        $upper_bound_type = $template_result->upper_bounds[$template_name][$defining_id]->type;
+                        $lower_bound_type = $lower_bound->type;
 
                         $union_comparison_result = new \Psalm\Internal\Type\Comparator\TypeComparisonResult();
 
                         if (count($template_result->lower_bounds_unintersectable_types) > 1) {
-                            [$upper_bound->type, $lower_bound->type]
+                            [$upper_bound_type, $lower_bound_type]
                                 = $template_result->lower_bounds_unintersectable_types;
                         }
 
                         if (!UnionTypeComparator::isContainedBy(
                             $statements_analyzer->getCodebase(),
-                            $upper_bound->type,
-                            $lower_bound->type,
+                            $upper_bound_type,
+                            $lower_bound_type,
                             false,
                             false,
                             $union_comparison_result
@@ -909,8 +910,8 @@ class CallAnalyzer
                                 if ($union_comparison_result->type_coerced_from_mixed) {
                                     if (IssueBuffer::accepts(
                                         new MixedArgumentTypeCoercion(
-                                            'Type ' . $upper_bound->type->getId() . ' should be a subtype of '
-                                                . $lower_bound->type->getId(),
+                                            'Type ' . $upper_bound_type->getId() . ' should be a subtype of '
+                                                . $lower_bound_type->getId(),
                                             $code_location,
                                             $function_id
                                         ),
@@ -921,8 +922,8 @@ class CallAnalyzer
                                 } else {
                                     if (IssueBuffer::accepts(
                                         new ArgumentTypeCoercion(
-                                            'Type ' . $upper_bound->type->getId() . ' should be a subtype of '
-                                                . $lower_bound->type->getId(),
+                                            'Type ' . $upper_bound_type->getId() . ' should be a subtype of '
+                                                . $lower_bound_type->getId(),
                                             $code_location,
                                             $function_id
                                         ),
@@ -934,8 +935,8 @@ class CallAnalyzer
                             } elseif ($union_comparison_result->scalar_type_match_found) {
                                 if (IssueBuffer::accepts(
                                     new InvalidScalarArgument(
-                                        'Type ' . $upper_bound->type->getId() . ' should be a subtype of '
-                                                . $lower_bound->type->getId(),
+                                        'Type ' . $upper_bound_type->getId() . ' should be a subtype of '
+                                                . $lower_bound_type->getId(),
                                         $code_location,
                                         $function_id
                                     ),
@@ -946,8 +947,8 @@ class CallAnalyzer
                             } else {
                                 if (IssueBuffer::accepts(
                                     new InvalidArgument(
-                                        'Type ' . $upper_bound->type->getId() . ' should be a subtype of '
-                                                . $lower_bound->type->getId(),
+                                        'Type ' . $upper_bound_type->getId() . ' should be a subtype of '
+                                                . $lower_bound_type->getId(),
                                         $code_location,
                                         $function_id
                                     ),
