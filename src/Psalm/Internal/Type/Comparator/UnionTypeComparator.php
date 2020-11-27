@@ -8,10 +8,8 @@ use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TMixed;
-use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
-use function get_class;
 use function array_merge;
 
 /**

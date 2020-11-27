@@ -7,7 +7,6 @@ use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
-use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentMapPopulator;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentsAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -25,7 +24,6 @@ use function array_shift;
 use function get_class;
 use function strtolower;
 use function array_merge;
-use function explode;
 
 /**
  * This is a bunch of complex logic to handle the potential for missing methods,
@@ -50,8 +48,6 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
         ?string $lhs_var_id,
         AtomicMethodCallAnalysisResult $result
     ) : void {
-        $config = $codebase->config;
-
         if ($lhs_type_part instanceof Type\Atomic\TTemplateParam
             && !$lhs_type_part->as->isMixed()
         ) {
@@ -158,55 +154,6 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
 
         $intersection_types = $lhs_type_part->getIntersectionTypes();
 
-        $all_intersection_return_type = null;
-        $all_intersection_existent_method_ids = [];
-
-        if ($intersection_types) {
-            foreach ($intersection_types as $intersection_type) {
-                $intersection_result = clone $result;
-
-                /** @var ?Type\Union */
-                $intersection_result->return_type = null;
-
-                self::analyze(
-                    $statements_analyzer,
-                    $stmt,
-                    $codebase,
-                    $context,
-                    $intersection_type,
-                    $lhs_type_part,
-                    true,
-                    $lhs_var_id,
-                    $intersection_result
-                );
-
-                $result->returns_by_ref = $intersection_result->returns_by_ref;
-                $result->has_mock = $intersection_result->has_mock;
-                $result->has_valid_method_call_type = $intersection_result->has_valid_method_call_type;
-                $result->has_mixed_method_call = $intersection_result->has_mixed_method_call;
-                $result->invalid_method_call_types = $intersection_result->invalid_method_call_types;
-                $result->check_visibility = $intersection_result->check_visibility;
-                $result->too_many_arguments = $intersection_result->too_many_arguments;
-
-                $all_intersection_existent_method_ids = array_merge(
-                    $all_intersection_existent_method_ids,
-                    $intersection_result->existent_method_ids
-                );
-
-                if ($intersection_result->return_type) {
-                    if (!$all_intersection_return_type || $all_intersection_return_type->isMixed()) {
-                        $all_intersection_return_type = $intersection_result->return_type;
-                    } else {
-                        $all_intersection_return_type = Type::intersectUnionTypes(
-                            $all_intersection_return_type,
-                            $intersection_result->return_type,
-                            $codebase
-                        ) ?: Type::getMixed();
-                    }
-                }
-            }
-        }
-
         if (!$stmt->name instanceof PhpParser\Node\Identifier) {
             if (!$context->ignore_variable_method) {
                 $codebase->analyzer->addMixedMemberName(
@@ -231,11 +178,6 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
         $method_name_lc = strtolower($stmt->name->name);
 
         $method_id = new MethodIdentifier($fq_class_name, $method_name_lc);
-        $cased_method_id = $fq_class_name . '::' . $stmt->name->name;
-
-        $intersection_method_id = $intersection_types
-            ? '(' . $lhs_type_part . ')'  . '::' . $stmt->name->name
-            : null;
 
         $args = $stmt->args;
 
@@ -289,6 +231,23 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                 );
         }
 
+        $all_intersection_return_type = null;
+        $all_intersection_existent_method_ids = [];
+
+        if ($intersection_types) {
+            [$all_intersection_return_type, $all_intersection_existent_method_ids]
+                = self::getIntersectionReturnType(
+                    $statements_analyzer,
+                    $stmt,
+                    $codebase,
+                    $context,
+                    $lhs_type_part,
+                    $lhs_var_id,
+                    $result,
+                    $intersection_types
+                );
+        }
+
         if (($fake_method_exists
                 && $codebase->methods->methodExists(new MethodIdentifier($fq_class_name, '__call')))
             || !$naive_method_exists
@@ -337,7 +296,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                     $method_id,
                     $class_storage,
                     $context,
-                    $config,
+                    $codebase->config,
                     $all_intersection_return_type,
                     $result
                 );
@@ -362,6 +321,11 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
          */
         $classlike_source = $source_source->getSource();
         $classlike_source_fqcln = $classlike_source ? $classlike_source->getFQCLN() : null;
+
+        $intersection_method_id = $intersection_types
+            ? '(' . $lhs_type_part . ')'  . '::' . $stmt->name->name
+            : null;
+        $cased_method_id = $fq_class_name . '::' . $stmt->name->name;
 
         if ($lhs_var_id === '$this'
             && $context->self
@@ -397,7 +361,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                 ));
 
         if (!$corrected_method_exists
-            || ($config->use_phpdoc_method_without_magic_or_parent
+            || ($codebase->config->use_phpdoc_method_without_magic_or_parent
                 && isset($class_storage->pseudo_methods[$method_name_lc]))
         ) {
             MissingMethodCallHandler::handleMissingOrMagicMethod(
@@ -407,67 +371,15 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                 $method_id,
                 $is_interface,
                 $context,
-                $config,
+                $codebase->config,
                 $all_intersection_return_type,
+                $all_intersection_existent_method_ids,
+                $intersection_method_id,
+                $cased_method_id,
                 $result
             );
 
-            if ($all_intersection_return_type && $all_intersection_existent_method_ids) {
-                $result->existent_method_ids = array_merge(
-                    $result->existent_method_ids,
-                    $all_intersection_existent_method_ids
-                );
-
-                if (!$result->return_type) {
-                    $result->return_type = $all_intersection_return_type;
-                } else {
-                    $result->return_type = Type::combineUnionTypes($all_intersection_return_type, $result->return_type);
-                }
-
-                return;
-            }
-
-            if ((!$is_interface && !$config->use_phpdoc_method_without_magic_or_parent)
-                || !isset($class_storage->pseudo_methods[$method_name_lc])
-            ) {
-                if ($is_interface) {
-                    $result->non_existent_interface_method_ids[] = $intersection_method_id ?: $cased_method_id;
-                } else {
-                    $result->non_existent_class_method_ids[] = $intersection_method_id ?: $cased_method_id;
-                }
-            }
-
             return;
-        }
-
-        if ($context->collect_initializations && $context->calling_method_id) {
-            [$calling_method_class] = explode('::', $context->calling_method_id);
-            $codebase->file_reference_provider->addMethodReferenceToClassMember(
-                $calling_method_class . '::__construct',
-                strtolower((string) $method_id)
-            );
-        }
-
-        if ($codebase->store_node_types
-            && !$context->collect_initializations
-            && !$context->collect_mutations
-        ) {
-            ArgumentMapPopulator::recordArgumentPositions(
-                $statements_analyzer,
-                $stmt,
-                $codebase,
-                (string) $method_id
-            );
-        }
-
-        $result->existent_method_ids[] = $method_id;
-
-        $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
-
-        $in_call_map = InternalCallMapHandler::inCallMap((string) ($declaring_method_id ?: $method_id));
-
-        if (!$lhs_type_part instanceof Type\Atomic\TNamedObject) {
-            throw new \UnexpectedValueException('should be a named object here');
         }
 
         $old_node_data = $statements_analyzer->node_data;
@@ -487,6 +399,10 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
         );
 
         $statements_analyzer->node_data = $old_node_data;
+
+        $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
+
+        $in_call_map = InternalCallMapHandler::inCallMap((string) ($declaring_method_id ?: $method_id));
 
         if (!$in_call_map) {
             if ($result->check_visibility) {
@@ -509,6 +425,72 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
             $method_name_lc,
             $codebase
         );
+    }
+
+    /**
+     * @param  Type\Atomic\TNamedObject|Type\Atomic\TTemplateParam  $lhs_type_part
+     * @param   array<string, Type\Atomic> $intersection_types
+     *
+     * @return  array{?Type\Union, array<string>}
+     */
+    private static function getIntersectionReturnType(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\MethodCall $stmt,
+        Codebase $codebase,
+        Context $context,
+        Type\Atomic $lhs_type_part,
+        ?string $lhs_var_id,
+        AtomicMethodCallAnalysisResult $result,
+        array $intersection_types
+    ) : array {
+        $all_intersection_return_type = null;
+        $all_intersection_existent_method_ids = [];
+
+        foreach ($intersection_types as $intersection_type) {
+            $intersection_result = clone $result;
+
+            /** @var ?Type\Union */
+            $intersection_result->return_type = null;
+
+            self::analyze(
+                $statements_analyzer,
+                $stmt,
+                $codebase,
+                $context,
+                $intersection_type,
+                $lhs_type_part,
+                true,
+                $lhs_var_id,
+                $intersection_result
+            );
+
+            $result->returns_by_ref = $intersection_result->returns_by_ref;
+            $result->has_mock = $intersection_result->has_mock;
+            $result->has_valid_method_call_type = $intersection_result->has_valid_method_call_type;
+            $result->has_mixed_method_call = $intersection_result->has_mixed_method_call;
+            $result->invalid_method_call_types = $intersection_result->invalid_method_call_types;
+            $result->check_visibility = $intersection_result->check_visibility;
+            $result->too_many_arguments = $intersection_result->too_many_arguments;
+
+            $all_intersection_existent_method_ids = array_merge(
+                $all_intersection_existent_method_ids,
+                $intersection_result->existent_method_ids
+            );
+
+            if ($intersection_result->return_type) {
+                if (!$all_intersection_return_type || $all_intersection_return_type->isMixed()) {
+                    $all_intersection_return_type = $intersection_result->return_type;
+                } else {
+                    $all_intersection_return_type = Type::intersectUnionTypes(
+                        $all_intersection_return_type,
+                        $intersection_result->return_type,
+                        $codebase
+                    ) ?: Type::getMixed();
+                }
+            }
+        }
+
+        return [$all_intersection_return_type, $all_intersection_existent_method_ids];
     }
 
     private static function updateResultReturnType(
@@ -639,11 +621,11 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
 
     /**
      * @param lowercase-string $method_name_lc
-     * @return array{Type\Atomic, \Psalm\Storage\ClassLikeStorage, bool, MethodIdentifier, string}
+     * @return array{Type\Atomic\TNamedObject, \Psalm\Storage\ClassLikeStorage, bool, MethodIdentifier, string}
      */
     private static function handleMixins(
         \Psalm\Storage\ClassLikeStorage $class_storage,
-        Type\Atomic $lhs_type_part,
+        Type\Atomic\TNamedObject $lhs_type_part,
         string $method_name_lc,
         Codebase $codebase,
         Context $context,

@@ -20,7 +20,6 @@ use Psalm\Issue\InvalidStringClass;
 use Psalm\Issue\InternalClass;
 use Psalm\Issue\MixedMethodCall;
 use Psalm\Issue\UndefinedClass;
-use Psalm\Issue\UndefinedMethod;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
@@ -28,7 +27,6 @@ use function count;
 use function in_array;
 use function strtolower;
 use function array_map;
-use function strpos;
 use function array_filter;
 
 class AtomicStaticCallAnalyzer

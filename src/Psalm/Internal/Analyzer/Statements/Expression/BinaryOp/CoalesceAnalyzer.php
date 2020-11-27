@@ -2,23 +2,10 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression\BinaryOp;
 
 use PhpParser;
-use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
-use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\IssueBuffer;
 use Psalm\Type;
-use Psalm\Internal\Algebra;
-use Psalm\Type\Reconciler;
-use Psalm\Internal\Type\AssertionReconciler;
-use function array_merge;
-use function array_values;
-use function array_map;
-use function array_keys;
-use function preg_match;
-use function preg_quote;
 use function substr;
 
 /**

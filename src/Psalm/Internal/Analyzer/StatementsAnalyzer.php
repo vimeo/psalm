@@ -54,6 +54,7 @@ use function trim;
 use function array_column;
 use function array_combine;
 use function array_keys;
+use function round;
 
 /**
  * @internal
@@ -705,7 +706,7 @@ class StatementsAnalyzer extends SourceAnalyzer
                 && $mean > $codebase->config->max_avg_path_length
                 && $branching > 1.1
             ) {
-                echo $source->getId() . "\n";
+                echo $source->getId() . ' ' . $count . ' ' . round($mean) . ' ' . $branching . "\n";
                 // do something else
             }
         }

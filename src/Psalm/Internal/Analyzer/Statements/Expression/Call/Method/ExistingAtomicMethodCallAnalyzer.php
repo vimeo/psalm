@@ -62,6 +62,28 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
 
         $cased_method_id = $fq_class_name . '::' . $stmt_name->name;
 
+        $result->existent_method_ids[] = $method_id;
+
+        if ($context->collect_initializations && $context->calling_method_id) {
+            [$calling_method_class] = explode('::', $context->calling_method_id);
+            $codebase->file_reference_provider->addMethodReferenceToClassMember(
+                $calling_method_class . '::__construct',
+                strtolower((string) $method_id)
+            );
+        }
+
+        if ($codebase->store_node_types
+            && !$context->collect_initializations
+            && !$context->collect_mutations
+        ) {
+            ArgumentMapPopulator::recordArgumentPositions(
+                $statements_analyzer,
+                $stmt,
+                $codebase,
+                (string) $method_id
+            );
+        }
+
         if ($fq_class_name === 'Closure' && $method_name_lc === '__invoke') {
             $statements_analyzer->node_data = clone $statements_analyzer->node_data;
 

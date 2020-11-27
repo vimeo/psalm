@@ -7,7 +7,6 @@ use function count;
 use function is_int;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
-use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\FileStorageProvider;

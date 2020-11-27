@@ -28,7 +28,6 @@ use function in_array;
 use function strtolower;
 use function implode;
 use function array_values;
-use function is_string;
 use function array_map;
 
 /**

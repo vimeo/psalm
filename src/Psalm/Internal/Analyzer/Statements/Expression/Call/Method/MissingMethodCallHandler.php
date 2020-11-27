@@ -11,6 +11,7 @@ use Psalm\Context;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Type;
 use function array_map;
+use function array_merge;
 
 class MissingMethodCallHandler
 {
@@ -189,6 +190,9 @@ class MissingMethodCallHandler
         );
     }
 
+    /**
+     * @param array<string> $all_intersection_existent_method_ids
+     */
     public static function handleMissingOrMagicMethod(
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
@@ -198,6 +202,9 @@ class MissingMethodCallHandler
         Context $context,
         \Psalm\Config $config,
         ?Type\Union $all_intersection_return_type,
+        array $all_intersection_existent_method_ids,
+        ?string $intersection_method_id,
+        string $cased_method_id,
         AtomicMethodCallAnalysisResult $result
     ) : void {
         $fq_class_name = $method_id->fq_class_name;
@@ -283,6 +290,31 @@ class MissingMethodCallHandler
             $context
         ) === false) {
             return;
+        }
+
+        if ($all_intersection_return_type && $all_intersection_existent_method_ids) {
+            $result->existent_method_ids = array_merge(
+                $result->existent_method_ids,
+                $all_intersection_existent_method_ids
+            );
+
+            if (!$result->return_type) {
+                $result->return_type = $all_intersection_return_type;
+            } else {
+                $result->return_type = Type::combineUnionTypes($all_intersection_return_type, $result->return_type);
+            }
+
+            return;
+        }
+
+        if ((!$is_interface && !$config->use_phpdoc_method_without_magic_or_parent)
+            || !isset($class_storage->pseudo_methods[$method_name_lc])
+        ) {
+            if ($is_interface) {
+                $result->non_existent_interface_method_ids[] = $intersection_method_id ?: $cased_method_id;
+            } else {
+                $result->non_existent_class_method_ids[] = $intersection_method_id ?: $cased_method_id;
+            }
         }
     }
 }

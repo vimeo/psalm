@@ -2,9 +2,7 @@
 namespace Psalm\Report;
 
 use Psalm\Internal\Json\Json;
-use function max;
 use Psalm\Config;
-use Psalm\Issue;
 use Psalm\Report;
 use function file_exists;
 use function file_get_contents;

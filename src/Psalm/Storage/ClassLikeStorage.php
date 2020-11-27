@@ -53,7 +53,7 @@ class ClassLikeStorage
     public $templatedMixins = [];
 
     /**
-     * @var Type\Atomic\TNamedObject[]
+     * @var list<Type\Atomic\TNamedObject>
      */
     public $namedMixins = [];
 
