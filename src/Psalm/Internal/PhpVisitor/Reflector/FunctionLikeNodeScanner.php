@@ -374,7 +374,8 @@ class FunctionLikeNodeScanner
 
             if ($param_storage->name === 'haystack'
                 && (strpos($this->file_path, 'CoreGenericFunctions.phpstub')
-                    || strpos($this->file_path, 'CoreGenericClasses.phpstub'))
+                    || strpos($this->file_path, 'CoreGenericClasses.phpstub')
+                    || strpos($this->file_path, 'CoreGenericIterators.phpstub'))
             ) {
                 $param_storage->expect_variable = true;
             }
