@@ -380,7 +380,7 @@ function takesDogList(Collection $dog_collection) : void {
 
 Here we're not doing anything bad – we're just iterating over an array of objects. But Psalm still gives that same basic error – "getNoises expects a `Collection<Animal>`, but `Collection<Dog>` was passed".
 
-We can tell Psalm that it's safe to pass subtypes for the templated param `T` by using the annotation `@template-covariant T`:
+We can tell Psalm that it's safe to pass subtypes for the templated param `T` by using the annotation `@template-covariant T` (or `@psalm-template-covariant T`):
 
 ```php
 <?php
