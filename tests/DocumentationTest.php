@@ -1,35 +1,38 @@
 <?php
+
 namespace Psalm\Tests;
 
+use DOMAttr;
+use DOMDocument;
+use DOMXPath;
+use PHPUnit\Framework\Constraint\Constraint;
+use Psalm\Config;
+use Psalm\Context;
+use Psalm\DocComment;
+use Psalm\Internal\RuntimeCaches;
+use Psalm\Tests\Internal\Provider;
+
+use function array_filter;
 use function array_keys;
+use function array_shift;
 use function count;
-use const DIRECTORY_SEPARATOR;
-use const LIBXML_NONET;
 use function dirname;
 use function explode;
 use function file_exists;
 use function file_get_contents;
+use function glob;
 use function implode;
+use function in_array;
 use function preg_quote;
-use Psalm\Config;
-use Psalm\Context;
-use Psalm\Tests\Internal\Provider;
 use function sort;
 use function strpos;
+use function str_replace;
 use function substr;
 use function trim;
-use function glob;
-use function str_replace;
-use function array_shift;
-use DOMDocument;
-use DOMXPath;
-use DOMAttr;
-use PHPUnit\Framework\Constraint\Constraint;
-use Psalm\DocComment;
-use Psalm\Internal\RuntimeCaches;
-
-use function array_filter;
 use function var_export;
+
+use const DIRECTORY_SEPARATOR;
+use const LIBXML_NONET;
 
 class DocumentationTest extends TestCase
 {
