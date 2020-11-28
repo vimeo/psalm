@@ -426,17 +426,17 @@ function abs($number) {}
  * @param TStep $step
  * @return (
  *     T is int
- *     ? (TStep is int ? list<int> : list<int|float>)
+ *     ? (TStep is int ? non-empty-list<int> : non-empty-list<int|float>)
  *     : (
  *         T is float
- *         ? list<float>
+ *         ? non-empty-list<float>
  *         : (
  *              T is string
- *              ? list<string>
+ *              ? non-empty-list<string>
  *              : (
  *                   T is int|float
- *                   ? list<int|float>
- *                   : list<int|float|string>
+ *                   ? non-empty-list<int|float>
+ *                   : non-empty-list<int|float|string>
  *              )
  *         )
  *     )
