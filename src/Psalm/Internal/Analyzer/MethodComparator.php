@@ -281,10 +281,10 @@ class MethodComparator
         ) {
             if (IssueBuffer::accepts(
                 new MissingImmutableAnnotation(
-                    $cased_guide_method_id . ' is marked immutable, but '
+                    $cased_guide_method_id . ' is marked @psalm-immutable, but '
                         . $implementer_classlike_storage->name . '::'
                         . ($guide_method_storage->cased_name ?: '')
-                        . ' is not marked immutable',
+                        . ' is not marked @psalm-immutable',
                     $code_location
                 ),
                 $suppressed_issues

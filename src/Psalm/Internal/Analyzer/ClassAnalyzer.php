@@ -313,8 +313,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 ) {
                     if (IssueBuffer::accepts(
                         new MissingImmutableAnnotation(
-                            $parent_fq_class_name . ' is marked immutable, but '
-                                . $fq_class_name . ' is not marked immutable',
+                            $parent_fq_class_name . ' is marked @psalm-immutable, but '
+                                . $fq_class_name . ' is not marked @psalm-immutable',
                             $code_location
                         ),
                         $storage->suppressed_issues + $this->getSuppressedIssues()
@@ -328,7 +328,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 ) {
                     if (IssueBuffer::accepts(
                         new MutableDependency(
-                            $fq_class_name . ' is marked immutable but ' . $parent_fq_class_name . ' is not',
+                            $fq_class_name . ' is marked @psalm-immutable but ' . $parent_fq_class_name . ' is not',
                             $code_location
                         ),
                         $storage->suppressed_issues + $this->getSuppressedIssues()
@@ -550,8 +550,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             ) {
                 if (IssueBuffer::accepts(
                     new MissingImmutableAnnotation(
-                        $interface_name . ' is marked immutable, but '
-                            . $fq_class_name . ' is not marked immutable',
+                        $interface_name . ' is marked @psalm-immutable, but '
+                            . $fq_class_name . ' is not marked @psalm-immutable',
                         $code_location
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues()
@@ -1615,7 +1615,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 if ($storage->mutation_free && !$trait_storage->mutation_free) {
                     if (IssueBuffer::accepts(
                         new MutableDependency(
-                            $storage->name . ' is marked immutable but ' . $fq_trait_name . ' is not',
+                            $storage->name . ' is marked @psalm-immutable but ' . $fq_trait_name . ' is not',
                             new CodeLocation($previous_trait_analyzer ?: $this, $trait_name)
                         ),
                         $storage->suppressed_issues + $this->getSuppressedIssues()
