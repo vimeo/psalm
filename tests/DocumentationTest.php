@@ -332,11 +332,7 @@ class DocumentationTest extends TestCase
 
         $this->assertThat(
             self::$docContents,
-            $this->conciseExpected(
-                $this->logicalOr(
-                    $this->stringContains('@psalm-' . $annotation)
-                )
-            ),
+            $this->conciseExpected($this->stringContains('@psalm-' . $annotation)),
             "'@psalm-$annotation' is not present in the docs"
         );
     }
