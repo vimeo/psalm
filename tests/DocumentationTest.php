@@ -1,38 +1,83 @@
 <?php
+
 namespace Psalm\Tests;
 
+use DOMAttr;
+use DOMDocument;
+use DOMXPath;
+use PHPUnit\Framework\Constraint\Constraint;
+use Psalm\Config;
+use Psalm\Context;
+use Psalm\DocComment;
+use Psalm\Internal\RuntimeCaches;
+use Psalm\Tests\Internal\Provider;
+
+use function array_filter;
 use function array_keys;
+use function array_shift;
 use function count;
-use const DIRECTORY_SEPARATOR;
-use const LIBXML_NONET;
 use function dirname;
 use function explode;
 use function file_exists;
 use function file_get_contents;
+use function glob;
 use function implode;
+use function in_array;
 use function preg_quote;
-use Psalm\Config;
-use Psalm\Context;
-use Psalm\Tests\Internal\Provider;
 use function sort;
 use function strpos;
+use function str_replace;
 use function substr;
 use function trim;
-use function glob;
-use function str_replace;
-use function array_shift;
-use DOMDocument;
-use DOMXPath;
-use DOMAttr;
-use Psalm\Internal\RuntimeCaches;
-
-use function array_filter;
 use function var_export;
+
+use const DIRECTORY_SEPARATOR;
+use const LIBXML_NONET;
 
 class DocumentationTest extends TestCase
 {
+    /**
+     * a list of all files containing annotation documentation
+     */
+    private const ANNOTATION_DOCS = [
+        'docs/annotating_code/supported_annotations.md',
+        'docs/annotating_code/templated_annotations.md',
+        'docs/annotating_code/adding_assertions.md',
+        'docs/security_analysis/annotations.md',
+    ];
+
+    /**
+     * annotations that we don’t want documented
+     */
+    private const INTENTIONALLY_UNDOCUMENTED_ANNOTATIONS = [
+        '@psalm-self-out', // I'm fairly sure it's intentionally undocumented, but can't find the reference
+        '@psalm-variadic',
+    ];
+    
+    /**
+     * These should be documented
+     */
+    private const WALL_OF_SHAME = [
+        '@psalm-assert-untainted',
+        '@psalm-consistent-constructor',
+        '@psalm-flow',
+        '@psalm-generator-return',
+        '@psalm-ignore-variable-method',
+        '@psalm-ignore-variable-property',
+        '@psalm-override-method-visibility',
+        '@psalm-override-property-visibility',
+        '@psalm-scope-this',
+        '@psalm-seal-methods',
+        '@psalm-stub-override',
+        '@psalm-taint-unescape',
+        '@psalm-yield',
+    ];
+
     /** @var \Psalm\Internal\Analyzer\ProjectAnalyzer */
     protected $project_analyzer;
+
+    /** @var string */
+    private static $docContents = '';
 
     /**
      * @return array<string, array<int, string>>
@@ -294,5 +339,69 @@ class DocumentationTest extends TestCase
             $duplicate_shortcodes,
             "Duplicate shortcodes found: \n" . var_export($duplicate_shortcodes, true)
         );
+    }
+
+    /** @dataProvider knownAnnotations */
+    public function testAllAnnotationsAreDocumented(string $annotation): void
+    {
+        if ('' === self::$docContents) {
+            foreach (self::ANNOTATION_DOCS as $file) {
+                self::$docContents .= file_get_contents(__DIR__ . '/../' . $file);
+            }
+        }
+
+        $this->assertThat(
+            self::$docContents,
+            $this->conciseExpected($this->stringContains('@psalm-' . $annotation)),
+            "'@psalm-$annotation' is not present in the docs"
+        );
+    }
+
+    /** @return iterable<string, array{string}> */
+    public function knownAnnotations(): iterable
+    {
+        foreach (DocComment::PSALM_ANNOTATIONS as $annotation) {
+            if (in_array('@psalm-' . $annotation, self::INTENTIONALLY_UNDOCUMENTED_ANNOTATIONS, true)) {
+                continue;
+            }
+
+            if (in_array('@psalm-' . $annotation, self::WALL_OF_SHAME, true)) {
+                continue;
+            }
+
+            yield $annotation => [$annotation];
+        }
+    }
+
+    /**
+     * Creates a constraint wrapper that displays the expected value in a concise form
+     */
+    public function conciseExpected(Constraint $inner): Constraint
+    {
+        return new class ($inner) extends Constraint
+        {
+            /** @var Constraint */
+            private $inner;
+
+            public function __construct(Constraint $inner)
+            {
+                $this->inner = $inner;
+            }
+
+            public function toString(): string
+            {
+                return $this->inner->toString();
+            }
+
+            protected function matches($other): bool
+            {
+                return $this->inner->matches($other);
+            }
+
+            protected function failureDescription($other): string
+            {
+                return $this->exporter()->shortenedExport($other) . ' ' . $this->toString();
+            }
+        };
     }
 }

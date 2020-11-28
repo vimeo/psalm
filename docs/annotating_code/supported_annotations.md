@@ -7,7 +7,7 @@ Psalm supports a wide range of docblock annotations.
 Psalm uses the following PHPDoc tags to understand your code:
 
 - [`@var`](https://docs.phpdoc.org/latest/references/phpdoc/tags/var.html)
-  Used for specifying the types of properties and variables
+  Used for specifying the types of properties and variables@
 - [`@return`](https://docs.phpdoc.org/latest/references/phpdoc/tags/return.html)
   Used for specifying the return types of functions, methods and closures
 - [`@param`](https://docs.phpdoc.org/latest/references/phpdoc/tags/param.html)
@@ -68,7 +68,7 @@ function addFoo(?string &$s) : void {
 }
 ```
 
-### `@psalm-var`, `@psalm-param`, `@psalm-return`, `@psalm-property`, `@psalm-property-read`, `@psalm-property-write`
+### `@psalm-var`, `@psalm-param`, `@psalm-return`, `@psalm-property`, `@psalm-property-read`, `@psalm-property-write`, `@psalm-method`
 
 When specifying types in a format not supported by phpDocumentor ([but supported by Psalm](#type-syntax)) you may wish to prepend `@psalm-` to the PHPDoc tag, so as to avoid confusing your IDE. If a `@psalm`-prefixed tag is given, Psalm will use it in place of its non-prefixed counterpart.
 
@@ -474,6 +474,38 @@ class User {
     }
 }
 ```
+
+### `@psalm-require-extends`
+
+The @psalm-require-extends-annotation allows you to define a requirements that a trait imposes on the using class.
+
+```php
+abstract class DatabaseModel {
+  // methods, properties, etc.
+}
+
+/**
+ * @psalm-require-extends DatabaseModel
+ */
+trait SoftDeletingTrait {
+  // useful but scoped functionality, that depends on methods/properties from DatabaseModel
+}
+
+
+class MyModel extends DatabaseModel {
+  // valid
+  use SoftDeletingTrait;
+}
+
+class NormalClass {
+  // triggers an error
+  use SoftDeletingTrait;
+}
+```
+
+### `@psalm-require-implements`
+
+Behaves the same way as `@psalm-require-extends`, but for interfaces.
 
 ## Type Syntax
 

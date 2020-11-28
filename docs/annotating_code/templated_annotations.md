@@ -68,9 +68,9 @@ class One_off_instance_of_MyContainer {
 
 This pattern can be used in large number of different situations like mocking, collections, iterators and loading arbitrary objects. Psalm has a large number of annotations to make it easy to use templated types in your codebase.
 
-## `@template`
+## `@template`, `@psalm-template`
 
-The `@template` tag allows classes and functions to declare a generic type parameter.
+The `@template`/`@psalm-template` tag allows classes and functions to declare a generic type parameter.
 
 As a very simple example, this function returns whatever is passed in:
 
@@ -380,7 +380,7 @@ function takesDogList(Collection $dog_collection) : void {
 
 Here we're not doing anything bad – we're just iterating over an array of objects. But Psalm still gives that same basic error – "getNoises expects a `Collection<Animal>`, but `Collection<Dog>` was passed".
 
-We can tell Psalm that it's safe to pass subtypes for the templated param `T` by using the annotation `@template-covariant T`:
+We can tell Psalm that it's safe to pass subtypes for the templated param `T` by using the annotation `@template-covariant T` (or `@psalm-template-covariant T`):
 
 ```php
 <?php

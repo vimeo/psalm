@@ -22,7 +22,7 @@ use function strspn;
 
 class DocComment
 {
-    private const PSALM_ANNOTATIONS = [
+    public const PSALM_ANNOTATIONS = [
         'return', 'param', 'template', 'var', 'type',
         'template-covariant', 'property', 'property-read', 'property-write', 'method',
         'assert', 'assert-if-true', 'assert-if-false', 'suppress',
