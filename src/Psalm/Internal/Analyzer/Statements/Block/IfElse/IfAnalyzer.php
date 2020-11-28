@@ -100,7 +100,9 @@ class IfAnalyzer
             ) {
                 if (IssueBuffer::accepts(
                     new ConflictingReferenceConstraint(
-                        'There is more than one pass-by-reference constraint on ' . $var_id,
+                        'There is more than one pass-by-reference constraint on ' . $var_id
+                            . ' between ' . $byref_constraint->type->getId()
+                            . ' and ' . $outer_constraint_type->getId(),
                         new CodeLocation($statements_analyzer, $stmt, $outer_context->include_location, true)
                     ),
                     $statements_analyzer->getSuppressedIssues()

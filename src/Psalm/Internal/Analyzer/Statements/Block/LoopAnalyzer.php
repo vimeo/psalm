@@ -320,6 +320,7 @@ class LoopAnalyzer
                 }
 
                 $inner_context->clauses = $pre_loop_context->clauses;
+                $inner_context->byref_constraints = $pre_loop_context->byref_constraints;
 
                 $analyzer->setMixedCountsForFile($statements_analyzer->getFilePath(), $original_mixed_counts);
                 IssueBuffer::startRecording();
