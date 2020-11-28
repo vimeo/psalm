@@ -24,6 +24,8 @@ use function array_shift;
 use DOMDocument;
 use DOMXPath;
 use DOMAttr;
+use PHPUnit\Framework\Constraint\Constraint;
+use Psalm\DocComment;
 use Psalm\Internal\RuntimeCaches;
 
 use function array_filter;
@@ -294,5 +296,82 @@ class DocumentationTest extends TestCase
             $duplicate_shortcodes,
             "Duplicate shortcodes found: \n" . var_export($duplicate_shortcodes, true)
         );
+    }
+
+    private static $annotationDocs = [
+        'docs/annotating_code/supported_annotations.md',
+        'docs/annotating_code/templated_annotations.md',
+        'docs/annotating_code/adding_assertions.md',
+        'docs/security_analysis/annotations.md',
+    ];
+
+    private static $docContents = '';
+
+    /** @dataProvider knownAnnotations */
+    public function testAllAnnotationsAreDocumented(string $annotation): void
+    {
+        if ('' === self::$docContents) {
+            foreach (self::$annotationDocs as $file) {
+                self::$docContents .= file_get_contents(__DIR__ . '/../' . $file);
+            }
+        }
+
+        $this->assertThat(
+            self::$docContents,
+            $this->conciseExpected(
+                $this->logicalOr(
+                    $this->stringContains('@psalm-' . $annotation),
+                    $this->stringContains('@' . $annotation)
+                )
+            ),
+            "Neither '@$annotation' nor '@psalm-$annotation' are present in the docs"
+        );
+    }
+
+    private static $intentionallyUndocumentedAnnotations = [
+        'self-out', // I'm fairly sure it's intentionally undocumented, but can't find the reference
+    ];
+
+    /** @return iterable<int, string> */
+    public function knownAnnotations(): iterable
+    {
+        foreach (DocComment::PSALM_ANNOTATIONS as $annotation) {
+            if (in_array($annotation, self::$intentionallyUndocumentedAnnotations, true)) {
+                continue;
+            }
+            yield $annotation => [$annotation];
+        }
+    }
+
+    /**
+     * Creates a constraint wrapper that displays the expected value in a concise form
+     */
+    public function conciseExpected(Constraint $inner): Constraint
+    {
+        return new class ($inner) extends Constraint
+        {
+            /** @var Constraint */
+            private $inner;
+
+            public function __construct(Constraint $inner)
+            {
+                $this->inner = $inner;
+            }
+
+            public function toString(): string
+            {
+                return $this->inner->toString();
+            }
+
+            protected function matches($other): bool
+            {
+                return $this->inner->matches($other);
+            }
+
+            protected function failureDescription($other): string
+            {
+                return $this->exporter()->shortenedExport($other) . ' ' . $this->toString();
+            }
+        };
     }
 }
