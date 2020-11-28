@@ -1,6 +1,6 @@
 # MutableDependency
 
-Emitted when an immutable class inherits from a class or trait not marked immutable
+Emitted when an immutable class inherits from a class or trait not marked @psalm-immutable
 
 ```php
 <?php
