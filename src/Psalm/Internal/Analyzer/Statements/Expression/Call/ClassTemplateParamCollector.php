@@ -141,10 +141,12 @@ class ClassTemplateParamCollector
                                         [$type_extends_atomic->defining_class]
                                         [$type_extends_atomic->param_name]
                             )) {
-                                $search_keys = array_keys(
+                                $search_keys = array_values(
                                     array_filter(
-                                        $static_class_storage->template_type_extends
-                                            [$type_extends_atomic->defining_class],
+                                        array_keys(
+                                            $static_class_storage->template_type_extends
+                                                [$type_extends_atomic->defining_class]
+                                        ),
                                         function ($key) {
                                             return is_string($key);
                                         }
@@ -156,7 +158,7 @@ class ClassTemplateParamCollector
                                     $search_keys
                                 );
 
-                                if (isset($lhs_type_part->type_params[(int) $mapped_offset])) {
+                                if ($mapped_offset !== false && isset($lhs_type_part->type_params[$mapped_offset])) {
                                     $candidate_type = $lhs_type_part->type_params[(int) $mapped_offset];
 
                                     if (!$output_type_extends) {
