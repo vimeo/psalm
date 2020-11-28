@@ -89,12 +89,12 @@ class NegatedAssertionReconciler extends Reconciler
                             $failed_reconciliation = 2;
 
                             if ($code_location) {
-                                if (strpos($key, '$this->')) {
+                                if (strpos($key, '$this->') !== 0) {
                                     if ($existing_var_type->from_docblock) {
                                         if (IssueBuffer::accepts(
                                             new DocblockTypeContradiction(
                                                 'Cannot resolve types for ' . $key . ' with docblock-defined type '
-                                                . $existing_var_type . ' and !isset assertion',
+                                                    . $existing_var_type . ' and !isset assertion',
                                                 $code_location,
                                                 null
                                             ),
@@ -106,7 +106,7 @@ class NegatedAssertionReconciler extends Reconciler
                                         if (IssueBuffer::accepts(
                                             new TypeDoesNotContainType(
                                                 'Cannot resolve types for ' . $key . ' with type '
-                                                . $existing_var_type . ' and !isset assertion',
+                                                    . $existing_var_type . ' and !isset assertion',
                                                 $code_location,
                                                 null
                                             ),
