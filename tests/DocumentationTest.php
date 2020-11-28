@@ -36,8 +36,28 @@ use const LIBXML_NONET;
 
 class DocumentationTest extends TestCase
 {
+    /**
+     * a list of all files containing annotation documentation
+     */
+    private const ANNOTATION_DOCS = [
+        'docs/annotating_code/supported_annotations.md',
+        'docs/annotating_code/templated_annotations.md',
+        'docs/annotating_code/adding_assertions.md',
+        'docs/security_analysis/annotations.md',
+    ];
+
+    /**
+     * annotations that we don’t want documented
+     */
+    private const INTENTIONALLY_UNDOCUMENTED_ANNOTATIONS = [
+        'self-out', // I'm fairly sure it's intentionally undocumented, but can't find the reference
+    ];
+
     /** @var \Psalm\Internal\Analyzer\ProjectAnalyzer */
     protected $project_analyzer;
+
+    /** @var string */
+    private static $docContents = '';
 
     /**
      * @return array<string, array<int, string>>
@@ -301,22 +321,11 @@ class DocumentationTest extends TestCase
         );
     }
 
-    /** @var list<string> */
-    private static $annotationDocs = [
-        'docs/annotating_code/supported_annotations.md',
-        'docs/annotating_code/templated_annotations.md',
-        'docs/annotating_code/adding_assertions.md',
-        'docs/security_analysis/annotations.md',
-    ];
-
-    /** @var string */
-    private static $docContents = '';
-
     /** @dataProvider knownAnnotations */
     public function testAllAnnotationsAreDocumented(string $annotation): void
     {
         if ('' === self::$docContents) {
-            foreach (self::$annotationDocs as $file) {
+            foreach (self::ANNOTATION_DOCS as $file) {
                 self::$docContents .= file_get_contents(__DIR__ . '/../' . $file);
             }
         }
@@ -325,24 +334,18 @@ class DocumentationTest extends TestCase
             self::$docContents,
             $this->conciseExpected(
                 $this->logicalOr(
-                    $this->stringContains('@psalm-' . $annotation),
-                    $this->stringContains('@' . $annotation)
+                    $this->stringContains('@psalm-' . $annotation)
                 )
             ),
-            "Neither '@$annotation' nor '@psalm-$annotation' are present in the docs"
+            "'@psalm-$annotation' is not present in the docs"
         );
     }
-
-    /** @var list<string> */
-    private static $intentionallyUndocumentedAnnotations = [
-        'self-out', // I'm fairly sure it's intentionally undocumented, but can't find the reference
-    ];
 
     /** @return iterable<string, array{string}> */
     public function knownAnnotations(): iterable
     {
         foreach (DocComment::PSALM_ANNOTATIONS as $annotation) {
-            if (in_array($annotation, self::$intentionallyUndocumentedAnnotations, true)) {
+            if (in_array($annotation, self::INTENTIONALLY_UNDOCUMENTED_ANNOTATIONS, true)) {
                 continue;
             }
             yield $annotation => [$annotation];
