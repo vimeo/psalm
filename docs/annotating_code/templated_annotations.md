@@ -68,9 +68,9 @@ class One_off_instance_of_MyContainer {
 
 This pattern can be used in large number of different situations like mocking, collections, iterators and loading arbitrary objects. Psalm has a large number of annotations to make it easy to use templated types in your codebase.
 
-## `@template`
+## `@template`, `@psalm-template`
 
-The `@template` tag allows classes and functions to declare a generic type parameter.
+The `@template`/`@psalm-template` tag allows classes and functions to declare a generic type parameter.
 
 As a very simple example, this function returns whatever is passed in:
 
