@@ -50,7 +50,8 @@ class DocumentationTest extends TestCase
      * annotations that we don’t want documented
      */
     private const INTENTIONALLY_UNDOCUMENTED_ANNOTATIONS = [
-        'self-out', // I'm fairly sure it's intentionally undocumented, but can't find the reference
+        '@psalm-self-out', // I'm fairly sure it's intentionally undocumented, but can't find the reference
+        '@psalm-variadic',
     ];
 
     /** @var \Psalm\Internal\Analyzer\ProjectAnalyzer */
@@ -341,7 +342,7 @@ class DocumentationTest extends TestCase
     public function knownAnnotations(): iterable
     {
         foreach (DocComment::PSALM_ANNOTATIONS as $annotation) {
-            if (in_array($annotation, self::INTENTIONALLY_UNDOCUMENTED_ANNOTATIONS, true)) {
+            if (in_array('@psalm-' . $annotation, self::INTENTIONALLY_UNDOCUMENTED_ANNOTATIONS, true)) {
                 continue;
             }
             yield $annotation => [$annotation];
