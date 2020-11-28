@@ -298,6 +298,7 @@ class DocumentationTest extends TestCase
         );
     }
 
+    /** @var list<string> */
     private static $annotationDocs = [
         'docs/annotating_code/supported_annotations.md',
         'docs/annotating_code/templated_annotations.md',
@@ -305,6 +306,7 @@ class DocumentationTest extends TestCase
         'docs/security_analysis/annotations.md',
     ];
 
+    /** @var string */
     private static $docContents = '';
 
     /** @dataProvider knownAnnotations */
@@ -328,11 +330,12 @@ class DocumentationTest extends TestCase
         );
     }
 
+    /** @var list<string> */
     private static $intentionallyUndocumentedAnnotations = [
         'self-out', // I'm fairly sure it's intentionally undocumented, but can't find the reference
     ];
 
-    /** @return iterable<int, string> */
+    /** @return iterable<string, array{string}> */
     public function knownAnnotations(): iterable
     {
         foreach (DocComment::PSALM_ANNOTATIONS as $annotation) {
