@@ -477,7 +477,7 @@ class ClassTemplateExtendsTest extends TestCase
             'extendsTwiceDifferentNameUnbrokenChain' => [
                 '<?php
                     /**
-                     * @template T1
+                     * @psalm-template T1
                      */
                     class Container
                     {
@@ -485,6 +485,7 @@ class ClassTemplateExtendsTest extends TestCase
                          * @var T1
                          */
                         private $v;
+
                         /**
                          * @param T1 $v
                          */
@@ -492,6 +493,7 @@ class ClassTemplateExtendsTest extends TestCase
                         {
                             $this->v = $v;
                         }
+
                         /**
                          * @return T1
                          */
@@ -502,14 +504,14 @@ class ClassTemplateExtendsTest extends TestCase
                     }
 
                     /**
-                     * @template T2
-                     * @template-extends Container<T2>
+                     * @psalm-template T2
+                     * @extends Container<T2>
                      */
                     class ChildContainer extends Container {}
 
                     /**
-                     * @template T3
-                     * @template-extends ChildContainer<T3>
+                     * @psalm-template T3
+                     * @extends ChildContainer<T3>
                      */
                     class GrandChildContainer extends ChildContainer {}
 
