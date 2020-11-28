@@ -89,29 +89,31 @@ class NegatedAssertionReconciler extends Reconciler
                             $failed_reconciliation = 2;
 
                             if ($code_location) {
-                                if ($existing_var_type->from_docblock) {
-                                    if (IssueBuffer::accepts(
-                                        new DocblockTypeContradiction(
-                                            'Cannot resolve types for ' . $key . ' with docblock-defined type '
+                                if (strpos($key, '$this->')) {
+                                    if ($existing_var_type->from_docblock) {
+                                        if (IssueBuffer::accepts(
+                                            new DocblockTypeContradiction(
+                                                'Cannot resolve types for ' . $key . ' with docblock-defined type '
                                                 . $existing_var_type . ' and !isset assertion',
-                                            $code_location,
-                                            null
-                                        ),
-                                        $suppressed_issues
-                                    )) {
-                                        // fall through
-                                    }
-                                } else {
-                                    if (IssueBuffer::accepts(
-                                        new TypeDoesNotContainType(
-                                            'Cannot resolve types for ' . $key . ' with type '
+                                                $code_location,
+                                                null
+                                            ),
+                                            $suppressed_issues
+                                        )) {
+                                            // fall through
+                                        }
+                                    } else {
+                                        if (IssueBuffer::accepts(
+                                            new TypeDoesNotContainType(
+                                                'Cannot resolve types for ' . $key . ' with type '
                                                 . $existing_var_type . ' and !isset assertion',
-                                            $code_location,
-                                            null
-                                        ),
-                                        $suppressed_issues
-                                    )) {
-                                        // fall through
+                                                $code_location,
+                                                null
+                                            ),
+                                            $suppressed_issues
+                                        )) {
+                                            // fall through
+                                        }
                                     }
                                 }
                             }
