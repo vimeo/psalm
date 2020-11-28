@@ -475,6 +475,38 @@ class User {
 }
 ```
 
+### `@psalm-require-extends`
+
+The @psalm-require-extends-annotation allows you to define a requirements that a trait imposes on the using class.
+
+```php
+abstract class DatabaseModel {
+  // methods, properties, etc.
+}
+
+/**
+ * @psalm-require-extends DatabaseModel
+ */
+trait SoftDeletingTrait {
+  // useful but scoped functionality, that depends on methods/properties from DatabaseModel
+}
+
+
+class MyModel extends DatabaseModel {
+  // valid
+  use SoftDeletingTrait;
+}
+
+class NormalClass {
+  // triggers an error
+  use SoftDeletingTrait;
+}
+```
+
+### `@psalm-require-implements`
+
+Behaves the same way as `@psalm-require-extends`, but for interfaces.
+
 ## Type Syntax
 
 Psalm supports PHPDoc’s [type syntax](https://docs.phpdoc.org/latest/guides/types.html), and also the [proposed PHPDoc PSR type syntax](https://github.com/php-fig/fig-standards/blob/master/proposed/phpdoc.md#appendix-a-types).
