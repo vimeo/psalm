@@ -12,6 +12,8 @@ use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyList;
+use function array_map;
+use function range;
 
 /**
  * @internal
@@ -148,7 +150,22 @@ class ArrayTypeComparator
 
         if ($input_type_part instanceof TList) {
             if ($input_type_part instanceof TNonEmptyList) {
-                $input_type_part = new TNonEmptyArray([Type::getInt(), clone $input_type_part->type_param]);
+                // if the array has a known size < 10, make sure the array keys are literal ints
+                if ($input_type_part->count !== null && $input_type_part->count < 10) {
+                    $literal_ints = array_map(
+                        function ($i) {
+                            return new Type\Atomic\TLiteralInt($i);
+                        },
+                        range(0, $input_type_part->count - 1)
+                    );
+
+                    $input_type_part = new TNonEmptyArray([
+                        new Type\Union($literal_ints),
+                        clone $input_type_part->type_param
+                    ]);
+                } else {
+                    $input_type_part = new TNonEmptyArray([Type::getInt(), clone $input_type_part->type_param]);
+                }
             } else {
                 $input_type_part = new TArray([Type::getInt(), clone $input_type_part->type_param]);
             }
