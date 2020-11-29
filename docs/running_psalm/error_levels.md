@@ -199,6 +199,7 @@ These issues are treated as errors at level 4 and below.
  - [NoInterfaceProperties](issues/NoInterfaceProperties.md)
  - [PossibleRawObjectIteration](issues/PossibleRawObjectIteration.md)
  - [RedundantCondition](issues/RedundantCondition.md)
+ - [RedundantPropertyInitializationCheck](issues/RedundantPropertyInitializationCheck.md)
  - [StringIncrement](issues/StringIncrement.md)
  - [TooManyArguments](issues/TooManyArguments.md)
  - [TypeDoesNotContainNull](issues/TypeDoesNotContainNull.md)
