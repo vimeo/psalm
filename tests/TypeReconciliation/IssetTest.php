@@ -782,6 +782,7 @@ class IssetTest extends \Psalm\Tests\TestCase
                         public $foo;
 
                         public function init() : void {
+                            /** @psalm-suppress RedundantPropertyInitializationCheck */
                             if (isset($this->foo)) {
                                 return;
                             }

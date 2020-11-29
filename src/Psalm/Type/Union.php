@@ -54,6 +54,15 @@ class Union implements TypeNode
     public $from_calculation = false;
 
     /**
+     * Whether the type originated from a property
+     *
+     * This helps turn isset($foo->bar) into a different sort of issue
+     *
+     * @var bool
+     */
+    public $from_property = false;
+
+    /**
      * Whether the property that this type has been derived from has been initialized in a constructor
      *
      * @var bool

@@ -1039,12 +1039,14 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     && !($property_type->isNullable() && $property_type->from_docblock)
                 ) {
                     $property_type->initialized = false;
+                    $property_type->from_property = true;
                 }
             } else {
                 $property_type = Type::getMixed();
 
                 if (!$property_storage->has_default && !$property_storage->is_promoted) {
                     $property_type->initialized = false;
+                    $property_type->from_property = true;
                 }
             }
 
@@ -1960,6 +1962,10 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
         foreach ($method_context->vars_in_scope as $context_var_id => $context_type) {
             $method_context->vars_in_scope[$context_var_id] = clone $context_type;
+
+            if ($context_type->from_property && $stmt->name->name !== '__construct') {
+                $method_context->vars_in_scope[$context_var_id]->initialized = true;
+            }
         }
 
         $method_context->collect_exceptions = $config->check_for_throws_docblock;

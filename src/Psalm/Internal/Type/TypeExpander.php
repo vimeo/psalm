@@ -75,6 +75,7 @@ class TypeExpander
         $fleshed_out_type->possibly_undefined_from_try = $return_type->possibly_undefined_from_try;
         $fleshed_out_type->by_ref = $return_type->by_ref;
         $fleshed_out_type->initialized = $return_type->initialized;
+        $fleshed_out_type->from_property = $return_type->from_property;
         $fleshed_out_type->had_template = $return_type->had_template;
         $fleshed_out_type->parent_nodes = $return_type->parent_nodes;
 
