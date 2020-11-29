@@ -58,6 +58,8 @@ class ConstantTypeResolver
                 || $c instanceof UnresolvedConstant\UnresolvedDivisionOp
                 || $c instanceof UnresolvedConstant\UnresolvedMultiplicationOp
                 || $c instanceof UnresolvedConstant\UnresolvedBitwiseOr
+                || $c instanceof UnresolvedConstant\UnresolvedBitwiseXor
+                || $c instanceof UnresolvedConstant\UnresolvedBitwiseAnd
             ) {
                 if (($left instanceof Type\Atomic\TLiteralFloat || $left instanceof Type\Atomic\TLiteralInt)
                     && ($right instanceof Type\Atomic\TLiteralFloat || $right instanceof Type\Atomic\TLiteralInt)
@@ -76,6 +78,14 @@ class ConstantTypeResolver
 
                     if ($c instanceof UnresolvedConstant\UnresolvedBitwiseOr) {
                         return self::getLiteralTypeFromScalarValue($left->value | $right->value);
+                    }
+
+                    if ($c instanceof UnresolvedConstant\UnresolvedBitwiseXor) {
+                        return self::getLiteralTypeFromScalarValue($left->value ^ $right->value);
+                    }
+
+                    if ($c instanceof UnresolvedConstant\UnresolvedBitwiseAnd) {
+                        return self::getLiteralTypeFromScalarValue($left->value & $right->value);
                     }
 
                     return self::getLiteralTypeFromScalarValue($left->value * $right->value);

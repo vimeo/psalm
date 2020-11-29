@@ -27,6 +27,11 @@ class Php56Test extends TestCase
                         const THREE = self::TWO + 1;
                         const ONE_THIRD = self::ONE / self::THREE;
                         const SENTENCE = "The value of THREE is " . self::THREE;
+                        const SHIFT = self::ONE >> 2;
+                        const SHIFT2 = self::ONE << 1;
+                        const BITAND = 1 & 1;
+                        const BITOR = 1 | 1;
+                        const BITXOR = 1 ^ 1;
 
                         /** @var int */
                         public $four = self::ONE + self::THREE;
@@ -46,7 +51,12 @@ class Php56Test extends TestCase
                     $c1_3rd = C::ONE_THIRD;
                     $c_sentence = C::SENTENCE;
                     $cf = (new C)->f();
-                    $c4 = (new C)->four;',
+                    $c4 = (new C)->four;
+                    $shift = C::SHIFT;
+                    $shift2 = C::SHIFT2;
+                    $bitand = C::BITAND;
+                    $bitor = C::BITOR;
+                    $bitxor = C::BITXOR;',
                 'assertions' => [
                     '$c1' => 'int',
                     '$c2===' => 'int(2)',
@@ -55,18 +65,32 @@ class Php56Test extends TestCase
                     '$c_sentence' => 'string',
                     '$cf' => 'int',
                     '$c4' => 'int',
+                    '$shift' => 'int',
+                    '$shift2' => 'int',
+                    '$bitand' => 'int',
+                    '$bitor' => 'int',
+                    '$bitxor' => 'int',
                 ],
             ],
             'constFeatures' => [
                 '<?php
                     const ONE = 1;
                     const TWO = ONE * 2;
+                    const BITWISE = ONE & 2;
+                    const SHIFT = ONE << 2;
+                    const SHIFT2 = PHP_INT_MAX << 1;
 
                     $one = ONE;
-                    $two = TWO;',
+                    $two = TWO;
+                    $bitwise = BITWISE;
+                    $shift = SHIFT;
+                    $shift2 = SHIFT2;',
                 'assertions' => [
                     '$one' => 'int',
                     '$two' => 'int',
+                    '$bitwise' => 'int',
+                    '$shift' => 'int',
+                    '$shift2' => 'int',
                 ],
             ],
             'exponentiation' => [

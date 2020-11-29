@@ -60,6 +60,14 @@ class ExpressionResolver
             if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BitwiseOr) {
                 return new UnresolvedConstant\UnresolvedBitwiseOr($left, $right);
             }
+
+            if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BitwiseXor) {
+                return new UnresolvedConstant\UnresolvedBitwiseXor($left, $right);
+            }
+
+            if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BitwiseAnd) {
+                return new UnresolvedConstant\UnresolvedBitwiseAnd($left, $right);
+            }
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\Ternary) {
