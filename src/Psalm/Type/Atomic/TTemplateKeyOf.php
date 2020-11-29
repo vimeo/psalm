@@ -3,6 +3,9 @@ namespace Psalm\Type\Atomic;
 
 use Psalm\Type\Union;
 
+/**
+ * Represents the type used when using TKeyOfClassConstant when the type of the class constant array is a template
+ */
 class TTemplateKeyOf extends TArrayKey
 {
     /**
