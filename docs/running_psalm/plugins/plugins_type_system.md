@@ -53,13 +53,13 @@ The classes are as follows:
 
 `TKeyOfClassConstant` - Represents an offset of a class constant array.
 
+`TValueOfClassConstant` - Represents a value of a class constant array.
+
 `TTemplateIndexedAccess` - To be documented
 
-`TTemplateKeyOf` - To be documented
+`TTemplateKeyOf` - Represents the type used when using TKeyOfClassConstant when the type of the class constant array is a template
 
 `TTypeAlias` - To be documented
-
-`TValueOfClassConstant` - To be documented
 
 ### Scalar supertype
 
