@@ -5,6 +5,9 @@ use Psalm\Codebase;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Type\Union;
 
+/**
+ * Internal representation of a conditional return type in phpdoc. For example ($param1 is int ? int : string)
+ */
 class TConditional extends \Psalm\Type\Atomic
 {
     /**

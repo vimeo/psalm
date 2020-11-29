@@ -2,7 +2,7 @@
 namespace Psalm\Type\Atomic;
 
 /**
- * Represents a non-empty array
+ * Denotes a list that is _also_ `callable`.
  */
 class TCallableList extends TNonEmptyList
 {

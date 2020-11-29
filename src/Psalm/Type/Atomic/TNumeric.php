@@ -1,6 +1,9 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+/**
+ * Denotes the `numeric` type (which can also result from an `is_numeric` check).
+ */
 class TNumeric extends Scalar
 {
     public function __toString(): string

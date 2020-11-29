@@ -1,6 +1,9 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+/**
+ * Denotes an integer value where the exact numeric value is known.
+ */
 class TLiteralInt extends TInt
 {
     /** @var int */

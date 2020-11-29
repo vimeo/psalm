@@ -1,6 +1,9 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+/**
+ * Denotes an object that is also `callable` (i.e. it has `__invoke` defined).
+ */
 class TCallableObject extends TObject
 {
     public function __toString(): string

@@ -3,6 +3,10 @@ namespace Psalm\Type\Atomic;
 
 use function substr;
 
+/**
+ * Represents the type that is the result of a bitmask combination of its parameters.
+ * `int-mask<1, 2, 4>` corresponds to `1|2|3|4|5|6|7`
+ */
 class TIntMask extends TInt
 {
     /** @var non-empty-array<TLiteralInt|TScalarClassConstant> */

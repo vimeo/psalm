@@ -5,6 +5,9 @@ use function preg_replace;
 use function strlen;
 use function substr;
 
+/**
+ * Denotes a string whose value is known.
+ */
 class TLiteralString extends TString
 {
     /** @var string */

@@ -11,7 +11,10 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
 /**
- * Represents an array where we know its key values
+ * Represents an array that has some particularities:
+ * - its keys are integers
+ * - they start at 0
+ * - they are consecutive and go upwards (no negative int)
  */
 class TList extends \Psalm\Type\Atomic
 {

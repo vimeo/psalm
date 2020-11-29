@@ -1,6 +1,9 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+/**
+ * Denotes the `float` type, where the exact value is unknown.
+ */
 class TFloat extends Scalar
 {
     public function __toString(): string

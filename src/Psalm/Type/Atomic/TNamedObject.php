@@ -9,6 +9,9 @@ use Psalm\Type\Atomic;
 use function substr;
 use function array_map;
 
+/**
+ * Denotes an object type where the type of the object is known e.g. `Exception`, `Throwable`, `Foo\Bar`
+ */
 class TNamedObject extends Atomic
 {
     use HasIntersectionTrait;

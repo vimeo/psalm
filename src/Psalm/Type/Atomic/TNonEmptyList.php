@@ -2,7 +2,7 @@
 namespace Psalm\Type\Atomic;
 
 /**
- * Represents a non-empty array
+ * Represents a non-empty list
  */
 class TNonEmptyList extends TList
 {

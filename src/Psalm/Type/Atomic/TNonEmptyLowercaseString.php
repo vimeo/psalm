@@ -1,6 +1,9 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+/**
+ * Denotes a non-empty-string where every character is lowercased. (which can also result from a `strtolower` call).
+ */
 class TNonEmptyLowercaseString extends TNonEmptyString
 {
     public function getKey(bool $include_extra = true): string

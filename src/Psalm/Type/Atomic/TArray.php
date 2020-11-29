@@ -6,7 +6,7 @@ use function get_class;
 use Psalm\Type\Atomic;
 
 /**
- * Represents an array with generic type parameters.
+ * Denotes a simple array of the form `array<TKey, TValue>`. It expects an array with two elements, both union types.
  */
 class TArray extends \Psalm\Type\Atomic
 {

@@ -1,6 +1,9 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+/**
+ * Denotes the `string` type, where the exact value is unknown.
+ */
 class TString extends Scalar
 {
     /**
