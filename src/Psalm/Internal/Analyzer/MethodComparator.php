@@ -678,9 +678,9 @@ class MethodComparator
 
         $guide_class_name = $guide_classlike_storage->name;
 
-        if ($implementer_classlike_storage->template_type_extends) {
+        if ($implementer_classlike_storage->template_extended_params) {
             self::transformTemplates(
-                $implementer_classlike_storage->template_type_extends,
+                $implementer_classlike_storage->template_extended_params,
                 $guide_class_name,
                 $guide_method_storage_param_type,
                 $codebase
@@ -693,17 +693,17 @@ class MethodComparator
             );
 
             if (isset(
-                $implementer_called_class_storage->template_type_extends[$implementer_classlike_storage->name]
+                $implementer_called_class_storage->template_extended_params[$implementer_classlike_storage->name]
             )) {
                 self::transformTemplates(
-                    $implementer_called_class_storage->template_type_extends,
+                    $implementer_called_class_storage->template_extended_params,
                     $implementer_classlike_storage->name,
                     $implementer_method_storage_param_type,
                     $codebase
                 );
 
                 self::transformTemplates(
-                    $implementer_called_class_storage->template_type_extends,
+                    $implementer_called_class_storage->template_extended_params,
                     $guide_class_name,
                     $guide_method_storage_param_type,
                     $codebase
@@ -940,9 +940,9 @@ class MethodComparator
 
         $guide_class_name = $guide_classlike_storage->name;
 
-        if ($implementer_classlike_storage->template_type_extends) {
+        if ($implementer_classlike_storage->template_extended_params) {
             self::transformTemplates(
-                $implementer_classlike_storage->template_type_extends,
+                $implementer_classlike_storage->template_extended_params,
                 $guide_class_name,
                 $guide_method_storage_return_type,
                 $codebase
@@ -955,17 +955,17 @@ class MethodComparator
             );
 
             if (isset(
-                $implementer_called_class_storage->template_type_extends[$implementer_classlike_storage->name]
+                $implementer_called_class_storage->template_extended_params[$implementer_classlike_storage->name]
             )) {
                 self::transformTemplates(
-                    $implementer_called_class_storage->template_type_extends,
+                    $implementer_called_class_storage->template_extended_params,
                     $implementer_classlike_storage->name,
                     $implementer_method_storage_return_type,
                     $codebase
                 );
 
                 self::transformTemplates(
-                    $implementer_called_class_storage->template_type_extends,
+                    $implementer_called_class_storage->template_extended_params,
                     $guide_class_name,
                     $guide_method_storage_return_type,
                     $codebase
@@ -1026,46 +1026,44 @@ class MethodComparator
     }
 
     /**
-     * @param  array<string, array<int|string, Type\Union>>  $template_type_extends
+     * @param  array<string, array<string, Type\Union>>  $template_extended_params
      */
     private static function transformTemplates(
-        array $template_type_extends,
+        array $template_extended_params,
         string $base_class_name,
         Type\Union $templated_type,
         Codebase $codebase
     ) : void {
-        if (isset($template_type_extends[$base_class_name])) {
-            $map = $template_type_extends[$base_class_name];
+        if (isset($template_extended_params[$base_class_name])) {
+            $map = $template_extended_params[$base_class_name];
 
             $template_types = [];
 
             foreach ($map as $key => $mapped_type) {
-                if (is_string($key)) {
-                    $new_bases = [];
+                $new_bases = [];
 
-                    foreach ($mapped_type->getTemplateTypes() as $mapped_atomic_type) {
-                        if ($mapped_atomic_type->defining_class === $base_class_name) {
-                            continue;
-                        }
-
-                        $new_bases[] = $mapped_atomic_type->defining_class;
+                foreach ($mapped_type->getTemplateTypes() as $mapped_atomic_type) {
+                    if ($mapped_atomic_type->defining_class === $base_class_name) {
+                        continue;
                     }
 
-                    if ($new_bases) {
-                        $mapped_type = clone $mapped_type;
-
-                        foreach ($new_bases as $new_base_class_name) {
-                            self::transformTemplates(
-                                $template_type_extends,
-                                $new_base_class_name,
-                                $mapped_type,
-                                $codebase
-                            );
-                        }
-                    }
-
-                    $template_types[$key][$base_class_name] = $mapped_type;
+                    $new_bases[] = $mapped_atomic_type->defining_class;
                 }
+
+                if ($new_bases) {
+                    $mapped_type = clone $mapped_type;
+
+                    foreach ($new_bases as $new_base_class_name) {
+                        self::transformTemplates(
+                            $template_extended_params,
+                            $new_base_class_name,
+                            $mapped_type,
+                            $codebase
+                        );
+                    }
+                }
+
+                $template_types[$key][$base_class_name] = $mapped_type;
             }
 
             $template_result = new \Psalm\Internal\Type\TemplateResult([], $template_types);

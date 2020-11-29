@@ -831,11 +831,11 @@ class ForeachAnalyzer
                                     // The collection might be an iterator, in which case
                                     // we want to call the iterator function
                                     /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
-                                    if (!isset($generic_storage->template_type_extends['Traversable'])
+                                    if (!isset($generic_storage->template_extended_params['Traversable'])
                                         || ($generic_storage
-                                                ->template_type_extends['Traversable']['TKey']->isMixed()
+                                                ->template_extended_params['Traversable']['TKey']->isMixed()
                                             && $generic_storage
-                                                ->template_type_extends['Traversable']['TValue']->isMixed())
+                                                ->template_extended_params['Traversable']['TValue']->isMixed())
                                     ) {
                                         self::handleIterable(
                                             $statements_analyzer,
@@ -992,7 +992,7 @@ class ForeachAnalyzer
                 $iterator_atomic_type->value
             );
 
-            if (!isset($generic_storage->template_type_extends['Traversable'])) {
+            if (!isset($generic_storage->template_extended_params['Traversable'])) {
                 return;
             }
 
@@ -1020,7 +1020,7 @@ class ForeachAnalyzer
                 'TKey',
                 'Traversable',
                 $generic_storage->name,
-                $generic_storage->template_type_extends,
+                $generic_storage->template_extended_params,
                 $generic_storage->template_types,
                 $passed_type_params
             );
@@ -1029,7 +1029,7 @@ class ForeachAnalyzer
                 'TValue',
                 'Traversable',
                 $generic_storage->name,
-                $generic_storage->template_type_extends,
+                $generic_storage->template_extended_params,
                 $generic_storage->template_types,
                 $passed_type_params
             );
@@ -1091,7 +1091,7 @@ class ForeachAnalyzer
     }
 
     /**
-     * @param  array<string, array<int|string, Type\Union>>  $template_type_extends
+     * @param  array<string, array<string, Type\Union>>  $template_extended_params
      * @param  array<string, array<string, Type\Union>>  $class_template_types
      * @param  array<int, Type\Union> $calling_type_params
      */
@@ -1099,7 +1099,7 @@ class ForeachAnalyzer
         string $template_name,
         string $template_class,
         string $calling_class,
-        array $template_type_extends,
+        array $template_extended_params,
         ?array $class_template_types = null,
         ?array $calling_type_params = null
     ): ?Type\Union {
@@ -1115,8 +1115,8 @@ class ForeachAnalyzer
             return null;
         }
 
-        if (isset($template_type_extends[$template_class][$template_name])) {
-            $extended_type = $template_type_extends[$template_class][$template_name];
+        if (isset($template_extended_params[$template_class][$template_name])) {
+            $extended_type = $template_extended_params[$template_class][$template_name];
 
             $return_type = null;
 
@@ -1138,7 +1138,7 @@ class ForeachAnalyzer
                     $extended_atomic_type->param_name,
                     $extended_atomic_type->defining_class,
                     $calling_class,
-                    $template_type_extends,
+                    $template_extended_params,
                     $class_template_types,
                     $calling_type_params
                 );

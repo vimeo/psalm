@@ -1556,14 +1556,8 @@ class ClassTemplateExtendsTest extends TestCase
                             $this->elements = $elements;
                         }
 
-                        /**
-                         * @psalm-suppress InvalidReturnType
-                         */
                         public function getIterator()
                         {
-                            /**
-                             * @psalm-suppress InvalidReturnStatement
-                             */
                             return new ArrayIterator($this->elements);
                         }
 
@@ -4975,7 +4969,7 @@ class ClassTemplateExtendsTest extends TestCase
                     }
 
                     new Foo(new DoStuffX());',
-                'error_message' => 'InvalidArgument'
+                'error_message' => 'MixedArgumentTypeCoercion'
             ],
             'concreteDefinesSignatureTypesDifferent' => [
                 '<?php

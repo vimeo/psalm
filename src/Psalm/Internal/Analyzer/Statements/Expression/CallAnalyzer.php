@@ -356,11 +356,11 @@ class CallAnalyzer
         if ($declaring_class_storage) {
             if ($calling_class_storage
                 && $declaring_class_storage !== $calling_class_storage
-                && $calling_class_storage->template_type_extends
+                && $calling_class_storage->template_extended_params
             ) {
-                foreach ($calling_class_storage->template_type_extends as $class_name => $type_map) {
+                foreach ($calling_class_storage->template_extended_params as $class_name => $type_map) {
                     foreach ($type_map as $template_name => $type) {
-                        if (is_string($template_name) && $class_name === $declaring_class_storage->name) {
+                        if ($class_name === $declaring_class_storage->name) {
                             $output_type = null;
 
                             foreach ($type->getAtomicTypes() as $atomic_type) {
@@ -368,7 +368,7 @@ class CallAnalyzer
                                     $output_type_candidate = self::getGenericParamForOffset(
                                         $atomic_type->defining_class,
                                         $atomic_type->param_name,
-                                        $calling_class_storage->template_type_extends,
+                                        $calling_class_storage->template_extended_params,
                                         $template_types
                                     );
                                 } else {
@@ -417,19 +417,19 @@ class CallAnalyzer
     }
 
     /**
-     * @param  array<string, array<int|string, Type\Union>>  $template_type_extends
+     * @param  array<string, array<string, Type\Union>>  $template_extended_params
      * @param  array<string, array<string, Type\Union>>  $found_generic_params
      */
     public static function getGenericParamForOffset(
         string $fq_class_name,
         string $template_name,
-        array $template_type_extends,
+        array $template_extended_params,
         array $found_generic_params,
         bool $mapped = false
     ): Type\Union {
         if (isset($found_generic_params[$template_name][$fq_class_name])) {
-            if (!$mapped && isset($template_type_extends[$fq_class_name][$template_name])) {
-                foreach ($template_type_extends[$fq_class_name][$template_name]->getAtomicTypes() as $t) {
+            if (!$mapped && isset($template_extended_params[$fq_class_name][$template_name])) {
+                foreach ($template_extended_params[$fq_class_name][$template_name]->getAtomicTypes() as $t) {
                     if ($t instanceof Type\Atomic\TTemplateParam) {
                         if ($t->param_name !== $template_name) {
                             return $t->as;
@@ -441,18 +441,17 @@ class CallAnalyzer
             return $found_generic_params[$template_name][$fq_class_name];
         }
 
-        foreach ($template_type_extends as $type_map) {
+        foreach ($template_extended_params as $type_map) {
             foreach ($type_map as $extended_template_name => $extended_type) {
                 foreach ($extended_type->getAtomicTypes() as $extended_atomic_type) {
-                    if (is_string($extended_template_name)
-                        && $extended_atomic_type instanceof Type\Atomic\TTemplateParam
+                    if ($extended_atomic_type instanceof Type\Atomic\TTemplateParam
                         && $extended_atomic_type->param_name === $template_name
                         && $extended_template_name !== $template_name
                     ) {
                         return self::getGenericParamForOffset(
                             $fq_class_name,
                             $extended_template_name,
-                            $template_type_extends,
+                            $template_extended_params,
                             $found_generic_params,
                             true
                         );

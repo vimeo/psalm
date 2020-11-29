@@ -354,13 +354,13 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     true
                 );
 
-                if ($storage->template_type_extends_count !== null) {
+                if ($storage->template_extended_count !== null) {
                     $this->checkTemplateParams(
                         $codebase,
                         $storage,
                         $parent_class_storage,
                         $code_location,
-                        $storage->template_type_extends_count
+                        $storage->template_extended_count
                     );
                 }
             } catch (\InvalidArgumentException $e) {
@@ -495,8 +495,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             );
         }
 
-        if ($storage->template_type_extends) {
-            foreach ($storage->template_type_extends as $type_map) {
+        if ($storage->template_extended_params) {
+            foreach ($storage->template_extended_params as $type_map) {
                 foreach ($type_map as $atomic_type) {
                     $atomic_type->check(
                         $this,
@@ -2036,7 +2036,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             $method_analyzer
         );
 
-        if ($return_type && $class_storage->template_type_extends) {
+        if ($return_type && $class_storage->template_extended_params) {
             $declaring_method_id = $codebase->methods->getDeclaringMethodId($analyzed_method_id);
 
             if ($declaring_method_id) {
@@ -2184,15 +2184,15 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             }
         }
 
-        if ($parent_storage->template_types && $storage->template_type_extends) {
+        if ($parent_storage->template_types && $storage->template_extended_params) {
             $i = 0;
 
             $previous_extended = [];
 
             foreach ($parent_storage->template_types as $template_name => $type_map) {
                 foreach ($type_map as $declaring_class => $template_type) {
-                    if (isset($storage->template_type_extends[$parent_storage->name][$template_name])) {
-                        $extended_type = $storage->template_type_extends[$parent_storage->name][$template_name];
+                    if (isset($storage->template_extended_params[$parent_storage->name][$template_name])) {
+                        $extended_type = $storage->template_extended_params[$parent_storage->name][$template_name];
 
                         if (isset($parent_storage->template_covariants[$i])
                             && !$parent_storage->template_covariants[$i]

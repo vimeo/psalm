@@ -705,7 +705,7 @@ class AtomicPropertyFetchAnalyzer
             $calling_class_storage->template_types ?: []
         );
 
-        $extended_types = $calling_class_storage->template_type_extends;
+        $extended_types = $calling_class_storage->template_extended_params;
 
         if ($template_types) {
             if ($calling_class_storage->template_types) {

@@ -629,11 +629,11 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                             if (isset($template_result->upper_bounds[$template_name][$fq_class_name])) {
                                 $generic_param_type
                                     = $template_result->upper_bounds[$template_name][$fq_class_name]->type;
-                            } elseif ($storage->template_type_extends && $template_result->upper_bounds) {
+                            } elseif ($storage->template_extended_params && $template_result->upper_bounds) {
                                 $generic_param_type = self::getGenericParamForOffset(
                                     $declaring_fq_class_name,
                                     $template_name,
-                                    $storage->template_type_extends,
+                                    $storage->template_extended_params,
                                     array_map(
                                         function ($type_map) {
                                             return array_map(

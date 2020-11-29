@@ -40,7 +40,7 @@ class ClassTemplateParamCollector
 
         $candidate_class_storages = [$class_storage];
 
-        if ($static_class_storage->template_type_extends
+        if ($static_class_storage->template_extended_params
             && $method_name
             && !empty($non_trait_class_storage->overridden_method_ids[$method_name])
             && isset($class_storage->methods[$method_name])
@@ -88,7 +88,7 @@ class ClassTemplateParamCollector
         }
 
         $class_template_params = [];
-        $e = $static_class_storage->template_type_extends;
+        $e = $static_class_storage->template_extended_params;
 
         if ($lhs_type_part instanceof TGenericObject) {
             if ($class_storage === $static_class_storage && $static_class_storage->template_types) {
@@ -143,25 +143,16 @@ class ClassTemplateParamCollector
                                 }
                             } elseif (isset(
                                 $static_class_storage
-                                    ->template_type_extends
+                                    ->template_extended_params
                                         [$type_extends_atomic->defining_class]
                                         [$type_extends_atomic->param_name]
                             )) {
-                                $search_keys = array_values(
-                                    array_filter(
-                                        array_keys(
-                                            $static_class_storage->template_type_extends
-                                                [$type_extends_atomic->defining_class]
-                                        ),
-                                        function ($key) {
-                                            return is_string($key);
-                                        }
-                                    )
-                                );
-
                                 $mapped_offset = array_search(
                                     $type_extends_atomic->param_name,
-                                    $search_keys,
+                                    array_keys(
+                                        $static_class_storage->template_extended_params
+                                            [$type_extends_atomic->defining_class]
+                                    ),
                                     true
                                 );
 
@@ -237,7 +228,7 @@ class ClassTemplateParamCollector
     }
 
     /**
-     * @param array<string, array<int|string, Type\Union>> $e
+     * @param array<string, array<string, Type\Union>> $e
      * @return non-empty-list<Type\Atomic>
      */
     private static function expandType(

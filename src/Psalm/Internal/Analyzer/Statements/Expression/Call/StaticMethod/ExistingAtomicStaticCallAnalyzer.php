@@ -137,14 +137,10 @@ class ExistingAtomicStaticCallAnalyzer
             && $stmt->class->parts === ['parent']
             && $context->self
             && ($self_class_storage = $codebase->classlike_storage_provider->get($context->self))
-            && $self_class_storage->template_type_extends
+            && $self_class_storage->template_extended_params
         ) {
-            foreach ($self_class_storage->template_type_extends as $template_fq_class_name => $extended_types) {
+            foreach ($self_class_storage->template_extended_params as $template_fq_class_name => $extended_types) {
                 foreach ($extended_types as $type_key => $extended_type) {
-                    if (!is_string($type_key)) {
-                        continue;
-                    }
-
                     if (isset($found_generic_params[$type_key][$template_fq_class_name])) {
                         $found_generic_params[$type_key][$template_fq_class_name] = clone $extended_type;
                         continue;

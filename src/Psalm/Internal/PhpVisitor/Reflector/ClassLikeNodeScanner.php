@@ -961,13 +961,13 @@ class ClassLikeNodeScanner
 
             $extended_type_parameters = [];
 
-            $storage->template_type_extends_count = count($atomic_type->type_params);
+            $storage->template_extended_count = count($atomic_type->type_params);
 
             foreach ($atomic_type->type_params as $type_param) {
                 $extended_type_parameters[] = $type_param;
             }
 
-            $storage->template_type_extends[$atomic_type->value] = $extended_type_parameters;
+            $storage->template_extended_offsets[$atomic_type->value] = $extended_type_parameters;
         }
     }
 
@@ -1053,7 +1053,7 @@ class ClassLikeNodeScanner
                 $implemented_type_parameters[] = $type_param;
             }
 
-            $storage->template_type_extends[$atomic_type->value] = $implemented_type_parameters;
+            $storage->template_extended_offsets[$atomic_type->value] = $implemented_type_parameters;
         }
     }
 
@@ -1139,7 +1139,7 @@ class ClassLikeNodeScanner
                 $used_type_parameters[] = $type_param;
             }
 
-            $storage->template_type_extends[$atomic_type->value] = $used_type_parameters;
+            $storage->template_extended_offsets[$atomic_type->value] = $used_type_parameters;
         }
     }
 

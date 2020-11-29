@@ -176,7 +176,7 @@ class ObjectComparator
                                 $intersection_input_type->defining_class
                             );
 
-                            if (isset($input_class_storage->template_type_extends
+                            if (isset($input_class_storage->template_extended_params
                                     [$intersection_container_type->defining_class]
                                     [$intersection_container_type->param_name])
                             ) {

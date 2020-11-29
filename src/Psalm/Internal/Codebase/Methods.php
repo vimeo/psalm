@@ -467,7 +467,7 @@ class Methods
         string $base_fq_class_name
     ) : Type\Union {
         $class_storage = $codebase->classlike_storage_provider->get($appearing_fq_class_name);
-        $extends = $class_storage->template_type_extends;
+        $extends = $class_storage->template_extended_params;
 
         if (!$extends) {
             return $type;
@@ -577,7 +577,7 @@ class Methods
     }
 
     /**
-     * @param array<string, array<int|string, Type\Union>> $extends
+     * @param array<string, array<string, Type\Union>> $extends
      * @return list<Type\Atomic>
      */
     public static function getExtendedTemplatedTypes(

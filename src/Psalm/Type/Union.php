@@ -1107,11 +1107,11 @@ class Union implements TypeNode
                             try {
                                 $classlike_storage = $codebase->classlike_storage_provider->get($template_class);
 
-                                if ($classlike_storage->template_type_extends) {
+                                if ($classlike_storage->template_extended_params) {
                                     $defining_class = $atomic_type->defining_class;
 
-                                    if (isset($classlike_storage->template_type_extends[$defining_class])) {
-                                        $param_map = $classlike_storage->template_type_extends[$defining_class];
+                                    if (isset($classlike_storage->template_extended_params[$defining_class])) {
+                                        $param_map = $classlike_storage->template_extended_params[$defining_class];
 
                                         if (isset($param_map[$key])
                                             && isset($inferred_upper_bounds[(string) $param_map[$key]][$template_class])
