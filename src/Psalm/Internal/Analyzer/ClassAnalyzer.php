@@ -1071,7 +1071,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 $storage,
                 null,
                 new Type\Atomic\TNamedObject($fq_class_name),
-                '$this'
+                true
             );
 
             $template_result = new \Psalm\Internal\Type\TemplateResult(

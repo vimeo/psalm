@@ -130,7 +130,7 @@ class ExistingAtomicStaticCallAnalyzer
             $class_storage,
             $method_name_lc,
             $lhs_type_part,
-            null
+            !$statements_analyzer->isStatic() && $method_id->fq_class_name === $context->self
         );
 
         if ($found_generic_params

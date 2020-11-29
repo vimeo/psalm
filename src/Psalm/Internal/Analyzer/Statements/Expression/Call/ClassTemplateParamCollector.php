@@ -28,7 +28,7 @@ class ClassTemplateParamCollector
         ClassLikeStorage $static_class_storage,
         ?string $method_name = null,
         ?Type\Atomic $lhs_type_part = null,
-        ?string $lhs_var_id = null
+        bool $self_call = false
     ): ?array {
         $static_fq_class_name = $static_class_storage->name;
 
@@ -96,7 +96,7 @@ class ClassTemplateParamCollector
 
                 foreach ($static_class_storage->template_types as $type_name => $_) {
                     if (isset($lhs_type_part->type_params[$i])) {
-                        if ($lhs_var_id !== '$this' || $static_fq_class_name !== $static_class_storage->name) {
+                        if (!$self_call || $static_fq_class_name !== $static_class_storage->name) {
                             $class_template_params[$type_name][$static_class_storage->name]
                                 = $lhs_type_part->type_params[$i];
                         }
@@ -183,13 +183,13 @@ class ClassTemplateParamCollector
                         }
                     }
 
-                    if ($lhs_var_id !== '$this' || $static_fq_class_name !== $class_storage->name) {
+                    if (!$self_call || $static_fq_class_name !== $class_storage->name) {
                         $class_template_params[$type_name][$class_storage->name]
                             = $output_type_extends ?: Type::getMixed();
                     }
                 }
 
-                if (($lhs_var_id !== '$this' || $static_fq_class_name !== $class_storage->name)
+                if ((!$self_call || $static_fq_class_name !== $class_storage->name)
                     && !isset($class_template_params[$type_name])
                 ) {
                     $class_template_params[$type_name] = [$class_storage->name => Type::getMixed()];
@@ -216,7 +216,7 @@ class ClassTemplateParamCollector
                     }
                 }
 
-                if ($lhs_var_id !== '$this') {
+                if (!$self_call) {
                     if (!isset($class_template_params[$type_name])) {
                         $class_template_params[$type_name][$class_storage->name] = $type;
                     }

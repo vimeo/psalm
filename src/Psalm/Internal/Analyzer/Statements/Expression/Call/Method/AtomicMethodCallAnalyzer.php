@@ -730,7 +730,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                         $codebase->classlike_storage_provider->get($fq_class_name),
                         null,
                         $lhs_type_part,
-                        $lhs_var_id
+                        $lhs_var_id === '$this'
                     );
 
                     $lhs_type_part = clone $mixin;

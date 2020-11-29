@@ -802,7 +802,7 @@ class ReturnTypeAnalyzer
                 $codebase->classlike_storage_provider->get($context->self),
                 strtolower($function->name->name),
                 new Type\Atomic\TNamedObject($context->self),
-                '$this'
+                true
             );
 
             $class_template_params = $class_template_params ?: [];

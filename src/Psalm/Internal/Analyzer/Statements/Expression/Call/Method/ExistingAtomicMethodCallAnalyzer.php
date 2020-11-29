@@ -145,7 +145,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             $class_storage,
             $method_name_lc,
             $lhs_type_part,
-            $lhs_var_id
+            $lhs_var_id === '$this'
         );
 
         if ($lhs_var_id === '$this' && $parent_source instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer) {
@@ -167,7 +167,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                         $class_storage,
                         $method_name_lc,
                         $lhs_type_part,
-                        $lhs_var_id
+                        $lhs_var_id === '$this'
                     );
                 }
             }

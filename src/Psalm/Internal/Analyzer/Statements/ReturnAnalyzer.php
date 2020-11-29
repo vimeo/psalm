@@ -259,7 +259,7 @@ class ReturnAnalyzer
                             $class_storage,
                             strtolower($method_name),
                             null,
-                            '$this'
+                            true
                         );
 
                         if ($found_generic_params) {
