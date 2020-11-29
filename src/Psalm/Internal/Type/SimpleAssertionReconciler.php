@@ -457,6 +457,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
             $existing_var_type->addType(new TMixed($inside_loop));
         }
 
+        $existing_var_type->from_property = false;
         $existing_var_type->possibly_undefined = false;
         $existing_var_type->possibly_undefined_from_try = false;
         $existing_var_type->ignore_isset = false;

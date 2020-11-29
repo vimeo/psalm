@@ -90,7 +90,18 @@ class NegatedAssertionReconciler extends Reconciler
                             $failed_reconciliation = 2;
 
                             if ($code_location) {
-                                if ($existing_var_type->from_docblock) {
+                                if ($existing_var_type->from_property) {
+                                    if (IssueBuffer::accepts(
+                                        new RedundantPropertyInitializationCheck(
+                                            'Property type ' . $key . ' with type '
+                                                . $existing_var_type . ' should already be set in the constructor',
+                                            $code_location
+                                        ),
+                                        $suppressed_issues
+                                    )) {
+                                        // fall through
+                                    }
+                                } elseif ($existing_var_type->from_docblock) {
                                     if (IssueBuffer::accepts(
                                         new DocblockTypeContradiction(
                                             'Cannot resolve types for ' . $key . ' with docblock-defined type '

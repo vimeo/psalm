@@ -2151,7 +2151,7 @@ class PropertyTypeTest extends TestCase
                         public string $bar;
 
                         public function getBar() : string {
-                            /** @psalm-suppress TypeDoesNotContainType */
+                            /** @psalm-suppress RedundantPropertyInitializationCheck */
                             if (!isset($this->bar)) {
                                 return "hello";
                             }
@@ -2160,6 +2160,7 @@ class PropertyTypeTest extends TestCase
                         }
 
                         public function getBarAgain() : string {
+                            /** @psalm-suppress RedundantPropertyInitializationCheck */
                             if (isset($this->bar)) {
                                 return $this->bar;
                             }
