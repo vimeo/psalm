@@ -66,36 +66,16 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
         }
 
         if ($assertion === 'isset') {
-            $existing_var_type->removeType('null');
-
-            if (empty($existing_var_type->getAtomicTypes())) {
-                $failed_reconciliation = 2;
-
-                if ($code_location) {
-                    if (IssueBuffer::accepts(
-                        new TypeDoesNotContainType(
-                            'Cannot resolve types for ' . $key . ' on null var',
-                            $code_location,
-                            null
-                        ),
-                        $suppressed_issues
-                    )) {
-                        // fall through
-                    }
-                }
-
-                return Type::getEmpty();
-            }
-
-            if ($existing_var_type->hasType('empty')) {
-                $existing_var_type->removeType('empty');
-                $existing_var_type->addType(new TMixed($inside_loop));
-            }
-
-            $existing_var_type->possibly_undefined = false;
-            $existing_var_type->possibly_undefined_from_try = false;
-
-            return $existing_var_type;
+            return self::reconcileIsset(
+                $existing_var_type,
+                $key,
+                $negated,
+                $code_location,
+                $suppressed_issues,
+                $failed_reconciliation,
+                $is_equality,
+                $inside_loop
+            );
         }
 
         if ($assertion === 'array-key-exists') {
@@ -418,6 +398,70 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
         }
 
         return null;
+    }
+
+    /**
+     * @param   string[]  $suppressed_issues
+     * @param   0|1|2    $failed_reconciliation
+     */
+    private static function reconcileIsset(
+        Union $existing_var_type,
+        ?string $key,
+        bool $negated,
+        ?CodeLocation $code_location,
+        array $suppressed_issues,
+        int &$failed_reconciliation,
+        bool $is_equality,
+        bool $inside_loop
+    ) : Union {
+        $old_var_type_string = $existing_var_type->getId();
+
+        // if key references an array offset
+        $did_remove_type = ($key && strpos($key, '['))
+            || !$existing_var_type->initialized
+            || $existing_var_type->possibly_undefined
+            || $key === '$_SESSION'
+            || $existing_var_type->ignore_isset;
+
+        if ($existing_var_type->isNullable()) {
+            $existing_var_type->removeType('null');
+
+            $did_remove_type = true;
+        }
+
+        if (!$existing_var_type->hasMixed()
+            && !$is_equality
+            && (!$did_remove_type || empty($existing_var_type->getAtomicTypes()))
+            && $key
+            && $code_location
+        ) {
+            self::triggerIssueForImpossible(
+                $existing_var_type,
+                $old_var_type_string,
+                $key,
+                'isset',
+                !$did_remove_type,
+                $negated,
+                $code_location,
+                $suppressed_issues
+            );
+
+            if (empty($existing_var_type->getAtomicTypes())) {
+                $failed_reconciliation = 2;
+                return Type::getEmpty();
+            }
+        }
+
+        if ($existing_var_type->hasType('empty')) {
+            $existing_var_type->removeType('empty');
+            $existing_var_type->addType(new TMixed($inside_loop));
+        }
+
+        $existing_var_type->possibly_undefined = false;
+        $existing_var_type->possibly_undefined_from_try = false;
+        $existing_var_type->ignore_isset = false;
+
+        return $existing_var_type;
     }
 
     /**

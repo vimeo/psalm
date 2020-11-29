@@ -9,6 +9,7 @@ use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Issue\DocblockTypeContradiction;
 use Psalm\Issue\TypeDoesNotContainType;
+use Psalm\Issue\RedundantPropertyInitializationCheck;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\IssueBuffer;
 use Psalm\Type;

@@ -17,6 +17,7 @@ use Psalm\Issue\DocblockTypeContradiction;
 use Psalm\Issue\PsalmInternalError;
 use Psalm\Issue\RedundantCondition;
 use Psalm\Issue\RedundantConditionGivenDocblockType;
+use Psalm\Issue\RedundantPropertyInitializationCheck;
 use Psalm\Issue\TypeDoesNotContainNull;
 use Psalm\Issue\TypeDoesNotContainType;
 use Psalm\IssueBuffer;
@@ -81,10 +82,6 @@ class Reconciler
                     || $type[0][0] === 'isset'
                     || $type[0][0] === '!empty'
                 ) {
-                    $isset_or_empty = $type[0][0] === 'isset' || $type[0][0] === '=isset'
-                        ? '=isset'
-                        : '!=empty';
-
                     $key_parts = Reconciler::breakUpPathIntoParts($nk);
 
                     if (!$key_parts) {
@@ -147,9 +144,6 @@ class Reconciler
                             $new_types[$base_key][] = ['=isset'];
                         }
                     }
-
-                    // replace with a less specific check
-                    $new_types[$nk][0][0] = $isset_or_empty;
                 }
 
                 if ($type[0][0] === 'array-key-exists') {
@@ -858,8 +852,8 @@ class Reconciler
                 if (IssueBuffer::accepts(
                     new RedundantConditionGivenDocblockType(
                         'Docblock-defined type ' . $old_var_type_string
-                            . ' for ' . $key
-                            . ' is ' . ($not ? 'never ' : 'always ') . $assertion,
+                        . ' for ' . $key
+                        . ' is ' . ($not ? 'never ' : 'always ') . $assertion,
                         $code_location,
                         $old_var_type_string . ' ' . $assertion
                     ),
@@ -871,8 +865,8 @@ class Reconciler
                 if (IssueBuffer::accepts(
                     new RedundantCondition(
                         'Type ' . $old_var_type_string
-                            . ' for ' . $key
-                            . ' is ' . ($not ? 'never ' : 'always ') . $assertion,
+                        . ' for ' . $key
+                        . ' is ' . ($not ? 'never ' : 'always ') . $assertion,
                         $code_location,
                         $old_var_type_string . ' ' . $assertion
                     ),

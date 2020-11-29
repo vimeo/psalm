@@ -2142,6 +2142,33 @@ class PropertyTypeTest extends TestCase
                         }
                     }'
             ],
+            'getPropertyThatMayNotBeSet' => [
+                '<?php
+                    /**
+                     * @psalm-suppress MissingConstructor
+                     */
+                    class A {
+                        public string $bar;
+
+                        public function getBar() : string {
+                            /** @psalm-suppress TypeDoesNotContainType */
+                            if (!isset($this->bar)) {
+                                return "hello";
+                            }
+
+                            return $this->bar;
+                        }
+
+                        public function getBarAgain() : string {
+                            /** @psalm-suppress RedundantCondition */
+                            if (isset($this->bar)) {
+                                return $this->bar;
+                            }
+
+                            return "hello";
+                        }
+                    }',
+            ],
         ];
     }
 

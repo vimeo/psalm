@@ -1957,9 +1957,11 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         );
 
         $method_context = clone $class_context;
+
         foreach ($method_context->vars_in_scope as $context_var_id => $context_type) {
             $method_context->vars_in_scope[$context_var_id] = clone $context_type;
         }
+
         $method_context->collect_exceptions = $config->check_for_throws_docblock;
 
         $type_provider = new \Psalm\Internal\Provider\NodeDataProvider();

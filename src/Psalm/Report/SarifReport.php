@@ -91,9 +91,10 @@ class SarifReport extends Report
                     ]
                 ];
 
-                /** @var \Psalm\Internal\Analyzer\DataFlowNodeData $trace */
                 foreach ($issue_data->taint_trace as $trace) {
-                    if (isset($trace->line_from)) {
+                    if ($trace instanceof \Psalm\Internal\Analyzer\DataFlowNodeData
+                        && $trace->line_from > 0
+                    ) {
                         $jsonEntry['codeFlows'][0]['threadFlows'][0]['locations'][] = [
                             'location' => [
                                 'physicalLocation' => [
@@ -115,7 +116,7 @@ class SarifReport extends Report
 
             $report['runs'][0]['results'][] = $jsonEntry;
         }
-        
+
         foreach ($rules as $rule) {
             $report['runs'][0]['tool']['driver']['rules'][] = $rule;
         }

@@ -1088,6 +1088,10 @@ class ArrayFetchAnalyzer
                 $has_valid_offset
             );
         }
+
+        if ($context->inside_isset) {
+            $offset_type->ignore_isset = true;
+        }
     }
 
     /**

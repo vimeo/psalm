@@ -12,6 +12,9 @@ use Psalm\Type\Atomic\TScalarClassConstant;
 use function array_merge;
 use function array_search;
 use function array_keys;
+use function array_values;
+use function array_filter;
+use function is_string;
 
 class ClassTemplateParamCollector
 {
@@ -158,7 +161,8 @@ class ClassTemplateParamCollector
 
                                 $mapped_offset = array_search(
                                     $type_extends_atomic->param_name,
-                                    $search_keys
+                                    $search_keys,
+                                    true
                                 );
 
                                 if ($mapped_offset !== false

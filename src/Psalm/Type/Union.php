@@ -94,6 +94,13 @@ class Union implements TypeNode
     public $ignore_falsable_issues = false;
 
     /**
+     * Whether or not to ignore issues with isset on this type
+     *
+     * @var bool
+     */
+    public $ignore_isset = false;
+
+    /**
      * Whether or not this variable is possibly undefined
      *
      * @var bool
