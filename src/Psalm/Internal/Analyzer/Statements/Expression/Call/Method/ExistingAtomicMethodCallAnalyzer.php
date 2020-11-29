@@ -167,7 +167,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                         $class_storage,
                         $method_name_lc,
                         $lhs_type_part,
-                        $lhs_var_id === '$this'
+                        true
                     );
                 }
             }
