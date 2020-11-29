@@ -2160,7 +2160,6 @@ class PropertyTypeTest extends TestCase
                         }
 
                         public function getBarAgain() : string {
-                            /** @psalm-suppress RedundantCondition */
                             if (isset($this->bar)) {
                                 return $this->bar;
                             }
