@@ -8,6 +8,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\VariableUseGraph;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Context;
 use Psalm\IssueBuffer;
 use Psalm\Issue\InvalidArrayAssignment;
@@ -521,7 +522,8 @@ class ArrayAssignmentAnalyzer
                             ]
                         );
 
-                        $current_type->replaceTemplateTypesWithArgTypes(
+                        TemplateInferredTypeReplacer::replaceTemplateTypesWithArgTypes(
+                            $current_type,
                             $template_result,
                             $codebase
                         );

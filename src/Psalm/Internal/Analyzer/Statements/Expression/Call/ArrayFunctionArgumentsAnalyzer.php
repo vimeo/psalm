@@ -11,6 +11,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\UnionTemplateHandler;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\CodeLocation;
 use Psalm\Context;
@@ -841,7 +842,7 @@ class ArrayFunctionArgumentsAnalyzer
                     $context->calling_method_id ?: $context->calling_function_id
                 );
 
-                $closure_type->return_type->replaceTemplateTypesWithArgTypes(
+                $closure_type->replaceTemplateTypesWithArgTypes(
                     $template_result,
                     $codebase
                 );

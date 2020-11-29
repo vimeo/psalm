@@ -7,6 +7,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Codebase\TaintFlowGraph;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\EmptyArrayAccess;
@@ -1329,7 +1330,8 @@ class ArrayFetchAnalyzer
 
                 $expected_value_param_get = clone $type->value_param;
 
-                $expected_value_param_get->replaceTemplateTypesWithArgTypes(
+                TemplateInferredTypeReplacer::replaceTemplateTypesWithArgTypes(
+                    $expected_value_param_get,
                     $template_result_get,
                     $codebase
                 );
@@ -1337,7 +1339,8 @@ class ArrayFetchAnalyzer
                 if ($replacement_type) {
                     $expected_value_param_set = clone $type->value_param;
 
-                    $replacement_type->replaceTemplateTypesWithArgTypes(
+                    TemplateInferredTypeReplacer::replaceTemplateTypesWithArgTypes(
+                        $replacement_type,
                         $template_result_set,
                         $codebase
                     );

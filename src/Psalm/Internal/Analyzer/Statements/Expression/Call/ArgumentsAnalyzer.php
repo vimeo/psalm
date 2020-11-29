@@ -17,6 +17,7 @@ use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\UnionTemplateHandler;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\InvalidPassByReference;
@@ -347,7 +348,8 @@ class ArgumentsAnalyzer
             'fn-' . ($context->calling_method_id ?: $context->calling_function_id)
         );
 
-        $replaced_type->replaceTemplateTypesWithArgTypes(
+        TemplateInferredTypeReplacer::replaceTemplateTypesWithArgTypes(
+            $replaced_type,
             $replace_template_result,
             $codebase
         );
@@ -1001,7 +1003,8 @@ class ArgumentsAnalyzer
                     );
 
                     if ($template_result->upper_bounds) {
-                        $original_by_ref_type->replaceTemplateTypesWithArgTypes(
+                        TemplateInferredTypeReplacer::replaceTemplateTypesWithArgTypes(
+                            $original_by_ref_type,
                             $template_result,
                             $codebase
                         );
@@ -1024,7 +1027,8 @@ class ArgumentsAnalyzer
                     );
 
                     if ($template_result->upper_bounds) {
-                        $original_by_ref_out_type->replaceTemplateTypesWithArgTypes(
+                        TemplateInferredTypeReplacer::replaceTemplateTypesWithArgTypes(
+                            $original_by_ref_out_type,
                             $template_result,
                             $codebase
                         );

@@ -13,6 +13,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\UnionTemplateHandler;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
@@ -352,7 +353,8 @@ class TKeyedArray extends \Psalm\Type\Atomic
         ?Codebase $codebase
     ) : void {
         foreach ($this->properties as $property) {
-            $property->replaceTemplateTypesWithArgTypes(
+            TemplateInferredTypeReplacer::replaceTemplateTypesWithArgTypes(
+                $property,
                 $template_result,
                 $codebase
             );

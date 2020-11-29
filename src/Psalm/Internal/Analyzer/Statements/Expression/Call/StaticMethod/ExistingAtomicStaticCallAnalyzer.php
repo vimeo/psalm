@@ -11,6 +11,7 @@ use Psalm\Context;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateBound;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Issue\AbstractMethodCall;
 use Psalm\Issue\ImpureMethodCall;
 use Psalm\IssueBuffer;
@@ -282,7 +283,8 @@ class ExistingAtomicStaticCallAnalyzer
                         null
                     );
 
-                    $return_type_candidate->replaceTemplateTypesWithArgTypes(
+                    TemplateInferredTypeReplacer::replaceTemplateTypesWithArgTypes(
+                        $return_type_candidate,
                         $template_result,
                         $codebase
                     );

@@ -8,6 +8,7 @@ use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Type\Union;
 use Psalm\Type\Atomic;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use function array_merge;
 use function array_values;
 use function count;
@@ -17,6 +18,9 @@ use function substr;
 
 class UnionTemplateHandler
 {
+    /**
+     * This replaces template types in unions with standins (normally the template as type)
+     */
     public static function replaceTemplateTypesWithStandins(
         Union $union_type,
         TemplateResult $template_result,
@@ -974,7 +978,9 @@ class UnionTemplateHandler
                     }
 
                     $new_input_param = clone $new_input_param;
-                    $new_input_param->replaceTemplateTypesWithArgTypes(
+
+                    TemplateInferredTypeReplacer::replaceTemplateTypesWithArgTypes(
+                        $new_input_param,
                         new TemplateResult([], $replacement_templates),
                         $codebase
                     );

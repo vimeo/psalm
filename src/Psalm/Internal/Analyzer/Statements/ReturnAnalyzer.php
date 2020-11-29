@@ -17,6 +17,7 @@ use Psalm\Exception\DocblockParseException;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Issue\FalsableReturnStatement;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidReturnStatement;
@@ -268,7 +269,8 @@ class ReturnAnalyzer
 
                             $local_return_type = clone $local_return_type;
 
-                            $local_return_type->replaceTemplateTypesWithArgTypes(
+                            TemplateInferredTypeReplacer::replaceTemplateTypesWithArgTypes(
+                                $local_return_type,
                                 new TemplateResult([], $found_generic_params),
                                 $codebase
                             );

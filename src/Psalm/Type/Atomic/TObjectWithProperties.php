@@ -11,6 +11,7 @@ use Psalm\Type\Union;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\UnionTemplateHandler;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use function array_merge;
 use function array_values;
 
@@ -258,7 +259,8 @@ class TObjectWithProperties extends TObject
         ?Codebase $codebase
     ) : void {
         foreach ($this->properties as $property) {
-            $property->replaceTemplateTypesWithArgTypes(
+            TemplateInferredTypeReplacer::replaceTemplateTypesWithArgTypes(
+                $property,
                 $template_result,
                 $codebase
             );

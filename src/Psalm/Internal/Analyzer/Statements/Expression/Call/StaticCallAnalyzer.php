@@ -9,6 +9,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Issue\NonStaticSelfCall;
 use Psalm\Issue\ParentNotFound;
 use Psalm\IssueBuffer;
@@ -280,7 +281,8 @@ class StaticCallAnalyzer extends CallAnalyzer
             foreach ($method_storage->conditionally_removed_taints as $conditionally_removed_taint) {
                 $conditionally_removed_taint = clone $conditionally_removed_taint;
 
-                $conditionally_removed_taint->replaceTemplateTypesWithArgTypes(
+                TemplateInferredTypeReplacer::replaceTemplateTypesWithArgTypes(
+                    $conditionally_removed_taint,
                     $template_result,
                     $codebase
                 );

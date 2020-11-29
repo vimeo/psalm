@@ -11,6 +11,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\DeprecatedProperty;
@@ -751,7 +752,8 @@ class AtomicPropertyFetchAnalyzer
                 }
             }
 
-            $class_property_type->replaceTemplateTypesWithArgTypes(
+            TemplateInferredTypeReplacer::replaceTemplateTypesWithArgTypes(
+                $class_property_type,
                 new TemplateResult([], $template_types),
                 $codebase
             );

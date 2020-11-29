@@ -10,6 +10,7 @@ use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\DocblockTypeContradiction;
@@ -832,7 +833,8 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                         );
 
                         if ($template_type_map) {
-                            $new_param->replaceTemplateTypesWithArgTypes(
+                            TemplateInferredTypeReplacer::replaceTemplateTypesWithArgTypes(
+                                $new_param,
                                 new TemplateResult([], $template_type_map),
                                 $codebase
                             );
@@ -880,7 +882,8 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                     );
 
                     if ($template_type_map) {
-                        $new_param->replaceTemplateTypesWithArgTypes(
+                        TemplateInferredTypeReplacer::replaceTemplateTypesWithArgTypes(
+                            $new_param,
                             new TemplateResult([], $template_type_map),
                             $codebase
                         );

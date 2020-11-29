@@ -3,6 +3,7 @@ namespace Psalm\Type\Atomic;
 
 use Psalm\Codebase;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Type\Union;
 
 class TConditional extends \Psalm\Type\Atomic
@@ -133,6 +134,10 @@ class TConditional extends \Psalm\Type\Atomic
         TemplateResult $template_result,
         ?Codebase $codebase
     ) : void {
-        $this->conditional_type->replaceTemplateTypesWithArgTypes($template_result, $codebase);
+        TemplateInferredTypeReplacer::replaceTemplateTypesWithArgTypes(
+            $this->conditional_type,
+            $template_result,
+            $codebase
+        );
     }
 }

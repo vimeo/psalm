@@ -6,6 +6,7 @@ use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\UnionTemplateHandler;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
@@ -166,7 +167,11 @@ class TList extends \Psalm\Type\Atomic
         TemplateResult $template_result,
         ?Codebase $codebase
     ) : void {
-        $this->type_param->replaceTemplateTypesWithArgTypes($template_result, $codebase);
+        TemplateInferredTypeReplacer::replaceTemplateTypesWithArgTypes(
+            $this->type_param,
+            $template_result,
+            $codebase
+        );
     }
 
     public function equals(Atomic $other_type): bool

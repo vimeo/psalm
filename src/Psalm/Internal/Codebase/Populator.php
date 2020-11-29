@@ -737,7 +737,8 @@ class Populator
                         $mapped_name = $parent_template_type_names[$i] ?? null;
 
                         if ($mapped_name) {
-                            $storage->template_extended_params[$implemented_interface_storage->name][$mapped_name] = $type;
+                            $storage->template_extended_params[$implemented_interface_storage->name][$mapped_name]
+                                = $type;
                         }
                     }
 

@@ -6,6 +6,7 @@ use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\PhpVisitor\ParamReplacementVisitor;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\ImplementedParamTypeMismatch;
@@ -1068,7 +1069,8 @@ class MethodComparator
 
             $template_result = new \Psalm\Internal\Type\TemplateResult([], $template_types);
 
-            $templated_type->replaceTemplateTypesWithArgTypes(
+            TemplateInferredTypeReplacer::replaceTemplateTypesWithArgTypes(
+                $templated_type,
                 $template_result,
                 $codebase
             );

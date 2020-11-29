@@ -11,6 +11,7 @@ use Psalm\Context;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TGenericObject;
 use function strtolower;
@@ -461,7 +462,8 @@ class MethodCallReturnTypeFetcher
                 null
             );
 
-            $return_type_candidate->replaceTemplateTypesWithArgTypes(
+            TemplateInferredTypeReplacer::replaceTemplateTypesWithArgTypes(
+                $return_type_candidate,
                 $template_result,
                 $codebase
             );

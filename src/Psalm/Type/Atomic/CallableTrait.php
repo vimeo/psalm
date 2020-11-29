@@ -8,6 +8,7 @@ use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\UnionTemplateHandler;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
@@ -252,12 +253,20 @@ trait CallableTrait
                     continue;
                 }
 
-                $param->type->replaceTemplateTypesWithArgTypes($template_result, $codebase);
+                TemplateInferredTypeReplacer::replaceTemplateTypesWithArgTypes(
+                    $param->type,
+                    $template_result,
+                    $codebase
+                );
             }
         }
 
         if ($this->return_type) {
-            $this->return_type->replaceTemplateTypesWithArgTypes($template_result, $codebase);
+            TemplateInferredTypeReplacer::replaceTemplateTypesWithArgTypes(
+                $this->return_type,
+                $template_result,
+                $codebase
+            );
         }
     }
 
