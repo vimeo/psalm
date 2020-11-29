@@ -695,29 +695,29 @@ class AtomicPropertyFetchAnalyzer
         \Psalm\Codebase $codebase,
         Type\Union $class_property_type,
         TGenericObject $lhs_type_part,
-        ClassLikeStorage $calling_class_storage,
-        ClassLikeStorage $declaring_class_storage
+        ClassLikeStorage $property_class_storage,
+        ClassLikeStorage $property_declaring_class_storage
     ) : Type\Union {
         $template_types = CallAnalyzer::getTemplateTypesForCall(
             $codebase,
-            $declaring_class_storage,
-            $declaring_class_storage->name,
-            $calling_class_storage,
-            $calling_class_storage->template_types ?: []
+            $property_declaring_class_storage,
+            $property_declaring_class_storage->name,
+            $property_class_storage,
+            $property_class_storage->template_types ?: []
         );
 
-        $extended_types = $calling_class_storage->template_extended_params;
+        $extended_types = $property_class_storage->template_extended_params;
 
         if ($template_types) {
-            if ($calling_class_storage->template_types) {
+            if ($property_class_storage->template_types) {
                 foreach ($lhs_type_part->type_params as $param_offset => $lhs_param_type) {
                     $i = -1;
 
-                    foreach ($calling_class_storage->template_types as $calling_param_name => $_) {
+                    foreach ($property_class_storage->template_types as $calling_param_name => $_) {
                         $i++;
 
                         if ($i === $param_offset) {
-                            $template_types[$calling_param_name][$calling_class_storage->name] = $lhs_param_type;
+                            $template_types[$calling_param_name][$property_class_storage->name] = $lhs_param_type;
                             break;
                         }
                     }
@@ -725,8 +725,8 @@ class AtomicPropertyFetchAnalyzer
             }
 
             foreach ($template_types as $type_name => $_) {
-                if (isset($extended_types[$declaring_class_storage->name][$type_name])) {
-                    $mapped_type = $extended_types[$declaring_class_storage->name][$type_name];
+                if (isset($extended_types[$property_declaring_class_storage->name][$type_name])) {
+                    $mapped_type = $extended_types[$property_declaring_class_storage->name][$type_name];
 
                     foreach ($mapped_type->getAtomicTypes() as $mapped_type_atomic) {
                         if (!$mapped_type_atomic instanceof Type\Atomic\TTemplateParam) {
@@ -737,15 +737,15 @@ class AtomicPropertyFetchAnalyzer
 
                         $position = false;
 
-                        if (isset($calling_class_storage->template_types[$param_name])) {
+                        if (isset($property_class_storage->template_types[$param_name])) {
                             $position = \array_search(
                                 $param_name,
-                                array_keys($calling_class_storage->template_types)
+                                array_keys($property_class_storage->template_types)
                             );
                         }
 
                         if ($position !== false && isset($lhs_type_part->type_params[$position])) {
-                            $template_types[$type_name][$declaring_class_storage->name]
+                            $template_types[$type_name][$property_declaring_class_storage->name]
                                 = $lhs_type_part->type_params[$position];
                         }
                     }
