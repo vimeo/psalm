@@ -1882,7 +1882,7 @@ class FunctionCallTest extends TestCase
 
                         if ($s) {}
                     }',
-                'error_message' => 'RedundantCondition',
+                'error_message' => 'RedundantConditionGivenDocblockType',
             ],
             'strposNoSetFirstParam' => [
                 '<?php
