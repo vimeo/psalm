@@ -16,7 +16,7 @@ use Psalm\Internal\Stubs\Generator\StubsGenerator;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateResult;
-use Psalm\Internal\Type\UnionTemplateHandler;
+use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\CodeLocation;
 use Psalm\Context;
@@ -255,7 +255,7 @@ class ArgumentsAnalyzer
 
         $existing_type = $statements_analyzer->node_data->getType($arg->value);
 
-        \Psalm\Internal\Type\UnionTemplateHandler::replaceTemplateTypesWithStandins(
+        \Psalm\Internal\Type\TemplateStandinTypeReplacer::replace(
             $generic_param_type,
             $replace_template_result,
             $codebase,
@@ -337,7 +337,7 @@ class ArgumentsAnalyzer
             []
         );
 
-        $replaced_type = \Psalm\Internal\Type\UnionTemplateHandler::replaceTemplateTypesWithStandins(
+        $replaced_type = \Psalm\Internal\Type\TemplateStandinTypeReplacer::replace(
             $replaced_type,
             $replace_template_result,
             $codebase,
@@ -348,7 +348,7 @@ class ArgumentsAnalyzer
             'fn-' . ($context->calling_method_id ?: $context->calling_function_id)
         );
 
-        TemplateInferredTypeReplacer::replaceTemplateTypesWithArgTypes(
+        TemplateInferredTypeReplacer::replace(
             $replaced_type,
             $replace_template_result,
             $codebase
@@ -610,7 +610,7 @@ class ArgumentsAnalyzer
                         continue;
                     }
 
-                    UnionTemplateHandler::replaceTemplateTypesWithStandins(
+                    TemplateStandinTypeReplacer::replace(
                         $function_param->type,
                         $template_result,
                         $codebase,
@@ -896,7 +896,7 @@ class ArgumentsAnalyzer
                     && !$param->is_variadic
                     && $template_result
                 ) {
-                    UnionTemplateHandler::replaceTemplateTypesWithStandins(
+                    TemplateStandinTypeReplacer::replace(
                         $param->type,
                         $template_result,
                         $codebase,
@@ -992,7 +992,7 @@ class ArgumentsAnalyzer
                 if ($template_result && $by_ref_type) {
                     $original_by_ref_type = clone $by_ref_type;
 
-                    $by_ref_type = UnionTemplateHandler::replaceTemplateTypesWithStandins(
+                    $by_ref_type = TemplateStandinTypeReplacer::replace(
                         clone $by_ref_type,
                         $template_result,
                         $codebase,
@@ -1003,7 +1003,7 @@ class ArgumentsAnalyzer
                     );
 
                     if ($template_result->upper_bounds) {
-                        TemplateInferredTypeReplacer::replaceTemplateTypesWithArgTypes(
+                        TemplateInferredTypeReplacer::replace(
                             $original_by_ref_type,
                             $template_result,
                             $codebase
@@ -1016,7 +1016,7 @@ class ArgumentsAnalyzer
                 if ($template_result && $by_ref_out_type) {
                     $original_by_ref_out_type = clone $by_ref_out_type;
 
-                    $by_ref_out_type = UnionTemplateHandler::replaceTemplateTypesWithStandins(
+                    $by_ref_out_type = TemplateStandinTypeReplacer::replace(
                         clone $by_ref_out_type,
                         $template_result,
                         $codebase,
@@ -1027,7 +1027,7 @@ class ArgumentsAnalyzer
                     );
 
                     if ($template_result->upper_bounds) {
-                        TemplateInferredTypeReplacer::replaceTemplateTypesWithArgTypes(
+                        TemplateInferredTypeReplacer::replace(
                             $original_by_ref_out_type,
                             $template_result,
                             $codebase

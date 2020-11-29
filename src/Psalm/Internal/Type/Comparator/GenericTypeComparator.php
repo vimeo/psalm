@@ -74,7 +74,7 @@ class GenericTypeComparator
 
         $container_type_params_covariant = [];
 
-        $input_type_params = \Psalm\Internal\Type\UnionTemplateHandler::getMappedGenericTypeParams(
+        $input_type_params = \Psalm\Internal\Type\TemplateStandinTypeReplacer::getMappedGenericTypeParams(
             $codebase,
             $input_type_part,
             $container_type_part,

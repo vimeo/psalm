@@ -7,7 +7,7 @@ use function implode;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
-use Psalm\Internal\Type\UnionTemplateHandler;
+use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type\Atomic;
@@ -206,7 +206,7 @@ trait CallableTrait
                     continue;
                 }
 
-                $param->type = UnionTemplateHandler::replaceTemplateTypesWithStandins(
+                $param->type = TemplateStandinTypeReplacer::replace(
                     $param->type,
                     $template_result,
                     $codebase,
@@ -226,7 +226,7 @@ trait CallableTrait
             && $callable->return_type
             && $input_type->return_type
         ) {
-            $callable->return_type = UnionTemplateHandler::replaceTemplateTypesWithStandins(
+            $callable->return_type = TemplateStandinTypeReplacer::replace(
                 $callable->return_type,
                 $template_result,
                 $codebase,
@@ -253,7 +253,7 @@ trait CallableTrait
                     continue;
                 }
 
-                TemplateInferredTypeReplacer::replaceTemplateTypesWithArgTypes(
+                TemplateInferredTypeReplacer::replace(
                     $param->type,
                     $template_result,
                     $codebase
@@ -262,7 +262,7 @@ trait CallableTrait
         }
 
         if ($this->return_type) {
-            TemplateInferredTypeReplacer::replaceTemplateTypesWithArgTypes(
+            TemplateInferredTypeReplacer::replace(
                 $this->return_type,
                 $template_result,
                 $codebase

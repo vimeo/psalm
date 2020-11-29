@@ -1330,7 +1330,7 @@ class ArrayFetchAnalyzer
 
                 $expected_value_param_get = clone $type->value_param;
 
-                TemplateInferredTypeReplacer::replaceTemplateTypesWithArgTypes(
+                TemplateInferredTypeReplacer::replace(
                     $expected_value_param_get,
                     $template_result_get,
                     $codebase
@@ -1339,7 +1339,7 @@ class ArrayFetchAnalyzer
                 if ($replacement_type) {
                     $expected_value_param_set = clone $type->value_param;
 
-                    TemplateInferredTypeReplacer::replaceTemplateTypesWithArgTypes(
+                    TemplateInferredTypeReplacer::replace(
                         $replacement_type,
                         $template_result_set,
                         $codebase

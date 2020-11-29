@@ -462,7 +462,7 @@ class MethodCallReturnTypeFetcher
                 null
             );
 
-            TemplateInferredTypeReplacer::replaceTemplateTypesWithArgTypes(
+            TemplateInferredTypeReplacer::replace(
                 $return_type_candidate,
                 $template_result,
                 $codebase

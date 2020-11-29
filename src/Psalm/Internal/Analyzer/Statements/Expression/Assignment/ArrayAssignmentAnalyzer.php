@@ -522,7 +522,7 @@ class ArrayAssignmentAnalyzer
                             ]
                         );
 
-                        TemplateInferredTypeReplacer::replaceTemplateTypesWithArgTypes(
+                        TemplateInferredTypeReplacer::replace(
                             $current_type,
                             $template_result,
                             $codebase

@@ -10,7 +10,7 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
-use Psalm\Internal\Type\UnionTemplateHandler;
+use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use function array_merge;
 use function array_values;
@@ -236,7 +236,7 @@ class TObjectWithProperties extends TObject
                 $input_type_param = $input_type->properties[$offset];
             }
 
-            $object_like->properties[$offset] = UnionTemplateHandler::replaceTemplateTypesWithStandins(
+            $object_like->properties[$offset] = TemplateStandinTypeReplacer::replace(
                 $property,
                 $template_result,
                 $codebase,
@@ -259,7 +259,7 @@ class TObjectWithProperties extends TObject
         ?Codebase $codebase
     ) : void {
         foreach ($this->properties as $property) {
-            TemplateInferredTypeReplacer::replaceTemplateTypesWithArgTypes(
+            TemplateInferredTypeReplacer::replace(
                 $property,
                 $template_result,
                 $codebase

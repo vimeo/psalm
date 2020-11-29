@@ -7,7 +7,7 @@ use Psalm\DocComment;
 use Psalm\Exception\DocblockParseException;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\FileManipulation\PropertyDocblockManipulator;
-use Psalm\Internal\Type\UnionTemplateHandler;
+use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
@@ -1080,7 +1080,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             );
 
             if ($class_template_params) {
-                $fleshed_out_type = UnionTemplateHandler::replaceTemplateTypesWithStandins(
+                $fleshed_out_type = TemplateStandinTypeReplacer::replace(
                     $fleshed_out_type,
                     $template_result,
                     $codebase,
@@ -2081,7 +2081,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 []
             );
 
-            $return_type = UnionTemplateHandler::replaceTemplateTypesWithStandins(
+            $return_type = TemplateStandinTypeReplacer::replace(
                 $return_type,
                 $template_result,
                 $codebase,
@@ -2228,7 +2228,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                                 []
                             );
 
-                            $template_type_copy = UnionTemplateHandler::replaceTemplateTypesWithStandins(
+                            $template_type_copy = TemplateStandinTypeReplacer::replace(
                                 $template_type_copy,
                                 $template_result,
                                 $codebase,

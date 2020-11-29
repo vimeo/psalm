@@ -10,7 +10,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Type\TypeCombiner;
-use Psalm\Internal\Type\UnionTemplateHandler;
+use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\CodeLocation;
@@ -831,7 +831,7 @@ class ArrayFunctionArgumentsAnalyzer
                     ];
                 }
 
-                $closure_param_type = UnionTemplateHandler::replaceTemplateTypesWithStandins(
+                $closure_param_type = TemplateStandinTypeReplacer::replace(
                     $closure_param_type,
                     $template_result,
                     $codebase,

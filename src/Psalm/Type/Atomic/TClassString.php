@@ -4,7 +4,7 @@ namespace Psalm\Type\Atomic;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
-use Psalm\Internal\Type\UnionTemplateHandler;
+use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Type\Atomic;
 use function preg_quote;
 use function preg_replace;
@@ -132,7 +132,7 @@ class TClassString extends TString
             $input_object_type = new TObject();
         }
 
-        $as_type = UnionTemplateHandler::replaceTemplateTypesWithStandins(
+        $as_type = TemplateStandinTypeReplacer::replace(
             new \Psalm\Type\Union([$class_string->as_type]),
             $template_result,
             $codebase,

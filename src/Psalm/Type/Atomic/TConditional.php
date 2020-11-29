@@ -134,7 +134,7 @@ class TConditional extends \Psalm\Type\Atomic
         TemplateResult $template_result,
         ?Codebase $codebase
     ) : void {
-        TemplateInferredTypeReplacer::replaceTemplateTypesWithArgTypes(
+        TemplateInferredTypeReplacer::replace(
             $this->conditional_type,
             $template_result,
             $codebase

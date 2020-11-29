@@ -833,7 +833,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                         );
 
                         if ($template_type_map) {
-                            TemplateInferredTypeReplacer::replaceTemplateTypesWithArgTypes(
+                            TemplateInferredTypeReplacer::replace(
                                 $new_param,
                                 new TemplateResult([], $template_type_map),
                                 $codebase
@@ -882,7 +882,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                     );
 
                     if ($template_type_map) {
-                        TemplateInferredTypeReplacer::replaceTemplateTypesWithArgTypes(
+                        TemplateInferredTypeReplacer::replace(
                             $new_param,
                             new TemplateResult([], $template_type_map),
                             $codebase

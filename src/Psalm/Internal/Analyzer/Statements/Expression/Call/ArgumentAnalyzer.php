@@ -17,7 +17,7 @@ use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateResult;
-use Psalm\Internal\Type\UnionTemplateHandler;
+use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\CodeLocation;
 use Psalm\Context;
@@ -237,7 +237,7 @@ class ArgumentAnalyzer
 
             $arg_value_type = $statements_analyzer->node_data->getType($arg->value);
 
-            $param_type = UnionTemplateHandler::replaceTemplateTypesWithStandins(
+            $param_type = TemplateStandinTypeReplacer::replace(
                 $param_type,
                 $empty_template_result,
                 $codebase,
@@ -247,7 +247,7 @@ class ArgumentAnalyzer
                 $context->self ?: 'fn-' . $context->calling_function_id
             );
 
-            $arg_type = UnionTemplateHandler::replaceTemplateTypesWithStandins(
+            $arg_type = TemplateStandinTypeReplacer::replace(
                 $arg_type,
                 $empty_template_result,
                 $codebase,
@@ -294,7 +294,7 @@ class ArgumentAnalyzer
                 }
             }
 
-            $param_type = UnionTemplateHandler::replaceTemplateTypesWithStandins(
+            $param_type = TemplateStandinTypeReplacer::replace(
                 $param_type,
                 $template_result,
                 $codebase,

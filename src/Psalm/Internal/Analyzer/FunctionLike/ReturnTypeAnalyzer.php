@@ -813,7 +813,7 @@ class ReturnTypeAnalyzer
                     []
                 );
 
-                $fleshed_out_return_type = \Psalm\Internal\Type\UnionTemplateHandler::replaceTemplateTypesWithStandins(
+                $fleshed_out_return_type = \Psalm\Internal\Type\TemplateStandinTypeReplacer::replace(
                     $fleshed_out_return_type,
                     $template_result,
                     $codebase,

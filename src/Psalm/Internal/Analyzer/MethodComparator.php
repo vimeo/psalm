@@ -1069,7 +1069,7 @@ class MethodComparator
 
             $template_result = new \Psalm\Internal\Type\TemplateResult([], $template_types);
 
-            TemplateInferredTypeReplacer::replaceTemplateTypesWithArgTypes(
+            TemplateInferredTypeReplacer::replace(
                 $templated_type,
                 $template_result,
                 $codebase

@@ -16,12 +16,12 @@ use function is_string;
 use function strpos;
 use function substr;
 
-class UnionTemplateHandler
+class TemplateStandinTypeReplacer
 {
     /**
      * This replaces template types in unions with standins (normally the template as type)
      */
-    public static function replaceTemplateTypesWithStandins(
+    public static function replace(
         Union $union_type,
         TemplateResult $template_result,
         ?Codebase $codebase,
@@ -469,7 +469,7 @@ class UnionTemplateHandler
 
         if ($atomic_type->extra_types) {
             foreach ($atomic_type->extra_types as $extra_type) {
-                $extra_type = self::replaceTemplateTypesWithStandins(
+                $extra_type = self::replace(
                     new \Psalm\Type\Union([$extra_type]),
                     $template_result,
                     $codebase,
@@ -518,7 +518,7 @@ class UnionTemplateHandler
                 }
 
                 if ($depth < 10) {
-                    $replacement_type = self::replaceTemplateTypesWithStandins(
+                    $replacement_type = self::replace(
                         $replacement_type,
                         $template_result,
                         $codebase,
@@ -600,7 +600,7 @@ class UnionTemplateHandler
                 );
             }
 
-            $atomic_type->as = self::replaceTemplateTypesWithStandins(
+            $atomic_type->as = self::replace(
                 $atomic_type->as,
                 $template_result,
                 $codebase,
@@ -979,7 +979,7 @@ class UnionTemplateHandler
 
                     $new_input_param = clone $new_input_param;
 
-                    TemplateInferredTypeReplacer::replaceTemplateTypesWithArgTypes(
+                    TemplateInferredTypeReplacer::replace(
                         $new_input_param,
                         new TemplateResult([], $replacement_templates),
                         $codebase

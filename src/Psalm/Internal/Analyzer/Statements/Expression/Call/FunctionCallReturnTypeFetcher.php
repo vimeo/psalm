@@ -105,7 +105,7 @@ class FunctionCallReturnTypeFetcher
                                 null
                             );
 
-                            TemplateInferredTypeReplacer::replaceTemplateTypesWithArgTypes(
+                            TemplateInferredTypeReplacer::replace(
                                 $return_type,
                                 $template_result,
                                 $codebase
@@ -496,7 +496,7 @@ class FunctionCallReturnTypeFetcher
         foreach ($function_storage->conditionally_removed_taints as $conditionally_removed_taint) {
             $conditionally_removed_taint = clone $conditionally_removed_taint;
 
-            TemplateInferredTypeReplacer::replaceTemplateTypesWithArgTypes(
+            TemplateInferredTypeReplacer::replace(
                 $conditionally_removed_taint,
                 $template_result,
                 $codebase

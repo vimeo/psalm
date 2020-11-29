@@ -25,7 +25,7 @@
     <exclude-pattern>tests/fixtures/</exclude-pattern>
     <rule ref="Generic.Files.LineLength">
         <exclude-pattern>tests</exclude-pattern>
-        <exclude-pattern>src/Psalm/Internal/Type/UnionTemplateHandler.php</exclude-pattern>
+        <exclude-pattern>src/Psalm/Internal/Type/TemplateStandinTypeReplacer.php</exclude-pattern>
     </rule>
 
     <rule ref="PSR2.Namespaces.UseDeclaration">

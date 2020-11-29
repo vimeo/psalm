@@ -43,7 +43,7 @@ class TemplateInferredTypeReplacer
     /**
      * This replaces template types in unions with the inferred types they should be
      */
-    public static function replaceTemplateTypesWithArgTypes(
+    public static function replace(
         Union $union,
         TemplateResult $template_result,
         ?Codebase $codebase
@@ -62,7 +62,7 @@ class TemplateInferredTypeReplacer
             if ($atomic_type instanceof Atomic\TTemplateParam) {
                 $template_type = null;
 
-                $traversed_type = \Psalm\Internal\Type\UnionTemplateHandler::getRootTemplateType(
+                $traversed_type = \Psalm\Internal\Type\TemplateStandinTypeReplacer::getRootTemplateType(
                     $inferred_upper_bounds,
                     $atomic_type->param_name,
                     $atomic_type->defining_class
@@ -234,7 +234,7 @@ class TemplateInferredTypeReplacer
                 $atomic_type = clone $atomic_type;
 
                 if ($template_type) {
-                    self::replaceTemplateTypesWithArgTypes(
+                    self::replace(
                         $atomic_type->as_type,
                         $template_result,
                         $codebase
@@ -250,7 +250,7 @@ class TemplateInferredTypeReplacer
                         $atomic_type->conditional_type
                     )) {
                         $class_template_type = clone $atomic_type->if_type;
-                        self::replaceTemplateTypesWithArgTypes(
+                        self::replace(
                             $class_template_type,
                             $template_result,
                             $codebase
@@ -267,7 +267,7 @@ class TemplateInferredTypeReplacer
                         )
                     ) {
                         $class_template_type = clone $atomic_type->else_type;
-                        self::replaceTemplateTypesWithArgTypes(
+                        self::replace(
                             $class_template_type,
                             $template_result,
                             $codebase
@@ -276,13 +276,13 @@ class TemplateInferredTypeReplacer
                 }
 
                 if (!$class_template_type) {
-                    self::replaceTemplateTypesWithArgTypes(
+                    self::replace(
                         $atomic_type->if_type,
                         $template_result,
                         $codebase
                     );
 
-                    self::replaceTemplateTypesWithArgTypes(
+                    self::replace(
                         $atomic_type->else_type,
                         $template_result,
                         $codebase
