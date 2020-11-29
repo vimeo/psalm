@@ -120,11 +120,14 @@ class ClassTemplateParamCollector
                             if (isset($static_class_storage->template_types[$type_extends_atomic->param_name])) {
                                 $mapped_offset = array_search(
                                     $type_extends_atomic->param_name,
-                                    array_keys($static_class_storage->template_types)
+                                    array_keys($static_class_storage->template_types),
+                                    true
                                 );
 
-                                if (isset($lhs_type_part->type_params[(int) $mapped_offset])) {
-                                    $candidate_type = $lhs_type_part->type_params[(int) $mapped_offset];
+                                if ($mapped_offset !== false
+                                    && isset($lhs_type_part->type_params[$mapped_offset])
+                                ) {
+                                    $candidate_type = $lhs_type_part->type_params[$mapped_offset];
 
                                     if (!$output_type_extends) {
                                         $output_type_extends = $candidate_type;
@@ -158,8 +161,10 @@ class ClassTemplateParamCollector
                                     $search_keys
                                 );
 
-                                if ($mapped_offset !== false && isset($lhs_type_part->type_params[$mapped_offset])) {
-                                    $candidate_type = $lhs_type_part->type_params[(int) $mapped_offset];
+                                if ($mapped_offset !== false
+                                    && isset($lhs_type_part->type_params[$mapped_offset])
+                                ) {
+                                    $candidate_type = $lhs_type_part->type_params[$mapped_offset];
 
                                     if (!$output_type_extends) {
                                         $output_type_extends = $candidate_type;
