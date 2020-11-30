@@ -230,6 +230,32 @@ class ArgumentAnalyzer
             $bindable_template_params = $param_type->getTemplateTypes();
         }
 
+        $parent_class = null;
+
+        $classlike_storage = null;
+        $static_classlike_storage = null;
+
+        if ($self_fq_class_name) {
+            $classlike_storage = $codebase->classlike_storage_provider->get($self_fq_class_name);
+            $parent_class = $classlike_storage->parent_class;
+            $static_classlike_storage = $classlike_storage;
+
+            if ($static_fq_class_name && $static_fq_class_name !== $self_fq_class_name) {
+                $static_classlike_storage = $codebase->classlike_storage_provider->get($static_fq_class_name);
+            }
+        }
+
+        $param_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+            $codebase,
+            $param_type,
+            $classlike_storage ? $classlike_storage->name : null,
+            $static_classlike_storage ? $static_classlike_storage->name : null,
+            $parent_class,
+            true,
+            false,
+            $static_classlike_storage ? $static_classlike_storage->final : false
+        );
+
         if ($class_generic_params) {
             $empty_generic_params = [];
 
@@ -330,33 +356,18 @@ class ArgumentAnalyzer
                     }
                 }
             }
+
+            $param_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                $codebase,
+                $param_type,
+                $classlike_storage ? $classlike_storage->name : null,
+                $static_classlike_storage ? $static_classlike_storage->name : null,
+                $parent_class,
+                true,
+                false,
+                $static_classlike_storage ? $static_classlike_storage->final : false
+            );
         }
-
-        $parent_class = null;
-
-        $classlike_storage = null;
-        $static_classlike_storage = null;
-
-        if ($self_fq_class_name) {
-            $classlike_storage = $codebase->classlike_storage_provider->get($self_fq_class_name);
-            $parent_class = $classlike_storage->parent_class;
-            $static_classlike_storage = $classlike_storage;
-
-            if ($static_fq_class_name && $static_fq_class_name !== $self_fq_class_name) {
-                $static_classlike_storage = $codebase->classlike_storage_provider->get($static_fq_class_name);
-            }
-        }
-
-        $fleshed_out_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
-            $codebase,
-            $param_type,
-            $classlike_storage ? $classlike_storage->name : null,
-            $static_classlike_storage ? $static_classlike_storage->name : null,
-            $parent_class,
-            true,
-            false,
-            $static_classlike_storage ? $static_classlike_storage->final : false
-        );
 
         $fleshed_out_signature_type = $function_param->signature_type
             ? \Psalm\Internal\Type\TypeExpander::expandUnion(
@@ -468,7 +479,7 @@ class ArgumentAnalyzer
         if (self::verifyType(
             $statements_analyzer,
             $arg_type,
-            $fleshed_out_type,
+            $param_type,
             $fleshed_out_signature_type,
             $cased_method_id,
             $method_id,

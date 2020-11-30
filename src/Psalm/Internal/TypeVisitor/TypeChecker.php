@@ -244,45 +244,47 @@ class TypeChecker extends NodeVisitor
             }
         }
 
+        $expected_type_param_keys = \array_keys($expected_type_params);
+
         foreach ($atomic->type_params as $i => $type_param) {
             $this->prevent_template_covariance = $this->source instanceof \Psalm\Internal\Analyzer\MethodAnalyzer
                 && $this->source->getMethodName() !== '__construct'
                 && empty($expected_param_covariants[$i]);
 
-            if (isset(\array_values($expected_type_params)[$i])) {
-                $expected_type_param = \reset(\array_values($expected_type_params)[$i]);
+            if (isset($expected_type_param_keys[$i])) {
+                $expected_template_name = $expected_type_param_keys[$i];
 
-                $expected_type_param = \Psalm\Internal\Type\TypeExpander::expandUnion(
-                    $codebase,
-                    $expected_type_param,
-                    $this->source->getFQCLN(),
-                    $this->source->getFQCLN(),
-                    $this->source->getParentFQCLN()
-                );
+                foreach ($expected_type_params[$expected_template_name] as $defining_class => $expected_type_param) {
+                    $expected_type_param = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                        $codebase,
+                        $expected_type_param,
+                        $defining_class,
+                        $defining_class,
+                        null
+                    );
 
-                $template_name = \array_keys($expected_type_params)[$i];
+                    $type_param = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                        $codebase,
+                        $type_param,
+                        $defining_class,
+                        $defining_class,
+                        null
+                    );
 
-                $type_param = \Psalm\Internal\Type\TypeExpander::expandUnion(
-                    $codebase,
-                    $type_param,
-                    $this->source->getFQCLN(),
-                    $this->source->getFQCLN(),
-                    $this->source->getParentFQCLN()
-                );
-
-                if (!UnionTypeComparator::isContainedBy($codebase, $type_param, $expected_type_param)) {
-                    if (IssueBuffer::accepts(
-                        new InvalidTemplateParam(
-                            'Extended template param ' . $template_name
-                                . ' of ' . $atomic->getId()
-                                . ' expects type '
-                                . $expected_type_param->getId()
-                                . ', type ' . $type_param->getId() . ' given',
-                            $this->code_location
-                        ),
-                        $this->suppressed_issues
-                    )) {
-                        // fall through
+                    if (!UnionTypeComparator::isContainedBy($codebase, $type_param, $expected_type_param)) {
+                        if (IssueBuffer::accepts(
+                            new InvalidTemplateParam(
+                                'Extended template param ' . $expected_template_name
+                                    . ' of ' . $atomic->getId()
+                                    . ' expects type '
+                                    . $expected_type_param->getId()
+                                    . ', type ' . $type_param->getId() . ' given',
+                                $this->code_location
+                            ),
+                            $this->suppressed_issues
+                        )) {
+                            // fall through
+                        }
                     }
                 }
             }

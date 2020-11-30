@@ -610,8 +610,19 @@ class ArgumentsAnalyzer
                         continue;
                     }
 
-                    TemplateStandinTypeReplacer::replace(
+                    $fleshed_out_param_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                        $codebase,
                         $function_param->type,
+                        $class_storage ? $class_storage->name : null,
+                        $calling_class_storage ? $calling_class_storage->name : null,
+                        null,
+                        true,
+                        false,
+                        $calling_class_storage ? $calling_class_storage->final : false
+                    );
+
+                    TemplateStandinTypeReplacer::replace(
+                        $fleshed_out_param_type,
                         $template_result,
                         $codebase,
                         $statements_analyzer,
