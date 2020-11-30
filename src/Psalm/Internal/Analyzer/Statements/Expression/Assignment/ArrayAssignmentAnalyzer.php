@@ -877,7 +877,6 @@ class ArrayAssignmentAnalyzer
             }
 
             return [$offset_type, $var_id_addition, true];
-
         }
 
         if ($child_stmt->dim instanceof PhpParser\Node\Scalar\LNumber
