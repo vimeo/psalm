@@ -3579,7 +3579,7 @@ class AssertionFinder
             $is_a_prefix = $third_arg_value === 'true' ? 'isa-string-' : 'isa-';
 
             /**
-             * @psalm-suppress RedundantConditionGivenDocblockTypes due to Psalm bug
+             * @psalm-suppress RedundantConditionGivenDocblockType due to Psalm bug
              */
             if ($first_arg
                 && ($first_arg_type = $source->node_data->getType($first_arg))
