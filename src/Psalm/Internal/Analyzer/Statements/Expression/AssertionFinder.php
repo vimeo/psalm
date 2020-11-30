@@ -3578,11 +3578,7 @@ class AssertionFinder
 
             $is_a_prefix = $third_arg_value === 'true' ? 'isa-string-' : 'isa-';
 
-            /**
-             * @psalm-suppress RedundantConditionGivenDocblockType due to Psalm bug
-             */
-            if ($first_arg
-                && ($first_arg_type = $source->node_data->getType($first_arg))
+            if (($first_arg_type = $source->node_data->getType($first_arg))
                 && $first_arg_type->isSingleStringLiteral()
                 && $source->getSource()->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer
                 && $first_arg_type->getSingleStringLiteral()->value === $this_class_name
