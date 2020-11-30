@@ -449,6 +449,10 @@ class TemplateStandinTypeReplacer
         bool $was_nullable,
         bool &$had_template
     ) : array {
+        if ($atomic_type->defining_class === $calling_class) {
+            return [$atomic_type];
+        }
+
         $template_type = $template_result->template_types
             [$atomic_type->param_name]
             [$atomic_type->defining_class];

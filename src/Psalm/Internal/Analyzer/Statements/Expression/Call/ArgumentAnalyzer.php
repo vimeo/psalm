@@ -327,7 +327,10 @@ class ArgumentAnalyzer
                 $statements_analyzer,
                 $arg_type_param,
                 $argument_offset,
-                $context->self,
+                !$statements_analyzer->isStatic()
+                    && (!$method_id || $method_id->method_name !== '__construct')
+                    ? $context->self
+                    : null,
                 $context->calling_method_id ?: $context->calling_function_id
             );
 
