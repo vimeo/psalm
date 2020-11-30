@@ -1480,7 +1480,7 @@ class AssertAnnotationTest extends TestCase
 
                         if ($bar) {}
                     }',
-                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:19:29',
+                'error_message' => 'RedundantConditionGivenDocblockType - src' . DIRECTORY_SEPARATOR . 'somefile.php:19:29',
             ],
             'assertOneOfStrings' => [
                 '<?php
