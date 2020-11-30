@@ -2,7 +2,7 @@
 namespace Psalm\Type\Atomic;
 
 /**
- * Represents a non-empty array
+ * Denotes a string, that is also non-empty
  */
 class TNonEmptyString extends TString
 {

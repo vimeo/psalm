@@ -1,6 +1,9 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+/**
+ * Denotes the `bool` type where the exact value is unknown.
+ */
 class TBool extends Scalar
 {
     public function __toString(): string

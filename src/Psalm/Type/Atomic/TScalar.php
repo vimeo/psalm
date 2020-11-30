@@ -1,6 +1,10 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+/**
+ * Denotes the `scalar` super type (which can also result from an `is_scalar` check).
+ * This type encompasses `float`, `int`, `bool` and `string`.
+ */
 class TScalar extends Scalar
 {
     public function __toString(): string

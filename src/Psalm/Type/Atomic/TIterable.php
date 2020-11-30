@@ -7,6 +7,9 @@ use Psalm\Type\Atomic;
 use function substr;
 use function array_merge;
 
+/**
+ * denotes the `iterable` type(which can also result from an `is_iterable` check).
+ */
 class TIterable extends Atomic
 {
     use HasIntersectionTrait;

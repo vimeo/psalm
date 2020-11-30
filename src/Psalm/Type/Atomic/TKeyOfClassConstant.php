@@ -7,6 +7,9 @@ use function stripos;
 use function strpos;
 use function strtolower;
 
+/**
+ * Represents an offset of a class constant array.
+ */
 class TKeyOfClassConstant extends Scalar
 {
     /** @var string */

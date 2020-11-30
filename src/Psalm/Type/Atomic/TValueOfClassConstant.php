@@ -1,6 +1,9 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+/**
+ * Represents a value of a class constant array.
+ */
 class TValueOfClassConstant extends \Psalm\Type\Atomic
 {
     /** @var string */

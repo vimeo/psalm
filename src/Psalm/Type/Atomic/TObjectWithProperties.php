@@ -15,6 +15,9 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use function array_merge;
 use function array_values;
 
+/**
+ * Denotes an object with specified member variables e.g. `object{foo:int, bar:string}`.
+ */
 class TObjectWithProperties extends TObject
 {
     use HasIntersectionTrait;

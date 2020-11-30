@@ -19,7 +19,7 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
 /**
- * Represents an array where we know its key values
+ * Represents an 'object-like array' - an array with known keys.
  */
 class TKeyedArray extends \Psalm\Type\Atomic
 {

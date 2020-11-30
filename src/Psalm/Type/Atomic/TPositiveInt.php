@@ -1,6 +1,9 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+/**
+ * Denotes an int that is also positive (strictly > 0)
+ */
 class TPositiveInt extends TInt
 {
     public function getId(bool $nested = false): string

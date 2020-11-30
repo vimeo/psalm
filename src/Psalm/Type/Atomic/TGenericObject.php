@@ -7,6 +7,9 @@ use Psalm\Type\Atomic;
 use function substr;
 use function array_merge;
 
+/**
+ * Denotes an object type that has generic parameters e.g. `ArrayObject<string, Foo\Bar>`
+ */
 class TGenericObject extends TNamedObject
 {
     use GenericTrait;

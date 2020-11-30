@@ -2,7 +2,7 @@
 namespace Psalm\Type\Atomic;
 
 /**
- * Represents a non-empty array
+ * Denotes an object-like array that is _also_ `callable`.
  */
 class TCallableKeyedArray extends TKeyedArray
 {

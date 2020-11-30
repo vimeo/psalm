@@ -1,6 +1,9 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+/**
+ * Denotes the `false` value type
+ */
 class TFalse extends TBool
 {
     public function __toString(): string

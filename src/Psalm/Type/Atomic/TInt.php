@@ -1,6 +1,9 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+/**
+ * Denotes the `int` type, where the exact value is unknown.
+ */
 class TInt extends Scalar
 {
     public function __toString(): string
