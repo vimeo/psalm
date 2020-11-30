@@ -292,6 +292,14 @@ class ClassLikeStorage
     public $overridden_property_ids = [];
 
     /**
+     * An array holding the class template "as" types.
+     *
+     * It's the de-facto list of all templates on a given class.
+     *
+     * The name of the template is the first key. The nested array is keyed by the defining class
+     * (i.e. the same as the class name). This allows operations with the same-named template defined
+     * across multiple classes to not run into trouble.
+     *
      * @var array<string, non-empty-array<string, Type\Union>>|null
      */
     public $template_types;
