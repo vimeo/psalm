@@ -64,7 +64,7 @@ Somewhere in `FunctionLikeAnalyzer::analyze` we create a new [`StatementsAnalyze
 
 At each line the `Context` object may or may not be manipulated. At branching points (if statements, loops, ternary etc) the `Context` object is cloned and then, at the end of the branch, Psalm figures out how to resolve the changes and update the uncloned `Context` object.
 
-Each PhpParser node is then abused, adding a property called `inferredType` which Psalm uses for type analysis.
+The `NodeDataProvider` stores a type for each PhpParser node.
 
 After all the statements have been analysed we gather up all the return types and compare to the given return type.
 
