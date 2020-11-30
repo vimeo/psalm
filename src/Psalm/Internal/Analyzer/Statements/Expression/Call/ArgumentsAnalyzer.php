@@ -570,7 +570,8 @@ class ArgumentsAnalyzer
                 $class_storage,
                 $self_fq_class_name,
                 $calling_class_storage,
-                $function_storage->template_types ?: []
+                $function_storage->template_types ?: [],
+                $class_generic_params
             );
 
             if ($template_types) {

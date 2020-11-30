@@ -341,15 +341,20 @@ class CallAnalyzer
     }
 
     /**
+     * This gets all the template params (and their types) that we think
+     * we'll need to know about
+     *
      * @return array<string, array<string, Type\Union>>
      * @param array<string, non-empty-array<string, Type\Union>> $existing_template_types
+     * @param array<string, array<string, Type\Union>> $class_template_params
      */
     public static function getTemplateTypesForCall(
         \Psalm\Codebase $codebase,
         ?ClassLikeStorage $declaring_class_storage,
         ?string $appearing_class_name,
         ?ClassLikeStorage $calling_class_storage,
-        array $existing_template_types = []
+        array $existing_template_types = [],
+        array $class_template_params = []
     ) : array {
         $template_types = $existing_template_types;
 
@@ -369,7 +374,7 @@ class CallAnalyzer
                                         $atomic_type->defining_class,
                                         $atomic_type->param_name,
                                         $calling_class_storage->template_extended_params,
-                                        $template_types
+                                        $class_template_params + $template_types
                                     );
                                 } else {
                                     $output_type_candidate = new Type\Union([$atomic_type]);
@@ -392,7 +397,8 @@ class CallAnalyzer
             } elseif ($declaring_class_storage->template_types) {
                 foreach ($declaring_class_storage->template_types as $template_name => $type_map) {
                     foreach ($type_map as $key => $type) {
-                        $template_types[$template_name][$key] = $type;
+                        $template_types[$template_name][$key]
+                            = $class_template_params[$template_name][$key] ?? $type;
                     }
                 }
             }
