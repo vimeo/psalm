@@ -719,8 +719,7 @@ class StatementsAnalyzer extends SourceAnalyzer
                                 . ' (method graph size = ' . $count .', average path length = ' . round($mean). ')',
                             $function_storage->location
                         ),
-                        $this->getSuppressedIssues(),
-                        true
+                        $this->getSuppressedIssues()
                     )) {
                         // fall through
                     }
@@ -731,8 +730,7 @@ class StatementsAnalyzer extends SourceAnalyzer
                                 . ' (method graph size = ' . $count .', average path length = ' . round($mean) . ')',
                             $function_storage->location
                         ),
-                        $this->getSuppressedIssues(),
-                        true
+                        $this->getSuppressedIssues()
                     )) {
                         // fall through
                     }
