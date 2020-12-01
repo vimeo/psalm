@@ -1181,8 +1181,6 @@ class StubTest extends TestCase
 
     public function testStubReplacingInterfaceDocblock(): void
     {
-        $this->markTestSkipped('Tis broken');
-
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__),

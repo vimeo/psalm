@@ -273,6 +273,8 @@ class Populator
     private function populateOverriddenMethods(
         ClassLikeStorage $storage
     ): void {
+        $storage->documenting_method_ids = [];
+
         foreach ($storage->methods as $method_name => $method_storage) {
             if (isset($storage->overridden_method_ids[$method_name])) {
                 $overridden_method_ids = $storage->overridden_method_ids[$method_name];
