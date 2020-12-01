@@ -3746,7 +3746,7 @@ class AssertionFinder
             }
         }
 
-        if ($literal_assertions) {
+        if ($literal_assertions && $first_var_name) {
             $if_types[$first_var_name] = [$literal_assertions];
         } else {
             $array_root = isset($expr->args[1]->value)
