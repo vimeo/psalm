@@ -72,7 +72,7 @@ class ForeachAnalyzer
             } catch (DocblockParseException $e) {
                 if (IssueBuffer::accepts(
                     new InvalidDocblock(
-                        (string)$e->getMessage(),
+                        $e->getMessage(),
                         new CodeLocation($statements_analyzer, $stmt)
                     )
                 )) {

@@ -436,7 +436,7 @@ class StatementsAnalyzer extends SourceAnalyzer
                 } catch (\Psalm\Exception\IncorrectDocblockException $e) {
                     if (IssueBuffer::accepts(
                         new MissingDocblockType(
-                            (string)$e->getMessage(),
+                            $e->getMessage(),
                             new CodeLocation($statements_analyzer->getSource(), $stmt)
                         )
                     )) {
@@ -445,7 +445,7 @@ class StatementsAnalyzer extends SourceAnalyzer
                 } catch (\Psalm\Exception\DocblockParseException $e) {
                     if (IssueBuffer::accepts(
                         new InvalidDocblock(
-                            (string)$e->getMessage(),
+                            $e->getMessage(),
                             new CodeLocation($statements_analyzer->getSource(), $stmt)
                         )
                     )) {
@@ -648,7 +648,7 @@ class StatementsAnalyzer extends SourceAnalyzer
         } catch (DocblockParseException $e) {
             if (IssueBuffer::accepts(
                 new InvalidDocblock(
-                    (string)$e->getMessage(),
+                    $e->getMessage(),
                     new CodeLocation($this->getSource(), $stmt, null, true)
                 )
             )) {

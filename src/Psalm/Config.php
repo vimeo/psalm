@@ -1569,6 +1569,14 @@ class Config
             return 'InvalidArgument';
         }
 
+        if ($issue_type === 'RedundantConditionGivenDocblockType') {
+            return 'RedundantCondition';
+        }
+
+        if ($issue_type === 'RedundantCastGivenDocblockType') {
+            return 'RedundantCast';
+        }
+
         if ($issue_type === 'TraitMethodSignatureMismatch') {
             return 'MethodSignatureMismatch';
         }

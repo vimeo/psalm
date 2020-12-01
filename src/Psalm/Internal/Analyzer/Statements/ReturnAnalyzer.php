@@ -70,7 +70,7 @@ class ReturnAnalyzer
             } catch (DocblockParseException $e) {
                 if (IssueBuffer::accepts(
                     new InvalidDocblock(
-                        (string)$e->getMessage(),
+                        $e->getMessage(),
                         new CodeLocation($source, $stmt)
                     )
                 )) {

@@ -121,7 +121,7 @@ class AssignmentAnalyzer
             } catch (IncorrectDocblockException $e) {
                 if (IssueBuffer::accepts(
                     new MissingDocblockType(
-                        (string)$e->getMessage(),
+                        $e->getMessage(),
                         new CodeLocation($statements_analyzer->getSource(), $assign_var)
                     )
                 )) {
@@ -130,7 +130,7 @@ class AssignmentAnalyzer
             } catch (DocblockParseException $e) {
                 if (IssueBuffer::accepts(
                     new InvalidDocblock(
-                        (string)$e->getMessage(),
+                        $e->getMessage(),
                         new CodeLocation($statements_analyzer->getSource(), $assign_var)
                     )
                 )) {
@@ -651,7 +651,7 @@ class AssignmentAnalyzer
         } catch (\UnexpectedValueException $e) {
             if (IssueBuffer::accepts(
                 new InvalidDocblock(
-                    (string)$e->getMessage(),
+                    $e->getMessage(),
                     new CodeLocation($statements_analyzer->getSource(), $stmt)
                 )
             )) {
@@ -1640,7 +1640,7 @@ class AssignmentAnalyzer
                     } catch (\UnexpectedValueException $e) {
                         if (IssueBuffer::accepts(
                             new InvalidDocblock(
-                                (string)$e->getMessage(),
+                                $e->getMessage(),
                                 new CodeLocation($statements_analyzer->getSource(), $assign_var)
                             )
                         )) {

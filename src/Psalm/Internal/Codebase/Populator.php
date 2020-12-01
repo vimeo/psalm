@@ -490,7 +490,7 @@ class Populator
 
             $storage->invalid_dependencies[] = $parent_storage_class;
 
-            $this->invalid_class_storages[strtolower($parent_storage_class)][] = $storage;
+            $this->invalid_class_storages[$parent_storage_class][] = $storage;
 
             return;
         }

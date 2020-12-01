@@ -672,12 +672,12 @@ class ClassLikeNodeScanner
                 }
             } catch (DocblockParseException $e) {
                 $storage->docblock_issues[] = new InvalidDocblock(
-                    (string)$e->getMessage(),
+                    $e->getMessage(),
                     new CodeLocation($this->file_scanner, $node, null, true)
                 );
             } catch (TypeParseTreeException $e) {
                 $storage->docblock_issues[] = new InvalidDocblock(
-                    (string)$e->getMessage(),
+                    $e->getMessage(),
                     new CodeLocation($this->file_scanner, $node, null, true)
                 );
             }

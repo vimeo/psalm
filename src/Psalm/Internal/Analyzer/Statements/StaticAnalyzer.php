@@ -62,7 +62,7 @@ class StaticAnalyzer
                 } catch (\Psalm\Exception\IncorrectDocblockException $e) {
                     if (IssueBuffer::accepts(
                         new \Psalm\Issue\MissingDocblockType(
-                            (string)$e->getMessage(),
+                            $e->getMessage(),
                             new CodeLocation($statements_analyzer, $var)
                         )
                     )) {
@@ -71,7 +71,7 @@ class StaticAnalyzer
                 } catch (DocblockParseException $e) {
                     if (IssueBuffer::accepts(
                         new InvalidDocblock(
-                            (string)$e->getMessage(),
+                            $e->getMessage(),
                             new CodeLocation($statements_analyzer->getSource(), $var)
                         )
                     )) {
@@ -131,7 +131,7 @@ class StaticAnalyzer
                     } catch (\UnexpectedValueException $e) {
                         if (IssueBuffer::accepts(
                             new InvalidDocblock(
-                                (string)$e->getMessage(),
+                                $e->getMessage(),
                                 new CodeLocation($statements_analyzer, $var)
                             )
                         )) {
