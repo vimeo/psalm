@@ -377,10 +377,9 @@ class NamedFunctionCallHandler
             ) {
                 if ($first_arg_type->from_docblock) {
                     if (IssueBuffer::accepts(
-                        new \Psalm\Issue\RedundantConditionGivenDocblockType(
+                        new \Psalm\Issue\RedundantCastGivenDocblockType(
                             'The call to strtolower is unnecessary given the docblock type',
-                            new CodeLocation($statements_analyzer, $function_name),
-                            null
+                            new CodeLocation($statements_analyzer, $function_name)
                         ),
                         $statements_analyzer->getSuppressedIssues()
                     )) {
@@ -388,10 +387,9 @@ class NamedFunctionCallHandler
                     }
                 } else {
                     if (IssueBuffer::accepts(
-                        new \Psalm\Issue\RedundantCondition(
+                        new \Psalm\Issue\RedundantCast(
                             'The call to strtolower is unnecessary',
-                            new CodeLocation($statements_analyzer, $function_name),
-                            null
+                            new CodeLocation($statements_analyzer, $function_name)
                         ),
                         $statements_analyzer->getSuppressedIssues()
                     )) {

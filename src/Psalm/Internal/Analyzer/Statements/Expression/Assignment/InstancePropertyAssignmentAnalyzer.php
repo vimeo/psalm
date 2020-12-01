@@ -761,7 +761,7 @@ class InstancePropertyAssignmentAnalyzer
 
         $context_type = $context_type ?: $assignment_value_type;
 
-        if ($var_id && $context_type) {
+        if ($var_id) {
             if ($context->collect_initializations
                 && $lhs_var_id === '$this'
             ) {

@@ -9,8 +9,8 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\InvalidCast;
 use Psalm\Issue\PossiblyInvalidCast;
-use Psalm\Issue\RedundantCondition;
-use Psalm\Issue\RedundantConditionGivenDocblockType;
+use Psalm\Issue\RedundantCast;
+use Psalm\Issue\RedundantCastGivenDocblockType;
 use Psalm\Issue\UnrecognizedExpression;
 use Psalm\IssueBuffer;
 use Psalm\Type;
@@ -49,16 +49,14 @@ class CastAnalyzer
             if ($maybe_type) {
                 if ($maybe_type->isInt()) {
                     if ($maybe_type->from_docblock) {
-                        $issue = new RedundantConditionGivenDocblockType(
+                        $issue = new RedundantCastGivenDocblockType(
                             'Redundant cast to ' . $maybe_type->getKey(),
-                            new CodeLocation($statements_analyzer->getSource(), $stmt),
-                            $maybe_type->getKey()
+                            new CodeLocation($statements_analyzer->getSource(), $stmt)
                         );
                     } else {
-                        $issue = new RedundantCondition(
+                        $issue = new RedundantCast(
                             'Redundant cast to ' . $maybe_type->getKey(),
-                            new CodeLocation($statements_analyzer->getSource(), $stmt),
-                            $maybe_type->getKey()
+                            new CodeLocation($statements_analyzer->getSource(), $stmt)
                         );
                     }
 
@@ -103,16 +101,14 @@ class CastAnalyzer
             if ($maybe_type) {
                 if ($maybe_type->isFloat()) {
                     if ($maybe_type->from_docblock) {
-                        $issue = new RedundantConditionGivenDocblockType(
+                        $issue = new RedundantCastGivenDocblockType(
                             'Redundant cast to ' . $maybe_type->getKey(),
-                            new CodeLocation($statements_analyzer->getSource(), $stmt),
-                            $maybe_type->getKey()
+                            new CodeLocation($statements_analyzer->getSource(), $stmt)
                         );
                     } else {
-                        $issue = new RedundantCondition(
+                        $issue = new RedundantCast(
                             'Redundant cast to ' . $maybe_type->getKey(),
-                            new CodeLocation($statements_analyzer->getSource(), $stmt),
-                            $maybe_type->getKey()
+                            new CodeLocation($statements_analyzer->getSource(), $stmt)
                         );
                     }
 
@@ -145,16 +141,14 @@ class CastAnalyzer
             if ($maybe_type) {
                 if ($maybe_type->isBool()) {
                     if ($maybe_type->from_docblock) {
-                        $issue = new RedundantConditionGivenDocblockType(
+                        $issue = new RedundantCastGivenDocblockType(
                             'Redundant cast to ' . $maybe_type->getKey(),
-                            new CodeLocation($statements_analyzer->getSource(), $stmt),
-                            $maybe_type->getKey()
+                            new CodeLocation($statements_analyzer->getSource(), $stmt)
                         );
                     } else {
-                        $issue = new RedundantCondition(
+                        $issue = new RedundantCast(
                             'Redundant cast to ' . $maybe_type->getKey(),
-                            new CodeLocation($statements_analyzer->getSource(), $stmt),
-                            $maybe_type->getKey()
+                            new CodeLocation($statements_analyzer->getSource(), $stmt)
                         );
                     }
 
@@ -187,16 +181,14 @@ class CastAnalyzer
             if ($stmt_expr_type) {
                 if ($stmt_expr_type->isString()) {
                     if ($stmt_expr_type->from_docblock) {
-                        $issue = new RedundantConditionGivenDocblockType(
+                        $issue = new RedundantCastGivenDocblockType(
                             'Redundant cast to ' . $stmt_expr_type->getKey(),
-                            new CodeLocation($statements_analyzer->getSource(), $stmt),
-                            $stmt_expr_type->getKey()
+                            new CodeLocation($statements_analyzer->getSource(), $stmt)
                         );
                     } else {
-                        $issue = new RedundantCondition(
+                        $issue = new RedundantCast(
                             'Redundant cast to ' . $stmt_expr_type->getKey(),
-                            new CodeLocation($statements_analyzer->getSource(), $stmt),
-                            $stmt_expr_type->getKey()
+                            new CodeLocation($statements_analyzer->getSource(), $stmt)
                         );
                     }
 
@@ -258,16 +250,14 @@ class CastAnalyzer
             if ($stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr)) {
                 if ($stmt_expr_type->isArray()) {
                     if ($stmt_expr_type->from_docblock) {
-                        $issue = new RedundantConditionGivenDocblockType(
+                        $issue = new RedundantCastGivenDocblockType(
                             'Redundant cast to ' . $stmt_expr_type->getKey(),
-                            new CodeLocation($statements_analyzer->getSource(), $stmt),
-                            $stmt_expr_type->getKey()
+                            new CodeLocation($statements_analyzer->getSource(), $stmt)
                         );
                     } else {
-                        $issue = new RedundantCondition(
+                        $issue = new RedundantCast(
                             'Redundant cast to ' . $stmt_expr_type->getKey(),
-                            new CodeLocation($statements_analyzer->getSource(), $stmt),
-                            $stmt_expr_type->getKey()
+                            new CodeLocation($statements_analyzer->getSource(), $stmt)
                         );
                     }
 

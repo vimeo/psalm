@@ -1890,8 +1890,10 @@ class ArrayAssignmentTest extends TestCase
                     /**
                      * @param list<int> $bar
                      */
-                    function baz(array $bar) : void { foo((array) $bar); }',
-                'error_message' => 'RedundantCondition',
+                    function baz(array $bar) : void {
+                        foo((array) $bar);
+                    }',
+                'error_message' => 'RedundantCast',
             ],
         ];
     }
