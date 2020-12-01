@@ -444,6 +444,7 @@ class TryAnalyzer
             $context->loop_scope->final_actions[] = ScopeAnalyzer::ACTION_NONE;
         }
 
+        $finally_has_returned = false;
         if ($stmt->finally) {
             if ($try_context->finally_scope) {
                 $finally_context = clone $context;
@@ -455,9 +456,7 @@ class TryAnalyzer
 
                 $statements_analyzer->analyze($stmt->finally->stmts, $finally_context);
 
-                if ($finally_context->has_returned) {
-                    $context->has_returned = true;
-                }
+                $finally_has_returned = $finally_context->has_returned;
 
                 /** @var string $var_id */
                 foreach ($finally_context->assigned_var_ids as $var_id => $_) {
@@ -499,6 +498,9 @@ class TryAnalyzer
                 $context->possibly_thrown_exceptions[$possibly_thrown_exception][$hash] = $codelocation;
             }
         }
+
+        $body_has_returned = !in_array(ScopeAnalyzer::ACTION_NONE, $stmt_control_actions, true);
+        $context->has_returned = ($body_has_returned && $all_catches_leave) || $finally_has_returned;
 
         return null;
     }
