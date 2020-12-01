@@ -1,0 +1,6 @@
+{
+    "name": "psalm-tests/doctrine-entitymanagerinterface",
+    "autoload": {
+        "psr-4": { "Doctrine\\ORM\\": "lib/Doctrine/ORM" }
+    }
+}

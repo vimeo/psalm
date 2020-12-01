@@ -1,0 +1,14 @@
+{
+    "repositories": [
+        {
+            "type": "path",
+            "url": "packages/doctrine-entitymanagerinterface",
+            "options": {
+                "symlink": false
+            }
+        }
+    ],
+    "require": {
+        "psalm-tests/doctrine-entitymanagerinterface": "@dev"
+    }
+}

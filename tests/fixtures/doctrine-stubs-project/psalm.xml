@@ -1,0 +1,10 @@
+<?xml version="1.0"?>                                                                                                                                                     
+<psalm resolveFromConfigFile="true">                                                                                                                                       
+    <projectFiles>                                                                                                                                                         
+        <directory name="src" />                                                                                                                                           
+    </projectFiles>                                                                                                                                                        
+    <stubs>                                                                                                                                                                
+        <file name="stubs/EntityManagerInterface.php" />                                                                                                                   
+        <file name="stubs/EntityManager.php" />                                                                                                                            
+    </stubs>                                                                                                                                                               
+</psalm>
