@@ -626,7 +626,7 @@ class CallAnalyzer
      * @param  \Psalm\Storage\Assertion[] $assertions
      * @param  string $thisName
      * @param  list<PhpParser\Node\Arg> $args
-     * @param  array<string, array<string, TemplateBound>> $inferred_upper_bouunds,
+     * @param  array<string, array<string, TemplateBound>> $inferred_upper_bounds,
      *
      */
     public static function applyAssertionsToContext(
@@ -634,7 +634,7 @@ class CallAnalyzer
         ?string $thisName,
         array $assertions,
         array $args,
-        array $inferred_upper_bouunds,
+        array $inferred_upper_bounds,
         Context $context,
         StatementsAnalyzer $statements_analyzer
     ): void {
@@ -684,8 +684,8 @@ class CallAnalyzer
                     $rule = substr($rule, 1);
                 }
 
-                if (isset($inferred_upper_bouunds[$rule])) {
-                    foreach ($inferred_upper_bouunds[$rule] as $template_map) {
+                if (isset($inferred_upper_bounds[$rule])) {
+                    foreach ($inferred_upper_bounds[$rule] as $template_map) {
                         if ($template_map->type->hasMixed()) {
                             continue 2;
                         }
@@ -807,7 +807,7 @@ class CallAnalyzer
                         $type_map
                     );
                 },
-                $inferred_upper_bouunds
+                $inferred_upper_bounds
             );
 
             foreach (($statements_analyzer->getTemplateTypeMap() ?: []) as $template_name => $map) {

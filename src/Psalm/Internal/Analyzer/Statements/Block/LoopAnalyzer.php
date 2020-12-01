@@ -104,7 +104,7 @@ class LoopAnalyzer
         }
 
         if ($has_continue) {
-            // this intuuitively feels right to me – if there's a continue statement,
+            // this intuitively feels right to me – if there's a continue statement,
             // maybe more assignment intrigue is possible
             $assignment_depth++;
         }

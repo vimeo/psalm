@@ -263,7 +263,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
         );
 
         if ($function_call_info->function_storage) {
-            $inferred_upper_bouunds = $template_result->upper_bounds;
+            $inferred_upper_bounds = $template_result->upper_bounds;
 
             if ($function_call_info->function_storage->assertions && $function_name instanceof PhpParser\Node\Name) {
                 self::applyAssertionsToContext(
@@ -271,7 +271,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     null,
                     $function_call_info->function_storage->assertions,
                     $stmt->args,
-                    $inferred_upper_bouunds,
+                    $inferred_upper_bounds,
                     $context,
                     $statements_analyzer
                 );
@@ -281,8 +281,8 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 $statements_analyzer->node_data->setIfTrueAssertions(
                     $stmt,
                     array_map(
-                        function (Assertion $assertion) use ($inferred_upper_bouunds) : Assertion {
-                            return $assertion->getUntemplatedCopy($inferred_upper_bouunds ?: [], null);
+                        function (Assertion $assertion) use ($inferred_upper_bounds) : Assertion {
+                            return $assertion->getUntemplatedCopy($inferred_upper_bounds ?: [], null);
                         },
                         $function_call_info->function_storage->if_true_assertions
                     )
@@ -293,8 +293,8 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 $statements_analyzer->node_data->setIfFalseAssertions(
                     $stmt,
                     array_map(
-                        function (Assertion $assertion) use ($inferred_upper_bouunds) : Assertion {
-                            return $assertion->getUntemplatedCopy($inferred_upper_bouunds ?: [], null);
+                        function (Assertion $assertion) use ($inferred_upper_bounds) : Assertion {
+                            return $assertion->getUntemplatedCopy($inferred_upper_bounds ?: [], null);
                         },
                         $function_call_info->function_storage->if_false_assertions
                     )
