@@ -491,6 +491,7 @@ class AssertionFinder
                         && ($var_type = $source->node_data->getType($isset_var))
                         && !$var_type->isMixed()
                         && !$var_type->possibly_undefined
+                        && !$var_type->possibly_undefined_from_try
                         && $var_name !== '$_SESSION'
                     ) {
                         $if_types[$var_name] = [['!null']];
