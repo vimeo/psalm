@@ -20,16 +20,28 @@ class CoalesceAnalyzer
     ) : bool {
         $left_expr = $stmt->left;
 
-        if ($left_expr instanceof PhpParser\Node\Expr\FuncCall
-            || $left_expr instanceof PhpParser\Node\Expr\MethodCall
-            || $left_expr instanceof PhpParser\Node\Expr\StaticCall
-            || $left_expr instanceof PhpParser\Node\Expr\Cast
+        $root_expr = $left_expr;
+
+        while ($root_expr instanceof PhpParser\Node\Expr\ArrayDimFetch
+            || $root_expr instanceof PhpParser\Node\Expr\PropertyFetch
+        ) {
+            $root_expr = $root_expr->var;
+        }
+
+        if ($root_expr instanceof PhpParser\Node\Expr\FuncCall
+            || $root_expr instanceof PhpParser\Node\Expr\MethodCall
+            || $root_expr instanceof PhpParser\Node\Expr\StaticCall
+            || $root_expr instanceof PhpParser\Node\Expr\Cast
         ) {
             $left_var_id = '$<tmp coalesce var>' . (int) $left_expr->getAttribute('startFilePos');
 
             ExpressionAnalyzer::analyze($statements_analyzer, $left_expr, clone $context);
 
             $condition_type = $statements_analyzer->node_data->getType($left_expr) ?: Type::getMixed();
+
+            if ($root_expr !== $left_expr) {
+                $condition_type->possibly_undefined = true;
+            }
 
             $context->vars_in_scope[$left_var_id] = $condition_type;
 
