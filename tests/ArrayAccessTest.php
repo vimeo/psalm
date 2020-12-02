@@ -216,6 +216,29 @@ class ArrayAccessTest extends TestCase
         $this->analyzeFile('somefile.php', new \Psalm\Context());
     }
 
+    public function testEnsureOffsetExistsAfterNestedIsset(): void
+    {
+        \Psalm\Config::getInstance()->ensure_array_string_offsets_exist = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class A {
+                    public int $foo = 0;
+                }
+
+                /**
+                 * @param array<string, A> $value
+                 */
+                function test(array $value): int
+                {
+                    return isset($value["a"]->foo) ? $value["a"]->foo : 0;
+                }'
+        );
+
+        $this->analyzeFile('somefile.php', new \Psalm\Context());
+    }
+
     public function testEnsureListOffsetExistsAfterCountValueInRange(): void
     {
         \Psalm\Config::getInstance()->ensure_array_int_offsets_exist = true;

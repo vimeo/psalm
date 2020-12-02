@@ -230,7 +230,7 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
     }
 
     /**
-     * @param-out array<string, array<array<string>>>|null $assertions
+     * @param-out array<string, array<array<int, string>>>|null $assertions
      */
     private static function executeFakeCall(
         \Psalm\Internal\Analyzer\StatementsAnalyzer $statements_analyzer,
@@ -309,9 +309,9 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
     }
 
     /**
-     * @param non-empty-array<string> $mapping_function_ids
+     * @param non-empty-array<int, string> $mapping_function_ids
      * @param list<PhpParser\Node\Arg> $array_args
-     * @param-out array<string, array<array<string>>>|null $assertions
+     * @param-out array<string, array<array<int, string>>>|null $assertions
      */
     public static function getReturnTypeFromMappingIds(
         \Psalm\Internal\Analyzer\StatementsAnalyzer $statements_source,

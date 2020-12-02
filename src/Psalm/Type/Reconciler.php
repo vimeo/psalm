@@ -46,8 +46,8 @@ class Reconciler
     /**
      * Takes two arrays and consolidates them, removing null values from existing types where applicable
      *
-     * @param  array<string, array<int, array<int, string>>> $new_types
-     * @param  array<string, array<int, array<int, string>>> $active_new_types - types we can complain about
+     * @param  array<string, array<array<int, string>>> $new_types
+     * @param  array<string, array<array<int, string>>> $active_new_types - types we can complain about
      * @param  array<string, Type\Union> $existing_types
      * @param  array<string, bool>       $changed_var_ids
      * @param  array<string, bool>       $referenced_var_ids
@@ -282,10 +282,23 @@ class Reconciler
     }
 
     /**
-     * @param array<string, array<int, array<int, string>>> $new_types
+     * This generates a list of extra assertions for an assertion on a nested key.
+     *
+     * For example  ['$a[0]->foo->bar' => 'isset']
+     *
+     * generates the assertions
+     *
+     * [
+     *     '$a' => '=int-or-string-array-access',
+     *     '$a[0]' => '=isset',
+     *     '$a[0]->foo' => '=isset',
+     *     '$a[0]->foo->bar' => 'isset' // original assertion
+     * ]
+     *
+     * @param array<string, array<array<int, string>>> $new_types
      * @param array<string, Type\Union> $existing_types
      *
-     * @return array<string, array<int, array<int, string>>>
+     * @return array<string, array<array<int, string>>>
      */
     private static function addNestedAssertions(array $new_types, array $existing_types) : array
     {
@@ -340,6 +353,10 @@ class Reconciler
                         if ($divider === '->') {
                             $property_name = array_shift($key_parts);
                             $new_base_key = $base_key . '->' . $property_name;
+
+                            if (!isset($new_types[$base_key])) {
+                                $new_types[$base_key] = [['=isset']];
+                            }
 
                             $base_key = $new_base_key;
                         } else {
