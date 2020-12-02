@@ -3733,12 +3733,25 @@ class AssertionFinder
                     || $atomic_type instanceof Type\Atomic\TKeyedArray
                 ) {
                     if ($atomic_type instanceof Type\Atomic\TKeyedArray) {
+                        $key_possibly_undefined = false;
+
+                        foreach ($atomic_type->properties as $property_type) {
+                            if ($property_type->possibly_undefined) {
+                                $key_possibly_undefined = true;
+                                break;
+                            }
+                        }
+
                         $key_type = $atomic_type->getGenericKeyType();
+
+                        if ($key_possibly_undefined) {
+                            $key_type->possibly_undefined = true;
+                        }
                     } else {
                         $key_type = $atomic_type->type_params[0];
                     }
 
-                    if ($key_type->allStringLiterals()) {
+                    if ($key_type->allStringLiterals() && !$key_type->possibly_undefined) {
                         foreach ($key_type->getLiteralStrings() as $array_literal_type) {
                             $literal_assertions[] = '=' . $array_literal_type->getId();
                         }
