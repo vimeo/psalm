@@ -555,7 +555,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             || $existing_var_type->possibly_undefined_from_try
             || $existing_var_type->hasType('iterable');
 
-        if ($is_strict_equality && $assertion === 'empty') {
+        if ($assertion === 'empty') {
             $existing_var_type->removeType('null');
             $existing_var_type->removeType('false');
 
