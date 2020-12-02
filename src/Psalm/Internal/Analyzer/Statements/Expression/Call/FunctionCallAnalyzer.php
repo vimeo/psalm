@@ -132,16 +132,14 @@ class FunctionCallAnalyzer extends CallAnalyzer
             $set_inside_conditional = true;
         }
 
-        if (ArgumentsAnalyzer::analyze(
+        ArgumentsAnalyzer::analyze(
             $statements_analyzer,
             $stmt->args,
             $function_call_info->function_params,
             $function_call_info->function_id,
             $function_call_info->allow_named_args,
             $context
-        ) === false) {
-            // fall through
-        }
+        );
 
         if ($set_inside_conditional) {
             $context->inside_conditional = false;
@@ -165,8 +163,8 @@ class FunctionCallAnalyzer extends CallAnalyzer
         $template_result = new TemplateResult([], []);
 
         // do this here to allow closure param checks
-        if ($function_call_info->function_params !== null
-            && ArgumentsAnalyzer::checkArgumentsMatch(
+        if ($function_call_info->function_params !== null) {
+            ArgumentsAnalyzer::checkArgumentsMatch(
                 $statements_analyzer,
                 $stmt->args,
                 $function_call_info->function_id,
@@ -176,9 +174,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 $template_result,
                 $code_location,
                 $context
-            ) === false
-        ) {
-            // fall through
+            );
         }
 
         CallAnalyzer::checkTemplateResult(
@@ -432,6 +428,8 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     }
 
                     return $function_call_info;
+                } else {
+                    $function_call_info->function_exists = true;
                 }
             }
         } else {
