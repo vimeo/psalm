@@ -614,6 +614,9 @@ class Reconciler
                             && ($has_isset || $has_inverted_isset)
                         ) {
                             $has_object_array_access = true;
+
+                            unset($existing_keys[$new_base_key]);
+
                             return null;
                         } elseif (!$existing_key_type_part instanceof Type\Atomic\TKeyedArray) {
                             return Type::getMixed();

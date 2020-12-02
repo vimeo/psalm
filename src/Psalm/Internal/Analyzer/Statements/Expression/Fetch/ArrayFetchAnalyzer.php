@@ -285,7 +285,7 @@ class ArrayFetchAnalyzer
                 if (IssueBuffer::accepts(
                     new PossiblyUndefinedArrayOffset(
                         'Possibly undefined array key ' . $keyed_array_var_id
-                            . ($stmt_var_type ? ' on ' . $stmt_var_type->getId() : ''),
+                            . ' on ' . $stmt_var_type->getId(),
                         new CodeLocation($statements_analyzer->getSource(), $stmt)
                     ),
                     $statements_analyzer->getSuppressedIssues()

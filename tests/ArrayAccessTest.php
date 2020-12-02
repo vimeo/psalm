@@ -368,7 +368,6 @@ class ArrayAccessTest extends TestCase
                     $a = new A();
                     /**
                      * @psalm-suppress UndefinedClass
-                     * @psalm-suppress PossiblyUndefinedArrayOffset
                      */
                     if (!isset($a->arr["bat"]) || strlen($a->arr["bat"])) { }',
                 'assertions' => [],
@@ -664,6 +663,13 @@ class ArrayAccessTest extends TestCase
             ],
             'arrayAccessOnObjectWithNullGet' => [
                 '<?php
+                    $array = new C([]);
+                    $array["key"] = [];
+                    /** @psalm-suppress PossiblyInvalidArrayAssignment */
+                    $array["key"][] = "testing";
+
+                    $c = isset($array["foo"]) ? $array["foo"] : null;
+
                     class C implements ArrayAccess
                     {
                         /**
@@ -738,14 +744,7 @@ class ArrayAccessTest extends TestCase
                         {
                             $this->__unset($offset);
                         }
-                    }
-
-                    $array = new C([]);
-                    $array["key"] = [];
-                    /** @psalm-suppress PossiblyInvalidArrayAssignment */
-                    $array["key"][] = "testing";
-
-                    $c = isset($array["foo"]) ? $array["foo"] : null;',
+                    }',
                 [
                     '$c' => 'C|null|scalar',
                 ]

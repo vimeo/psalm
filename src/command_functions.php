@@ -156,7 +156,8 @@ function getVendorDir(string $current_dir): string
         exit(1);
     }
 
-    if (isset($composer_json['config'])
+    if (is_array($composer_json)
+        && isset($composer_json['config'])
         && is_array($composer_json['config'])
         && isset($composer_json['config']['vendor-dir'])
         && is_string($composer_json['config']['vendor-dir'])

@@ -1006,7 +1006,6 @@ class IssetTest extends \Psalm\Tests\TestCase
                         if (isset($param["name"])) {
                             /**
                              * @psalm-suppress MixedArgument
-                             * @psalm-suppress PossiblyUndefinedArrayOffset
                              */
                             echo $param["name"];
                         }
@@ -1027,6 +1026,18 @@ class IssetTest extends \Psalm\Tests\TestCase
                     function returnsInt(?int $a, ?int $b): int {
                         assert($a !== null || $b !== null);
                         return $a ?? $b;
+                    }'
+            ],
+            'nullCoalesceSimpleArrayOffset' => [
+                '<?php
+                    function a(array $arr) : void {
+                        /** @psalm-suppress MixedArgument */
+                        echo isset($arr["a"]["b"]) ? $arr["a"]["b"] : 0;
+                    }
+
+                    function b(array $arr) : void {
+                        /** @psalm-suppress MixedArgument */
+                        echo $arr["a"]["b"] ?? 0;
                     }'
             ],
         ];
