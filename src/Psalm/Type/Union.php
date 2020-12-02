@@ -1196,6 +1196,17 @@ class Union implements TypeNode
         return true;
     }
 
+    public function allIntLiterals() : bool
+    {
+        foreach ($this->types as $atomic_key_type) {
+            if (!$atomic_key_type instanceof TLiteralInt) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     public function hasLiteralValue() : bool
     {
         return $this->literal_int_types

@@ -3755,6 +3755,10 @@ class AssertionFinder
                         foreach ($key_type->getLiteralStrings() as $array_literal_type) {
                             $literal_assertions[] = '=' . $array_literal_type->getId();
                         }
+                    } elseif ($key_type->allIntLiterals() && !$key_type->possibly_undefined) {
+                        foreach ($key_type->getLiteralInts() as $array_literal_type) {
+                            $literal_assertions[] = '=' . $array_literal_type->getId();
+                        }
                     }
                 }
             }
