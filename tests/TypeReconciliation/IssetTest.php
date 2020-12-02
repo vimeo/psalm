@@ -1006,6 +1006,7 @@ class IssetTest extends \Psalm\Tests\TestCase
                         if (isset($param["name"])) {
                             /**
                              * @psalm-suppress MixedArgument
+                             * @psalm-suppress PossiblyUndefinedArrayOffset
                              */
                             echo $param["name"];
                         }

@@ -366,7 +366,10 @@ class ArrayAccessTest extends TestCase
                 '<?php
                     /** @psalm-suppress UndefinedClass */
                     $a = new A();
-                    /** @psalm-suppress UndefinedClass */
+                    /**
+                     * @psalm-suppress UndefinedClass
+                     * @psalm-suppress PossiblyUndefinedArrayOffset
+                     */
                     if (!isset($a->arr["bat"]) || strlen($a->arr["bat"])) { }',
                 'assertions' => [],
                 'error_levels' => ['MixedArgument', 'MixedArrayAccess'],
@@ -991,6 +994,25 @@ class ArrayAccessTest extends TestCase
                     $test = new test(1);
                     $a = [1 => $test];
                     unset($a[$test->value]);'
+            ],
+            'arrayAssertionShouldNotBeNull' => [
+                '<?php
+                    function foo(?array $arr, string $s) : void {
+                        /**
+                         * @psalm-suppress PossiblyNullArrayAccess
+                         * @psalm-suppress MixedArrayAccess
+                         */
+                        if ($arr[$s]["b"] !== true) {
+                            return;
+                        }
+
+                        /**
+                         * @psalm-suppress MixedArgument
+                         * @psalm-suppress MixedArrayAccess
+                         * @psalm-suppress PossiblyNullArrayAccess
+                         */
+                        echo $arr[$s]["c"];
+                    }'
             ],
         ];
     }

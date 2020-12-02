@@ -174,6 +174,13 @@ class Reconciler
         $codebase = $statements_analyzer->getCodebase();
 
         foreach ($new_types as $key => $new_type_parts) {
+            if (strpos($key, '::')
+                && !strpos($key, '$')
+                && !strpos($key, '[')
+            ) {
+                continue;
+            }
+
             $has_negation = false;
             $has_isset = false;
             $has_inverted_isset = false;
@@ -498,6 +505,10 @@ class Reconciler
 
         $base_key = array_shift($key_parts);
 
+        if ($base_key === 'C::A' && isset($existing_keys[$base_key]) && $existing_keys[$base_key]->isMixed()) {
+            throw new \Exception("Error Processing Request", 1);
+        }
+
         if ($base_key[0] !== '$' && count($key_parts) > 2 && $key_parts[0] === '::$') {
             $base_key .= array_shift($key_parts);
             $base_key .= array_shift($key_parts);
@@ -543,7 +554,7 @@ class Reconciler
                     $atomic_types = $existing_keys[$base_key]->getAtomicTypes();
 
                     while ($atomic_types) {
-                        $existing_key_type_part = array_pop($atomic_types);
+                        $existing_key_type_part = array_shift($atomic_types);
 
                         if ($existing_key_type_part instanceof TTemplateParam) {
                             $atomic_types = array_merge($atomic_types, $existing_key_type_part->as->getAtomicTypes());
@@ -654,7 +665,7 @@ class Reconciler
                     $atomic_types = $existing_keys[$base_key]->getAtomicTypes();
 
                     while ($atomic_types) {
-                        $existing_key_type_part = array_pop($atomic_types);
+                        $existing_key_type_part = array_shift($atomic_types);
 
                         if ($existing_key_type_part instanceof TTemplateParam) {
                             $atomic_types = array_merge($atomic_types, $existing_key_type_part->as->getAtomicTypes());
