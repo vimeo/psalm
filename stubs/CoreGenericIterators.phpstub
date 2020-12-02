@@ -23,7 +23,8 @@ interface IteratorAggregate extends Traversable {
 interface Iterator extends Traversable {
 
     /**
-     * @return TValue Can return any type.
+     * @return TValue|null returns current value or null when iterator is drained
+     * @psalm-ignore-nullable-return
      */
     public function current();
 
@@ -33,7 +34,8 @@ interface Iterator extends Traversable {
     public function next();
 
     /**
-     * @return TKey scalar on success, or null on failure.
+     * @return TKey|null current key or null when iterator is drained
+     * @psalm-ignore-nullable-return
      */
     public function key();
 
@@ -115,12 +117,14 @@ class IteratorIterator implements OuterIterator {
     public function __construct(Traversable $iterator) {}
 
     /**
-     * @return TValue Can return any type.
+     * @return TValue|null current value or null when iterator is drained
+     * @psalm-ignore-nullable-return
      */
     public function current() {}
 
     /**
-     * @return TKey scalar on success, or null on failure.
+     * @return TKey|null current key value or null when iterator is drained
+     * @psalm-ignore-nullable-return
      */
     public function key() {}
 }
@@ -148,12 +152,14 @@ class AppendIterator extends IteratorIterator {
     public function getIteratorIndex(): int {}
 
     /**
-     * @return TValue Can return any type.
+     * @return TValue|null current value or null when iterator is drained
+     * @psalm-ignore-nullable-return
      */
     public function current() {}
 
     /**
-     * @return TKey scalar on success, or null on failure.
+     * @return TKey|null current value or null when iterator is drained
+     * @psalm-ignore-nullable-return
      */
     public function key() {}
 }
@@ -170,7 +176,7 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
 
     /**
      * @param array<TKey, TValue> $array The array or object to be iterated on.
-     * @param int $flags Flags to control the behaviour of the ArrayObject object.
+     * @param int-mask-of<self::*> $flags Flags to control the behaviour of the ArrayObject object.
      */
     public function __construct($array = array(), $flags = 0) { }
 
@@ -182,7 +188,8 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
 
     /**
      * @param TKey $index The offset to get the value from.
-     * @return TValue The value at offset index.
+     * @return TValue|null The value at offset index, null when accessing invalid indexes
+     * @psalm-ignore-nullable-return
      */
     public function offsetGet($index) { }
 
@@ -218,12 +225,12 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
     public function count() { }
 
     /**
-     * @return string The current flags.
+     * @return int-mask-of<self::*> The current flags.
      */
     public function getFlags() { }
 
     /**
-     * @param string $flags bitmask
+     * @param int-mask-of<self::*> $flags bitmask
      * @return void
      */
     public function setFlags($flags) { }
@@ -277,12 +284,14 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
     public function rewind() { }
 
     /**
-     * @return TValue The current array entry.
+     * @return TValue|null current value or null when iterator is drained
+     * @psalm-ignore-nullable-return
      */
     public function current() { }
 
     /**
-     * @return TKey The current array key.
+     * @return TKey|null The current array key or null when iterator is drained
+     * @psalm-ignore-nullable-return
      */
     public function key() { }
 
@@ -334,8 +343,16 @@ class FilterIterator extends IteratorIterator {
  * @template-extends IteratorIterator<TKey, TValue>
  */
 class CachingIterator extends IteratorIterator implements OuterIterator , ArrayAccess , Countable  {
+    const CALL_TOSTRING = 1 ;
+    const CATCH_GET_CHILD = 16 ;
+    const TOSTRING_USE_KEY = 2 ;
+    const TOSTRING_USE_CURRENT = 4 ;
+    const TOSTRING_USE_INNER = 8 ;
+    const FULL_CACHE = 256 ;
+    
     /**
      * @param Iterator<TKey, TValue> $iterator
+     * @param int-mask-of<self::*>
      */
     public function __construct(Iterator $iterator, int $flags = self::CALL_TOSTRING) {}
 
@@ -343,12 +360,14 @@ class CachingIterator extends IteratorIterator implements OuterIterator , ArrayA
     public function hasNext () {}
 
     /**
-     * @return TValue Can return any type.
+     * @return TValue|null current value or null when iterator is drained
+     * @psalm-ignore-nullable-return
      */
     public function current() {}
 
     /**
-     * @return TKey scalar on success, or null on failure.
+     * @return TKey|null current key or null when iterator is drained
+     * @psalm-ignore-nullable-return
      */
     public function key() {}
 }
@@ -369,29 +388,34 @@ class CallbackFilterIterator extends FilterIterator implements OuterIterator  {
     public function __construct(Iterator $iterator, callable $callback) {}
 
     /**
-     * @return TValue Can return any type.
+     * @return TValue|null current value or null when iterator is drained
+     * @psalm-ignore-nullable-return
      */
     public function current() {}
 
     /**
-     * @return TKey scalar on success, or null on failure.
+     * @return TKey|null current key or null when iterator is drained
+     * @psalm-ignore-nullable-return
      */
     public function key() {}
 }
 
 /**
- * @template T as DirectoryIterator
- * @psalm-implements SeekableIterator<T>
+ * @psalm-implements SeekableIterator<int, DirectoryIterator>
  */
 class DirectoryIterator extends SplFileInfo implements SeekableIterator {
 
     public function __construct(string $path){}
 
     /**
-     * @return DirectoryIterator<string, DirectoryIterator>
+     * @return self
      */
     public function current() {}
-    public function key(): string{}
+    /**
+     * @return int|false
+     * @psalm-ignore-falsable-return
+     */
+    public function key() {}
     public function next(): void{}
     public function rewind(): void{}
 
@@ -416,12 +440,11 @@ class EmptyIterator implements Iterator {
     public function key() {}
     public function next(): void {}
     public function rewind(): void {}
-    public function valid(): bool {}
+    public function valid(): false {}
 }
 
 /**
- * @template T as FilesystemIterator
- * @psalm-extends SeekableIterator<T>
+ * @psalm-extends SeekableIterator<string, FilesystemItarator|SplFileInfo|string>
  */
 class FilesystemIterator extends DirectoryIterator
 {
@@ -438,28 +461,33 @@ class FilesystemIterator extends DirectoryIterator
     const UNIX_PATHS = 8192;
 
     /**
-     * @param self::KEY_AS_PATHNAME|self::CURRENT_AS_FILEINFO|self::SKIP_DOTS $flags
+     * @param int-mask<self::CURRENT_AS_PATHNAME,self::CURRENT_AS_FILEINFO,self::CURRENT_AS_SELF,self::KEY_AS_PATHNAME,self::KEY_AS_FILENAME,self::FOLLOW_SYMLINKS,self::NEW_CURRENT_AND_KEY,self::SKIP_DOTS,self::UNIX_PATHS> $flags
      */
-    public function __construct(string $path, ?int $flags = null) {}
+    public function __construct(string $path, int $flags = self::KEY_AS_PATHNAME|self::CURRENT_AS_FILEINFO|self::SKIP_DOTS) {}
 
     /**
-     * @return mixed
+     * @return FilesystemItarator|SplFileInfo|string|null
+     * @psalm-ignore-nullable-return
      */
     public function current() {}
+    /** @return int-mask<self::CURRENT_AS_PATHNAME,self::CURRENT_AS_FILEINFO,self::CURRENT_AS_SELF,self::KEY_AS_PATHNAME,self::KEY_AS_FILENAME,self::FOLLOW_SYMLINKS,self::NEW_CURRENT_AND_KEY,self::SKIP_DOTS,self::UNIX_PATH>
     public function getFlags(): int {}
 
     /**
-     * @param int|null $flags
+     * @param int-mask<self::CURRENT_AS_PATHNAME,self::CURRENT_AS_FILEINFO,self::CURRENT_AS_SELF,self::KEY_AS_PATHNAME,self::KEY_AS_FILENAME,self::FOLLOW_SYMLINKS,self::NEW_CURRENT_AND_KEY,self::SKIP_DOTS,self::UNIX_PATH> $flags
      */
-    public function setFlags($flags = null) : void {}
-    public function key(): string{}
+    public function setFlags($flags) : void {}
+    /**
+     * @return string|null
+     * @psalm-ignore-nullable-return
+     */
+    public function key() {}
 }
 
 
 
 /**
- * @template T as GlobIterator
- * @psalm-extends SeekableIterator<string, T>
+ * @psalm-extends SeekableIterator<string, GlobIterator|SplFileInfo|string>
  */
 class GlobIterator extends FilesystemIterator implements Countable {
     public function count(): int{}
@@ -478,12 +506,14 @@ class InfiniteIterator extends IteratorIterator {
     public function __construct(Iterator $iterator) {}
 
     /**
-     * @return TValue Can return any type.
+     * @return TValue|null current value or null if iterator is drained
+     * @psalm-ignore-nullable-return
      */
     public function current() {}
 
     /**
-     * @return TKey scalar on success, or null on failure.
+     * @return TKey|null current key or null when iterator is drained
+     * @psalm-ignore-nullable-return
      */
     public function key() {}
 }
@@ -503,12 +533,14 @@ class LimitIterator extends IteratorIterator implements OuterIterator {
     public function __construct(Iterator $iterator, int $offset = 0, int $count = -1) {}
 
     /**
-     * @return TValue Can return any type.
+     * @return TValue|null current value or null when iterator is drained
+     * @psalm-ignore-nullable-return
      */
     public function current() {}
 
     /**
-     * @return TKey scalar on success, or null on failure.
+     * @return TKey|null current key or null when iterator is drained
+     * @psalm-ignore-nullable-return
      */
     public function key() {}
 }
@@ -528,12 +560,14 @@ class NoRewindIterator extends IteratorIterator {
     public function __construct(Iterator $iterator) {}
 
     /**
-     * @return TValue Can return any type.
+     * @return TValue|null current value or null when iterator is drained
+     * @psalm-ignore-nullable-return
      */
     public function current() {}
 
     /**
-     * @return TKey scalar on success, or null on failure.
+     * @return TKey|null current value or null when iterator is drained
+     * @psalm-ignore-nullable-return
      */
     public function key() {}
 }
@@ -552,16 +586,43 @@ class MultipleIterator implements Iterator {
     const MIT_KEYS_ASSOC = 2 ;
 
     /**
-     * @param self::MIT_* $flags
+     * @param int-mask-of<self::MIT_*> $flags
      */
     public function __construct (int $flags = 0) {}
-    public function attachIterator(Iterator $iterator, string $infos = ''): void {}
+    /**
+     * @param Iterator<Tkey,TValue> $iterator
+     * @param string|int $infos
+     */
+    public function attachIterator(Iterator $iterator, $infos = ''): void {}
+    /**
+     * @param Iterator<TKey, TValue> $iterator
+     */
     public function containsIterator(Iterator $iterator): bool {}
     public function countIterators(): int {}
+    /**
+     * nullable values are returned when MIT_NEED_ANY is set 
+     * and one of the iterators is already drained. 
+     * When MIT_NEED_ALL is set and one of the iterators 
+     * is already drained, `current()` throws
+     *
+     * @return array<array-key, TValue|null> 
+     */
     public function current(): array {}
+    /**
+     * @param Iterator<TKey,TValue> $iterator
+     */
     public function detachIterator(Iterator $iterator): void {}
+    /**
+     * @return int-mask-of<self::MIT_*>
+     */
     public function getFlags(): int {}
+    /**
+     * @return array<array-key, TValue|null>
+     */
     public function key(): array {}
+    /**
+     * @param int-mask-of<self::MIT_*> $flags
+     */
     public function setFlags( int $flags ): void {}
 }
 
@@ -570,20 +631,29 @@ class MultipleIterator implements Iterator {
  * @template TValue
  *
  * @template-extends FilterIterator<TKey, TValue>
+ * @template-implements RecursiveIterator<TKey, TValue>
  */
 abstract class RecursiveFilterIterator extends FilterIterator implements RecursiveIterator {
 
+    /**
+     * @param RecursiveIterator<TKey, TValue>
+     */
     public function __construct(RecursiveIterator $iterator) {}
+    /**
+     * @return RecursiveFilterIterator<TKey, TValue>
+     */
     public function getChildren(): RecursiveFilterIterator {}
     public function hasChildren(): bool {}
 
     /**
-     * @return TValue Can return any type.
+     * @return TValue|null current value or null when iterator is drained
+     * @psalm-ignore-nullable-return
      */
     public function current() {}
 
     /**
-     * @return TKey scalar on success, or null on failure.
+     * @return TKey|null current value or null when iterator is drained
+     * @psalm-ignore-nullable-return
      */
     public function key() {}
 }
@@ -597,19 +667,27 @@ abstract class RecursiveFilterIterator extends FilterIterator implements Recursi
 class ParentIterator extends RecursiveFilterIterator implements RecursiveIterator, OuterIterator {
 
     public function accept(): bool {}
+    /**
+     * @param RecursiveIterator<TKey, TValue>
+     */
     public function __construct(RecursiveIterator $iterator) {}
+    /**
+     * @return ParentIterator<TKey,TValue>
+     */
     public function getChildren(): ParentIterator {}
     public function hasChildren(): bool {}
     public function next(): void {}
     public function rewind(): void {}
 
     /**
-     * @return TValue Can return any type.
+     * @return TValue|null current value or null when iterator is drained
+     * @psalm-ignore-nullable-return
      */
     public function current() {}
 
     /**
-     * @return TKey scalar on success, or null on failure.
+     * @return TKey|null current key or null when iterator is drained
+     * @psalm-ignore-nullable-return
      */
     public function key() {}
 }
@@ -626,15 +704,20 @@ class RecursiveArrayIterator extends ArrayIterator implements RecursiveIterator 
     const ARRAY_AS_PROPS = 2 ;
     const CHILD_ARRAYS_ONLY = 4 ;
 
+    /**
+     * @return RecursiveArrayIterator<TKey, TValue>
+     */
     public function getChildren() : RecursiveArrayIterator {}
     public function hasChildren() : bool {}
     /**
-     * @return TValue Can return any type.
+     * @return TValue|null current value or null when iterator is drained
+     * @psalm-ignore-nullable-return
      */
     public function current() {}
 
     /**
-     * @return TKey scalar on success, or null on failure.
+     * @return TKey|null current key or null when iterator is drained
+     * @psalm-ignore-nullable-return
      */
     public function key() {}
 }
@@ -655,17 +738,26 @@ class RecursiveCachingIterator extends CachingIterator implements RecursiveItera
     const TOSTRING_USE_INNER = 8 ;
     const FULL_CACHE = 256 ;
 
+    /**
+     * @param Iterator<TKey, TValue>
+     * @param int-mask-of<self::*> $flags
+     */
     public function __construct(Iterator $iterator, int $flags = 0) {}
+    /**
+     * @return RecursiveCachingIterator<TKey,TValue>
+     */
     public function getChildren(): RecursiveCachingIterator {}
     public function hasChildren(): bool {}
 
     /**
-     * @return TValue Can return any type.
+     * @return TValue|null current value or null when iterator is drained
+     * @psalm-suppress-nullable-return
      */
     public function current() {}
 
     /**
-     * @return TKey scalar on success, or null on failure.
+     * @return TKey|null current key or null when iterator is drained
+     * @psalm-suppress-nullable-return
      */
     public function key() {}
 }
@@ -680,31 +772,32 @@ class RecursiveCachingIterator extends CachingIterator implements RecursiveItera
 class RecursiveCallbackFilterIterator extends CallbackFilterIterator implements RecursiveIterator {
 
     /**
-     * @param Iterator<TKey, TValue> $iterator
-     * @param callable(TValue, TKey, Iterator<TKey, TValue>): bool $callback
+     * @param RecursiveIterator<TKey, TValue> $iterator
+     * @param callable(TValue, TKey, RecursiveIterator<TKey, TValue>): bool $callback
      */
     public function __construct(RecursiveIterator $iterator, callable $callback) {}
+    /**
+     * @return RecursiveCallbackFilterIterator<TKey, TValue>
+     */
     public function getChildren(): RecursiveCallbackFilterIterator {}
     public function hasChildren(): bool {}
 
     /**
-     * @return TValue Can return any type.
+     * @return TValue|null current value or null when iterator is drained
      */
     public function current() {}
 
     /**
-     * @return TKey scalar on success, or null on failure.
+     * @return TKey|null current value or null when iterator is drained
      */
     public function key() {}
 }
 
 /**
- * @template T as FilesystemIterator|string|SplFileInfo
- *
- * @template-implements RecursiveIterator<T>
- * @template-extends FilesystemIterator<T>
+ * @template-implements RecursiveIterator<string, RecursiveDirectoryIterator|string|SplFileInfo>
+ * @template-implements SeekableIterator<string, RecursiveDirectoryIterator|string|SplFileInfo>
  */
-class RecursiveDirectoryIterator extends FilesystemIterator implements RecursiveIterator {
+class RecursiveDirectoryIterator extends FilesystemIterator implements RecursiveIterator, SeekableIterator {
 
     const CURRENT_AS_PATHNAME = 32 ;
     const CURRENT_AS_FILEINFO = 0 ;
@@ -718,56 +811,48 @@ class RecursiveDirectoryIterator extends FilesystemIterator implements Recursive
     const SKIP_DOTS = 4096 ;
     const UNIX_PATHS = 8192 ;
 
-    public function __construct(string $path, int $flags = 0) {}
+    /**
+     * @param string $path
+     * @param int-mask<self::CURRENT_AS_PATHNAME,self::CURRENT_AS_FILEINFO,self::CURRENT_AS_SELF,self::KEY_AS_PATHNAME,self::KEY_AS_FILENAME,self::FOLLOW_SYMLINKS,self::NEW_CURRENT_AND_KEY,self::SKIP_DOTS,self::UNIX_PATHS> $flags
+     */
+    public function __construct(string $path, int $flags = self::KEY_AS_PATHNAME|self::CURRENT_AS_FILEINFO) {}
     public function getSubPath(): string {}
     public function getSubPathname(): string {}
 
     /**
-     * @return T Can return any type.
+     * @return RecursiveDirectoryIterator|string|SplFileInfo|null current value or null when iterator is drained
+     * @psalm-ignore-nullable-return
      */
     public function current() {}
 
     /**
-     * @return string scalar on success, or null on failure.
+     * @return string|null current key or null when iterator is drained
+     * @psalm-ignore-nullable-return
      */
     public function key(): string {}
 }
 
-/**
- * @template TKey
- * @template TValue
- *
- * @template-implements RecursiveIterator<TKey, TValue>
- * @template-extends FilterIterator<TKey, TValue>
- */
-abstract class RecursiveFilterIterator extends FilterIterator implements RecursiveIterator {
-
-    public function __construct (RecursiveIterator $iterator) {}
-
-    /**
-     * @return TValue Can return any type.
-     */
-    public function current() {}
-
-    /**
-     * @return TKey scalar on success, or null on failure.
-     */
-    public function key(): string {}
-}
 
 /**
- * @template TIterator as RecursiveIterator|IteratorAggregate
+ * @template-covariant TKey
+ * @template-covariant TValue
+ * @template-implements OuterIterator<TKey,TValue>
  * @mixin TIterator
  */
 class RecursiveIteratorIterator implements OuterIterator {
+    const LEAVES_ONLY = 0;
+    const SELF_FIRST = 1;
+    const CHILD_FIRST = 2;
+    const CATCH_GET_CHILD = 16;
+    
     /**
-     * @param TIterator $iterator
-     * @param int $mode
-     * @param int $flags
+     * @param RecursiveIterator<TKey, TValue>|IteratorAggregate<TKey,TValue> $iterator
+     * @param self::LEAVES_ONLY|self::SELF_FIRST|self::CHILD_FIRST $mode
+     * @param self::CATCH_GET_CHILD|0 $flags
      *
      * @return void
      */
-    public function __construct($iterator, $mode = 0, $flags = 0) {}
+    public function __construct($iterator, $mode = self::LEAVES_ONLY, $flags = 0) {}
 }
 
 /**
@@ -786,15 +871,27 @@ class RecursiveRegexIterator extends RegexIterator implements RecursiveIterator 
     const REPLACE = 4 ;
     const USE_KEY = 1 ;
 
+    /**
+     * @param RecursiveIterator<TKey, TValue> $iterator
+     * @param string $regex
+     * @param self::MATH|self::GET_MATCH|self::ALL_MATCHES|self::SPLIT|self::REPLACE $mode
+     * @param int-mask-of<self::USE_KEY> $flags
+     * @param int $preg_flags
+     */
     public function __construct(RecursiveIterator $iterator, string $regex, int $mode = self::MATCH, int $flags = 0, int $preg_flags = 0) {}
+    
+    /**
+     * @return RecursiveRegexIterator<TKey, TValue>
+     */
+    public function getChildren(): RecursiveRegexIterator {}
 }
 
 /**
  * @template TKey
  * @template TValue
  *
- * @template-implements RecursiveIterator<TKey, TValue>
- * @template-extends FilterIterator<TKey, TValue>
+ * @template-extends RecursiveIteratorIterator<TKey, TValue>
+ * @template-implements OuterIterator<TKey, TValue>
  */
 class RecursiveTreeIterator extends RecursiveIteratorIterator implements OuterIterator {
 
@@ -818,26 +915,27 @@ class RecursiveTreeIterator extends RecursiveIteratorIterator implements OuterIt
     public function callHasChildren(): bool {}
 
     /**
-     * @param RecursiveIterator|IteratorAggregate $it
+     * @param RecursiveIterator<TKey, TValue>|IteratorAggregate<TKey, TValue> $it
+     * @param int-mask<self::BYPASS_CURRENT, self::BYPASS_KEY> $flags
+     * @param int-mask<self::CATCH_GET_CHILD> $cit_flags
+     * @param self::LEAVES_ONLY|self::SELF_FIRST|self::CHILD_FIRST $mode
      */
-    public function __construct($it, int $flags = RecursiveTreeIterator::BYPASS_KEY, int $cit_flags = CachingIterator::CATCH_GET_CHILD, int $mode = RecursiveIteratorIterator::SELF_FIRST) {}
-    /**
-     * @return TValue Can return any type.
-     */
+    public function __construct($it, int $flags = self::BYPASS_KEY, int $cit_flags = self::CATCH_GET_CHILD, int $mode = self::SELF_FIRST) {}
     public function current(): string {}
     public function endChildren(): void {}
     public function endIteration(): void {}
     public function getEntry(): string {}
     public function getPostfix(): string {}
     public function getPrefix(): string {}
-    /**
-     * @return TKey scalar on success, or null on failure.
-     */
     public function key(): string {}
     public function next(): void {}
     public function nextElement(): void {}
     public function rewind(): void {}
     public function setPostfix(string $postfix ): void {}
+    /**
+     * @param self::PREFIX_* $part
+     * @param string $value
+     */
     public function setPrefixPart(int $part , string $value ): void {}
     public function valid(): bool {}
 }
@@ -856,7 +954,14 @@ class RegexIterator extends FilterIterator {
     const REPLACE = 4 ;
     const USE_KEY = 1 ;
 
-    public function __construct(RecursiveIterator $iterator, string $regex, int $mode = self::MATCH, int $flags = 0, int $preg_flags = 0) {}
+    /**
+     * @param Iterator<TKey, TValue> $iterator
+     * @param string $regex
+     * @param self::MATCH|self::GET_MATCH|self::ALL_MATCHES|self::SPLIT|self::REPLACE $mode
+     * @param int-mask<self::USE_KEY> $flags
+     * @param int $preg_flags
+     */
+    public function __construct(Iterator $iterator, string $regex, int $mode = self::MATCH, int $flags = 0, int $preg_flags = 0) {}
     /**
      * @return TValue Can return any type.
      */
