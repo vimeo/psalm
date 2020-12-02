@@ -28,8 +28,8 @@ class ClassTemplateTest extends TestCase
                     $value = $decoratorIterator->current();
                 ',
                 'assertions' => [
-                    '$key' => 'int',
-                    '$value' => 'string',
+                    '$key' => 'int|null',
+                    '$value' => 'null|string',
                     '$next' => 'bool',
                 ],
             ],
@@ -44,8 +44,8 @@ class ClassTemplateTest extends TestCase
                     $value = $decoratorIterator->current();
                 ',
                 'assertions' => [
-                    '$key' => 'int',
-                    '$value' => 'string',
+                    '$key' => 'int|null',
+                    '$value' => 'null|string',
                 ],
             ],
             'limitIterator' => [
@@ -59,8 +59,8 @@ class ClassTemplateTest extends TestCase
                     $value = $decoratorIterator->current();
                 ',
                 'assertions' => [
-                    '$key' => 'int',
-                    '$value' => 'string',
+                    '$key' => 'int|null',
+                    '$value' => 'null|string',
                 ],
             ],
             'callbackFilterIterator' => [
@@ -77,8 +77,8 @@ class ClassTemplateTest extends TestCase
                     $value = $decoratorIterator->current();
                 ',
                 'assertions' => [
-                    '$key' => 'int',
-                    '$value' => 'string',
+                    '$key' => 'int|null',
+                    '$value' => 'null|string',
                 ],
             ],
             'noRewindIterator' => [
@@ -92,8 +92,8 @@ class ClassTemplateTest extends TestCase
                     $value = $decoratorIterator->current();
                 ',
                 'assertions' => [
-                    '$key' => 'int',
-                    '$value' => 'string',
+                    '$key' => 'int|null',
+                    '$value' => 'null|string',
                 ],
             ],
             'classTemplate' => [

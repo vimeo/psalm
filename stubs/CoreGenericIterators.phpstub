@@ -352,7 +352,7 @@ class CachingIterator extends IteratorIterator implements OuterIterator , ArrayA
     
     /**
      * @param Iterator<TKey, TValue> $iterator
-     * @param int-mask-of<self::*>
+     * @param int-mask-of<self::*> $flags
      */
     public function __construct(Iterator $iterator, int $flags = self::CALL_TOSTRING) {}
 
@@ -444,7 +444,7 @@ class EmptyIterator implements Iterator {
 }
 
 /**
- * @psalm-extends SeekableIterator<string, FilesystemItarator|SplFileInfo|string>
+ * @psalm-extends SeekableIterator<string, FilesystemIterator|SplFileInfo|string>
  */
 class FilesystemIterator extends DirectoryIterator
 {
@@ -466,11 +466,13 @@ class FilesystemIterator extends DirectoryIterator
     public function __construct(string $path, int $flags = self::KEY_AS_PATHNAME|self::CURRENT_AS_FILEINFO|self::SKIP_DOTS) {}
 
     /**
-     * @return FilesystemItarator|SplFileInfo|string|null
+     * @return FilesystemIterator|SplFileInfo|string|null
      * @psalm-ignore-nullable-return
      */
     public function current() {}
-    /** @return int-mask<self::CURRENT_AS_PATHNAME,self::CURRENT_AS_FILEINFO,self::CURRENT_AS_SELF,self::KEY_AS_PATHNAME,self::KEY_AS_FILENAME,self::FOLLOW_SYMLINKS,self::NEW_CURRENT_AND_KEY,self::SKIP_DOTS,self::UNIX_PATH>
+    /**
+     * @return int-mask<self::CURRENT_AS_PATHNAME,self::CURRENT_AS_FILEINFO,self::CURRENT_AS_SELF,self::KEY_AS_PATHNAME,self::KEY_AS_FILENAME,self::FOLLOW_SYMLINKS,self::NEW_CURRENT_AND_KEY,self::SKIP_DOTS,self::UNIX_PATH>
+     */
     public function getFlags(): int {}
 
     /**
@@ -590,7 +592,7 @@ class MultipleIterator implements Iterator {
      */
     public function __construct (int $flags = 0) {}
     /**
-     * @param Iterator<Tkey,TValue> $iterator
+     * @param Iterator<TKey,TValue> $iterator
      * @param string|int $infos
      */
     public function attachIterator(Iterator $iterator, $infos = ''): void {}
@@ -600,12 +602,12 @@ class MultipleIterator implements Iterator {
     public function containsIterator(Iterator $iterator): bool {}
     public function countIterators(): int {}
     /**
-     * nullable values are returned when MIT_NEED_ANY is set 
-     * and one of the iterators is already drained. 
-     * When MIT_NEED_ALL is set and one of the iterators 
+     * nullable values are returned when MIT_NEED_ANY is set
+     * and one of the iterators is already drained.
+     * When MIT_NEED_ALL is set and one of the iterators
      * is already drained, `current()` throws
      *
-     * @return array<array-key, TValue|null> 
+     * @return array<array-key, TValue|null>
      */
     public function current(): array {}
     /**
@@ -636,7 +638,7 @@ class MultipleIterator implements Iterator {
 abstract class RecursiveFilterIterator extends FilterIterator implements RecursiveIterator {
 
     /**
-     * @param RecursiveIterator<TKey, TValue>
+     * @param RecursiveIterator<TKey, TValue> $iterator
      */
     public function __construct(RecursiveIterator $iterator) {}
     /**
@@ -668,7 +670,7 @@ class ParentIterator extends RecursiveFilterIterator implements RecursiveIterato
 
     public function accept(): bool {}
     /**
-     * @param RecursiveIterator<TKey, TValue>
+     * @param RecursiveIterator<TKey, TValue> $iterator
      */
     public function __construct(RecursiveIterator $iterator) {}
     /**
@@ -739,7 +741,7 @@ class RecursiveCachingIterator extends CachingIterator implements RecursiveItera
     const FULL_CACHE = 256 ;
 
     /**
-     * @param Iterator<TKey, TValue>
+     * @param Iterator<TKey, TValue> $iterator
      * @param int-mask-of<self::*> $flags
      */
     public function __construct(Iterator $iterator, int $flags = 0) {}
@@ -751,13 +753,13 @@ class RecursiveCachingIterator extends CachingIterator implements RecursiveItera
 
     /**
      * @return TValue|null current value or null when iterator is drained
-     * @psalm-suppress-nullable-return
+     * @psalm-ignore-nullable-return
      */
     public function current() {}
 
     /**
      * @return TKey|null current key or null when iterator is drained
-     * @psalm-suppress-nullable-return
+     * @psalm-ignore-nullable-return
      */
     public function key() {}
 }
@@ -834,25 +836,18 @@ class RecursiveDirectoryIterator extends FilesystemIterator implements Recursive
 
 
 /**
- * @template-covariant TKey
- * @template-covariant TValue
- * @template-implements OuterIterator<TKey,TValue>
+ * @template TIterator as RecursiveIterator|IteratorAggregate
  * @mixin TIterator
  */
 class RecursiveIteratorIterator implements OuterIterator {
-    const LEAVES_ONLY = 0;
-    const SELF_FIRST = 1;
-    const CHILD_FIRST = 2;
-    const CATCH_GET_CHILD = 16;
-    
     /**
-     * @param RecursiveIterator<TKey, TValue>|IteratorAggregate<TKey,TValue> $iterator
-     * @param self::LEAVES_ONLY|self::SELF_FIRST|self::CHILD_FIRST $mode
-     * @param self::CATCH_GET_CHILD|0 $flags
+     * @param TIterator $iterator
+     * @param int $mode
+     * @param int $flags
      *
      * @return void
      */
-    public function __construct($iterator, $mode = self::LEAVES_ONLY, $flags = 0) {}
+    public function __construct($iterator, $mode = 0, $flags = 0) {}
 }
 
 /**
@@ -875,11 +870,11 @@ class RecursiveRegexIterator extends RegexIterator implements RecursiveIterator 
      * @param RecursiveIterator<TKey, TValue> $iterator
      * @param string $regex
      * @param self::MATH|self::GET_MATCH|self::ALL_MATCHES|self::SPLIT|self::REPLACE $mode
-     * @param int-mask-of<self::USE_KEY> $flags
+     * @param self::USE_KEY|0 $flags
      * @param int $preg_flags
      */
     public function __construct(RecursiveIterator $iterator, string $regex, int $mode = self::MATCH, int $flags = 0, int $preg_flags = 0) {}
-    
+
     /**
      * @return RecursiveRegexIterator<TKey, TValue>
      */
