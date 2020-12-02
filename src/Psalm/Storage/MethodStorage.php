@@ -23,6 +23,11 @@ class MethodStorage extends FunctionLikeStorage
     /**
      * @var bool
      */
+    public $final_from_docblock = false;
+
+    /**
+     * @var bool
+     */
     public $abstract = false;
 
     /**

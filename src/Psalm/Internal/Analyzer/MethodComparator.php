@@ -252,7 +252,8 @@ class MethodComparator
                 new MethodSignatureMismatch(
                     'Method ' . $cased_guide_method_id . ' is declared final and cannot be overridden',
                     $code_location
-                )
+                ),
+                $guide_method_storage->final_from_docblock ? $suppressed_issues : []
             )) {
                 // fall through
             }

@@ -569,7 +569,10 @@ class ClassLikeNodeScanner
                     $storage->internal = $docblock_info->psalm_internal ?? '';
                 }
 
-                $storage->final = $storage->final || $docblock_info->final;
+                if ($docblock_info->final && !$storage->final) {
+                    $storage->final = true;
+                    $storage->final_from_docblock = true;
+                }
 
                 $storage->preserve_constructor_signature = $docblock_info->consistent_constructor;
 

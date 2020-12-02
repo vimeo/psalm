@@ -141,6 +141,7 @@ class FunctionLikeNodeScanner
             $storage->defining_fqcln = '';
             $storage->is_static = $stmt->isStatic();
             $storage->final = $this->classlike_storage && $this->classlike_storage->final;
+            $storage->final_from_docblock = $this->classlike_storage && $this->classlike_storage->final_from_docblock;
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Function_) {
             $cased_function_id =
                 ($this->aliases->namespace ? $this->aliases->namespace . '\\' : '') . $stmt->name->name;
@@ -293,6 +294,7 @@ class FunctionLikeNodeScanner
             $storage->abstract = $stmt->isAbstract();
 
             $storage->final = $classlike_storage->final || $stmt->isFinal();
+            $storage->final_from_docblock = $classlike_storage->final_from_docblock;
 
             if ($stmt->isPrivate()) {
                 $storage->visibility = ClassLikeAnalyzer::VISIBILITY_PRIVATE;

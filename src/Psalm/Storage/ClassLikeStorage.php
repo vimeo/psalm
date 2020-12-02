@@ -167,6 +167,11 @@ class ClassLikeStorage
     public $final = false;
 
     /**
+     * @var bool
+     */
+    public $final_from_docblock = false;
+
+    /**
      * @var array<lowercase-string, string>
      */
     public $used_traits = [];
