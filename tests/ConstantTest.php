@@ -759,24 +759,6 @@ class ConstantTest extends TestCase
                         echo A::C[$s];
                     }'
             ],
-            'arrayKeyExistsWithClassConst' => [
-                '<?php
-                    class C {}
-                    class D {}
-
-                    class A {
-                        const FLAGS = [
-                            0 => [C::class => "foo"],
-                            1 => [D::class => "bar"],
-                        ];
-
-                        private function foo(int $i) : void {
-                            if (array_key_exists(C::class, self::FLAGS[$i])) {
-                                echo self::FLAGS[$i][C::class];
-                            }
-                        }
-                    }'
-            ],
             'getClassConstantOffset' => [
                 '<?php
                     class C {
@@ -834,19 +816,6 @@ class ConstantTest extends TestCase
                     }
 
                     echo B::VALUES["there"];'
-            ],
-            'constantArrayKeyExistsWithClassConstant' => [
-                '<?php
-                    class Foo {
-                        public const F = "key";
-                    }
-
-                    /** @param array{key?: string} $a */
-                    function one(array $a): void {
-                        if (array_key_exists(Foo::F, $a)) {
-                            echo $a[Foo::F];
-                        }
-                    }'
             ],
             'internalConstWildcard' => [
                 '<?php

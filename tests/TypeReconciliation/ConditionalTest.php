@@ -1394,22 +1394,6 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                         return $ret;
                     }',
             ],
-            'assertTypeNarrowedByNestedIsset' => [
-                '<?php
-                    /**
-                     * @psalm-suppress MixedMethodCall
-                     * @psalm-suppress MixedArgument
-                     */
-                    function foo(array $array = []): void {
-                        if (array_key_exists("a", $array)) {
-                            echo $array["a"];
-                        }
-
-                        if (array_key_exists("b", $array)) {
-                            echo $array["b"]->format("Y-m-d");
-                        }
-                    }',
-            ],
             'assertCheckOnNonZeroArrayOffset' => [
                 '<?php
                     /**
@@ -1716,34 +1700,6 @@ class ConditionalTest extends \Psalm\Tests\TestCase
 
                             $this->arr[0] = new stdClass;
                             return $this->arr[0];
-                        }
-                    }'
-            ],
-            'assertArrayKeyExistsRefinesType' => [
-                '<?php
-                    class Foo {
-                        /** @var array<int,string> */
-                        public const DAYS = [
-                            1 => "mon",
-                            2 => "tue",
-                            3 => "wed",
-                            4 => "thu",
-                            5 => "fri",
-                            6 => "sat",
-                            7 => "sun",
-                        ];
-
-                        /** @param key-of<self::DAYS> $dayNum*/
-                        private static function doGetDayName(int $dayNum): string {
-                            return self::DAYS[$dayNum];
-                        }
-
-                        /** @throws LogicException */
-                        public static function getDayName(int $dayNum): string {
-                            if (! array_key_exists($dayNum, self::DAYS)) {
-                                throw new \LogicException();
-                            }
-                            return self::doGetDayName($dayNum);
                         }
                     }'
             ],
