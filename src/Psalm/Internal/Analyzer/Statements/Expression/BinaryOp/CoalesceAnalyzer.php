@@ -35,7 +35,10 @@ class CoalesceAnalyzer
         ) {
             $left_var_id = '$<tmp coalesce var>' . (int) $left_expr->getAttribute('startFilePos');
 
-            ExpressionAnalyzer::analyze($statements_analyzer, $left_expr, clone $context);
+            $cloned = clone $context;
+            $cloned->inside_isset = true;
+
+            ExpressionAnalyzer::analyze($statements_analyzer, $left_expr, $cloned);
 
             $condition_type = $statements_analyzer->node_data->getType($left_expr) ?: Type::getMixed();
 
