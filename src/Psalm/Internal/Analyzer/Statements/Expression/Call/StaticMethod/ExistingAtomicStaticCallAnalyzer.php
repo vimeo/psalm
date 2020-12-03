@@ -248,7 +248,7 @@ class ExistingAtomicStaticCallAnalyzer
                             } elseif ($template_type->param_name === 'TPhpMajorVersion') {
                                 $template_result->upper_bounds[$template_type->param_name] = [
                                     'fn-' . strtolower((string) $method_id) => new TemplateBound(
-                                        Type::getInt(false, $codebase->php_major_version),
+                                        Type::getInt(false, $codebase->php_major_version)
                                     )
                                 ];
                             } else {
