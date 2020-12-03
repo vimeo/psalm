@@ -7,6 +7,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Codebase\TaintFlowGraph;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\CodeLocation;
 use Psalm\Context;
@@ -343,7 +344,7 @@ class ArrayFetchAnalyzer
 
             $var_location = new CodeLocation($statements_analyzer->getSource(), $var);
 
-            $new_parent_node = \Psalm\Internal\DataFlow\DataFlowNode::getForAssignment(
+            $new_parent_node = DataFlowNode::getForAssignment(
                 $keyed_array_var_id ?: 'array-fetch',
                 $var_location
             );
@@ -937,6 +938,33 @@ class ArrayFetchAnalyzer
                 )) {
                     // fall through
                 }
+            }
+        }
+
+        if (($data_flow_graph = $statements_analyzer->data_flow_graph)
+            && $data_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph
+            && ($stmt_var_type = $statements_analyzer->node_data->getType($stmt->var))
+        ) {
+            if ($stmt_var_type->parent_nodes) {
+                $var_location = new CodeLocation($statements_analyzer->getSource(), $stmt->var);
+
+                $new_parent_node = DataFlowNode::getForAssignment('mixed-var-array-access', $var_location);
+
+                $data_flow_graph->addNode($new_parent_node);
+
+                foreach ($stmt_var_type->parent_nodes as $parent_node) {
+                    $data_flow_graph->addPath($parent_node, $new_parent_node, '=');
+
+                    $data_flow_graph->addPath(
+                        $parent_node,
+                        new DataFlowNode('variable-use', 'variable use', null),
+                        'variable-use'
+                    );
+                }
+
+                $stmt_var_type->parent_nodes = [
+                    $new_parent_node->id => $new_parent_node
+                ];
             }
         }
 
