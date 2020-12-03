@@ -50,7 +50,7 @@ class CastAnalyzer
                 if ($maybe_type->isInt()) {
                     if ($maybe_type->from_docblock) {
                         $issue = new RedundantCastGivenDocblockType(
-                            'Redundant cast to ' . $maybe_type->getKey(),
+                            'Redundant cast to ' . $maybe_type->getKey() . ' given docblock-provided type',
                             new CodeLocation($statements_analyzer->getSource(), $stmt)
                         );
                     } else {
@@ -102,7 +102,7 @@ class CastAnalyzer
                 if ($maybe_type->isFloat()) {
                     if ($maybe_type->from_docblock) {
                         $issue = new RedundantCastGivenDocblockType(
-                            'Redundant cast to ' . $maybe_type->getKey(),
+                            'Redundant cast to ' . $maybe_type->getKey() . ' given docblock-provided type',
                             new CodeLocation($statements_analyzer->getSource(), $stmt)
                         );
                     } else {
@@ -142,7 +142,7 @@ class CastAnalyzer
                 if ($maybe_type->isBool()) {
                     if ($maybe_type->from_docblock) {
                         $issue = new RedundantCastGivenDocblockType(
-                            'Redundant cast to ' . $maybe_type->getKey(),
+                            'Redundant cast to ' . $maybe_type->getKey() . ' given docblock-provided type',
                             new CodeLocation($statements_analyzer->getSource(), $stmt)
                         );
                     } else {
@@ -182,7 +182,7 @@ class CastAnalyzer
                 if ($stmt_expr_type->isString()) {
                     if ($stmt_expr_type->from_docblock) {
                         $issue = new RedundantCastGivenDocblockType(
-                            'Redundant cast to ' . $stmt_expr_type->getKey(),
+                            'Redundant cast to ' . $stmt_expr_type->getKey() . ' given docblock-provided type',
                             new CodeLocation($statements_analyzer->getSource(), $stmt)
                         );
                     } else {
@@ -251,7 +251,7 @@ class CastAnalyzer
                 if ($stmt_expr_type->isArray()) {
                     if ($stmt_expr_type->from_docblock) {
                         $issue = new RedundantCastGivenDocblockType(
-                            'Redundant cast to ' . $stmt_expr_type->getKey(),
+                            'Redundant cast to ' . $stmt_expr_type->getKey() . ' given docblock-provided type',
                             new CodeLocation($statements_analyzer->getSource(), $stmt)
                         );
                     } else {
