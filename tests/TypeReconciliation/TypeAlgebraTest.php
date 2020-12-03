@@ -1052,6 +1052,13 @@ class TypeAlgebraTest extends \Psalm\Tests\TestCase
                         }
                     }'
             ],
+            'assignSameName' => [
+                '<?php
+                    function foo(string $value): string {
+                        $value = "yes" === $value;
+                        return !$value ? "foo" : "bar";
+                    }'
+            ],
         ];
     }
 

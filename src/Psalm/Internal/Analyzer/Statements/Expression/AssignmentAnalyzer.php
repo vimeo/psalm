@@ -1884,6 +1884,11 @@ class AssignmentAnalyzer
                         $codebase
                     );
 
+                    $right_clauses = Context::filterClauses(
+                        $var_id,
+                        $right_clauses
+                    );
+
                     $assignment_clauses = \Psalm\Internal\Algebra::combineOredClauses(
                         [new \Psalm\Internal\Clause([$var_id => ['falsy']], $var_object_id, $var_object_id)],
                         $right_clauses,
