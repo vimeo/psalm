@@ -101,7 +101,7 @@ class TryAnalyzer
 
         $context->has_returned = false;
 
-        $stmt_control_actions = ScopeAnalyzer::getControlActions(
+        $try_block_control_actions = ScopeAnalyzer::getControlActions(
             $stmt->stmts,
             $statements_analyzer->node_data,
             $codebase->config->exit_functions,
@@ -387,17 +387,18 @@ class TryAnalyzer
                 $context->mergeExceptions($catch_context);
             }
 
-            if ($catch_actions[$i] !== [ScopeAnalyzer::ACTION_END]
+            $catch_doesnt_leave_parent_scope = $catch_actions[$i] !== [ScopeAnalyzer::ACTION_END]
                 && $catch_actions[$i] !== [ScopeAnalyzer::ACTION_CONTINUE]
-                && $catch_actions[$i] !== [ScopeAnalyzer::ACTION_BREAK]
-            ) {
+                && $catch_actions[$i] !== [ScopeAnalyzer::ACTION_BREAK];
+
+            if ($catch_doesnt_leave_parent_scope) {
                 $definitely_newly_assigned_var_ids = array_intersect_key(
                     $new_catch_assigned_var_ids,
                     $definitely_newly_assigned_var_ids
                 );
 
                 foreach ($catch_context->vars_in_scope as $var_id => $type) {
-                    if ($stmt_control_actions === [ScopeAnalyzer::ACTION_END]) {
+                    if ($try_block_control_actions === [ScopeAnalyzer::ACTION_END]) {
                         $context->vars_in_scope[$var_id] = $type;
                     } elseif (isset($context->vars_in_scope[$var_id])) {
                         $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
@@ -432,6 +433,8 @@ class TryAnalyzer
                         }
                     } else {
                         $try_context->finally_scope->vars_in_scope[$var_id] = $type;
+                        $type->possibly_undefined = true;
+                        $type->possibly_undefined_from_try = true;
                     }
                 }
             }
@@ -499,7 +502,7 @@ class TryAnalyzer
             }
         }
 
-        $body_has_returned = !in_array(ScopeAnalyzer::ACTION_NONE, $stmt_control_actions, true);
+        $body_has_returned = !in_array(ScopeAnalyzer::ACTION_NONE, $try_block_control_actions, true);
         $context->has_returned = ($body_has_returned && $all_catches_leave) || $finally_has_returned;
 
         return null;
