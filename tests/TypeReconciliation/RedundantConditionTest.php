@@ -791,6 +791,12 @@ class RedundantConditionTest extends \Psalm\Tests\TestCase
                         }
                     }'
             ],
+            'noRedundantCastAfterCalculation' => [
+                '<?php
+                    function x(string $x): int {
+                        return (int) (hexdec($x) + 1);
+                    }',
+            ],
         ];
     }
 
