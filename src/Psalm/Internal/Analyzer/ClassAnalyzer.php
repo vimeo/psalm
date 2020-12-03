@@ -1328,7 +1328,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         return new PhpParser\Node\Arg(
                             new PhpParser\Node\Expr\Variable($param->name, $attributes),
                             false,
-                            false,
+                            $param->is_variadic,
                             $attributes
                         );
                     },
