@@ -605,7 +605,7 @@ interface Sequence extends Collection, ArrayAccess
     public function copy(): Sequence;
 
     /**
-     * @return array<int, TValue>
+     * @return list<TValue>
      * @psalm-mutation-free
      */
     public function toArray(): array;
