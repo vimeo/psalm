@@ -935,8 +935,22 @@ class AtomicPropertyFetchAnalyzer
         }
     }
 
-    private static function handleNonExistentProperty(StatementsAnalyzer $statements_analyzer, \Psalm\Codebase $codebase, PhpParser\Node\Expr\PropertyFetch $stmt, Context $contex, Config $config, ClassLikeStorage $class_storage, string $prop_name, TNamedObject $lhs_type_part, ?string $declaring_property_class, string $property_id, bool $in_assignment, ?string $stmt_var_id, bool $has_magic_getter, ?string $var_id): void
-    {
+    private static function handleNonExistentProperty(
+        StatementsAnalyzer $statements_analyzer,
+        \Psalm\Codebase $codebase,
+        PhpParser\Node\Expr\PropertyFetch $stmt,
+        Context $contex,
+        Config $config,
+        ClassLikeStorage $class_storage,
+        string $prop_name,
+        TNamedObject $lhs_type_part,
+        ?string $declaring_property_class,
+        string $property_id,
+        bool $in_assignment,
+        ?string $stmt_var_id,
+        bool $has_magic_getter,
+        ?string $var_id
+    ): void {
         if ($config->use_phpdoc_property_without_magic_or_parent
             && isset($class_storage->pseudo_property_get_types['$' . $prop_name])
         ) {
@@ -960,8 +974,8 @@ class AtomicPropertyFetchAnalyzer
                     $class_storage,
                     $declaring_property_class
                         ? $codebase->classlike_storage_provider->get(
-                        $declaring_property_class
-                    ) : $class_storage
+                            $declaring_property_class
+                        ) : $class_storage
                 );
             }
 

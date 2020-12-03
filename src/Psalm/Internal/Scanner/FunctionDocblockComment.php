@@ -155,11 +155,6 @@ class FunctionDocblockComment
     public $templates = [];
 
     /**
-     * @var array<int, array{template_type: string, param_name: string, line_number?: int}>
-     */
-    public $template_typeofs = [];
-
-    /**
      * @var array<int, array{type: string, param_name: string}>
      */
     public $assertions = [];
