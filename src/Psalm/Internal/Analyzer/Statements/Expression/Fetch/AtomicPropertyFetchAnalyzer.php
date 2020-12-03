@@ -138,70 +138,25 @@ class AtomicPropertyFetchAnalyzer
         $has_magic_getter = false;
 
         $class_exists = false;
-        $interface_exists = false;
 
         $codebase = $statements_analyzer->getCodebase();
 
         if (!$codebase->classExists($lhs_type_part->value)) {
-            if ($codebase->interfaceExists($lhs_type_part->value)) {
-                $interface_exists = true;
-                $interface_storage = $codebase->classlike_storage_provider->get($lhs_type_part->value);
+            $interface_exists = false;
 
-                $override_property_visibility = $interface_storage->override_property_visibility;
-
-                foreach ($intersection_types as $intersection_type) {
-                    if ($intersection_type instanceof TNamedObject
-                        && $codebase->classExists($intersection_type->value)
-                    ) {
-                        $fq_class_name = $intersection_type->value;
-                        $class_exists = true;
-                        break;
-                    }
-                }
-
-                if (!$class_exists) {
-                    if (IssueBuffer::accepts(
-                        new NoInterfaceProperties(
-                            'Interfaces cannot have properties',
-                            new CodeLocation($statements_analyzer->getSource(), $stmt),
-                            $lhs_type_part->value
-                        ),
-                        $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        return;
-                    }
-
-                    if (!$codebase->methodExists($fq_class_name . '::__set')) {
-                        return;
-                    }
-                }
-            }
+            self::handleNonExistentClass(
+                $statements_analyzer,
+                $codebase,
+                $stmt,
+                $lhs_type_part,
+                $intersection_types,
+                $class_exists,
+                $interface_exists,
+                $fq_class_name,
+                $override_property_visibility
+            );
 
             if (!$class_exists && !$interface_exists) {
-                if ($lhs_type_part->from_docblock) {
-                    if (IssueBuffer::accepts(
-                        new UndefinedDocblockClass(
-                            'Cannot set properties of undefined docblock class ' . $lhs_type_part->value,
-                            new CodeLocation($statements_analyzer->getSource(), $stmt),
-                            $lhs_type_part->value
-                        ),
-                        $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
-                } else {
-                    if (IssueBuffer::accepts(
-                        new UndefinedClass(
-                            'Cannot set properties of undefined class ' . $lhs_type_part->value,
-                            new CodeLocation($statements_analyzer->getSource(), $stmt),
-                            $lhs_type_part->value
-                        ),
-                        $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
-                }
-
                 return;
             }
         } else {
@@ -265,150 +220,26 @@ class AtomicPropertyFetchAnalyzer
             $statements_analyzer
         );
 
-        if ((!$naive_property_exists
-                || ($stmt_var_id !== '$this'
-                    && $fq_class_name !== $context->self
-                    && ClassLikeAnalyzer::checkPropertyVisibility(
-                        $property_id,
-                        $context,
-                        $statements_analyzer,
-                        new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        $statements_analyzer->getSuppressedIssues(),
-                        false
-                    ) !== true)
-            )
-            && $codebase->methods->methodExists(
-                $get_method_id,
-                $context->calling_method_id,
-                $codebase->collect_locations
-                    ? new CodeLocation($statements_analyzer->getSource(), $stmt)
-                    : null,
-                !$context->collect_initializations
-                    && !$context->collect_mutations
-                    ? $statements_analyzer
-                    : null,
-                $statements_analyzer->getFilePath()
-            )
-        ) {
-            $has_magic_getter = true;
-
-            if (isset($class_storage->pseudo_property_get_types['$' . $prop_name])) {
-                $stmt_type = clone $class_storage->pseudo_property_get_types['$' . $prop_name];
-
-                if ($class_storage->template_types) {
-                    if (!$lhs_type_part instanceof TGenericObject) {
-                        $type_params = [];
-
-                        foreach ($class_storage->template_types as $type_map) {
-                            $type_params[] = clone array_values($type_map)[0];
-                        }
-
-                        $lhs_type_part = new TGenericObject($lhs_type_part->value, $type_params);
-                    }
-
-                    $stmt_type = self::localizePropertyType(
-                        $codebase,
-                        $stmt_type,
-                        $lhs_type_part,
-                        $class_storage,
-                        $declaring_property_class
-                            ? $codebase->classlike_storage_provider->get(
-                                $declaring_property_class
-                            ) : $class_storage
-                    );
-                }
-
-                $statements_analyzer->node_data->setType($stmt, $stmt_type);
-
-                self::processTaints(
-                    $statements_analyzer,
-                    $stmt,
-                    $stmt_type,
-                    $property_id,
-                    $class_storage,
-                    $in_assignment
-                );
-                return;
-            }
-
-            $old_data_provider = $statements_analyzer->node_data;
-
-            $statements_analyzer->node_data = clone $statements_analyzer->node_data;
-
-            $fake_method_call = new PhpParser\Node\Expr\MethodCall(
-                $stmt->var,
-                new PhpParser\Node\Identifier('__get', $stmt->name->getAttributes()),
-                [
-                    new PhpParser\Node\Arg(
-                        new PhpParser\Node\Scalar\String_(
-                            $prop_name,
-                            $stmt->name->getAttributes()
-                        )
-                    )
-                ]
-            );
-
-            $suppressed_issues = $statements_analyzer->getSuppressedIssues();
-
-            if (!in_array('PossiblyNullReference', $suppressed_issues, true)) {
-                $statements_analyzer->addSuppressedIssues(['PossiblyNullReference']);
-            }
-
-            if (!in_array('InternalMethod', $suppressed_issues, true)) {
-                $statements_analyzer->addSuppressedIssues(['InternalMethod']);
-            }
-
-            \Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer::analyze(
-                $statements_analyzer,
-                $fake_method_call,
-                $context,
-                false
-            );
-
-            if (!in_array('PossiblyNullReference', $suppressed_issues, true)) {
-                $statements_analyzer->removeSuppressedIssues(['PossiblyNullReference']);
-            }
-
-            if (!in_array('InternalMethod', $suppressed_issues, true)) {
-                $statements_analyzer->removeSuppressedIssues(['InternalMethod']);
-            }
-
-            $fake_method_call_type = $statements_analyzer->node_data->getType($fake_method_call);
-
-            $statements_analyzer->node_data = $old_data_provider;
-
-            if ($fake_method_call_type) {
-                $statements_analyzer->node_data->setType($stmt, $fake_method_call_type);
-            } else {
-                $statements_analyzer->node_data->setType($stmt, Type::getMixed());
-            }
-
-            $property_id = $lhs_type_part->value . '::$' . $prop_name;
-
-            /*
-             * If we have an explicit list of all allowed magic properties on the class, and we're
-             * not in that list, fall through
-             */
-            if (!$class_storage->sealed_properties && !$override_property_visibility) {
-                return;
-            }
-
-            if (!$class_exists) {
-                $property_id = $lhs_type_part->value . '::$' . $prop_name;
-
-                if (IssueBuffer::accepts(
-                    new UndefinedMagicPropertyFetch(
-                        'Magic instance property ' . $property_id . ' is not defined',
-                        new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        $property_id
-                    ),
-                    $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
-
-                return;
-            }
+        if (self::propertyFetchCanBeAnalyzed(
+            $statements_analyzer,
+            $codebase,
+            $stmt,
+            $context,
+            $fq_class_name,
+            $prop_name,
+            $lhs_type_part,
+            $property_id,
+            $has_magic_getter,
+            $stmt_var_id,
+            $naive_property_exists,
+            $override_property_visibility,
+            $class_exists,
+            $declaring_property_class,
+            $class_storage,
+            $get_method_id,
+            $in_assignment
+        ) === false) {
+            return;
         }
 
         if ($codebase->store_node_types
@@ -424,76 +255,40 @@ class AtomicPropertyFetchAnalyzer
 
         $config = $statements_analyzer->getProjectAnalyzer()->getConfig();
 
-        if (!$naive_property_exists) {
-            if ($config->use_phpdoc_property_without_magic_or_parent
-                && isset($class_storage->pseudo_property_get_types['$' . $prop_name])
-            ) {
-                $stmt_type = clone $class_storage->pseudo_property_get_types['$' . $prop_name];
+        if (!$naive_property_exists
+            && $fq_class_name !== $context->self
+            && $context->self
+            && $codebase->classlikes->classExtends($fq_class_name, $context->self)
+            && $codebase->properties->propertyExists(
+                $context->self . '::$' . $prop_name,
+                true,
+                $statements_analyzer,
+                $context,
+                $codebase->collect_locations
+                    ? new CodeLocation($statements_analyzer->getSource(), $stmt)
+                    : null
+            )
+        ) {
+            $property_id = $context->self . '::$' . $prop_name;
+        } elseif (!$naive_property_exists) {
+            self::handleNonExistentProperty(
+                $statements_analyzer,
+                $codebase,
+                $stmt,
+                $context,
+                $config,
+                $class_storage,
+                $prop_name,
+                $lhs_type_part,
+                $declaring_property_class,
+                $property_id,
+                $in_assignment,
+                $stmt_var_id,
+                $has_magic_getter,
+                $var_id
+            );
 
-                if ($class_storage->template_types) {
-                    if (!$lhs_type_part instanceof TGenericObject) {
-                        $type_params = [];
-
-                        foreach ($class_storage->template_types as $type_map) {
-                            $type_params[] = clone array_values($type_map)[0];
-                        }
-
-                        $lhs_type_part = new TGenericObject($lhs_type_part->value, $type_params);
-                    }
-
-                    $stmt_type = self::localizePropertyType(
-                        $codebase,
-                        $stmt_type,
-                        $lhs_type_part,
-                        $class_storage,
-                        $declaring_property_class
-                            ? $codebase->classlike_storage_provider->get(
-                                $declaring_property_class
-                            ) : $class_storage
-                    );
-                }
-
-                $statements_analyzer->node_data->setType($stmt, $stmt_type);
-
-                self::processTaints(
-                    $statements_analyzer,
-                    $stmt,
-                    $stmt_type,
-                    $property_id,
-                    $class_storage,
-                    $in_assignment
-                );
-
-                return;
-            }
-
-            if ($fq_class_name !== $context->self
-                && $context->self
-                && $codebase->classlikes->classExtends($fq_class_name, $context->self)
-                && $codebase->properties->propertyExists(
-                    $context->self . '::$' . $prop_name,
-                    true,
-                    $statements_analyzer,
-                    $context,
-                    $codebase->collect_locations
-                        ? new CodeLocation($statements_analyzer->getSource(), $stmt)
-                        : null
-                )
-            ) {
-                $property_id = $context->self . '::$' . $prop_name;
-            } else {
-                self::handleUndefinedProperty(
-                    $context,
-                    $statements_analyzer,
-                    $stmt,
-                    $stmt_var_id,
-                    $property_id,
-                    $has_magic_getter,
-                    $var_id
-                );
-
-                return;
-            }
+            return;
         }
 
         if (!$override_property_visibility) {
@@ -585,70 +380,19 @@ class AtomicPropertyFetchAnalyzer
             }
         }
 
-        $class_property_type = $codebase->properties->getPropertyType(
-            $property_id,
-            false,
+        $class_property_type = self::getClassPropertyType(
             $statements_analyzer,
-            $context
+            $codebase,
+            $config,
+            $context,
+            $stmt,
+            $class_storage,
+            $declaring_class_storage,
+            $property_id,
+            $fq_class_name,
+            $prop_name,
+            $lhs_type_part
         );
-
-        if (!$class_property_type) {
-            if ($declaring_class_storage->location
-                && $config->isInProjectDirs(
-                    $declaring_class_storage->location->file_path
-                )
-            ) {
-                if (IssueBuffer::accepts(
-                    new MissingPropertyType(
-                        'Property ' . $fq_class_name . '::$' . $prop_name
-                            . ' does not have a declared type',
-                        new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        $property_id
-                    ),
-                    $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
-            }
-
-            $class_property_type = Type::getMixed();
-        } else {
-            $class_property_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
-                $codebase,
-                clone $class_property_type,
-                $declaring_class_storage->name,
-                $declaring_class_storage->name,
-                $declaring_class_storage->parent_class
-            );
-
-            if ($declaring_class_storage->template_types) {
-                if (!$lhs_type_part instanceof TGenericObject) {
-                    $type_params = [];
-
-                    foreach ($declaring_class_storage->template_types as $type_map) {
-                        $type_params[] = clone array_values($type_map)[0];
-                    }
-
-                    $lhs_type_part = new TGenericObject($lhs_type_part->value, $type_params);
-                }
-
-                $class_property_type = self::localizePropertyType(
-                    $codebase,
-                    $class_property_type,
-                    $lhs_type_part,
-                    $class_storage,
-                    $declaring_class_storage
-                );
-            } elseif ($lhs_type_part instanceof TGenericObject) {
-                $class_property_type = self::localizePropertyType(
-                    $codebase,
-                    $class_property_type,
-                    $lhs_type_part,
-                    $class_storage,
-                    $declaring_class_storage
-                );
-            }
-        }
 
         if (!$context->collect_mutations
             && !$context->collect_initializations
@@ -689,6 +433,175 @@ class AtomicPropertyFetchAnalyzer
         } else {
             $statements_analyzer->node_data->setType($stmt, $class_property_type);
         }
+    }
+
+    private static function propertyFetchCanBeAnalyzed(
+        StatementsAnalyzer $statements_analyzer,
+        \Psalm\Codebase $codebase,
+        PhpParser\Node\Expr\PropertyFetch $stmt,
+        Context $context,
+        string $fq_class_name,
+        string $prop_name,
+        Type\Atomic\TNamedObject $lhs_type_part,
+        string &$property_id,
+        bool &$has_magic_getter,
+        ?string $stmt_var_id,
+        bool $naive_property_exists,
+        bool $override_property_visibility,
+        bool $class_exists,
+        ?string $declaring_property_class,
+        \Psalm\Storage\ClassLikeStorage $class_storage,
+        \Psalm\Internal\MethodIdentifier $get_method_id,
+        bool $in_assignment
+    ) : bool {
+        if ((!$naive_property_exists
+                || ($stmt_var_id !== '$this'
+                    && $fq_class_name !== $context->self
+                    && ClassLikeAnalyzer::checkPropertyVisibility(
+                        $property_id,
+                        $context,
+                        $statements_analyzer,
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        $statements_analyzer->getSuppressedIssues(),
+                        false
+                    ) !== true)
+            )
+            && $codebase->methods->methodExists(
+                $get_method_id,
+                $context->calling_method_id,
+                $codebase->collect_locations
+                    ? new CodeLocation($statements_analyzer->getSource(), $stmt)
+                    : null,
+                !$context->collect_initializations
+                    && !$context->collect_mutations
+                    ? $statements_analyzer
+                    : null,
+                $statements_analyzer->getFilePath()
+            )
+        ) {
+            $has_magic_getter = true;
+
+            if (isset($class_storage->pseudo_property_get_types['$' . $prop_name])) {
+                $stmt_type = clone $class_storage->pseudo_property_get_types['$' . $prop_name];
+
+                if ($class_storage->template_types) {
+                    if (!$lhs_type_part instanceof TGenericObject) {
+                        $type_params = [];
+
+                        foreach ($class_storage->template_types as $type_map) {
+                            $type_params[] = clone array_values($type_map)[0];
+                        }
+
+                        $lhs_type_part = new TGenericObject($lhs_type_part->value, $type_params);
+                    }
+
+                    $stmt_type = self::localizePropertyType(
+                        $codebase,
+                        $stmt_type,
+                        $lhs_type_part,
+                        $class_storage,
+                        $declaring_property_class
+                            ? $codebase->classlike_storage_provider->get(
+                                $declaring_property_class
+                            ) : $class_storage
+                    );
+                }
+
+                $statements_analyzer->node_data->setType($stmt, $stmt_type);
+
+                self::processTaints(
+                    $statements_analyzer,
+                    $stmt,
+                    $stmt_type,
+                    $property_id,
+                    $class_storage,
+                    $in_assignment
+                );
+
+                return false;
+            }
+
+            $old_data_provider = $statements_analyzer->node_data;
+
+            $statements_analyzer->node_data = clone $statements_analyzer->node_data;
+
+            $fake_method_call = new PhpParser\Node\Expr\MethodCall(
+                $stmt->var,
+                new PhpParser\Node\Identifier('__get', $stmt->name->getAttributes()),
+                [
+                    new PhpParser\Node\Arg(
+                        new PhpParser\Node\Scalar\String_(
+                            $prop_name,
+                            $stmt->name->getAttributes()
+                        )
+                    )
+                ]
+            );
+
+            $suppressed_issues = $statements_analyzer->getSuppressedIssues();
+
+            if (!in_array('PossiblyNullReference', $suppressed_issues, true)) {
+                $statements_analyzer->addSuppressedIssues(['PossiblyNullReference']);
+            }
+
+            if (!in_array('InternalMethod', $suppressed_issues, true)) {
+                $statements_analyzer->addSuppressedIssues(['InternalMethod']);
+            }
+
+            \Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer::analyze(
+                $statements_analyzer,
+                $fake_method_call,
+                $context,
+                false
+            );
+
+            if (!in_array('PossiblyNullReference', $suppressed_issues, true)) {
+                $statements_analyzer->removeSuppressedIssues(['PossiblyNullReference']);
+            }
+
+            if (!in_array('InternalMethod', $suppressed_issues, true)) {
+                $statements_analyzer->removeSuppressedIssues(['InternalMethod']);
+            }
+
+            $fake_method_call_type = $statements_analyzer->node_data->getType($fake_method_call);
+
+            $statements_analyzer->node_data = $old_data_provider;
+
+            if ($fake_method_call_type) {
+                $statements_analyzer->node_data->setType($stmt, $fake_method_call_type);
+            } else {
+                $statements_analyzer->node_data->setType($stmt, Type::getMixed());
+            }
+
+            $property_id = $lhs_type_part->value . '::$' . $prop_name;
+
+            /*
+             * If we have an explicit list of all allowed magic properties on the class, and we're
+             * not in that list, fall through
+             */
+            if (!$class_storage->sealed_properties && !$override_property_visibility) {
+                return false;
+            }
+
+            if (!$class_exists) {
+                $property_id = $lhs_type_part->value . '::$' . $prop_name;
+
+                if (IssueBuffer::accepts(
+                    new UndefinedMagicPropertyFetch(
+                        'Magic instance property ' . $property_id . ' is not defined',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        $property_id
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public static function localizePropertyType(
@@ -945,5 +858,218 @@ class AtomicPropertyFetchAnalyzer
         if ($var_id) {
             $context->vars_in_scope[$var_id] = $stmt_type;
         }
+    }
+
+    /**
+     * @param  array<Type\Atomic>     $intersection_types
+     */
+    private static function handleNonExistentClass(
+        StatementsAnalyzer $statements_analyzer,
+        \Psalm\Codebase $codebase,
+        PhpParser\Node\Expr\PropertyFetch $stmt,
+        TNamedObject $lhs_type_part,
+        array $intersection_types,
+        bool &$class_exists,
+        bool &$interface_exists,
+        string &$fq_class_name,
+        bool &$override_property_visibility
+    ): void {
+        if ($codebase->interfaceExists($lhs_type_part->value)) {
+            $interface_exists = true;
+            $interface_storage = $codebase->classlike_storage_provider->get($lhs_type_part->value);
+
+            $override_property_visibility = $interface_storage->override_property_visibility;
+
+            foreach ($intersection_types as $intersection_type) {
+                if ($intersection_type instanceof TNamedObject
+                    && $codebase->classExists($intersection_type->value)
+                ) {
+                    $fq_class_name = $intersection_type->value;
+                    $class_exists = true;
+                    return;
+                }
+            }
+
+            if (!$class_exists) {
+                if (IssueBuffer::accepts(
+                    new NoInterfaceProperties(
+                        'Interfaces cannot have properties',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        $lhs_type_part->value
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    return;
+                }
+
+                if (!$codebase->methodExists($fq_class_name . '::__set')) {
+                    return;
+                }
+            }
+        }
+
+        if (!$class_exists && !$interface_exists) {
+            if ($lhs_type_part->from_docblock) {
+                if (IssueBuffer::accepts(
+                    new UndefinedDocblockClass(
+                        'Cannot set properties of undefined docblock class ' . $lhs_type_part->value,
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        $lhs_type_part->value
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            } else {
+                if (IssueBuffer::accepts(
+                    new UndefinedClass(
+                        'Cannot set properties of undefined class ' . $lhs_type_part->value,
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        $lhs_type_part->value
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            }
+        }
+    }
+
+    private static function handleNonExistentProperty(StatementsAnalyzer $statements_analyzer, \Psalm\Codebase $codebase, PhpParser\Node\Expr\PropertyFetch $stmt, Context $contex, Config $config, ClassLikeStorage $class_storage, string $prop_name, TNamedObject $lhs_type_part, ?string $declaring_property_class, string $property_id, bool $in_assignment, ?string $stmt_var_id, bool $has_magic_getter, ?string $var_id): void
+    {
+        if ($config->use_phpdoc_property_without_magic_or_parent
+            && isset($class_storage->pseudo_property_get_types['$' . $prop_name])
+        ) {
+            $stmt_type = clone $class_storage->pseudo_property_get_types['$' . $prop_name];
+
+            if ($class_storage->template_types) {
+                if (!$lhs_type_part instanceof TGenericObject) {
+                    $type_params = [];
+
+                    foreach ($class_storage->template_types as $type_map) {
+                        $type_params[] = clone array_values($type_map)[0];
+                    }
+
+                    $lhs_type_part = new TGenericObject($lhs_type_part->value, $type_params);
+                }
+
+                $stmt_type = self::localizePropertyType(
+                    $codebase,
+                    $stmt_type,
+                    $lhs_type_part,
+                    $class_storage,
+                    $declaring_property_class
+                        ? $codebase->classlike_storage_provider->get(
+                        $declaring_property_class
+                    ) : $class_storage
+                );
+            }
+
+            $statements_analyzer->node_data->setType($stmt, $stmt_type);
+
+            self::processTaints(
+                $statements_analyzer,
+                $stmt,
+                $stmt_type,
+                $property_id,
+                $class_storage,
+                $in_assignment
+            );
+
+            return;
+        }
+
+
+        self::handleUndefinedProperty(
+            $contex,
+            $statements_analyzer,
+            $stmt,
+            $stmt_var_id,
+            $property_id,
+            $has_magic_getter,
+            $var_id
+        );
+
+        return;
+    }
+
+    private static function getClassPropertyType(
+        StatementsAnalyzer $statements_analyzer,
+        \Psalm\Codebase $codebase,
+        Config $config,
+        Context $context,
+        PhpParser\Node\Expr\PropertyFetch $stmt,
+        ClassLikeStorage $class_storage,
+        ClassLikeStorage $declaring_class_storage,
+        string $property_id,
+        string $fq_class_name,
+        string $prop_name,
+        TNamedObject $lhs_type_part
+    ): Type\Union {
+        $class_property_type = $codebase->properties->getPropertyType(
+            $property_id,
+            false,
+            $statements_analyzer,
+            $context
+        );
+
+        if (!$class_property_type) {
+            if ($declaring_class_storage->location
+                && $config->isInProjectDirs(
+                    $declaring_class_storage->location->file_path
+                )
+            ) {
+                if (IssueBuffer::accepts(
+                    new MissingPropertyType(
+                        'Property ' . $fq_class_name . '::$' . $prop_name
+                        . ' does not have a declared type',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        $property_id
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            }
+
+            $class_property_type = Type::getMixed();
+        } else {
+            $class_property_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                $codebase,
+                clone $class_property_type,
+                $declaring_class_storage->name,
+                $declaring_class_storage->name,
+                $declaring_class_storage->parent_class
+            );
+
+            if ($declaring_class_storage->template_types) {
+                if (!$lhs_type_part instanceof TGenericObject) {
+                    $type_params = [];
+
+                    foreach ($declaring_class_storage->template_types as $type_map) {
+                        $type_params[] = clone array_values($type_map)[0];
+                    }
+
+                    $lhs_type_part = new TGenericObject($lhs_type_part->value, $type_params);
+                }
+
+                $class_property_type = self::localizePropertyType(
+                    $codebase,
+                    $class_property_type,
+                    $lhs_type_part,
+                    $class_storage,
+                    $declaring_class_storage
+                );
+            } elseif ($lhs_type_part instanceof TGenericObject) {
+                $class_property_type = self::localizePropertyType(
+                    $codebase,
+                    $class_property_type,
+                    $lhs_type_part,
+                    $class_storage,
+                    $declaring_class_storage
+                );
+            }
+        }
+        return $class_property_type;
     }
 }
