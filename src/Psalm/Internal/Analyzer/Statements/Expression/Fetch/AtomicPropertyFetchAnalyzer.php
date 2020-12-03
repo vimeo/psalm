@@ -939,7 +939,7 @@ class AtomicPropertyFetchAnalyzer
         StatementsAnalyzer $statements_analyzer,
         \Psalm\Codebase $codebase,
         PhpParser\Node\Expr\PropertyFetch $stmt,
-        Context $contex,
+        Context $context,
         Config $config,
         ClassLikeStorage $class_storage,
         string $prop_name,
@@ -993,9 +993,12 @@ class AtomicPropertyFetchAnalyzer
             return;
         }
 
+        if ($class_storage->is_interface) {
+            return;
+        }
 
         self::handleUndefinedProperty(
-            $contex,
+            $context,
             $statements_analyzer,
             $stmt,
             $stmt_var_id,
