@@ -6426,7 +6426,7 @@ return [
 'ip2long' => ['int|false', 'ip'=>'string'],
 'iptcembed' => ['string|bool', 'iptc_data'=>'string', 'filename'=>'string', 'spool='=>'int'],
 'iptcparse' => ['array|false', 'iptc_block'=>'string'],
-'is_a' => ['bool', 'object_or_class'=>'object|string', 'class'=>'string', 'allow_string='=>'bool'],
+'is_a' => ['bool', 'object_or_class'=>'mixed', 'class'=>'string', 'allow_string='=>'bool'],
 'is_array' => ['bool', 'value'=>'mixed'],
 'is_bool' => ['bool', 'value'=>'mixed'],
 'is_callable' => ['bool', 'value'=>'callable|mixed', 'syntax_only='=>'bool', '&w_callable_name='=>'string'],
