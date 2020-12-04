@@ -222,7 +222,7 @@ class TaintFlowGraph extends DataFlowGraph
     /**
      * @param array<string> $source_taints
      * @param array<DataFlowNode> $sinks
-     * @return array<string, DataFlowNode>
+     * @return list<DataFlowNode>
      */
     private function getChildNodes(
         DataFlowNode $generated_source,
@@ -441,7 +441,7 @@ class TaintFlowGraph extends DataFlowGraph
             $new_destination->specialized_calls = $generated_source->specialized_calls;
             $new_destination->path_types = array_merge($generated_source->path_types, [$path_type]);
 
-            $new_sources[$to_id] = $new_destination;
+            $new_sources[] = $new_destination;
         }
 
         return $new_sources;
@@ -459,10 +459,9 @@ class TaintFlowGraph extends DataFlowGraph
         if ($source->specialization_key && isset($this->specialized_calls[$source->specialization_key])) {
             $generated_source = clone $source;
 
-            $generated_source->specialized_calls[$source->specialization_key]
-                = $this->specialized_calls[$source->specialization_key];
-
             $generated_source->id = substr($source->id, 0, -strlen($source->specialization_key) - 1);
+
+            $generated_source->specialized_calls[$source->specialization_key][$generated_source->id] = true;
 
             $generated_sources[] = $generated_source;
         } elseif (isset($this->specializations[$source->id])) {
