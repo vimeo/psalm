@@ -1556,8 +1556,14 @@ class ClassTemplateExtendsTest extends TestCase
                             $this->elements = $elements;
                         }
 
+                        /**
+                         * @psalm-suppress InvalidReturnType
+                         */
                         public function getIterator()
                         {
+                            /**
+                             * @psalm-suppress InvalidReturnStatement
+                             */
                             return new ArrayIterator($this->elements);
                         }
 
@@ -4171,6 +4177,49 @@ class ClassTemplateExtendsTest extends TestCase
                             return strlen($a);
                         };
                         return $foo->map($function);
+                    }'
+            ],
+            'extendStubbedInterfaceTwice' => [
+                '<?php
+                    /**
+                     * @template Tk of array-key
+                     * @template Tv
+                     */
+                    interface AA {}
+                    /**
+                     * @template Tk of array-key
+                     * @template Tv
+                     * @extends ArrayAccess<Tk, Tv>
+                     */
+                    interface A extends ArrayAccess {
+                        /**
+                         * @psalm-param Tk $k
+                         * @psalm-return Tv
+                         */
+                        public function at($k);
+                    }
+
+                    /**
+                     * @template Tk of array-key
+                     * @template Tv
+                     *
+                     * @extends A<Tk, Tv>
+                     */
+                    interface B extends A {}
+
+                    /**
+                     * @template Tk of array-key
+                     * @template Tv
+                     *
+                     * @implements B<Tk, Tv>
+                     */
+                    abstract class C implements B
+                    {
+                        /**
+                         * @psalm-param  Tk $k
+                         * @psalm-return Tv
+                         */
+                        public function at($k) { /** @var Tv */ return 1;  }
                     }'
             ],
         ];

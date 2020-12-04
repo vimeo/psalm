@@ -102,7 +102,7 @@ class ClassLikeStorage
     /**
      * Interfaces this class implements directly
      *
-     * @var array<string, string>
+     * @var array<lowercase-string, string>
      */
     public $direct_class_interfaces = [];
 

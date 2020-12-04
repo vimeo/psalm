@@ -603,7 +603,7 @@ class Populator
     ): void {
         $parent_interfaces = [];
 
-        foreach ($storage->parent_interfaces as $parent_interface_lc => $_) {
+        foreach ($storage->direct_interface_parents as $parent_interface_lc => $_) {
             try {
                 $parent_interface_lc = strtolower(
                     $this->classlikes->getUnAliasedName(
@@ -696,7 +696,7 @@ class Populator
     ): void {
         $extra_interfaces = [];
 
-        foreach ($storage->class_implements as $implemented_interface_lc => $_) {
+        foreach ($storage->direct_class_interfaces as $implemented_interface_lc => $_) {
             try {
                 $implemented_interface_lc = strtolower(
                     $this->classlikes->getUnAliasedName(
