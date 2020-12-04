@@ -38,8 +38,8 @@
             <file>src/Psalm/Internal/Provider/ParserCacheProvider.php</file>
         </exclude>
         <report>
-            <clover outputFile="build/logs/clover.xml"/>
-            <html outputDirectory="build/logs/phpunit-html/"/>
+            <!-- <clover outputFile="build/logs/clover.xml"/> -->
+            <!-- <html outputDirectory="build/logs/phpunit-html/"/> -->
         </report>
     </coverage>
 
