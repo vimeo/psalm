@@ -684,8 +684,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 )
                 : Type::getVoid();
 
-            if ($inferred_return_type
-                && !$inferred_return_type->isVoid()
+            if (!$inferred_return_type->isVoid()
                 && !$inferred_return_type->isFalse()
                 && !$inferred_return_type->isNull()
                 && !$inferred_return_type->isSingleIntLiteral()
@@ -785,31 +784,29 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 )
                 : null;
 
-            if ($closure_return_type || $closure_yield_type) {
-                if ($closure_yield_type) {
-                    $closure_return_type = $closure_yield_type;
+            if ($closure_yield_type) {
+                $closure_return_type = $closure_yield_type;
+            }
+
+            if ($function_type = $statements_analyzer->node_data->getType($this->function)) {
+                /**
+                 * @var Type\Atomic\TClosure
+                 */
+                $closure_atomic = \array_values($function_type->getAtomicTypes())[0];
+
+                if (($storage->return_type === $storage->signature_return_type)
+                    && (!$storage->return_type
+                        || $storage->return_type->hasMixed()
+                        || UnionTypeComparator::isContainedBy(
+                            $codebase,
+                            $closure_return_type,
+                            $storage->return_type
+                        ))
+                ) {
+                    $closure_atomic->return_type = $closure_return_type;
                 }
 
-                if ($function_type = $statements_analyzer->node_data->getType($this->function)) {
-                    /**
-                     * @var Type\Atomic\TClosure
-                     */
-                    $closure_atomic = \array_values($function_type->getAtomicTypes())[0];
-
-                    if (($storage->return_type === $storage->signature_return_type)
-                        && (!$storage->return_type
-                            || $storage->return_type->hasMixed()
-                            || UnionTypeComparator::isContainedBy(
-                                $codebase,
-                                $closure_return_type,
-                                $storage->return_type
-                            ))
-                    ) {
-                        $closure_atomic->return_type = $closure_return_type;
-                    }
-
-                    $closure_atomic->is_pure = !$this->inferred_impure;
-                }
+                $closure_atomic->is_pure = !$this->inferred_impure;
             }
         }
 
