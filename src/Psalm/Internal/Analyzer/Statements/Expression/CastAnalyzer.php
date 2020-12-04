@@ -48,20 +48,22 @@ class CastAnalyzer
 
             if ($maybe_type) {
                 if ($maybe_type->isInt()) {
-                    if ($maybe_type->from_docblock) {
-                        $issue = new RedundantCastGivenDocblockType(
-                            'Redundant cast to ' . $maybe_type->getKey() . ' given docblock-provided type',
-                            new CodeLocation($statements_analyzer->getSource(), $stmt)
-                        );
-                    } else {
-                        $issue = new RedundantCast(
-                            'Redundant cast to ' . $maybe_type->getKey(),
-                            new CodeLocation($statements_analyzer->getSource(), $stmt)
-                        );
-                    }
+                    if (!$maybe_type->from_calculation) {
+                        if ($maybe_type->from_docblock) {
+                            $issue = new RedundantCastGivenDocblockType(
+                                'Redundant cast to ' . $maybe_type->getKey() . ' given docblock-provided type',
+                                new CodeLocation($statements_analyzer->getSource(), $stmt)
+                            );
+                        } else {
+                            $issue = new RedundantCast(
+                                'Redundant cast to ' . $maybe_type->getKey(),
+                                new CodeLocation($statements_analyzer->getSource(), $stmt)
+                            );
+                        }
 
-                    if (IssueBuffer::accepts($issue, $statements_analyzer->getSuppressedIssues())) {
-                        // fall through
+                        if (IssueBuffer::accepts($issue, $statements_analyzer->getSuppressedIssues())) {
+                            // fall through
+                        }
                     }
                 }
 
