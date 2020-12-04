@@ -471,6 +471,8 @@ class TaintFlowGraph extends DataFlowGraph
 
                     $new_source->id = $source->id . '-' . $specialization;
 
+                    unset($new_source->specialized_calls[$specialization]);
+
                     $generated_sources[] = $new_source;
                 }
             }

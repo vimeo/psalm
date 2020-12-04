@@ -1960,6 +1960,21 @@ class TaintTest extends TestCase
                     echo post("x");',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintSpecializedTwice' => [
+                '<?php
+                    /** @psalm-taint-specialize */
+                    function data(array $data, string $key) {
+                        return $data[$key];
+                    }
+
+                    /** @psalm-taint-specialize */
+                    function get(string $key) {
+                        return data($_GET, $key);
+                    }
+
+                    echo get("x");',
+                'error_message' => 'TaintedHtml',
+            ],
             /*
             // TODO: Stubs do not support this type of inference even with $this->message = $message.
             // Most uses of getMessage() would be with caught exceptions, so this is not representative of real code.
