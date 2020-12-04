@@ -682,7 +682,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     $inferred_return_types,
                     $codebase
                 )
-                : null;
+                : Type::getVoid();
 
             if ($inferred_return_type
                 && !$inferred_return_type->isVoid()
@@ -776,7 +776,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     $closure_return_types,
                     $codebase
                 )
-                : null;
+                : Type::getVoid();
 
             $closure_yield_type = $closure_yield_types
                 ? \Psalm\Type::combineUnionTypeArray(
