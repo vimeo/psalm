@@ -1214,73 +1214,73 @@ class ArgumentsAnalyzer
             $class_generic_params
         );
 
-        if ($template_types) {
-            if ($class_template_result) {
-                $template_result = $class_template_result;
-
-                if (!$template_result->template_types) {
-                    $template_result->template_types = $template_types;
-                }
-
-                foreach ($args as $argument_offset => $arg) {
-                    $function_param = null;
-
-                    if ($arg->name && $function_storage->allow_named_arg_calls) {
-                        foreach ($function_params as $candidate_param) {
-                            if ($candidate_param->name === $arg->name->name) {
-                                $function_param = $candidate_param;
-                                break;
-                            }
-                        }
-                    } elseif ($argument_offset < count($function_params)) {
-                        $function_param = $function_params[$argument_offset];
-                    } elseif ($last_param && $last_param->is_variadic) {
-                        $function_param = $last_param;
-                    }
-
-                    if (!$function_param
-                        || !$function_param->type
-                    ) {
-                        continue;
-                    }
-
-                    $arg_value_type = $statements_analyzer->node_data->getType($arg->value);
-
-                    if (!$arg_value_type) {
-                        continue;
-                    }
-
-                    $fleshed_out_param_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
-                        $codebase,
-                        $function_param->type,
-                        $class_storage ? $class_storage->name : null,
-                        $calling_class_storage ? $calling_class_storage->name : null,
-                        null,
-                        true,
-                        false,
-                        $calling_class_storage ? $calling_class_storage->final : false
-                    );
-
-                    TemplateStandinTypeReplacer::replace(
-                        $fleshed_out_param_type,
-                        $template_result,
-                        $codebase,
-                        $statements_analyzer,
-                        $arg_value_type,
-                        $argument_offset,
-                        $context->self,
-                        $context->calling_method_id ?: $context->calling_function_id,
-                        false
-                    );
-                }
-
-                return $template_result;
-            } else {
-                return new TemplateResult($template_types, []);
-            }
+        if (!$template_types) {
+            return null;
         }
 
-        return null;
+        if (!$class_template_result) {
+            return new TemplateResult($template_types, []);
+        }
+
+        $template_result = $class_template_result;
+
+        if (!$template_result->template_types) {
+            $template_result->template_types = $template_types;
+        }
+
+        foreach ($args as $argument_offset => $arg) {
+            $function_param = null;
+
+            if ($arg->name && $function_storage->allow_named_arg_calls) {
+                foreach ($function_params as $candidate_param) {
+                    if ($candidate_param->name === $arg->name->name) {
+                        $function_param = $candidate_param;
+                        break;
+                    }
+                }
+            } elseif ($argument_offset < count($function_params)) {
+                $function_param = $function_params[$argument_offset];
+            } elseif ($last_param && $last_param->is_variadic) {
+                $function_param = $last_param;
+            }
+
+            if (!$function_param
+                || !$function_param->type
+            ) {
+                continue;
+            }
+
+            $arg_value_type = $statements_analyzer->node_data->getType($arg->value);
+
+            if (!$arg_value_type) {
+                continue;
+            }
+
+            $fleshed_out_param_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                $codebase,
+                $function_param->type,
+                $class_storage ? $class_storage->name : null,
+                $calling_class_storage ? $calling_class_storage->name : null,
+                null,
+                true,
+                false,
+                $calling_class_storage ? $calling_class_storage->final : false
+            );
+
+            TemplateStandinTypeReplacer::replace(
+                $fleshed_out_param_type,
+                $template_result,
+                $codebase,
+                $statements_analyzer,
+                $arg_value_type,
+                $argument_offset,
+                $context->self,
+                $context->calling_method_id ?: $context->calling_function_id,
+                false
+            );
+        }
+
+        return $template_result;
     }
 
     /**
