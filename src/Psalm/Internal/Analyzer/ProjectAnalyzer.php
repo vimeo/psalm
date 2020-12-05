@@ -1149,6 +1149,8 @@ class ProjectAnalyzer
     public function checkPaths(array $paths_to_check): void
     {
         $this->visitAutoloadFiles();
+        
+        $this->codebase->scanner->addFilesToShallowScan($this->extra_files);
 
         foreach ($paths_to_check as $path) {
             $this->progress->debug('Checking ' . $path . "\n");
