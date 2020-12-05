@@ -257,15 +257,26 @@ class ArgumentAnalyzer
         );
 
         if ($class_generic_params) {
-            $empty_generic_params = [];
+            // here we're replacing the param types and arg types with the bound
+            // class template params.
+            //
+            // For example, if we're operating on a class Foo with params TKey and TValue,
+            // and we're calling a method "add(TKey $key, TValue $value)" on an instance
+            // of that class where we know that TKey is int and TValue is string, then we
+            // want to replace the substitute the expected values so it's as if we were actually
+            // calling "add(int $key, string $value)"
+            $readonly_template_result = new TemplateResult($class_generic_params, []);
 
-            $empty_template_result = new TemplateResult($class_generic_params, $empty_generic_params);
+            // This flag ensures that the template results will never be written to
+            // It also supercedes the `$add_upper_bounds` flag so that closure params
+            // don’t get overwritten
+            $readonly_template_result->readonly = true;
 
             $arg_value_type = $statements_analyzer->node_data->getType($arg->value);
 
             $param_type = TemplateStandinTypeReplacer::replace(
                 $param_type,
-                $empty_template_result,
+                $readonly_template_result,
                 $codebase,
                 $statements_analyzer,
                 $arg_value_type,
@@ -275,7 +286,7 @@ class ArgumentAnalyzer
 
             $arg_type = TemplateStandinTypeReplacer::replace(
                 $arg_type,
-                $empty_template_result,
+                $readonly_template_result,
                 $codebase,
                 $statements_analyzer,
                 $arg_value_type,

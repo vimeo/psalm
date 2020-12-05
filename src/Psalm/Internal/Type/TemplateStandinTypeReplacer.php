@@ -619,6 +619,7 @@ class TemplateStandinTypeReplacer
             );
 
             if ($input_type
+                && !$template_result->readonly
                 && (
                     $atomic_type->as->isMixed()
                     || !$codebase
@@ -686,20 +687,23 @@ class TemplateStandinTypeReplacer
                 );
             }
 
-            foreach ($atomic_types as $atomic_type) {
+            foreach ($atomic_types as &$atomic_type) {
                 if ($atomic_type instanceof Atomic\TNamedObject
                     || $atomic_type instanceof Atomic\TTemplateParam
                     || $atomic_type instanceof Atomic\TIterable
                     || $atomic_type instanceof Atomic\TObjectWithProperties
                 ) {
                     $atomic_type->extra_types = $extra_types;
+                } elseif ($atomic_type instanceof Atomic\TObject && $extra_types) {
+                    $atomic_type = \reset($extra_types);
+                    $atomic_type->extra_types = \array_slice($extra_types, 1);
                 }
             }
 
             return $atomic_types;
         }
 
-        if ($add_upper_bound && $input_type) {
+        if ($add_upper_bound && $input_type && !$template_result->readonly) {
             $matching_input_keys = [];
 
             if ($codebase
@@ -782,7 +786,7 @@ class TemplateStandinTypeReplacer
 
         $atomic_types[] = $class_string;
 
-        if ($input_type) {
+        if ($input_type && !$template_result->readonly) {
             $valid_input_atomic_types = [];
 
             foreach ($input_type->getAtomicTypes() as $input_atomic_type) {
