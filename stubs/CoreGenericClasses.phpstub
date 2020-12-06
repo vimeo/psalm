@@ -2214,3 +2214,15 @@ final class WeakReference
     /** @return ?T */
     public function get(): ?object;
 }
+
+class SimpleXMLElement implements \Stringable, \Countable, \RecursiveIterator
+{
+    /** @return SimpleXMLElement */
+    public function current()
+    {
+    }
+    /** @return SimpleXMLElement|null */
+    public function getChildren()
+    {
+    }
+}
