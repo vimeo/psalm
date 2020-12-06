@@ -30,7 +30,7 @@ class PhpStormReport extends Report
             $issue_string .= 'INFO';
         }
 
-        $issue_reference = ' (see ' . $issue_data->link . ')';
+        $issue_reference = $issue_data->link ? ' (see ' . $issue_data->link . ')' : '';
 
         $issue_string .= ': ' . $issue_data->type
             . "\nat " . $issue_data->file_path . ':' . $issue_data->line_from . ':' . $issue_data->column_from
