@@ -524,11 +524,11 @@ class FunctionLikeNodeScanner
                     && $function_stmt->expr->expr instanceof PhpParser\Node\Expr\FuncCall
                     && $function_stmt->expr->expr->name instanceof PhpParser\Node\Name
                 ) {
-                    $function_id = implode('\\', $function_stmt->expr->expr->name->parts);
+                    $inner_function_id = implode('\\', $function_stmt->expr->expr->name->parts);
 
-                    if ($function_id === 'func_get_arg'
-                        || $function_id === 'func_get_args'
-                        || $function_id === 'func_num_args'
+                    if ($inner_function_id === 'func_get_arg'
+                        || $inner_function_id === 'func_get_args'
+                        || $inner_function_id === 'func_num_args'
                     ) {
                         $storage->variadic = true;
                     }
@@ -538,11 +538,11 @@ class FunctionLikeNodeScanner
                     && $function_stmt->cond->left->left instanceof PhpParser\Node\Expr\FuncCall
                     && $function_stmt->cond->left->left->name instanceof PhpParser\Node\Name
                 ) {
-                    $function_id = implode('\\', $function_stmt->cond->left->left->name->parts);
+                    $inner_function_id = implode('\\', $function_stmt->cond->left->left->name->parts);
 
-                    if ($function_id === 'func_get_arg'
-                        || $function_id === 'func_get_args'
-                        || $function_id === 'func_num_args'
+                    if ($inner_function_id === 'func_get_arg'
+                        || $inner_function_id === 'func_get_args'
+                        || $inner_function_id === 'func_num_args'
                     ) {
                         $storage->variadic = true;
                     }
