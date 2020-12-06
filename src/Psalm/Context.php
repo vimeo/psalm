@@ -656,9 +656,17 @@ class Context
             $statements_analyzer
         );
 
-        foreach ($this->vars_in_scope as $var_id => $_) {
+        foreach ($this->vars_in_scope as $var_id => $type) {
             if (preg_match('/' . preg_quote($remove_var_id, '/') . '[\]\[\-]/', $var_id)) {
                 unset($this->vars_in_scope[$var_id]);
+            }
+
+            foreach ($type->getAtomicTypes() as $atomic_type) {
+                if ($atomic_type instanceof Type\Atomic\DependentType
+                    && $atomic_type->getVarId() === $remove_var_id
+                ) {
+                    $type->addType($atomic_type->getReplacement());
+                }
             }
         }
     }
