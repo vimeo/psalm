@@ -18,6 +18,7 @@ use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TDependentGetClass;
 use Psalm\Type\Atomic\TDependentGetDebugType;
 use Psalm\Type\Atomic\TDependentGetType;
+use Psalm\Type\Atomic\TDependentListKey;
 use Psalm\Type\Atomic\THtmlEscapedString;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TLiteralClassString;
@@ -245,11 +246,11 @@ class ScalarTypeComparator
             return true;
         }
 
-        if (get_class($container_type_part) === TInt::class && $input_type_part instanceof TLiteralInt) {
-            return true;
-        }
-
-        if (get_class($container_type_part) === TInt::class && $input_type_part instanceof TPositiveInt) {
+        if ((get_class($container_type_part) === TInt::class
+                || get_class($container_type_part) === TDependentListKey::class)
+            && ($input_type_part instanceof TLiteralInt
+                || $input_type_part instanceof TPositiveInt)
+        ) {
             return true;
         }
 
@@ -272,7 +273,8 @@ class ScalarTypeComparator
             return true;
         }
 
-        if (get_class($container_type_part) === TInt::class
+        if ((get_class($container_type_part) === TInt::class
+                || get_class($container_type_part) === TDependentListKey::class)
             && $input_type_part instanceof TInt
         ) {
             return true;

@@ -1509,6 +1509,20 @@ class ArrayAssignmentTest extends TestCase
                     ];
                 ',
             ],
+            'assignToListWithForeachKey' => [
+                '<?php
+                    /**
+                     * @param list<string> $list
+                     * @return list<string>
+                     */
+                    function getList(array $list): array {
+                        foreach ($list as $key => $value) {
+                            $list[$key] = $value . "!";
+                        }
+
+                        return $list;
+                    }'
+            ],
         ];
     }
 
@@ -1824,6 +1838,40 @@ class ArrayAssignmentTest extends TestCase
                         foo((array) $bar);
                     }',
                 'error_message' => 'RedundantCast',
+            ],
+            'assignToListWithUpdatedForeachKey' => [
+                '<?php
+                    /**
+                     * @param list<string> $list
+                     * @return list<string>
+                     */
+                    function getList(array $list): array {
+                        foreach ($list as $key => $value) {
+                            $list[$key + 1] = $value . "!";
+                        }
+
+                        return $list;
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'assignToListWithAlteredForeachKeyVar' => [
+                '<?php
+                    /**
+                     * @param list<string> $list
+                     * @return list<string>
+                     */
+                    function getList(array $list): array {
+                        foreach ($list as $key => $value) {
+                            if (rand(0, 1)) {
+                                array_pop($list);
+                            }
+
+                            $list[$key] = $value . "!";
+                        }
+
+                        return $list;
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
             ],
         ];
     }

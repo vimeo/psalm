@@ -437,6 +437,16 @@ class ArrayAssignmentAnalyzer
                     $current_dim_type = Type::getArrayKey();
                 }
 
+                if ($current_dim_type->isSingle()) {
+                    $current_dim_type_type = \array_values($current_dim_type->getAtomicTypes())[0];
+
+                    if ($current_dim_type_type instanceof Type\Atomic\TDependentListKey
+                        && $current_dim_type_type->getVarId() === $parent_var_id
+                    ) {
+                        $offset_already_existed = true;
+                    }
+                }
+
                 $array_atomic_key_type = ArrayFetchAnalyzer::replaceOffsetTypeWithInts(
                     $current_dim_type
                 );
@@ -580,6 +590,7 @@ class ArrayAssignmentAnalyzer
                 $atomic_root_types['array']->count++;
             }
         }
+
         return $new_child_type;
     }
 
@@ -604,6 +615,7 @@ class ArrayAssignmentAnalyzer
         $reversed_child_stmts = [];
         $var_id_additions = [];
         $full_var_id = true;
+
         $child_stmt = null;
 
         // First go from the root element up, and go as far as we can to figure out what

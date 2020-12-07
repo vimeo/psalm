@@ -414,12 +414,22 @@ class ForeachAnalyzer
                     }
                     $iterator_atomic_type = $iterator_atomic_type->getGenericArrayType();
                 } elseif ($iterator_atomic_type instanceof Type\Atomic\TList) {
+                    $list_var_id = ExpressionIdentifier::getArrayVarId(
+                        $stmt->expr,
+                        $statements_analyzer->getFQCLN(),
+                        $statements_analyzer
+                    );
+
                     if (!$iterator_atomic_type instanceof Type\Atomic\TNonEmptyList) {
                         $always_non_empty_array = false;
                     }
 
                     $iterator_atomic_type = new Type\Atomic\TArray([
-                        Type::getInt(),
+                        $list_var_id
+                            ? new Type\Union([
+                                new Type\Atomic\TDependentListKey($list_var_id)
+                            ])
+                            : Type::getInt(),
                         $iterator_atomic_type->type_param
                     ]);
                 } elseif (!$iterator_atomic_type instanceof Type\Atomic\TNonEmptyArray) {

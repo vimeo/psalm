@@ -532,7 +532,6 @@ class ArrayFunctionArgumentsAnalyzer
                         }
 
                         $array_type->addType($array_atomic_type);
-                        $context->removeDescendents($var_id, $array_type);
                     } elseif ($array_atomic_type instanceof TNonEmptyList) {
                         if (!$context->inside_loop && $array_atomic_type->count !== null) {
                             if ($array_atomic_type->count === 0) {
@@ -550,10 +549,10 @@ class ArrayFunctionArgumentsAnalyzer
                         }
 
                         $array_type->addType($array_atomic_type);
-                        $context->removeDescendents($var_id, $array_type);
                     }
                 }
 
+                $context->removeDescendents($var_id, $array_type);
                 $context->vars_in_scope[$var_id] = $array_type;
             }
         }

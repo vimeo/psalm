@@ -1159,7 +1159,6 @@ class ArgumentAnalyzer
                                 if ($type_param->isEmpty() && isset($param_atomic_type->type_params[$i])) {
                                     $input_type_changed = true;
 
-                                    /** @psalm-suppress PropertyTypeCoercion */
                                     $input_atomic_type->type_params[$i] = clone $param_atomic_type->type_params[$i];
                                 }
                             }
