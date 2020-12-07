@@ -263,7 +263,7 @@ class ArgumentAnalyzer
             // For example, if we're operating on a class Foo with params TKey and TValue,
             // and we're calling a method "add(TKey $key, TValue $value)" on an instance
             // of that class where we know that TKey is int and TValue is string, then we
-            // want to replace the substitute the expected values so it's as if we were actually
+            // want to substitute the expected parameters so it's as if we were actually
             // calling "add(int $key, string $value)"
             $readonly_template_result = new TemplateResult($class_generic_params, []);
 
