@@ -68,7 +68,7 @@ class CoalesceAnalyzer
 
         $statements_analyzer->node_data = clone $statements_analyzer->node_data;
 
-        ExpressionAnalyzer::analyze($statements_analyzer, $ternary, clone $context);
+        ExpressionAnalyzer::analyze($statements_analyzer, $ternary, $context);
 
         $ternary_type = $statements_analyzer->node_data->getType($ternary) ?: Type::getMixed();
 
