@@ -143,6 +143,9 @@ class Functions
 
     public function addGlobalFunction(string $function_id, FunctionStorage $storage): void
     {
+        if ($this->hasStubbedFunction($function_id)) {
+            throw new \RuntimeException("Cannot register multiple stubs for global function '{$function_id}'");
+        }
         self::$stubbed_functions[strtolower($function_id)] = $storage;
     }
 
