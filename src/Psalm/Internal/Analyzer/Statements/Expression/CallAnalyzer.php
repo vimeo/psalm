@@ -874,10 +874,10 @@ class CallAnalyzer
                         $readonly_template_result = new TemplateResult($template_type_map, $template_type_map);
 
                          \Psalm\Internal\Type\TemplateInferredTypeReplacer::replace(
-                            $op_vars_in_scope[$var_id],
-                            $readonly_template_result,
-                            $codebase
-                        );
+                             $op_vars_in_scope[$var_id],
+                             $readonly_template_result,
+                             $codebase
+                         );
                     }
 
                     $op_vars_in_scope[$var_id]->from_docblock = true;

@@ -84,4 +84,9 @@ class AtomicMethodCallAnalysisResult
      * @var bool
      */
     public $can_memoize = false;
+
+    /**
+     * @var bool
+     */
+    public $immutable_call = false;
 }

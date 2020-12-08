@@ -225,7 +225,7 @@ class StaticCallAnalyzer extends CallAnalyzer
         }
 
         if (!$config->remember_property_assignments_after_call && !$context->collect_initializations) {
-            $context->removeAllObjectVars();
+            $context->removeMutableObjectVars();
         }
 
         if (!$statements_analyzer->node_data->getType($stmt)) {

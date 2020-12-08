@@ -68,6 +68,11 @@ class MethodStorage extends FunctionLikeStorage
     /**
      * @var bool
      */
+    public $immutable = false;
+
+    /**
+     * @var bool
+     */
     public $mutation_free_inferred = false;
 
     /**

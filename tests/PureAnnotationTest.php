@@ -333,7 +333,8 @@ class PureAnnotationTest extends TestCase
                         public function foo() : void {}
 
                         public function doSomething(): void {
-                            if ($this->checkNotNullNested() && $this->other->foo()) {}
+                            $this->checkNotNullNested();
+                            $this->other->foo();
                         }
                     }'
             ],

@@ -251,7 +251,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
 
         if ($method_storage) {
             if (!$context->collect_mutations && !$context->collect_initializations) {
-                $result->can_memoize = MethodCallPurityAnalyzer::analyze(
+                MethodCallPurityAnalyzer::analyze(
                     $statements_analyzer,
                     $codebase,
                     $stmt,
@@ -261,7 +261,8 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                     $method_storage,
                     $class_storage,
                     $context,
-                    $config
+                    $config,
+                    $result
                 );
             }
 

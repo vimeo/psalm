@@ -31,8 +31,7 @@ class PropertyTypeTest extends TestCase
                 }
 
                 class X {
-                    /** @var ?int **/
-                    public $x;
+                    public ?int $x = null;
 
                     public function getX(): int {
                         $this->x = 5;
@@ -64,8 +63,7 @@ class PropertyTypeTest extends TestCase
                 }
 
                 class X {
-                    /** @var ?int **/
-                    public $x;
+                    public ?int $x = null;
 
                     public function getX(): int {
                         $this->x = 5;
@@ -80,7 +78,7 @@ class PropertyTypeTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    public function testForgetPropertyAssignmentsInBranchWithThrow(): void
+    public function testForgetPropertyAssignmentsInBranch(): void
     {
         Config::getInstance()->remember_property_assignments_after_call = false;
 
@@ -99,18 +97,129 @@ class PropertyTypeTest extends TestCase
                 }
 
                 class X {
-                    /** @var ?int **/
-                    public $x;
+                    public ?int $x = null;
+                }
 
-                    public function getX(bool $b): int {
-                        $this->x = 5;
+                function testX(X $x): void {
+                    $x->x = 5;
 
-                        if ($b) {
-                            XCollector::modify();
-                            throw new \Exception("bad");
+                    if (rand(0, 1)) {
+                        XCollector::modify();
+                    }
+
+                    if ($x->x === null) {}
+                }'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testForgetFinalMethodCalls(): void
+    {
+        Config::getInstance()->remember_property_assignments_after_call = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class XCollector {
+                    /** @var X[] */
+                    private static array $xs = [];
+
+                    public static function modify() : void {
+                        foreach (self::$xs as $x) {
+                            $x->x = null;
                         }
+                    }
+                }
 
+                class X {
+                    public ?int $x = null;
+
+                    public function __construct(?int $x) {
+                        $this->x = $x;
+                    }
+
+                    public final function getX() : ?int {
                         return $this->x;
+                    }
+                }
+
+                function testX(X $x): void {
+                    if ($x->getX()) {
+                        XCollector::modify();
+                        if ($x->getX() === null) {}
+                    }
+                }'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testRememberImmutableMethodCalls(): void
+    {
+        Config::getInstance()->remember_property_assignments_after_call = false;
+
+        $this->expectExceptionMessage('TypeDoesNotContainNull - somefile.php:22:29');
+        $this->expectException(\Psalm\Exception\CodeException::class);
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class XCollector {
+                    public static function modify() : void {}
+                }
+
+                /** @psalm-immutable */
+                class X {
+                    public ?int $x = null;
+
+                    public function __construct(?int $x) {
+                        $this->x = $x;
+                    }
+
+                    public function getX() : ?int {
+                        return $this->x;
+                    }
+                }
+
+                function testX(X $x): void {
+                    if ($x->getX()) {
+                        XCollector::modify();
+                        if ($x->getX() === null) {}
+                    }
+                }'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testRememberImmutableProperties(): void
+    {
+        Config::getInstance()->remember_property_assignments_after_call = false;
+
+        $this->expectExceptionMessage('TypeDoesNotContainNull - somefile.php:18:29');
+        $this->expectException(\Psalm\Exception\CodeException::class);
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class XCollector {
+                    public static function modify() : void {}
+                }
+
+                /** @psalm-immutable */
+                class X {
+                    public ?int $x = null;
+
+                    public function __construct(?int $x) {
+                        $this->x = $x;
+                    }
+                }
+
+                function testX(X $x): void {
+                    if ($x->x) {
+                        XCollector::modify();
+                        if ($x->x === null) {}
                     }
                 }'
         );

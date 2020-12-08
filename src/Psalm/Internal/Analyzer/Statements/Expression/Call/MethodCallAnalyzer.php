@@ -203,14 +203,17 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
         if (!$stmt->args && $lhs_var_id && $stmt->name instanceof PhpParser\Node\Identifier) {
             if ($codebase->config->memoize_method_calls || $result->can_memoize) {
                 $method_var_id = $lhs_var_id . '->' . strtolower($stmt->name->name) . '()';
+
                 if (isset($context->vars_in_scope[$method_var_id])) {
                     $result->return_type = clone $context->vars_in_scope[$method_var_id];
-                    if ($result->can_memoize) {
-                        /** @psalm-suppress UndefinedPropertyAssignment */
-                        $stmt->pure = true;
-                    }
                 } elseif ($result->return_type !== null) {
                     $context->vars_in_scope[$method_var_id] = $result->return_type;
+                    $context->vars_in_scope[$method_var_id]->has_mutations = false;
+                }
+
+                if ($result->can_memoize) {
+                    /** @psalm-suppress UndefinedPropertyAssignment */
+                    $stmt->memoizable = true;
                 }
             }
         }

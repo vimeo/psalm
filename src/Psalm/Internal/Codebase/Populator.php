@@ -219,6 +219,7 @@ class Populator
                 if (!$method->is_static && !$method->external_mutation_free) {
                     $method->mutation_free = $storage->mutation_free;
                     $method->external_mutation_free = $storage->external_mutation_free;
+                    $method->immutable = $storage->mutation_free;
                 }
             }
 

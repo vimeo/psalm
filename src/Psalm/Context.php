@@ -647,6 +647,8 @@ class Context
             return;
         }
 
+        $existing_type->allow_mutations = true;
+
         $this->removeVarFromConflictingClauses(
             $remove_var_id,
             $existing_type->hasMixed()
@@ -671,12 +673,14 @@ class Context
         }
     }
 
-    public function removeAllObjectVars(): void
+    public function removeMutableObjectVars(): void
     {
         $vars_to_remove = [];
 
-        foreach ($this->vars_in_scope as $var_id => $_) {
-            if (strpos($var_id, '->') !== false || strpos($var_id, '::') !== false) {
+        foreach ($this->vars_in_scope as $var_id => $type) {
+            if ($type->has_mutations
+                && (strpos($var_id, '->') !== false || strpos($var_id, '::') !== false)
+            ) {
                 $vars_to_remove[] = $var_id;
             }
         }

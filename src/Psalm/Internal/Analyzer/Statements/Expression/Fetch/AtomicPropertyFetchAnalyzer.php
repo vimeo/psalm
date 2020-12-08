@@ -425,6 +425,10 @@ class AtomicPropertyFetchAnalyzer
             $in_assignment
         );
 
+        if ($class_storage->mutation_free) {
+            $class_property_type->has_mutations = false;
+        }
+
         if ($stmt_type = $statements_analyzer->node_data->getType($stmt)) {
             $statements_analyzer->node_data->setType(
                 $stmt,
@@ -1087,6 +1091,7 @@ class AtomicPropertyFetchAnalyzer
                 );
             }
         }
+
         return $class_property_type;
     }
 }
