@@ -199,6 +199,16 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 $possible_new_class_types[] = $context->vars_in_scope[$lhs_var_id];
             }
         }
+        if (!$stmt->args && $lhs_var_id) {
+            if ($codebase->config->memoize_method_calls || $result->can_memoize) {
+                $method_var_id = $lhs_var_id . '->' . strtolower($stmt->name->name) . '()';
+                if (isset($context->vars_in_scope[$method_var_id])) {
+                    $result->return_type = clone $context->vars_in_scope[$method_var_id];
+                } else {
+                    $context->vars_in_scope[$method_var_id] = $result->return_type;
+                }
+            }
+        }
 
         if (count($possible_new_class_types) > 0) {
             $class_type = array_reduce(

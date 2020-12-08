@@ -349,19 +349,13 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             }
         }
 
+        $result->can_memoize = $can_memoize;
         if (!$args && $lhs_var_id) {
             if ($config->memoize_method_calls || $can_memoize) {
                 $method_var_id = $lhs_var_id . '->' . $method_name_lc . '()';
-
-                if (isset($context->vars_in_scope[$method_var_id])) {
-                    $return_type_candidate = clone $context->vars_in_scope[$method_var_id];
-
-                    if ($can_memoize) {
-                        /** @psalm-suppress UndefinedPropertyAssignment */
-                        $stmt->pure = true;
-                    }
-                } else {
-                    $context->vars_in_scope[$method_var_id] = $return_type_candidate;
+                if (isset($context->vars_in_scope[$method_var_id]) && $can_memoize) {
+                    /** @psalm-suppress UndefinedPropertyAssignment */
+                    $stmt->pure = true;
                 }
             }
         }
