@@ -953,6 +953,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             }
         }
 
+
+
         $plugin_classes = $codebase->config->after_classlike_checks;
 
         if ($plugin_classes) {

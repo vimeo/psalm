@@ -177,8 +177,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         $codebase = $this->codebase;
         $project_analyzer = $this->getProjectAnalyzer();
 
-        $implemented_docblock_param_types = [];
-
         $classlike_storage_provider = $codebase->classlike_storage_provider;
 
         if ($codebase->track_unused_suppressions && !isset($storage->suppressed_issues[0])) {
@@ -345,20 +343,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                             $storage->suppressed_issues
                         );
                     }
-
-                    foreach ($parent_method_storage->params as $i => $guide_param) {
-                        if ($guide_param->type
-                            && (!$guide_param->signature_type
-                                || ($guide_param->signature_type !== $guide_param->type
-                                    && $storage->inheritdoc)
-                                || !$parent_storage->user_defined
-                            )
-                        ) {
-                            if (!isset($implemented_docblock_param_types[$i])) {
-                                $implemented_docblock_param_types[$i] = $guide_param->type;
-                            }
-                        }
-                    }
                 }
             }
 
@@ -485,41 +469,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
         $params = $storage->params;
 
-        if ($storage instanceof MethodStorage) {
-            $non_null_param_types = array_filter(
-                $storage->params,
-                function (FunctionLikeParameter $p): bool {
-                    return $p->type !== null && $p->has_docblock_type;
-                }
-            );
-        } else {
-            $non_null_param_types = array_filter(
-                $storage->params,
-                function (FunctionLikeParameter $p): bool {
-                    return $p->type !== null;
-                }
-            );
-        }
-
-        if ($storage instanceof MethodStorage
-            && $method_id instanceof \Psalm\Internal\MethodIdentifier
-            && $overridden_method_ids
-        ) {
-            $types_without_docblocks = array_filter(
-                $storage->params,
-                function (FunctionLikeParameter $p): bool {
-                    return !$p->type || !$p->has_docblock_type;
-                }
-            );
-
-            if ($types_without_docblocks) {
-                $params = $codebase->methods->getMethodParams(
-                    $method_id,
-                    $this
-                );
-            }
-        }
-
         if ($codebase->alter_code) {
             $this->alterParams($codebase, $storage, $params, $context);
         }
@@ -544,14 +493,22 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
         }
 
+        if ($storage instanceof MethodStorage
+            && $method_id instanceof \Psalm\Internal\MethodIdentifier
+            && $overridden_method_ids
+        ) {
+            $params = $codebase->methods->getMethodParams(
+                $method_id,
+                $this
+            );
+        }
+
         $check_stmts = $this->processParams(
             $statements_analyzer,
             $storage,
             $cased_method_id,
             $params,
             $context,
-            $implemented_docblock_param_types,
-            (bool) $non_null_param_types,
             (bool) $template_types
         );
 
@@ -719,11 +676,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
         $this->examineParamTypes($statements_analyzer, $context, $codebase);
 
-        foreach ($storage->params as $offset => $function_param) {
+        foreach ($params as $function_param) {
             // only complain if there's no type defined by a parent type
             if (!$function_param->type
                 && $function_param->location
-                && !isset($implemented_docblock_param_types[$offset])
             ) {
                 if ($this->function instanceof Closure
                     || $this->function instanceof ArrowFunction
@@ -1147,7 +1103,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
     /**
      * @param array<int, \Psalm\Storage\FunctionLikeParameter> $params
-     * @param array<int, Type\Union> $implemented_docblock_param_types
      */
     private function processParams(
         StatementsAnalyzer $statements_analyzer,
@@ -1155,8 +1110,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         ?string $cased_method_id,
         array $params,
         Context $context,
-        array $implemented_docblock_param_types,
-        bool $non_null_param_types,
         bool $has_template_types
     ) : bool {
         $check_stmts = true;
@@ -1193,17 +1146,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
 
             if ($function_param->type) {
-                $is_signature_type = $function_param->type === $function_param->signature_type;
-
-                if ($is_signature_type
-                    && $storage instanceof MethodStorage
-                    && $storage->inheritdoc
-                    && isset($implemented_docblock_param_types[$offset])
-                ) {
-                    $param_type = clone $implemented_docblock_param_types[$offset];
-                } else {
-                    $param_type = clone $function_param->type;
-                }
+                $param_type = clone $function_param->type;
 
                 $param_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
                     $codebase,
@@ -1227,29 +1170,20 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         $check_stmts = false;
                     }
                 }
+
+                if (!$storage instanceof MethodStorage
+                    && $param_type->hasTemplate()
+                    && $param_type->isSingle()
+                ) {
+                    /** @var Type\Atomic\TTemplateParam */
+                    $template_type = \array_values($param_type->getAtomicTypes())[0];
+
+                    if ($template_type->as->getTemplateTypes()) {
+                        $param_type = $template_type->as;
+                    }
+                }
             } else {
-                if (!$non_null_param_types && isset($implemented_docblock_param_types[$offset])) {
-                    $param_type = clone $implemented_docblock_param_types[$offset];
-
-                    $param_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
-                        $codebase,
-                        $param_type,
-                        $context->self,
-                        $context->self,
-                        $this->getParentFQCLN()
-                    );
-                } else {
-                    $param_type = Type::getMixed();
-                }
-            }
-
-            if ($param_type->hasTemplate() && $param_type->isSingle()) {
-                /** @var Type\Atomic\TTemplateParam */
-                $template_type = \array_values($param_type->getAtomicTypes())[0];
-
-                if ($template_type->as->getTemplateTypes()) {
-                    $param_type = $template_type->as;
-                }
+                $param_type = Type::getMixed();
             }
 
             $var_type = $param_type;

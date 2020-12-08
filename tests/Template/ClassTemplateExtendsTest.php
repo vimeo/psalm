@@ -5301,6 +5301,26 @@ class ClassTemplateExtendsTest extends TestCase
                     }',
                 'error_message' => 'ArgumentTypeCoercion'
             ],
+            'inheritSubstitutedParamFromInterface' => [
+                '<?php
+                    /** @psalm-template T */
+                    interface BuilderInterface {
+                        /** @psalm-param T $data */
+                        public function create($data): Exception;
+                    }
+
+                    /** @implements BuilderInterface<string> */
+                    class CovariantUserBuilder implements BuilderInterface {
+                        public function create($data): RuntimeException {
+                            /** @psalm-suppress MixedArgument */
+                            return new RuntimeException($data);
+                        }
+                    }',
+                'error_message' => 'MissingParamType',
+                [],
+                false,
+                '7.4'
+            ],
         ];
     }
 }
