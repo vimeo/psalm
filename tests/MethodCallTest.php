@@ -833,7 +833,7 @@ class MethodCallTest extends TestCase
                         printInt($obj->getInt());
                     }',
             ],
-            'unchainedInferredInferredFinalMutationFreeMethodCallMemoize' => [
+            'unchainedInferredNonOverriddenMutationFreeMethodCallMemoize' => [
                 '<?php
                     class SomeClass {
                         private ?int $int;
@@ -842,7 +842,7 @@ class MethodCallTest extends TestCase
                             $this->int = 1;
                         }
 
-                        final public function getInt(): ?int {
+                        public function getInt(): ?int {
                             return $this->int;
                         }
                     }
@@ -1381,6 +1381,11 @@ class MethodCallTest extends TestCase
                         }
 
                         public function getInt(): ?int {
+                            return $this->int;
+                        }
+                    }
+                    class Child extends SomeClass {
+                        public function getInt(): ?int { // overridden
                             return $this->int;
                         }
                     }

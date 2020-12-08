@@ -80,7 +80,7 @@ class MethodCallPurityAnalyzer
         ) {
             if ($method_storage->mutation_free
                 && (!$method_storage->mutation_free_inferred
-                    || $method_storage->final)
+                    || !$method_storage->overridden_somewhere)
             ) {
                 if ($context->inside_conditional
                     && !$method_storage->assertions
