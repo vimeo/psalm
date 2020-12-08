@@ -26,6 +26,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use function count;
 use function is_string;
 use function array_reduce;
+use function strtolower;
 
 /**
  * @internal
@@ -204,6 +205,10 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 $method_var_id = $lhs_var_id . '->' . strtolower($stmt->name->name) . '()';
                 if (isset($context->vars_in_scope[$method_var_id])) {
                     $result->return_type = clone $context->vars_in_scope[$method_var_id];
+                    if ($result->can_memoize) {
+                        /** @psalm-suppress UndefinedPropertyAssignment */
+                        $stmt->pure = true;
+                    }
                 } elseif ($result->return_type !== null) {
                     $context->vars_in_scope[$method_var_id] = $result->return_type;
                 }

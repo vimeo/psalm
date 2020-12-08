@@ -200,8 +200,6 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
 
         $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
-        $can_memoize = false;
-
         $return_type_candidate = MethodCallReturnTypeFetcher::fetch(
             $statements_analyzer,
             $codebase,
@@ -253,7 +251,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
 
         if ($method_storage) {
             if (!$context->collect_mutations && !$context->collect_initializations) {
-                $can_memoize = MethodCallPurityAnalyzer::analyze(
+                $result->can_memoize = MethodCallPurityAnalyzer::analyze(
                     $statements_analyzer,
                     $codebase,
                     $stmt,
@@ -346,17 +344,6 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                         $method_storage->if_false_assertions
                     )
                 );
-            }
-        }
-
-        $result->can_memoize = $can_memoize;
-        if (!$args && $lhs_var_id) {
-            if ($config->memoize_method_calls || $can_memoize) {
-                $method_var_id = $lhs_var_id . '->' . $method_name_lc . '()';
-                if (isset($context->vars_in_scope[$method_var_id]) && $can_memoize) {
-                    /** @psalm-suppress UndefinedPropertyAssignment */
-                    $stmt->pure = true;
-                }
             }
         }
 
