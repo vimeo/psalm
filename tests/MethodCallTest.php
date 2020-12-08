@@ -1371,7 +1371,7 @@ class MethodCallTest extends TestCase
                     new Missing($class_arg);',
                 'error_message' => 'PossiblyUndefinedVariable',
             ],
-            'unchainedInferredInferredMutationFreeMethodCallDontMemoize' => [
+            'unchainedOverriddenInferredMutationFreeMethodCallDontMemoize' => [
                 '<?php
                     class SomeClass {
                         private ?int $int;
