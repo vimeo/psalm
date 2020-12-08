@@ -199,12 +199,12 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 $possible_new_class_types[] = $context->vars_in_scope[$lhs_var_id];
             }
         }
-        if (!$stmt->args && $lhs_var_id) {
+        if (!$stmt->args && $lhs_var_id && $stmt->name instanceof PhpParser\Node\Identifier) {
             if ($codebase->config->memoize_method_calls || $result->can_memoize) {
                 $method_var_id = $lhs_var_id . '->' . strtolower($stmt->name->name) . '()';
                 if (isset($context->vars_in_scope[$method_var_id])) {
                     $result->return_type = clone $context->vars_in_scope[$method_var_id];
-                } else {
+                } elseif ($result->return_type !== null) {
                     $context->vars_in_scope[$method_var_id] = $result->return_type;
                 }
             }
