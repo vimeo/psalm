@@ -1642,7 +1642,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
 
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
-        if ($existing_var_type->hasMixed() || $existing_var_type->hasTemplate()) {
+        if ($existing_var_type->hasMixed()) {
             return Type::getArray();
         }
 
@@ -1665,6 +1665,24 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                 self::refineArrayKey($clone_type->type_params[0]);
 
                 $array_types[] = new TArray($clone_type->type_params);
+
+                $did_remove_type = true;
+            } elseif ($type instanceof TTemplateParam) {
+                if ($type->as->hasArray() || $type->as->hasMixed()) {
+                   $type = clone $type;
+
+                    $type->as = self::reconcileArray(
+                        $type->as,
+                        null,
+                        false,
+                        null,
+                        $suppressed_issues,
+                        $failed_reconciliation,
+                        $is_equality
+                    );
+
+                    $array_types[] = $type;
+                }
 
                 $did_remove_type = true;
             } else {
