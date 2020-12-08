@@ -1840,6 +1840,16 @@ class Config
             $core_generic_files[] = $ext_pdo_path;
         }
 
+        if (\extension_loaded('soap')) {
+            $ext_pdo_path = dirname(__DIR__, 2) . '/stubs/soap.php';
+
+            if (!file_exists($ext_pdo_path)) {
+                throw new \UnexpectedValueException('Cannot locate soap classes');
+            }
+
+            $core_generic_files[] = $ext_pdo_path;
+        }
+
         if (\extension_loaded('ds')) {
             $ext_ds_path = dirname(__DIR__, 2) . '/stubs/ext-ds.php';
 

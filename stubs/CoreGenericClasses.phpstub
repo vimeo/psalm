@@ -2285,3 +2285,16 @@ class SimpleXMLElement implements \Stringable, \Countable, \RecursiveIterator
     {
     }
 }
+
+interface Serializable {
+    /**
+     * @return string the string representation of the object or null
+     */
+    public function serialize();
+
+    /**
+     * @param string $serialized <p>
+     * @return void
+     */
+    public function unserialize($serialized);
+}

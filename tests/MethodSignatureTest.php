@@ -1255,7 +1255,7 @@ class MethodSignatureTest extends TestCase
                         public function unserialize(string $serialized) {}
                         public function serialize() {}
                     }',
-                'error_message' => 'MethodSignatureMismatch',
+                'error_message' => 'InvalidReturnType',
             ],
             'preventImplementingSerializableWithWrongDocblockType' => [
                 '<?php
