@@ -645,10 +645,6 @@ class TemplateStandinTypeReplacer
                     }
                 }
 
-                if ($was_nullable && $generic_param->isNullable() && !$generic_param->isNull()) {
-                    $generic_param->removeType('null');
-                }
-
                 if ($add_upper_bound) {
                     return array_values($generic_param->getAtomicTypes());
                 }
