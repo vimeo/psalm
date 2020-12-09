@@ -362,6 +362,21 @@ class ArrayKeyExistsTest extends \Psalm\Tests\TestCase
                     }',
                 'error_message' => 'PossiblyUndefinedArrayOffset',
             ],
+            'dontCreateWeirdString' => [
+                '<?php
+                    /**
+                     * @psalm-param array{inner:string} $options
+                     */
+                    function go(array $options): void {
+                        if (!array_key_exists(\'size\', $options)) {
+                            throw new Exception(\'bad\');
+                        }
+
+                        /** @psalm-suppress MixedArgument */
+                        echo $options[\'\\\'size\\\'\'];
+                    }',
+                'error_message' => 'InvalidArrayOffset',
+            ],
         ];
     }
 }
