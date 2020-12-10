@@ -674,9 +674,9 @@ class ConditionalReturnTypeTest extends TestCase
                         public string $name = "Dave";
                     }
 
-                    function takesNullableUser(?User $user) : void {
-                        $name = optional($user);
-                        if ($name instanceof NullObject) {}
+                    /** @return User|NullObject */
+                    function takesNullableUser(?User $user) {
+                        return optional($user);
                     }
 
                     class NullObject {
