@@ -2349,9 +2349,16 @@ class PropertyTypeTest extends TestCase
                         public string $name = "Dave";
                     }
 
-                    function takesNullableUser(User|NullObject $user) : void {
-                        echo $user->name;
-                    }'
+                    function takesNullableUser(User|NullObject $user) : ?string {
+                        $name = $user->name;
+
+                        if ($name === null) {}
+
+                        return $name;
+                    }',
+                [],
+                [],
+                '8.0'
             ],
         ];
     }

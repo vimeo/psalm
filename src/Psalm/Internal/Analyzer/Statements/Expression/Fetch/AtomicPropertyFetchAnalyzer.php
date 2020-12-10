@@ -566,7 +566,14 @@ class AtomicPropertyFetchAnalyzer
             $statements_analyzer->node_data = $old_data_provider;
 
             if ($fake_method_call_type) {
-                $statements_analyzer->node_data->setType($stmt, $fake_method_call_type);
+                if ($stmt_type = $statements_analyzer->node_data->getType($stmt)) {
+                    $statements_analyzer->node_data->setType(
+                        $stmt,
+                        Type::combineUnionTypes($fake_method_call_type, $stmt_type)
+                    );
+                } else {
+                    $statements_analyzer->node_data->setType($stmt, $fake_method_call_type);
+                }
             } else {
                 $statements_analyzer->node_data->setType($stmt, Type::getMixed());
             }
