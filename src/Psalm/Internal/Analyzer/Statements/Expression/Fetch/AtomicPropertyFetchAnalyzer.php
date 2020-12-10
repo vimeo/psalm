@@ -529,6 +529,8 @@ class AtomicPropertyFetchAnalyzer
 
             $statements_analyzer->node_data = clone $statements_analyzer->node_data;
 
+            $statements_analyzer->node_data->setType($stmt->var, new Type\Union([$lhs_type_part]));
+
             $fake_method_call = new PhpParser\Node\Expr\MethodCall(
                 $stmt->var,
                 new PhpParser\Node\Identifier('__get', $stmt->name->getAttributes()),
@@ -544,10 +546,6 @@ class AtomicPropertyFetchAnalyzer
 
             $suppressed_issues = $statements_analyzer->getSuppressedIssues();
 
-            if (!in_array('PossiblyNullReference', $suppressed_issues, true)) {
-                $statements_analyzer->addSuppressedIssues(['PossiblyNullReference']);
-            }
-
             if (!in_array('InternalMethod', $suppressed_issues, true)) {
                 $statements_analyzer->addSuppressedIssues(['InternalMethod']);
             }
@@ -558,10 +556,6 @@ class AtomicPropertyFetchAnalyzer
                 $context,
                 false
             );
-
-            if (!in_array('PossiblyNullReference', $suppressed_issues, true)) {
-                $statements_analyzer->removeSuppressedIssues(['PossiblyNullReference']);
-            }
 
             if (!in_array('InternalMethod', $suppressed_issues, true)) {
                 $statements_analyzer->removeSuppressedIssues(['InternalMethod']);

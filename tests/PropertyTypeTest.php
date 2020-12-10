@@ -2334,6 +2334,25 @@ class PropertyTypeTest extends TestCase
                         }
                     }'
             ],
+            'ignoreUndefinedMethodOnUnion' => [
+                '<?php
+                    class NullObject {
+                        /**
+                         * @return null
+                         */
+                        public function __get(string $s) {
+                            return null;
+                        }
+                    }
+
+                    class User {
+                        public string $name = "Dave";
+                    }
+
+                    function takesNullableUser(User|NullObject $user) : void {
+                        echo $user->name;
+                    }'
+            ],
         ];
     }
 
