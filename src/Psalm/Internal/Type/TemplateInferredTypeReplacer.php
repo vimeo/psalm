@@ -244,26 +244,51 @@ class TemplateInferredTypeReplacer
                         $template_type = Type::getNull();
                     }
 
-                    if (UnionTypeComparator::isContainedBy(
-                        $codebase,
-                        $template_type,
-                        $atomic_type->conditional_type
-                    )) {
+                    $matching_if_types = [];
+                    $matching_else_types = [];
+
+                    foreach ($template_type->getAtomicTypes() as $candidate_atomic_type) {
+                        if (UnionTypeComparator::isContainedBy(
+                            $codebase,
+                            new Type\Union([$candidate_atomic_type]),
+                            $atomic_type->conditional_type
+                        )
+                            && (!$candidate_atomic_type instanceof Type\Atomic\TInt
+                                || $atomic_type->conditional_type->getId() !== 'float')
+                        ) {
+                            $matching_if_types[] = $candidate_atomic_type;
+                        } elseif (!UnionTypeComparator::isContainedBy(
+                            $codebase,
+                            $atomic_type->conditional_type,
+                            new Type\Union([$candidate_atomic_type])
+                        )) {
+                            $matching_else_types[] = $candidate_atomic_type;
+                        }
+                    }
+
+                    $if_candidate_type = $matching_if_types ? new Type\Union($matching_if_types) : null;
+                    $else_candidate_type = $matching_else_types ? new Type\Union($matching_else_types) : null;
+
+                    if ($if_candidate_type
+                        && !$else_candidate_type
+                        && UnionTypeComparator::isContainedBy(
+                            $codebase,
+                            $if_candidate_type,
+                            $atomic_type->conditional_type
+                        )
+                    ) {
                         $class_template_type = clone $atomic_type->if_type;
                         self::replace(
                             $class_template_type,
                             $template_result,
                             $codebase
                         );
-                    } elseif (UnionTypeComparator::isContainedBy(
-                        $codebase,
-                        $template_type,
-                        $atomic_type->as_type
-                    )
-                        && !UnionTypeComparator::isContainedBy(
+                    } elseif (!$if_candidate_type
+                        && $else_candidate_type
+                        && UnionTypeComparator::isContainedBy(
                             $codebase,
-                            $atomic_type->as_type,
-                            $template_type
+                            $else_candidate_type,
+                            $atomic_type->as_type
                         )
                     ) {
                         $class_template_type = clone $atomic_type->else_type;

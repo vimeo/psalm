@@ -57,7 +57,6 @@ class TemplateStandinTypeReplacer
                     $add_upper_bound,
                     $depth,
                     count($original_atomic_types) === 1,
-                    $union_type->isNullable(),
                     $had_template
                 )
             );
@@ -104,7 +103,6 @@ class TemplateStandinTypeReplacer
         bool $add_upper_bound,
         int $depth,
         bool $was_single,
-        bool $was_nullable,
         bool &$had_template
     ) : array {
         if ($bracket_pos = strpos($key, '<')) {
@@ -127,7 +125,6 @@ class TemplateStandinTypeReplacer
                 $replace,
                 $add_upper_bound,
                 $depth,
-                $was_nullable,
                 $had_template
             );
 
@@ -446,7 +443,6 @@ class TemplateStandinTypeReplacer
         bool $replace,
         bool $add_upper_bound,
         int $depth,
-        bool $was_nullable,
         bool &$had_template
     ) : array {
         if ($atomic_type->defining_class === $calling_class) {
