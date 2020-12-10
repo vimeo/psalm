@@ -227,6 +227,31 @@ class PropertyTypeTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testNoCrashInTryCatch(): void
+    {
+        Config::getInstance()->remember_property_assignments_after_call = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                function maybeMutates() : void {}
+
+                class X {
+                    public int $f = 0;
+
+                    public function validate(): void {
+                        try {
+                        } finally {
+                            $this->f = 1;
+                            maybeMutates();
+                        }
+                    }
+                }'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     public function testUniversalObjectCrates(): void
     {
         Config::getInstance()->addUniversalObjectCrate(\DateTime::class);
