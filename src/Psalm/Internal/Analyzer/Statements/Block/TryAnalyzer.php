@@ -463,7 +463,9 @@ class TryAnalyzer
 
                 /** @var string $var_id */
                 foreach ($finally_context->assigned_var_ids as $var_id => $_) {
-                    if (isset($context->vars_in_scope[$var_id])) {
+                    if (isset($context->vars_in_scope[$var_id])
+                        && $finally_context->vars_in_scope[$var_id]
+                    ) {
                         if ($context->vars_in_scope[$var_id]->possibly_undefined
                             && $context->vars_in_scope[$var_id]->possibly_undefined_from_try
                         ) {
