@@ -4222,6 +4222,24 @@ class ClassTemplateExtendsTest extends TestCase
                         public function at($k) { /** @var Tv */ return 1;  }
                     }'
             ],
+            'inheritSubstitutedParamFromInterface' => [
+                '<?php
+                    /** @psalm-template T */
+                    interface BuilderInterface {
+                        /** @psalm-param T $data */
+                        public function create($data): Exception;
+                    }
+
+                    /** @implements BuilderInterface<string> */
+                    class CovariantUserBuilder implements BuilderInterface {
+                        public function create($data): RuntimeException {
+                            return new RuntimeException($data);
+                        }
+                    }',
+                [],
+                [],
+                '7.4'
+            ],
         ];
     }
 
@@ -5300,26 +5318,6 @@ class ClassTemplateExtendsTest extends TestCase
                         $c->test($f);
                     }',
                 'error_message' => 'ArgumentTypeCoercion'
-            ],
-            'inheritSubstitutedParamFromInterface' => [
-                '<?php
-                    /** @psalm-template T */
-                    interface BuilderInterface {
-                        /** @psalm-param T $data */
-                        public function create($data): Exception;
-                    }
-
-                    /** @implements BuilderInterface<string> */
-                    class CovariantUserBuilder implements BuilderInterface {
-                        public function create($data): RuntimeException {
-                            /** @psalm-suppress MixedArgument */
-                            return new RuntimeException($data);
-                        }
-                    }',
-                'error_message' => 'MissingParamType',
-                [],
-                false,
-                '7.4'
             ],
         ];
     }

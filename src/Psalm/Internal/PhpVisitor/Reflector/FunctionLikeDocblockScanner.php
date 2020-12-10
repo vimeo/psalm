@@ -852,6 +852,10 @@ class FunctionLikeDocblockScanner
 
             $storage->return_type->setFromDocblock();
 
+            if ($storage instanceof MethodStorage) {
+                $storage->has_docblock_return_type = true;
+            }
+
             if ($storage->signature_return_type) {
                 $all_typehint_types_match = true;
                 $signature_return_atomic_types = $storage->signature_return_type->getAtomicTypes();
@@ -866,6 +870,10 @@ class FunctionLikeDocblockScanner
 
                 if ($all_typehint_types_match) {
                     $storage->return_type->from_docblock = false;
+
+                    if ($storage instanceof MethodStorage) {
+                        $storage->has_docblock_return_type = true;
+                    }
                 }
 
                 if ($storage->signature_return_type->isNullable()

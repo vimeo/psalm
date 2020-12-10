@@ -311,14 +311,9 @@ class Populator
                     $declaring_method_storage = $declaring_class_storage->methods[$declaring_method_name];
 
                     if (($declaring_method_storage->has_docblock_param_types
-                            || $declaring_method_storage->return_type
-                                !== $declaring_method_storage->signature_return_type)
+                            || $declaring_method_storage->has_docblock_return_type)
                         && !$method_storage->has_docblock_param_types
-                        && $method_storage->return_type === $method_storage->signature_return_type
-                        && (!$declaring_method_storage->signature_return_type
-                            || ($method_storage->signature_return_type
-                                && $method_storage->signature_return_type->getId()
-                                    === $declaring_method_storage->signature_return_type->getId()))
+                        && !$method_storage->has_docblock_return_type
                         && $method_storage->inherited_return_type !== null
                     ) {
                         if (!isset($storage->documenting_method_ids[$method_name])

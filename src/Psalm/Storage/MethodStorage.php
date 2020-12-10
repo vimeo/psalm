@@ -63,6 +63,11 @@ class MethodStorage extends FunctionLikeStorage
     /**
      * @var bool
      */
+    public $has_docblock_return_type = false;
+
+    /**
+     * @var bool
+     */
     public $external_mutation_free = false;
 
     /**
