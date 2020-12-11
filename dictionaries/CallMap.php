@@ -3341,7 +3341,7 @@ return [
 'ftp_login' => ['bool', 'ftp'=>'resource', 'username'=>'string', 'password'=>'string'],
 'ftp_mdtm' => ['int', 'ftp'=>'resource', 'filename'=>'string'],
 'ftp_mkdir' => ['string|false', 'ftp'=>'resource', 'directory'=>'string'],
-'ftp_mlsd' => ['array', 'ftp'=>'resource', 'directory'=>'string'],
+'ftp_mlsd' => ['array|false', 'ftp'=>'resource', 'directory'=>'string'],
 'ftp_nb_continue' => ['int', 'ftp'=>'resource'],
 'ftp_nb_fget' => ['int', 'ftp'=>'resource', 'stream'=>'resource', 'remote_filename'=>'string', 'mode='=>'int', 'offset='=>'int'],
 'ftp_nb_fput' => ['int', 'ftp'=>'resource', 'remote_filename'=>'string', 'stream'=>'resource', 'mode='=>'int', 'offset='=>'int'],
