@@ -373,7 +373,7 @@ class FunctionLikeDocblockParser
             foreach ($parsed_docblock->tags['psalm-assert'] as $assertion) {
                 $line_parts = CommentAnalyzer::splitDocLine($assertion);
 
-                if (count($line_parts) < 2 || $line_parts[1][0] !== '$') {
+                if (count($line_parts) < 2 || strpos($line_parts[1], '$') === false) {
                     throw new IncorrectDocblockException('Misplaced variable');
                 }
 
@@ -381,7 +381,7 @@ class FunctionLikeDocblockParser
 
                 $info->assertions[] = [
                     'type' => $line_parts[0],
-                    'param_name' => substr($line_parts[1], 1),
+                    'param_name' => $line_parts[1][0] === '$' ? substr($line_parts[1], 1) : $line_parts[1],
                 ];
             }
         }
