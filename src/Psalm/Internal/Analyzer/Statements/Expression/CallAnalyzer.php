@@ -672,6 +672,9 @@ class CallAnalyzer
                 $assertion_var_id = $thisName . str_replace('$this->', '->', $assertion->var_id);
             } elseif (strpos($assertion->var_id, 'self::') === 0 && $context->self) {
                 $assertion_var_id = $context->self . str_replace('self::', '::', $assertion->var_id);
+            } elseif (strpos($assertion->var_id, '::$') !== false) {
+                // allow assertions to bring external static props into scope
+                $assertion_var_id = $assertion->var_id;
             } elseif (isset($context->vars_in_scope[$assertion->var_id])) {
                 $assertion_var_id = $assertion->var_id;
             }

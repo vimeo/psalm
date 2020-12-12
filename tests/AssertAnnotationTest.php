@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Tests;
 
 use const DIRECTORY_SEPARATOR;
@@ -1345,6 +1346,25 @@ class AssertAnnotationTest extends TestCase
                         }
                     }
                 ?>'
+            ],
+            'assertStaticOnUnrelatedClass' => [
+                '<?php
+                    class A {
+                        /** @var null|int */
+                        public static $q = null;
+                    }
+
+                    class B {
+                        /** @psalm-assert int A::$q */
+                        private static function prefillQ(): void {
+                            A::$q = 123;
+                        }
+                        public static function getQ(): int {
+                            self::prefillQ();
+                            return A::$q;
+                        }
+                    }
+                ?>'
             ]
         ];
     }
@@ -1537,7 +1557,8 @@ class AssertAnnotationTest extends TestCase
 
                         if ($bar) {}
                     }',
-                'error_message' => 'RedundantConditionGivenDocblockType - src' . DIRECTORY_SEPARATOR . 'somefile.php:19:29',
+                'error_message' => 'RedundantConditionGivenDocblockType - src'
+                                    . DIRECTORY_SEPARATOR . 'somefile.php:19:29',
             ],
             'assertOneOfStrings' => [
                 '<?php
