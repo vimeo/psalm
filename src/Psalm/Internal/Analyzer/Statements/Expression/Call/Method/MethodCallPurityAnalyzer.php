@@ -2,6 +2,7 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call\Method;
 
 use PhpParser;
+use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
@@ -79,7 +80,8 @@ class MethodCallPurityAnalyzer
         ) {
             if ($method_storage->mutation_free
                 && (!$method_storage->mutation_free_inferred
-                    || $method_storage->final)
+                    || $method_storage->final
+                    || $method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE)
                 && ($method_storage->immutable || $config->remember_property_assignments_after_call)
             ) {
                 if ($context->inside_conditional
