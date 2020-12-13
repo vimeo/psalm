@@ -673,8 +673,6 @@ class Populator
                 );
             }
 
-            $parent_interface_storage->dependent_classlikes[strtolower($storage->name)] = true;
-
             $parent_interfaces = array_merge($parent_interfaces, $parent_interface_storage->parent_interfaces);
 
             $this->inheritMethodsFromParent($storage, $parent_interface_storage);
@@ -683,6 +681,21 @@ class Populator
         }
 
         $storage->parent_interfaces = array_merge($parent_interfaces, $storage->parent_interfaces);
+
+        foreach ($storage->parent_interfaces as $parent_interface_lc => $_) {
+            try {
+                $parent_interface_lc = strtolower(
+                    $this->classlikes->getUnAliasedName(
+                        $parent_interface_lc
+                    )
+                );
+                $parent_interface_storage = $storage_provider->get($parent_interface_lc);
+            } catch (\InvalidArgumentException $e) {
+                continue;
+            }
+
+            $parent_interface_storage->dependent_classlikes[strtolower($storage->name)] = true;
+        }
     }
 
     private function populateDataFromImplementedInterfaces(
