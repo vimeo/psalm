@@ -1129,7 +1129,7 @@ class FunctionLikeDocblockScanner
                 }
 
                 $storage->if_true_assertions[] = new \Psalm\Storage\Assertion(
-                    '$' . $assertion['param_name'],
+                    (strpos($assertion['param_name'], '$') === false ? '$' : '') . $assertion['param_name'],
                     [$assertion_type_parts]
                 );
             }
@@ -1168,7 +1168,7 @@ class FunctionLikeDocblockScanner
                 }
 
                 $storage->if_false_assertions[] = new \Psalm\Storage\Assertion(
-                    '$' . $assertion['param_name'],
+                    (strpos($assertion['param_name'], '$') === false ? '$' : '') . $assertion['param_name'],
                     [$assertion_type_parts]
                 );
             }

@@ -390,13 +390,13 @@ class FunctionLikeDocblockParser
             foreach ($parsed_docblock->tags['psalm-assert-if-true'] as $assertion) {
                 $line_parts = CommentAnalyzer::splitDocLine($assertion);
 
-                if (count($line_parts) < 2 || $line_parts[1][0] !== '$') {
+                if (count($line_parts) < 2 || strpos($line_parts[1], '$') === false) {
                     throw new IncorrectDocblockException('Misplaced variable');
                 }
 
                 $info->if_true_assertions[] = [
                     'type' => $line_parts[0],
-                    'param_name' => substr($line_parts[1], 1),
+                    'param_name' => $line_parts[1][0] === '$' ? substr($line_parts[1], 1) : $line_parts[1],
                 ];
             }
         }
@@ -405,13 +405,13 @@ class FunctionLikeDocblockParser
             foreach ($parsed_docblock->tags['psalm-assert-if-false'] as $assertion) {
                 $line_parts = CommentAnalyzer::splitDocLine($assertion);
 
-                if (count($line_parts) < 2 || $line_parts[1][0] !== '$') {
+                if (count($line_parts) < 2 || strpos($line_parts[1], '$') === false) {
                     throw new IncorrectDocblockException('Misplaced variable');
                 }
 
                 $info->if_false_assertions[] = [
                     'type' => $line_parts[0],
-                    'param_name' => substr($line_parts[1], 1),
+                    'param_name' => $line_parts[1][0] === '$' ? substr($line_parts[1], 1) : $line_parts[1],
                 ];
             }
         }
