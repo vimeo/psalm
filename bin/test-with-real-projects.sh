@@ -31,7 +31,7 @@ proxymanager)
 	;;
 
 psl)
-	git clone git@github.com:azjezz/psl.git
+	git clone git@github.com:muglug/psl.git
 	cd psl
 	composer install --ignore-platform-reqs
 	~/project/psalm --monochrome
