@@ -1186,6 +1186,8 @@ class AssignmentAnalyzer
             if (!$context->hasVariable($var_id)) {
                 $context->vars_possibly_in_scope[$var_id] = true;
 
+                $location = new CodeLocation($statements_analyzer->getSource(), $stmt);
+
                 if (!$statements_analyzer->hasVariable($var_id)) {
                     if ($constrain_type
                         && $prevent_null
@@ -1197,11 +1199,29 @@ class AssignmentAnalyzer
                         if (IssueBuffer::accepts(
                             new \Psalm\Issue\NullReference(
                                 'Not expecting null argument passed by reference',
-                                new CodeLocation($statements_analyzer->getSource(), $stmt)
+                                $location
                             ),
                             $statements_analyzer->getSuppressedIssues()
                         )) {
                             // fall through
+                        }
+                    }
+
+                    if ($stmt instanceof PhpParser\Node\Expr\Variable) {
+                        $statements_analyzer->registerVariable(
+                            $var_id,
+                            $location,
+                            $context->branch_point
+                        );
+
+                        if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
+                            $byref_node = DataFlowNode::getForAssignment($var_id, $location);
+
+                            $statements_analyzer->data_flow_graph->addPath(
+                                $byref_node,
+                                new DataFlowNode('variable-use', 'variable use', null),
+                                'variable-use'
+                            );
                         }
                     }
 
