@@ -581,10 +581,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                     if (strpos($docblock_issue->code_location->file_path, 'CoreGenericFunctions.phpstub')
                         || strpos($docblock_issue->code_location->file_path, 'CoreGenericClasses.phpstub')
                     ) {
-                        $e = reset($functionlike_node_scanner->storage->docblock_issues);
+                        $e = \reset($functionlike_node_scanner->storage->docblock_issues);
 
-                        $fqcn_parts = explode('\\', get_class($e));
-                        $issue_type = array_pop($fqcn_parts);
+                        $fqcn_parts = \explode('\\', \get_class($e));
+                        $issue_type = \array_pop($fqcn_parts);
 
                         $message = $e instanceof \Psalm\Issue\TaintedInput
                             ? $e->getJourneyMessage()
