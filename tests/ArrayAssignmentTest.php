@@ -1494,13 +1494,6 @@ class ArrayAssignmentTest extends TestCase
                     return [...$data];
                 }'
             ],
-            'ArrayCreateOffsetMixed' => [
-                '<?php
-                    /** @var mixed $b */
-                    $b = "";
-                    $_a = [$b => "a"];
-                ',
-            ],
             'ArrayOffsetNumericSupPHPINTMAX' => [
                 '<?php
                     $_a = [
@@ -1873,6 +1866,17 @@ class ArrayAssignmentTest extends TestCase
                     }',
                 'error_message' => 'LessSpecificReturnStatement',
             ],
+            'createArrayWithMixedOffset' => [
+                '<?php
+                    /**
+                     * @param mixed $index
+                     */
+                    function test($index): array {
+                        $arr = [$index => 5];
+                        return $arr;
+                    }',
+                'error_message' => 'MixedArrayOffset'
+            ]
         ];
     }
 }

@@ -8,6 +8,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\DuplicateArrayKey;
 use Psalm\Issue\InvalidArrayOffset;
+use Psalm\Issue\MixedArrayOffset;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Internal\Type\TypeCombiner;
@@ -130,6 +131,25 @@ class ArrayAnalyzer
             $good_types = [];
 
             foreach ($item_key_type->getAtomicTypes() as $atomic_key_type) {
+                if ($atomic_key_type instanceof Type\Atomic\TMixed) {
+                    if (IssueBuffer::accepts(
+                        new MixedArrayOffset(
+                            'Cannot create mixed offset – expecting array-key',
+                            new CodeLocation($statements_analyzer->getSource(), $stmt)
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        // do nothing
+                    }
+
+                    $bad_types[] = $atomic_key_type;
+
+                    $good_types[] = new Type\Atomic\TArrayKey;
+
+
+                    continue;
+                }
+
                 if (!$atomic_key_type instanceof Type\Atomic\TString
                     && !$atomic_key_type instanceof Type\Atomic\TInt
                     && !$atomic_key_type instanceof Type\Atomic\TArrayKey
@@ -146,20 +166,22 @@ class ArrayAnalyzer
                         ),
                         $statements_analyzer->getSuppressedIssues()
                     )) {
-                        $bad_types[] = $atomic_key_type;
+                        // do nothing
+                    }
 
-                        if ($atomic_key_type instanceof Type\Atomic\TFalse) {
-                            $good_types[] = new Type\Atomic\TLiteralInt(0);
-                        } elseif ($atomic_key_type instanceof Type\Atomic\TTrue) {
-                            $good_types[] = new Type\Atomic\TLiteralInt(1);
-                        } elseif ($atomic_key_type instanceof Type\Atomic\TBool) {
-                            $good_types[] = new Type\Atomic\TLiteralInt(0);
-                            $good_types[] = new Type\Atomic\TLiteralInt(1);
-                        } elseif ($atomic_key_type instanceof Type\Atomic\TFloat) {
-                            $good_types[] = new Type\Atomic\TInt;
-                        } else {
-                            $good_types[] = new Type\Atomic\TArrayKey;
-                        }
+                    $bad_types[] = $atomic_key_type;
+
+                    if ($atomic_key_type instanceof Type\Atomic\TFalse) {
+                        $good_types[] = new Type\Atomic\TLiteralInt(0);
+                    } elseif ($atomic_key_type instanceof Type\Atomic\TTrue) {
+                        $good_types[] = new Type\Atomic\TLiteralInt(1);
+                    } elseif ($atomic_key_type instanceof Type\Atomic\TBool) {
+                        $good_types[] = new Type\Atomic\TLiteralInt(0);
+                        $good_types[] = new Type\Atomic\TLiteralInt(1);
+                    } elseif ($atomic_key_type instanceof Type\Atomic\TFloat) {
+                        $good_types[] = new Type\Atomic\TInt;
+                    } else {
+                        $good_types[] = new Type\Atomic\TArrayKey;
                     }
                 }
             }
