@@ -43,26 +43,6 @@ jobs:
 
     - php: 7.3
       env: DEPS="high"
-
-    - php: 7.4
-      env: DEPS="low"
-
-    - php: 7.4
-      env: DEPS="high"
-
-    - php: 7.3
-      env: DEPS="high"
-      script:
-        - vendor/bin/phpcs
-
-    - php: 7.3
-      env: DEPS="high"
-      script:
-        - composer require --dev maglnet/composer-require-checker:^2.0.0
-        - ./vendor/bin/composer-require-checker check --config-file=bin/composer-require-checker-config.json ./composer.json
-
-    - php: 7.3
-      env: DEPS="high"
       script: bin/build-phar.sh
       deploy:
         # deploy tagged releases to github releases page
