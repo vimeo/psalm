@@ -1801,6 +1801,7 @@ class ArrayAssignmentTest extends TestCase
             ],
             'ArrayDimOffsetObject' => [
                 '<?php
+                    $_a = [];
                     $_a[new stdClass] = "a";
                 ',
                 'error_message' => 'InvalidArrayOffset'
@@ -1813,6 +1814,7 @@ class ArrayAssignmentTest extends TestCase
             ],
             'ArrayDimOffsetResource' => [
                 '<?php
+                    $_a = [];
                     $_a[fopen("", "")] = "a";
                 ',
                 'error_message' => 'InvalidArrayOffset'
@@ -1825,6 +1827,7 @@ class ArrayAssignmentTest extends TestCase
             ],
             'ArrayDimOffsetBool' => [
                 '<?php
+                    $_a = [];
                     $_a[true] = "a";
                 ',
                 'error_message' => 'InvalidArrayOffset'
@@ -1837,6 +1840,7 @@ class ArrayAssignmentTest extends TestCase
             ],
             'ArrayDimOffsetStringable' => [
                 '<?php
+                    $_a = [];
                     $a = new class{public function __toString(){return "";}};
                     $_a[$a] = "a";',
                 'error_message' => 'InvalidArrayOffset',
