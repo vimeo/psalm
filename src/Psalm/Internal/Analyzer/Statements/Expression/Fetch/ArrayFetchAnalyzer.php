@@ -103,27 +103,39 @@ class ArrayFetchAnalyzer
         $dim_var_id = null;
         $new_offset_type = null;
 
+        if (ExpressionAnalyzer::analyze(
+            $statements_analyzer,
+            $stmt->var,
+            $context
+        ) === false) {
+            return false;
+        }
+
+        $stmt_var_type = $statements_analyzer->node_data->getType($stmt->var);
+
         if ($stmt->dim) {
             $used_key_type = $statements_analyzer->node_data->getType($stmt->dim) ?: Type::getMixed();
 
-            foreach ($used_key_type->getAtomicTypes() as $atomic_key_type) {
-                if (!$atomic_key_type instanceof Type\Atomic\TString
-                    && !$atomic_key_type instanceof Type\Atomic\TInt
-                    && !$atomic_key_type instanceof Type\Atomic\TArrayKey
-                    && !$atomic_key_type instanceof Type\Atomic\TMixed
-                    && !(
-                        $atomic_key_type instanceof Type\Atomic\TObjectWithProperties
-                        && isset($atomic_key_type->methods['__toString'])
-                    )
-                ) {
-                    if (IssueBuffer::accepts(
-                        new InvalidArrayOffset(
-                            'Cannot access offset of type ' . $used_key_type->getKey() . ', expecting array-key',
-                            new CodeLocation($statements_analyzer->getSource(), $stmt->dim)
-                        ),
-                        $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // do nothing
+            if ($stmt_var_type !== null && $stmt_var_type->isArray()) {
+                foreach ($used_key_type->getAtomicTypes() as $atomic_key_type) {
+                    if (!$atomic_key_type instanceof Type\Atomic\TString
+                        && !$atomic_key_type instanceof Type\Atomic\TInt
+                        && !$atomic_key_type instanceof Type\Atomic\TArrayKey
+                        && !$atomic_key_type instanceof Type\Atomic\TMixed
+                        && !(
+                            $atomic_key_type instanceof Type\Atomic\TObjectWithProperties
+                            && isset($atomic_key_type->methods['__toString'])
+                        )
+                    ) {
+                        if (IssueBuffer::accepts(
+                            new InvalidArrayOffset(
+                                'Cannot access offset of type ' . $used_key_type->getKey() . ', expecting array-key',
+                                new CodeLocation($statements_analyzer->getSource(), $stmt->dim)
+                            ),
+                            $statements_analyzer->getSuppressedIssues()
+                        )) {
+                            // do nothing
+                        }
                     }
                 }
             }
@@ -136,16 +148,6 @@ class ArrayFetchAnalyzer
         } else {
             $used_key_type = Type::getInt();
         }
-
-        if (ExpressionAnalyzer::analyze(
-            $statements_analyzer,
-            $stmt->var,
-            $context
-        ) === false) {
-            return false;
-        }
-
-        $stmt_var_type = $statements_analyzer->node_data->getType($stmt->var);
 
         $codebase = $statements_analyzer->getCodebase();
 
