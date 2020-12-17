@@ -11928,7 +11928,7 @@ return [
 'session_id' => ['string', 'id='=>'string'],
 'session_is_registered' => ['bool', 'name'=>'string'],
 'session_module_name' => ['string', 'module='=>'string'],
-'session_name' => ['string', 'name='=>'string'],
+'session_name' => ['string|false', 'name='=>'string'],
 'session_pgsql_add_error' => ['bool', 'error_level'=>'int', 'error_message='=>'string'],
 'session_pgsql_get_error' => ['array', 'with_error_message='=>'bool'],
 'session_pgsql_get_field' => ['string'],
