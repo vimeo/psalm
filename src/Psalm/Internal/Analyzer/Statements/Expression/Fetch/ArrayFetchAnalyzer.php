@@ -106,6 +106,28 @@ class ArrayFetchAnalyzer
         if ($stmt->dim) {
             $used_key_type = $statements_analyzer->node_data->getType($stmt->dim) ?: Type::getMixed();
 
+            foreach ($used_key_type->getAtomicTypes() as $atomic_key_type) {
+                if (!$atomic_key_type instanceof Type\Atomic\TString
+                    && !$atomic_key_type instanceof Type\Atomic\TInt
+                    && !$atomic_key_type instanceof Type\Atomic\TArrayKey
+                    && !$atomic_key_type instanceof Type\Atomic\TMixed
+                    && !(
+                        $atomic_key_type instanceof Type\Atomic\TObjectWithProperties
+                        && isset($atomic_key_type->methods['__toString'])
+                    )
+                ) {
+                    if (IssueBuffer::accepts(
+                        new InvalidArrayOffset(
+                            'Cannot access offset of type ' . $used_key_type->getKey() . ', expecting array-key',
+                            new CodeLocation($statements_analyzer->getSource(), $stmt->dim)
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        // do nothing
+                    }
+                }
+            }
+
             $dim_var_id = ExpressionIdentifier::getArrayVarId(
                 $stmt->dim,
                 $statements_analyzer->getFQCLN(),
