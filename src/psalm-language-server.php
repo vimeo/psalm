@@ -60,6 +60,9 @@ $valid_long_options = [
     'tcp-server',
     'disable-on-change::',
     'enable-autocomplete',
+    'track-tainted-input',
+    'taint-analysis',
+    'security-analysis',
     'use-extended-diagnostic-codes',
     'verbose'
 ];
@@ -215,6 +218,10 @@ $first_autoloader = $include_collector->runAndCollect(
     }
 );
 
+$run_taint_analysis = (isset($options['track-tainted-input'])
+    || isset($options['security-analysis'])
+    || isset($options['taint-analysis']));
+
 $ini_handler = new \Psalm\Internal\Fork\PsalmRestarter('PSALM');
 
 $ini_handler->disableExtension('grpc');
@@ -289,6 +296,11 @@ $config->visitComposerAutoloadFiles($project_analyzer);
 
 if ($find_unused_code) {
     $project_analyzer->getCodebase()->reportUnusedCode($find_unused_code);
+}
+
+if ($config->run_taint_analysis || $run_taint_analysis) {
+    $is_diff = false;
+    $project_analyzer->trackTaintedInputs();
 }
 
 if (isset($options['use-extended-diagnostic-codes'])) {
