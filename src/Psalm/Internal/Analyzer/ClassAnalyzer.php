@@ -7,6 +7,7 @@ use Psalm\DocComment;
 use Psalm\Exception\DocblockParseException;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\FileManipulation\PropertyDocblockManipulator;
+use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Codebase;
@@ -67,6 +68,11 @@ class ClassAnalyzer extends ClassLikeAnalyzer
      * @var array<string, Type\Union>
      */
     public $inferred_property_types = [];
+
+    /**
+     * @var array<lowercase-string, NodeDataProvider>
+     */
+    public $type_providers = [];
 
     public function __construct(PhpParser\Node\Stmt\Class_ $class, SourceAnalyzer $source, ?string $fq_class_name)
     {
@@ -1985,6 +1991,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         $method_context->collect_exceptions = $config->check_for_throws_docblock;
 
         $type_provider = new \Psalm\Internal\Provider\NodeDataProvider();
+
+        $this->type_providers[$actual_method_id->method_name] = $type_provider;
 
         $method_analyzer->analyze(
             $method_context,
