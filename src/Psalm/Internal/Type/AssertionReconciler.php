@@ -1235,6 +1235,8 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
             $allow_string_comparison = true;
         }
 
+        \assert($assertion !== false);
+
         if ($existing_var_type->hasMixed()) {
             $type = new Type\Union([
                 new Type\Atomic\TNamedObject($assertion),

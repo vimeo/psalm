@@ -1261,8 +1261,8 @@ class InstancePropertyAssignmentAnalyzer
             if (!$property_storage->readonly
                 && !$context->collect_mutations
                 && !$context->collect_initializations
-                && isset($context->vars_in_scope[$lhs_var_id])
-                && !$context->vars_in_scope[$lhs_var_id]->allow_mutations
+                && isset($context->vars_in_scope[(string)$lhs_var_id])
+                && !$context->vars_in_scope[(string)$lhs_var_id]->allow_mutations
             ) {
                 if ($context->mutation_free) {
                     if (IssueBuffer::accepts(

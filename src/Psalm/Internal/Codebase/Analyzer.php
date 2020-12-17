@@ -711,7 +711,7 @@ class Analyzer
                     $method_param_uses[$member_id]
                 );
 
-                $member_stub = preg_replace('/::.*$/', '::*', $member_id);
+                $member_stub = (string)preg_replace('/::.*$/', '::*', $member_id);
 
                 if (isset($all_referencing_methods[$member_stub])) {
                     $newly_invalidated_methods = array_merge(

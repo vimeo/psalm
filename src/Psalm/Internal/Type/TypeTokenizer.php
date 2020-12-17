@@ -408,7 +408,7 @@ class TypeTokenizer
                 continue;
             }
 
-            if (isset(self::PSALM_RESERVED_WORDS[$string_type_token[0]])) {
+            if (isset(self::PSALM_RESERVED_WORDS[(string)$string_type_token[0]])) {
                 continue;
             }
 
@@ -459,7 +459,7 @@ class TypeTokenizer
             $type_tokens[$i][2] = $string_type_token[0];
 
             if (isset($type_aliases[$string_type_token[0]])) {
-                $type_alias = $type_aliases[$string_type_token[0]];
+                $type_alias = $type_aliases[(string)$string_type_token[0]];
 
                 if ($type_alias instanceof TypeAlias\InlineTypeAlias) {
                     $replacement_tokens = $type_alias->replacement_tokens;

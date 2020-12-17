@@ -624,7 +624,7 @@ class Scanner
     ): FileScanner {
         $path_parts = explode(DIRECTORY_SEPARATOR, $file_path);
         $file_name_parts = explode('.', array_pop($path_parts));
-        $extension = count($file_name_parts) > 1 ? array_pop($file_name_parts) : null;
+        $extension = count($file_name_parts) > 1 ? array_pop($file_name_parts) : '';
 
         $file_name = $this->config->shortenFileName($file_path);
 

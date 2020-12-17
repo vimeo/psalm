@@ -691,6 +691,8 @@ class CallAnalyzer
                     $rule = substr($rule, 1);
                 }
 
+                \assert($rule !== false);
+
                 if (isset($inferred_upper_bounds[$rule])) {
                     foreach ($inferred_upper_bounds[$rule] as $template_map) {
                         if ($template_map->type->hasMixed()) {

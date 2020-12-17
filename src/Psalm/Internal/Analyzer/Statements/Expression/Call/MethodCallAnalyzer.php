@@ -194,10 +194,10 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 $lhs_var_id,
                 $result
             );
-            if (isset($context->vars_in_scope[$lhs_var_id])
-                && ($possible_new_class_type = $context->vars_in_scope[$lhs_var_id]) instanceof Type\Union
+            if (isset($context->vars_in_scope[(string)$lhs_var_id])
+                && ($possible_new_class_type = $context->vars_in_scope[(string)$lhs_var_id]) instanceof Type\Union
                 && !$possible_new_class_type->equals($class_type)) {
-                $possible_new_class_types[] = $context->vars_in_scope[$lhs_var_id];
+                $possible_new_class_types[] = $context->vars_in_scope[(string)$lhs_var_id];
             }
         }
         if (!$stmt->args && $lhs_var_id && $stmt->name instanceof PhpParser\Node\Identifier) {

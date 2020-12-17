@@ -537,7 +537,7 @@ class Reconciler
             return isset($existing_keys[$key_parts[0]]) ? clone $existing_keys[$key_parts[0]] : null;
         }
 
-        $base_key = array_shift($key_parts);
+        $base_key = (string)array_shift($key_parts);
 
         if ($base_key === 'C::A' && isset($existing_keys[$base_key]) && $existing_keys[$base_key]->isMixed()) {
             throw new \Exception("Error Processing Request", 1);
@@ -882,6 +882,7 @@ class Reconciler
 
         if ($not) {
             $assertion = substr($assertion, 1);
+            \assert($assertion !== false);
         }
 
         if ($negated) {

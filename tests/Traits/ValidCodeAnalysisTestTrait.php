@@ -90,6 +90,7 @@ trait ValidCodeAnalysisTestTrait
 
             if ($var && strpos($var, '===') === strlen($var) - 3) {
                 $var = substr($var, 0, -3);
+                \assert($var !== false);
                 $exact = true;
             }
 

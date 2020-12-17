@@ -70,6 +70,7 @@ class Functions
     ) : FunctionStorage {
         if ($function_id[0] === '\\') {
             $function_id = substr($function_id, 1);
+            \assert($function_id !== false);
         }
 
         if (isset(self::$stubbed_functions[$function_id])) {

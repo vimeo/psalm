@@ -398,7 +398,7 @@ class AssignmentAnalyzer
             return false;
         }
 
-        if (isset($context->protected_var_ids[$var_id])
+        if (isset($context->protected_var_ids[(string)$var_id])
             && $assign_value_type->hasLiteralInt()
         ) {
             if (IssueBuffer::accepts(
@@ -817,7 +817,7 @@ class AssignmentAnalyzer
             && !$context->collect_initializations
             && $stmt->var instanceof PhpParser\Node\Expr\PropertyFetch
         ) {
-            $lhs_var_id = ExpressionIdentifier::getArrayVarId(
+            $lhs_var_id = (string)ExpressionIdentifier::getArrayVarId(
                 $stmt->var->var,
                 $statements_analyzer->getFQCLN(),
                 $statements_analyzer

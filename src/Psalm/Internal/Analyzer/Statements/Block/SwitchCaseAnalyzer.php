@@ -110,7 +110,7 @@ class SwitchCaseAnalyzer
             if ($fake_switch_condition) {
                 $statements_analyzer->node_data->setType(
                     $switch_condition,
-                    $case_context->vars_in_scope[$switch_var_id] ?? Type::getMixed()
+                    $case_context->vars_in_scope[(string)$switch_var_id] ?? Type::getMixed()
                 );
             }
 
@@ -183,7 +183,7 @@ class SwitchCaseAnalyzer
                     if ($fake_switch_condition) {
                         $statements_analyzer->node_data->setType(
                             $switch_condition,
-                            $case_context->vars_in_scope[$switch_var_id] ?? Type::getMixed()
+                            $case_context->vars_in_scope[(string)$switch_var_id] ?? Type::getMixed()
                         );
                     }
                 }
