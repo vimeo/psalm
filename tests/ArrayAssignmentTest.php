@@ -1065,15 +1065,6 @@ class ArrayAssignmentTest extends TestCase
                         if (is_int($value["a"])) {}
                     }'
             ],
-            'falseArrayAssignment' => [
-                '<?php
-                    function foo(): array {
-                        $array = [];
-                        $array[false] = "";
-                        echo $array[0];
-                        return $array;
-                    }',
-            ],
             'coercePossiblyNullKeyToZero' => [
                 '<?php
                     function int_or_null(): ?int {
@@ -1904,7 +1895,17 @@ class ArrayAssignmentTest extends TestCase
                         return $arr;
                     }',
                 'error_message' => 'MixedArrayOffset'
-            ]
+            ],
+            'falseArrayAssignment' => [
+                '<?php
+                    function foo(): array {
+                        $array = [];
+                        $array[false] = "";
+                        echo $array[0];
+                        return $array;
+                    }',
+                'error_message' => 'InvalidArrayOffset'
+            ],
         ];
     }
 }
