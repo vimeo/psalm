@@ -393,7 +393,8 @@ class ArrayFetchAnalyzer
         $has_array_access = false;
         $non_array_types = [];
 
-        $has_valid_offset = false;
+        $has_valid_expected_offset = false;
+        $has_valid_absolute_offset = false;
         $expected_offset_types = [];
 
         $key_values = [];
@@ -461,6 +462,39 @@ class ArrayFetchAnalyzer
             }
         }
 
+        if ($array_type->isArray()) {
+            foreach ($offset_type->getAtomicTypes() as $atomic_offset_type) {
+                if ($atomic_offset_type instanceof Type\Atomic\TFalse &&
+                    $offset_type->ignore_falsable_issues === true
+                ) {
+                    //do nothing
+                } elseif ($atomic_offset_type instanceof Type\Atomic\TNull &&
+                    $offset_type->ignore_nullable_issues === true
+                ) {
+                    //do nothing
+                } elseif ($atomic_offset_type instanceof Type\Atomic\TString ||
+                    $atomic_offset_type instanceof Type\Atomic\TInt ||
+                    $atomic_offset_type instanceof Type\Atomic\TArrayKey ||
+                    $atomic_offset_type instanceof Type\Atomic\TMixed ||
+                    $atomic_offset_type instanceof Type\Atomic\TTemplateParam ||
+                    (
+                        $atomic_offset_type instanceof Type\Atomic\TObjectWithProperties
+                        && isset($atomic_offset_type->methods['__toString'])
+                    )
+                ) {
+                    $has_valid_absolute_offset = true;
+                }
+            }
+
+            if ($has_valid_absolute_offset === false) {
+                //we didn't find a single type that could be valid
+                $expected_offset_types[] = 'array-key';
+            }
+        } else {
+            //on not-arrays, the type is considered valid
+            $has_valid_absolute_offset = true;
+        }
+
         foreach ($array_type->getAtomicTypes() as $type_string => $type) {
             $original_type = $type;
 
@@ -477,7 +511,7 @@ class ArrayFetchAnalyzer
                         $type
                     );
 
-                    $has_valid_offset = true;
+                    $has_valid_expected_offset = true;
 
                     continue;
                 }
@@ -557,7 +591,7 @@ class ArrayFetchAnalyzer
                     $expected_offset_types,
                     $array_access_type,
                     $has_array_access,
-                    $has_valid_offset
+                    $has_valid_expected_offset
                 );
 
                 continue;
@@ -575,7 +609,7 @@ class ArrayFetchAnalyzer
                     $offset_type,
                     $expected_offset_types,
                     $array_access_type,
-                    $has_valid_offset
+                    $has_valid_expected_offset
                 );
 
                 continue;
@@ -707,9 +741,9 @@ class ArrayFetchAnalyzer
                     $used_offset = 'using offset value of ' . implode('|', $key_values);
                 }
 
-                if ($has_valid_offset && $context->inside_isset) {
+                if ($has_valid_expected_offset && $has_valid_absolute_offset && $context->inside_isset) {
                     // do nothing
-                } elseif ($has_valid_offset) {
+                } elseif ($has_valid_expected_offset && $has_valid_absolute_offset) {
                     if (!$context->inside_unset) {
                         if (IssueBuffer::accepts(
                             new PossiblyInvalidArrayOffset(
