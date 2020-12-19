@@ -299,7 +299,7 @@ if ($find_unused_code) {
 }
 
 if ($config->run_taint_analysis || $run_taint_analysis) {
-    $is_diff = false;
+    //$is_diff = false;
     $project_analyzer->trackTaintedInputs();
 }
 
