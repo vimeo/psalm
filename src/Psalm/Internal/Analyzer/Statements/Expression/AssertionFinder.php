@@ -1249,9 +1249,16 @@ class AssertionFinder
                         $if_types[$var_id] = [[$assertion->rule[0][0]]];
                     }
                 } elseif (\is_string($assertion->var_id)
-                    && $expr instanceof PhpParser\Node\Expr\MethodCall
+                    && (
+                        $expr instanceof PhpParser\Node\Expr\MethodCall
+                        || $expr instanceof PhpParser\Node\Expr\StaticCall
+                    )
                 ) {
-                    $if_types[$assertion->var_id] = [[$assertion->rule[0][0]]];
+                    $var_id = $assertion->var_id;
+                    if (strpos($var_id, 'self::') === 0) {
+                        $var_id = $this_class_name . '::' . substr($var_id, 6);
+                    }
+                    $if_types[$var_id] = [[$assertion->rule[0][0]]];
                 }
 
                 if ($if_types) {
@@ -1315,9 +1322,16 @@ class AssertionFinder
                         }
                     }
                 } elseif (\is_string($assertion->var_id)
-                    && $expr instanceof PhpParser\Node\Expr\MethodCall
+                    && (
+                        $expr instanceof PhpParser\Node\Expr\MethodCall
+                        || $expr instanceof PhpParser\Node\Expr\StaticCall
+                    )
                 ) {
-                    $if_types[$assertion->var_id] = [['!' . $assertion->rule[0][0]]];
+                    $var_id = $assertion->var_id;
+                    if (strpos($var_id, 'self::') === 0) {
+                        $var_id = $this_class_name . '::' . substr($var_id, 6);
+                    }
+                    $if_types[$var_id] = [['!' . $assertion->rule[0][0]]];
                 }
 
                 if ($if_types) {

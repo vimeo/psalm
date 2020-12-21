@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Tests;
 
 use const DIRECTORY_SEPARATOR;
@@ -1289,6 +1290,130 @@ class AssertAnnotationTest extends TestCase
                 [],
                 '8.0'
             ],
+            'assertStaticSelf' => [
+                '<?php
+                    final class C {
+                        /** @var null|int */
+                        private static $q = null;
+
+                        /** @psalm-assert int self::$q */
+                        private static function prefillQ(): void {
+                            self::$q = 123;
+                        }
+
+                        public static function getQ(): int {
+                            self::prefillQ();
+                            return self::$q;
+                        }
+                    }
+                ?>'
+            ],
+            'assertIfTrueStaticSelf' => [
+                '<?php
+                    final class C {
+                        /** @var null|int */
+                        private static $q = null;
+
+                        /** @psalm-assert-if-true int self::$q */
+                        private static function prefillQ(): bool {
+                            if (rand(0,1)) {
+                                self::$q = 123;
+                                return true;
+                            }
+                            return false;
+                        }
+
+                        public static function getQ(): int {
+                            if (self::prefillQ()) {
+                                return self::$q;
+                            }
+                            return -1;
+                        }
+                    }
+                ?>'
+            ],
+            'assertIfFalseStaticSelf' => [
+                '<?php
+                    final class C {
+                        /** @var null|int */
+                        private static $q = null;
+
+                        /** @psalm-assert-if-false int self::$q */
+                        private static function prefillQ(): bool {
+                            if (rand(0,1)) {
+                                self::$q = 123;
+                                return false;
+                            }
+                            return true;
+                        }
+
+                        public static function getQ(): int {
+                            if (self::prefillQ()) {
+                                return -1;
+                            }
+                            return self::$q;
+                        }
+                    }
+                ?>'
+            ],
+            'assertStaticByInheritedMethod' => [
+                '<?php
+                    class A {
+                        /** @var null|int */
+                        protected static $q = null;
+
+                        /** @psalm-assert int self::$q */
+                        protected static function prefillQ(): void {
+                            self::$q = 123;
+                        }
+                    }
+
+                    class B extends A {
+                        public static function getQ(): int {
+                            self::prefillQ();
+                            return self::$q;
+                        }
+                    }
+                ?>'
+            ],
+            'assertInheritedStatic' => [
+                '<?php
+                    class A {
+                        /** @var null|int */
+                        protected static $q = null;
+                    }
+
+                    class B extends A {
+                        /** @psalm-assert int self::$q */
+                        protected static function prefillQ(): void {
+                            self::$q = 123;
+                        }
+                        public static function getQ(): int {
+                            self::prefillQ();
+                            return self::$q;
+                        }
+                    }
+                ?>'
+            ],
+            'assertStaticOnUnrelatedClass' => [
+                '<?php
+                    class A {
+                        /** @var null|int */
+                        public static $q = null;
+                    }
+
+                    class B {
+                        /** @psalm-assert int A::$q */
+                        private static function prefillQ(): void {
+                            A::$q = 123;
+                        }
+                        public static function getQ(): int {
+                            self::prefillQ();
+                            return A::$q;
+                        }
+                    }
+                ?>'
+            ],
         ];
     }
 
@@ -1480,7 +1605,8 @@ class AssertAnnotationTest extends TestCase
 
                         if ($bar) {}
                     }',
-                'error_message' => 'RedundantConditionGivenDocblockType - src' . DIRECTORY_SEPARATOR . 'somefile.php:19:29',
+                'error_message' => 'RedundantConditionGivenDocblockType - src'
+                                    . DIRECTORY_SEPARATOR . 'somefile.php:19:29',
             ],
             'assertOneOfStrings' => [
                 '<?php

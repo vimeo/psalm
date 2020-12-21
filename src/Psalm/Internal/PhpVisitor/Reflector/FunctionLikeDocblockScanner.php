@@ -1,14 +1,8 @@
 <?php
+
 namespace Psalm\Internal\PhpVisitor\Reflector;
 
-use function array_filter;
-use function array_merge;
-use function count;
-use function end;
-use function explode;
 use PhpParser;
-use function preg_match;
-use function preg_replace;
 use Psalm\Aliases;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
@@ -26,11 +20,19 @@ use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
+
+use function array_filter;
+use function array_merge;
+use function count;
+use function explode;
+use function preg_match;
+use function preg_replace;
+use function preg_split;
+use function strlen;
+use function strpos;
 use function strtolower;
 use function substr;
 use function trim;
-use function preg_split;
-use function strlen;
 
 class FunctionLikeDocblockScanner
 {
@@ -1088,7 +1090,7 @@ class FunctionLikeDocblockScanner
                 }
 
                 $storage->assertions[] = new \Psalm\Storage\Assertion(
-                    '$' . $assertion['param_name'],
+                    (strpos($assertion['param_name'], '$') === false ? '$' : '') . $assertion['param_name'],
                     [$assertion_type_parts]
                 );
             }
@@ -1127,7 +1129,7 @@ class FunctionLikeDocblockScanner
                 }
 
                 $storage->if_true_assertions[] = new \Psalm\Storage\Assertion(
-                    '$' . $assertion['param_name'],
+                    (strpos($assertion['param_name'], '$') === false ? '$' : '') . $assertion['param_name'],
                     [$assertion_type_parts]
                 );
             }
@@ -1166,7 +1168,7 @@ class FunctionLikeDocblockScanner
                 }
 
                 $storage->if_false_assertions[] = new \Psalm\Storage\Assertion(
-                    '$' . $assertion['param_name'],
+                    (strpos($assertion['param_name'], '$') === false ? '$' : '') . $assertion['param_name'],
                     [$assertion_type_parts]
                 );
             }
