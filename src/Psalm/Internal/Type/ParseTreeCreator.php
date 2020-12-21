@@ -157,10 +157,10 @@ class ParseTreeCreator
         $default = '';
 
         if ($current_token[0] === '&') {
-            throw new TypeParseTreeException('Magic args cannot be passed by reference');
-        }
-
-        if ($current_token[0] === '...') {
+            $byref = true;
+            ++$this->t;
+            $current_token = $this->t < $this->type_token_count ? $this->type_tokens[$this->t] : null;
+        } elseif ($current_token[0] === '...') {
             $variadic = true;
 
             ++$this->t;
@@ -648,7 +648,7 @@ class ParseTreeCreator
 
         $current_parent = $this->current_leaf->parent;
 
-        if ($this->current_leaf instanceof ParseTree\MethodTree && $current_parent) {
+        if ($current_parent && $current_parent instanceof ParseTree\MethodTree) {
             $this->createMethodParam($this->type_tokens[$this->t], $current_parent);
             return;
         }
