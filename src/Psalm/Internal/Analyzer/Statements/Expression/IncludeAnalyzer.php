@@ -143,6 +143,9 @@ class IncludeAnalyzer
                 ) {
                     return true;
                 }
+                if ($config->mustBeIgnored($path_to_file)) {
+                    return true;
+                }
 
                 $current_file_analyzer->addRequiredFilePath($path_to_file);
 
