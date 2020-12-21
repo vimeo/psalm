@@ -238,7 +238,7 @@ class Algebra
         }
 
         foreach ($clauses as $clause) {
-            if (!$clause->reconcilable) {
+            if (!$clause->reconcilable || count($clause->possibilities) !== 1) {
                 continue;
             }
 
@@ -248,7 +248,7 @@ class Algebra
                 }
 
                 // if there's only one possible type, return it
-                if (count($clause->possibilities) === 1 && count($possible_types) === 1) {
+                if (count($possible_types) === 1) {
                     $possible_type = array_pop($possible_types);
 
                     if (isset($truths[$var]) && !isset($clause->redefined_vars[$var])) {
@@ -264,7 +264,7 @@ class Algebra
 
                         $active_truths[$var][count($truths[$var]) - 1] = [$possible_type];
                     }
-                } elseif (count($clause->possibilities) === 1) {
+                } else {
                     // if there's only one active clause, return all the non-negation clause members ORed together
                     $things_that_can_be_said = array_filter(
                         $possible_types,

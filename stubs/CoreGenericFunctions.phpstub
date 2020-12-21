@@ -809,15 +809,6 @@ function strrev(string $string): string {}
 
 /**
  * @psalm-pure
- * @return string|false
- * @psalm-ignore-falsable-return
- *
- * @psalm-flow ($string) -> return
- */
-function strtok(string $str, string $token) {}
-
-/**
- * @psalm-pure
  *
  * @param string|string[] $pattern
  * @param string|array<string|int|float> $replacement
