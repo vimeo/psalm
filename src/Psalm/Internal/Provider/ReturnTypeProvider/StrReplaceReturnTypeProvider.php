@@ -1,11 +1,9 @@
 <?php
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
+use Psalm\Plugin\Hook\Event\FunctionReturnTypeProviderEvent;
 use function in_array;
 use PhpParser;
-use Psalm\CodeLocation;
-use Psalm\Context;
-use Psalm\StatementsSource;
 use Psalm\Type;
 
 class StrReplaceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface
@@ -27,13 +25,10 @@ class StrReplaceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnT
     /**
      * @param  list<PhpParser\Node\Arg>    $call_args
      */
-    public static function getFunctionReturnType(
-        StatementsSource $statements_source,
-        string $function_id,
-        array $call_args,
-        Context $context,
-        CodeLocation $code_location
-    ) : Type\Union {
+    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event) : Type\Union {
+        $statements_source = $event->getStatementsSource();
+        $call_args = $event->getCallArgs();
+        $function_id = $event->getFunctionId();
         if (!$statements_source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer
             || \count($call_args) < 3
         ) {

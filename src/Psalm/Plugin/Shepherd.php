@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Plugin;
 
+use Psalm\Plugin\Hook\Event\AfterAnalysisEvent;
 use function array_filter;
 use function curl_close;
 use function curl_exec;
@@ -18,9 +19,7 @@ use function json_encode;
 use function parse_url;
 use const PHP_EOL;
 use const PHP_URL_SCHEME;
-use Psalm\Codebase;
 use Psalm\Internal\Analyzer\IssueData;
-use Psalm\SourceControl\SourceControlInfo;
 use const STDERR;
 use function strlen;
 use function var_export;
@@ -35,11 +34,13 @@ class Shepherd implements \Psalm\Plugin\Hook\AfterAnalysisInterface
      * @param array<string, list<IssueData>> $issues
      */
     public static function afterAnalysis(
-        Codebase $codebase,
-        array $issues,
-        array $build_info,
-        ?SourceControlInfo $source_control_info = null
+        AfterAnalysisEvent $event
     ): void {
+        $codebase = $event->getCodebase();
+        $issues = $event->getIssues();
+        $build_info = $event->getBuildInfo();
+        $source_control_info = $event->getSourceControlInfo();
+
         if (!function_exists('curl_init')) {
             fwrite(STDERR, 'No curl found, cannot send data to ' . $codebase->config->shepherd_host . PHP_EOL);
 

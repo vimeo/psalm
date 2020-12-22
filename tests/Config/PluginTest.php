@@ -1,10 +1,10 @@
 <?php
 namespace Psalm\Tests\Config;
 
-use PhpParser\Node\Expr\FuncCall;
 use PHPUnit\Framework\MockObject\MockObject;
 use Psalm\Plugin\Hook\AfterEveryFunctionCallAnalysisInterface;
-use Psalm\StatementsSource;
+use Psalm\Plugin\Hook\Event\AfterCodebasePopulatedEvent;
+use Psalm\Plugin\Hook\Event\AfterEveryFunctionCallAnalysisEvent;
 use function define;
 use function defined;
 use const DIRECTORY_SEPARATOR;
@@ -12,7 +12,6 @@ use function dirname;
 use function get_class;
 use function getcwd;
 use function microtime;
-use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\IncludeCollector;
@@ -533,7 +532,7 @@ class PluginTest extends \Psalm\Tests\TestCase
 
         $hook = new class implements AfterCodebasePopulatedInterface {
             /** @return void */
-            public static function afterCodebasePopulated(Codebase $codebase)
+            public static function afterCodebasePopulated(AfterCodebasePopulatedEvent $event)
             {
             }
         };
@@ -961,13 +960,8 @@ class PluginTest extends \Psalm\Tests\TestCase
                 self::$m = $m;
             }
 
-            public static function afterEveryFunctionCallAnalysis(
-                FuncCall $expr,
-                string $function_id,
-                Context $context,
-                StatementsSource $statements_source,
-                Codebase $codebase
-            ): void {
+            public static function afterEveryFunctionCallAnalysis(AfterEveryFunctionCallAnalysisEvent $event): void {
+                $function_id = $event->getFunctionId();
                 /** @psalm-suppress UndefinedInterfaceMethod */
                 self::$m->check($function_id);
             }

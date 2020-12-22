@@ -15,6 +15,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Issue\AbstractMethodCall;
 use Psalm\Issue\ImpureMethodCall;
 use Psalm\IssueBuffer;
+use Psalm\Plugin\Hook\Event\AfterMethodCallAnalysisEvent;
 use Psalm\Storage\Assertion;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
@@ -23,7 +24,6 @@ use function strtolower;
 use function array_map;
 use function explode;
 use function strpos;
-use function is_string;
 use function strlen;
 use function substr;
 
@@ -476,7 +476,7 @@ class ExistingAtomicStaticCallAnalyzer
 
             if ($appearing_method_id !== null && $declaring_method_id) {
                 foreach ($config->after_method_checks as $plugin_fq_class_name) {
-                    $plugin_fq_class_name::afterMethodCallAnalysis(
+                    $event = new AfterMethodCallAnalysisEvent(
                         $stmt,
                         (string) $method_id,
                         (string) $appearing_method_id,
@@ -487,6 +487,8 @@ class ExistingAtomicStaticCallAnalyzer
                         $file_manipulations,
                         $return_type_candidate
                     );
+                    $plugin_fq_class_name::afterMethodCallAnalysis($event);
+                    $file_manipulations = $event->getFileReplacements();
                 }
             }
 

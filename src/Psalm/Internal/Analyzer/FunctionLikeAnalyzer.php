@@ -26,8 +26,8 @@ use Psalm\Issue\ReservedWord;
 use Psalm\Issue\UnusedClosureParam;
 use Psalm\Issue\UnusedParam;
 use Psalm\IssueBuffer;
+use Psalm\Plugin\Hook\Event\AfterFunctionLikeAnalysisEvent;
 use Psalm\StatementsSource;
-use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
@@ -35,7 +35,6 @@ use Psalm\Type\Atomic\TNamedObject;
 use function md5;
 use function strtolower;
 use function array_merge;
-use function array_filter;
 use function array_key_exists;
 use function substr;
 use function strpos;
@@ -928,15 +927,17 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $file_manipulations = [];
 
             foreach ($plugin_classes as $plugin_fq_class_name) {
-                if ($plugin_fq_class_name::afterStatementAnalysis(
+                $event = new AfterFunctionLikeAnalysisEvent(
                     $this->function,
                     $storage,
                     $this,
                     $codebase,
                     $file_manipulations
-                ) === false) {
+                );
+                if ($plugin_fq_class_name::afterStatementAnalysis($event) === false) {
                     return false;
                 }
+                $file_manipulations = $event->getFileReplacements();
             }
 
             if ($file_manipulations) {

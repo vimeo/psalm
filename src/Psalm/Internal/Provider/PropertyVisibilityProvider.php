@@ -5,6 +5,7 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Plugin\Hook\PropertyVisibilityProviderInterface;
+use Psalm\Plugin\Hook\Event\PropertyVisibilityProviderEvent;
 use Psalm\StatementsSource;
 use function strtolower;
 
@@ -13,14 +14,7 @@ class PropertyVisibilityProvider
     /**
      * @var array<
      *   lowercase-string,
-     *   array<\Closure(
-     *     StatementsSource,
-     *     string,
-     *     string,
-     *     bool,
-     *     Context,
-     *     CodeLocation
-     *   ) : ?bool>
+     *   array<\Closure(PropertyVisibilityProviderEvent) : ?bool>
      * >
      */
     private static $handlers = [];
@@ -32,7 +26,6 @@ class PropertyVisibilityProvider
 
     /**
      * @param  class-string<PropertyVisibilityProviderInterface> $class
-     *
      */
     public function registerClass(string $class): void
     {
@@ -44,16 +37,7 @@ class PropertyVisibilityProvider
     }
 
     /**
-     * /**
-     * @param \Closure(
-     *     StatementsSource,
-     *     string,
-     *     string,
-     *     bool,
-     *     Context,
-     *     CodeLocation
-     *   ) : ?bool $c
-     *
+     * @param \Closure(PropertyVisibilityProviderEvent) : ?bool $c
      */
     public function registerClosure(string $fq_classlike_name, \Closure $c): void
     {
@@ -74,7 +58,7 @@ class PropertyVisibilityProvider
         CodeLocation $code_location
     ): ?bool {
         foreach (self::$handlers[strtolower($fq_classlike_name)] as $property_handler) {
-            $property_visible = $property_handler(
+            $event = new PropertyVisibilityProviderEvent(
                 $source,
                 $fq_classlike_name,
                 $property_name,
@@ -82,6 +66,7 @@ class PropertyVisibilityProvider
                 $context,
                 $code_location
             );
+            $property_visible = $property_handler($event);
 
             if ($property_visible !== null) {
                 return $property_visible;

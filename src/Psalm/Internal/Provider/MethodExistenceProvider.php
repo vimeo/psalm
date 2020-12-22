@@ -4,6 +4,7 @@ namespace Psalm\Internal\Provider;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Plugin\Hook\MethodExistenceProviderInterface;
+use Psalm\Plugin\Hook\Event\MethodExistenceProviderEvent;
 use Psalm\StatementsSource;
 use function strtolower;
 
@@ -12,12 +13,7 @@ class MethodExistenceProvider
     /**
      * @var array<
      *   lowercase-string,
-     *   array<\Closure(
-     *     string,
-     *     string,
-     *     ?StatementsSource=,
-     *     ?CodeLocation
-     *   ) : ?bool>
+     *   array<\Closure(MethodExistenceProviderEvent) : ?bool>
      * >
      */
     private static $handlers = [];
@@ -41,14 +37,7 @@ class MethodExistenceProvider
     }
 
     /**
-     * /**
-     * @param \Closure(
-     *     string,
-     *     string,
-     *     ?StatementsSource=,
-     *     ?CodeLocation
-     *   ) : ?bool $c
-     *
+     * @param \Closure(MethodExistenceProviderEvent) : ?bool $c
      */
     public function registerClosure(string $fq_classlike_name, \Closure $c): void
     {
@@ -67,12 +56,13 @@ class MethodExistenceProvider
         ?CodeLocation $code_location = null
     ): ?bool {
         foreach (self::$handlers[strtolower($fq_classlike_name)] as $method_handler) {
-            $method_exists = $method_handler(
+            $event = new MethodExistenceProviderEvent(
                 $fq_classlike_name,
                 $method_name_lowercase,
                 $source,
                 $code_location
             );
+            $method_exists = $method_handler($event);
 
             if ($method_exists !== null) {
                 return $method_exists;

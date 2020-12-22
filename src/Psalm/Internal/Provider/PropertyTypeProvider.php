@@ -4,6 +4,7 @@ namespace Psalm\Internal\Provider;
 use PhpParser;
 use Psalm\Context;
 use Psalm\Plugin\Hook\PropertyTypeProviderInterface;
+use Psalm\Plugin\Hook\Event\PropertyTypeProviderEvent;
 use Psalm\StatementsSource;
 use Psalm\Type;
 use function strtolower;
@@ -13,13 +14,7 @@ class PropertyTypeProvider
     /**
      * @var array<
      *   lowercase-string,
-     *   array<\Closure(
-     *     string,
-     *     string,
-     *     bool,
-     *     ?StatementsSource=,
-     *     ?Context=
-     *   ) : ?Type\Union>
+     *   array<\Closure(PropertyTypeProviderEvent) : ?Type\Union>
      * >
      */
     private static $handlers = [];
@@ -31,7 +26,6 @@ class PropertyTypeProvider
 
     /**
      * @param  class-string<PropertyTypeProviderInterface> $class
-     *
      */
     public function registerClass(string $class): void
     {
@@ -43,15 +37,7 @@ class PropertyTypeProvider
     }
 
     /**
-     * /**
-     * @param \Closure(
-     *     string,
-     *     string,
-     *     bool,
-     *     ?StatementsSource=,
-     *     ?Context=
-     *   ) : ?Type\Union $c
-     *
+     * @param \Closure(PropertyTypeProviderEvent) : ?Type\Union $c
      */
     public function registerClosure(string $fq_classlike_name, \Closure $c): void
     {
@@ -71,13 +57,14 @@ class PropertyTypeProvider
         ?Context $context = null
     ): ?Type\Union {
         foreach (self::$handlers[strtolower($fq_classlike_name)] as $property_handler) {
-            $property_type = $property_handler(
+            $event = new PropertyTypeProviderEvent(
                 $fq_classlike_name,
                 $property_name,
                 $read_mode,
                 $source,
                 $context
             );
+            $property_type = $property_handler($event);
 
             if ($property_type !== null) {
                 return $property_type;

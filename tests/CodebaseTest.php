@@ -1,16 +1,13 @@
 <?php
 namespace Psalm\Tests;
 
+use Psalm\Plugin\Hook\Event\AfterClassLikeVisitEvent;
 use function array_values;
 use function get_class;
-use PhpParser\Node\Stmt\ClassLike;
 use Psalm\Codebase;
 use Psalm\Context;
-use Psalm\FileManipulation;
-use Psalm\FileSource;
 use Psalm\Plugin\Hook\AfterClassLikeVisitInterface;
 use Psalm\PluginRegistrationSocket;
-use Psalm\Storage\ClassLikeStorage;
 use Psalm\Tests\Internal\Provider\ClassLikeStorageInstanceCacheProvider;
 use Psalm\Type;
 
@@ -139,17 +136,12 @@ class CodebaseTest extends TestCase
         );
         $hook = new class implements AfterClassLikeVisitInterface {
             /**
-             * @param FileManipulation[] $file_replacements
-             *
              * @return void
              */
-            public static function afterClassLikeVisit(
-                ClassLike $stmt,
-                ClassLikeStorage $storage,
-                FileSource $statements_source,
-                Codebase $codebase,
-                array &$file_replacements = []
-            ) {
+            public static function afterClassLikeVisit(AfterClassLikeVisitEvent $event)
+            {
+                $storage = $event->getStorage();
+                $codebase = $event->getCodebase();
                 if ($storage->name === 'C') {
                     $storage->custom_metadata['a'] = 'b';
                     $storage->methods['m']->custom_metadata['c'] = 'd';

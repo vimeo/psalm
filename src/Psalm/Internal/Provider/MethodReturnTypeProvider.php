@@ -5,6 +5,7 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Plugin\Hook\MethodReturnTypeProviderInterface;
+use Psalm\Plugin\Hook\Event\MethodReturnTypeProviderEvent;
 use Psalm\StatementsSource;
 use Psalm\Type;
 use function strtolower;
@@ -14,17 +15,7 @@ class MethodReturnTypeProvider
     /**
      * @var array<
      *   lowercase-string,
-     *   array<\Closure(
-     *     StatementsSource,
-     *     string,
-     *     lowercase-string,
-     *     list<PhpParser\Node\Arg>,
-     *     Context,
-     *     CodeLocation,
-     *     ?array<Type\Union>=,
-     *     ?string=,
-     *     ?lowercase-string=
-     *   ) : ?Type\Union>
+     *   array<\Closure(MethodReturnTypeProviderEvent) : ?Type\Union>
      * >
      */
     private static $handlers = [];
@@ -53,17 +44,7 @@ class MethodReturnTypeProvider
     }
 
     /**
-     * @param  \Closure(
-     *     StatementsSource,
-     *     string,
-     *     lowercase-string,
-     *     list<PhpParser\Node\Arg>,
-     *     Context,
-     *     CodeLocation,
-     *     ?array<Type\Union>=,
-     *     ?string=,
-     *     ?lowercase-string=
-     *   ) : ?Type\Union $c
+     * @param  \Closure(MethodReturnTypeProviderEvent) : ?Type\Union $c
      *
      */
     public function registerClosure(string $fq_classlike_name, \Closure $c): void
@@ -93,7 +74,7 @@ class MethodReturnTypeProvider
         ?string $called_method_name = null
     ): ?Type\Union {
         foreach (self::$handlers[strtolower($fq_classlike_name)] as $class_handler) {
-            $result = $class_handler(
+            $event = new MethodReturnTypeProviderEvent(
                 $statements_source,
                 $fq_classlike_name,
                 strtolower($method_name),
@@ -104,6 +85,7 @@ class MethodReturnTypeProvider
                 $called_fq_classlike_name,
                 $called_method_name ? strtolower($called_method_name) : null
             );
+            $result = $class_handler($event);
 
             if ($result) {
                 return $result;

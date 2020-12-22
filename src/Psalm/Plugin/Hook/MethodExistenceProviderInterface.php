@@ -1,8 +1,7 @@
 <?php
 namespace Psalm\Plugin\Hook;
 
-use Psalm\CodeLocation;
-use Psalm\StatementsSource;
+use Psalm\Plugin\Hook\Event\MethodExistenceProviderEvent;
 
 interface MethodExistenceProviderInterface
 {
@@ -16,10 +15,5 @@ interface MethodExistenceProviderInterface
      * not exist, return false. If you aren't sure if it exists or not, return null and the default analysis will
      * continue to determine if the method actually exists.
      */
-    public static function doesMethodExist(
-        string $fq_classlike_name,
-        string $method_name_lowercase,
-        ?StatementsSource $source = null,
-        ?CodeLocation $code_location = null
-    ): ?bool;
+    public static function doesMethodExist(MethodExistenceProviderEvent $event): ?bool;
 }

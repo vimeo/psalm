@@ -34,6 +34,7 @@ use Psalm\Issue\UnnecessaryVarAnnotation;
 use Psalm\Issue\UnusedMethod;
 use Psalm\Issue\UnusedProperty;
 use Psalm\Issue\UnusedVariable;
+use Psalm\Plugin\Hook\Event\AfterCodebasePopulatedEvent;
 use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
 use Psalm\Report;
@@ -624,7 +625,8 @@ class ProjectAnalyzer
 
             if ($plugin_classes) {
                 foreach ($plugin_classes as $plugin_fq_class_name) {
-                    $plugin_fq_class_name::afterCodebasePopulated($this->codebase);
+                    $event = new AfterCodebasePopulatedEvent($this->codebase);
+                    $plugin_fq_class_name::afterCodebasePopulated($event);
                 }
             }
         }

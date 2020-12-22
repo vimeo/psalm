@@ -1,16 +1,15 @@
 <?php
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
+use Psalm\Plugin\Hook\Event\FunctionReturnTypeProviderEvent;
 use function array_map;
 use function count;
 use function explode;
 use function in_array;
 use PhpParser;
-use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Type\ArrayType;
-use Psalm\StatementsSource;
 use Psalm\Type;
 use function strpos;
 use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
@@ -28,13 +27,10 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
     /**
      * @param  list<PhpParser\Node\Arg>    $call_args
      */
-    public static function getFunctionReturnType(
-        StatementsSource $statements_source,
-        string $function_id,
-        array $call_args,
-        Context $context,
-        CodeLocation $code_location
-    ) : Type\Union {
+    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event) : Type\Union {
+        $statements_source = $event->getStatementsSource();
+        $call_args = $event->getCallArgs();
+        $context = $event->getContext();
         if (!$statements_source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
             return Type::getMixed();
         }

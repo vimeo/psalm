@@ -20,6 +20,7 @@ use Psalm\Issue\PossiblyInvalidFunctionCall;
 use Psalm\Issue\PossiblyNullFunctionCall;
 use Psalm\Issue\UnusedFunctionCall;
 use Psalm\IssueBuffer;
+use Psalm\Plugin\Hook\Event\AfterEveryFunctionCallAnalysisEvent;
 use Psalm\Storage\Assertion;
 use Psalm\Type;
 use Psalm\Type\Atomic\TCallable;
@@ -203,13 +204,14 @@ class FunctionCallAnalyzer extends CallAnalyzer
 
             if ($config->after_every_function_checks) {
                 foreach ($config->after_every_function_checks as $plugin_fq_class_name) {
-                    $plugin_fq_class_name::afterEveryFunctionCallAnalysis(
+                    $event = new AfterEveryFunctionCallAnalysisEvent(
                         $stmt,
                         $function_call_info->function_id,
                         $context,
                         $statements_analyzer->getSource(),
                         $codebase
                     );
+                    $plugin_fq_class_name::afterEveryFunctionCallAnalysis($event);
                 }
             }
         }

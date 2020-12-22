@@ -5,6 +5,7 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Plugin\Hook\MethodVisibilityProviderInterface;
+use Psalm\Plugin\Hook\Event\MethodVisibilityProviderEvent;
 use Psalm\StatementsSource;
 use function strtolower;
 
@@ -13,13 +14,7 @@ class MethodVisibilityProvider
     /**
      * @var array<
      *   lowercase-string,
-     *   array<\Closure(
-     *     StatementsSource,
-     *     string,
-     *     string,
-     *     Context,
-     *     ?CodeLocation
-     *   ) : ?bool>
+     *   array<\Closure(MethodVisibilityProviderEvent) : ?bool>
      * >
      */
     private static $handlers = [];
@@ -43,15 +38,7 @@ class MethodVisibilityProvider
     }
 
     /**
-     * /**
-     * @param \Closure(
-     *     StatementsSource,
-     *     string,
-     *     string,
-     *     Context,
-     *     ?CodeLocation
-     *   ) : ?bool $c
-     *
+     * @param \Closure(MethodVisibilityProviderEvent) : ?bool $c
      */
     public function registerClosure(string $fq_classlike_name, \Closure $c): void
     {
@@ -71,13 +58,14 @@ class MethodVisibilityProvider
         ?CodeLocation $code_location = null
     ): ?bool {
         foreach (self::$handlers[strtolower($fq_classlike_name)] as $method_handler) {
-            $method_visible = $method_handler(
+            $event = new MethodVisibilityProviderEvent(
                 $source,
                 $fq_classlike_name,
                 $method_name,
                 $context,
                 $code_location
             );
+            $method_visible = $method_handler($event);
 
             if ($method_visible !== null) {
                 return $method_visible;

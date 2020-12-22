@@ -3,6 +3,7 @@ namespace Psalm\Internal\Provider;
 
 use PhpParser;
 use Psalm\Plugin\Hook\FunctionExistenceProviderInterface;
+use Psalm\Plugin\Hook\Event\FunctionExistenceProviderEvent;
 use Psalm\StatementsSource;
 use function strtolower;
 
@@ -11,10 +12,7 @@ class FunctionExistenceProvider
     /**
      * @var array<
      *   lowercase-string,
-     *   array<\Closure(
-     *     StatementsSource,
-     *     string
-     *   ) : ?bool>
+     *   array<\Closure(FunctionExistenceProviderEvent) : ?bool>
      * >
      */
     private static $handlers = [];
@@ -26,7 +24,6 @@ class FunctionExistenceProvider
 
     /**
      * @param  class-string<FunctionExistenceProviderInterface> $class
-     *
      */
     public function registerClass(string $class): void
     {
@@ -39,11 +36,7 @@ class FunctionExistenceProvider
 
     /**
      * @param lowercase-string $function_id
-     * @param \Closure(
-     *     StatementsSource,
-     *     string
-     *   ) : ?bool $c
-     *
+     * @param \Closure(FunctionExistenceProviderEvent) : ?bool $c
      */
     public function registerClosure(string $function_id, \Closure $c): void
     {
@@ -64,10 +57,11 @@ class FunctionExistenceProvider
         string $function_id
     ): ?bool {
         foreach (self::$handlers[strtolower($function_id)] as $function_handler) {
-            $function_exists = $function_handler(
+            $event = new FunctionExistenceProviderEvent(
                 $statements_source,
                 $function_id
             );
+            $function_exists = $function_handler($event);
 
             if ($function_exists !== null) {
                 return $function_exists;

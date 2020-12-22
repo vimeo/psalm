@@ -5,6 +5,7 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface;
+use Psalm\Plugin\Hook\Event\FunctionReturnTypeProviderEvent;
 use Psalm\StatementsSource;
 use Psalm\Type;
 use function strtolower;
@@ -14,13 +15,7 @@ class FunctionReturnTypeProvider
     /**
      * @var array<
      *   lowercase-string,
-     *   array<\Closure(
-     *     StatementsSource,
-     *     non-empty-string,
-     *     list<PhpParser\Node\Arg>,
-     *     Context,
-     *     CodeLocation
-     *   ) : ?Type\Union>
+     *   array<\Closure(FunctionReturnTypeProviderEvent) : ?Type\Union>
      * >
      */
     private static $handlers = [];
@@ -73,14 +68,7 @@ class FunctionReturnTypeProvider
 
     /**
      * @param lowercase-string $function_id
-     * @param \Closure(
-     *     StatementsSource,
-     *     non-empty-string,
-     *     list<PhpParser\Node\Arg>,
-     *     Context,
-     *     CodeLocation
-     *   ) : ?Type\Union $c
-     *
+     * @param \Closure(FunctionReturnTypeProviderEvent) : ?Type\Union $c
      */
     public function registerClosure(string $function_id, \Closure $c): void
     {
@@ -105,13 +93,14 @@ class FunctionReturnTypeProvider
         CodeLocation $code_location
     ): ?Type\Union {
         foreach (self::$handlers[strtolower($function_id)] as $function_handler) {
-            $return_type = $function_handler(
+            $event = new FunctionReturnTypeProviderEvent(
                 $statements_source,
                 $function_id,
                 $call_args,
                 $context,
                 $code_location
             );
+            $return_type = $function_handler($event);
 
             if ($return_type) {
                 return $return_type;

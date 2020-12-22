@@ -8,11 +8,9 @@ use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Type\Union;
 use Psalm\Type\Atomic;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
-use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use function array_merge;
 use function array_values;
 use function count;
-use function is_string;
 use function strpos;
 use function substr;
 

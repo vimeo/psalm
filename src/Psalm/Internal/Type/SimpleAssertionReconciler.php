@@ -9,7 +9,6 @@ use Psalm\CodeLocation;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\ParadoxicalCondition;
 use Psalm\Issue\RedundantCondition;
-use Psalm\Issue\TypeDoesNotContainType;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic;

@@ -1,13 +1,11 @@
 <?php
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
+use Psalm\Plugin\Hook\Event\FunctionReturnTypeProviderEvent;
 use function array_merge;
 use function array_values;
 use PhpParser;
-use Psalm\CodeLocation;
-use Psalm\Context;
 use Psalm\Internal\Type\TypeCombiner;
-use Psalm\StatementsSource;
 use Psalm\Type;
 
 class ArrayMergeReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface
@@ -23,13 +21,9 @@ class ArrayMergeReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnT
     /**
      * @param  list<PhpParser\Node\Arg>    $call_args
      */
-    public static function getFunctionReturnType(
-        StatementsSource $statements_source,
-        string $function_id,
-        array $call_args,
-        Context $context,
-        CodeLocation $code_location
-    ) : Type\Union {
+    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event) : Type\Union {
+        $statements_source = $event->getStatementsSource();
+        $call_args = $event->getCallArgs();
         if (!$statements_source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer
             || !$call_args
         ) {

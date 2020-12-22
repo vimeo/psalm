@@ -2,9 +2,7 @@
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use PhpParser;
-use Psalm\CodeLocation;
-use Psalm\Context;
-use Psalm\StatementsSource;
+use Psalm\Plugin\Hook\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Type;
 use Psalm\Internal\DataFlow\DataFlowNode;
 
@@ -20,16 +18,11 @@ class StrTrReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypePr
         ];
     }
 
-    /**
-     * @param  list<PhpParser\Node\Arg>    $call_args
-     */
-    public static function getFunctionReturnType(
-        StatementsSource $statements_source,
-        string $function_id,
-        array $call_args,
-        Context $context,
-        CodeLocation $code_location
-    ) : Type\Union {
+    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event) : Type\Union {
+        $statements_source = $event->getStatementsSource();
+        $call_args = $event->getCallArgs();
+        $function_id = $event->getFunctionId();
+        $code_location = $event->getCodeLocation();
         if (!$statements_source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
             throw new \UnexpectedValueException();
         }

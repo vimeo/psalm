@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Internal\PhpVisitor;
 
+use Psalm\Plugin\Hook\Event\AfterClassLikeVisitEvent;
 use function array_pop;
 use function count;
 use function end;
@@ -546,13 +547,15 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                 $file_manipulations = [];
 
                 foreach ($this->after_classlike_check_plugins as $plugin_fq_class_name) {
-                    $plugin_fq_class_name::afterClassLikeVisit(
+                    $event = new AfterClassLikeVisitEvent(
                         $node,
                         $classlike_storage,
                         $this,
                         $this->codebase,
                         $file_manipulations
                     );
+                    $plugin_fq_class_name::afterClassLikeVisit($event);
+                    $file_manipulations = $event->getFileReplacements();
                 }
             }
 

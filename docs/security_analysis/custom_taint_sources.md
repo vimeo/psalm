@@ -25,12 +25,11 @@ For example this plugin treats all variables named `$bad_data` as taint sources.
 namespace Some\Ns;
 
 use PhpParser;
-use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\FileManipulation;
 use Psalm\Plugin\Hook\AfterExpressionAnalysisInterface;
-use Psalm\StatementsSource;
+use Psalm\Plugin\Hook\Event\AfterExpressionAnalysisEvent;
 use Psalm\Type\TaintKindGroup;
 
 class BadSqlTainter implements AfterExpressionAnalysisInterface
@@ -44,13 +43,10 @@ class BadSqlTainter implements AfterExpressionAnalysisInterface
      *
      * @return void
      */
-    public static function afterExpressionAnalysis(
-        PhpParser\Node\Expr $expr,
-        Context $context,
-        StatementsSource $statements_source,
-        Codebase $codebase,
-        array &$file_replacements = []
-    ) {
+    public static function afterExpressionAnalysis(AfterExpressionAnalysisEvent $event): ?bool {
+        $expr = $event->getExpr();
+        $statements_source = $event->getStatementsSource();
+        $codebase = $event->getCodebase();
         if ($expr instanceof PhpParser\Node\Expr\Variable
             && $expr->name === 'bad_data'
         ) {

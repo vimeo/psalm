@@ -5,6 +5,7 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Plugin\Hook\PropertyExistenceProviderInterface;
+use Psalm\Plugin\Hook\Event\PropertyExistenceProviderEvent;
 use Psalm\StatementsSource;
 use function strtolower;
 
@@ -13,14 +14,7 @@ class PropertyExistenceProvider
     /**
      * @var array<
      *   lowercase-string,
-     *   array<\Closure(
-     *     string,
-     *     string,
-     *     bool,
-     *     ?StatementsSource=,
-     *     ?Context=,
-     *     ?CodeLocation=
-     *   ) : ?bool>
+     *   array<\Closure(PropertyExistenceProviderEvent) : ?bool>
      * >
      */
     private static $handlers = [];
@@ -44,14 +38,7 @@ class PropertyExistenceProvider
     }
 
     /**
-     * @param \Closure(
-     *     string,
-     *     string,
-     *     bool,
-     *     ?StatementsSource=,
-     *     ?Context=,
-     *     ?CodeLocation=
-     *   ) : ?bool $c
+     * @param \Closure(PropertyExistenceProviderEvent) : ?bool $c
      *
      */
     public function registerClosure(string $fq_classlike_name, \Closure $c): void
@@ -73,7 +60,7 @@ class PropertyExistenceProvider
         ?CodeLocation $code_location = null
     ): ?bool {
         foreach (self::$handlers[strtolower($fq_classlike_name)] as $property_handler) {
-            $property_exists = $property_handler(
+            $event = new PropertyExistenceProviderEvent(
                 $fq_classlike_name,
                 $property_name,
                 $read_mode,
@@ -81,6 +68,7 @@ class PropertyExistenceProvider
                 $context,
                 $code_location
             );
+            $property_exists = $property_handler($event);
 
             if ($property_exists !== null) {
                 return $property_exists;

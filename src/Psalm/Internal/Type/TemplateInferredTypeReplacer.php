@@ -3,39 +3,16 @@
 namespace Psalm\Internal\Type;
 
 use Psalm\Codebase;
-use Psalm\CodeLocation;
-use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
-use Psalm\Internal\Type\TemplateResult;
-use Psalm\Internal\Type\TypeCombiner;
-use Psalm\StatementsSource;
-use Psalm\Storage\FileStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic;
-use Psalm\Type\Atomic\TFloat;
-use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIterable;
-use Psalm\Type\Atomic\TLiteralFloat;
-use Psalm\Type\Atomic\TLiteralInt;
-use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
-use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
-use function array_filter;
 use function array_merge;
 use function array_shift;
-use function array_unique;
 use function array_values;
-use function count;
-use function get_class;
-use function implode;
-use function is_string;
-use function reset;
-use function sort;
-use function strpos;
-use function strval;
 use function substr;
 
 class TemplateInferredTypeReplacer

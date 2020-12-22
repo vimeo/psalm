@@ -2,14 +2,12 @@
 namespace Psalm\Example\Plugin\ComposerBased;
 
 use PhpParser;
-use Psalm\Codebase;
 use Psalm\CodeLocation;
-use Psalm\Context;
 use Psalm\FileManipulation;
 use Psalm\IssueBuffer;
 use Psalm\Issue\ArgumentTypeCoercion;
 use Psalm\Plugin\Hook\AfterStatementAnalysisInterface;
-use Psalm\StatementsSource;
+use Psalm\Plugin\Hook\Event\AfterStatementAnalysisEvent;
 
 class EchoChecker implements AfterStatementAnalysisInterface
 {
@@ -20,13 +18,9 @@ class EchoChecker implements AfterStatementAnalysisInterface
      *
      * @return null|false
      */
-    public static function afterStatementAnalysis(
-        PhpParser\Node\Stmt $stmt,
-        Context $context,
-        StatementsSource $statements_source,
-        Codebase $codebase,
-        array &$file_replacements = []
-    ): ?bool {
+    public static function afterStatementAnalysis(AfterStatementAnalysisEvent $event): ?bool {
+        $stmt = $event->getStmt();
+        $statements_source = $event->getStatementsSource();
         if ($stmt instanceof PhpParser\Node\Stmt\Echo_) {
             foreach ($stmt->exprs as $expr) {
                 $expr_type = $statements_source->getNodeTypeProvider()->getType($expr);

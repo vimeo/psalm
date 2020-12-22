@@ -11,6 +11,8 @@ use Psalm\Internal\Type\TypeAlias\LinkableTypeAlias;
 use Psalm\Issue\InvalidTypeImport;
 use Psalm\Issue\UncaughtThrowInGlobalScope;
 use Psalm\IssueBuffer;
+use Psalm\Plugin\Hook\Event\AfterFileAnalysisEvent;
+use Psalm\Plugin\Hook\Event\BeforeFileAnalysisEvent;
 use Psalm\Type;
 use function implode;
 use function strtolower;
@@ -159,7 +161,8 @@ class FileAnalyzer extends SourceAnalyzer
             return;
         }
         foreach ($codebase->config->before_file_checks as $plugin_class) {
-            $plugin_class::beforeAnalyzeFile($this, $this->context, $file_storage, $codebase);
+            $event = new BeforeFileAnalysisEvent($this, $this->context, $file_storage, $codebase);
+            $plugin_class::beforeAnalyzeFile($event);
         }
 
         if ($codebase->alter_code) {
@@ -269,7 +272,8 @@ class FileAnalyzer extends SourceAnalyzer
         }
 
         foreach ($codebase->config->after_file_checks as $plugin_class) {
-            $plugin_class::afterAnalyzeFile($this, $this->context, $file_storage, $codebase);
+            $event = new AfterFileAnalysisEvent($this, $this->context, $file_storage, $codebase);
+            $plugin_class::afterAnalyzeFile($event);
         }
 
         $this->class_analyzers_to_analyze = [];

@@ -23,7 +23,6 @@ use function array_diff_key;
 use function array_filter;
 use function array_values;
 use function array_keys;
-use function preg_match;
 use function count;
 
 class IfConditionalAnalyzer

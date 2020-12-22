@@ -2,20 +2,16 @@
 namespace Psalm\Example\Plugin;
 
 use PhpParser;
-use PhpParser\Node\Expr;
-use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\StaticCall;
 use Psalm\Checker;
 use Psalm\Checker\StatementsChecker;
-use Psalm\Codebase;
 use Psalm\CodeLocation;
-use Psalm\Context;
 use Psalm\FileManipulation;
 use Psalm\Plugin\Hook\AfterFunctionCallAnalysisInterface;
 use Psalm\Plugin\Hook\AfterMethodCallAnalysisInterface;
-use Psalm\StatementsSource;
-use Psalm\Type\Union;
+use Psalm\Plugin\Hook\Event\AfterFunctionCallAnalysisEvent;
+use Psalm\Plugin\Hook\Event\AfterMethodCallAnalysisEvent;
 
 /**
  * Prevents any assignment to a float value
@@ -26,17 +22,11 @@ class FunctionCasingChecker implements AfterFunctionCallAnalysisInterface, After
      * @param  MethodCall|StaticCall $expr
      * @param  FileManipulation[] $file_replacements
      */
-    public static function afterMethodCallAnalysis(
-        Expr $expr,
-        string $method_id,
-        string $appearing_method_id,
-        string $declaring_method_id,
-        Context $context,
-        StatementsSource $statements_source,
-        Codebase $codebase,
-        array &$file_replacements = [],
-        Union &$return_type_candidate = null
-    ): void {
+    public static function afterMethodCallAnalysis(AfterMethodCallAnalysisEvent $event): void {
+        $expr = $event->getExpr();
+        $codebase = $event->getCodebase();
+        $declaring_method_id = $event->getDeclaringMethodId();
+        $statements_source = $event->getStatementsSource();
         if (!$expr->name instanceof PhpParser\Node\Identifier) {
             return;
         }
@@ -74,15 +64,11 @@ class FunctionCasingChecker implements AfterFunctionCallAnalysisInterface, After
      * @param non-empty-string $function_id
      * @param  FileManipulation[] $file_replacements
      */
-    public static function afterFunctionCallAnalysis(
-        FuncCall $expr,
-        string $function_id,
-        Context $context,
-        StatementsSource $statements_source,
-        Codebase $codebase,
-        Union $return_type_candidate,
-        array &$file_replacements
-    ): void {
+    public static function afterFunctionCallAnalysis(AfterFunctionCallAnalysisEvent $event): void {
+        $expr = $event->getExpr();
+        $codebase = $event->getCodebase();
+        $statements_source = $event->getStatementsSource();
+        $function_id = $event->getFunctionId();
         if ($expr->name instanceof PhpParser\Node\Expr) {
             return;
         }

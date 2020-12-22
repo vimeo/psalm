@@ -115,11 +115,8 @@ If you want something more custom, like suppressing a certain type of error on c
 <?php
 namespace Foo\Bar;
 
-use PhpParser\Node;
-use Psalm\Codebase;
-use Psalm\FileSource;
 use Psalm\Plugin\Hook\AfterClassLikeVisitInterface;
-use Psalm\Storage\ClassLikeStorage;
+use Psalm\Plugin\Hook\Event\AfterClassLikeVisitEvent;
 use ReflectionClass;
 
 /**
@@ -127,14 +124,9 @@ use ReflectionClass;
  */
 class DynamicallySuppressClassIssueBasedOnInterface implements AfterClassLikeVisitInterface
 {
-    public static function afterClassLikeVisit(
-        Node\Stmt\ClassLike $stmt,
-        ClassLikeStorage $storage,
-        FileSource $statements_source,
-        Codebase $codebase,
-        array &$file_replacements = []
-    )
+    public static function afterClassLikeVisit(AfterClassLikeVisitEvent $event)
     {
+        $storage = $event->getStorage();
         if ($storage->user_defined
             && !$storage->is_interface
             && \class_exists($storage->name)

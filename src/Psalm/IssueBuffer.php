@@ -1,6 +1,7 @@
 <?php
 namespace Psalm;
 
+use Psalm\Plugin\Hook\Event\AfterAnalysisEvent;
 use Psalm\Report\PhpStormReport;
 use function array_pop;
 use function array_search;
@@ -554,12 +555,13 @@ class IssueBuffer
 
             foreach ($after_analysis_hooks as $after_analysis_hook) {
                 /** @psalm-suppress ArgumentTypeCoercion due to Psalm bug */
-                $after_analysis_hook::afterAnalysis(
+                $event = new AfterAnalysisEvent(
                     $codebase,
                     $issues_data,
                     $build_info,
                     $source_control_info
                 );
+                $after_analysis_hook::afterAnalysis($event);
             }
         }
 

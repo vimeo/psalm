@@ -1,17 +1,16 @@
 <?php
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
+use Psalm\Plugin\Hook\Event\FunctionReturnTypeProviderEvent;
 use function array_map;
 use function count;
 use function is_string;
 use PhpParser;
 use Psalm\CodeLocation;
-use Psalm\Context;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Issue\InvalidReturnType;
 use Psalm\IssueBuffer;
-use Psalm\StatementsSource;
 use Psalm\Type;
 use Psalm\Type\Reconciler;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
@@ -26,16 +25,11 @@ class ArrayFilterReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
         return ['array_filter'];
     }
 
-    /**
-     * @param  list<PhpParser\Node\Arg>    $call_args
-     */
-    public static function getFunctionReturnType(
-        StatementsSource $statements_source,
-        string $function_id,
-        array $call_args,
-        Context $context,
-        CodeLocation $code_location
-    ) : Type\Union {
+    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event) : Type\Union {
+        $statements_source = $event->getStatementsSource();
+        $call_args = $event->getCallArgs();
+        $context = $event->getContext();
+        $code_location = $event->getCodeLocation();
         if (!$statements_source instanceof StatementsAnalyzer
             || !$call_args
         ) {

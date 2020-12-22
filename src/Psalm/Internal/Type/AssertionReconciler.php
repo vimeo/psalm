@@ -10,7 +10,6 @@ use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
-use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\DocblockTypeContradiction;

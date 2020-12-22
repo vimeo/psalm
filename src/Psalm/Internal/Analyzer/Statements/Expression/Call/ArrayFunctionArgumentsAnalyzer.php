@@ -11,7 +11,6 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
-use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\CodeLocation;
 use Psalm\Context;

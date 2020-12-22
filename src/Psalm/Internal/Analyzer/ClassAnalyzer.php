@@ -39,6 +39,7 @@ use Psalm\Issue\UndefinedTrait;
 use Psalm\Issue\UnimplementedAbstractMethod;
 use Psalm\Issue\UnimplementedInterfaceMethod;
 use Psalm\IssueBuffer;
+use Psalm\Plugin\Hook\Event\AfterClassLikeAnalysisEvent;
 use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
@@ -974,15 +975,17 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             $file_manipulations = [];
 
             foreach ($plugin_classes as $plugin_fq_class_name) {
-                if ($plugin_fq_class_name::afterStatementAnalysis(
+                $event = new AfterClassLikeAnalysisEvent(
                     $class,
                     $storage,
                     $this,
                     $codebase,
                     $file_manipulations
-                ) === false) {
+                );
+                if ($plugin_fq_class_name::afterStatementAnalysis($event) === false) {
                     return false;
                 }
+                $file_manipulations = $event->getFileReplacements();
             }
 
             if ($file_manipulations) {

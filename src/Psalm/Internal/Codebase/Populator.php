@@ -4,7 +4,6 @@ namespace Psalm\Internal\Codebase;
 use function array_keys;
 use function array_merge;
 use function count;
-use function is_int;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;

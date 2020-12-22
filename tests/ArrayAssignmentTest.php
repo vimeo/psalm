@@ -2,7 +2,6 @@
 namespace Psalm\Tests;
 
 use Psalm\Context;
-use Psalm\Issue\InvalidArrayOffset;
 
 class ArrayAssignmentTest extends TestCase
 {

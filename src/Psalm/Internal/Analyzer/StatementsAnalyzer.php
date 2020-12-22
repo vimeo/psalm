@@ -40,6 +40,7 @@ use Psalm\Issue\UnevaluatedCode;
 use Psalm\Issue\UnrecognizedStatement;
 use Psalm\Issue\UnusedVariable;
 use Psalm\IssueBuffer;
+use Psalm\Plugin\Hook\Event\AfterStatementAnalysisEvent;
 use Psalm\Type;
 use function strtolower;
 use function fwrite;
@@ -581,15 +582,17 @@ class StatementsAnalyzer extends SourceAnalyzer
             $file_manipulations = [];
 
             foreach ($plugin_classes as $plugin_fq_class_name) {
-                if ($plugin_fq_class_name::afterStatementAnalysis(
+                $event = new AfterStatementAnalysisEvent(
                     $stmt,
                     $context,
                     $statements_analyzer,
                     $codebase,
                     $file_manipulations
-                ) === false) {
+                );
+                if ($plugin_fq_class_name::afterStatementAnalysis($event) === false) {
                     return false;
                 }
+                $file_manipulations = $event->getFileReplacements();
             }
 
             if ($file_manipulations) {

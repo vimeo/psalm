@@ -5,6 +5,7 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Plugin\Hook\MethodParamsProviderInterface;
+use Psalm\Plugin\Hook\Event\MethodParamsProviderEvent;
 use Psalm\StatementsSource;
 use function strtolower;
 
@@ -13,14 +14,7 @@ class MethodParamsProvider
     /**
      * @var array<
      *   lowercase-string,
-     *   array<\Closure(
-     *     string,
-     *     string,
-     *     ?list<PhpParser\Node\Arg>=,
-     *     ?StatementsSource=,
-     *     ?Context=,
-     *     ?CodeLocation=
-     *   ) : ?array<int, \Psalm\Storage\FunctionLikeParameter>>
+     *   array<\Closure(MethodParamsProviderEvent) : ?array<int, \Psalm\Storage\FunctionLikeParameter>>
      * >
      */
     private static $handlers = [];
@@ -46,15 +40,7 @@ class MethodParamsProvider
     }
 
     /**
-     * @param  \Closure(
-     *     string,
-     *     string,
-     *     ?list<PhpParser\Node\Arg>=,
-     *     ?StatementsSource=,
-     *     ?Context=,
-     *     ?CodeLocation=
-     *   ) : ?array<int, \Psalm\Storage\FunctionLikeParameter> $c
-     *
+     * @param  \Closure(MethodParamsProviderEvent) : ?array<int, \Psalm\Storage\FunctionLikeParameter> $c
      */
     public function registerClosure(string $fq_classlike_name, \Closure $c): void
     {
@@ -80,7 +66,7 @@ class MethodParamsProvider
         ?CodeLocation $code_location = null
     ): ?array {
         foreach (self::$handlers[strtolower($fq_classlike_name)] as $class_handler) {
-            $result = $class_handler(
+            $event = new MethodParamsProviderEvent(
                 $fq_classlike_name,
                 $method_name_lowercase,
                 $call_args,
@@ -88,6 +74,7 @@ class MethodParamsProvider
                 $context,
                 $code_location
             );
+            $result = $class_handler($event);
 
             if ($result !== null) {
                 return $result;

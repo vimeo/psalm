@@ -23,6 +23,7 @@ use Psalm\Issue\PropertyTypeCoercion;
 use Psalm\Issue\UndefinedThisPropertyAssignment;
 use Psalm\Issue\UndefinedThisPropertyFetch;
 use Psalm\IssueBuffer;
+use Psalm\Plugin\Hook\Event\AfterMethodCallAnalysisEvent;
 use Psalm\Storage\Assertion;
 use Psalm\Type;
 use function strtolower;
@@ -377,7 +378,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
 
             if ($appearing_method_id !== null && $declaring_method_id !== null) {
                 foreach ($config->after_method_checks as $plugin_fq_class_name) {
-                    $plugin_fq_class_name::afterMethodCallAnalysis(
+                    $event = new AfterMethodCallAnalysisEvent(
                         $stmt,
                         (string) $method_id,
                         (string) $appearing_method_id,
@@ -388,6 +389,9 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                         $file_manipulations,
                         $return_type_candidate
                     );
+                    $plugin_fq_class_name::afterMethodCallAnalysis($event);
+                    $file_manipulations = $event->getFileReplacements();
+                    $return_type_candidate = $event->getReturnTypeCandidate();
                 }
             }
 

@@ -1,26 +1,14 @@
 <?php
 namespace Psalm\Plugin\Hook;
 
-use PhpParser\Node;
-use Psalm\Codebase;
-use Psalm\FileManipulation;
-use Psalm\StatementsSource;
-use Psalm\Storage\FunctionLikeStorage;
+use Psalm\Plugin\Hook\Event\AfterFunctionLikeAnalysisEvent;
 
 interface AfterFunctionLikeAnalysisInterface
 {
     /**
      * Called after a statement has been checked
      *
-     * @param  FileManipulation[]   $file_replacements
-     *
      * @return null|false
      */
-    public static function afterStatementAnalysis(
-        Node\FunctionLike $stmt,
-        FunctionLikeStorage $classlike_storage,
-        StatementsSource $statements_source,
-        Codebase $codebase,
-        array &$file_replacements = []
-    ): ?bool;
+    public static function afterStatementAnalysis(AfterFunctionLikeAnalysisEvent $event): ?bool;
 }

@@ -15,6 +15,7 @@ use Psalm\Issue\UndefinedAttributeClass;
 use Psalm\Issue\UndefinedClass;
 use Psalm\Issue\UndefinedDocblockClass;
 use Psalm\IssueBuffer;
+use Psalm\Plugin\Hook\Event\AfterClassLikeExistenceCheckEvent;
 use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
@@ -372,13 +373,15 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                 $file_manipulations = [];
 
                 foreach ($plugin_classes as $plugin_fq_class_name) {
-                    $plugin_fq_class_name::afterClassLikeExistenceCheck(
+                    $event = new AfterClassLikeExistenceCheckEvent(
                         $fq_class_name,
                         $code_location,
                         $statements_source,
                         $codebase,
                         $file_manipulations
                     );
+                    $plugin_fq_class_name::afterClassLikeExistenceCheck($event);
+                    $file_manipulations = $event->getFileReplacements();
                 }
 
                 if ($file_manipulations) {
