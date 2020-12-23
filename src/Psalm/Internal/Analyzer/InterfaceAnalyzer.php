@@ -4,6 +4,10 @@ namespace Psalm\Internal\Analyzer;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Issue\UndefinedInterface;
+use function strtolower;
+use function explode;
+use function array_pop;
+use function implode;
 
 /**
  * @internal
@@ -37,7 +41,6 @@ class InterfaceAnalyzer extends ClassLikeAnalyzer
         $config = $project_analyzer->getConfig();
 
         if ($codebase->alter_code && $class->name && $codebase->classes_to_move) {
-
             if (isset($codebase->classes_to_move[strtolower($this->fq_class_name)])) {
                 $destination_class = $codebase->classes_to_move[strtolower($this->fq_class_name)];
 
@@ -51,10 +54,8 @@ class InterfaceAnalyzer extends ClassLikeAnalyzer
                 $destination_ns = implode('\\', $destination_class_parts);
 
                 if (strtolower($source_ns) !== strtolower($destination_ns)) {
-
                     // If the trait already has a namespace
                     if ($storage->namespace_name_location) {
-
                         $bounds = $storage->namespace_name_location->getSelectionBounds();
 
                         $file_manipulations = [
