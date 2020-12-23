@@ -108,6 +108,11 @@ class NamespaceAnalyzer extends SourceAnalyzer
                 $fq_class_name,
                 new InterfaceAnalyzer($stmt, $this, $fq_class_name)
             );
+        } elseif ($stmt instanceof PhpParser\Node\Stmt\Trait_) {
+            $this->source->addNamespacedTraitAnalyzer(
+                $fq_class_name,
+                new TraitAnalyzer($stmt, $this, $fq_class_name, $this->getAliases())
+            );
         }
     }
 

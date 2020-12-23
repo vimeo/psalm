@@ -7,12 +7,14 @@ use Psalm\Aliases;
 /**
  * @internal
  */
-class TraitAnalyzer extends ClassLikeAnalyzer
+class TraitAnalyzer extends ClassAnalyzer
 {
     /**
      * @var Aliases
      */
     private $aliases;
+
+    protected $extends = false;
 
     public function __construct(
         PhpParser\Node\Stmt\Trait_ $class,
@@ -24,10 +26,19 @@ class TraitAnalyzer extends ClassLikeAnalyzer
         $this->file_analyzer = $source->getFileAnalyzer();
         $this->aliases = $source->getAliases();
         $this->class = $class;
+        $this->class->extends = false; // Traits cant' extend stuff
+        $this->class->implements = []; // Traits can't implement interfaces
         $this->fq_class_name = $fq_class_name;
         $codebase = $source->getCodebase();
         $this->storage = $codebase->classlike_storage_provider->get($fq_class_name);
         $this->aliases = $aliases;
+    }
+
+    protected function validateNodeStmt()
+    {
+        if (!$this->class instanceof PhpParser\Node\Stmt\Trait_) {
+            throw new \LogicException('Something went badly wrong');
+        }
     }
 
     public function getNamespace(): ?string

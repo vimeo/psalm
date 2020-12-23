@@ -701,7 +701,9 @@ class ProjectAnalyzer
             $source_parts = explode('::', $source);
             $destination_parts = explode('::', $destination);
 
-            if (!$this->codebase->classlikes->hasFullyQualifiedClassName($source_parts[0])) {
+            if (!$this->codebase->classlikes->hasFullyQualifiedClassName($source_parts[0])
+            && !$this->codebase->classlikes->hasFullyQualifiedInterfaceName($source_parts[0])
+            && !$this->codebase->classlikes->hasFullyQualifiedTraitName($source_parts[0])) {
                 throw new \Psalm\Exception\RefactorException(
                     'Source class ' . $source_parts[0] . ' doesn’t exist'
                 );

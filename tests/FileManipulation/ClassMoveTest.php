@@ -76,6 +76,103 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
     public function providerValidCodeParse(): array
     {
         return [
+            'renameTraitUsedByTrait' => [
+                '<?php
+                    namespace Foo {
+
+                        trait A {
+                        }
+                    };
+                    
+                    namespace Bar {
+
+                        trait C {
+                            use \Foo\A;
+                        }
+                    };',
+                '<?php
+                    namespace Baz {
+
+                        trait C {
+                        }
+                    };
+                    
+                    namespace Bar {
+
+                        trait C {
+                            use \Baz\C;
+                        }
+                    };',
+                [
+                    'Foo\A' => 'Baz\C',
+                ],
+            ],
+            'renameTraitUsedByClass' => [
+                '<?php
+                    namespace Foo {
+
+                        trait A {
+                        }
+                    };
+                    
+                    namespace Bar {
+
+                        Class C {
+                            use \Foo\A;
+                        }
+                    };',
+                '<?php
+                    namespace Baz {
+
+                        trait C {
+                        }
+                    };
+                    
+                    namespace Bar {
+
+                        Class C {
+                            use \Baz\C;
+                        }
+                    };',
+                [
+                    'Foo\A' => 'Baz\C',
+                ],
+            ],
+            'renameInterface' => [
+                '<?php
+                    namespace Foo {
+
+                        interface C {
+                        }
+                    };
+
+                    namespace Bar {
+
+                        interface A {
+
+                            public function __invoke(string $argument =\'\'): \Foo\C;
+                        }
+                    };'
+                    ,
+                '<?php
+                    namespace Baz {
+
+                        interface D {
+                        }
+                    };
+
+                    namespace Bar {
+
+                        interface A {
+
+                            public function __invoke(string $argument =\'\'): \Baz\D;
+                        }
+                    };'
+                    ,
+                [
+                    'Foo\C' => 'Baz\D',
+                ],
+            ],
             'renameEmptyClass' => [
                 '<?php
                     namespace Ns;

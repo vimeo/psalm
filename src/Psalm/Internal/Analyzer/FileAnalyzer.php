@@ -87,6 +87,11 @@ class FileAnalyzer extends SourceAnalyzer
     public $class_analyzers_to_analyze = [];
 
     /**
+     * @var array<lowercase-string, TraitAnalyzer>
+     */
+    public $trait_analyzers_to_analyze = [];
+
+    /**
      * @var null|Context
      */
     public $context;
@@ -123,6 +128,7 @@ class FileAnalyzer extends SourceAnalyzer
 
     public function analyze(
         ?Context $file_context = null,
+        bool $preserve_analyzers = false, 
         ?Context $global_context = null
     ): void {
         $codebase = $this->project_analyzer->getCodebase();
@@ -208,6 +214,16 @@ class FileAnalyzer extends SourceAnalyzer
 
         foreach ($this->class_analyzers_to_analyze as $class_analyzer) {
             $class_analyzer->analyze(null, $this->context);
+        }
+
+        foreach ($this->trait_analyzers_to_analyze as $trait_analyzer) {
+            $trait_analyzer->analyze(null, $this->context);
+        }
+
+        if (!$preserve_analyzers) {
+            $this->class_analyzers_to_analyze = [];
+            $this->interface_analyzers_to_analyze = [];
+            $this->trait_analyzers_to_analyze = [];
         }
 
         if ($codebase->config->check_for_throws_in_global_scope) {
@@ -363,6 +379,11 @@ class FileAnalyzer extends SourceAnalyzer
     public function addNamespacedInterfaceAnalyzer(string $fq_class_name, InterfaceAnalyzer $interface_analyzer): void
     {
         $this->interface_analyzers_to_analyze[strtolower($fq_class_name)] = $interface_analyzer;
+    }
+
+    public function addNamespacedTraitAnalyzer(string $fq_class_name, TraitAnalyzer $trait_analyzer): void
+    {
+        $this->trait_analyzers_to_analyze[strtolower($fq_class_name)] = $trait_analyzer;
     }
 
     public function getMethodMutations(

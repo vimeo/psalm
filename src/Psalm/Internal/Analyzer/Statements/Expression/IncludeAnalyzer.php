@@ -178,6 +178,7 @@ class IncludeAnalyzer
                 try {
                     $include_file_analyzer->analyze(
                         $context,
+                        false,
                         $global_context
                     );
                 } catch (\Psalm\Exception\UnpreparedAnalysisException $e) {
