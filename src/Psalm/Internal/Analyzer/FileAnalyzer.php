@@ -211,6 +211,7 @@ class FileAnalyzer extends SourceAnalyzer
         }
 
         // check any leftover classes not already evaluated
+
         foreach ($this->class_analyzers_to_analyze as $class_analyzer) {
             $class_analyzer->analyze(null, $this->context);
         }
@@ -341,6 +342,7 @@ class FileAnalyzer extends SourceAnalyzer
             if (!$this->codebase->classExists($stmt->name->name)) {
                 return;
             }
+
 
             $class_analyzer = new ClassAnalyzer($stmt, $this, $stmt->name->name);
 

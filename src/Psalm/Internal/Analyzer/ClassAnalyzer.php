@@ -94,6 +94,13 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             . '_' . $class->getLine() . '_' . (int)$class->getAttribute('startFilePos');
     }
 
+    protected function validateNodeStmt()
+    {
+        if (!$this->class instanceof PhpParser\Node\Stmt\Class_) {
+            throw new \LogicException('Something went badly wrong');
+        }
+    }
+
     /**
      * @return null|false
      */
@@ -103,9 +110,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
     ): ?bool {
         $class = $this->class;
 
-        if (!$class instanceof PhpParser\Node\Stmt\Class_) {
-            throw new \LogicException('Something went badly wrong');
-        }
+        $this->validateNodeStmt();
 
         $fq_class_name = $class_context && $class_context->self ? $class_context->self : $this->fq_class_name;
 
@@ -1533,6 +1538,28 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 $trait_name,
                 $aliases
             );
+
+            if ($codebase->alter_code && $this->class->name && $codebase->classes_to_move) {
+                    if (isset($codebase->classes_to_move[strtolower($fq_trait_name)]))
+                    {
+                        $destination_trait = $codebase->classes_to_move[strtolower($fq_trait_name)];
+
+                        $bounds = $trait_location->getSelectionBounds();
+
+                                $file_manipulations = [
+                                    new \Psalm\FileManipulation(
+                                        $bounds[0],
+                                        $bounds[1],
+                                        Type::getStringFromFQCLN($destination_trait, null, [], null)
+                                    )
+                                ];
+
+                                \Psalm\Internal\FileManipulation\FileManipulationBuffer::add(
+                                    $this->getFilePath(),
+                                    $file_manipulations
+                                );
+                    }
+                }
 
             if (!$codebase->classlikes->hasFullyQualifiedTraitName($fq_trait_name, $trait_location)) {
                 if (IssueBuffer::accepts(
