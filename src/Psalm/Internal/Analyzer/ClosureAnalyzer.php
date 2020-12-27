@@ -24,6 +24,7 @@ use function preg_match;
 class ClosureAnalyzer extends FunctionLikeAnalyzer
 {
     /**
+     * @psalm-suppress NonInvariantPropertyType
      * @var PhpParser\Node\Expr\Closure|PhpParser\Node\Expr\ArrowFunction
      */
     protected $function;

@@ -570,7 +570,6 @@ class ClassTest extends TestCase
             'extendException' => [
                 '<?php
                     class ME extends Exception {
-                        /** @var string */
                         protected $message = "hello";
                     }',
             ],

@@ -30,6 +30,7 @@ use Psalm\Issue\MissingImmutableAnnotation;
 use Psalm\Issue\MissingPropertyType;
 use Psalm\Issue\MissingTemplateParam;
 use Psalm\Issue\MutableDependency;
+use Psalm\Issue\NonInvariantPropertyType;
 use Psalm\Issue\OverriddenPropertyAccess;
 use Psalm\Issue\PropertyNotSetInConstructor;
 use Psalm\Issue\ReservedWord;
@@ -651,7 +652,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     ) {
                         if (IssueBuffer::accepts(
                             new OverriddenPropertyAccess(
-                                'Property ' . $guide_class_storage->name . '::$' . $property_name
+                                'Property ' . $fq_class_name . '::$' . $property_name
                                     . ' has different access level than '
                                     . $storage->name . '::$' . $property_name,
                                 $property_storage->location
@@ -659,8 +660,22 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         )) {
                             // fall through
                         }
+                    }
 
-                        continue;
+                    if ($property_storage->type && $guide_property_storage->type && $property_storage->location &&
+                        !$property_storage->type->equals($guide_property_storage->type)) {
+                        if (IssueBuffer::accepts(
+                            new NonInvariantPropertyType(
+                                'Property ' . $fq_class_name . '::$' . $property_name
+                                . ' has type ' . $property_storage->type->getId()
+                                . ", not invariant with " . $guide_class_name . '::$' . $property_name . ' of type ' .
+                                $guide_property_storage->type->getId(),
+                                $property_storage->location
+                            ),
+                            $property_storage->suppressed_issues
+                        )) {
+                            // fall through
+                        }
                     }
                 }
             }

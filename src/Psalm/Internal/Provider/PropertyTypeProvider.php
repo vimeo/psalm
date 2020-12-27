@@ -95,6 +95,11 @@ class PropertyTypeProvider
         ?StatementsSource $source = null,
         ?Context $context = null
     ): ?Type\Union {
+
+        if ($source) {
+            $source->addSuppressedIssues(['NonInvariantPropertyType']);
+        }
+
         foreach (self::$handlers[strtolower($fq_classlike_name)] ?? [] as $property_handler) {
             $event = new PropertyTypeProviderEvent(
                 $fq_classlike_name,

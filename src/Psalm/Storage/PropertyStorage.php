@@ -96,6 +96,11 @@ class PropertyStorage
      */
     public $attributes = [];
 
+    /**
+     * @var array<int, string>
+     */
+    public $suppressed_issues = [];
+
     public function getInfo() : string
     {
         switch ($this->visibility) {
