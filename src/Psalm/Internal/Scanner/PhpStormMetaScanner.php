@@ -241,7 +241,7 @@ class PhpStormMetaScanner
             && $identifier->args
             && $identifier->args[0]->value instanceof PhpParser\Node\Scalar\LNumber
         ) {
-            $function_id = implode('\\', $identifier->name->parts);
+            $function_id = strtolower(implode('\\', $identifier->name->parts));
 
             if ($map) {
                 $offset = $identifier->args[0]->value->value;

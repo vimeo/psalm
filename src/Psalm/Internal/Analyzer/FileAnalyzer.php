@@ -351,7 +351,7 @@ class FileAnalyzer extends SourceAnalyzer
 
             $fq_class_name = $class_analyzer->getFQCLN();
 
-            $this->interface_analyzers_to_analyze[$fq_class_name] = $class_analyzer;
+            $this->interface_analyzers_to_analyze[strtolower($fq_class_name)] = $class_analyzer;
         }
     }
 
