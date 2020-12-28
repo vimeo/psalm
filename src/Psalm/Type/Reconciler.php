@@ -514,10 +514,8 @@ class Reconciler
     /**
      * Gets the type for a given (non-existent key) based on the passed keys
      *
-     * @param  array<string,Type\Union>  $existing_keys
-     * @param  array<string,mixed>       $new_assertions
-     * @param  string[][]                $new_type_parts
-     *
+     * @param array<string,Type\Union>  $existing_keys
+     * @param array<string,mixed>       $new_assertions
      */
     private static function getValueForKey(
         Codebase $codebase,

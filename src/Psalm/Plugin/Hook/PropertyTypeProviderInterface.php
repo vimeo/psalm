@@ -13,10 +13,6 @@ interface PropertyTypeProviderInterface
      */
     public static function getClassLikeNames() : array;
 
-    /**
-     * @param  list<PhpParser\Node\Arg>    $call_args
-     *
-     */
     public static function getPropertyType(
         string $fq_classlike_name,
         string $property_name,

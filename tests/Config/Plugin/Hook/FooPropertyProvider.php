@@ -45,10 +45,6 @@ class FooPropertyProvider implements
         return true;
     }
 
-    /**
-     * @param  array<PhpParser\Node\Arg>    $call_args
-     *
-     */
     public static function getPropertyType(
         string $fq_classlike_name,
         string $property_name,

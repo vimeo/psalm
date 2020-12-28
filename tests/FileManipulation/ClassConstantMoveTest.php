@@ -23,8 +23,6 @@ class ClassConstantMoveTest extends \Psalm\Tests\TestCase
      * @dataProvider providerValidCodeParse
      *
      * @param array<string, string> $constants_to_move
-     * @param array<string, string> $call_transforms
-     *
      */
     public function testValidCode(
         string $input_code,

@@ -275,9 +275,6 @@ class FunctionDocblockManipulator
 
     /**
      * Sets a new param type
-     *
-     * @param   bool        $is_php_compatible
-     *
      */
     public function setParamType(
         string $param_name,

@@ -248,7 +248,6 @@ class ProjectAnalyzer
 
     /**
      * @param array<ReportOptions> $generated_report_options
-     * @param string        $reports
      */
     public function __construct(
         Config $config,
@@ -1043,10 +1042,6 @@ class ProjectAnalyzer
         return $file_paths;
     }
 
-    /**
-     * @param  string  $dir_name
-     *
-     */
     public function addProjectFile(string $file_path): void
     {
         $this->project_files[$file_path] = $file_path;

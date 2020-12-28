@@ -136,7 +136,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
     /**
      * @param bool          $add_mutations  whether or not to add mutations to this method
-     * @param ?array<string, bool> $byref_uses
      *
      * @return false|null
      */
@@ -1615,9 +1614,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
     /**
      * Adds return types for the given function
-     *
-     * @param   string  $return_type
-     *
      */
     public function addReturnTypes(Context $context): void
     {

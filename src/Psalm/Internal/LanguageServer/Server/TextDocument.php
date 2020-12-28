@@ -227,7 +227,7 @@ class TextDocument
      * interface then a 'completionItem/resolve' request is sent with the selected completion item as a param. The
      * returned completion item should have the documentation property filled in.
      *
-     * @param TextDocumentIdentifier The text document
+     * @param TextDocumentIdentifier $textDocument The text document
      * @param Position $position The position
      * @psalm-return Promise<array<empty, empty>>|Promise<CompletionList>
      */

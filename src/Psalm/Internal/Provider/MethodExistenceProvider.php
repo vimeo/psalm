@@ -60,10 +60,6 @@ class MethodExistenceProvider
         return isset(self::$handlers[strtolower($fq_classlike_name)]);
     }
 
-    /**
-     * @param  list<PhpParser\Node\Arg>  $call_args
-     *
-     */
     public function doesMethodExist(
         string $fq_classlike_name,
         string $method_name_lowercase,

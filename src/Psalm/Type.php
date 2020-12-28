@@ -172,10 +172,6 @@ abstract class Type
         return $union;
     }
 
-    /**
-     * @param int|null $value
-     *
-     */
     public static function getPositiveInt(bool $from_calculation = false): Union
     {
         $union = new Union([new Type\Atomic\TPositiveInt()]);

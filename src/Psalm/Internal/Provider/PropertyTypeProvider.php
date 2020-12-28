@@ -63,10 +63,6 @@ class PropertyTypeProvider
         return isset(self::$handlers[strtolower($fq_classlike_name)]);
     }
 
-    /**
-     * @param  list<PhpParser\Node\Arg>  $call_args
-     *
-     */
     public function getPropertyType(
         string $fq_classlike_name,
         string $property_name,
