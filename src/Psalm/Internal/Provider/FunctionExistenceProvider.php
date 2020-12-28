@@ -10,7 +10,7 @@ class FunctionExistenceProvider
 {
     /**
      * @var array<
-     *   string,
+     *   lowercase-string,
      *   array<\Closure(
      *     StatementsSource,
      *     string
@@ -38,7 +38,7 @@ class FunctionExistenceProvider
     }
 
     /**
-     * /**
+     * @param lowercase-string $function_id
      * @param \Closure(
      *     StatementsSource,
      *     string

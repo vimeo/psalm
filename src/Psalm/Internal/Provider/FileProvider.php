@@ -12,12 +12,12 @@ use function strtolower;
 class FileProvider
 {
     /**
-     * @var array<string, string>
+     * @var array<lowercase-string, string>
      */
     protected $temp_files = [];
 
     /**
-     * @var array<string, string>
+     * @var array<lowercase-string, string>
      */
     protected $open_files = [];
 

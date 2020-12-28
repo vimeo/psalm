@@ -4,22 +4,22 @@ namespace Psalm;
 class Aliases
 {
     /**
-     * @var array<string, string>
+     * @var array<lowercase-string, string>
      */
     public $uses;
 
     /**
-     * @var array<string, string>
+     * @var array<lowercase-string, string>
      */
     public $uses_flipped;
 
     /**
-     * @var array<string, non-empty-string>
+     * @var array<lowercase-string, non-empty-string>
      */
     public $functions;
 
     /**
-     * @var array<string, string>
+     * @var array<lowercase-string, string>
      */
     public $functions_flipped;
 
@@ -46,11 +46,11 @@ class Aliases
     public $uses_end;
 
     /**
-     * @param array<string, string> $uses
-     * @param array<string, non-empty-string> $functions
+     * @param array<lowercase-string, string> $uses
+     * @param array<lowercase-string, non-empty-string> $functions
      * @param array<string, string> $constants
-     * @param array<string, string> $uses_flipped
-     * @param array<string, string> $functions_flipped
+     * @param array<lowercase-string, string> $uses_flipped
+     * @param array<lowercase-string, string> $functions_flipped
      * @param array<string, string> $constants_flipped
      */
     public function __construct(

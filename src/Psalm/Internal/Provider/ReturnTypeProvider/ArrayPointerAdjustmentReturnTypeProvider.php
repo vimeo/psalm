@@ -9,6 +9,9 @@ use Psalm\Type;
 
 class ArrayPointerAdjustmentReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface
 {
+    /**
+     * @return array<lowercase-string>
+     */
     public static function getFunctionIds() : array
     {
         return ['current', 'next', 'prev', 'reset', 'end'];

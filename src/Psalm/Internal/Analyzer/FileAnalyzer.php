@@ -67,7 +67,7 @@ class FileAnalyzer extends SourceAnalyzer
     private $namespace_aliased_classes = [];
 
     /**
-     * @var array<string, array<string, string>>
+     * @var array<string, array<lowercase-string, string>>
      */
     private $namespace_aliased_classes_flipped = [];
 
@@ -77,7 +77,7 @@ class FileAnalyzer extends SourceAnalyzer
     private $namespace_aliased_classes_flipped_replaceable = [];
 
     /**
-     * @var array<string, InterfaceAnalyzer>
+     * @var array<lowercase-string, InterfaceAnalyzer>
      */
     public $interface_analyzers_to_analyze = [];
 
@@ -448,7 +448,7 @@ class FileAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * @return array<string, string>
+     * @return array<lowercase-string, string>
      */
     public function getAliasedClassesFlipped(?string $namespace_name = null): array
     {

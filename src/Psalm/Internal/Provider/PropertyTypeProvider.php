@@ -12,7 +12,7 @@ class PropertyTypeProvider
 {
     /**
      * @var array<
-     *   string,
+     *   lowercase-string,
      *   array<\Closure(
      *     string,
      *     string,

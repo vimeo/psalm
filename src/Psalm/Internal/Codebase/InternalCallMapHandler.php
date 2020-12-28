@@ -38,7 +38,7 @@ class InternalCallMapHandler
     private static $loaded_php_minor_version = null;
 
     /**
-     * @var array<array<int|string,string>>|null
+     * @var array<lowercase-string, array<int|string,string>>|null
      */
     private static $call_map = null;
 

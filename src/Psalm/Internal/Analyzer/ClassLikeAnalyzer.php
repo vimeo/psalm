@@ -421,7 +421,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * @return array<string, string>
+     * @return array<lowercase-string, string>
      */
     public function getAliasedClassesFlipped(): array
     {

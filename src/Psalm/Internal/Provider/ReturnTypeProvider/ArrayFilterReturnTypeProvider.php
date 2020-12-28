@@ -18,6 +18,9 @@ use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 
 class ArrayFilterReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface
 {
+    /**
+     * @return array<lowercase-string>
+     */
     public static function getFunctionIds() : array
     {
         return ['array_filter'];

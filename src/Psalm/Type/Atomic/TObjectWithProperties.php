@@ -121,7 +121,7 @@ class TObjectWithProperties extends TObject
     }
 
     /**
-     * @param  array<string, string> $aliased_classes
+     * @param  array<lowercase-string, string> $aliased_classes
      *
      */
     public function toNamespacedString(
@@ -165,7 +165,7 @@ class TObjectWithProperties extends TObject
     }
 
     /**
-     * @param  array<string> $aliased_classes
+     * @param  array<lowercase-string, string> $aliased_classes
      */
     public function toPhpString(
         ?string $namespace,

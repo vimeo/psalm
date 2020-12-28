@@ -41,7 +41,7 @@ class TraitAnalyzer extends ClassLikeAnalyzer
     }
 
     /**
-     * @return array<string, string>
+     * @return array<lowercase-string, string>
      */
     public function getAliasedClassesFlipped(): array
     {

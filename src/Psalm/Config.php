@@ -397,7 +397,7 @@ class Config
     public $ensure_array_int_offsets_exist = false;
 
     /**
-     * @var array<string, bool>
+     * @var array<lowercase-string, bool>
      */
     public $forbidden_functions = [];
 
@@ -591,7 +591,7 @@ class Config
     /**
      * Custom functions that always exit
      *
-     * @var array<string, bool>
+     * @var array<lowercase-string, bool>
      */
     public $exit_functions = [];
 

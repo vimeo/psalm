@@ -9,14 +9,14 @@ use function strtolower;
 class PropertyMap
 {
     /**
-     * @var array<string, array<string, string>>|null
+     * @var array<lowercase-string, array<string, string>>|null
      */
     private static $property_map;
 
     /**
      * Gets the method/function call map
      *
-     * @return array<string, array<string, string>>
+     * @return array<lowercase-string, array<string, string>>
      */
     public static function getPropertyMap(): array
     {

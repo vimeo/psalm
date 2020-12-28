@@ -14,7 +14,7 @@ class FileStorageProvider
      * A list of data useful to analyse files
      * Storing this statically is much faster (at least in PHP 7.2.1)
      *
-     * @var array<string, FileStorage>
+     * @var array<lowercase-string, FileStorage>
      */
     private static $storage = [];
 
@@ -81,7 +81,7 @@ class FileStorageProvider
     }
 
     /**
-     * @return array<string, FileStorage>
+     * @return array<lowercase-string, FileStorage>
      */
     public function getAll(): array
     {
@@ -97,8 +97,7 @@ class FileStorageProvider
     }
 
     /**
-     * @param array<string, FileStorage> $more
-     *
+     * @param array<lowercase-string, FileStorage> $more
      */
     public function addMore(array $more): void
     {

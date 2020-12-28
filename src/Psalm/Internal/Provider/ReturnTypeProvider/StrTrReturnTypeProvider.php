@@ -10,6 +10,9 @@ use Psalm\Internal\DataFlow\DataFlowNode;
 
 class StrTrReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface
 {
+    /**
+     * @return array<lowercase-string>
+     */
     public static function getFunctionIds() : array
     {
         return [
@@ -41,7 +44,7 @@ class StrTrReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypePr
                 null,
                 $code_location
             );
-            
+
             $statements_source->data_flow_graph->addNode($function_return_sink);
             foreach ($call_args as $i => $_) {
                 $function_param_sink = DataFlowNode::getForMethodArgument(

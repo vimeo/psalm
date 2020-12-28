@@ -6,7 +6,7 @@ use Psalm\StatementsSource;
 interface FunctionExistenceProviderInterface
 {
     /**
-     * @return array<string>
+     * @return array<lowercase-string>
      */
     public static function getFunctionIds() : array;
 

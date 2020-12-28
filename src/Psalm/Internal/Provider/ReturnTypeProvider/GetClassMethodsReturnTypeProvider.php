@@ -9,6 +9,9 @@ use Psalm\Type;
 
 class GetClassMethodsReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface
 {
+    /**
+     * @return array<lowercase-string>
+     */
     public static function getFunctionIds() : array
     {
         return [

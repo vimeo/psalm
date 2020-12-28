@@ -25,7 +25,7 @@ class TLiteralFloat extends TFloat
     }
 
     /**
-     * @param  array<string> $aliased_classes
+     * @param  array<lowercase-string, string> $aliased_classes
      */
     public function toPhpString(
         ?string $namespace,
@@ -38,7 +38,7 @@ class TLiteralFloat extends TFloat
     }
 
     /**
-     * @param  array<string> $aliased_classes
+     * @param  array<lowercase-string, string> $aliased_classes
      *
      */
     public function toNamespacedString(
