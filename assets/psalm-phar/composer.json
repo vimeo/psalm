@@ -9,5 +9,7 @@
 		"vimeo/psalm" : "*"
 	},
 	"bin": ["psalm.phar"],
-	"platform-check": false
+	"config": {
+        "platform-check": false
+    }
 }
