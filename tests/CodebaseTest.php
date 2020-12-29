@@ -1,12 +1,12 @@
 <?php
 namespace Psalm\Tests;
 
-use Psalm\Plugin\Hook\Event\AfterClassLikeVisitEvent;
+use Psalm\Plugin\EventHandler\Event\AfterClassLikeVisitEvent;
 use function array_values;
 use function get_class;
 use Psalm\Codebase;
 use Psalm\Context;
-use Psalm\Plugin\Hook\AfterClassLikeVisitInterface;
+use Psalm\Plugin\EventHandler\AfterClassLikeVisitInterface;
 use Psalm\PluginRegistrationSocket;
 use Psalm\Tests\Internal\Provider\ClassLikeStorageInstanceCacheProvider;
 use Psalm\Type;

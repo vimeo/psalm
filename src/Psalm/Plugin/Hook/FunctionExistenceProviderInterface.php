@@ -1,7 +1,7 @@
 <?php
 namespace Psalm\Plugin\Hook;
 
-use Psalm\Plugin\Hook\Event\FunctionExistenceProviderEvent;
+use Psalm\StatementsSource;
 
 interface FunctionExistenceProviderInterface
 {
@@ -16,5 +16,8 @@ interface FunctionExistenceProviderInterface
      * will continue to determine if the function actually exists.
      *
      */
-    public static function doesFunctionExist(FunctionExistenceProviderEvent $event): ?bool;
+    public static function doesFunctionExist(
+        StatementsSource $statements_source,
+        string $function_id
+    ): ?bool;
 }

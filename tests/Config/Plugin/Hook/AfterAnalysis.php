@@ -2,10 +2,10 @@
 namespace Psalm\Test\Config\Plugin\Hook;
 
 use Psalm\Internal\Analyzer\IssueData;
-use Psalm\Plugin\Hook\{AfterAnalysisInterface, Event\AfterAnalysisEvent};
+use Psalm\Plugin\EventHandler\AfterAnalysisInterface;
+use Psalm\Plugin\EventHandler\Event\AfterAnalysisEvent;
 
-class AfterAnalysis implements
-    AfterAnalysisInterface
+class AfterAnalysis implements AfterAnalysisInterface
 {
     /**
      * Called after analysis is complete

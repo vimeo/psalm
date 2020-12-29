@@ -8,10 +8,13 @@ use Psalm\Checker;
 use Psalm\Checker\StatementsChecker;
 use Psalm\CodeLocation;
 use Psalm\FileManipulation;
-use Psalm\Plugin\Hook\AfterFunctionCallAnalysisInterface;
-use Psalm\Plugin\Hook\AfterMethodCallAnalysisInterface;
-use Psalm\Plugin\Hook\Event\AfterFunctionCallAnalysisEvent;
-use Psalm\Plugin\Hook\Event\AfterMethodCallAnalysisEvent;
+use Psalm\Plugin\EventHandler\AfterFunctionCallAnalysisInterface;
+use Psalm\Plugin\EventHandler\AfterMethodCallAnalysisInterface;
+use Psalm\Plugin\EventHandler\Event\AfterFunctionCallAnalysisEvent;
+use Psalm\Plugin\EventHandler\Event\AfterMethodCallAnalysisEvent;
+use function explode;
+use function strtolower;
+use function end;
 
 /**
  * Prevents any assignment to a float value
@@ -22,7 +25,8 @@ class FunctionCasingChecker implements AfterFunctionCallAnalysisInterface, After
      * @param  MethodCall|StaticCall $expr
      * @param  FileManipulation[] $file_replacements
      */
-    public static function afterMethodCallAnalysis(AfterMethodCallAnalysisEvent $event): void {
+    public static function afterMethodCallAnalysis(AfterMethodCallAnalysisEvent $event): void
+    {
         $expr = $event->getExpr();
         $codebase = $event->getCodebase();
         $declaring_method_id = $event->getDeclaringMethodId();
@@ -64,7 +68,8 @@ class FunctionCasingChecker implements AfterFunctionCallAnalysisInterface, After
      * @param non-empty-string $function_id
      * @param  FileManipulation[] $file_replacements
      */
-    public static function afterFunctionCallAnalysis(AfterFunctionCallAnalysisEvent $event): void {
+    public static function afterFunctionCallAnalysis(AfterFunctionCallAnalysisEvent $event): void
+    {
         $expr = $event->getExpr();
         $codebase = $event->getCodebase();
         $statements_source = $event->getStatementsSource();
@@ -104,5 +109,6 @@ class FunctionCasingChecker implements AfterFunctionCallAnalysisInterface, After
     }
 }
 
-class IncorrectFunctionCasing extends \Psalm\Issue\PluginIssue {
+class IncorrectFunctionCasing extends \Psalm\Issue\PluginIssue
+{
 }

@@ -1,8 +1,8 @@
 <?php
 
-use Psalm\Plugin\Hook\Event\AfterFunctionCallAnalysisEvent;
+use Psalm\Plugin\EventHandler\Event\AfterFunctionCallAnalysisEvent;
 
-class BasePlugin implements Psalm\Plugin\Hook\AfterFunctionCallAnalysisInterface
+class BasePlugin implements Psalm\Plugin\EventHandler\AfterFunctionCallAnalysisInterface
 {
     public static function afterFunctionCallAnalysis(AfterFunctionCallAnalysisEvent $event): void {
     }

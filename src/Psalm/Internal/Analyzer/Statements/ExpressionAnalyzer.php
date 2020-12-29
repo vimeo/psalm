@@ -15,7 +15,7 @@ use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\UnrecognizedExpression;
 use Psalm\IssueBuffer;
-use Psalm\Plugin\Hook\Event\AfterExpressionAnalysisEvent;
+use Psalm\Plugin\EventHandler\Event\AfterExpressionAnalysisEvent;
 use Psalm\Type;
 use function in_array;
 use function strtolower;
@@ -79,28 +79,22 @@ class ExpressionAnalyzer
             }
         }
 
-        $plugin_classes = $codebase->config->after_expression_checks;
+        $event = new AfterExpressionAnalysisEvent(
+            $stmt,
+            $context,
+            $statements_analyzer,
+            $codebase,
+            []
+        );
 
-        if ($plugin_classes) {
-            $file_manipulations = [];
+        if ($codebase->config->eventDispatcher->dispatchAfterExpressionAnalysis($event) === false) {
+            return false;
+        }
 
-            foreach ($plugin_classes as $plugin_fq_class_name) {
-                $event = new AfterExpressionAnalysisEvent(
-                    $stmt,
-                    $context,
-                    $statements_analyzer,
-                    $codebase,
-                    $file_manipulations
-                );
-                if ($plugin_fq_class_name::afterExpressionAnalysis($event) === false) {
-                    return false;
-                }
-                $file_manipulations = $event->getFileReplacements();
-            }
+        $file_manipulations = $event->getFileReplacements();
 
-            if ($file_manipulations) {
-                FileManipulationBuffer::add($statements_analyzer->getFilePath(), $file_manipulations);
-            }
+        if ($file_manipulations) {
+            FileManipulationBuffer::add($statements_analyzer->getFilePath(), $file_manipulations);
         }
 
         return true;

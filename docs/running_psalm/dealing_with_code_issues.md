@@ -115,8 +115,8 @@ If you want something more custom, like suppressing a certain type of error on c
 <?php
 namespace Foo\Bar;
 
-use Psalm\Plugin\Hook\AfterClassLikeVisitInterface;
-use Psalm\Plugin\Hook\Event\AfterClassLikeVisitEvent;
+use Psalm\Plugin\EventHandler\AfterClassLikeVisitInterface;
+use Psalm\Plugin\EventHandler\Event\AfterClassLikeVisitEvent;
 use ReflectionClass;
 
 /**

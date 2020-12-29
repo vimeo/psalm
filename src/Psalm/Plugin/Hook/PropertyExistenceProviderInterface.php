@@ -1,7 +1,9 @@
 <?php
 namespace Psalm\Plugin\Hook;
 
-use Psalm\Plugin\Hook\Event\PropertyExistenceProviderEvent;
+use Psalm\CodeLocation;
+use Psalm\Context;
+use Psalm\StatementsSource;
 
 interface PropertyExistenceProviderInterface
 {
@@ -16,5 +18,12 @@ interface PropertyExistenceProviderInterface
      * continue to determine if the property actually exists.
      *
      */
-    public static function doesPropertyExist(PropertyExistenceProviderEvent $event): ?bool;
+    public static function doesPropertyExist(
+        string $fq_classlike_name,
+        string $property_name,
+        bool $read_mode,
+        ?StatementsSource $source = null,
+        ?Context $context = null,
+        ?CodeLocation $code_location = null
+    ): ?bool;
 }

@@ -1,13 +1,14 @@
 <?php
 namespace Psalm\Internal\Provider;
 
-use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\Plugin\Hook\PropertyVisibilityProviderInterface;
-use Psalm\Plugin\Hook\Event\PropertyVisibilityProviderEvent;
+use Psalm\Plugin\EventHandler\Event\PropertyVisibilityProviderEvent;
+use Psalm\Plugin\EventHandler\PropertyVisibilityProviderInterface;
+use Psalm\Plugin\Hook\PropertyVisibilityProviderInterface as LegacyPropertyVisibilityProviderInterface;
 use Psalm\StatementsSource;
 use function strtolower;
+use function is_subclass_of;
 
 class PropertyVisibilityProvider
 {
@@ -19,20 +20,45 @@ class PropertyVisibilityProvider
      */
     private static $handlers = [];
 
+    /**
+     * @var array<
+     *   lowercase-string,
+     *   array<\Closure(
+     *     StatementsSource,
+     *     string,
+     *     string,
+     *     bool,
+     *     Context,
+     *     CodeLocation
+     *   ) : ?bool>
+     * >
+     */
+    private static $legacy_handlers = [];
+
     public function __construct()
     {
         self::$handlers = [];
+        self::$legacy_handlers = [];
     }
 
     /**
-     * @param  class-string<PropertyVisibilityProviderInterface> $class
+     * @param class-string<LegacyPropertyVisibilityProviderInterface>
+     *     |class-string<PropertyVisibilityProviderInterface> $class
      */
     public function registerClass(string $class): void
     {
-        $callable = \Closure::fromCallable([$class, 'isPropertyVisible']);
+        if (is_subclass_of($class, LegacyPropertyVisibilityProviderInterface::class, true)) {
+            $callable = \Closure::fromCallable([$class, 'isPropertyVisible']);
 
-        foreach ($class::getClassLikeNames() as $fq_classlike_name) {
-            $this->registerClosure($fq_classlike_name, $callable);
+            foreach ($class::getClassLikeNames() as $fq_classlike_name) {
+                $this->registerLegacyClosure($fq_classlike_name, $callable);
+            }
+        } elseif (is_subclass_of($class, PropertyVisibilityProviderInterface::class, true)) {
+            $callable = \Closure::fromCallable([$class, 'isPropertyVisible']);
+
+            foreach ($class::getClassLikeNames() as $fq_classlike_name) {
+                $this->registerClosure($fq_classlike_name, $callable);
+            }
         }
     }
 
@@ -44,9 +70,25 @@ class PropertyVisibilityProvider
         self::$handlers[strtolower($fq_classlike_name)][] = $c;
     }
 
+    /**
+     * @param \Closure(
+     *     StatementsSource,
+     *     string,
+     *     string,
+     *     bool,
+     *     Context,
+     *     CodeLocation
+     *   ) : ?bool $c
+     */
+    public function registerLegacyClosure(string $fq_classlike_name, \Closure $c): void
+    {
+        self::$legacy_handlers[strtolower($fq_classlike_name)][] = $c;
+    }
+
     public function has(string $fq_classlike_name) : bool
     {
-        return isset(self::$handlers[strtolower($fq_classlike_name)]);
+        return isset(self::$handlers[strtolower($fq_classlike_name)]) ||
+            isset(self::$legacy_handlers[strtolower($fq_classlike_name)]);
     }
 
     public function isPropertyVisible(
@@ -57,7 +99,7 @@ class PropertyVisibilityProvider
         Context $context,
         CodeLocation $code_location
     ): ?bool {
-        foreach (self::$handlers[strtolower($fq_classlike_name)] as $property_handler) {
+        foreach (self::$handlers[strtolower($fq_classlike_name)] ?? [] as $property_handler) {
             $event = new PropertyVisibilityProviderEvent(
                 $source,
                 $fq_classlike_name,
@@ -67,6 +109,21 @@ class PropertyVisibilityProvider
                 $code_location
             );
             $property_visible = $property_handler($event);
+
+            if ($property_visible !== null) {
+                return $property_visible;
+            }
+        }
+
+        foreach (self::$legacy_handlers[strtolower($fq_classlike_name)] ?? [] as $property_handler) {
+            $property_visible = $property_handler(
+                $source,
+                $fq_classlike_name,
+                $property_name,
+                $read_mode,
+                $context,
+                $code_location
+            );
 
             if ($property_visible !== null) {
                 return $property_visible;

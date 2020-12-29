@@ -1,22 +1,20 @@
 <?php
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
-use Psalm\Plugin\Hook\Event\MethodReturnTypeProviderEvent;
+use Psalm\Plugin\EventHandler\Event\MethodReturnTypeProviderEvent;
 use function count;
 use PhpParser;
 use Psalm\Type;
 
-class SimpleXmlElementAsXml implements \Psalm\Plugin\Hook\MethodReturnTypeProviderInterface
+class SimpleXmlElementAsXml implements \Psalm\Plugin\EventHandler\MethodReturnTypeProviderInterface
 {
     public static function getClassLikeNames() : array
     {
         return ['SimpleXMLElement'];
     }
 
-    /**
-     * @param  list<PhpParser\Node\Arg>    $call_args
-     */
-    public static function getMethodReturnType(MethodReturnTypeProviderEvent $event): ?Type\Union {
+    public static function getMethodReturnType(MethodReturnTypeProviderEvent $event): ?Type\Union
+    {
         $call_args = $event->getCallArgs();
         $method_name_lowercase = $event->getMethodNameLowercase();
         if ($method_name_lowercase === 'asxml'

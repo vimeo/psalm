@@ -1,7 +1,7 @@
 <?php
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
-use Psalm\Plugin\Hook\Event\FunctionReturnTypeProviderEvent;
+use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use function array_map;
 use function count;
 use function explode;
@@ -14,7 +14,7 @@ use Psalm\Type;
 use function strpos;
 use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
 
-class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface
+class ArrayMapReturnTypeProvider implements \Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>
@@ -24,10 +24,8 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
         return ['array_map'];
     }
 
-    /**
-     * @param  list<PhpParser\Node\Arg>    $call_args
-     */
-    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event) : Type\Union {
+    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event) : Type\Union
+    {
         $statements_source = $event->getStatementsSource();
         $call_args = $event->getCallArgs();
         $context = $event->getContext();

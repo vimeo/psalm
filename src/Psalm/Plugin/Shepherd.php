@@ -1,7 +1,7 @@
 <?php
 namespace Psalm\Plugin;
 
-use Psalm\Plugin\Hook\Event\AfterAnalysisEvent;
+use Psalm\Plugin\EventHandler\Event\AfterAnalysisEvent;
 use function array_filter;
 use function curl_close;
 use function curl_exec;
@@ -26,7 +26,7 @@ use function var_export;
 use function array_merge;
 use function array_values;
 
-class Shepherd implements \Psalm\Plugin\Hook\AfterAnalysisInterface
+class Shepherd implements \Psalm\Plugin\EventHandler\AfterAnalysisInterface
 {
     /**
      * Called after analysis is complete

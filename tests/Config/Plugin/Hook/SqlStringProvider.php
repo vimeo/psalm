@@ -1,8 +1,8 @@
 <?php
 namespace Psalm\Test\Config\Plugin\Hook;
 
-use Psalm\Plugin\Hook\StringInterpreterInterface;
-use Psalm\Plugin\Hook\Event\StringInterpreterEvent;
+use Psalm\Plugin\EventHandler\StringInterpreterInterface;
+use Psalm\Plugin\EventHandler\Event\StringInterpreterEvent;
 use Psalm\Type\Atomic\TLiteralString;
 use function stripos;
 

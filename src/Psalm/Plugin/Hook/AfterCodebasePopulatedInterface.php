@@ -1,7 +1,7 @@
 <?php
 namespace Psalm\Plugin\Hook;
 
-use Psalm\Plugin\Hook\Event\AfterCodebasePopulatedEvent;
+use Psalm\Codebase;
 
 interface AfterCodebasePopulatedInterface
 {
@@ -10,5 +10,5 @@ interface AfterCodebasePopulatedInterface
      *
      * @return void
      */
-    public static function afterCodebasePopulated(AfterCodebasePopulatedEvent $event);
+    public static function afterCodebasePopulated(Codebase $codebase);
 }

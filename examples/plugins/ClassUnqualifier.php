@@ -2,8 +2,8 @@
 namespace Psalm\Example\Plugin;
 
 use Psalm\FileManipulation;
-use Psalm\Plugin\Hook\AfterClassLikeExistenceCheckInterface;
-use Psalm\Plugin\Hook\Event\AfterClassLikeExistenceCheckEvent;
+use Psalm\Plugin\EventHandler\AfterClassLikeExistenceCheckInterface;
+use Psalm\Plugin\EventHandler\Event\AfterClassLikeExistenceCheckEvent;
 use function strtolower;
 use function implode;
 use function array_map;

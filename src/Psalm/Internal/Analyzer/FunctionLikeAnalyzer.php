@@ -26,7 +26,7 @@ use Psalm\Issue\ReservedWord;
 use Psalm\Issue\UnusedClosureParam;
 use Psalm\Issue\UnusedParam;
 use Psalm\IssueBuffer;
-use Psalm\Plugin\Hook\Event\AfterFunctionLikeAnalysisEvent;
+use Psalm\Plugin\EventHandler\Event\AfterFunctionLikeAnalysisEvent;
 use Psalm\StatementsSource;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
@@ -921,31 +921,25 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
         }
 
-        $plugin_classes = $codebase->config->after_functionlike_checks;
+        $event = new AfterFunctionLikeAnalysisEvent(
+            $this->function,
+            $storage,
+            $this,
+            $codebase,
+            []
+        );
 
-        if ($plugin_classes) {
-            $file_manipulations = [];
+        if ($codebase->config->eventDispatcher->dispatchAfterFunctionLikeAnalysis($event) === false) {
+            return false;
+        }
 
-            foreach ($plugin_classes as $plugin_fq_class_name) {
-                $event = new AfterFunctionLikeAnalysisEvent(
-                    $this->function,
-                    $storage,
-                    $this,
-                    $codebase,
-                    $file_manipulations
-                );
-                if ($plugin_fq_class_name::afterStatementAnalysis($event) === false) {
-                    return false;
-                }
-                $file_manipulations = $event->getFileReplacements();
-            }
+        $file_manipulations = $event->getFileReplacements();
 
-            if ($file_manipulations) {
-                \Psalm\Internal\FileManipulation\FileManipulationBuffer::add(
-                    $this->getFilePath(),
-                    $file_manipulations
-                );
-            }
+        if ($file_manipulations) {
+            \Psalm\Internal\FileManipulation\FileManipulationBuffer::add(
+                $this->getFilePath(),
+                $file_manipulations
+            );
         }
 
         foreach ($storage->attributes as $attribute) {

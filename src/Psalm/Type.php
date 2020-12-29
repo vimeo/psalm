@@ -1,7 +1,7 @@
 <?php
 namespace Psalm;
 
-use Psalm\Plugin\Hook\Event\StringInterpreterEvent;
+use Psalm\Plugin\EventHandler\Event\StringInterpreterEvent;
 use function array_merge;
 use function array_pop;
 use function array_shift;
@@ -195,14 +195,9 @@ abstract class Type
         if ($value !== null) {
             $config = \Psalm\Config::getInstance();
 
-            if ($config->string_interpreters) {
-                foreach ($config->string_interpreters as $string_interpreter) {
-                    $event = new StringInterpreterEvent($value);
-                    if ($type = $string_interpreter::getTypeFromValue($event)) {
-                        break;
-                    }
-                }
-            }
+            $event = new StringInterpreterEvent($value);
+
+            $type = $config->eventDispatcher->dispatchStringInterpreter($event);
 
             if (!$type) {
                 if (strlen($value) < $config->max_string_length) {

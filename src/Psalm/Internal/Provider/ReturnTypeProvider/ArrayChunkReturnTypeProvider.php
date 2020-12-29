@@ -2,12 +2,12 @@
 
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
-use Psalm\Plugin\Hook\Event\FunctionReturnTypeProviderEvent;
+use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use function count;
 use Psalm\Internal\Type\ArrayType;
 use Psalm\Type;
 
-class ArrayChunkReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface
+class ArrayChunkReturnTypeProvider implements \Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>

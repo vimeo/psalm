@@ -1,10 +1,10 @@
 <?php
 namespace Psalm\Test\Config\Plugin\Hook;
 
-use Psalm\Plugin\Hook\AfterFileAnalysisInterface;
-use Psalm\Plugin\Hook\BeforeFileAnalysisInterface;
-use Psalm\Plugin\Hook\Event\AfterFileAnalysisEvent;
-use Psalm\Plugin\Hook\Event\BeforeFileAnalysisEvent;
+use Psalm\Plugin\EventHandler\AfterFileAnalysisInterface;
+use Psalm\Plugin\EventHandler\BeforeFileAnalysisInterface;
+use Psalm\Plugin\EventHandler\Event\AfterFileAnalysisEvent;
+use Psalm\Plugin\EventHandler\Event\BeforeFileAnalysisEvent;
 
 class FileProvider implements
     AfterFileAnalysisInterface,
@@ -13,7 +13,8 @@ class FileProvider implements
     /**
      * Called before a file has been checked
      */
-    public static function beforeAnalyzeFile(BeforeFileAnalysisEvent $event): void {
+    public static function beforeAnalyzeFile(BeforeFileAnalysisEvent $event): void
+    {
         $codebase = $event->getCodebase();
         $statements_source = $event->getStatementsSource();
         $file_storage = $codebase->file_storage_provider->get($statements_source->getFilePath());
@@ -23,7 +24,8 @@ class FileProvider implements
     /**
      * Called before a file has been checked
      */
-    public static function afterAnalyzeFile(AfterFileAnalysisEvent $event): void {
+    public static function afterAnalyzeFile(AfterFileAnalysisEvent $event): void
+    {
         $codebase = $event->getCodebase();
         $statements_source = $event->getStatementsSource();
         $file_storage = $codebase->file_storage_provider->get($statements_source->getFilePath());

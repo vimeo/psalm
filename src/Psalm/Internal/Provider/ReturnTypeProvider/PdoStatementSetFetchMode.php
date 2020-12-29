@@ -2,10 +2,10 @@
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use PhpParser;
-use Psalm\Plugin\Hook\Event\MethodParamsProviderEvent;
+use Psalm\Plugin\EventHandler\Event\MethodParamsProviderEvent;
 use Psalm\Type;
 
-class PdoStatementSetFetchMode implements \Psalm\Plugin\Hook\MethodParamsProviderInterface
+class PdoStatementSetFetchMode implements \Psalm\Plugin\EventHandler\MethodParamsProviderInterface
 {
     public static function getClassLikeNames() : array
     {
@@ -13,11 +13,10 @@ class PdoStatementSetFetchMode implements \Psalm\Plugin\Hook\MethodParamsProvide
     }
 
     /**
-     * @param  list<PhpParser\Node\Arg>    $call_args
-     *
      * @return ?array<int, \Psalm\Storage\FunctionLikeParameter>
      */
-    public static function getMethodParams(MethodParamsProviderEvent $event): ?array {
+    public static function getMethodParams(MethodParamsProviderEvent $event): ?array
+    {
         $statements_source = $event->getStatementsSource();
         $method_name_lowercase = $event->getMethodNameLowercase();
         $context = $event->getContext();

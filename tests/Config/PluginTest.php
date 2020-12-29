@@ -2,9 +2,9 @@
 namespace Psalm\Tests\Config;
 
 use PHPUnit\Framework\MockObject\MockObject;
-use Psalm\Plugin\Hook\AfterEveryFunctionCallAnalysisInterface;
-use Psalm\Plugin\Hook\Event\AfterCodebasePopulatedEvent;
-use Psalm\Plugin\Hook\Event\AfterEveryFunctionCallAnalysisEvent;
+use Psalm\Plugin\EventHandler\AfterEveryFunctionCallAnalysisInterface;
+use Psalm\Plugin\EventHandler\Event\AfterCodebasePopulatedEvent;
+use Psalm\Plugin\EventHandler\Event\AfterEveryFunctionCallAnalysisEvent;
 use function define;
 use function defined;
 use const DIRECTORY_SEPARATOR;
@@ -16,7 +16,7 @@ use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\RuntimeCaches;
-use Psalm\Plugin\Hook\AfterCodebasePopulatedInterface;
+use Psalm\Plugin\EventHandler\AfterCodebasePopulatedInterface;
 use Psalm\PluginRegistrationSocket;
 use Psalm\Tests\Internal\Provider;
 use Psalm\Tests\TestConfig;
@@ -353,11 +353,11 @@ class PluginTest extends \Psalm\Tests\TestCase
         );
 
         $codebase = $this->project_analyzer->getCodebase();
-        $this->assertEmpty($codebase->config->before_file_checks);
-        $this->assertEmpty($codebase->config->after_file_checks);
+        $this->assertEmpty($codebase->config->eventDispatcher->before_file_checks);
+        $this->assertEmpty($codebase->config->eventDispatcher->after_file_checks);
         $codebase->config->initializePlugins($this->project_analyzer);
-        $this->assertCount(1, $codebase->config->before_file_checks);
-        $this->assertCount(1, $codebase->config->after_file_checks);
+        $this->assertCount(1, $codebase->config->eventDispatcher->before_file_checks);
+        $this->assertCount(1, $codebase->config->eventDispatcher->after_file_checks);
 
         $file_path = getcwd() . '/src/somefile.php';
 
@@ -510,7 +510,7 @@ class PluginTest extends \Psalm\Tests\TestCase
         $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
         $this->assertContains(
             'ExtendingPlugin',
-            $this->project_analyzer->getCodebase()->config->after_function_checks
+            $this->project_analyzer->getCodebase()->config->eventDispatcher->after_function_checks
         );
     }
 
@@ -545,7 +545,7 @@ class PluginTest extends \Psalm\Tests\TestCase
 
         $this->assertContains(
             get_class($hook),
-            $this->project_analyzer->getCodebase()->config->after_codebase_populated
+            $this->project_analyzer->getCodebase()->config->eventDispatcher->after_codebase_populated
         );
     }
 
@@ -960,7 +960,8 @@ class PluginTest extends \Psalm\Tests\TestCase
                 self::$m = $m;
             }
 
-            public static function afterEveryFunctionCallAnalysis(AfterEveryFunctionCallAnalysisEvent $event): void {
+            public static function afterEveryFunctionCallAnalysis(AfterEveryFunctionCallAnalysisEvent $event): void
+            {
                 $function_id = $event->getFunctionId();
                 /** @psalm-suppress UndefinedInterfaceMethod */
                 self::$m->check($function_id);
@@ -968,7 +969,7 @@ class PluginTest extends \Psalm\Tests\TestCase
         };
 
         $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
-        $this->project_analyzer->getCodebase()->config->after_every_function_checks[] = get_class($plugin);
+        $this->project_analyzer->getCodebase()->config->eventDispatcher->after_every_function_checks[] = get_class($plugin);
 
         $file_path = getcwd() . '/src/somefile.php';
 

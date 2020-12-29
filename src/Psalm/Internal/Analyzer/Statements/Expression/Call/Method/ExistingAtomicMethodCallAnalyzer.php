@@ -23,7 +23,7 @@ use Psalm\Issue\PropertyTypeCoercion;
 use Psalm\Issue\UndefinedThisPropertyAssignment;
 use Psalm\Issue\UndefinedThisPropertyFetch;
 use Psalm\IssueBuffer;
-use Psalm\Plugin\Hook\Event\AfterMethodCallAnalysisEvent;
+use Psalm\Plugin\EventHandler\Event\AfterMethodCallAnalysisEvent;
 use Psalm\Storage\Assertion;
 use Psalm\Type;
 use function strtolower;
@@ -370,29 +370,28 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             }
         }
 
-        if ($config->after_method_checks) {
+        if ($config->eventDispatcher->after_method_checks) {
             $file_manipulations = [];
 
             $appearing_method_id = $codebase->methods->getAppearingMethodId($method_id);
             $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
             if ($appearing_method_id !== null && $declaring_method_id !== null) {
-                foreach ($config->after_method_checks as $plugin_fq_class_name) {
-                    $event = new AfterMethodCallAnalysisEvent(
-                        $stmt,
-                        (string) $method_id,
-                        (string) $appearing_method_id,
-                        (string) $declaring_method_id,
-                        $context,
-                        $statements_analyzer,
-                        $codebase,
-                        $file_manipulations,
-                        $return_type_candidate
-                    );
-                    $plugin_fq_class_name::afterMethodCallAnalysis($event);
-                    $file_manipulations = $event->getFileReplacements();
-                    $return_type_candidate = $event->getReturnTypeCandidate();
-                }
+                $event = new AfterMethodCallAnalysisEvent(
+                    $stmt,
+                    (string) $method_id,
+                    (string) $appearing_method_id,
+                    (string) $declaring_method_id,
+                    $context,
+                    $statements_analyzer,
+                    $codebase,
+                    $file_manipulations,
+                    $return_type_candidate
+                );
+
+                $config->eventDispatcher->dispatchAfterMethodCallAnalysis($event);
+                $file_manipulations = $event->getFileReplacements();
+                $return_type_candidate = $event->getReturnTypeCandidate();
             }
 
             if ($file_manipulations) {

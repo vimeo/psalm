@@ -2,12 +2,12 @@
 
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
-use Psalm\Plugin\Hook\Event\FunctionReturnTypeProviderEvent;
+use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use function count;
 use Psalm\Internal\Type\ArrayType;
 use Psalm\Type;
 
-class ArrayPadReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface
+class ArrayPadReturnTypeProvider implements \Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>
@@ -17,7 +17,8 @@ class ArrayPadReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
         return ['array_pad'];
     }
 
-    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): ?Type\Union {
+    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): ?Type\Union
+    {
         $statements_source = $event->getStatementsSource();
         $call_args = $event->getCallArgs();
         $type_provider = $statements_source->getNodeTypeProvider();

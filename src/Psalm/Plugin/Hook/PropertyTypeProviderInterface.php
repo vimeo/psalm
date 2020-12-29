@@ -1,7 +1,9 @@
 <?php
 namespace Psalm\Plugin\Hook;
 
-use Psalm\Plugin\Hook\Event\PropertyTypeProviderEvent;
+use PhpParser;
+use Psalm\Context;
+use Psalm\StatementsSource;
 use Psalm\Type;
 
 interface PropertyTypeProviderInterface
@@ -11,5 +13,11 @@ interface PropertyTypeProviderInterface
      */
     public static function getClassLikeNames() : array;
 
-    public static function getPropertyType(PropertyTypeProviderEvent $event): ?Type\Union;
+    public static function getPropertyType(
+        string $fq_classlike_name,
+        string $property_name,
+        bool $read_mode,
+        ?StatementsSource $source = null,
+        ?Context $context = null
+    ): ?Type\Union;
 }

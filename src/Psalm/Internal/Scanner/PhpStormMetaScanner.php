@@ -3,8 +3,8 @@ namespace Psalm\Internal\Scanner;
 
 use PhpParser;
 use Psalm\Codebase;
-use Psalm\Plugin\Hook\Event\FunctionReturnTypeProviderEvent;
-use Psalm\Plugin\Hook\Event\MethodReturnTypeProviderEvent;
+use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
+use Psalm\Plugin\EventHandler\Event\MethodReturnTypeProviderEvent;
 use Psalm\Type;
 use function strtolower;
 use function implode;

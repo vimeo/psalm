@@ -34,7 +34,7 @@ use Psalm\Issue\UnnecessaryVarAnnotation;
 use Psalm\Issue\UnusedMethod;
 use Psalm\Issue\UnusedProperty;
 use Psalm\Issue\UnusedVariable;
-use Psalm\Plugin\Hook\Event\AfterCodebasePopulatedEvent;
+use Psalm\Plugin\EventHandler\Event\AfterCodebasePopulatedEvent;
 use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
 use Psalm\Report;
@@ -621,14 +621,9 @@ class ProjectAnalyzer
         if (!$diff_no_files) {
             $this->config->visitStubFiles($this->codebase, $this->progress);
 
-            $plugin_classes = $this->config->after_codebase_populated;
+            $event = new AfterCodebasePopulatedEvent($this->codebase);
 
-            if ($plugin_classes) {
-                foreach ($plugin_classes as $plugin_fq_class_name) {
-                    $event = new AfterCodebasePopulatedEvent($this->codebase);
-                    $plugin_fq_class_name::afterCodebasePopulated($event);
-                }
-            }
+            $this->config->eventDispatcher->dispatchAfterCodebasePopulated($event);
         }
 
         $this->progress->startAnalyzingFiles();

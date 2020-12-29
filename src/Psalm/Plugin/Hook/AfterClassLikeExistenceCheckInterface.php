@@ -1,9 +1,21 @@
 <?php
 namespace Psalm\Plugin\Hook;
 
-use Psalm\Plugin\Hook\Event\AfterClassLikeExistenceCheckEvent;
+use Psalm\Codebase;
+use Psalm\CodeLocation;
+use Psalm\FileManipulation;
+use Psalm\StatementsSource;
 
 interface AfterClassLikeExistenceCheckInterface
 {
-    public static function afterClassLikeExistenceCheck(AfterClassLikeExistenceCheckEvent $event): void;
+    /**
+     * @param  FileManipulation[] $file_replacements
+     */
+    public static function afterClassLikeExistenceCheck(
+        string $fq_class_name,
+        CodeLocation $code_location,
+        StatementsSource $statements_source,
+        Codebase $codebase,
+        array &$file_replacements = []
+    ): void;
 }

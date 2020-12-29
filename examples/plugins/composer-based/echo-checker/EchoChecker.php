@@ -6,8 +6,8 @@ use Psalm\CodeLocation;
 use Psalm\FileManipulation;
 use Psalm\IssueBuffer;
 use Psalm\Issue\ArgumentTypeCoercion;
-use Psalm\Plugin\Hook\AfterStatementAnalysisInterface;
-use Psalm\Plugin\Hook\Event\AfterStatementAnalysisEvent;
+use Psalm\Plugin\EventHandler\AfterStatementAnalysisInterface;
+use Psalm\Plugin\EventHandler\Event\AfterStatementAnalysisEvent;
 
 class EchoChecker implements AfterStatementAnalysisInterface
 {

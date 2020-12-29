@@ -1,13 +1,14 @@
 <?php
 namespace Psalm\Internal\Provider;
 
-use PhpParser;
 use Psalm\Context;
-use Psalm\Plugin\Hook\PropertyTypeProviderInterface;
-use Psalm\Plugin\Hook\Event\PropertyTypeProviderEvent;
+use Psalm\Plugin\EventHandler\Event\PropertyTypeProviderEvent;
+use Psalm\Plugin\EventHandler\PropertyTypeProviderInterface;
+use Psalm\Plugin\Hook\PropertyTypeProviderInterface as LegacyPropertyTypeProviderInterface;
 use Psalm\StatementsSource;
 use Psalm\Type;
 use function strtolower;
+use function is_subclass_of;
 
 class PropertyTypeProvider
 {
@@ -19,20 +20,43 @@ class PropertyTypeProvider
      */
     private static $handlers = [];
 
+    /**
+     * @var array<
+     *   lowercase-string,
+     *   array<\Closure(
+     *     string,
+     *     string,
+     *     bool,
+     *     ?StatementsSource=,
+     *     ?Context=
+     *   ) : ?Type\Union>
+     * >
+     */
+    private static $legacy_handlers = [];
+
     public function __construct()
     {
         self::$handlers = [];
+        self::$legacy_handlers = [];
     }
 
     /**
-     * @param  class-string<PropertyTypeProviderInterface> $class
+     * @param class-string $class
      */
     public function registerClass(string $class): void
     {
-        $callable = \Closure::fromCallable([$class, 'getPropertyType']);
+        if (is_subclass_of($class, LegacyPropertyTypeProviderInterface::class, true)) {
+            $callable = \Closure::fromCallable([$class, 'getPropertyType']);
 
-        foreach ($class::getClassLikeNames() as $fq_classlike_name) {
-            $this->registerClosure($fq_classlike_name, $callable);
+            foreach ($class::getClassLikeNames() as $fq_classlike_name) {
+                $this->registerLegacyClosure($fq_classlike_name, $callable);
+            }
+        } elseif (is_subclass_of($class, PropertyTypeProviderInterface::class, true)) {
+            $callable = \Closure::fromCallable([$class, 'getPropertyType']);
+
+            foreach ($class::getClassLikeNames() as $fq_classlike_name) {
+                $this->registerClosure($fq_classlike_name, $callable);
+            }
         }
     }
 
@@ -44,9 +68,24 @@ class PropertyTypeProvider
         self::$handlers[strtolower($fq_classlike_name)][] = $c;
     }
 
+    /**
+     * @param \Closure(
+     *     string,
+     *     string,
+     *     bool,
+     *     ?StatementsSource=,
+     *     ?Context=
+     *   ) : ?Type\Union $c
+     */
+    public function registerLegacyClosure(string $fq_classlike_name, \Closure $c): void
+    {
+        self::$legacy_handlers[strtolower($fq_classlike_name)][] = $c;
+    }
+
     public function has(string $fq_classlike_name) : bool
     {
-        return isset(self::$handlers[strtolower($fq_classlike_name)]);
+        return isset(self::$handlers[strtolower($fq_classlike_name)]) ||
+            isset(self::$legacy_handlers[strtolower($fq_classlike_name)]);
     }
 
     public function getPropertyType(
@@ -56,7 +95,7 @@ class PropertyTypeProvider
         ?StatementsSource $source = null,
         ?Context $context = null
     ): ?Type\Union {
-        foreach (self::$handlers[strtolower($fq_classlike_name)] as $property_handler) {
+        foreach (self::$handlers[strtolower($fq_classlike_name)] ?? [] as $property_handler) {
             $event = new PropertyTypeProviderEvent(
                 $fq_classlike_name,
                 $property_name,
@@ -65,6 +104,20 @@ class PropertyTypeProvider
                 $context
             );
             $property_type = $property_handler($event);
+
+            if ($property_type !== null) {
+                return $property_type;
+            }
+        }
+
+        foreach (self::$legacy_handlers[strtolower($fq_classlike_name)] ?? [] as $property_handler) {
+            $property_type = $property_handler(
+                $fq_classlike_name,
+                $property_name,
+                $read_mode,
+                $source,
+                $context
+            );
 
             if ($property_type !== null) {
                 return $property_type;

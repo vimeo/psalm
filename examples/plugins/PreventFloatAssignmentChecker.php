@@ -5,8 +5,8 @@ use PhpParser;
 use Psalm\Checker;
 use Psalm\CodeLocation;
 use Psalm\FileManipulation;
-use Psalm\Plugin\Hook\AfterExpressionAnalysisInterface;
-use Psalm\Plugin\Hook\Event\AfterExpressionAnalysisEvent;
+use Psalm\Plugin\EventHandler\AfterExpressionAnalysisInterface;
+use Psalm\Plugin\EventHandler\Event\AfterExpressionAnalysisEvent;
 
 /**
  * Prevents any assignment to a float value
