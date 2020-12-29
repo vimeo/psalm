@@ -25,7 +25,6 @@ before_install:
     - if [[ $TRAVIS_PHP_VERSION = nightly ]]; then export DEFAULT_COMPOSER_FLAGS="$DEFAULT_COMPOSER_FLAGS --ignore-platform-reqs"; fi
     - composer validate
 
-
 install:
   - if [[ "$DEPS" = 'high' ]]; then travis_retry composer $DEFAULT_COMPOSER_FLAGS update; fi
   - if [[ "$DEPS" = 'low' ]]; then travis_retry composer $DEFAULT_COMPOSER_FLAGS --prefer-lowest --prefer-stable update; fi
@@ -38,10 +37,7 @@ script:
 jobs:
   fast_finish: true
   include:
-    - php: 7.3
-      env: DEPS="low"
-
-    - php: 7.3
+    - php: 7.4
       env: DEPS="high"
       script: bin/build-phar.sh
       deploy:
