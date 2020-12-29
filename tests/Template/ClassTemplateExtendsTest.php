@@ -3935,7 +3935,7 @@ class ClassTemplateExtendsTest extends TestCase
                     /** @template T of A */
                     abstract class ATestCase {
                         /** @var T */
-                        protected Mock $foo;
+                        protected $foo;
 
                         /** @param T $foo */
                         public function __construct(A $foo) {
