@@ -3,7 +3,7 @@ version: 2.1
 executors:
   php-74:
     docker:
-      - image: thecodingmachine/php:7.4-v3-cli
+      - image: thecodingmachine/php:7.4-v4-cli
 jobs:
   install-and-self-analyse:
     executor: php-74
@@ -12,14 +12,14 @@ jobs:
       - run: date "+%F" > /tmp/cachekey; cat composer.json >> /tmp/cachekey
       - restore_cache:
           keys:
-            - composer-v3
+            - composer-v4
       - restore_cache:
           keys:
             - psalm-cache-{{ checksum "/tmp/cachekey" }} # speeds up diff run
       - run: composer update
 
       - save_cache:
-          key: composer-v3
+          key: composer-v4
           paths:
             - /home/docker/.composer/cache/files
             - /home/docker/.composer/cache/vcs
