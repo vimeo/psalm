@@ -2,9 +2,6 @@
 	"minimum-stability": "dev",
 	"prefer-stable": true,
 	"require": {
-		"humbug/box": "^3.8"
-	},
-    "config": {
-        "platform-check": false
-    }
+		"humbug/box": "3.10.*"
+	}
 }
