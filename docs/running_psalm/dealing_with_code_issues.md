@@ -55,7 +55,8 @@ Some issue types allow the use of `referencedMethod`, `referencedClass` or `refe
     <errorLevel type="suppress">
       <referencedVariable name="$fooBar" /> <!-- if your variable is "$fooBar" -->
     </errorLevel>
-</UndefinedGlobalVariable>
+  </UndefinedGlobalVariable>
+  <PluginIssue name="IssueNameEmittedByPlugin" errorLevel="info" /> <!-- this is a special case to handle issues emitted by plugins -->
 </issueHandlers>
 ```
 
