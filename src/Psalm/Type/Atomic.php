@@ -548,8 +548,7 @@ abstract class Atomic implements TypeNode
     }
 
     /**
-     * @param  array<string, string> $aliased_classes
-     *
+     * @param  array<lowercase-string, string> $aliased_classes
      */
     public function toNamespacedString(
         ?string $namespace,
@@ -561,7 +560,7 @@ abstract class Atomic implements TypeNode
     }
 
     /**
-     * @param  array<string, string> $aliased_classes
+     * @param  array<lowercase-string, string> $aliased_classes
      */
     abstract public function toPhpString(
         ?string $namespace,

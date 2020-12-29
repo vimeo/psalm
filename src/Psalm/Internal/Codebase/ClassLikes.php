@@ -93,7 +93,7 @@ class ClassLikes
     private $existing_traits = [];
 
     /**
-     * @var array<string, string>
+     * @var array<lowercase-string, string>
      */
     private $classlike_aliases = [];
 
@@ -557,7 +557,7 @@ class ClassLikes
     }
 
     /**
-     * @return array<string, string>   all interfaces extended by $interface_name
+     * @return array<lowercase-string, string>   all interfaces extended by $interface_name
      */
     public function getParentInterfaces(string $fq_interface_name): array
     {

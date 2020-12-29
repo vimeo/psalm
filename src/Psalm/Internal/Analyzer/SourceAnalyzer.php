@@ -27,7 +27,7 @@ abstract class SourceAnalyzer implements StatementsSource
     }
 
     /**
-     * @return array<string, string>
+     * @return array<lowercase-string, string>
      */
     public function getAliasedClassesFlipped(): array
     {

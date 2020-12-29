@@ -11,27 +11,27 @@ use function strtolower;
 trait CanAlias
 {
     /**
-     * @var array<string, string>
+     * @var array<lowercase-string, string>
      */
     private $aliased_classes = [];
 
     /**
-     * @var array<string, CodeLocation>
+     * @var array<lowercase-string, CodeLocation>
      */
     private $aliased_class_locations = [];
 
     /**
-     * @var array<string, string>
+     * @var array<lowercase-string, string>
      */
     private $aliased_classes_flipped = [];
 
     /**
-     * @var array<string, string>
+     * @var array<lowercase-string, string>
      */
     private $aliased_classes_flipped_replaceable = [];
 
     /**
-     * @var array<string, non-empty-string>
+     * @var array<lowercase-string, non-empty-string>
      */
     private $aliased_functions = [];
 
@@ -132,7 +132,7 @@ trait CanAlias
     }
 
     /**
-     * @return array<string, string>
+     * @return array<lowercase-string, string>
      */
     public function getAliasedClassesFlipped(): array
     {

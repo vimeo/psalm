@@ -142,7 +142,7 @@ class Context
     /**
      * A list of classes checked with class_exists
      *
-     * @var array<string,bool>
+     * @var array<lowercase-string,bool>
      */
     public $phantom_classes = [];
 

@@ -6,7 +6,7 @@ interface StatementsSource extends FileSource
     public function getNamespace(): ?string;
 
     /**
-     * @return array<string, string>
+     * @return array<lowercase-string, string>
      */
     public function getAliasedClassesFlipped(): array;
 

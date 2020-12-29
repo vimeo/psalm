@@ -61,11 +61,12 @@ class ScopeAnalyzer
     }
 
     /**
-     * @param   array<PhpParser\Node> $stmts
-     * @param   bool $return_is_exit Exit and Throw statements are treated differently from return if this is false
-     * @param   list<'loop'|'switch'> $break_types
+     * @param array<PhpParser\Node> $stmts
+     * @param array<lowercase-string, bool> $exit_functions
+     * @param list<'loop'|'switch'> $break_types
+     * @param bool $return_is_exit Exit and Throw statements are treated differently from return if this is false
      *
-     * @return  list<self::ACTION_*>
+     * @return list<self::ACTION_*>
      */
     public static function getControlActions(
         array $stmts,

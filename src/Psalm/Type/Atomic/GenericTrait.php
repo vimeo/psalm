@@ -61,7 +61,7 @@ trait GenericTrait
     }
 
     /**
-     * @param  array<string, string> $aliased_classes
+     * @param  array<lowercase-string, string> $aliased_classes
      *
      */
     public function toNamespacedString(

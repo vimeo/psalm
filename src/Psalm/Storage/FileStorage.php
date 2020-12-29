@@ -13,17 +13,17 @@ class FileStorage
     public $classlikes_in_file = [];
 
     /**
-     * @var array<string>
+     * @var array<lowercase-string, string>
      */
     public $referenced_classlikes = [];
 
     /**
-     * @var array<string>
+     * @var array<lowercase-string, string>
      */
     public $required_classes = [];
 
     /**
-     * @var array<string>
+     * @var array<lowercase-string, string>
      */
     public $required_interfaces = [];
 
@@ -51,10 +51,10 @@ class FileStorage
     /** @var array<string, string> */
     public $declaring_constants = [];
 
-    /** @var array<string, string> */
+    /** @var array<lowercase-string, string> */
     public $required_file_paths = [];
 
-    /** @var array<string, string> */
+    /** @var array<lowercase-string, string> */
     public $required_by_file_paths = [];
 
     /** @var bool */

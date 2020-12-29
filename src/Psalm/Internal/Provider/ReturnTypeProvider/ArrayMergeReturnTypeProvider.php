@@ -12,6 +12,9 @@ use Psalm\Type;
 
 class ArrayMergeReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface
 {
+    /**
+     * @return array<lowercase-string>
+     */
     public static function getFunctionIds() : array
     {
         return ['array_merge', 'array_replace'];

@@ -49,7 +49,7 @@ class TTemplateParamClass extends TClassString
     }
 
     /**
-     * @param  array<string> $aliased_classes
+     * @param  array<lowercase-string, string> $aliased_classes
      */
     public function toPhpString(
         ?string $namespace,
@@ -67,7 +67,7 @@ class TTemplateParamClass extends TClassString
     }
 
     /**
-     * @param  array<string> $aliased_classes
+     * @param  array<lowercase-string, string> $aliased_classes
      *
      */
     public function toNamespacedString(

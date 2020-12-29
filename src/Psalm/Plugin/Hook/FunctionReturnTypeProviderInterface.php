@@ -10,7 +10,7 @@ use Psalm\Type;
 interface FunctionReturnTypeProviderInterface
 {
     /**
-     * @return array<string>
+     * @return array<lowercase-string>
      */
     public static function getFunctionIds() : array;
 

@@ -101,7 +101,7 @@ abstract class Type
     }
 
     /**
-     * @param array<string, string> $aliased_classes
+     * @param array<lowercase-string, string> $aliased_classes
      *
      * @psalm-pure
      */

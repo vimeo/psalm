@@ -9,6 +9,9 @@ use Psalm\Type;
 
 class ArrayPopReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface
 {
+    /**
+     * @return array<lowercase-string>
+     */
     public static function getFunctionIds() : array
     {
         return ['array_pop', 'array_shift'];

@@ -71,7 +71,7 @@ class TNamedObject extends Atomic
     }
 
     /**
-     * @param  array<string, string> $aliased_classes
+     * @param  array<lowercase-string, string> $aliased_classes
      *
      */
     public function toNamespacedString(
@@ -102,7 +102,7 @@ class TNamedObject extends Atomic
     }
 
     /**
-     * @param  array<string, string> $aliased_classes
+     * @param  array<lowercase-string, string> $aliased_classes
      */
     public function toPhpString(
         ?string $namespace,

@@ -51,7 +51,7 @@ class Codebase
      * A map of fully-qualified use declarations to the files
      * that reference them (keyed by filename)
      *
-     * @var array<string, array<int, \Psalm\CodeLocation>>
+     * @var array<lowercase-string, array<int, \Psalm\CodeLocation>>
      */
     public $use_referencing_locations = [];
 
@@ -59,7 +59,7 @@ class Codebase
      * A map of file names to the classes that they contain explicit references to
      * used in collaboration with use_referencing_locations
      *
-     * @var array<string, array<string, bool>>
+     * @var array<string, array<lowercase-string, bool>>
      */
     public $use_referencing_files = [];
 
@@ -235,7 +235,7 @@ class Codebase
     public $classes_to_move = [];
 
     /**
-     * @var array<string, string>
+     * @var array<lowercase-string, string>
      */
     public $call_transforms = [];
 

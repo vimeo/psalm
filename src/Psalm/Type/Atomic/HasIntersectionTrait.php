@@ -16,7 +16,7 @@ trait HasIntersectionTrait
     public $extra_types;
 
     /**
-     * @param  array<string, string> $aliased_classes
+     * @param  array<lowercase-string, string> $aliased_classes
      */
     private function getNamespacedIntersectionTypes(
         ?string $namespace,

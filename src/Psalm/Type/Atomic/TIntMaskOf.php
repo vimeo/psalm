@@ -30,7 +30,7 @@ class TIntMaskOf extends TInt
     }
 
     /**
-     * @param  array<string> $aliased_classes
+     * @param  array<lowercase-string, string> $aliased_classes
      */
     public function toPhpString(
         ?string $namespace,
@@ -43,8 +43,7 @@ class TIntMaskOf extends TInt
     }
 
     /**
-     * @param  array<string, string> $aliased_classes
-     *
+     * @param array<lowercase-string, string> $aliased_classes
      */
     public function toNamespacedString(
         ?string $namespace,

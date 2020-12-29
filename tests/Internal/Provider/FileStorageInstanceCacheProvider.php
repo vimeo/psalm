@@ -6,7 +6,7 @@ use function strtolower;
 
 class FileStorageInstanceCacheProvider extends \Psalm\Internal\Provider\FileStorageCacheProvider
 {
-    /** @var array<string, FileStorage> */
+    /** @var array<lowercase-string, FileStorage> */
     private $cache = [];
 
     public function __construct()

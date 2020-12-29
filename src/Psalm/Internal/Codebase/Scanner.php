@@ -53,7 +53,7 @@ use function substr;
  *     unchanged_signature_members:array<string, array<string, bool>>,
  *     diff_map:array<string, array<int, array{0:int, 1:int, 2:int, 3:int}>>,
  *     classlike_storage:array<string, \Psalm\Storage\ClassLikeStorage>,
- *     file_storage:array<string, \Psalm\Storage\FileStorage>,
+ *     file_storage:array<lowercase-string, \Psalm\Storage\FileStorage>,
  *     new_file_content_hashes: array<string, string>,
  *     taint_data: ?TaintFlowGraph
  * }

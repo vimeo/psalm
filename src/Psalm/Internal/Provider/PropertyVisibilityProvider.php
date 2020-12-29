@@ -12,7 +12,7 @@ class PropertyVisibilityProvider
 {
     /**
      * @var array<
-     *   string,
+     *   lowercase-string,
      *   array<\Closure(
      *     StatementsSource,
      *     string,

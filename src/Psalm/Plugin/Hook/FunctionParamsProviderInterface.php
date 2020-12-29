@@ -9,7 +9,7 @@ use Psalm\StatementsSource;
 interface FunctionParamsProviderInterface
 {
     /**
-     * @return array<string>
+     * @return array<lowercase-string>
      */
     public static function getFunctionIds() : array;
 

@@ -13,7 +13,7 @@ class FunctionReturnTypeProvider
 {
     /**
      * @var array<
-     *   string,
+     *   lowercase-string,
      *   array<\Closure(
      *     StatementsSource,
      *     non-empty-string,
@@ -72,7 +72,7 @@ class FunctionReturnTypeProvider
     }
 
     /**
-     * /**
+     * @param lowercase-string $function_id
      * @param \Closure(
      *     StatementsSource,
      *     non-empty-string,

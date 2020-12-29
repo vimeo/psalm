@@ -17,6 +17,9 @@ use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
 
 class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface
 {
+    /**
+     * @return array<lowercase-string>
+     */
     public static function getFunctionIds() : array
     {
         return ['array_map'];
