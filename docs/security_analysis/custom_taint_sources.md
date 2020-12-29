@@ -40,7 +40,6 @@ class BadSqlTainter implements AfterExpressionAnalysisInterface
      *
      * @param  PhpParser\Node\Expr  $expr
      * @param  Context              $context
-     * @param  string[]             $suppressed_issues
      * @param  FileManipulation[]   $file_replacements
      *
      * @return void

@@ -58,8 +58,6 @@ class IncludeTest extends TestCase
      * @param array<int, string> $files_to_check
      * @param array<string, string> $files
      * @param string $error_message
-     * @param bool $hoist_constants
-     *
      */
     public function testInvalidInclude(
         array $files,

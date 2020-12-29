@@ -2145,7 +2145,6 @@ class AssertionFinder
 
     /**
      * @param int $null_position
-     * @param array $if_types
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<string>>>>
      */
     private static function getNullInequalityAssertions(

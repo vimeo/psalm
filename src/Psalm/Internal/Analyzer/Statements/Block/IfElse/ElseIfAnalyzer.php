@@ -34,8 +34,6 @@ use function in_array;
 class ElseIfAnalyzer
 {
     /**
-     * @param  Context                     $elseif_context
-     *
      * @return false|null
      */
     public static function analyze(

@@ -64,10 +64,6 @@ class PropertyExistenceProvider
         return isset(self::$handlers[strtolower($fq_classlike_name)]);
     }
 
-    /**
-     * @param  list<PhpParser\Node\Arg>  $call_args
-     *
-     */
     public function doesPropertyExist(
         string $fq_classlike_name,
         string $property_name,

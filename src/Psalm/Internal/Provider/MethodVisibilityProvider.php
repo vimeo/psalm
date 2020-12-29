@@ -63,10 +63,6 @@ class MethodVisibilityProvider
         return isset(self::$handlers[strtolower($fq_classlike_name)]);
     }
 
-    /**
-     * @param  list<PhpParser\Node\Arg>  $call_args
-     *
-     */
     public function isMethodVisible(
         StatementsSource $source,
         string $fq_classlike_name,

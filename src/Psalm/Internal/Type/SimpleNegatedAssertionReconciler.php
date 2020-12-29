@@ -31,7 +31,6 @@ use function substr;
 class SimpleNegatedAssertionReconciler extends Reconciler
 {
     /**
-     * @param  array<string, array<string, Type\Union>> $template_type_map
      * @param  string[]   $suppressed_issues
      * @param  0|1|2      $failed_reconciliation
      *
@@ -234,10 +233,6 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         return null;
     }
 
-    /**
-     * @param   string[]  $suppressed_issues
-     * @param   0|1|2    $failed_reconciliation
-     */
     private static function reconcileCallable(
         Type\Union $existing_var_type
     ) : Type\Union {

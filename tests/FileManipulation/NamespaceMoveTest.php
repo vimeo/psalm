@@ -23,8 +23,6 @@ class NamespaceMoveTest extends \Psalm\Tests\TestCase
      * @dataProvider providerValidCodeParse
      *
      * @param array<string, string> $namespaces_to_move
-     * @param array<string, string> $call_transforms
-     *
      */
     public function testValidCode(
         string $input_code,

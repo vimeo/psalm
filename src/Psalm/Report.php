@@ -69,9 +69,6 @@ abstract class Report
     /**
      * @param array<int, IssueData> $issues_data
      * @param array<string, int> $fixable_issue_counts
-     * @param bool $use_color
-     * @param bool $show_snippet
-     * @param bool $show_info
      */
     public function __construct(
         array $issues_data,

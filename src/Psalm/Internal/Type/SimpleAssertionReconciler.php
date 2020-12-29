@@ -552,8 +552,6 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
     }
 
     /**
-     * @param   string[]  $suppressed_issues
-     * @param   0|1|2    $failed_reconciliation
      * @param   positive-int $count
      */
     private static function reconcileExactlyCountable(
@@ -1478,10 +1476,6 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
         return Type::getMixed();
     }
 
-    /**
-     * @param   string[]  $suppressed_issues
-     * @param   0|1|2    $failed_reconciliation
-     */
     private static function reconcileInArray(
         Codebase $codebase,
         Union $existing_var_type,
@@ -1522,10 +1516,6 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
         return $existing_var_type;
     }
 
-    /**
-     * @param   string[]  $suppressed_issues
-     * @param   0|1|2    $failed_reconciliation
-     */
     private static function reconcileHasArrayKey(
         Union $existing_var_type,
         string $assertion

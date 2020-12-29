@@ -927,7 +927,7 @@ function wordwrap(string $str, int $width = 75, string $break = "\n", bool $cut 
 /**
  * @psalm-pure
  *
- * @param string|int|float $args
+ * @param string|int|float $values
  *
  * @psalm-flow ($format, $values) -> return
  */

@@ -176,8 +176,6 @@ class FileManipulationBuffer
     }
 
     /**
-     * @param string $file_path
-     *
      * @return array<string, FileManipulation[]>
      */
     public static function getMigrationManipulations(FileProvider $file_provider): array
