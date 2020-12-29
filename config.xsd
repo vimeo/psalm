@@ -274,6 +274,7 @@
             <xs:element name="MethodSignatureMismatch" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MethodSignatureMustOmitReturnType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MismatchingDocblockParamType" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="MismatchingDocblockPropertyType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MismatchingDocblockReturnType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingClosureParamType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingClosureReturnType" type="IssueHandlerType" minOccurs="0" />

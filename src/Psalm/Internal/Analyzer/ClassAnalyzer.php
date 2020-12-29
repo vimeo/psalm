@@ -23,6 +23,7 @@ use Psalm\Issue\InternalClass;
 use Psalm\Issue\InvalidExtendClass;
 use Psalm\Issue\InvalidTemplateParam;
 use Psalm\Issue\MethodSignatureMismatch;
+use Psalm\Issue\MismatchingDocblockPropertyType;
 use Psalm\Issue\MissingConstructor;
 use Psalm\Issue\MissingImmutableAnnotation;
 use Psalm\Issue\MissingPropertyType;
@@ -1137,6 +1138,32 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     [],
                     false
                 );
+
+                if ($property_storage->signature_type) {
+                    $union_comparison_result = new \Psalm\Internal\Type\Comparator\TypeComparisonResult();
+
+                    if (!UnionTypeComparator::isContainedBy(
+                        $codebase,
+                        $fleshed_out_type,
+                        $property_storage->signature_type,
+                        false,
+                        false,
+                        $union_comparison_result
+                    ) && !$union_comparison_result->type_coerced_from_mixed
+                    ) {
+                        if (IssueBuffer::accepts(
+                            new MismatchingDocblockPropertyType(
+                                'Parameter '
+                                    . $property_class_name . '::$' . $property_name
+                                    . ' has wrong type \'' . $fleshed_out_type .
+                                    '\', should be \'' . $property_storage->signature_type . '\'',
+                                $property_type_location
+                            )
+                        )) {
+                            // do nothing
+                        }
+                    }
+                }
             }
 
             if ($property_storage->is_static) {
