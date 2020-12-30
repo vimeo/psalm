@@ -319,7 +319,7 @@ Basic configuration:
         If greater than one, Psalm will run analysis on multiple threads, speeding things up.
 
     --no-diff
-        Turns off Psalm’s diff mode, checks all files regardless of whether they've changed
+        Turns off Psalm’s diff mode, checks all files regardless of whether they’ve changed.
 
 Surfacing issues:
     --show-info[=BOOLEAN]
@@ -382,7 +382,7 @@ Output:
         Use a progress indicator suitable for Continuous Integration logs
 
     --stats
-        Shows a breakdown of Psalm's ability to infer types in the codebase
+        Shows a breakdown of Psalm’s ability to infer types in the codebase
 
 Reports:
     --report=PATH
@@ -432,7 +432,7 @@ Miscellaneous:
         Print a php backtrace to stderr when emitting issues.
 
     -r, --root
-        If running Psalm globally you'll need to specify a project root. Defaults to cwd
+        If running Psalm globally you’ll need to specify a project root. Defaults to cwd
 
     --generate-json-map=PATH
         Generate a map of node references and types in JSON format, saved to the given path.
@@ -441,7 +441,7 @@ Miscellaneous:
         Generate stubs for the project and dump the file in the given path
 
     --shepherd[=host]
-        Send data to Shepherd, Psalm's GitHub integration tool.
+        Send data to Shepherd, Psalm’s GitHub integration tool.
 
     --alter
         Run Psalter
