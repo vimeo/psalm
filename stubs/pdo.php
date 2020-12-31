@@ -6,7 +6,8 @@ class PdoStatement {
      *
      * @template T
      * @param class-string<T> $class
+     * @param array $ctorArgs
      * @return false|T
      */
-    public function fetchObject($class = "stdclass") {}
+    public function fetchObject($class = "stdclass", array $ctorArgs = array()) {}
 }
