@@ -98,6 +98,7 @@ echo "Successfully executed the command: " . $prefixedData;';
                     'tool' => [
                         'driver' => [
                             'name' => 'Psalm',
+                            'informationUri' => 'https://psalm.dev',
                             'version' => '2.0.0',
                             'rules' => [
                                 [
@@ -111,6 +112,7 @@ echo "Successfully executed the command: " . $prefixedData;';
                                             'security'
                                         ],
                                     ],
+                                    'helpUri' => 'https://psalm.dev/246',
                                     'help' => [
                                         'markdown' => file_get_contents(__DIR__ . '/../docs/running_psalm/issues/TaintedShell.md'),
                                         'text' => file_get_contents(__DIR__ . '/../docs/running_psalm/issues/TaintedShell.md'),
@@ -127,6 +129,7 @@ echo "Successfully executed the command: " . $prefixedData;';
                                             'security'
                                         ],
                                     ],
+                                    'helpUri' => 'https://psalm.dev/245',
                                     'help' => [
                                         'markdown' => file_get_contents(__DIR__ . '/../docs/running_psalm/issues/TaintedHtml.md'),
                                         'text' => file_get_contents(__DIR__ . '/../docs/running_psalm/issues/TaintedHtml.md'),
