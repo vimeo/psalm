@@ -72,17 +72,13 @@
     },
     "autoload": {
         "psr-4": {
-            "Psalm\\": "src/Psalm/"
+            "Psalm\\": "src/Psalm/",
+            "Psalm\\Tests\\": "tests/"
         },
         "files": [
             "src/functions.php",
             "src/spl_object_id.php"
         ]
-    },
-    "autoload-dev": {
-        "psr-4": {
-            "Psalm\\Tests\\": "tests/"
-        }
     },
     "repositories": [
         {
