@@ -192,6 +192,20 @@ class ScopeTest extends \Psalm\Tests\TestCase
                 ?>
                 <h1><?= $this->getMessage() ?></h1>',
             ],
+            'psalmVarThisInTemplate' => [
+                '<?php
+                    $e = new Exception(); // necessary to trick Psalm’s scanner for test
+                    /** @var Exception $this */
+                ?>
+                <h1><?= $this->getMessage() ?></h1>',
+            ],
+            'psalmVarThisAbsoluteClassInTemplate' => [
+                '<?php
+                    $e = new Exception(); // necessary to trick Psalm’s scanner for test
+                    /** @var \Exception $this */
+                ?>
+                <h1><?= $this->getMessage() ?></h1>',
+            ],
         ];
     }
 

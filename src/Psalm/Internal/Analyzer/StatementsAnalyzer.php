@@ -460,6 +460,13 @@ class StatementsAnalyzer extends SourceAnalyzer
                         $var_comment,
                         $context
                     );
+
+                    if ($var_comment->var_id === '$this'
+                        && $var_comment->type
+                        && $codebase->classExists((string)$var_comment->type)
+                    ) {
+                        $statements_analyzer->setFQCLN((string)$var_comment->type);
+                    }
                 }
             }
         } else {
