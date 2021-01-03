@@ -674,9 +674,18 @@ class NonDivArithmeticOpAnalyzer
                     }
 
                     if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Mod) {
-                        $result_type = $always_positive
-                            ? new Type\Union([new Type\Atomic\TPositiveInt(), new TLiteralInt(0)])
-                            : Type::getInt();
+                        if ($always_positive) {
+                            if ($right_type_part instanceof TLiteralInt && $right_type_part->value === 1) {
+                                $result_type = Type::getInt(true, 0);
+                            } else {
+                                $result_type = new Type\Union([
+                                    new Type\Atomic\TPositiveInt(),
+                                    new TLiteralInt(0)
+                                ]);
+                            }
+                        } else {
+                            $result_type = Type::getInt();
+                        }
                     } elseif (!$result_type) {
                         $result_type = $always_positive ? Type::getPositiveInt(true) : Type::getInt(true);
                     } else {
