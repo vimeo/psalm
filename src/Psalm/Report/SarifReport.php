@@ -23,6 +23,7 @@ class SarifReport extends Report
                     'tool' => [
                         'driver' => [
                             'name' => 'Psalm',
+                            'informationUri' => 'https://psalm.dev',
                             'version' => PSALM_VERSION,
                         ],
                     ],
@@ -45,6 +46,7 @@ class SarifReport extends Report
                         (\substr($issue_data->type, 0, 7) === 'Tainted') ? 'security' : 'maintainability',
                     ],
                 ],
+                'helpUri' => $issue_data->link,
             ];
 
             $markdown_documentation_path = __DIR__ . '/../../../docs/running_psalm/issues/' . $issue_data->type . '.md';
