@@ -9,7 +9,12 @@
         "src/psalm-refactor.php"
     ],
     "files-bin": ["config.xsd"],
-    "directories-bin" : ["assets", "dictionaries", "stubs"],
+    "directories-bin" : [
+        "assets",
+        "dictionaries",
+        "docs/running_psalm/issues",
+        "stubs"
+    ],
     "compactors" : [
         "KevinGH\\Box\\Compactor\\PhpScoper"
     ]
