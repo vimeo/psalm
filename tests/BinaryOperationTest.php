@@ -131,12 +131,14 @@ class BinaryOperationTest extends TestCase
                     $a = 25 % 2;
                     $b = 25.4 % 2;
                     $c = 25 % 2.5;
-                    $d = 25.5 % 2.5;',
+                    $d = 25.5 % 2.5;
+                    $e = 25 % 1;',
                 'assertions' => [
                     '$a' => 'int',
                     '$b' => 'int',
                     '$c' => 'int',
                     '$d' => 'int',
+                    '$e' => 'int',
                 ],
             ],
             'numericAddition' => [
