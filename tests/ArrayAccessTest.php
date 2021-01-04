@@ -835,6 +835,14 @@ class ArrayAccessTest extends TestCase
                         return $s["a"];
                     }',
             ],
+            'simpleXmlArrayFetchChildren' => [
+                '<?php
+                    function iterator(SimpleXMLElement $xml): iterable {
+                        foreach ($xml->children() as $img) {
+                            yield $img["src"] ?? "";
+                        }
+                    }',
+            ],
             'assertOnArrayAccess' => [
                 '<?php
                     class A {
