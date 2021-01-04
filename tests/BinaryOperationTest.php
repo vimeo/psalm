@@ -414,6 +414,11 @@ class BinaryOperationTest extends TestCase
                     $a = 5 / (rand(0, 1) ? 2 : null);',
                 'error_message' => 'PossiblyNullOperand',
             ],
+            'DivByZero' => [
+                '<?php
+                    $a = 5 / 0;',
+                'error_message' => 'DivisionByZero',
+            ],
             'invalidExponent' => [
                 '<?php
                     $a = "x" ^ 1;',
