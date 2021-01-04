@@ -2215,7 +2215,7 @@ final class WeakReference
     public function get(): ?object;
 }
 
-class SimpleXMLElement implements \Stringable, \Countable, \RecursiveIterator
+class SimpleXMLElement implements \Stringable, \Countable, \RecursiveIterator, \ArrayAccess
 {
     /** @return array */
     public function getNamespaces(bool $recursive = false)
@@ -2282,6 +2282,22 @@ class SimpleXMLElement implements \Stringable, \Countable, \RecursiveIterator
     }
     /** @return SimpleXMLElement|null */
     public function getChildren()
+    {
+    }
+
+    public function offsetExists($offset)
+    {
+    }
+
+    public function offsetGet($offset)
+    {
+    }
+
+    public function offsetSet($offset, $value)
+    {
+    }
+
+    public function offsetUnset($offset)
     {
     }
 }
