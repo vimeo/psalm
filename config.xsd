@@ -199,6 +199,7 @@
             <xs:element name="DeprecatedMethod" type="MethodIssueHandlerType" minOccurs="0" />
             <xs:element name="DeprecatedProperty" type="PropertyIssueHandlerType" minOccurs="0" />
             <xs:element name="DeprecatedTrait" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="DivisionByZero" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="DocblockTypeContradiction" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="DuplicateArrayKey" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="DuplicateClass" type="IssueHandlerType" minOccurs="0" />

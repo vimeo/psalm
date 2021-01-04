@@ -7,6 +7,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Issue\DivisionByZero;
 use Psalm\Issue\FalseOperand;
 use Psalm\Issue\InvalidOperand;
 use Psalm\Issue\MixedOperand;
@@ -647,6 +648,17 @@ class NonDivArithmeticOpAnalyzer
 
             if ($left_type_part instanceof TInt && $right_type_part instanceof TInt) {
                 if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Div) {
+                    if ($right_type_part instanceof TLiteralInt && $right_type_part->value === 0) {
+                        if ($statements_source && IssueBuffer::accepts(
+                            new DivisionByZero(
+                                'Cannot divide by zero',
+                                new CodeLocation($statements_source, $parent)
+                            ),
+                            $statements_source->getSuppressedIssues()
+                        )) {
+                            return null;
+                        }
+                    }
                     $result_type = new Type\Union([new Type\Atomic\TInt(), new Type\Atomic\TFloat()]);
                 } else {
                     $left_is_positive = $left_type_part instanceof TPositiveInt
