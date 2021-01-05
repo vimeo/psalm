@@ -208,207 +208,26 @@ class TypeCombiner
 
         $new_types = [];
 
-        if (count($combination->objectlike_entries)) {
-            if ($combination->array_type_params
-                && $combination->array_type_params[0]->allStringLiterals()
-                && $combination->array_always_filled
-            ) {
-                foreach ($combination->array_type_params[0]->getAtomicTypes() as $atomic_key_type) {
-                    if ($atomic_key_type instanceof TLiteralString) {
-                        $combination->objectlike_entries[$atomic_key_type->value]
-                            = $combination->array_type_params[1];
-                    }
-                }
-
-                $combination->array_type_params = [];
-                $combination->objectlike_sealed = false;
-            }
-
-            if (!$combination->array_type_params
-                || $combination->array_type_params[1]->isEmpty()
-            ) {
-                if (!$overwrite_empty_array
-                    && ($combination->array_type_params
-                        && ($combination->array_type_params[1]->isEmpty()
-                            || $combination->array_type_params[1]->isMixed()))
-                ) {
-                    foreach ($combination->objectlike_entries as $objectlike_entry) {
-                        $objectlike_entry->possibly_undefined = true;
-                    }
-                }
-
-                if ($combination->objectlike_value_type
-                    && $combination->objectlike_value_type->isMixed()
-                ) {
-                    $combination->objectlike_entries = array_filter(
-                        $combination->objectlike_entries,
-                        function (Type\Union $type) : bool {
-                            return !$type->possibly_undefined;
-                        }
-                    );
-                }
-
-                if ($combination->objectlike_entries) {
-                    if ($combination->all_arrays_callable) {
-                        $objectlike = new TCallableKeyedArray($combination->objectlike_entries);
-                    } else {
-                        $objectlike = new TKeyedArray($combination->objectlike_entries);
-                    }
-
-                    if ($combination->objectlike_sealed && !$combination->array_type_params) {
-                        $objectlike->sealed = true;
-                    }
-
-                    if ($combination->objectlike_key_type) {
-                        $objectlike->previous_key_type = $combination->objectlike_key_type;
-                    } elseif ($combination->array_type_params
-                        && $combination->array_type_params[0]->isArrayKey()
-                    ) {
-                        $objectlike->previous_key_type = $combination->array_type_params[0];
-                    }
-
-                    if ($combination->objectlike_value_type) {
-                        $objectlike->previous_value_type = $combination->objectlike_value_type;
-                    } elseif ($combination->array_type_params
-                        && $combination->array_type_params[1]->isMixed()
-                    ) {
-                        $objectlike->previous_value_type = $combination->array_type_params[1];
-                    }
-
-                    if ($combination->all_arrays_lists) {
-                        $objectlike->is_list = true;
-                    }
-
-                    $new_types[] = $objectlike;
-                } else {
-                    $new_types[] = new Type\Atomic\TArray([Type::getArrayKey(), Type::getMixed()]);
-                }
-
-                // if we're merging an empty array with an object-like, clobber empty array
-                $combination->array_type_params = [];
-            }
+        if ($combination->objectlike_entries) {
+            $new_types = self::handleKeyedArrayEntries(
+                $combination,
+                $overwrite_empty_array
+            );
         }
 
-        if ($generic_type_params = $combination->array_type_params) {
-            if (count($generic_type_params) !== 2) {
+        if ($combination->array_type_params) {
+            if (count($combination->array_type_params) !== 2) {
                 throw new \UnexpectedValueException('Unexpected number of parameters');
             }
 
-            if ($combination->objectlike_entries) {
-                $objectlike_generic_type = null;
-
-                $objectlike_keys = [];
-
-                foreach ($combination->objectlike_entries as $property_name => $property_type) {
-                    if ($objectlike_generic_type) {
-                        $objectlike_generic_type = Type::combineUnionTypes(
-                            $property_type,
-                            $objectlike_generic_type,
-                            $codebase,
-                            $overwrite_empty_array
-                        );
-                    } else {
-                        $objectlike_generic_type = clone $property_type;
-                    }
-
-                    if (is_int($property_name)) {
-                        $objectlike_keys[$property_name] = new TLiteralInt($property_name);
-                    } elseif (isset($type->class_strings[$property_name])) {
-                        $objectlike_keys[$property_name] = new TLiteralClassString($property_name);
-                    } else {
-                        $objectlike_keys[$property_name] = new TLiteralString($property_name);
-                    }
-                }
-
-                if ($combination->objectlike_value_type) {
-                    $objectlike_generic_type = Type::combineUnionTypes(
-                        $combination->objectlike_value_type,
-                        $objectlike_generic_type,
-                        $codebase,
-                        $overwrite_empty_array
-                    );
-                }
-
-                $objectlike_generic_type->possibly_undefined = false;
-
-                $objectlike_key_type = new Type\Union(array_values($objectlike_keys));
-
-                if ($combination->objectlike_key_type) {
-                    $objectlike_key_type = Type::combineUnionTypes(
-                        $combination->objectlike_key_type,
-                        $objectlike_key_type,
-                        $codebase,
-                        $overwrite_empty_array
-                    );
-                }
-
-                $generic_type_params[0] = Type::combineUnionTypes(
-                    $generic_type_params[0],
-                    $objectlike_key_type,
-                    $codebase,
-                    $overwrite_empty_array,
-                    $allow_mixed_union
-                );
-
-                if (!$generic_type_params[1]->isMixed()) {
-                    $generic_type_params[1] = Type::combineUnionTypes(
-                        $generic_type_params[1],
-                        $objectlike_generic_type,
-                        $codebase,
-                        $overwrite_empty_array,
-                        $allow_mixed_union
-                    );
-                }
-            }
-
-            if ($combination->all_arrays_callable) {
-                $array_type = new TCallableArray($generic_type_params);
-            } elseif ($combination->array_always_filled
-                || ($combination->array_sometimes_filled && $overwrite_empty_array)
-                || ($combination->objectlike_entries
-                    && $combination->objectlike_sealed
-                    && $overwrite_empty_array)
-            ) {
-                if ($combination->all_arrays_lists) {
-                    if ($combination->objectlike_entries
-                        && $combination->objectlike_sealed
-                    ) {
-                        $array_type = new TKeyedArray([$generic_type_params[1]]);
-                        $array_type->previous_key_type = Type::getInt();
-                        $array_type->previous_value_type = $combination->array_type_params[1];
-                        $array_type->is_list = true;
-                    } else {
-                        $array_type = new TNonEmptyList($generic_type_params[1]);
-
-                        if ($combination->array_counts && count($combination->array_counts) === 1) {
-                            $array_type->count = array_keys($combination->array_counts)[0];
-                        }
-                    }
-                } else {
-                    $array_type = new TNonEmptyArray($generic_type_params);
-
-                    if ($combination->array_counts && count($combination->array_counts) === 1) {
-                        $array_type->count = array_keys($combination->array_counts)[0];
-                    }
-                }
-            } else {
-                if ($combination->all_arrays_class_string_maps
-                    && count($combination->class_string_map_as_types) === 1
-                    && count($combination->class_string_map_names) === 1
-                ) {
-                    $array_type = new Type\Atomic\TClassStringMap(
-                        array_keys($combination->class_string_map_names)[0],
-                        array_values($combination->class_string_map_as_types)[0],
-                        $generic_type_params[1]
-                    );
-                } elseif ($combination->all_arrays_lists) {
-                    $array_type = new TList($generic_type_params[1]);
-                } else {
-                    $array_type = new TArray($generic_type_params);
-                }
-            }
-
-            $new_types[] = $array_type;
+            $new_types[] = self::getArrayTypeFromGenericParams(
+                $codebase,
+                $combination,
+                $overwrite_empty_array,
+                $allow_mixed_union,
+                $type,
+                $combination->array_type_params
+            );
         }
 
         if ($combination->extra_types) {
@@ -1375,5 +1194,224 @@ class TypeCombiner
         }
 
         return $classlikes;
+    }
+
+    /**
+     * @return list<Atomic>
+     */
+    private static function handleKeyedArrayEntries(
+        TypeCombination $combination,
+        bool $overwrite_empty_array
+    ) : array {
+        $new_types = [];
+
+        if ($combination->array_type_params
+            && $combination->array_type_params[0]->allStringLiterals()
+            && $combination->array_always_filled
+        ) {
+            foreach ($combination->array_type_params[0]->getAtomicTypes() as $atomic_key_type) {
+                if ($atomic_key_type instanceof TLiteralString) {
+                    $combination->objectlike_entries[$atomic_key_type->value]
+                        = $combination->array_type_params[1];
+                }
+            }
+
+            $combination->array_type_params = [];
+            $combination->objectlike_sealed = false;
+        }
+
+        if (!$combination->array_type_params
+            || $combination->array_type_params[1]->isEmpty()
+        ) {
+            if (!$overwrite_empty_array
+                && ($combination->array_type_params
+                    && ($combination->array_type_params[1]->isEmpty()
+                        || $combination->array_type_params[1]->isMixed()))
+            ) {
+                foreach ($combination->objectlike_entries as $objectlike_entry) {
+                    $objectlike_entry->possibly_undefined = true;
+                }
+            }
+
+            if ($combination->objectlike_value_type
+                && $combination->objectlike_value_type->isMixed()
+            ) {
+                $combination->objectlike_entries = array_filter(
+                    $combination->objectlike_entries,
+                    function (Type\Union $type): bool {
+                        return !$type->possibly_undefined;
+                    }
+                );
+            }
+
+            if ($combination->objectlike_entries) {
+                if ($combination->all_arrays_callable) {
+                    $objectlike = new TCallableKeyedArray($combination->objectlike_entries);
+                } else {
+                    $objectlike = new TKeyedArray($combination->objectlike_entries);
+                }
+
+                if ($combination->objectlike_sealed && !$combination->array_type_params) {
+                    $objectlike->sealed = true;
+                }
+
+                if ($combination->objectlike_key_type) {
+                    $objectlike->previous_key_type = $combination->objectlike_key_type;
+                } elseif ($combination->array_type_params
+                    && $combination->array_type_params[0]->isArrayKey()
+                ) {
+                    $objectlike->previous_key_type = $combination->array_type_params[0];
+                }
+
+                if ($combination->objectlike_value_type) {
+                    $objectlike->previous_value_type = $combination->objectlike_value_type;
+                } elseif ($combination->array_type_params
+                    && $combination->array_type_params[1]->isMixed()
+                ) {
+                    $objectlike->previous_value_type = $combination->array_type_params[1];
+                }
+
+                if ($combination->all_arrays_lists) {
+                    $objectlike->is_list = true;
+                }
+
+                $new_types[] = $objectlike;
+            } else {
+                $new_types[] = new Type\Atomic\TArray([Type::getArrayKey(), Type::getMixed()]);
+            }
+
+            // if we're merging an empty array with an object-like, clobber empty array
+            $combination->array_type_params = [];
+        }
+
+        return $new_types;
+    }
+
+    /**
+     * @param  array{Union, Union}  $generic_type_params
+     */
+    private static function getArrayTypeFromGenericParams(
+        ?Codebase $codebase,
+        TypeCombination $combination,
+        bool $overwrite_empty_array,
+        bool $allow_mixed_union,
+        Atomic $type,
+        array $generic_type_params
+    ) : Atomic {
+        if ($combination->objectlike_entries) {
+            $objectlike_generic_type = null;
+
+            $objectlike_keys = [];
+
+            foreach ($combination->objectlike_entries as $property_name => $property_type) {
+                if ($objectlike_generic_type) {
+                    $objectlike_generic_type = Type::combineUnionTypes(
+                        $property_type,
+                        $objectlike_generic_type,
+                        $codebase,
+                        $overwrite_empty_array
+                    );
+                } else {
+                    $objectlike_generic_type = clone $property_type;
+                }
+
+                if (is_int($property_name)) {
+                    $objectlike_keys[$property_name] = new TLiteralInt($property_name);
+                } elseif (isset($type->class_strings[$property_name])) {
+                    $objectlike_keys[$property_name] = new TLiteralClassString($property_name);
+                } else {
+                    $objectlike_keys[$property_name] = new TLiteralString($property_name);
+                }
+            }
+
+            if ($combination->objectlike_value_type) {
+                $objectlike_generic_type = Type::combineUnionTypes(
+                    $combination->objectlike_value_type,
+                    $objectlike_generic_type,
+                    $codebase,
+                    $overwrite_empty_array
+                );
+            }
+
+            $objectlike_generic_type->possibly_undefined = false;
+
+            $objectlike_key_type = new Type\Union(array_values($objectlike_keys));
+
+            if ($combination->objectlike_key_type) {
+                $objectlike_key_type = Type::combineUnionTypes(
+                    $combination->objectlike_key_type,
+                    $objectlike_key_type,
+                    $codebase,
+                    $overwrite_empty_array
+                );
+            }
+
+            $generic_type_params[0] = Type::combineUnionTypes(
+                $generic_type_params[0],
+                $objectlike_key_type,
+                $codebase,
+                $overwrite_empty_array,
+                $allow_mixed_union
+            );
+
+            if (!$generic_type_params[1]->isMixed()) {
+                $generic_type_params[1] = Type::combineUnionTypes(
+                    $generic_type_params[1],
+                    $objectlike_generic_type,
+                    $codebase,
+                    $overwrite_empty_array,
+                    $allow_mixed_union
+                );
+            }
+        }
+
+        if ($combination->all_arrays_callable) {
+            $array_type = new TCallableArray($generic_type_params);
+        } elseif ($combination->array_always_filled
+            || ($combination->array_sometimes_filled && $overwrite_empty_array)
+            || ($combination->objectlike_entries
+                && $combination->objectlike_sealed
+                && $overwrite_empty_array)
+        ) {
+            if ($combination->all_arrays_lists) {
+                if ($combination->objectlike_entries
+                    && $combination->objectlike_sealed
+                ) {
+                    $array_type = new TKeyedArray([$generic_type_params[1]]);
+                    $array_type->previous_key_type = Type::getInt();
+                    $array_type->previous_value_type = $combination->array_type_params[1];
+                    $array_type->is_list = true;
+                } else {
+                    $array_type = new TNonEmptyList($generic_type_params[1]);
+
+                    if ($combination->array_counts && count($combination->array_counts) === 1) {
+                        $array_type->count = array_keys($combination->array_counts)[0];
+                    }
+                }
+            } else {
+                $array_type = new TNonEmptyArray($generic_type_params);
+
+                if ($combination->array_counts && count($combination->array_counts) === 1) {
+                    $array_type->count = array_keys($combination->array_counts)[0];
+                }
+            }
+        } else {
+            if ($combination->all_arrays_class_string_maps
+                && count($combination->class_string_map_as_types) === 1
+                && count($combination->class_string_map_names) === 1
+            ) {
+                $array_type = new Type\Atomic\TClassStringMap(
+                    array_keys($combination->class_string_map_names)[0],
+                    array_values($combination->class_string_map_as_types)[0],
+                    $generic_type_params[1]
+                );
+            } elseif ($combination->all_arrays_lists) {
+                $array_type = new TList($generic_type_params[1]);
+            } else {
+                $array_type = new TArray($generic_type_params);
+            }
+        }
+
+        return $array_type;
     }
 }
