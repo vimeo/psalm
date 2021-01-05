@@ -209,7 +209,7 @@ class ConcatAnalyzer
                 if ($left_type_part instanceof Type\Atomic\TTemplateParam) {
                     if (IssueBuffer::accepts(
                         new MixedOperand(
-                            'Left operand cannot be mixed',
+                            'Left operand cannot be a template param',
                             new CodeLocation($statements_analyzer->getSource(), $left)
                         ),
                         $statements_analyzer->getSuppressedIssues()
@@ -449,9 +449,20 @@ class ConcatAnalyzer
         if ($left_type && $right_type && $left_type->isSingleStringLiteral() && $right_type->isSingleStringLiteral()) {
             $literal = $left_type->getSingleStringLiteral()->value . $right_type->getSingleStringLiteral()->value;
             if (strlen($literal) <= 1000) {
-                // Limit these to 10000 bytes to avoid extremely large union types from repeated concatenations, etc
+                // Limit these to 1000 bytes to avoid extremely large union types from repeated concatenations, etc
                 $result_type = Type::getString($literal);
             }
+        } elseif ($left_type && $right_type && $left_type->isSingleIntLiteral() && $right_type->isSingleIntLiteral()) {
+            $literal = $left_type->getSingleIntLiteral()->value . $right_type->getSingleIntLiteral()->value;
+            if (strlen($literal) <= 1000) {
+                // Limit these to 1000 bytes to avoid extremely large union types from repeated concatenations, etc
+                $result_type = Type::getString($literal);
+            }
+        } elseif ($left_type && $right_type &&
+            $left_type->isSingle() && $right_type->isSingle() &&
+            $left_type->isInt() && $right_type->isInt()
+        ) {
+            $result_type = Type::getNumericString();
         } else {
             if ($left_type
                 && $right_type

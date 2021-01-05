@@ -155,6 +155,20 @@ class BinaryOperationTest extends TestCase
                 '<?php
                     $a = "hi" . 5;',
             ],
+            'concatenationWithTwoLiteralInt' => [
+                '<?php
+                    $a = 7 . 5;',
+                'assertions' => [
+                    '$a' => 'string',//will contain "75"
+                ]
+            ],
+            'concatenationWithTwoInt' => [
+                '<?php
+                    /** @return numeric-string */
+                    function scope(int $a, int $b): string{
+                        return $a . $b;
+                    }',
+            ],
             'possiblyInvalidAdditionOnBothSides' => [
                 '<?php
                     function foo(string $s) : int {

@@ -31,6 +31,7 @@ use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
+use Psalm\Type\Atomic\TNumericString;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TResource;
@@ -183,6 +184,13 @@ abstract class Type
     public static function getNumeric(): Union
     {
         $type = new TNumeric;
+
+        return new Union([$type]);
+    }
+
+    public static function getNumericString(): Union
+    {
+        $type = new TNumericString;
 
         return new Union([$type]);
     }
