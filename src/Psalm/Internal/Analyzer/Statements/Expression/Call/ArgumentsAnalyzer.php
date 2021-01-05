@@ -1325,7 +1325,7 @@ class ArgumentsAnalyzer
                 // fall through
             }
 
-            //return null;
+            return;
         }
 
         if (!$has_packed_var && count($args) < count($function_params)) {
