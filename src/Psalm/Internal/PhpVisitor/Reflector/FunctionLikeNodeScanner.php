@@ -126,201 +126,26 @@ class FunctionLikeNodeScanner
             $this->codebase->scanner->queueClassLikeForScanning('Closure');
         }
 
-        $classlike_storage = null;
-        $fq_classlike_name = null;
-        $is_functionlike_override = false;
+        $functionlike_info = $this->createStorageForFunctionLike($stmt, $fake_method);
 
-        $function_id = null;
-        $method_name_lc = null;
-        $method_id = null;
+        if ($functionlike_info === false) {
+            return false;
+        }
 
-        if ($fake_method && $stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
-            $cased_function_id = '@method ' . $stmt->name->name;
+        [
+            $cased_function_id,
+            $storage,
+            $function_id,
+            $fq_classlike_name,
+            $method_name_lc,
+            $classlike_storage,
+            $is_functionlike_override,
+            $method_id,
+            $is_dupe
+        ] = $functionlike_info;
 
-            $storage = $this->storage = new MethodStorage();
-            $storage->defining_fqcln = '';
-            $storage->is_static = $stmt->isStatic();
-            $storage->final = $this->classlike_storage && $this->classlike_storage->final;
-            $storage->final_from_docblock = $this->classlike_storage && $this->classlike_storage->final_from_docblock;
-        } elseif ($stmt instanceof PhpParser\Node\Stmt\Function_) {
-            $cased_function_id =
-                ($this->aliases->namespace ? $this->aliases->namespace . '\\' : '') . $stmt->name->name;
-            $function_id = strtolower($cased_function_id);
-
-            $storage = $this->storage = new FunctionStorage();
-
-            if ($this->codebase->register_stub_files || $this->codebase->register_autoload_files) {
-                if (isset($this->file_storage->functions[$function_id])
-                    && ($this->codebase->register_stub_files
-                        || !$this->codebase->functions->hasStubbedFunction($function_id))
-                ) {
-                    $this->codebase->functions->addGlobalFunction(
-                        $function_id,
-                        $this->file_storage->functions[$function_id]
-                    );
-
-                    $storage = $this->storage = $this->file_storage->functions[$function_id];
-
-                    return $storage;
-                }
-            } else {
-                if (isset($this->file_storage->functions[$function_id])) {
-                    $duplicate_function_storage = $this->file_storage->functions[$function_id];
-
-                    if ($duplicate_function_storage->location
-                        && $duplicate_function_storage->location->getLineNumber() === $stmt->getLine()
-                    ) {
-                        $storage = $this->storage = $this->file_storage->functions[$function_id];
-
-                        return $storage;
-                    }
-
-                    if (IssueBuffer::accepts(
-                        new DuplicateFunction(
-                            'Method ' . $function_id . ' has already been defined'
-                                . ($duplicate_function_storage->location
-                                    ? ' in ' . $duplicate_function_storage->location->file_path
-                                    : ''),
-                            new CodeLocation($this->file_scanner, $stmt, null, true)
-                        )
-                    )) {
-                        // fall through
-                    }
-
-                    $this->file_storage->has_visitor_issues = true;
-
-                    $duplicate_function_storage->has_visitor_issues = true;
-
-                    $storage = $this->storage = $this->file_storage->functions[$function_id];
-
-                    return $storage;
-                }
-
-                if (isset($this->config->getPredefinedFunctions()[$function_id])) {
-                    /** @psalm-suppress ArgumentTypeCoercion */
-                    $reflection_function = new \ReflectionFunction($function_id);
-
-                    if ($reflection_function->getFileName() !== $this->file_path) {
-                        if (IssueBuffer::accepts(
-                            new DuplicateFunction(
-                                'Method ' . $function_id . ' has already been defined as a core function',
-                                new CodeLocation($this->file_scanner, $stmt, null, true)
-                            )
-                        )) {
-                            // fall through
-                        }
-                    }
-                }
-            }
-        } elseif ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
-            if (!$this->classlike_storage) {
-                throw new \LogicException('$this->classlike_storage should not be null');
-            }
-
-            $fq_classlike_name = $this->classlike_storage->name;
-
-            $method_name_lc = strtolower($stmt->name->name);
-
-            $function_id = $fq_classlike_name . '::' . $method_name_lc;
-            $cased_function_id = $fq_classlike_name . '::' . $stmt->name->name;
-
-            $classlike_storage = $this->classlike_storage;
-
-            $storage = null;
-
-            if (isset($classlike_storage->methods[$method_name_lc])) {
-                if (!$this->codebase->register_stub_files) {
-                    $duplicate_method_storage = $classlike_storage->methods[$method_name_lc];
-
-                    if (IssueBuffer::accepts(
-                        new DuplicateMethod(
-                            'Method ' . $function_id . ' has already been defined'
-                                . ($duplicate_method_storage->location
-                                    ? ' in ' . $duplicate_method_storage->location->file_path
-                                    : ''),
-                            new CodeLocation($this->file_scanner, $stmt, null, true)
-                        )
-                    )) {
-                        // fall through
-                    }
-
-                    $this->file_storage->has_visitor_issues = true;
-
-                    $duplicate_method_storage->has_visitor_issues = true;
-
-                    return false;
-                }
-
-                $is_functionlike_override = true;
-                $storage = $this->storage = $classlike_storage->methods[$method_name_lc];
-            }
-
-            if (!$storage) {
-                $storage = $this->storage = new MethodStorage();
-            }
-
-            $storage->stubbed = $this->codebase->register_stub_files;
-            $storage->defining_fqcln = $fq_classlike_name;
-
-            $class_name_parts = explode('\\', $fq_classlike_name);
-            $class_name = array_pop($class_name_parts);
-
-            if ($method_name_lc === strtolower($class_name)
-                && !isset($classlike_storage->methods['__construct'])
-                && strpos($fq_classlike_name, '\\') === false
-                && $this->codebase->php_major_version < 8
-            ) {
-                $this->codebase->methods->setDeclaringMethodId(
-                    $fq_classlike_name,
-                    '__construct',
-                    $fq_classlike_name,
-                    $method_name_lc
-                );
-
-                $this->codebase->methods->setAppearingMethodId(
-                    $fq_classlike_name,
-                    '__construct',
-                    $fq_classlike_name,
-                    $method_name_lc
-                );
-            }
-
-            $method_id = new \Psalm\Internal\MethodIdentifier(
-                $fq_classlike_name,
-                $method_name_lc
-            );
-
-            $storage->is_static = $stmt->isStatic();
-            $storage->abstract = $stmt->isAbstract();
-
-            $storage->final = $classlike_storage->final || $stmt->isFinal();
-            $storage->final_from_docblock = $classlike_storage->final_from_docblock;
-
-            if ($stmt->isPrivate()) {
-                $storage->visibility = ClassLikeAnalyzer::VISIBILITY_PRIVATE;
-            } elseif ($stmt->isProtected()) {
-                $storage->visibility = ClassLikeAnalyzer::VISIBILITY_PROTECTED;
-            } else {
-                $storage->visibility = ClassLikeAnalyzer::VISIBILITY_PUBLIC;
-            }
-        } elseif ($stmt instanceof PhpParser\Node\Expr\Closure
-            || $stmt instanceof PhpParser\Node\Expr\ArrowFunction
-        ) {
-            $function_id = $cased_function_id = strtolower($this->file_path)
-                . ':' . $stmt->getLine()
-                . ':' . (int) $stmt->getAttribute('startFilePos') . ':-:closure';
-
-            $storage = $this->storage = $this->file_storage->functions[$function_id] = new FunctionStorage();
-
-            if ($stmt instanceof PhpParser\Node\Expr\Closure) {
-                foreach ($stmt->uses as $closure_use) {
-                    if ($closure_use->byRef && \is_string($closure_use->var->name)) {
-                        $storage->byref_uses[$closure_use->var->name] = true;
-                    }
-                }
-            }
-        } else {
-            throw new \UnexpectedValueException('Unrecognized functionlike');
+        if ($is_dupe) {
+            return $storage;
         }
 
         if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
@@ -958,5 +783,232 @@ class FunctionLikeNodeScanner
                 )
                 : null
         );
+    }
+
+    /**
+     * @return array{
+     *     string,
+     *     FunctionStorage|MethodStorage,
+     *     null|string,
+     *     null|string,
+     *     null|lowercase-string,
+     *     ClassLikeStorage|null,
+     *     bool,
+     *     \Psalm\Internal\MethodIdentifier|null,
+     *     bool
+     * }|false
+     */
+    private function createStorageForFunctionLike(
+        PhpParser\Node\FunctionLike $stmt,
+        bool $fake_method
+    ) {
+        $classlike_storage = null;
+        $fq_classlike_name = null;
+        $is_functionlike_override = false;
+
+        $function_id = null;
+        $method_name_lc = null;
+        $method_id = null;
+
+        if ($fake_method && $stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
+            $cased_function_id = '@method ' . $stmt->name->name;
+
+            $storage = $this->storage = new MethodStorage();
+            $storage->defining_fqcln = '';
+            $storage->is_static = $stmt->isStatic();
+            $storage->final = $this->classlike_storage && $this->classlike_storage->final;
+            $storage->final_from_docblock = $this->classlike_storage && $this->classlike_storage->final_from_docblock;
+        } elseif ($stmt instanceof PhpParser\Node\Stmt\Function_) {
+            $cased_function_id =
+                ($this->aliases->namespace ? $this->aliases->namespace . '\\' : '') . $stmt->name->name;
+            $function_id = strtolower($cased_function_id);
+
+            $storage = $this->storage = new FunctionStorage();
+
+            if ($this->codebase->register_stub_files || $this->codebase->register_autoload_files) {
+                if (isset($this->file_storage->functions[$function_id])
+                    && ($this->codebase->register_stub_files
+                        || !$this->codebase->functions->hasStubbedFunction($function_id))
+                ) {
+                    $this->codebase->functions->addGlobalFunction(
+                        $function_id,
+                        $this->file_storage->functions[$function_id]
+                    );
+
+                    $storage = $this->storage = $this->file_storage->functions[$function_id];
+
+                    return [$function_id, $storage, null, null, null, null, false, null, true];
+                }
+            } else {
+                if (isset($this->file_storage->functions[$function_id])) {
+                    $duplicate_function_storage = $this->file_storage->functions[$function_id];
+
+                    if ($duplicate_function_storage->location
+                        && $duplicate_function_storage->location->getLineNumber() === $stmt->getLine()
+                    ) {
+                        $storage = $this->storage = $this->file_storage->functions[$function_id];
+
+                        return [$function_id, $storage, null, null, null, null, false, null, true];
+                    }
+
+                    if (IssueBuffer::accepts(
+                        new DuplicateFunction(
+                            'Method ' . $function_id . ' has already been defined'
+                            . ($duplicate_function_storage->location
+                                ? ' in ' . $duplicate_function_storage->location->file_path
+                                : ''),
+                            new CodeLocation($this->file_scanner, $stmt, null, true)
+                        )
+                    )) {
+                        // fall through
+                    }
+
+                    $this->file_storage->has_visitor_issues = true;
+
+                    $duplicate_function_storage->has_visitor_issues = true;
+
+                    $storage = $this->storage = $this->file_storage->functions[$function_id];
+
+                    return [$function_id, $storage, null, null, null, null, false, null, true];
+                }
+
+                if (isset($this->config->getPredefinedFunctions()[$function_id])) {
+                    /** @psalm-suppress ArgumentTypeCoercion */
+                    $reflection_function = new \ReflectionFunction($function_id);
+
+                    if ($reflection_function->getFileName() !== $this->file_path) {
+                        if (IssueBuffer::accepts(
+                            new DuplicateFunction(
+                                'Method ' . $function_id . ' has already been defined as a core function',
+                                new CodeLocation($this->file_scanner, $stmt, null, true)
+                            )
+                        )) {
+                            // fall through
+                        }
+                    }
+                }
+            }
+        } elseif ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
+            if (!$this->classlike_storage) {
+                throw new \LogicException('$this->classlike_storage should not be null');
+            }
+
+            $fq_classlike_name = $this->classlike_storage->name;
+
+            $method_name_lc = strtolower($stmt->name->name);
+
+            $function_id = $fq_classlike_name . '::' . $method_name_lc;
+            $cased_function_id = $fq_classlike_name . '::' . $stmt->name->name;
+
+            $classlike_storage = $this->classlike_storage;
+
+            $storage = null;
+
+            if (isset($classlike_storage->methods[$method_name_lc])) {
+                if (!$this->codebase->register_stub_files) {
+                    $duplicate_method_storage = $classlike_storage->methods[$method_name_lc];
+
+                    if (IssueBuffer::accepts(
+                        new DuplicateMethod(
+                            'Method ' . $function_id . ' has already been defined'
+                            . ($duplicate_method_storage->location
+                                ? ' in ' . $duplicate_method_storage->location->file_path
+                                : ''),
+                            new CodeLocation($this->file_scanner, $stmt, null, true)
+                        )
+                    )) {
+                        // fall through
+                    }
+
+                    $this->file_storage->has_visitor_issues = true;
+
+                    $duplicate_method_storage->has_visitor_issues = true;
+
+                    return false;
+                }
+
+                $is_functionlike_override = true;
+                $storage = $this->storage = $classlike_storage->methods[$method_name_lc];
+            }
+
+            if (!$storage) {
+                $storage = $this->storage = new MethodStorage();
+            }
+
+            $storage->stubbed = $this->codebase->register_stub_files;
+            $storage->defining_fqcln = $fq_classlike_name;
+
+            $class_name_parts = explode('\\', $fq_classlike_name);
+            $class_name = array_pop($class_name_parts);
+
+            if ($method_name_lc === strtolower($class_name)
+                && !isset($classlike_storage->methods['__construct'])
+                && strpos($fq_classlike_name, '\\') === false
+                && $this->codebase->php_major_version < 8
+            ) {
+                $this->codebase->methods->setDeclaringMethodId(
+                    $fq_classlike_name,
+                    '__construct',
+                    $fq_classlike_name,
+                    $method_name_lc
+                );
+
+                $this->codebase->methods->setAppearingMethodId(
+                    $fq_classlike_name,
+                    '__construct',
+                    $fq_classlike_name,
+                    $method_name_lc
+                );
+            }
+
+            $method_id = new \Psalm\Internal\MethodIdentifier(
+                $fq_classlike_name,
+                $method_name_lc
+            );
+
+            $storage->is_static = $stmt->isStatic();
+            $storage->abstract = $stmt->isAbstract();
+
+            $storage->final = $classlike_storage->final || $stmt->isFinal();
+            $storage->final_from_docblock = $classlike_storage->final_from_docblock;
+
+            if ($stmt->isPrivate()) {
+                $storage->visibility = ClassLikeAnalyzer::VISIBILITY_PRIVATE;
+            } elseif ($stmt->isProtected()) {
+                $storage->visibility = ClassLikeAnalyzer::VISIBILITY_PROTECTED;
+            } else {
+                $storage->visibility = ClassLikeAnalyzer::VISIBILITY_PUBLIC;
+            }
+        } elseif ($stmt instanceof PhpParser\Node\Expr\Closure
+            || $stmt instanceof PhpParser\Node\Expr\ArrowFunction
+        ) {
+            $function_id = $cased_function_id = strtolower($this->file_path)
+                . ':' . $stmt->getLine()
+                . ':' . (int)$stmt->getAttribute('startFilePos') . ':-:closure';
+
+            $storage = $this->storage = $this->file_storage->functions[$function_id] = new FunctionStorage();
+
+            if ($stmt instanceof PhpParser\Node\Expr\Closure) {
+                foreach ($stmt->uses as $closure_use) {
+                    if ($closure_use->byRef && \is_string($closure_use->var->name)) {
+                        $storage->byref_uses[$closure_use->var->name] = true;
+                    }
+                }
+            }
+        } else {
+            throw new \UnexpectedValueException('Unrecognized functionlike');
+        }
+
+        return [
+            $cased_function_id,
+            $storage,
+            $function_id,
+            $fq_classlike_name,
+            $method_name_lc,
+            $classlike_storage,
+            $is_functionlike_override,
+            $method_id,
+            false
+        ];
     }
 }
