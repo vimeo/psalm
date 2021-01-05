@@ -157,14 +157,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $function_stmts[0]->setAttributes($function_stmts[0]->expr->getAttributes());
         }
 
-        $hash = null;
-        $real_method_id = null;
-        $method_id = null;
-
-        $cased_method_id = null;
-
-        $appearing_class_storage = null;
-
         if ($global_context) {
             foreach ($global_context->constants as $const_name => $var_type) {
                 if (!$context->hasVariable($const_name)) {
@@ -176,8 +168,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         $codebase = $this->codebase;
         $project_analyzer = $this->getProjectAnalyzer();
 
-        $classlike_storage_provider = $codebase->classlike_storage_provider;
-
         if ($codebase->track_unused_suppressions && !isset($storage->suppressed_issues[0])) {
             foreach ($storage->suppressed_issues as $offset => $issue_name) {
                 IssueBuffer::addUnusedSuppression($this->getFilePath(), $offset, $issue_name);
@@ -188,204 +178,26 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             IssueBuffer::add($docblock_issue);
         }
 
-        $overridden_method_ids = [];
+        $function_information = $this->getFunctionInformation(
+            $context,
+            $codebase,
+            $type_provider,
+            $storage,
+            $add_mutations
+        );
 
-        if ($this->function instanceof ClassMethod) {
-            if (!$storage instanceof MethodStorage || !$this instanceof MethodAnalyzer) {
-                throw new \UnexpectedValueException('$storage must be MethodStorage');
-            }
-
-            $real_method_id = $this->getMethodId();
-
-            $method_id = $this->getMethodId($context->self);
-
-            $fq_class_name = (string)$context->self;
-            $appearing_class_storage = $classlike_storage_provider->get($fq_class_name);
-
-            if ($add_mutations) {
-                if (!$context->collect_initializations) {
-                    $hash = md5($real_method_id . '::' . $context->getScopeSummary());
-
-                    // if we know that the function has no effects on vars, we don't bother rechecking
-                    if (isset(self::$no_effects_hashes[$hash])) {
-                        return null;
-                    }
-                }
-            } elseif ($context->self) {
-                if ($appearing_class_storage->template_types) {
-                    $template_params = [];
-
-                    foreach ($appearing_class_storage->template_types as $param_name => $template_map) {
-                        $key = array_keys($template_map)[0];
-
-                        $template_params[] = new Type\Union([
-                            new Type\Atomic\TTemplateParam(
-                                $param_name,
-                                \reset($template_map),
-                                $key
-                            )
-                        ]);
-                    }
-
-                    $this_object_type = new Type\Atomic\TGenericObject(
-                        $context->self,
-                        $template_params
-                    );
-                    $this_object_type->was_static = !$storage->final;
-                } else {
-                    $this_object_type = new TNamedObject($context->self);
-                    $this_object_type->was_static = !$storage->final;
-                }
-
-                $context->vars_in_scope['$this'] = new Type\Union([$this_object_type]);
-
-                if ($codebase->taint_flow_graph
-                    && $storage->specialize_call
-                    && $storage->location
-                ) {
-                    $new_parent_node = DataFlowNode::getForAssignment('$this in ' . $method_id, $storage->location);
-
-                    $codebase->taint_flow_graph->addNode($new_parent_node);
-                    $context->vars_in_scope['$this']->parent_nodes += [$new_parent_node->id => $new_parent_node];
-                }
-
-                if ($storage->external_mutation_free
-                    && !$storage->mutation_free_inferred
-                ) {
-                    $context->vars_in_scope['$this']->reference_free = true;
-
-                    if ($this->function->name->name !== '__construct') {
-                        $context->vars_in_scope['$this']->allow_mutations = false;
-                    }
-                }
-
-                $context->vars_possibly_in_scope['$this'] = true;
-            }
-
-            if ($appearing_class_storage->has_visitor_issues) {
-                return null;
-            }
-
-            $cased_method_id = $fq_class_name . '::' . $storage->cased_name;
-
-            $overridden_method_ids = $codebase->methods->getOverriddenMethodIds($method_id);
-
-            if ($this->function->name->name === '__construct') {
-                $context->inside_constructor = true;
-            }
-
-            $codeLocation = new CodeLocation(
-                $this,
-                $this->function,
-                null,
-                true
-            );
-
-            if ($overridden_method_ids
-                && !$context->collect_initializations
-                && !$context->collect_mutations
-            ) {
-                foreach ($overridden_method_ids as $overridden_method_id) {
-                    $parent_method_storage = $codebase->methods->getStorage($overridden_method_id);
-
-                    $overridden_fq_class_name = $overridden_method_id->fq_class_name;
-
-                    $parent_storage = $classlike_storage_provider->get($overridden_fq_class_name);
-
-                    if ($this->function->name->name === '__construct'
-                        && !$parent_storage->preserve_constructor_signature
-                    ) {
-                        continue;
-                    }
-
-                    $implementer_visibility = $storage->visibility;
-
-                    $implementer_appearing_method_id = $codebase->methods->getAppearingMethodId($method_id);
-                    $implementer_declaring_method_id = $real_method_id;
-
-                    $declaring_class_storage = $appearing_class_storage;
-
-                    if ($implementer_appearing_method_id
-                        && $implementer_appearing_method_id !== $implementer_declaring_method_id
-                    ) {
-                        $appearing_fq_class_name = $implementer_appearing_method_id->fq_class_name;
-                        $appearing_method_name = $implementer_appearing_method_id->method_name;
-
-                        $declaring_fq_class_name = $implementer_declaring_method_id->fq_class_name;
-
-                        $appearing_class_storage = $classlike_storage_provider->get(
-                            $appearing_fq_class_name
-                        );
-
-                        $declaring_class_storage = $classlike_storage_provider->get(
-                            $declaring_fq_class_name
-                        );
-
-                        if (isset($appearing_class_storage->trait_visibility_map[$appearing_method_name])) {
-                            $implementer_visibility
-                                = $appearing_class_storage->trait_visibility_map[$appearing_method_name];
-                        }
-                    }
-
-                    // we've already checked this in the class checker
-                    if (!isset($appearing_class_storage->class_implements[strtolower($overridden_fq_class_name)])) {
-                        MethodComparator::compare(
-                            $codebase,
-                            \count($overridden_method_ids) === 1 ? $this->function : null,
-                            $declaring_class_storage,
-                            $parent_storage,
-                            $storage,
-                            $parent_method_storage,
-                            $fq_class_name,
-                            $implementer_visibility,
-                            $codeLocation,
-                            $storage->suppressed_issues
-                        );
-                    }
-                }
-            }
-
-            MethodAnalyzer::checkMethodSignatureMustOmitReturnType($storage, $codeLocation);
-
-            if (!$context->calling_method_id || !$context->collect_initializations) {
-                $context->calling_method_id = strtolower((string) $method_id);
-            }
-        } elseif ($this->function instanceof Function_) {
-            $function_name = $this->function->name->name;
-            $namespace_prefix = $this->getNamespace();
-            $cased_method_id = ($namespace_prefix !== null ? $namespace_prefix . '\\' : '') . $function_name;
-            $context->calling_function_id = strtolower($cased_method_id);
-        } else { // Closure
-            if ($storage->return_type) {
-                $closure_return_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
-                    $codebase,
-                    $storage->return_type,
-                    $context->self,
-                    $context->self,
-                    $this->getParentFQCLN()
-                );
-            } else {
-                $closure_return_type = Type::getMixed();
-            }
-
-            $closure_type = new Type\Atomic\TClosure(
-                'Closure',
-                $storage->params,
-                $closure_return_type
-            );
-
-            if ($storage instanceof FunctionStorage) {
-                $closure_type->byref_uses = $storage->byref_uses;
-                $closure_type->is_pure = $storage->pure;
-            }
-
-            $type_provider->setType(
-                $this->function,
-                new Type\Union([
-                    $closure_type,
-                ])
-            );
+        if ($function_information === null) {
+            return null;
         }
+
+        [
+            $real_method_id,
+            $method_id,
+            $appearing_class_storage,
+            $hash,
+            $cased_method_id,
+            $overridden_method_ids
+        ] = $function_information;
 
         $this->suppressed_issues = $this->getSource()->getSuppressedIssues() + $storage->suppressed_issues;
 
@@ -1904,5 +1716,238 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         );
 
         return $this->local_return_type;
+    }
+
+    /**
+     * @return array{
+     *        \Psalm\Internal\MethodIdentifier|null,
+     *        \Psalm\Internal\MethodIdentifier|null,
+     *        \Psalm\Storage\ClassLikeStorage|null,
+     *        ?string,
+     *        ?string,
+     *        array<string, \Psalm\Internal\MethodIdentifier>
+     * }|null
+     */
+    private function getFunctionInformation(
+        Context $context,
+        Codebase $codebase,
+        \Psalm\Internal\Provider\NodeDataProvider $type_provider,
+        \Psalm\Storage\FunctionLikeStorage $storage,
+        bool $add_mutations
+    ): ?array {
+        $classlike_storage_provider = $codebase->classlike_storage_provider;
+        $real_method_id = null;
+        $method_id = null;
+
+        $cased_method_id = null;
+        $hash = null;
+        $appearing_class_storage = null;
+        $overridden_method_ids = [];
+
+        if ($this->function instanceof ClassMethod) {
+            if (!$storage instanceof MethodStorage || !$this instanceof MethodAnalyzer) {
+                throw new \UnexpectedValueException('$storage must be MethodStorage');
+            }
+
+            $real_method_id = $this->getMethodId();
+
+            $method_id = $this->getMethodId($context->self);
+
+            $fq_class_name = (string)$context->self;
+            $appearing_class_storage = $classlike_storage_provider->get($fq_class_name);
+
+            if ($add_mutations) {
+                if (!$context->collect_initializations) {
+                    $hash = md5($real_method_id . '::' . $context->getScopeSummary());
+
+                    // if we know that the function has no effects on vars, we don't bother rechecking
+                    if (isset(self::$no_effects_hashes[$hash])) {
+                        return null;
+                    }
+                }
+            } elseif ($context->self) {
+                if ($appearing_class_storage->template_types) {
+                    $template_params = [];
+
+                    foreach ($appearing_class_storage->template_types as $param_name => $template_map) {
+                        $key = array_keys($template_map)[0];
+
+                        $template_params[] = new Type\Union([
+                            new Type\Atomic\TTemplateParam(
+                                $param_name,
+                                \reset($template_map),
+                                $key
+                            )
+                        ]);
+                    }
+
+                    $this_object_type = new Type\Atomic\TGenericObject(
+                        $context->self,
+                        $template_params
+                    );
+                    $this_object_type->was_static = !$storage->final;
+                } else {
+                    $this_object_type = new TNamedObject($context->self);
+                    $this_object_type->was_static = !$storage->final;
+                }
+
+                $context->vars_in_scope['$this'] = new Type\Union([$this_object_type]);
+
+                if ($codebase->taint_flow_graph
+                    && $storage->specialize_call
+                    && $storage->location
+                ) {
+                    $new_parent_node = DataFlowNode::getForAssignment('$this in ' . $method_id, $storage->location);
+
+                    $codebase->taint_flow_graph->addNode($new_parent_node);
+                    $context->vars_in_scope['$this']->parent_nodes += [$new_parent_node->id => $new_parent_node];
+                }
+
+                if ($storage->external_mutation_free
+                    && !$storage->mutation_free_inferred
+                ) {
+                    $context->vars_in_scope['$this']->reference_free = true;
+
+                    if ($this->function->name->name !== '__construct') {
+                        $context->vars_in_scope['$this']->allow_mutations = false;
+                    }
+                }
+
+                $context->vars_possibly_in_scope['$this'] = true;
+            }
+
+            if ($appearing_class_storage->has_visitor_issues) {
+                return null;
+            }
+
+            $cased_method_id = $fq_class_name . '::' . $storage->cased_name;
+
+            $overridden_method_ids = $codebase->methods->getOverriddenMethodIds($method_id);
+
+            if ($this->function->name->name === '__construct') {
+                $context->inside_constructor = true;
+            }
+
+            $codeLocation = new CodeLocation(
+                $this,
+                $this->function,
+                null,
+                true
+            );
+
+            if ($overridden_method_ids
+                && !$context->collect_initializations
+                && !$context->collect_mutations
+            ) {
+                foreach ($overridden_method_ids as $overridden_method_id) {
+                    $parent_method_storage = $codebase->methods->getStorage($overridden_method_id);
+
+                    $overridden_fq_class_name = $overridden_method_id->fq_class_name;
+
+                    $parent_storage = $classlike_storage_provider->get($overridden_fq_class_name);
+
+                    if ($this->function->name->name === '__construct'
+                        && !$parent_storage->preserve_constructor_signature
+                    ) {
+                        continue;
+                    }
+
+                    $implementer_visibility = $storage->visibility;
+
+                    $implementer_appearing_method_id = $codebase->methods->getAppearingMethodId($method_id);
+                    $implementer_declaring_method_id = $real_method_id;
+
+                    $declaring_class_storage = $appearing_class_storage;
+
+                    if ($implementer_appearing_method_id
+                        && $implementer_appearing_method_id !== $implementer_declaring_method_id
+                    ) {
+                        $appearing_fq_class_name = $implementer_appearing_method_id->fq_class_name;
+                        $appearing_method_name = $implementer_appearing_method_id->method_name;
+
+                        $declaring_fq_class_name = $implementer_declaring_method_id->fq_class_name;
+
+                        $appearing_class_storage = $classlike_storage_provider->get(
+                            $appearing_fq_class_name
+                        );
+
+                        $declaring_class_storage = $classlike_storage_provider->get(
+                            $declaring_fq_class_name
+                        );
+
+                        if (isset($appearing_class_storage->trait_visibility_map[$appearing_method_name])) {
+                            $implementer_visibility
+                                = $appearing_class_storage->trait_visibility_map[$appearing_method_name];
+                        }
+                    }
+
+                    // we've already checked this in the class checker
+                    if (!isset($appearing_class_storage->class_implements[strtolower($overridden_fq_class_name)])) {
+                        MethodComparator::compare(
+                            $codebase,
+                            \count($overridden_method_ids) === 1 ? $this->function : null,
+                            $declaring_class_storage,
+                            $parent_storage,
+                            $storage,
+                            $parent_method_storage,
+                            $fq_class_name,
+                            $implementer_visibility,
+                            $codeLocation,
+                            $storage->suppressed_issues
+                        );
+                    }
+                }
+            }
+
+            MethodAnalyzer::checkMethodSignatureMustOmitReturnType($storage, $codeLocation);
+
+            if (!$context->calling_method_id || !$context->collect_initializations) {
+                $context->calling_method_id = strtolower((string)$method_id);
+            }
+        } elseif ($this->function instanceof Function_) {
+            $function_name = $this->function->name->name;
+            $namespace_prefix = $this->getNamespace();
+            $cased_method_id = ($namespace_prefix !== null ? $namespace_prefix . '\\' : '') . $function_name;
+            $context->calling_function_id = strtolower($cased_method_id);
+        } else { // Closure
+            if ($storage->return_type) {
+                $closure_return_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                    $codebase,
+                    $storage->return_type,
+                    $context->self,
+                    $context->self,
+                    $this->getParentFQCLN()
+                );
+            } else {
+                $closure_return_type = Type::getMixed();
+            }
+
+            $closure_type = new Type\Atomic\TClosure(
+                'Closure',
+                $storage->params,
+                $closure_return_type
+            );
+
+            if ($storage instanceof FunctionStorage) {
+                $closure_type->byref_uses = $storage->byref_uses;
+                $closure_type->is_pure = $storage->pure;
+            }
+
+            $type_provider->setType(
+                $this->function,
+                new Type\Union([
+                    $closure_type,
+                ])
+            );
+        }
+
+        return [
+            $real_method_id,
+            $method_id,
+            $appearing_class_storage,
+            $hash,
+            $cased_method_id,
+            $overridden_method_ids
+        ];
     }
 }
