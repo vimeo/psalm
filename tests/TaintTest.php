@@ -1591,6 +1591,32 @@ class TaintTest extends TestCase
                     echo $a->isUnsafe();',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintSpecializedMethodForAnonymousInstance' => [
+                '<?php
+                    /** @psalm-taint-specialize */
+                    class Unsafe {
+                        public function isUnsafe() {
+                            return $_GET["unsafe"];
+                        }
+                    }
+                    echo (new Unsafe())->isUnsafe();',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintSpecializedMethodForStubMadeInstance' => [
+                '<?php
+                    /** @psalm-taint-specialize */
+                    class Unsafe {
+                        public function isUnsafe() {
+                            return $_GET["unsafe"];
+                        }
+                    }
+
+                    /** @psalm-suppress InvalidReturnType */
+                    function stub(): Unsafe { }
+
+                    echo stub()->isUnsafe();',
+                'error_message' => 'TaintedHtml',
+            ],
             'doTaintSpecializedInstanceProperty' => [
                 '<?php
                     /** @psalm-taint-specialize */
