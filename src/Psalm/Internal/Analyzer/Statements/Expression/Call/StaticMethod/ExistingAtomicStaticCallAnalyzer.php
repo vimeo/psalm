@@ -15,6 +15,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Issue\AbstractMethodCall;
 use Psalm\Issue\ImpureMethodCall;
 use Psalm\IssueBuffer;
+use Psalm\Plugin\EventHandler\Event\AfterMethodCallAnalysisEvent;
 use Psalm\Storage\Assertion;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
@@ -23,7 +24,6 @@ use function strtolower;
 use function array_map;
 use function explode;
 use function strpos;
-use function is_string;
 use function strlen;
 use function substr;
 
@@ -469,25 +469,26 @@ class ExistingAtomicStaticCallAnalyzer
             }
         }
 
-        if ($config->after_method_checks) {
+        if ($config->eventDispatcher->after_method_checks) {
             $file_manipulations = [];
 
             $appearing_method_id = $codebase->methods->getAppearingMethodId($method_id);
 
             if ($appearing_method_id !== null && $declaring_method_id) {
-                foreach ($config->after_method_checks as $plugin_fq_class_name) {
-                    $plugin_fq_class_name::afterMethodCallAnalysis(
-                        $stmt,
-                        (string) $method_id,
-                        (string) $appearing_method_id,
-                        (string) $declaring_method_id,
-                        $context,
-                        $statements_analyzer,
-                        $codebase,
-                        $file_manipulations,
-                        $return_type_candidate
-                    );
-                }
+                $event = new AfterMethodCallAnalysisEvent(
+                    $stmt,
+                    (string) $method_id,
+                    (string) $appearing_method_id,
+                    (string) $declaring_method_id,
+                    $context,
+                    $statements_analyzer,
+                    $codebase,
+                    $file_manipulations,
+                    $return_type_candidate
+                );
+                $config->eventDispatcher->dispatchAfterMethodCallAnalysis($event);
+                $file_manipulations = $event->getFileReplacements();
+                $return_type_candidate = $event->getReturnTypeCandidate();
             }
 
             if ($file_manipulations) {

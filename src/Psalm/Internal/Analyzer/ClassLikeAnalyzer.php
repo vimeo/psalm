@@ -15,9 +15,11 @@ use Psalm\Issue\UndefinedAttributeClass;
 use Psalm\Issue\UndefinedClass;
 use Psalm\Issue\UndefinedDocblockClass;
 use Psalm\IssueBuffer;
+use Psalm\Plugin\EventHandler\Event\AfterClassLikeExistenceCheckEvent;
 use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic\TLiteralString;
 use function strtolower;
 use function preg_replace;
 use function in_array;
@@ -366,24 +368,19 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         }
 
         if (!$inferred) {
-            $plugin_classes = $codebase->config->after_classlike_exists_checks;
+            $event = new AfterClassLikeExistenceCheckEvent(
+                $fq_class_name,
+                $code_location,
+                $statements_source,
+                $codebase,
+                []
+            );
 
-            if ($plugin_classes) {
-                $file_manipulations = [];
+            $codebase->config->eventDispatcher->dispatchAfterClassLikeExistenceCheck($event);
 
-                foreach ($plugin_classes as $plugin_fq_class_name) {
-                    $plugin_fq_class_name::afterClassLikeExistenceCheck(
-                        $fq_class_name,
-                        $code_location,
-                        $statements_source,
-                        $codebase,
-                        $file_manipulations
-                    );
-                }
-
-                if ($file_manipulations) {
-                    FileManipulationBuffer::add($code_location->file_path, $file_manipulations);
-                }
+            $file_manipulations = $event->getFileReplacements();
+            if ($file_manipulations) {
+                FileManipulationBuffer::add($code_location->file_path, $file_manipulations);
             }
         }
 

@@ -2,32 +2,21 @@
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use PhpParser;
-use Psalm\CodeLocation;
-use Psalm\Context;
-use Psalm\StatementsSource;
+use Psalm\Plugin\EventHandler\Event\MethodReturnTypeProviderEvent;
 use Psalm\Type;
 
-class PdoStatementReturnTypeProvider implements \Psalm\Plugin\Hook\MethodReturnTypeProviderInterface
+class PdoStatementReturnTypeProvider implements \Psalm\Plugin\EventHandler\MethodReturnTypeProviderInterface
 {
     public static function getClassLikeNames() : array
     {
         return ['PDOStatement'];
     }
 
-    /**
-     * @param  list<PhpParser\Node\Arg>    $call_args
-     */
-    public static function getMethodReturnType(
-        StatementsSource $source,
-        string $fq_classlike_name,
-        string $method_name_lowercase,
-        array $call_args,
-        Context $context,
-        CodeLocation $code_location,
-        ?array $template_type_parameters = null,
-        ?string $called_fq_classlike_name = null,
-        ?string $called_method_name_lowercase = null
-    ): ?Type\Union {
+    public static function getMethodReturnType(MethodReturnTypeProviderEvent $event): ?Type\Union
+    {
+        $source = $event->getSource();
+        $call_args = $event->getCallArgs();
+        $method_name_lowercase = $event->getMethodNameLowercase();
         if ($method_name_lowercase === 'fetch'
             && \class_exists('PDO')
             && isset($call_args[0])

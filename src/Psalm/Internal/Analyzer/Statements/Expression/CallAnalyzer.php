@@ -24,7 +24,6 @@ use function strtolower;
 use function strpos;
 use function count;
 use function in_array;
-use function is_string;
 use function preg_match;
 use function preg_replace;
 use function str_replace;

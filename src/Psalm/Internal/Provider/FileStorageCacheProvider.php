@@ -52,7 +52,7 @@ class FileStorageCacheProvider
             $storage_dir . 'FunctionLikeParameter.php',
         ];
 
-        if ($config->after_visit_classlikes) {
+        if ($config->eventDispatcher->after_visit_classlikes) {
             $dependent_files = array_merge($dependent_files, $config->plugin_paths);
         }
 

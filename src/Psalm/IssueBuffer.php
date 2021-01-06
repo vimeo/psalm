@@ -1,6 +1,7 @@
 <?php
 namespace Psalm;
 
+use Psalm\Plugin\EventHandler\Event\AfterAnalysisEvent;
 use Psalm\Report\PhpStormReport;
 use function array_pop;
 use function array_search;
@@ -540,28 +541,24 @@ class IssueBuffer
             }
         }
 
-        $after_analysis_hooks = $codebase->config->after_analysis;
+        $source_control_info = null;
+        $build_info = (new \Psalm\Internal\ExecutionEnvironment\BuildInfoCollector($_SERVER))->collect();
 
-        if ($after_analysis_hooks) {
-            $source_control_info = null;
-            $build_info = (new \Psalm\Internal\ExecutionEnvironment\BuildInfoCollector($_SERVER))->collect();
-
-            try {
-                $source_control_info = (new \Psalm\Internal\ExecutionEnvironment\GitInfoCollector())->collect();
-            } catch (\RuntimeException $e) {
-                // do nothing
-            }
-
-            foreach ($after_analysis_hooks as $after_analysis_hook) {
-                /** @psalm-suppress ArgumentTypeCoercion due to Psalm bug */
-                $after_analysis_hook::afterAnalysis(
-                    $codebase,
-                    $issues_data,
-                    $build_info,
-                    $source_control_info
-                );
-            }
+        try {
+            $source_control_info = (new \Psalm\Internal\ExecutionEnvironment\GitInfoCollector())->collect();
+        } catch (\RuntimeException $e) {
+            // do nothing
         }
+
+        /** @psalm-suppress ArgumentTypeCoercion due to Psalm bug */
+        $event = new AfterAnalysisEvent(
+            $codebase,
+            $issues_data,
+            $build_info,
+            $source_control_info
+        );
+
+        $codebase->config->eventDispatcher->dispatchAfterAnalysis($event);
 
         foreach ($project_analyzer->generated_report_options as $report_options) {
             if (!$report_options->output_path) {

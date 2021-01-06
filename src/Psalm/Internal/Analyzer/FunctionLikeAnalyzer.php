@@ -26,8 +26,8 @@ use Psalm\Issue\ReservedWord;
 use Psalm\Issue\UnusedClosureParam;
 use Psalm\Issue\UnusedParam;
 use Psalm\IssueBuffer;
+use Psalm\Plugin\EventHandler\Event\AfterFunctionLikeAnalysisEvent;
 use Psalm\StatementsSource;
-use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
@@ -35,7 +35,6 @@ use Psalm\Type\Atomic\TNamedObject;
 use function md5;
 use function strtolower;
 use function array_merge;
-use function array_filter;
 use function array_key_exists;
 use function substr;
 use function strpos;
@@ -734,29 +733,25 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
         }
 
-        $plugin_classes = $codebase->config->after_functionlike_checks;
+        $event = new AfterFunctionLikeAnalysisEvent(
+            $this->function,
+            $storage,
+            $this,
+            $codebase,
+            []
+        );
 
-        if ($plugin_classes) {
-            $file_manipulations = [];
+        if ($codebase->config->eventDispatcher->dispatchAfterFunctionLikeAnalysis($event) === false) {
+            return false;
+        }
 
-            foreach ($plugin_classes as $plugin_fq_class_name) {
-                if ($plugin_fq_class_name::afterStatementAnalysis(
-                    $this->function,
-                    $storage,
-                    $this,
-                    $codebase,
-                    $file_manipulations
-                ) === false) {
-                    return false;
-                }
-            }
+        $file_manipulations = $event->getFileReplacements();
 
-            if ($file_manipulations) {
-                \Psalm\Internal\FileManipulation\FileManipulationBuffer::add(
-                    $this->getFilePath(),
-                    $file_manipulations
-                );
-            }
+        if ($file_manipulations) {
+            \Psalm\Internal\FileManipulation\FileManipulationBuffer::add(
+                $this->getFilePath(),
+                $file_manipulations
+            );
         }
 
         foreach ($storage->attributes as $attribute) {

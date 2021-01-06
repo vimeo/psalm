@@ -13,6 +13,7 @@ use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
+use Psalm\Plugin\EventHandler\Event\AfterFunctionCallAnalysisEvent;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TCallable;
@@ -122,27 +123,24 @@ class FunctionCallReturnTypeFetcher
 
                         $return_type_location = $function_storage->return_type_location;
 
-                        if ($config->after_function_checks) {
-                            $file_manipulations = [];
+                        $event = new AfterFunctionCallAnalysisEvent(
+                            $stmt,
+                            $function_id,
+                            $context,
+                            $statements_analyzer->getSource(),
+                            $codebase,
+                            $return_type,
+                            []
+                        );
 
-                            foreach ($config->after_function_checks as $plugin_fq_class_name) {
-                                $plugin_fq_class_name::afterFunctionCallAnalysis(
-                                    $stmt,
-                                    $function_id,
-                                    $context,
-                                    $statements_analyzer->getSource(),
-                                    $codebase,
-                                    $return_type,
-                                    $file_manipulations
-                                );
-                            }
+                        $config->eventDispatcher->dispatchAfterFunctionCallAnalysis($event);
+                        $file_manipulations = $event->getFileReplacements();
 
-                            if ($file_manipulations) {
-                                FileManipulationBuffer::add(
-                                    $statements_analyzer->getFilePath(),
-                                    $file_manipulations
-                                );
-                            }
+                        if ($file_manipulations) {
+                            FileManipulationBuffer::add(
+                                $statements_analyzer->getFilePath(),
+                                $file_manipulations
+                            );
                         }
 
                         $stmt_type = $return_type;

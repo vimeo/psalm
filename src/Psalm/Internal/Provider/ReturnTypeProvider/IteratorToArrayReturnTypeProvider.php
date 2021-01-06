@@ -1,17 +1,15 @@
 <?php
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
+use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use function assert;
 use PhpParser;
-use Psalm\CodeLocation;
-use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
-use Psalm\StatementsSource;
 use Psalm\Type;
 
-class IteratorToArrayReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface
+class IteratorToArrayReturnTypeProvider implements \Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>
@@ -23,16 +21,12 @@ class IteratorToArrayReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionRe
         ];
     }
 
-    /**
-     * @param  list<PhpParser\Node\Arg>    $call_args
-     */
-    public static function getFunctionReturnType(
-        StatementsSource $statements_source,
-        string $function_id,
-        array $call_args,
-        Context $context,
-        CodeLocation $code_location
-    ) : Type\Union {
+    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event) : Type\Union
+    {
+        $statements_source = $event->getStatementsSource();
+        $call_args = $event->getCallArgs();
+        $function_id = $event->getFunctionId();
+        $context = $event->getContext();
         if (!$statements_source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer
             || !$call_args
         ) {

@@ -2,23 +2,18 @@
 namespace Psalm\Type;
 
 use function array_filter;
-use function array_merge;
-use function array_shift;
 use function array_values;
 use function count;
 use function get_class;
 use function implode;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
-use Psalm\Internal\Type\Comparator\UnionTypeComparator;
-use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\StatementsSource;
 use Psalm\Storage\FileStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
-use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
@@ -29,7 +24,6 @@ use function reset;
 use function sort;
 use function strpos;
 use function strval;
-use function substr;
 use function array_unique;
 
 class Union implements TypeNode

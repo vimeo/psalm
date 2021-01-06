@@ -11,6 +11,8 @@ use Psalm\Internal\Type\TypeAlias\LinkableTypeAlias;
 use Psalm\Issue\InvalidTypeImport;
 use Psalm\Issue\UncaughtThrowInGlobalScope;
 use Psalm\IssueBuffer;
+use Psalm\Plugin\EventHandler\Event\AfterFileAnalysisEvent;
+use Psalm\Plugin\EventHandler\Event\BeforeFileAnalysisEvent;
 use Psalm\Type;
 use function implode;
 use function strtolower;
@@ -158,9 +160,10 @@ class FileAnalyzer extends SourceAnalyzer
         } catch (PhpParser\Error $e) {
             return;
         }
-        foreach ($codebase->config->before_file_checks as $plugin_class) {
-            $plugin_class::beforeAnalyzeFile($this, $this->context, $file_storage, $codebase);
-        }
+
+        $event = new BeforeFileAnalysisEvent($this, $this->context, $file_storage, $codebase);
+
+        $codebase->config->eventDispatcher->dispatchBeforeFileAnalysis($event);
 
         if ($codebase->alter_code) {
             foreach ($stmts as $stmt) {
@@ -268,9 +271,8 @@ class FileAnalyzer extends SourceAnalyzer
             }
         }
 
-        foreach ($codebase->config->after_file_checks as $plugin_class) {
-            $plugin_class::afterAnalyzeFile($this, $this->context, $file_storage, $codebase);
-        }
+        $event = new AfterFileAnalysisEvent($this, $this->context, $file_storage, $codebase);
+        $codebase->config->eventDispatcher->dispatchAfterFileAnalysis($event);
 
         $this->class_analyzers_to_analyze = [];
         $this->interface_analyzers_to_analyze = [];

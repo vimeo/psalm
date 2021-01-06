@@ -1,24 +1,23 @@
 <?php
 namespace Psalm\Example\Plugin;
 
-use Psalm\Codebase;
-use Psalm\CodeLocation;
 use Psalm\FileManipulation;
-use Psalm\Plugin\Hook\AfterClassLikeExistenceCheckInterface;
-use Psalm\StatementsSource;
+use Psalm\Plugin\EventHandler\AfterClassLikeExistenceCheckInterface;
+use Psalm\Plugin\EventHandler\Event\AfterClassLikeExistenceCheckEvent;
+use function strtolower;
+use function implode;
+use function array_map;
 
 class ClassUnqualifier implements AfterClassLikeExistenceCheckInterface
 {
-    /**
-     * @param  FileManipulation[] $file_replacements
-     */
     public static function afterClassLikeExistenceCheck(
-        string $fq_class_name,
-        CodeLocation $code_location,
-        StatementsSource $statements_source,
-        Codebase $codebase,
-        array &$file_replacements = []
+        AfterClassLikeExistenceCheckEvent $event
     ): void {
+        $fq_class_name = $event->getFqClassName();
+        $code_location = $event->getCodeLocation();
+        $statements_source = $event->getStatementsSource();
+        $file_replacements = $event->getFileReplacements();
+
         $candidate_type = $code_location->getSelectedText();
         $aliases = $statements_source->getAliasedClassesFlipped();
 
@@ -26,7 +25,7 @@ class ClassUnqualifier implements AfterClassLikeExistenceCheckInterface
             return;
         }
 
-        if (strpos($candidate_type, '\\' . $fq_class_name) !== false) {
+        if (\strpos($candidate_type, '\\' . $fq_class_name) !== false) {
             $type_tokens = \Psalm\Internal\Type\TypeTokenizer::tokenize($candidate_type, false);
 
             foreach ($type_tokens as &$type_token) {
@@ -51,6 +50,7 @@ class ClassUnqualifier implements AfterClassLikeExistenceCheckInterface
                 $bounds = $code_location->getSelectionBounds();
                 $file_replacements[] = new FileManipulation($bounds[0], $bounds[1], $new_candidate_type);
             }
+            $event->setFileReplacements($file_replacements);
         }
     }
 }

@@ -8,7 +8,6 @@ use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TNamedObject;
 use function count;
-use function is_string;
 use function array_fill;
 
 /**

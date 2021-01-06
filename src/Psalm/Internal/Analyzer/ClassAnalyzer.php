@@ -40,6 +40,7 @@ use Psalm\Issue\UndefinedTrait;
 use Psalm\Issue\UnimplementedAbstractMethod;
 use Psalm\Issue\UnimplementedInterfaceMethod;
 use Psalm\IssueBuffer;
+use Psalm\Plugin\EventHandler\Event\AfterClassLikeAnalysisEvent;
 use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
@@ -593,31 +594,23 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             }
         }
 
+        $event = new AfterClassLikeAnalysisEvent(
+            $class,
+            $storage,
+            $this,
+            $codebase,
+            []
+        );
 
-
-        $plugin_classes = $codebase->config->after_classlike_checks;
-
-        if ($plugin_classes) {
-            $file_manipulations = [];
-
-            foreach ($plugin_classes as $plugin_fq_class_name) {
-                if ($plugin_fq_class_name::afterStatementAnalysis(
-                    $class,
-                    $storage,
-                    $this,
-                    $codebase,
-                    $file_manipulations
-                ) === false) {
-                    return false;
-                }
-            }
-
-            if ($file_manipulations) {
-                \Psalm\Internal\FileManipulation\FileManipulationBuffer::add(
-                    $this->getFilePath(),
-                    $file_manipulations
-                );
-            }
+        if ($codebase->config->eventDispatcher->dispatchAfterClassLikeAnalysis($event) === false) {
+            return false;
+        }
+        $file_manipulations = $event->getFileReplacements();
+        if ($file_manipulations) {
+            \Psalm\Internal\FileManipulation\FileManipulationBuffer::add(
+                $this->getFilePath(),
+                $file_manipulations
+            );
         }
 
         return null;

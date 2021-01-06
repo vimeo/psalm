@@ -2,14 +2,12 @@
 
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
+use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use function count;
-use Psalm\CodeLocation;
-use Psalm\Context;
 use Psalm\Internal\Type\ArrayType;
-use Psalm\StatementsSource;
 use Psalm\Type;
 
-class ArrayChunkReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface
+class ArrayChunkReturnTypeProvider implements \Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>
@@ -19,13 +17,10 @@ class ArrayChunkReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnT
         return ['array_chunk'];
     }
 
-    public static function getFunctionReturnType(
-        StatementsSource $statements_source,
-        string $function_id,
-        array $call_args,
-        Context $context,
-        CodeLocation $code_location
-    ): ?Type\Union {
+    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): ?Type\Union
+    {
+        $call_args = $event->getCallArgs();
+        $statements_source = $event->getStatementsSource();
         if (count($call_args) >= 2
             && ($array_arg_type = $statements_source->getNodeTypeProvider()->getType($call_args[0]->value))
             && $array_arg_type->isSingle()

@@ -1,10 +1,6 @@
 <?php
 namespace Psalm\Tests;
 
-use const DIRECTORY_SEPARATOR;
-use Psalm\Config;
-use Psalm\Context;
-
 class AttributeTest extends TestCase
 {
     use Traits\InvalidCodeAnalysisTestTrait;

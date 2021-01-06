@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Internal\PhpVisitor;
 
+use Psalm\Plugin\EventHandler\Event\AfterClassLikeVisitEvent;
 use function array_pop;
 use function count;
 use function end;
@@ -79,11 +80,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
     private $classlike_node_scanners = [];
 
     /**
-     * @var array<class-string<\Psalm\Plugin\Hook\AfterClassLikeVisitInterface>>
-     */
-    private $after_classlike_check_plugins;
-
-    /**
      * @var PhpParser\Node\Name|null
      */
     private $namespace_name;
@@ -107,6 +103,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
      * @var array<int, bool>
      */
     private $bad_classes = [];
+    /**
+     * @var \Psalm\Internal\EventDispatcher
+     */
+    private $eventDispatcher;
 
     public function __construct(
         Codebase $codebase,
@@ -119,7 +119,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
         $this->scan_deep = $file_scanner->will_analyze;
         $this->file_storage = $file_storage;
         $this->aliases = $this->file_storage->aliases = new Aliases();
-        $this->after_classlike_check_plugins = $this->codebase->config->after_visit_classlikes;
+        $this->eventDispatcher = $this->codebase->config->eventDispatcher;
     }
 
     public function enterNode(PhpParser\Node $node): ?int
@@ -542,19 +542,15 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                 $this->file_storage->has_visitor_issues = true;
             }
 
-            if ($this->after_classlike_check_plugins) {
-                $file_manipulations = [];
+            $event = new AfterClassLikeVisitEvent(
+                $node,
+                $classlike_storage,
+                $this,
+                $this->codebase,
+                []
+            );
 
-                foreach ($this->after_classlike_check_plugins as $plugin_fq_class_name) {
-                    $plugin_fq_class_name::afterClassLikeVisit(
-                        $node,
-                        $classlike_storage,
-                        $this,
-                        $this->codebase,
-                        $file_manipulations
-                    );
-                }
-            }
+            $this->eventDispatcher->dispatchAfterClassLikeVisit($event);
 
             if (!$this->file_storage->has_visitor_issues) {
                 $this->codebase->cacheClassLikeStorage($classlike_storage, $this->file_path);

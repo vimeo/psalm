@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Tests;
 
+use Psalm\Plugin\EventHandler\Event\AfterCodebasePopulatedEvent;
 use function define;
 use function defined;
 use const DIRECTORY_SEPARATOR;
@@ -14,7 +15,7 @@ use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\RuntimeCaches;
-use Psalm\Plugin\Hook\AfterCodebasePopulatedInterface;
+use Psalm\Plugin\EventHandler\AfterCodebasePopulatedInterface;
 use Psalm\Tests\Internal\Provider;
 use Psalm\Tests\Progress\EchoProgress;
 use function realpath;
@@ -106,7 +107,7 @@ class ProjectCheckerTest extends TestCase
             public static $called = false;
 
             /** @return void */
-            public static function afterCodebasePopulated(Codebase $codebase)
+            public static function afterCodebasePopulated(AfterCodebasePopulatedEvent $event)
             {
                 self::$called = true;
             }
@@ -126,7 +127,7 @@ class ProjectCheckerTest extends TestCase
 
         $hook_class = get_class($hook);
 
-        $this->project_analyzer->getCodebase()->config->after_codebase_populated[] = $hook_class;
+        $this->project_analyzer->getCodebase()->config->eventDispatcher->after_codebase_populated[] = $hook_class;
 
         ob_start();
         $this->project_analyzer->check('tests/fixtures/DummyProject');
