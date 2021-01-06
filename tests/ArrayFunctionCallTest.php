@@ -1962,7 +1962,7 @@ class ArrayFunctionCallTest extends TestCase
 
                     $direct_closure_result = array_reduce(
                         $arr,
-                        function (int $carry) : int {
+                        function() : int {
                             return 5;
                         },
                         1

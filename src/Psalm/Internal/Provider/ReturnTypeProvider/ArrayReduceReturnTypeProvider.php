@@ -101,10 +101,10 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\EventHandler\Functi
             $reduce_return_type = Type::combineUnionTypes($closure_return_type, $reduce_return_type);
 
             if ($closure_atomic_type->params !== null) {
-                if (count($closure_atomic_type->params) < 2) {
+                if (count($closure_atomic_type->params) < 1) {
                     if (IssueBuffer::accepts(
                         new InvalidArgument(
-                            'The closure passed to array_reduce needs two params',
+                            'The closure passed to array_reduce at least one parameter',
                             new CodeLocation($statements_source, $function_call_arg)
                         ),
                         $statements_source->getSuppressedIssues()
@@ -115,7 +115,8 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\EventHandler\Functi
                     return Type::getMixed();
                 }
 
-                [$carry_param, $item_param] = $closure_atomic_type->params;
+                $carry_param = $closure_atomic_type->params[0];
+                $item_param = $closure_atomic_type->params[1] ?? null;
 
                 if ($carry_param->type
                     && (
@@ -149,7 +150,8 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\EventHandler\Functi
                     return Type::getMixed();
                 }
 
-                if ($item_param->type
+                if ($item_param
+                    && $item_param->type
                     && $array_arg_atomic_type
                     && !$array_arg_atomic_type->type_params[1]->hasMixed()
                     && !UnionTypeComparator::isContainedBy(
