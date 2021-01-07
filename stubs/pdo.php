@@ -1,6 +1,6 @@
 <?php
 
-class PdoStatement {
+class PdoStatement implements Traversable {
     /**
      * @psalm-taint-sink callable $class
      *
