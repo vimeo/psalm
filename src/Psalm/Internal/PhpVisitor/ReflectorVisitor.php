@@ -576,6 +576,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                 foreach ($functionlike_node_scanner->storage->docblock_issues as $docblock_issue) {
                     if (strpos($docblock_issue->code_location->file_path, 'CoreGenericFunctions.phpstub')
                         || strpos($docblock_issue->code_location->file_path, 'CoreGenericClasses.phpstub')
+                        || strpos($this->file_path, 'CoreGenericIterators.phpstub')
                     ) {
                         $e = \reset($functionlike_node_scanner->storage->docblock_issues);
 

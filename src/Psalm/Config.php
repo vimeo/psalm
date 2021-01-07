@@ -1712,14 +1712,26 @@ class Config
             throw new \UnexpectedValueException('Cannot locate core generic classes');
         }
 
-        // note: don't realpath $generic_classes_path, or phar version will fail
+        // note: don't realpath $generic_iterator_path, or phar version will fail
+        $generic_iterator_path = dirname(__DIR__, 2) . '/stubs/CoreGenericIterators.phpstub';
+
+        if (!file_exists($generic_iterator_path)) {
+            throw new \UnexpectedValueException('Cannot locate core generic Iterator classes');
+        }
+
+        // note: don't realpath $immutable_classes_path, or phar version will fail
         $immutable_classes_path = dirname(__DIR__, 2) . '/stubs/CoreImmutableClasses.phpstub';
 
         if (!file_exists($immutable_classes_path)) {
             throw new \UnexpectedValueException('Cannot locate core immutable classes');
         }
 
-        $core_generic_files = [$generic_stubs_path, $generic_classes_path, $immutable_classes_path];
+        $core_generic_files = [
+            $generic_stubs_path,
+            $generic_classes_path,
+            $generic_iterator_path,
+            $immutable_classes_path
+        ];
 
         if (\PHP_VERSION_ID >= 80000 && $codebase->php_major_version >= 8) {
             $stringable_path = dirname(__DIR__, 2) . '/stubs/Php80.php';
