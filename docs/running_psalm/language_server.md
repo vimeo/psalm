@@ -2,7 +2,7 @@
 
 Psalm now has built-in Language Server Compatibility support so you can run it in your favourite IDE.
 
-It currently supports diagnostics (i.e. finding errors and warnings), go-to-definition and hover.
+It currently supports diagnostics (i.e. finding errors and warnings), go-to-definition and hover, with limited support for autocompletion (PRs are welcome!).
 
 It works well in a variety of editors (listed alphabetically):
 
