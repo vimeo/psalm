@@ -738,7 +738,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $storage,
             $this,
             $codebase,
-            []
+            [],
+            $type_provider,
+            $context
         );
 
         if ($codebase->config->eventDispatcher->dispatchAfterFunctionLikeAnalysis($event) === false) {
