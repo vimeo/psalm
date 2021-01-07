@@ -349,6 +349,39 @@ class MethodCallReturnTypeFetcher
                 $stmt_var_type->parent_nodes = $var_nodes;
 
                 $context->vars_in_scope[$var_id] = $stmt_var_type;
+            } elseif ($method_storage->specialize_call) {
+                $method_call_node = DataFlowNode::getForMethodReturn(
+                    (string) $method_id,
+                    $cased_method_id,
+                    $is_declaring
+                        ? ($method_storage->signature_return_type_location ?: $method_storage->location)
+                        : null,
+                    $node_location
+                );
+
+                if (!$is_declaring) {
+                    $cased_declaring_method_id = $codebase->methods->getCasedMethodId($declaring_method_id);
+
+                    $declaring_method_call_node = DataFlowNode::getForMethodReturn(
+                        (string) $declaring_method_id,
+                        $cased_declaring_method_id,
+                        $method_storage->signature_return_type_location ?: $method_storage->location,
+                        $node_location
+                    );
+
+                    $statements_analyzer->data_flow_graph->addNode($declaring_method_call_node);
+                    $statements_analyzer->data_flow_graph->addPath(
+                        $declaring_method_call_node,
+                        $method_call_node,
+                        'parent'
+                    );
+                }
+
+                $statements_analyzer->data_flow_graph->addNode($method_call_node);
+
+                $return_type_candidate->parent_nodes = [
+                    $method_call_node->id => $method_call_node
+                ];
             } else {
                 $method_call_node = DataFlowNode::getForMethodReturn(
                     (string) $method_id,

@@ -467,6 +467,35 @@ class TaintTest extends TestCase
 
                     echo $a->x;'
             ],
+            'dontTaintSpecializedCallsForAnonymousInstance' => [
+                '<?php
+
+                    class StringRenderer {
+                        /** @psalm-taint-specialize */
+                        public function render(string $x) {
+                            return $x;
+                        }
+                    }
+
+                    $notEchoed = (new StringRenderer())->render($_GET["untrusted"]);
+                    echo (new StringRenderer())->render("a");'
+            ],
+            'dontTaintSpecializedCallsForStubMadeInstance' => [
+                '<?php
+
+                    class StringRenderer {
+                        /** @psalm-taint-specialize */
+                        public function render(string $x) {
+                            return $x;
+                        }
+                    }
+
+                    /** @psalm-suppress InvalidReturnType */
+                    function stub(): StringRenderer { }
+
+                    $notEchoed = stub()->render($_GET["untrusted"]);
+                    echo stub()->render("a");'
+            ],
             'suppressTaintedInput' => [
                 '<?php
                     function unsafe() {
