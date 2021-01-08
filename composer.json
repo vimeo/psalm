@@ -42,6 +42,7 @@
     "require-dev": {
         "php": "^7.3|^8",
         "ext-curl": "*",
+        "spatie/ray": "^1.0",
         "amphp/amp": "^2.4.2",
         "bamarni/composer-bin-plugin": "^1.2",
         "brianium/paratest": "^4.0||^6.0",
