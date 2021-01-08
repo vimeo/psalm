@@ -469,7 +469,7 @@ class ExistingAtomicStaticCallAnalyzer
             }
         }
 
-        if ($config->eventDispatcher->after_method_checks) {
+        if ($config->eventDispatcher->hasAfterMethodCallAnalysisHandlers()) {
             $file_manipulations = [];
 
             $appearing_method_id = $codebase->methods->getAppearingMethodId($method_id);

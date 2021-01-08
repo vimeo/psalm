@@ -1,10 +1,19 @@
 <?php
 namespace Psalm\Tests\Config;
 
+use PhpParser\Node\Expr;
+use PhpParser\Node\Stmt\ClassLike;
 use PHPUnit\Framework\MockObject\MockObject;
+use Psalm\Codebase;
+use Psalm\FileSource;
 use Psalm\Plugin\EventHandler\AfterEveryFunctionCallAnalysisInterface;
 use Psalm\Plugin\EventHandler\Event\AfterCodebasePopulatedEvent;
 use Psalm\Plugin\EventHandler\Event\AfterEveryFunctionCallAnalysisEvent;
+use Psalm\Plugin\Hook\AfterClassLikeVisitInterface;
+use Psalm\Plugin\Hook\AfterMethodCallAnalysisInterface;
+use Psalm\StatementsSource;
+use Psalm\Storage\ClassLikeStorage;
+use Psalm\Type\Union;
 use function define;
 use function defined;
 use const DIRECTORY_SEPARATOR;
@@ -547,6 +556,82 @@ class PluginTest extends \Psalm\Tests\TestCase
             get_class($hook),
             $this->project_analyzer->getCodebase()->config->eventDispatcher->after_codebase_populated
         );
+    }
+
+    public function testAfterMethodCallAnalysisLegacyHookIsLoaded(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                </psalm>'
+            )
+        );
+
+        $hook = new class implements AfterMethodCallAnalysisInterface {
+            public static function afterMethodCallAnalysis(
+                Expr $expr,
+                string $method_id,
+                string $appearing_method_id,
+                string $declaring_method_id,
+                Context $context,
+                StatementsSource $statements_source,
+                Codebase $codebase,
+                array &$file_replacements = [],
+                Union &$return_type_candidate = null
+            ): void {
+            }
+        };
+
+        $codebase = $this->project_analyzer->getCodebase();
+
+        $config = $codebase->config;
+
+        (new PluginRegistrationSocket($config, $codebase))->registerHooksFromClass(get_class($hook));
+
+        $this->assertTrue($this->project_analyzer->getCodebase()->config->eventDispatcher->hasAfterMethodCallAnalysisHandlers());
+    }
+
+    public function testAfterClassLikeAnalysisLegacyHookIsLoaded(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                </psalm>'
+            )
+        );
+
+        $hook = new class implements AfterClassLikeVisitInterface {
+            public static function afterClassLikeVisit(
+                ClassLike $stmt,
+                ClassLikeStorage $storage,
+                FileSource $statements_source,
+                Codebase $codebase,
+                array &$file_replacements = []
+            ): void {
+            }
+        };
+
+        $codebase = $this->project_analyzer->getCodebase();
+
+        $config = $codebase->config;
+
+        (new PluginRegistrationSocket($config, $codebase))->registerHooksFromClass(get_class($hook));
+
+        $this->assertTrue($this->project_analyzer->getCodebase()->config->eventDispatcher->hasAfterClassLikeVisitHandlers());
     }
 
     public function testPropertyProviderHooks(): void

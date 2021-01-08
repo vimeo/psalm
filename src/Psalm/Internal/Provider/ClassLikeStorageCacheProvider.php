@@ -51,7 +51,7 @@ class ClassLikeStorageCacheProvider
             $storage_dir . 'MethodStorage.php',
         ];
 
-        if ($config->eventDispatcher->after_visit_classlikes) {
+        if ($config->eventDispatcher->hasAfterClassLikeVisitHandlers()) {
             $dependent_files = array_merge($dependent_files, $config->plugin_paths);
         }
 
