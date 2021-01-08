@@ -79,4 +79,14 @@ class AtomicMethodCallAnalysisResult
      * @var list<\Psalm\Internal\MethodIdentifier>
      */
     public $too_few_arguments_method_ids = [];
+
+    /**
+     * @var bool
+     */
+    public $can_memoize = false;
+
+    /**
+     * @var bool
+     */
+    public $immutable_call = false;
 }

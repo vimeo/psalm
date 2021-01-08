@@ -128,7 +128,7 @@ class FileAnalyzer extends SourceAnalyzer
 
     public function analyze(
         ?Context $file_context = null,
-        bool $preserve_analyzers = false,
+        bool $preserve_analyzers = false, 
         ?Context $global_context = null
     ): void {
         $codebase = $this->project_analyzer->getCodebase();
@@ -223,6 +223,7 @@ class FileAnalyzer extends SourceAnalyzer
         if (!$preserve_analyzers) {
             $this->class_analyzers_to_analyze = [];
             $this->interface_analyzers_to_analyze = [];
+            $this->trait_analyzers_to_analyze = [];
         }
 
         if ($codebase->config->check_for_throws_in_global_scope) {
@@ -286,6 +287,9 @@ class FileAnalyzer extends SourceAnalyzer
         foreach ($codebase->config->after_file_checks as $plugin_class) {
             $plugin_class::afterAnalyzeFile($this, $this->context, $file_storage, $codebase);
         }
+
+        $this->class_analyzers_to_analyze = [];
+        $this->interface_analyzers_to_analyze = [];
     }
 
     /**

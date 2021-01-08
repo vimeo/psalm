@@ -577,11 +577,27 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
             $functionlike_node_scanner = array_pop($this->functionlike_node_scanners);
 
             if ($functionlike_node_scanner->storage) {
-                if ($functionlike_node_scanner->storage->docblock_issues
-                    && (strpos($this->file_path, 'CoreGenericFunctions.phpstub')
-                        || strpos($this->file_path, 'CoreGenericClasses.phpstub'))
-                ) {
-                    throw new \UnexpectedValueException('Error with core stub file docblocks');
+                foreach ($functionlike_node_scanner->storage->docblock_issues as $docblock_issue) {
+                    if (strpos($docblock_issue->code_location->file_path, 'CoreGenericFunctions.phpstub')
+                        || strpos($docblock_issue->code_location->file_path, 'CoreGenericClasses.phpstub')
+                    ) {
+                        $e = \reset($functionlike_node_scanner->storage->docblock_issues);
+
+                        $fqcn_parts = \explode('\\', \get_class($e));
+                        $issue_type = \array_pop($fqcn_parts);
+
+                        $message = $e instanceof \Psalm\Issue\TaintedInput
+                            ? $e->getJourneyMessage()
+                            : $e->message;
+
+                        throw new \Psalm\Exception\CodeException(
+                            'Error with core stub file docblocks: '
+                                . $issue_type
+                                . ' - ' . $e->getShortLocationWithPrevious()
+                                . ':' . $e->code_location->getColumn()
+                                . ' - ' . $message
+                        );
+                    }
                 }
 
                 if ($functionlike_node_scanner->storage->has_visitor_issues) {

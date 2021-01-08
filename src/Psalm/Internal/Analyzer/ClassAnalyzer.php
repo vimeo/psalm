@@ -488,6 +488,18 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             /** @var non-empty-array<int, Type\Atomic\TTemplateParam|Type\Atomic\TNamedObject> $mixins */
             $mixins = array_merge($storage->templatedMixins, $storage->namedMixins);
             $union = new Type\Union($mixins);
+
+            $static_self = new Type\Atomic\TNamedObject($storage->name);
+            $static_self->was_static = true;
+
+            $union = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                $codebase,
+                $union,
+                $storage->name,
+                $static_self,
+                null
+            );
+
             $union->check(
                 $this,
                 new CodeLocation(
@@ -957,6 +969,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 }
             }
         }
+
+
 
         $plugin_classes = $codebase->config->after_classlike_checks;
 

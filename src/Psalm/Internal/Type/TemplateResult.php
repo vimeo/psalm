@@ -23,6 +23,13 @@ class TemplateResult
     public $lower_bounds = [];
 
     /**
+     * If set to true then we shouldn't update the template bounds
+     *
+     * @var bool
+     */
+    public $readonly = false;
+
+    /**
      * @var list<Union>
      */
     public $lower_bounds_unintersectable_types = [];

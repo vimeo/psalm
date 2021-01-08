@@ -252,6 +252,24 @@ class GeneratorTest extends TestCase
                     }
                     echo json_encode(iterator_to_array(getIteratorOrAggregate()));'
             ],
+            'yieldNonExistentClass' => [
+                '<?php
+                    class T {
+                        private const FACTORIES = [
+                            ClassNotExisting::class,
+                        ];
+
+                        function f() : Generator {
+                            foreach (self::FACTORIES as $f) {
+                                if (class_exists($f)) {
+                                    yield new $f();
+                                }
+                            }
+                        }
+                    }',
+                [],
+                ['UndefinedClass']
+            ],
         ];
     }
 

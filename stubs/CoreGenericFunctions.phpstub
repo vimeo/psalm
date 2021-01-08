@@ -1194,11 +1194,11 @@ function base64_encode(string $data) : string {}
 /**
  * @psalm-pure
  *
- * @param resource $context
+ * @param resource|null $context
  *
  * @psalm-taint-sink ssrf $url
  */
-function get_headers(string $url, int $format = 0, $context) : array {}
+function get_headers(string $url, int $format = 0, $context = null) : array {}
 
 /**
  * @psalm-pure

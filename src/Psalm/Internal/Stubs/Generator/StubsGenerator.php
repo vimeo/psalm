@@ -342,6 +342,27 @@ class StubsGenerator
             if ($atomic_type instanceof Type\Atomic\TArray) {
                 return new PhpParser\Node\Expr\Array_([]);
             }
+
+            if ($atomic_type instanceof Type\Atomic\TKeyedArray) {
+                $new_items = [];
+
+                foreach ($atomic_type->properties as $property_name => $property_type) {
+                    if ($atomic_type->is_list) {
+                        $key_type = null;
+                    } elseif (\is_int($property_name)) {
+                        $key_type = new PhpParser\Node\Scalar\LNumber($property_name);
+                    } else {
+                        $key_type = new PhpParser\Node\Scalar\String_($property_name);
+                    }
+
+                    $new_items[] = new PhpParser\Node\Expr\ArrayItem(
+                        self::getExpressionFromType($property_type),
+                        $key_type
+                    );
+                }
+
+                return new PhpParser\Node\Expr\Array_($new_items);
+            }
         }
 
         return new PhpParser\Node\Scalar\String_('Psalm could not infer this type');

@@ -142,6 +142,10 @@ class YieldAnalyzer
 
         foreach ($expression_type->getAtomicTypes() as $expression_atomic_type) {
             if ($expression_atomic_type instanceof Type\Atomic\TNamedObject) {
+                if (!$codebase->classlikes->classOrInterfaceExists($expression_atomic_type->value)) {
+                    continue;
+                }
+
                 $classlike_storage = $codebase->classlike_storage_provider->get($expression_atomic_type->value);
 
                 if ($classlike_storage->yield) {

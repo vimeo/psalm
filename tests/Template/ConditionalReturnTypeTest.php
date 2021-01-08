@@ -14,7 +14,7 @@ class ConditionalReturnTypeTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
-            'conditionalReturnType' => [
+            'conditionalReturnTypeSimple' => [
                 '<?php
 
                     class A {
@@ -143,9 +143,9 @@ class ConditionalReturnTypeTest extends TestCase
                     $int = add(rand(0, 1) ? null : 1, 1);',
                 [
                     '$int' => 'int',
-                    '$float1' => 'float',
+                    '$float1' => 'float|int',
                     '$float2' => 'float',
-                    '$float3' => 'float',
+                    '$float3' => 'float|int',
                 ]
             ],
             'possiblyNullArgumentStillMatchesType' => [
@@ -652,6 +652,64 @@ class ConditionalReturnTypeTest extends TestCase
                     '$expect_a_object' => 'A',
                     '$expect_mixed_from_literal' => 'mixed',
                 ]
+            ],
+            'isArryCheckOnTemplate' => [
+                '<?php
+                    /**
+                     * @template TResult as string|list<string>
+                     * @param TResult $result
+                     * @return (TResult is array ? list<string> : string)
+                     */
+                    function recursion($result) {
+                        if (\is_array($result)) {
+                            return $result;
+                        }
+
+                        return strtoupper($result);
+                    }'
+            ],
+            'optional' => [
+                '<?php
+                    class User {
+                        public string $name = "Dave";
+                    }
+
+                    /** @return User|NullObject */
+                    function takesNullableUser(?User $user) {
+                        return optional($user);
+                    }
+
+                    class NullObject {
+                        /**
+                         * @return null
+                         */
+                        public function __call(string $_name, array $args) {
+                            return null;
+                        }
+
+                        /**
+                         * @return null
+                         */
+                        public function __get(string $s) {
+                            return null;
+                        }
+
+                        public function __set(string $_name, string $_value) : void {
+                        }
+                    }
+
+                    /**
+                     * @template TVar as object|null
+                     * @param TVar $var
+                     * @return (TVar is object ? TVar : NullObject)
+                     */
+                    function optional($var) {
+                        if ($var) {
+                            return $var;
+                        }
+
+                        return new NullObject();
+                    }'
             ],
         ];
     }

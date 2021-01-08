@@ -1078,7 +1078,7 @@ class ProjectAnalyzer
 
         foreach ($file_paths as $file_path) {
             if ($config->isInProjectDirs($file_path)) {
-                if ($this->file_provider->getModifiedTime($file_path) > $last_run
+                if ($this->file_provider->getModifiedTime($file_path) >= $last_run
                     && $this->parser_cache_provider->loadExistingFileContentsFromCache($file_path)
                         !== $this->file_provider->getContents($file_path)
                 ) {
@@ -1151,6 +1151,8 @@ class ProjectAnalyzer
     public function checkPaths(array $paths_to_check): void
     {
         $this->visitAutoloadFiles();
+
+        $this->codebase->scanner->addFilesToShallowScan($this->extra_files);
 
         foreach ($paths_to_check as $path) {
             $this->progress->debug('Checking ' . $path . "\n");

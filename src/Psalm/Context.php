@@ -647,6 +647,8 @@ class Context
             return;
         }
 
+        $existing_type->allow_mutations = true;
+
         $this->removeVarFromConflictingClauses(
             $remove_var_id,
             $existing_type->hasMixed()
@@ -656,19 +658,29 @@ class Context
             $statements_analyzer
         );
 
-        foreach ($this->vars_in_scope as $var_id => $_) {
+        foreach ($this->vars_in_scope as $var_id => $type) {
             if (preg_match('/' . preg_quote($remove_var_id, '/') . '[\]\[\-]/', $var_id)) {
                 unset($this->vars_in_scope[$var_id]);
+            }
+
+            foreach ($type->getAtomicTypes() as $atomic_type) {
+                if ($atomic_type instanceof Type\Atomic\DependentType
+                    && $atomic_type->getVarId() === $remove_var_id
+                ) {
+                    $type->addType($atomic_type->getReplacement());
+                }
             }
         }
     }
 
-    public function removeAllObjectVars(): void
+    public function removeMutableObjectVars(): void
     {
         $vars_to_remove = [];
 
-        foreach ($this->vars_in_scope as $var_id => $_) {
-            if (strpos($var_id, '->') !== false || strpos($var_id, '::') !== false) {
+        foreach ($this->vars_in_scope as $var_id => $type) {
+            if ($type->has_mutations
+                && (strpos($var_id, '->') !== false || strpos($var_id, '::') !== false)
+            ) {
                 $vars_to_remove[] = $var_id;
             }
         }

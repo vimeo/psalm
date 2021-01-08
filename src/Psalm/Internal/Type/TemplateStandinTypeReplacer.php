@@ -57,7 +57,6 @@ class TemplateStandinTypeReplacer
                     $add_upper_bound,
                     $depth,
                     count($original_atomic_types) === 1,
-                    $union_type->isNullable(),
                     $had_template
                 )
             );
@@ -104,7 +103,6 @@ class TemplateStandinTypeReplacer
         bool $add_upper_bound,
         int $depth,
         bool $was_single,
-        bool $was_nullable,
         bool &$had_template
     ) : array {
         if ($bracket_pos = strpos($key, '<')) {
@@ -127,7 +125,6 @@ class TemplateStandinTypeReplacer
                 $replace,
                 $add_upper_bound,
                 $depth,
-                $was_nullable,
                 $had_template
             );
 
@@ -446,7 +443,6 @@ class TemplateStandinTypeReplacer
         bool $replace,
         bool $add_upper_bound,
         int $depth,
-        bool $was_nullable,
         bool &$had_template
     ) : array {
         if ($atomic_type->defining_class === $calling_class) {
@@ -619,6 +615,7 @@ class TemplateStandinTypeReplacer
             );
 
             if ($input_type
+                && !$template_result->readonly
                 && (
                     $atomic_type->as->isMixed()
                     || !$codebase
@@ -642,10 +639,6 @@ class TemplateStandinTypeReplacer
                             $generic_param->removeType($atomic_key);
                         }
                     }
-                }
-
-                if ($was_nullable && $generic_param->isNullable() && !$generic_param->isNull()) {
-                    $generic_param->removeType('null');
                 }
 
                 if ($add_upper_bound) {
@@ -686,20 +679,23 @@ class TemplateStandinTypeReplacer
                 );
             }
 
-            foreach ($atomic_types as $atomic_type) {
+            foreach ($atomic_types as &$atomic_type) {
                 if ($atomic_type instanceof Atomic\TNamedObject
                     || $atomic_type instanceof Atomic\TTemplateParam
                     || $atomic_type instanceof Atomic\TIterable
                     || $atomic_type instanceof Atomic\TObjectWithProperties
                 ) {
                     $atomic_type->extra_types = $extra_types;
+                } elseif ($atomic_type instanceof Atomic\TObject && $extra_types) {
+                    $atomic_type = \reset($extra_types);
+                    $atomic_type->extra_types = \array_slice($extra_types, 1);
                 }
             }
 
             return $atomic_types;
         }
 
-        if ($add_upper_bound && $input_type) {
+        if ($add_upper_bound && $input_type && !$template_result->readonly) {
             $matching_input_keys = [];
 
             if ($codebase
@@ -782,7 +778,7 @@ class TemplateStandinTypeReplacer
 
         $atomic_types[] = $class_string;
 
-        if ($input_type) {
+        if ($input_type && !$template_result->readonly) {
             $valid_input_atomic_types = [];
 
             foreach ($input_type->getAtomicTypes() as $input_atomic_type) {

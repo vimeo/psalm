@@ -229,7 +229,8 @@ class TemplateInferredTypeReplacer
                     ? clone $inferred_upper_bounds[$atomic_type->param_name][$atomic_type->defining_class]->type
                     : null;
 
-                $class_template_type = null;
+                $if_template_type = null;
+                $else_template_type = null;
 
                 $atomic_type = clone $atomic_type;
 
@@ -244,38 +245,79 @@ class TemplateInferredTypeReplacer
                         $template_type = Type::getNull();
                     }
 
-                    if (UnionTypeComparator::isContainedBy(
-                        $codebase,
-                        $template_type,
-                        $atomic_type->conditional_type
-                    )) {
-                        $class_template_type = clone $atomic_type->if_type;
-                        self::replace(
-                            $class_template_type,
-                            $template_result,
-                            $codebase
-                        );
-                    } elseif (UnionTypeComparator::isContainedBy(
-                        $codebase,
-                        $template_type,
-                        $atomic_type->as_type
-                    )
-                        && !UnionTypeComparator::isContainedBy(
+                    $matching_if_types = [];
+                    $matching_else_types = [];
+
+                    foreach ($template_type->getAtomicTypes() as $candidate_atomic_type) {
+                        if (UnionTypeComparator::isContainedBy(
                             $codebase,
-                            $atomic_type->as_type,
-                            $template_type
+                            new Type\Union([$candidate_atomic_type]),
+                            $atomic_type->conditional_type
+                        )
+                            && (!$candidate_atomic_type instanceof Type\Atomic\TInt
+                                || $atomic_type->conditional_type->getId() !== 'float')
+                        ) {
+                            $matching_if_types[] = $candidate_atomic_type;
+                        } elseif (!UnionTypeComparator::isContainedBy(
+                            $codebase,
+                            $atomic_type->conditional_type,
+                            new Type\Union([$candidate_atomic_type])
+                        )) {
+                            $matching_else_types[] = $candidate_atomic_type;
+                        }
+                    }
+
+                    $if_candidate_type = $matching_if_types ? new Type\Union($matching_if_types) : null;
+                    $else_candidate_type = $matching_else_types ? new Type\Union($matching_else_types) : null;
+
+                    if ($if_candidate_type
+                        && UnionTypeComparator::isContainedBy(
+                            $codebase,
+                            $if_candidate_type,
+                            $atomic_type->conditional_type
                         )
                     ) {
-                        $class_template_type = clone $atomic_type->else_type;
+                        $if_template_type = clone $atomic_type->if_type;
+
+                        $refined_template_result = clone $template_result;
+
+                        $refined_template_result->upper_bounds[$atomic_type->param_name][$atomic_type->defining_class]
+                            = new \Psalm\Internal\Type\TemplateBound(
+                                $if_candidate_type
+                            );
+
                         self::replace(
-                            $class_template_type,
-                            $template_result,
+                            $if_template_type,
+                            $refined_template_result,
+                            $codebase
+                        );
+                    }
+
+                    if ($else_candidate_type
+                        && UnionTypeComparator::isContainedBy(
+                            $codebase,
+                            $else_candidate_type,
+                            $atomic_type->as_type
+                        )
+                    ) {
+                        $else_template_type = clone $atomic_type->else_type;
+
+                        $refined_template_result = clone $template_result;
+
+                        $refined_template_result->upper_bounds[$atomic_type->param_name][$atomic_type->defining_class]
+                            = new \Psalm\Internal\Type\TemplateBound(
+                                $else_candidate_type
+                            );
+
+                        self::replace(
+                            $else_template_type,
+                            $refined_template_result,
                             $codebase
                         );
                     }
                 }
 
-                if (!$class_template_type) {
+                if (!$if_template_type && !$else_template_type) {
                     self::replace(
                         $atomic_type->if_type,
                         $template_result,
@@ -291,6 +333,16 @@ class TemplateInferredTypeReplacer
                     $class_template_type = Type::combineUnionTypes(
                         $atomic_type->if_type,
                         $atomic_type->else_type,
+                        $codebase
+                    );
+                } elseif ($if_template_type && !$else_template_type) {
+                    $class_template_type = $if_template_type;
+                } elseif (!$if_template_type) {
+                    $class_template_type = $else_template_type;
+                } else {
+                    $class_template_type = Type::combineUnionTypes(
+                        $if_template_type,
+                        $else_template_type,
                         $codebase
                     );
                 }

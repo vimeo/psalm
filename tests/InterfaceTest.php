@@ -553,7 +553,7 @@ class InterfaceTest extends TestCase
                         $i::doFoo();
                     }',
             ],
-            'inheritSystemInterface' => [
+            'SKIPPED-inheritSystemInterface' => [
                 '<?php
                     interface I extends \RecursiveIterator {}
 

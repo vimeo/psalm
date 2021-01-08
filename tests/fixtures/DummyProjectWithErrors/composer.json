@@ -3,7 +3,7 @@
     "description": "A sample project to be used when testing Psalm",
     "type": "project",
     "require": {
-        "vimeo/psalm": "^3.11"
+        "vimeo/psalm": "^4.3"
     },
     "autoload": {
         "psr-4": {

@@ -1556,8 +1556,14 @@ class ClassTemplateExtendsTest extends TestCase
                             $this->elements = $elements;
                         }
 
+                        /**
+                         * @psalm-suppress InvalidReturnType
+                         */
                         public function getIterator()
                         {
+                            /**
+                             * @psalm-suppress InvalidReturnStatement
+                             */
                             return new ArrayIterator($this->elements);
                         }
 
@@ -4171,6 +4177,109 @@ class ClassTemplateExtendsTest extends TestCase
                             return strlen($a);
                         };
                         return $foo->map($function);
+                    }'
+            ],
+            'extendStubbedInterfaceTwice' => [
+                '<?php
+                    /**
+                     * @template Tk of array-key
+                     * @template Tv
+                     */
+                    interface AA {}
+                    /**
+                     * @template Tk of array-key
+                     * @template Tv
+                     * @extends ArrayAccess<Tk, Tv>
+                     */
+                    interface A extends ArrayAccess {
+                        /**
+                         * @psalm-param Tk $k
+                         * @psalm-return Tv
+                         */
+                        public function at($k);
+                    }
+
+                    /**
+                     * @template Tk of array-key
+                     * @template Tv
+                     *
+                     * @extends A<Tk, Tv>
+                     */
+                    interface B extends A {}
+
+                    /**
+                     * @template Tk of array-key
+                     * @template Tv
+                     *
+                     * @implements B<Tk, Tv>
+                     */
+                    abstract class C implements B
+                    {
+                        /**
+                         * @psalm-param  Tk $k
+                         * @psalm-return Tv
+                         */
+                        public function at($k) { /** @var Tv */ return 1;  }
+                    }'
+            ],
+            'inheritSubstitutedParamFromInterface' => [
+                '<?php
+                    /** @psalm-template T */
+                    interface BuilderInterface {
+                        /** @psalm-param T $data */
+                        public function create($data): Exception;
+                    }
+
+                    /** @implements BuilderInterface<string> */
+                    class CovariantUserBuilder implements BuilderInterface {
+                        public function create($data): RuntimeException {
+                            return new RuntimeException($data);
+                        }
+                    }',
+                [],
+                [],
+                '7.4'
+            ],
+            'inheritInterfacesManyTimes' => [
+                '<?php
+                    /**
+                     * @template Tv
+                     *
+                     * @extends IteratorAggregate<int, Tv>
+                     */
+                    interface C1 extends \IteratorAggregate
+                    {
+                    }
+
+                    /**
+                     * @template Tv
+                     *
+                     * @extends C1<Tv>
+                     */
+                    interface C2 extends C1
+                    {
+                    }
+
+                    /**
+                     * @template Tv
+                     *
+                     * @extends C2<Tv>
+                     */
+                    interface C3 extends C2
+                    {
+                    }
+
+                    /**
+                     * @template Tv
+                     *
+                     * @extends C3<Tv>
+                     */
+                    interface C4 extends C3
+                    {
+                        /**
+                         * @psalm-return Traversable<int, Tv>
+                         */
+                        function getIterator(): Traversable;
                     }'
             ],
         ];

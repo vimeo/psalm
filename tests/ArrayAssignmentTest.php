@@ -1494,13 +1494,6 @@ class ArrayAssignmentTest extends TestCase
                     return [...$data];
                 }'
             ],
-            'ArrayCreateOffsetMixed' => [
-                '<?php
-                    /** @var mixed $b */
-                    $b = "";
-                    $_a = [$b => "a"];
-                ',
-            ],
             'ArrayOffsetNumericSupPHPINTMAX' => [
                 '<?php
                     $_a = [
@@ -1508,6 +1501,20 @@ class ArrayAssignmentTest extends TestCase
                         "9223372036854775809" => 2
                     ];
                 ',
+            ],
+            'assignToListWithForeachKey' => [
+                '<?php
+                    /**
+                     * @param list<string> $list
+                     * @return list<string>
+                     */
+                    function getList(array $list): array {
+                        foreach ($list as $key => $value) {
+                            $list[$key] = $value . "!";
+                        }
+
+                        return $list;
+                    }'
             ],
         ];
     }
@@ -1825,6 +1832,51 @@ class ArrayAssignmentTest extends TestCase
                     }',
                 'error_message' => 'RedundantCast',
             ],
+            'assignToListWithUpdatedForeachKey' => [
+                '<?php
+                    /**
+                     * @param list<string> $list
+                     * @return list<string>
+                     */
+                    function getList(array $list): array {
+                        foreach ($list as $key => $value) {
+                            $list[$key + 1] = $value . "!";
+                        }
+
+                        return $list;
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'assignToListWithAlteredForeachKeyVar' => [
+                '<?php
+                    /**
+                     * @param list<string> $list
+                     * @return list<string>
+                     */
+                    function getList(array $list): array {
+                        foreach ($list as $key => $value) {
+                            if (rand(0, 1)) {
+                                array_pop($list);
+                            }
+
+                            $list[$key] = $value . "!";
+                        }
+
+                        return $list;
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'createArrayWithMixedOffset' => [
+                '<?php
+                    /**
+                     * @param mixed $index
+                     */
+                    function test($index): array {
+                        $arr = [$index => 5];
+                        return $arr;
+                    }',
+                'error_message' => 'MixedArrayOffset'
+            ]
         ];
     }
 }

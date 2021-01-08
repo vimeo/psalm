@@ -425,6 +425,10 @@ class AtomicPropertyFetchAnalyzer
             $in_assignment
         );
 
+        if ($class_storage->mutation_free) {
+            $class_property_type->has_mutations = false;
+        }
+
         if ($stmt_type = $statements_analyzer->node_data->getType($stmt)) {
             $statements_analyzer->node_data->setType(
                 $stmt,
@@ -525,6 +529,8 @@ class AtomicPropertyFetchAnalyzer
 
             $statements_analyzer->node_data = clone $statements_analyzer->node_data;
 
+            $statements_analyzer->node_data->setType($stmt->var, new Type\Union([$lhs_type_part]));
+
             $fake_method_call = new PhpParser\Node\Expr\MethodCall(
                 $stmt->var,
                 new PhpParser\Node\Identifier('__get', $stmt->name->getAttributes()),
@@ -540,10 +546,6 @@ class AtomicPropertyFetchAnalyzer
 
             $suppressed_issues = $statements_analyzer->getSuppressedIssues();
 
-            if (!in_array('PossiblyNullReference', $suppressed_issues, true)) {
-                $statements_analyzer->addSuppressedIssues(['PossiblyNullReference']);
-            }
-
             if (!in_array('InternalMethod', $suppressed_issues, true)) {
                 $statements_analyzer->addSuppressedIssues(['InternalMethod']);
             }
@@ -555,10 +557,6 @@ class AtomicPropertyFetchAnalyzer
                 false
             );
 
-            if (!in_array('PossiblyNullReference', $suppressed_issues, true)) {
-                $statements_analyzer->removeSuppressedIssues(['PossiblyNullReference']);
-            }
-
             if (!in_array('InternalMethod', $suppressed_issues, true)) {
                 $statements_analyzer->removeSuppressedIssues(['InternalMethod']);
             }
@@ -568,7 +566,14 @@ class AtomicPropertyFetchAnalyzer
             $statements_analyzer->node_data = $old_data_provider;
 
             if ($fake_method_call_type) {
-                $statements_analyzer->node_data->setType($stmt, $fake_method_call_type);
+                if ($stmt_type = $statements_analyzer->node_data->getType($stmt)) {
+                    $statements_analyzer->node_data->setType(
+                        $stmt,
+                        Type::combineUnionTypes($fake_method_call_type, $stmt_type)
+                    );
+                } else {
+                    $statements_analyzer->node_data->setType($stmt, $fake_method_call_type);
+                }
             } else {
                 $statements_analyzer->node_data->setType($stmt, Type::getMixed());
             }
@@ -1087,6 +1092,7 @@ class AtomicPropertyFetchAnalyzer
                 );
             }
         }
+
         return $class_property_type;
     }
 }

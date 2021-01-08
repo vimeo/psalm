@@ -512,8 +512,10 @@ class FunctionCallReturnTypeFetcher
                 true
             );
 
-            foreach ($expanded_type->getLiteralStrings() as $literal_string) {
-                $conditionally_removed_taints[] = $literal_string->value;
+            if (!$expanded_type->isNullable()) {
+                foreach ($expanded_type->getLiteralStrings() as $literal_string) {
+                    $conditionally_removed_taints[] = $literal_string->value;
+                }
             }
         }
 

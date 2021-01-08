@@ -1940,6 +1940,62 @@ class TaintTest extends TestCase
                     echo foo($_GET["foo"], false);',
                 'error_message' => 'TaintedHtml',
             ],
+            'suppressOneCatchAnother' => [
+                '<?php
+                    /** @psalm-taint-specialize */
+                    function data(array $data, string $key) {
+                        return $data[$key];
+                    }
+
+                    function get(string $key) {
+                        return data($_GET, $key);
+                    }
+
+                    function post(string $key) {
+                        return data($_POST, $key);
+                    }
+
+                    echo get("x");
+                    /** @psalm-suppress TaintedInput */
+                    echo post("x");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintSpecializedTwice' => [
+                '<?php
+                    /** @psalm-taint-specialize */
+                    function data(array $data, string $key) {
+                        return $data[$key];
+                    }
+
+                    /** @psalm-taint-specialize */
+                    function get(string $key) {
+                        return data($_GET, $key);
+                    }
+
+                    echo get("x");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'conditionallyEscapedTaintsAll' => [
+                '<?php
+                    /** @psalm-taint-escape ($type is "int" ? "html" : null) */
+                    function cast(mixed $value, string $type): mixed
+                    {
+                        if ("int" === $type) {
+                            return (int) $value;
+                        }
+                        return (string) $value;
+                    }
+
+                    /** @psalm-taint-specialize */
+                    function data(array $data, string $key, string $type) {
+                        return cast($data[$key], $type);
+                    }
+
+                    // technically a false-positive, but desired behaviour in lieu
+                    // of better information
+                    echo data($_GET, "x", "int");',
+                'error_message' => 'TaintedHtml',
+            ],
             /*
             // TODO: Stubs do not support this type of inference even with $this->message = $message.
             // Most uses of getMessage() would be with caught exceptions, so this is not representative of real code.

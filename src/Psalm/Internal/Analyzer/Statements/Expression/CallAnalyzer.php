@@ -187,17 +187,24 @@ class CallAnalyzer
                 $local_vars_in_scope = [];
                 $local_vars_possibly_in_scope = [];
 
-                foreach ($context->vars_in_scope as $var => $_) {
-                    if (strpos($var, '$this->') !== 0 && $var !== '$this') {
-                        $local_vars_in_scope[$var] = $context->vars_in_scope[$var];
+                foreach ($context->vars_in_scope as $var_id => $type) {
+                    if (strpos($var_id, '$this->') === 0) {
+                        if ($type->initialized) {
+                            $local_vars_in_scope[$var_id] = $context->vars_in_scope[$var_id];
+
+                            if (isset($context->vars_possibly_in_scope[$var_id])) {
+                                $local_vars_possibly_in_scope[$var_id] = $context->vars_possibly_in_scope[$var_id];
+                            }
+
+                            unset($context->vars_in_scope[$var_id]);
+                            unset($context->vars_possibly_in_scope[$var_id]);
+                        }
+                    } elseif ($var_id !== '$this') {
+                        $local_vars_in_scope[$var_id] = $context->vars_in_scope[$var_id];
                     }
                 }
 
-                foreach ($context->vars_possibly_in_scope as $var => $_) {
-                    if (strpos($var, '$this->') !== 0 && $var !== '$this') {
-                        $local_vars_possibly_in_scope[$var] = $context->vars_possibly_in_scope[$var];
-                    }
-                }
+                $local_vars_possibly_in_scope = $context->vars_possibly_in_scope;
 
                 $old_calling_method_id = $context->calling_method_id;
 
@@ -861,6 +868,16 @@ class CallAnalyzer
                             'MixedAssignment',
                             $first_appearance->raw_file_start
                         );
+                    }
+
+                    if ($template_type_map) {
+                        $readonly_template_result = new TemplateResult($template_type_map, $template_type_map);
+
+                         \Psalm\Internal\Type\TemplateInferredTypeReplacer::replace(
+                             $op_vars_in_scope[$var_id],
+                             $readonly_template_result,
+                             $codebase
+                         );
                     }
 
                     $op_vars_in_scope[$var_id]->from_docblock = true;

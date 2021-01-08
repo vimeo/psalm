@@ -219,6 +219,7 @@ class Populator
                 if (!$method->is_static && !$method->external_mutation_free) {
                     $method->mutation_free = $storage->mutation_free;
                     $method->external_mutation_free = $storage->external_mutation_free;
+                    $method->immutable = $storage->mutation_free;
                 }
             }
 
@@ -310,14 +311,9 @@ class Populator
                     $declaring_method_storage = $declaring_class_storage->methods[$declaring_method_name];
 
                     if (($declaring_method_storage->has_docblock_param_types
-                            || $declaring_method_storage->return_type
-                                !== $declaring_method_storage->signature_return_type)
+                            || $declaring_method_storage->has_docblock_return_type)
                         && !$method_storage->has_docblock_param_types
-                        && $method_storage->return_type === $method_storage->signature_return_type
-                        && (!$declaring_method_storage->signature_return_type
-                            || ($method_storage->signature_return_type
-                                && $method_storage->signature_return_type->getId()
-                                    === $declaring_method_storage->signature_return_type->getId()))
+                        && !$method_storage->has_docblock_return_type
                         && $method_storage->inherited_return_type !== null
                     ) {
                         if (!isset($storage->documenting_method_ids[$method_name])
@@ -603,7 +599,7 @@ class Populator
     ): void {
         $parent_interfaces = [];
 
-        foreach ($storage->parent_interfaces as $parent_interface_lc => $_) {
+        foreach ($storage->direct_interface_parents as $parent_interface_lc => $_) {
             try {
                 $parent_interface_lc = strtolower(
                     $this->classlikes->getUnAliasedName(
@@ -677,8 +673,6 @@ class Populator
                 );
             }
 
-            $parent_interface_storage->dependent_classlikes[strtolower($storage->name)] = true;
-
             $parent_interfaces = array_merge($parent_interfaces, $parent_interface_storage->parent_interfaces);
 
             $this->inheritMethodsFromParent($storage, $parent_interface_storage);
@@ -687,6 +681,21 @@ class Populator
         }
 
         $storage->parent_interfaces = array_merge($parent_interfaces, $storage->parent_interfaces);
+
+        foreach ($storage->parent_interfaces as $parent_interface_lc => $_) {
+            try {
+                $parent_interface_lc = strtolower(
+                    $this->classlikes->getUnAliasedName(
+                        $parent_interface_lc
+                    )
+                );
+                $parent_interface_storage = $storage_provider->get($parent_interface_lc);
+            } catch (\InvalidArgumentException $e) {
+                continue;
+            }
+
+            $parent_interface_storage->dependent_classlikes[strtolower($storage->name)] = true;
+        }
     }
 
     private function populateDataFromImplementedInterfaces(
@@ -696,7 +705,7 @@ class Populator
     ): void {
         $extra_interfaces = [];
 
-        foreach ($storage->class_implements as $implemented_interface_lc => $_) {
+        foreach ($storage->direct_class_interfaces as $implemented_interface_lc => $_) {
             try {
                 $implemented_interface_lc = strtolower(
                     $this->classlikes->getUnAliasedName(

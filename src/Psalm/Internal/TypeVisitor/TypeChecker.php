@@ -259,7 +259,7 @@ class TypeChecker extends NodeVisitor
                         $codebase,
                         $expected_type_param,
                         $defining_class,
-                        $defining_class,
+                        null,
                         null
                     );
 
@@ -267,7 +267,7 @@ class TypeChecker extends NodeVisitor
                         $codebase,
                         $type_param,
                         $defining_class,
-                        $defining_class,
+                        null,
                         null
                     );
 

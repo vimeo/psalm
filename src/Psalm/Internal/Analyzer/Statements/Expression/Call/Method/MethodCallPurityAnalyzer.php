@@ -2,6 +2,7 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call\Method;
 
 use PhpParser;
+use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
@@ -23,10 +24,9 @@ class MethodCallPurityAnalyzer
         \Psalm\Storage\MethodStorage $method_storage,
         \Psalm\Storage\ClassLikeStorage $class_storage,
         Context $context,
-        \Psalm\Config $config
-    ) : bool {
-        $can_memoize = false;
-
+        \Psalm\Config $config,
+        AtomicMethodCallAnalysisResult $result
+    ) : void {
         $method_pure_compatible = $method_storage->external_mutation_free
             && $statements_analyzer->node_data->isPureCompatible($stmt->var);
 
@@ -80,17 +80,25 @@ class MethodCallPurityAnalyzer
         ) {
             if ($method_storage->mutation_free
                 && (!$method_storage->mutation_free_inferred
-                    || $method_storage->final)
+                    || $method_storage->final
+                    || $method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE)
+                && ($method_storage->immutable || $config->remember_property_assignments_after_call)
             ) {
                 if ($context->inside_conditional
                     && !$method_storage->assertions
                     && !$method_storage->if_true_assertions
                 ) {
                     /** @psalm-suppress UndefinedPropertyAssignment */
-                    $stmt->pure = true;
+                    $stmt->memoizable = true;
+
+                    if ($method_storage->immutable) {
+                        /** @psalm-suppress UndefinedPropertyAssignment */
+                        $stmt->pure = true;
+                    }
                 }
 
-                $can_memoize = true;
+                $result->can_memoize = true;
+                $result->immutable_call = $method_storage->immutable;
             }
 
             if ($codebase->find_unused_variables
@@ -128,7 +136,7 @@ class MethodCallPurityAnalyzer
             && !$method_storage->mutation_free
             && !$method_pure_compatible
         ) {
-            $context->removeAllObjectVars();
+            $context->removeMutableObjectVars();
         } elseif ($method_storage->this_property_mutations) {
             foreach ($method_storage->this_property_mutations as $name => $_) {
                 $mutation_var_id = $lhs_var_id . '->' . $name;
@@ -144,7 +152,5 @@ class MethodCallPurityAnalyzer
                 }
             }
         }
-
-        return $can_memoize;
     }
 }

@@ -476,7 +476,12 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                 && UnionTypeComparator::isContainedBy(
                     $codebase,
                     $existing_var_type,
-                    $new_type
+                    $new_type,
+                    false,
+                    false,
+                    null,
+                    false,
+                    false
                 )
             ) {
                 self::triggerIssueForImpossible(

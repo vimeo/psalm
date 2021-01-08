@@ -968,7 +968,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 }
 
                 if (!$config->remember_property_assignments_after_call) {
-                    $context->removeAllObjectVars();
+                    $context->removeMutableObjectVars();
                 }
             } elseif ($function_call_info->function_id
                 && (($function_call_info->function_storage

@@ -1300,7 +1300,7 @@ class ReturnTypeTest extends TestCase
                 function map(): callable {
                     return function(B $v): void {};
                 }',
-                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:28 - The inferred type \'impure-Closure(B):void\' does not match the declared return type \'callable(A):void\' for map',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:28 - The inferred type \'pure-Closure(B):void\' does not match the declared return type \'callable(A):void\' for map',
             ],
             'compareTKeyedArrayToAlwaysFilledArray' => [
                 '<?php

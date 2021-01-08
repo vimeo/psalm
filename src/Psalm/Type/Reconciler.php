@@ -380,7 +380,11 @@ class Reconciler
                 if ($type[0][0] === 'array-key-exists') {
                     $key_parts = Reconciler::breakUpPathIntoParts($nk);
 
-                    if (count($key_parts) === 4 && $key_parts[1] === '[') {
+                    if (count($key_parts) === 4
+                        && $key_parts[1] === '['
+                        && $key_parts[2][0] !== '\''
+                        && !\is_numeric($key_parts[2])
+                    ) {
                         if (isset($new_types[$key_parts[2]])) {
                             $new_types[$key_parts[2]][] = ['=in-array-' . $key_parts[0]];
                         } else {

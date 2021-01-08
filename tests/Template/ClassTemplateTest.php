@@ -1476,6 +1476,43 @@ class ClassTemplateTest extends TestCase
                     '$a_or_b' => 'A|B',
                 ],
             ],
+            'doNotCombineTypesWhenMemoized' => [
+                '<?php
+                    class A {}
+                    class B {}
+
+                    /**
+                     * @template T
+                     */
+                    class C {
+                        /**
+                         * @var T
+                         */
+                        private $t;
+
+                        /**
+                         * @param T $t
+                         */
+                        public function __construct($t) {
+                            $this->t = $t;
+                        }
+
+                        /**
+                         * @return T
+                         * @psalm-mutation-free
+                         */
+                        public function get() {
+                            return $this->t;
+                        }
+                    }
+
+                    /** @var C<A>|C<B> $random_collection **/
+                    $a_or_b = $random_collection->get();',
+                [
+                    '$random_collection' => 'C<A>|C<B>',
+                    '$a_or_b' => 'A|B',
+                ],
+            ],
             'inferClosureParamTypeFromContext' => [
                 '<?php
                     /**
@@ -2394,21 +2431,18 @@ class ClassTemplateTest extends TestCase
             'intersectOnTOfObject' => [
                 '<?php
                     /**
-                     * @psalm-template InterceptedObjectType of object
+                     * @psalm-template TO of object
                      */
-                    interface AccessInterceptorInterface
-                    {
+                    interface A {
                         /**
-                         * @psalm-param Closure(
-                         *   InterceptedObjectType&AccessInterceptorInterface
-                         * ) : mixed $prefixInterceptor
+                         * @psalm-param Closure(TO&A):mixed $c
                          */
-                        public function setMethodPrefixInterceptor(Closure $prefixInterceptor = null) : void;
+                        public function setClosure(Closure $c): void;
                     }
 
-                    function foo(AccessInterceptorInterface $i) : void {
-                        $i->setMethodPrefixInterceptor(
-                            function(AccessInterceptorInterface $i) : string {
+                    function foo(A $i) : void {
+                        $i->setClosure(
+                            function(A $i) : string {
                                 return "hello";
                             }
                         );
@@ -3800,6 +3834,31 @@ class ClassTemplateTest extends TestCase
                 [],
                 false,
                 '8.0'
+            ],
+            'bindClosureParamAccurately' => [
+                '<?php
+                    /**
+                     * @template TKey
+                     * @template TValue
+                     */
+                    interface Collection {
+                        /**
+                         * @template T
+                         * @param Closure(TValue):T $func
+                         * @return Collection<TKey,T>
+                         */
+                        public function map(Closure $func);
+
+                    }
+
+                    /**
+                     * @param Collection<int, string> $c
+                     */
+                    function f(Collection $c): void {
+                        $fn = function(int $_p): bool { return true; };
+                        $c->map($fn);
+                    }',
+                'error_message' => 'InvalidScalarArgument',
             ],
         ];
     }

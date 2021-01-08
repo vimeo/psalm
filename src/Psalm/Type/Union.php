@@ -174,6 +174,11 @@ class Union implements TypeNode
      */
     public $allow_mutations = true;
 
+    /**
+     * @var bool
+     */
+    public $has_mutations = true;
+
     /** @var null|string */
     private $id;
 

@@ -27,7 +27,8 @@ class UnionTypeComparator
         bool $ignore_null = false,
         bool $ignore_false = false,
         ?TypeComparisonResult $union_comparison_result = null,
-        bool $allow_interface_equality = false
+        bool $allow_interface_equality = false,
+        bool $allow_float_int_equality = true
     ) : bool {
         if ($union_comparison_result) {
             $union_comparison_result->scalar_type_match_found = true;
@@ -108,7 +109,7 @@ class UnionTypeComparator
                     $input_type_part,
                     $container_type_part,
                     $allow_interface_equality,
-                    true,
+                    $allow_float_int_equality,
                     $atomic_comparison_result
                 );
 

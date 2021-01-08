@@ -4,7 +4,7 @@ namespace Psalm\Type\Atomic;
 /**
  * Represents a string whose value is that of a type found by get_debug_type($var)
  */
-class TDependentGetDebugType extends TString
+class TDependentGetDebugType extends TString implements DependentType
 {
     /**
      * Used to hold information as to what this refers to
@@ -19,6 +19,21 @@ class TDependentGetDebugType extends TString
     public function __construct(string $typeof)
     {
         $this->typeof = $typeof;
+    }
+
+    public function getKey(bool $include_extra = true): string
+    {
+        return 'get-debug-type-of<' . $this->typeof . '>';
+    }
+
+    public function getVarId() : string
+    {
+        return $this->typeof;
+    }
+
+    public function getReplacement() : \Psalm\Type\Atomic
+    {
+        return new TString();
     }
 
     public function canBeFullyExpressedInPhp(int $php_major_version, int $php_minor_version): bool

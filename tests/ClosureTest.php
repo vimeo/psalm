@@ -873,6 +873,22 @@ class ClosureTest extends TestCase
                 false,
                 '7.4',
             ],
+            'detectImplicitVoidReturn' => [
+                '<?php
+                    /**
+                     * @param Closure():Exception $c
+                     */
+                    function takesClosureReturningException(Closure $c) : void {
+                        echo $c()->getMessage();
+                    }
+
+                    takesClosureReturningException(
+                        function () {
+                            echo "hello";
+                        }
+                    );',
+                'error_message' => 'InvalidArgument'
+            ],
         ];
     }
 }
