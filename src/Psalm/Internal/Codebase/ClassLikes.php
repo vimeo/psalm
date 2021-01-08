@@ -1129,7 +1129,9 @@ class ClassLikes
                     . ($class_name_node instanceof PhpParser\Node\Scalar\MagicConst\Class_ ? '::class' : '')
             );
 
-            FileManipulationBuffer::add($source->getFilePath(), $file_manipulations);
+            if (!$was_self) {
+                FileManipulationBuffer::add($source->getFilePath(), $file_manipulations);
+            }
 
             return true;
         }
