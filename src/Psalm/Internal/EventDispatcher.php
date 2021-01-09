@@ -6,6 +6,7 @@ use Psalm\Plugin\Hook;
 use Psalm\Plugin\EventHandler;
 use Psalm\Plugin\EventHandler\Event;
 use Psalm\Type\Atomic\TLiteralString;
+use function count;
 use function is_subclass_of;
 
 
@@ -16,9 +17,9 @@ class EventDispatcher
      *
      * @var list<class-string<EventHandler\AfterMethodCallAnalysisInterface>>
      */
-    public $after_method_checks = [];
+    private $after_method_checks = [];
     /** @var list<class-string<Hook\AfterMethodCallAnalysisInterface>> */
-    public $legacy_after_method_checks = [];
+    private $legacy_after_method_checks = [];
 
     /**
      * Static methods to be called after project function checks have completed
@@ -96,9 +97,9 @@ class EventDispatcher
      *
      * @var list<class-string<EventHandler\AfterClassLikeVisitInterface>>
      */
-    public $after_visit_classlikes = [];
+    private $after_visit_classlikes = [];
     /** @var list<class-string<Hook\AfterClassLikeVisitInterface>> */
-    public $legacy_after_visit_classlikes = [];
+    private $legacy_after_visit_classlikes = [];
 
     /**
      * Static methods to be called after codebase has been populated
@@ -233,6 +234,11 @@ class EventDispatcher
         } elseif (is_subclass_of($class, EventHandler\AfterFunctionLikeAnalysisInterface::class)) {
             $this->after_functionlike_checks[] = $class;
         }
+    }
+
+    public function hasAfterMethodCallAnalysisHandlers(): bool
+    {
+        return count($this->after_method_checks) || count($this->legacy_after_method_checks);
     }
 
     public function dispatchAfterMethodCallAnalysis(Event\AfterMethodCallAnalysisEvent $event): void
@@ -407,6 +413,11 @@ class EventDispatcher
         }
 
         return null;
+    }
+
+    public function hasAfterClassLikeVisitHandlers(): bool
+    {
+        return count($this->after_visit_classlikes) || count($this->legacy_after_visit_classlikes);
     }
 
     public function dispatchAfterClassLikeVisit(Event\AfterClassLikeVisitEvent $event): void
