@@ -4173,7 +4173,7 @@ return [
 'gzopen' => ['resource|false', 'filename'=>'string', 'mode'=>'string', 'use_include_path='=>'int'],
 'gzpassthru' => ['int|false', 'stream'=>'resource'],
 'gzputs' => ['int', 'stream'=>'resource', 'data'=>'string', 'length='=>'int'],
-'gzread' => ['string', 'stream'=>'resource', 'length'=>'int'],
+'gzread' => ['string|false', 'stream'=>'resource', 'length'=>'int'],
 'gzrewind' => ['bool', 'stream'=>'resource'],
 'gzseek' => ['int', 'stream'=>'resource', 'offset'=>'int', 'whence='=>'int'],
 'gztell' => ['int|false', 'stream'=>'resource'],
