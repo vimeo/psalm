@@ -6,6 +6,10 @@ use function function_exists;
 use function implode;
 use function interface_exists;
 use PhpParser;
+use PhpParser\ConstExprEvaluationException;
+use PhpParser\ConstExprEvaluator;
+use PhpParser\Node\Expr;
+use PhpParser\Node\Expr\ConstFetch;
 use Psalm\Aliases;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
@@ -234,6 +238,39 @@ class ExpressionResolver
             $enter_conditional_right = self::enterConditional($codebase, $file_path, $expr->right);
 
             return $enter_conditional_left !== false || $enter_conditional_right !== false;
+        }
+
+        if ($codebase->register_autoload_files) {
+            if ((
+                    $expr instanceof PhpParser\Node\Expr\BinaryOp\GreaterOrEqual
+                    || $expr instanceof PhpParser\Node\Expr\BinaryOp\Greater
+                    || $expr instanceof PhpParser\Node\Expr\BinaryOp\SmallerOrEqual
+                    || $expr instanceof PhpParser\Node\Expr\BinaryOp\Smaller
+                ) && (
+                    (
+                        $expr->left instanceof PhpParser\Node\Expr\ConstFetch
+                        && $expr->left->name->parts === ['PHP_VERSION_ID']
+                        && $expr->right instanceof PhpParser\Node\Scalar\LNumber
+                    ) || (
+                        $expr->right instanceof PhpParser\Node\Expr\ConstFetch
+                        && $expr->right->name->parts === ['PHP_VERSION_ID']
+                        && $expr->left instanceof PhpParser\Node\Scalar\LNumber
+                    )
+                )
+            ) {
+                $php_version_id = $codebase->php_major_version * 10000 + $codebase->php_minor_version * 100;
+                $evaluator = new ConstExprEvaluator(function (Expr $expr) use ($php_version_id) {
+                    if ($expr instanceof ConstFetch && $expr->name->parts === ['PHP_VERSION_ID']) {
+                        return $php_version_id;
+                    }
+                    throw new ConstExprEvaluationException('unexpected');
+                });
+                try {
+                    return (bool) $evaluator->evaluateSilently($expr);
+                } catch (ConstExprEvaluationException $e) {
+                    return null;
+                }
+            }
         }
 
         if (!$expr instanceof PhpParser\Node\Expr\FuncCall) {

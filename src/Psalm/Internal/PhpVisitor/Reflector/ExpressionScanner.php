@@ -38,7 +38,7 @@ class ExpressionScanner
         ?FunctionLikeStorage $functionlike_storage,
         ?int $skip_if_descendants
     ) : void {
-        if ($node instanceof PhpParser\Node\Expr\Include_) {
+        if ($node instanceof PhpParser\Node\Expr\Include_ && !$skip_if_descendants) {
             self::visitInclude(
                 $codebase,
                 $file_storage,
