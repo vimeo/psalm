@@ -73,14 +73,23 @@ class ObjectComparator
                         continue;
                     }
 
-                    if (\substr($intersection_container_type->defining_class, 0, 3) === 'fn-') {
-                        foreach ($intersection_input_types as $intersection_input_type) {
-                            if ($intersection_input_type instanceof TTemplateParam
-                                && \substr($intersection_input_type->defining_class, 0, 3) === 'fn-'
+                    foreach ($intersection_input_types as $intersection_input_type) {
+                        if ($intersection_input_type instanceof TTemplateParam
+                            && (\substr($intersection_container_type->defining_class, 0, 3) === 'fn-'
+                                || \substr($intersection_input_type->defining_class, 0, 3) === 'fn-')
+                        ) {
+                            if (\substr($intersection_input_type->defining_class, 0, 3) === 'fn-'
+                                && \substr($intersection_container_type->defining_class, 0, 3) === 'fn-'
                                 && $intersection_input_type->defining_class
                                     !== $intersection_container_type->defining_class
                             ) {
                                 continue 2;
+                            }
+
+                            foreach ($intersection_input_type->as->getAtomicTypes() as $input_as_atomic) {
+                                if ($input_as_atomic->equals($intersection_container_type)) {
+                                    continue 3;
+                                }
                             }
                         }
                     }
