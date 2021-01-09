@@ -1444,6 +1444,47 @@ class FunctionTemplateTest extends TestCase
 
                     $value = takesClosure(function(Foo $foo) : void {})(new Foo());'
             ],
+            'subtractTemplatedNull' => [
+                '<?php
+                    /**
+                     * @template T
+                     * @param T|null $var
+                     * @return T
+                     */
+                    function notNull($var) {
+                        if ($var === null) {
+                            throw new \InvalidArgumentException("");
+                        }
+
+                        return $var;
+                    }
+
+                    function takesNullableString(?string $s) : string {
+                        return notNull($s);
+                    }'
+            ],
+            'subtractTemplatedInt' => [
+                '<?php
+                    /**
+                     * @template T
+                     * @param T|int $var
+                     * @return T
+                     */
+                    function notNull($var) {
+                        if (\is_int($var)) {
+                            throw new \InvalidArgumentException("");
+                        }
+
+                        return $var;
+                    }
+
+                    function takesNullableString(string|int $s) : string {
+                        return notNull($s);
+                    }',
+                [],
+                [],
+                '8.0'
+            ],
         ];
     }
 

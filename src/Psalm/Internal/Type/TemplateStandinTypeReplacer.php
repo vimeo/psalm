@@ -18,6 +18,11 @@ class TemplateStandinTypeReplacer
 {
     /**
      * This replaces template types in unions with standins (normally the template as type)
+     *
+     * $input_type here is normally the argument passed to a templated function or method.
+     *
+     * This method fills in the values in $template_result based on how the various atomic types
+     * of $union_type match up to the types inside $input_type
      */
     public static function replace(
         Union $union_type,
@@ -35,6 +40,23 @@ class TemplateStandinTypeReplacer
         $atomic_types = [];
 
         $original_atomic_types = $union_type->getAtomicTypes();
+
+        // here we want to subtract atomic types from the input type
+        // when they're also in the union type, so those shared atomic
+        // types will never be inferred as part of the generic type
+        if ($input_type && !$input_type->isSingle()) {
+            $new_input_type = clone $input_type;
+
+            foreach ($original_atomic_types as $key => $_) {
+                if ($new_input_type->hasType($key)) {
+                    $new_input_type->removeType($key);
+                }
+            }
+
+            if ($new_input_type->getAtomicTypes()) {
+                $input_type = $new_input_type;
+            }
+        }
 
         $had_template = false;
 
