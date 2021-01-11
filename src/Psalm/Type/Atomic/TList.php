@@ -192,6 +192,10 @@ class TList extends \Psalm\Type\Atomic
 
     public function getAssertionString(): string
     {
+        if ($this->type_param->isMixed()) {
+            return 'list';
+        }
+
         return 'list<' . $this->type_param->getAssertionString() . '>';
     }
 

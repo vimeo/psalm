@@ -83,6 +83,10 @@ class TArray extends \Psalm\Type\Atomic
 
     public function getAssertionString(): string
     {
+        if ($this->type_params[1]->isMixed()) {
+            return 'array';
+        }
+
         return 'array<'
             . $this->type_params[0]->getAssertionString() . ', ' . $this->type_params[1]->getAssertionString()
             . '>' ;
