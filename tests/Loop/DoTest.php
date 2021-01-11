@@ -343,6 +343,20 @@ class DoTest extends \Psalm\Tests\TestCase
 
                     if ($b) {}'
             ],
+            'regularAssignmentInsideDo' => [
+                '<?php
+                    do {
+                        $code = rand(0, 1);
+                        echo "here";
+                    } while ($code === 1);'
+            ],
+            'destructuringAssignmentInsideDo' => [
+                '<?php
+                    do {
+                        [$code] = [rand(0, 1)];
+                        echo "here";
+                    } while ($code === 1);'
+            ],
         ];
     }
 

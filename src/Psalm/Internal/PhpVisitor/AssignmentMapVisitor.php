@@ -27,15 +27,32 @@ class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
     public function enterNode(PhpParser\Node $node): ?int
     {
         if ($node instanceof PhpParser\Node\Expr\Assign) {
-            $left_var_id = ExpressionIdentifier::getRootVarId($node->var, $this->this_class_name);
             $right_var_id = ExpressionIdentifier::getRootVarId($node->expr, $this->this_class_name);
 
-            if ($left_var_id) {
-                $this->assignment_map[$left_var_id][$right_var_id ?: 'isset'] = true;
+            if ($node->var instanceof PhpParser\Node\Expr\List_
+                || $node->var instanceof PhpParser\Node\Expr\Array_
+            ) {
+                foreach ($node->var->items as $assign_item) {
+                    if ($assign_item) {
+                        $left_var_id = ExpressionIdentifier::getRootVarId($assign_item->value, $this->this_class_name);
+
+                        if ($left_var_id) {
+                            $this->assignment_map[$left_var_id][$right_var_id ?: 'isset'] = true;
+                        }
+                    }
+                }
+            } else {
+                $left_var_id = ExpressionIdentifier::getRootVarId($node->var, $this->this_class_name);
+
+                if ($left_var_id) {
+                    $this->assignment_map[$left_var_id][$right_var_id ?: 'isset'] = true;
+                }
             }
 
             return PhpParser\NodeTraverser::DONT_TRAVERSE_CHILDREN;
-        } elseif ($node instanceof PhpParser\Node\Expr\PostInc
+        }
+
+        if ($node instanceof PhpParser\Node\Expr\PostInc
             || $node instanceof PhpParser\Node\Expr\PostDec
             || $node instanceof PhpParser\Node\Expr\PreInc
             || $node instanceof PhpParser\Node\Expr\PreDec
@@ -48,7 +65,9 @@ class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
             }
 
             return PhpParser\NodeTraverser::DONT_TRAVERSE_CHILDREN;
-        } elseif ($node instanceof PhpParser\Node\Expr\FuncCall) {
+        }
+
+        if ($node instanceof PhpParser\Node\Expr\FuncCall) {
             foreach ($node->args as $arg) {
                 $arg_var_id = ExpressionIdentifier::getRootVarId($arg->value, $this->this_class_name);
 
