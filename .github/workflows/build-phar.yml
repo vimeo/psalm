@@ -1,6 +1,9 @@
 name: Build phar
 
-on: 
+on:
+  push:
+    branches:
+      - master
   release:
     types:
       - published
