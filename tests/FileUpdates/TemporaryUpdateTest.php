@@ -122,7 +122,7 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
             $this->assertSame($error_positions[$i + 1], $found_positions, 'stage ' . ($i + 2));
         }
 
-        if ($test_save) {
+        if ($test_save && $file_stages) {
             $last_file_stage = end($file_stages);
 
             foreach ($last_file_stage as $file_path => $_) {
