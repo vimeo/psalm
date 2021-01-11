@@ -7,7 +7,7 @@ jobs:
 
     runs-on: ubuntu-latest
     env:
-      CHUNK_COUNT: 5
+      CHUNK_COUNT: 8
 
     outputs:
       count: ${{ steps.chunk-matrix.outputs.count }}
