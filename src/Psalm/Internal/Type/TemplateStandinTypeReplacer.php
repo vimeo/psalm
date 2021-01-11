@@ -132,7 +132,7 @@ class TemplateStandinTypeReplacer
         if ($atomic_type instanceof Atomic\TTemplateParam
             && isset($template_result->template_types[$atomic_type->param_name][$atomic_type->defining_class])
         ) {
-            $a = self::handleTemplateParamStandin(
+            return self::handleTemplateParamStandin(
                 $atomic_type,
                 $key,
                 $input_type,
@@ -147,12 +147,10 @@ class TemplateStandinTypeReplacer
                 $depth,
                 $had_template
             );
-
-            return $a;
         }
 
         if ($atomic_type instanceof Atomic\TTemplateParamClass
-            && isset($template_result->template_types[$atomic_type->param_name])
+            && isset($template_result->template_types[$atomic_type->param_name][$atomic_type->defining_class])
         ) {
             if ($replace) {
                 return self::handleTemplateParamClassStandin(
@@ -796,8 +794,6 @@ class TemplateStandinTypeReplacer
 
         $atomic_types = [];
 
-        $atomic_types[] = $class_string;
-
         if ($input_type && !$template_result->readonly) {
             $valid_input_atomic_types = [];
 
@@ -857,6 +853,25 @@ class TemplateStandinTypeReplacer
                     );
                 }
             }
+        } else {
+            $template_type = $template_result->template_types
+                [$atomic_type->param_name]
+                [$atomic_type->defining_class];
+
+            foreach ($template_type->getAtomicTypes() as $atomic_type) {
+                if ($atomic_type instanceof Atomic\TNamedObject) {
+                    $atomic_types[] = new Atomic\TClassString(
+                        $atomic_type->value,
+                        $atomic_type
+                    );
+                } elseif ($atomic_type instanceof Atomic\TObject) {
+                    $atomic_types[] = new Atomic\TClassString();
+                }
+            }
+        }
+
+        if (!$atomic_types) {
+            $atomic_types[] = $class_string;
         }
 
         return $atomic_types;
