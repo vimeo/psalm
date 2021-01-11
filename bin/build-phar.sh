@@ -14,6 +14,6 @@ SIGNING_KEY_ID=${SIGNING_KEY_ID:-8A03EA3B385DBAA1}
 
 if [[ "$GPG_ENCRYPTION" != '' ]] ; then
     echo "$GPG_ENCRYPTION" | gpg --batch --passphrase-fd 0 keys.asc.gpg
-    gpg --batch --yes --import keys.asc
+#    gpg --batch --yes --import keys.asc
     echo "$SIGNING_KEY" | gpg --batch --passphrase-fd 0 --pinentry-mode loopback -u "$SIGNING_KEY_ID" --armor --detach-sig build/psalm.phar
 fi
