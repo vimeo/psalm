@@ -44,8 +44,8 @@ jobs:
       - run: bin/build-phar.sh
         env:
           GPG_SIGNING: 1
-          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
-          SIGNING_KEY_ID: ${{ secrets.SIGNING_KEY_ID }}
+          GPG_SECRET_KEY: ${{ secrets.GPG_SECRET_KEY }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
 
       - name: Upload release assets
         uses: svenstaro/upload-release-action@v2
