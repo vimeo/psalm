@@ -43,7 +43,7 @@ jobs:
 
       - run: bin/build-phar.sh
         env:
-          GPG_ENCRYPTION: ${{ secrets.GPG_ENCRYPTION }}
+          GPG_SIGNING: 1
           SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
           SIGNING_KEY_ID: ${{ secrets.SIGNING_KEY_ID }}
 
