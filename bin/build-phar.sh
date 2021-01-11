@@ -18,5 +18,5 @@ if [[ "$GPG_SIGNING" != '' ]] ; then
 
     echo "Sign Phar"
 
-    ECHO "$GPG_PASSPHRASE" | gpg --command-fd 0 --passphrase-fd 0 --pinentry-mode loopback -u 12CE0F1D262429A5 --batch --detach-sign --armor --output build/psalm.phar.asc build/psalm.phar
+    echo "$GPG_PASSPHRASE" | gpg --command-fd 0 --passphrase-fd 0 --pinentry-mode loopback -u 12CE0F1D262429A5 --batch --detach-sign --armor --output build/psalm.phar.asc build/psalm.phar
 fi
