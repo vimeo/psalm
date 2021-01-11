@@ -7,7 +7,7 @@ use Psalm\Tests\Internal\Provider;
 use Psalm\Tests\TestConfig;
 use function strpos;
 
-abstract class FileManipulationTest extends \Psalm\Tests\TestCase
+abstract class FileManipulationTestCase extends \Psalm\Tests\TestCase
 {
     /** @var \Psalm\Internal\Analyzer\ProjectAnalyzer */
     protected $project_analyzer;

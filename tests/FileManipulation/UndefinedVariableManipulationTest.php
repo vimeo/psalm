@@ -3,7 +3,7 @@ namespace Psalm\Tests\FileManipulation;
 
 use const PHP_VERSION;
 
-class UndefinedVariableManipulationTest extends FileManipulationTest
+class UndefinedVariableManipulationTest extends FileManipulationTestCase
 {
     /**
      * @return array<string,array{string,string,string,string[],bool}>

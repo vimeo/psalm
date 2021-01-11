@@ -1,7 +1,7 @@
 <?php
 namespace Psalm\Tests\FileManipulation;
 
-class ImmutableAnnotationAdditionTest extends FileManipulationTest
+class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
 {
     /**
      * @return array<string,array{string,string,string,string[],bool}>
