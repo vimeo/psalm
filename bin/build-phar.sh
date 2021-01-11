@@ -12,5 +12,5 @@ vendor/bin/box compile
 
 if [[ "$GPG_SIGNING" != '' ]] ; then
     echo "$SIGNING_KEY" | gpg --import --no-tty --batch --yes
-    gpg --command-fd 0 --pinentry-mode loopback -u "$SIGNING_KEY_ID" --batch --detach-sign --armor --output build/psalm.phar.asc build/psalm.phar
+    gpg --command-fd 0 --pinentry-mode loopback -u "12CE0F1D262429A5" --batch --detach-sign --armor --output build/psalm.phar.asc build/psalm.phar
 fi
