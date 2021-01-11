@@ -83,6 +83,8 @@ class TArray extends \Psalm\Type\Atomic
 
     public function getAssertionString(): string
     {
-        return $this->getKey();
+        return 'array<'
+            . $this->type_params[0]->getAssertionString() . ', ' . $this->type_params[1]->getAssertionString()
+            . '>' ;
     }
 }

@@ -192,7 +192,7 @@ class TList extends \Psalm\Type\Atomic
 
     public function getAssertionString(): string
     {
-        return 'list';
+        return 'list<' . $this->type_param->getAssertionString() . '>';
     }
 
     public function getChildNodes() : array

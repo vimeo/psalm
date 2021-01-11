@@ -6,6 +6,11 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 
 /**
  * @internal
+ *
+ * This produces a graph of probably assignments inside a loop
+ *
+ * With this map we can calculate how many times the loop analysis must
+ * be run before all variables have the correct types
  */
 class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
 {
