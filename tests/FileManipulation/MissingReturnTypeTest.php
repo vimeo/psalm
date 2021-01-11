@@ -1,7 +1,7 @@
 <?php
 namespace Psalm\Tests\FileManipulation;
 
-class MissingReturnTypeTest extends FileManipulationTest
+class MissingReturnTypeTest extends FileManipulationTestCase
 {
     /**
      * @return array<string,array{string,string,string,string[],bool,5?:bool}>

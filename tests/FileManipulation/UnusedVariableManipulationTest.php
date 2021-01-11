@@ -1,7 +1,7 @@
 <?php
 namespace Psalm\Tests\FileManipulation;
 
-class UnusedVariableManipulationTest extends FileManipulationTest
+class UnusedVariableManipulationTest extends FileManipulationTestCase
 {
     /**
      * @return array<string,array{string,string,string,string[],bool}>

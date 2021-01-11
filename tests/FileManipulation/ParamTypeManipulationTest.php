@@ -1,7 +1,7 @@
 <?php
 namespace Psalm\Tests\FileManipulation;
 
-class ParamTypeManipulationTest extends FileManipulationTest
+class ParamTypeManipulationTest extends FileManipulationTestCase
 {
     /**
      * @return array<string,array{string,string,string,string[],bool}>
