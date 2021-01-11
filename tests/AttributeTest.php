@@ -117,6 +117,15 @@ class AttributeTest extends TestCase
                 [],
                 '8.0'
             ],
+            'allowsRepeatableFlag' => [
+                '<?php
+                    #[Attribute(Attribute::TARGET_ALL|Attribute::IS_REPEATABLE)] // results in int(127)
+                    class A {}
+                ',
+                [],
+                [],
+                '8.0'
+            ],
         ];
     }
 
