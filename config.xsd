@@ -37,6 +37,8 @@
         <xs:attribute name="allowFileIncludes" type="xs:boolean" default="true" />
         <xs:attribute name="allowPhpStormGenerics" type="xs:boolean" default="false" />
         <xs:attribute name="allowStringToStandInForClass" type="xs:boolean" default="false" />
+        <xs:attribute name="allowTraitStaticCall" type="xs:boolean" default="false" />
+        <xs:attribute name="allowTraitStaticPropertyAccess" type="xs:boolean" default="false" />
         <xs:attribute name="checkForThrowsDocblock" type="xs:boolean" default="false" />
         <xs:attribute name="checkForThrowsInGlobalScope" type="xs:boolean" default="false" />
         <xs:attribute name="ensureArrayIntOffsetsExist" type="xs:boolean" default="false" />

@@ -474,6 +474,15 @@ class Config
      */
     public $allow_named_arg_calls = true;
 
+    /**
+     * @var bool
+     */
+    public $allow_trait_static_call = false;
+    /**
+     * @var bool
+     */
+    public $allow_trait_static_property_access = false;
+
     /** @var array<string, mixed> */
     private $predefined_constants = [];
 
@@ -754,6 +763,8 @@ class Config
             'reportInfo' => 'report_info',
             'restrictReturnTypes' => 'restrict_return_types',
             'limitMethodComplexity' => 'limit_method_complexity',
+            'allowTraitStaticCall' => 'allow_trait_static_call',
+            'allowTraitStaticPropertyAccess' => 'allow_trait_static_property_access',
         ];
 
         foreach ($booleanAttributes as $xmlName => $internalName) {

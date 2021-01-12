@@ -91,7 +91,8 @@ class StaticPropertyFetchAnalyzer
                     $context->self,
                     $context->calling_method_id,
                     $statements_analyzer->getSuppressedIssues(),
-                    false
+                    false,
+                    $codebase->config->allow_trait_static_property_access
                 ) !== true) {
                     return false;
                 }

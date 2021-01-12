@@ -148,7 +148,7 @@ class StaticCallAnalyzer extends CallAnalyzer
                             : null,
                         $statements_analyzer->getSuppressedIssues(),
                         false,
-                        false,
+                        $codebase->config->allow_trait_static_call,
                         false
                     );
                 }
