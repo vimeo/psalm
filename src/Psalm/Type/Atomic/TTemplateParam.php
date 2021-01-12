@@ -50,7 +50,7 @@ class TTemplateParam extends \Psalm\Type\Atomic
         return $this->param_name . ':' . $this->defining_class;
     }
 
-    public function getAssertionString(): string
+    public function getAssertionString(bool $exact = false): string
     {
         return $this->as->getId();
     }

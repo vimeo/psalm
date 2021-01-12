@@ -397,10 +397,10 @@ class Union implements TypeNode
         return $id;
     }
 
-    public function getAssertionString(): string
+    public function getAssertionString(bool $exact = false): string
     {
         foreach ($this->types as $type) {
-            return $type->getAssertionString();
+            return $type->getAssertionString($exact);
         }
 
         throw new \UnexpectedValueException('Should only be one type per assertion');

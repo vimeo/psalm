@@ -542,7 +542,7 @@ abstract class Atomic implements TypeNode
         return $this->__toString();
     }
 
-    public function getAssertionString(): string
+    public function getAssertionString(bool $exact = false): string
     {
         return $this->getId();
     }

@@ -36,7 +36,7 @@ class TCallableObject extends TObject
         return false;
     }
 
-    public function getAssertionString(): string
+    public function getAssertionString(bool $exact = false): string
     {
         return 'object';
     }

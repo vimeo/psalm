@@ -80,7 +80,7 @@ class TConditional extends \Psalm\Type\Atomic
         return $this->__toString();
     }
 
-    public function getAssertionString(): string
+    public function getAssertionString(bool $exact = false): string
     {
         return '';
     }

@@ -16,7 +16,7 @@ class TAssertionFalsy extends \Psalm\Type\Atomic
         return 'falsy';
     }
 
-    public function getAssertionString(): string
+    public function getAssertionString(bool $exact = false): string
     {
         return 'falsy';
     }

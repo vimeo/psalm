@@ -69,7 +69,7 @@ class TValueOfClassConstant extends \Psalm\Type\Atomic
             . '>::' . $this->const_name . '>';
     }
 
-    public function getAssertionString(): string
+    public function getAssertionString(bool $exact = false): string
     {
         return 'mixed';
     }

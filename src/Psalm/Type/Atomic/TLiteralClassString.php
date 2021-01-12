@@ -53,7 +53,7 @@ class TLiteralClassString extends TLiteralString
         return $this->value . '::class';
     }
 
-    public function getAssertionString(): string
+    public function getAssertionString(bool $exact = false): string
     {
         return $this->getKey();
     }

@@ -91,7 +91,7 @@ class TTypeAlias extends \Psalm\Type\Atomic
         return $this->getKey();
     }
 
-    public function getAssertionString(): string
+    public function getAssertionString(bool $exact = false): string
     {
         return 'mixed';
     }

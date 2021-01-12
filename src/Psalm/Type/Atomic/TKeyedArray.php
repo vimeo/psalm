@@ -393,7 +393,7 @@ class TKeyedArray extends \Psalm\Type\Atomic
         return true;
     }
 
-    public function getAssertionString(): string
+    public function getAssertionString(bool $exact = false): string
     {
         return $this->getKey();
     }

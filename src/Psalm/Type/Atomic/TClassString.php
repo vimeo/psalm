@@ -49,7 +49,7 @@ class TClassString extends TString
         return $this->getKey();
     }
 
-    public function getAssertionString(): string
+    public function getAssertionString(bool $exact = false): string
     {
         return 'class-string';
     }

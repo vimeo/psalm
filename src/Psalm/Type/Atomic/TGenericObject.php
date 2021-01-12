@@ -85,7 +85,7 @@ class TGenericObject extends TNamedObject
         return true;
     }
 
-    public function getAssertionString(): string
+    public function getAssertionString(bool $exact = false): string
     {
         return $this->value;
     }

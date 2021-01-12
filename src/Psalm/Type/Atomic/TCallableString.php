@@ -22,7 +22,7 @@ class TCallableString extends TString
         return false;
     }
 
-    public function getAssertionString(): string
+    public function getAssertionString(bool $exact = false): string
     {
         return 'string';
     }

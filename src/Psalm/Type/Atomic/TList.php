@@ -190,13 +190,13 @@ class TList extends \Psalm\Type\Atomic
         return true;
     }
 
-    public function getAssertionString(): string
+    public function getAssertionString(bool $exact = false): string
     {
-        if ($this->type_param->isMixed()) {
+        if (!$exact || $this->type_param->isMixed()) {
             return 'list';
         }
 
-        return 'list<' . $this->type_param->getAssertionString() . '>';
+        return $this->toNamespacedString(null, [], null, false);
     }
 
     public function getChildNodes() : array

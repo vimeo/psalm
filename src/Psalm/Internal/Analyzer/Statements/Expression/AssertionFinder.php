@@ -3492,7 +3492,7 @@ class AssertionFinder
                 );
 
             if ($identical) {
-                $if_types[$var_name] = [['=' . $var_type->getAssertionString()]];
+                $if_types[$var_name] = [['=' . $var_type->getAssertionString(true)]];
             } else {
                 $if_types[$var_name] = [['~' . $var_type->getAssertionString()]];
             }
