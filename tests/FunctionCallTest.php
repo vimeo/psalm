@@ -1818,7 +1818,7 @@ class FunctionCallTest extends TestCase
                             if ($c !== 2) {}
                         }
                     }',
-                'error_message' => 'TypeDoesNotContainType',
+                'error_message' => 'DocblockTypeContradiction',
             ],
             'coerceCallMapArgsInStrictMode' => [
                 '<?php
