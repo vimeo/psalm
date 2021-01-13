@@ -1087,6 +1087,28 @@ function chunk_split(string $str, int $chunklen = 76, string $end= ''): string
 }
 
 /**
+ * @template TInput as \Countable|array
+ *
+ * @param TInput $value
+ * @param \COUNT_NORMAL|\COUNT_RECURSIVE $mode
+ *
+ * @return (
+ *          TInput is array<empty, empty>
+ *          ? 0
+ *          : (TInput is non-empty-array
+ *              ? positive-int
+ *              : (TInput is array
+ *                  ? positive-int|0
+ *                  : int
+ *              )
+ *          )
+ * )
+ */
+function count(\Countable|array $value, int $mode = \COUNT_NORMAL): int
+{
+}
+
+/**
  * @psalm-pure
  *
  * @psalm-flow ($data) -> return
