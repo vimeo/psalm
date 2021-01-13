@@ -319,6 +319,11 @@ class FunctionCallReturnTypeFetcher
                                         new Type\Atomic\TLiteralInt(count($atomic_types['array']->properties))
                                     ]);
                                 }
+
+                                return new Type\Union([
+                                    new Type\Atomic\TLiteralInt(0),
+                                    new Type\Atomic\TPositiveInt
+                                ]);
                             }
                         }
                     }
