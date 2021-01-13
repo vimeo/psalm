@@ -246,7 +246,7 @@ class TKeyedArray extends \Psalm\Type\Atomic
         return $value_type;
     }
 
-    public function getGenericArrayType(): TArray
+    public function getGenericArrayType(bool $allow_non_empty = true): TArray
     {
         $key_types = [];
         $value_type = null;
@@ -285,7 +285,7 @@ class TKeyedArray extends \Psalm\Type\Atomic
 
         $value_type->possibly_undefined = false;
 
-        if ($this->previous_value_type || $has_defined_keys) {
+        if ($allow_non_empty && ($this->previous_value_type || $has_defined_keys)) {
             $array_type = new TNonEmptyArray([$key_type, $value_type]);
         } else {
             $array_type = new TArray([$key_type, $value_type]);

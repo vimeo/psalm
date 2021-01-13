@@ -81,8 +81,10 @@ class UnsetAnalyzer
                                 $atomic_root_type->sealed = false;
 
                                 $root_type->addType(
-                                    $atomic_root_type->getGenericArrayType()
+                                    $atomic_root_type->getGenericArrayType(false)
                                 );
+
+                                $atomic_root_type->is_list = false;
                             }
                         } elseif ($atomic_root_type instanceof Type\Atomic\TNonEmptyArray) {
                             $root_type->addType(
