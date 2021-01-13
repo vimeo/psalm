@@ -300,7 +300,7 @@ class FunctionCallReturnTypeFetcher
                                     return new Type\Union([
                                         $atomic_types['array']->count !== null
                                             ? new Type\Atomic\TLiteralInt($atomic_types['array']->count)
-                                            : new Type\Atomic\TInt
+                                            : new Type\Atomic\TPositiveInt
                                     ]);
                                 }
 
@@ -308,7 +308,7 @@ class FunctionCallReturnTypeFetcher
                                     return new Type\Union([
                                         $atomic_types['array']->count !== null
                                             ? new Type\Atomic\TLiteralInt($atomic_types['array']->count)
-                                            : new Type\Atomic\TInt
+                                            : new Type\Atomic\TPositiveInt
                                     ]);
                                 }
 
