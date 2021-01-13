@@ -1054,6 +1054,83 @@ class FunctionCallTest extends TestCase
                         }
                     }'
             ],
+            'countNonEmptyArrayShouldBePositiveInt' => [
+                '<?php
+                    /**
+                     * @psalm-pure
+                     * @param non-empty-list $x
+                     * @return positive-int
+                     */
+                    function example($x) : int {
+                        return count($x);
+                    }',
+            ],
+            'countListShouldBeZeroOrPositive' => [
+                '<?php
+                    /**
+                     * @psalm-pure
+                     * @param list $x
+                     * @return positive-int|0
+                     */
+                    function example($x) : int {
+                        return count($x);
+                    }',
+            ],
+            'countArrayShouldBeZeroOrPositive' => [
+                '<?php
+                    /**
+                     * @psalm-pure
+                     * @param array $x
+                     * @return positive-int|0
+                     */
+                    function example($x) : int {
+                        return count($x);
+                    }',
+            ],
+            'countEmptyArrayShouldBeZero' => [
+                '<?php
+                    /**
+                     * @psalm-pure
+                     * @param array<empty, empty> $x
+                     * @return 0
+                     */
+                    function example($x) : int {
+                        return count($x);
+                    }',
+            ],
+            'countConstantSizeArrayShouldBeConstantInteger' => [
+                '<?php
+                    /**
+                     * @psalm-pure
+                     * @param array{int, int, string} $x
+                     * @return 3
+                     */
+                    function example($x) : int {
+                        return count($x);
+                    }',
+            ],
+            'countCallableArrayShouldBe2' => [
+                '<?php
+                    /**
+                     * @psalm-pure
+                     * @return 2
+                     */
+                    function example(callable $x) : int {
+                        assert(is_array($x));
+                        return count($x);
+                    }',
+            ],
+            'countOnPureObjectIsPure' => [
+                '<?php
+                    class PureCountable implements \Countable {
+                        /** @psalm-pure */
+                        public function count(): int { return 1; }
+                    }
+                    /** @psalm-pure */
+                    function example(PureCountable $x) : int {
+                        return count($x);
+                    }',
+            ],
             'refineWithTraitExists' => [
                 '<?php
                     function foo(string $s) : void {
@@ -1819,6 +1896,22 @@ class FunctionCallTest extends TestCase
                         }
                     }',
                 'error_message' => 'TypeDoesNotContainType',
+            ],
+            'countOnObjectCannotBePositive' => [
+                '<?php
+                    /** @return positive-int|0 */
+                    function example(\Countable $x) : int {
+                        return count($x);
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'countOnUnknownObjectCannotBePure' => [
+                '<?php
+                    /** @psalm-pure */
+                    function example(\Countable $x) : int {
+                        return count($x);
+                    }',
+                'error_message' => 'ImpureFunctionCall',
             ],
             'coerceCallMapArgsInStrictMode' => [
                 '<?php
