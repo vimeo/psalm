@@ -544,21 +544,25 @@ class IssueBuffer
         $source_control_info = null;
         $build_info = (new \Psalm\Internal\ExecutionEnvironment\BuildInfoCollector($_SERVER))->collect();
 
-        try {
-            $source_control_info = (new \Psalm\Internal\ExecutionEnvironment\GitInfoCollector())->collect();
-        } catch (\RuntimeException $e) {
-            // do nothing
+        if ($codebase->config->eventDispatcher->after_analysis
+            || $codebase->config->eventDispatcher->legacy_after_analysis
+        ) {
+            try {
+                $source_control_info = (new \Psalm\Internal\ExecutionEnvironment\GitInfoCollector())->collect();
+            } catch (\RuntimeException $e) {
+                // do nothing
+            }
+
+            /** @psalm-suppress ArgumentTypeCoercion due to Psalm bug */
+            $event = new AfterAnalysisEvent(
+                $codebase,
+                $issues_data,
+                $build_info,
+                $source_control_info
+            );
+
+            $codebase->config->eventDispatcher->dispatchAfterAnalysis($event);
         }
-
-        /** @psalm-suppress ArgumentTypeCoercion due to Psalm bug */
-        $event = new AfterAnalysisEvent(
-            $codebase,
-            $issues_data,
-            $build_info,
-            $source_control_info
-        );
-
-        $codebase->config->eventDispatcher->dispatchAfterAnalysis($event);
 
         foreach ($project_analyzer->generated_report_options as $report_options) {
             if (!$report_options->output_path) {
