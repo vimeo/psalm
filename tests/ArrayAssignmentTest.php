@@ -1506,6 +1506,16 @@ class ArrayAssignmentTest extends TestCase
                         return $list;
                     }'
             ],
+            'ArrayCreateTemplateArrayKey' => [
+                '/**
+                  * @template K of array-key
+                  * @param K $key
+                  */
+                function with($key): void
+                {
+                    [$key => 123];
+                }',
+            ],
         ];
     }
 
