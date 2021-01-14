@@ -1089,7 +1089,6 @@ class RegexIterator extends FilterIterator {
 
     /**
      * @return TKey scalar on success, or null on failure.
-     * @return string
      */
     public function key() {}
 }
