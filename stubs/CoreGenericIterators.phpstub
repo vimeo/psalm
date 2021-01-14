@@ -141,15 +141,19 @@ class AppendIterator extends IteratorIterator {
 
     /**
      * @param TIterator $iterator
+     * @return void
      */
-    public function append(Iterator $iterator): void {}
+    public function append(Iterator $iterator) {}
 
     /**
      * @return ArrayIterator<TKey, TValue>
      */
-    public function getArrayIterator(): ArrayIterator {}
+    public function getArrayIterator() {}
 
-    public function getIteratorIndex(): int {}
+    /**
+     * @return int
+     */
+    public function getIteratorIndex() {}
 
     /**
      * @return TValue|null current value or null when iterator is drained
@@ -416,14 +420,25 @@ class DirectoryIterator extends SplFileInfo implements SeekableIterator {
      * @psalm-ignore-falsable-return
      */
     public function key() {}
-    public function next(): void{}
-    public function rewind(): void{}
+
+    /**
+     * @return void
+     */
+    public function next(){}
+    /**
+     * @return void
+     */
+    public function rewind(){}
 
     /**
      * @param int $position
      */
     public function seek($position) {}
-    public function valid(): bool{}
+
+    /**
+     * @return bool
+     */
+    public function valid(){}
 }
 
 /**
@@ -438,9 +453,19 @@ class EmptyIterator implements Iterator {
      * @return empty
      */
     public function key() {}
-    public function next(): void {}
-    public function rewind(): void {}
-    public function valid(): false {}
+    /**
+     * @return void
+     */
+    public function next() {}
+    /**
+     * @return void
+     */
+    public function rewind() {}
+
+    /**
+     * @return false
+     */
+    public function valid() {}
 }
 
 /**
@@ -473,12 +498,13 @@ class FilesystemIterator extends DirectoryIterator
     /**
      * @return int-mask<self::CURRENT_AS_PATHNAME,self::CURRENT_AS_FILEINFO,self::CURRENT_AS_SELF,self::KEY_AS_PATHNAME,self::KEY_AS_FILENAME,self::FOLLOW_SYMLINKS,self::NEW_CURRENT_AND_KEY,self::SKIP_DOTS,self::UNIX_PATH>
      */
-    public function getFlags(): int {}
+    public function getFlags() {}
 
     /**
      * @param int-mask<self::CURRENT_AS_PATHNAME,self::CURRENT_AS_FILEINFO,self::CURRENT_AS_SELF,self::KEY_AS_PATHNAME,self::KEY_AS_FILENAME,self::FOLLOW_SYMLINKS,self::NEW_CURRENT_AND_KEY,self::SKIP_DOTS,self::UNIX_PATH> $flags
+     * @return void
      */
-    public function setFlags($flags) : void {}
+    public function setFlags($flags) {}
     /**
      * @return string|null
      * @psalm-ignore-nullable-return
@@ -492,7 +518,10 @@ class FilesystemIterator extends DirectoryIterator
  * @psalm-extends SeekableIterator<string, GlobIterator|SplFileInfo|string>
  */
 class GlobIterator extends FilesystemIterator implements Countable {
-    public function count(): int{}
+    /**
+     * @return int
+     */
+    public function count() {}
 }
 
 /**
@@ -594,13 +623,19 @@ class MultipleIterator implements Iterator {
     /**
      * @param Iterator<TKey,TValue> $iterator
      * @param string|int $infos
+     * @return void
      */
-    public function attachIterator(Iterator $iterator, $infos = ''): void {}
+    public function attachIterator(Iterator $iterator, $infos = '') {}
     /**
      * @param Iterator<TKey, TValue> $iterator
+     * @return bool
      */
-    public function containsIterator(Iterator $iterator): bool {}
-    public function countIterators(): int {}
+    public function containsIterator(Iterator $iterator) {}
+
+    /**
+     * @return int
+     */
+    public function countIterators() {}
     /**
      * nullable values are returned when MIT_NEED_ANY is set
      * and one of the iterators is already drained.
@@ -609,23 +644,25 @@ class MultipleIterator implements Iterator {
      *
      * @return array<array-key, TValue|null>
      */
-    public function current(): array {}
+    public function current() {}
     /**
      * @param Iterator<TKey,TValue> $iterator
+     * @return void
      */
-    public function detachIterator(Iterator $iterator): void {}
+    public function detachIterator(Iterator $iterator) {}
     /**
      * @return int-mask-of<self::MIT_*>
      */
-    public function getFlags(): int {}
+    public function getFlags() {}
     /**
      * @return array<array-key, TValue|null>
      */
-    public function key(): array {}
+    public function key() {}
     /**
      * @param int-mask-of<self::MIT_*> $flags
+     * @return void
      */
-    public function setFlags( int $flags ): void {}
+    public function setFlags( int $flags ) {}
 }
 
 /**
@@ -644,8 +681,12 @@ abstract class RecursiveFilterIterator extends FilterIterator implements Recursi
     /**
      * @return RecursiveFilterIterator<TKey, TValue>
      */
-    public function getChildren(): RecursiveFilterIterator {}
-    public function hasChildren(): bool {}
+    public function getChildren() {}
+
+    /**
+     * @return bool
+     */
+    public function hasChildren() {}
 
     /**
      * @return TValue|null current value or null when iterator is drained
@@ -668,7 +709,10 @@ abstract class RecursiveFilterIterator extends FilterIterator implements Recursi
  */
 class ParentIterator extends RecursiveFilterIterator implements RecursiveIterator, OuterIterator {
 
-    public function accept(): bool {}
+    /**
+     * @return bool
+     */
+    public function accept() {}
     /**
      * @param RecursiveIterator<TKey, TValue> $iterator
      */
@@ -676,10 +720,20 @@ class ParentIterator extends RecursiveFilterIterator implements RecursiveIterato
     /**
      * @return ParentIterator<TKey,TValue>
      */
-    public function getChildren(): ParentIterator {}
-    public function hasChildren(): bool {}
-    public function next(): void {}
-    public function rewind(): void {}
+    public function getChildren() {}
+
+    /**
+     * @return bool
+     */
+    public function hasChildren() {}
+    /**
+     * @return void
+     */
+    public function next() {}
+    /**
+     * @return void
+     */
+    public function rewind() {}
 
     /**
      * @return TValue|null current value or null when iterator is drained
@@ -709,8 +763,12 @@ class RecursiveArrayIterator extends ArrayIterator implements RecursiveIterator 
     /**
      * @return RecursiveArrayIterator<TKey, TValue>
      */
-    public function getChildren() : RecursiveArrayIterator {}
-    public function hasChildren() : bool {}
+    public function getChildren() {}
+
+    /**
+     * @return bool
+     */
+    public function hasChildren() {}
     /**
      * @return TValue|null current value or null when iterator is drained
      * @psalm-ignore-nullable-return
@@ -748,8 +806,12 @@ class RecursiveCachingIterator extends CachingIterator implements RecursiveItera
     /**
      * @return RecursiveCachingIterator<TKey,TValue>
      */
-    public function getChildren(): RecursiveCachingIterator {}
-    public function hasChildren(): bool {}
+    public function getChildren() {}
+
+    /**
+     * @return bool
+     */
+    public function hasChildren() {}
 
     /**
      * @return TValue|null current value or null when iterator is drained
@@ -781,8 +843,12 @@ class RecursiveCallbackFilterIterator extends CallbackFilterIterator implements 
     /**
      * @return RecursiveCallbackFilterIterator<TKey, TValue>
      */
-    public function getChildren(): RecursiveCallbackFilterIterator {}
-    public function hasChildren(): bool {}
+    public function getChildren() {}
+
+    /**
+     * @return bool
+     */
+    public function hasChildren() {}
 
     /**
      * @return TValue|null current value or null when iterator is drained
@@ -818,8 +884,15 @@ class RecursiveDirectoryIterator extends FilesystemIterator implements Recursive
      * @param int-mask<self::CURRENT_AS_PATHNAME,self::CURRENT_AS_FILEINFO,self::CURRENT_AS_SELF,self::KEY_AS_PATHNAME,self::KEY_AS_FILENAME,self::FOLLOW_SYMLINKS,self::NEW_CURRENT_AND_KEY,self::SKIP_DOTS,self::UNIX_PATHS> $flags
      */
     public function __construct(string $path, int $flags = self::KEY_AS_PATHNAME|self::CURRENT_AS_FILEINFO) {}
-    public function getSubPath(): string {}
-    public function getSubPathname(): string {}
+
+    /**
+     * @return string
+     */
+    public function getSubPath() {}
+    /**
+     * @return string
+     */
+    public function getSubPathname() {}
 
     /**
      * @return RecursiveDirectoryIterator|string|SplFileInfo|null current value or null when iterator is drained
@@ -831,7 +904,7 @@ class RecursiveDirectoryIterator extends FilesystemIterator implements Recursive
      * @return string|null current key or null when iterator is drained
      * @psalm-ignore-nullable-return
      */
-    public function key(): string {}
+    public function key() {}
 }
 
 
@@ -878,7 +951,7 @@ class RecursiveRegexIterator extends RegexIterator implements RecursiveIterator 
     /**
      * @return RecursiveRegexIterator<TKey, TValue>
      */
-    public function getChildren(): RecursiveRegexIterator {}
+    public function getChildren() {}
 }
 
 /**
@@ -904,10 +977,23 @@ class RecursiveTreeIterator extends RecursiveIteratorIterator implements OuterIt
     const PREFIX_END_LAST = 4 ;
     const PREFIX_RIGHT = 5 ;
 
-    public function beginChildren(): void {}
-    public function beginIteration(): RecursiveIterator {}
-    public function callGetChildren(): RecursiveIterator {}
-    public function callHasChildren(): bool {}
+    /**
+     * @return void
+     */
+    public function beginChildren() {}
+
+    /**
+     * @return RecursiveIterator
+     */
+    public function beginIteration() {}
+    /**
+     * @return RecursiveIterator
+     */
+    public function callGetChildren() {}
+    /**
+     * @return bool
+     */
+    public function callHasChildren() {}
 
     /**
      * @param RecursiveIterator<TKey, TValue>|IteratorAggregate<TKey, TValue> $it
@@ -916,23 +1002,62 @@ class RecursiveTreeIterator extends RecursiveIteratorIterator implements OuterIt
      * @param self::LEAVES_ONLY|self::SELF_FIRST|self::CHILD_FIRST $mode
      */
     public function __construct($it, int $flags = self::BYPASS_KEY, int $cit_flags = self::CATCH_GET_CHILD, int $mode = self::SELF_FIRST) {}
-    public function current(): string {}
-    public function endChildren(): void {}
-    public function endIteration(): void {}
-    public function getEntry(): string {}
-    public function getPostfix(): string {}
-    public function getPrefix(): string {}
-    public function key(): string {}
-    public function next(): void {}
-    public function nextElement(): void {}
-    public function rewind(): void {}
-    public function setPostfix(string $postfix ): void {}
+
+    /**
+     * @return string
+     */
+    public function current() {}
+    /**
+     * @return void
+     */
+    public function endChildren() {}
+    /**
+     * @return void
+     */
+    public function endIteration() {}
+
+    /**
+     * @return string
+     */
+    public function getEntry() {}
+    /**
+     * @return string
+     */
+    public function getPostfix() {}
+    /**
+     * @return string
+     */
+    public function getPrefix() {}
+    /**
+     * @return string
+     */
+    public function key() {}
+    /**
+     * @return void
+     */
+    public function next() {}
+    /**
+     * @return void
+     */
+    public function nextElement() {}
+    /**
+     * @return void
+     */
+    public function rewind() {}
+    /**
+     * @return void
+     */
+    public function setPostfix(string $postfix ) {}
     /**
      * @param self::PREFIX_* $part
      * @param string $value
+     * @return void
      */
-    public function setPrefixPart(int $part , string $value ): void {}
-    public function valid(): bool {}
+    public function setPrefixPart(int $part , string $value ) {}
+    /**
+     * @return bool
+     */
+    public function valid() {}
 }
 
 /**
@@ -964,6 +1089,7 @@ class RegexIterator extends FilterIterator {
 
     /**
      * @return TKey scalar on success, or null on failure.
+     * @return string
      */
-    public function key(): string {}
+    public function key() {}
 }
