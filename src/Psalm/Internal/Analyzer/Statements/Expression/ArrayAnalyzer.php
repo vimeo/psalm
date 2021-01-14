@@ -154,6 +154,7 @@ class ArrayAnalyzer
                     && !$atomic_key_type instanceof Type\Atomic\TInt
                     && !$atomic_key_type instanceof Type\Atomic\TArrayKey
                     && !$atomic_key_type instanceof Type\Atomic\TMixed
+                    && !$atomic_key_type instanceof Type\Atomic\TTemplateParam
                     && !(
                         $atomic_key_type instanceof Type\Atomic\TObjectWithProperties
                         && isset($atomic_key_type->methods['__toString'])
