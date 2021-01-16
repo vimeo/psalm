@@ -1774,6 +1774,7 @@ return [
 'DateTime::add' => ['static', 'interval'=>'DateInterval'],
 'DateTime::createFromFormat' => ['static|false', 'format'=>'string', 'time'=>'string', 'timezone='=>'?DateTimeZone'],
 'DateTime::createFromImmutable' => ['static', 'datetTimeImmutable'=>'DateTimeImmutable'],
+'DateTime::createFromInterface' => ['static', 'object'=>'DateTimeInterface'],
 'DateTime::diff' => ['DateInterval|false', 'datetime2'=>'DateTimeInterface', 'absolute='=>'bool'],
 'DateTime::format' => ['string|false', 'format'=>'string'],
 'DateTime::getLastErrors' => ['array{warning_count:int,warnings:array<int,string>,error_count:int,errors:array<int,string>}'],
