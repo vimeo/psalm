@@ -202,7 +202,7 @@ class BinaryOperationTest extends TestCase
                      * @return 7
                      */
                     function scope(){
-                        return 1 | 2 | 4;
+                        return 1 | 2 | 4 | (1 & 0);
                     }',
             ],
             'booleanXor' => [
