@@ -360,6 +360,7 @@ class ProjectAnalyzer
         $mapping = [
             'checkstyle.xml' => Report::TYPE_CHECKSTYLE,
             'sonarqube.json' => Report::TYPE_SONARQUBE,
+            'codeclimate.json' => Report::TYPE_CODECLIMATE,
             'summary.json' => Report::TYPE_JSON_SUMMARY,
             'junit.xml' => Report::TYPE_JUNIT,
             '.xml' => Report::TYPE_XML,
