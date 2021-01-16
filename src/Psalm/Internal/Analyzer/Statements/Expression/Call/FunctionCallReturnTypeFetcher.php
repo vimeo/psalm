@@ -252,14 +252,6 @@ class FunctionCallReturnTypeFetcher
 
         if (!$call_args) {
             switch ($call_map_key) {
-                case 'hrtime':
-                    return new Type\Union([
-                        new Type\Atomic\TKeyedArray([
-                            Type::getInt(),
-                            Type::getInt()
-                        ])
-                    ]);
-
                 case 'get_called_class':
                     return new Type\Union([
                         new Type\Atomic\TClassString(
@@ -329,36 +321,6 @@ class FunctionCallReturnTypeFetcher
                     }
 
                     break;
-
-                case 'hrtime':
-                    if (($first_arg_type = $statements_analyzer->node_data->getType($call_args[0]->value))) {
-                        if ((string) $first_arg_type === 'true') {
-                            $int = Type::getInt();
-                            $int->from_calculation = true;
-                            return $int;
-                        }
-
-                        if ((string) $first_arg_type === 'false') {
-                            return new Type\Union([
-                                new Type\Atomic\TKeyedArray([
-                                    Type::getInt(),
-                                    Type::getInt()
-                                ])
-                            ]);
-                        }
-
-                        return new Type\Union([
-                            new Type\Atomic\TKeyedArray([
-                                Type::getInt(),
-                                Type::getInt()
-                            ]),
-                            new Type\Atomic\TInt()
-                        ]);
-                    }
-
-                    $int = Type::getInt();
-                    $int->from_calculation = true;
-                    return $int;
 
                 case 'min':
                 case 'max':
