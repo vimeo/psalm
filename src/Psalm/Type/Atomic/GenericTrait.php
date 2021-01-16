@@ -45,16 +45,22 @@ trait GenericTrait
 
         $extra_types = '';
 
-        if ($this instanceof TNamedObject && $this->extra_types) {
-            $extra_types = '&' . implode(
-                '&',
-                array_map(
-                    function ($type) {
-                        return $type->getId(true);
-                    },
-                    $this->extra_types
-                )
-            );
+        if ($this instanceof TNamedObject) {
+            if ($this->extra_types) {
+                $extra_types = '&' . implode(
+                    '&',
+                    array_map(
+                        function ($type) {
+                            return $type->getId(true);
+                        },
+                        $this->extra_types
+                    )
+                );
+            }
+
+            if ($this->was_static) {
+                $extra_types .= '&static';
+            }
         }
 
         return $this->value . '<' . substr($s, 0, -2) . '>' . $extra_types;

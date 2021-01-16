@@ -243,6 +243,7 @@ class TypeCombiner
                 $new_types[] = new TIterable($generic_type_params);
             } else {
                 $generic_object = new TGenericObject($generic_type, $generic_type_params);
+
                 /** @psalm-suppress PropertyTypeCoercion */
                 $generic_object->extra_types = $combination->extra_types;
                 $new_types[] = $generic_object;
@@ -257,6 +258,11 @@ class TypeCombiner
             $generic_type = substr($generic_type, 0, (int) strpos($generic_type, '<'));
 
             $generic_object = new TGenericObject($generic_type, $generic_type_params);
+
+            if ($combination->object_static[$generic_type] ?? false) {
+                $generic_object->was_static = true;
+            }
+
             /** @psalm-suppress PropertyTypeCoercion */
             $generic_object->extra_types = $combination->extra_types;
             $new_types[] = $generic_object;
@@ -489,6 +495,16 @@ class TypeCombiner
                     $combination->extra_types ?: [],
                     $type->extra_types
                 );
+            }
+        }
+
+        if ($type instanceof TNamedObject) {
+            if (\array_key_exists($type->value, $combination->object_static)) {
+                if ($combination->object_static[$type->value] && !$type->was_static) {
+                    $combination->object_static[$type->value] = false;
+                }
+            } else {
+                $combination->object_static[$type->value] = $type->was_static;
             }
         }
 
