@@ -405,7 +405,7 @@ class CallbackFilterIterator extends FilterIterator implements OuterIterator  {
 }
 
 /**
- * @psalm-implements SeekableIterator<int, DirectoryIterator>
+ * @template-implements SeekableIterator<int, DirectoryIterator>
  */
 class DirectoryIterator extends SplFileInfo implements SeekableIterator {
 
@@ -469,7 +469,7 @@ class EmptyIterator implements Iterator {
 }
 
 /**
- * @psalm-extends SeekableIterator<string, FilesystemIterator|SplFileInfo|string>
+ * @template-extends SeekableIterator<string, FilesystemIterator|SplFileInfo|string>
  */
 class FilesystemIterator extends DirectoryIterator
 {
@@ -515,7 +515,7 @@ class FilesystemIterator extends DirectoryIterator
 
 
 /**
- * @psalm-extends SeekableIterator<string, GlobIterator|SplFileInfo|string>
+ * @template-extends SeekableIterator<string, GlobIterator|SplFileInfo|string>
  */
 class GlobIterator extends FilesystemIterator implements Countable {
     /**
