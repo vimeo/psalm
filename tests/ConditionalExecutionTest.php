@@ -2,7 +2,6 @@
 namespace Psalm\Tests;
 
 use UnexpectedValueException;
-use function preg_quote;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\RuntimeCaches;
@@ -10,7 +9,7 @@ use Psalm\Tests\Internal\Provider;
 use function strpos;
 use function substr;
 
-class ConditionalExecution extends TestCase
+class ConditionalExecutionTest extends TestCase
 {
     /** @var \Psalm\Internal\Analyzer\ProjectAnalyzer */
     protected $project_analyzer;
