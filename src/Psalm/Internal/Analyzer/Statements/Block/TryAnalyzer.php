@@ -306,6 +306,14 @@ class TryAnalyzer
                     )
                 );
 
+                // removes dependent vars from $context
+                $catch_context->removeDescendents(
+                    $catch_var_id,
+                    null,
+                    $catch_context->vars_in_scope[$catch_var_id],
+                    $statements_analyzer
+                );
+
                 $catch_context->vars_possibly_in_scope[$catch_var_id] = true;
 
                 $location = new CodeLocation($statements_analyzer->getSource(), $catch->var);

@@ -630,6 +630,10 @@ class Context
         }
     }
 
+    /**
+     * This method is used after assignments to variables to remove any existing
+     * items in $vars_in_scope that are now made redundant by an update to some data
+     */
     public function removeDescendents(
         string $remove_var_id,
         ?Union $existing_type = null,
