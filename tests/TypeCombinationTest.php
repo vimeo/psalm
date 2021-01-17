@@ -644,6 +644,20 @@ class TypeCombinationTest extends TestCase
                     'array{0?:int}',
                 ]
             ],
+            'combinNonEmptyStringAndLiteral' => [
+                'non-empty-string',
+                [
+                    'non-empty-string',
+                    '"foo"',
+                ]
+            ],
+            'combinLiteralAndNonEmptyString' => [
+                'non-empty-string',
+                [
+                    '"foo"',
+                    'non-empty-string'
+                ]
+            ],
         ];
     }
 

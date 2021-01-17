@@ -931,6 +931,11 @@ class TypeCombiner
                             && \strtolower($type->value) === $type->value
                         ) {
                             // do nothing
+                        } elseif (isset($combination->value_types['string'])
+                            && $combination->value_types['string'] instanceof Type\Atomic\TNonEmptyString
+                            && $type->value
+                        ) {
+                            // do nothing
                         } else {
                             $combination->value_types['string'] = new TString();
                         }
@@ -969,6 +974,23 @@ class TypeCombiner
                             }
 
                             if ($has_non_lowercase_string) {
+                                $combination->value_types['string'] = new TString();
+                            } else {
+                                $combination->value_types['string'] = $type;
+                            }
+
+                            $combination->strings = null;
+                        } elseif ($type instanceof Type\Atomic\TNonEmptyString) {
+                            $has_empty_string = false;
+
+                            foreach ($combination->strings as $string_type) {
+                                if (!$string_type->value) {
+                                    $has_empty_string = true;
+                                    break;
+                                }
+                            }
+
+                            if ($has_empty_string) {
                                 $combination->value_types['string'] = new TString();
                             } else {
                                 $combination->value_types['string'] = $type;
