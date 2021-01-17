@@ -176,7 +176,8 @@ class InstancePropertyFetchAnalyzer
         }
 
         if ($stmt_var_type->isNullable() && !$stmt_var_type->ignore_nullable_issues) {
-            if (!$context->inside_isset) {
+            // we can only be sure that the variable is possibly null if we know the var_id
+            if (!$context->inside_isset && $var_id) {
                 if (IssueBuffer::accepts(
                     new PossiblyNullPropertyFetch(
                         'Cannot get property on possibly null variable ' . $stmt_var_id . ' of type ' . $stmt_var_type,
