@@ -297,7 +297,12 @@ class FunctionLikeNodeScanner
                             null
                         );
 
-                        $negated_formula = \Psalm\Internal\Algebra::negateFormula($if_clauses);
+                        try {
+                            $negated_formula = \Psalm\Internal\Algebra::negateFormula($if_clauses);
+                        } catch (\Psalm\Exception\ComplicatedExpressionException $e) {
+                            $var_assertions = [];
+                            break;
+                        }
 
                         $rules = \Psalm\Internal\Algebra::getTruthsFromFormula($negated_formula);
 

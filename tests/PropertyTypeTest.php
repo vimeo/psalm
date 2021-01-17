@@ -2385,6 +2385,16 @@ class PropertyTypeTest extends TestCase
                 [],
                 '8.0'
             ],
+            'dynamicPropertyFetch' => [
+                '<?php
+                    class Foo {
+                        public int $a = 0;
+                    }
+
+                    function takesFoo(?Foo $foo, string $b) : void {
+                        echo $foo->{$b} ?? null;
+                    }'
+            ],
         ];
     }
 
