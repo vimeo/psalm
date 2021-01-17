@@ -196,6 +196,15 @@ class BinaryOperationTest extends TestCase
                     '$f' => 'string',
                 ],
             ],
+            'ComplexLiteralBitwise' => [
+                '<?php
+                    /**
+                     * @return 7
+                     */
+                    function scope(){
+                        return 1 | 2 | 4 | (1 & 0);
+                    }',
+            ],
             'booleanXor' => [
                 '<?php
                     $a = 4 ^ 1;
