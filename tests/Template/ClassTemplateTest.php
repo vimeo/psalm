@@ -2038,11 +2038,6 @@ class ClassTemplateTest extends TestCase
                         public function __construct(Foo $v) {
                             $this->vector = $v;
                         }
-
-                        public function getIterator(): Iterator
-                        {
-                            yield from $this->vector;
-                        }
                     }',
                 [],
                 ['TooManyTemplateParams']
