@@ -341,7 +341,7 @@ class ForeachAnalyzer
      */
     public static function checkIteratorType(
         StatementsAnalyzer $statements_analyzer,
-        $stmt,
+        PhpParser\NodeAbstract $stmt,
         PhpParser\Node\Expr $expr,
         Type\Union $iterator_type,
         Codebase $codebase,
