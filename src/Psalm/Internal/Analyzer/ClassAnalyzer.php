@@ -1556,22 +1556,22 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             if ($codebase->alter_code && $this->class->name && $codebase->classes_to_move) {
                 if (isset($codebase->classes_to_move[strtolower($fq_trait_name)])) {
 
-                    // $destination_trait = $codebase->classes_to_move[strtolower($fq_trait_name)];
+                    $destination_trait = $codebase->classes_to_move[strtolower($fq_trait_name)];
 
-                    // $bounds = $trait_location->getSelectionBounds();
+                    $bounds = $trait_location->getSelectionBounds();
 
-                    //         $file_manipulations = [
-                    //             new \Psalm\FileManipulation(
-                    //                 $bounds[0],
-                    //                 $bounds[1],
-                    //                 Type::getStringFromFQCLN($destination_trait, null, [], null)
-                    //             )
-                    //         ];
+                            $file_manipulations = [
+                                new \Psalm\FileManipulation(
+                                    $bounds[0],
+                                    $bounds[1],
+                                    Type::getStringFromFQCLN($destination_trait, null, [], null)
+                                )
+                            ];
 
-                    //         \Psalm\Internal\FileManipulation\FileManipulationBuffer::add(
-                    //             $this->getFilePath(),
-                    //             $file_manipulations
-                    //         );
+                            \Psalm\Internal\FileManipulation\FileManipulationBuffer::add(
+                                $this->getFilePath(),
+                                $file_manipulations
+                            );
                 }
             }
 
