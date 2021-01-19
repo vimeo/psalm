@@ -132,6 +132,7 @@ class ReconcilerTest extends \Psalm\Tests\TestCase
             'iterableWithParamsToTraversableWithParams' => ['Traversable<int, string>', '!array', 'iterable<int, string>'],
             'iterableAndObject' => ['Traversable<int, string>', 'object', 'iterable<int, string>'],
             'iterableAndNotObject' => ['array<int, string>', '!object', 'iterable<int, string>'],
+            'boolNotEmptyIsTrue' => ['true', '!empty', 'bool'],
         ];
     }
 

@@ -586,6 +586,12 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                 }
             }
 
+            if ($existing_var_type->hasBool()) {
+                $existing_var_type->removeType('bool');
+
+                $existing_var_type->addType(new Type\Atomic\TTrue);
+            }
+
             self::removeFalsyNegatedLiteralTypes(
                 $existing_var_type,
                 $did_remove_type

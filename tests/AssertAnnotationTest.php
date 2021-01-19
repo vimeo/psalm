@@ -1674,6 +1674,20 @@ class AssertAnnotationTest extends TestCase
                     }',
                 'error_message' => 'InvalidDocblock',
             ],
+            'assertNotEmptyOnBool' => [
+                '<?php
+                    /**
+                     * @param mixed $value
+                     * @psalm-assert !empty $value
+                     */
+                    function assertNotEmpty($value) : void {}
+
+                    function foo(bool $bar) : void {
+                        assertNotEmpty($bar);
+                        if ($bar) {}
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType',
+            ],
         ];
     }
 }
