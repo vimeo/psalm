@@ -33,6 +33,7 @@
         "nikic/php-parser": "^4.10.1",
         "openlss/lib-array2xml": "^1.0",
         "sebastian/diff": "^3.0 || ^4.0",
+        "spatie/ray": "^1.11",
         "symfony/console": "^3.4.17 || ^4.1.6 || ^5.0",
         "symfony/var-dumper": "^5.2",
         "webmozart/path-util": "^2.3"
@@ -43,7 +44,6 @@
     "require-dev": {
         "php": "^7.3|^8",
         "ext-curl": "*",
-        "spatie/ray": "^1.0",
         "amphp/amp": "^2.4.2",
         "bamarni/composer-bin-plugin": "^1.2",
         "brianium/paratest": "^4.0||^6.0",

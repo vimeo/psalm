@@ -1157,16 +1157,16 @@ class ClassLikes
 
                 FileManipulationBuffer::add($source->getFilePath(), $file_manipulations);
             } else {
-                $this->airliftClassLikeReference(
-                    strtolower($calling_fq_class_name) === strtolower($fq_class_name)
-                        ? $destination_class
-                        : $fq_class_name,
-                    $destination_class,
-                    $source->getFilePath(),
-                    (int) $class_name_node->getAttribute('startFilePos'),
-                    (int) $class_name_node->getAttribute('endFilePos') + 1,
-                    $class_name_node instanceof PhpParser\Node\Scalar\MagicConst\Class_
-                );
+                // $this->airliftClassLikeReference(
+                //     strtolower($calling_fq_class_name) === strtolower($fq_class_name)
+                //         ? $destination_class
+                //         : $fq_class_name,
+                //     $destination_class,
+                //     $source->getFilePath(),
+                //     (int) $class_name_node->getAttribute('startFilePos'),
+                //     (int) $class_name_node->getAttribute('endFilePos') + 1,
+                //     $class_name_node instanceof PhpParser\Node\Scalar\MagicConst\Class_
+                // );
             }
 
             return true;

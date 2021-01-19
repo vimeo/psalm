@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Internal\FileManipulation;
 
 use function array_merge;
@@ -28,6 +29,11 @@ class FileManipulationBuffer
      */
     public static function add(string $file_path, array $file_manipulations): void
     {
+        // if ($file_path === '/Users/nico/Projects/sigmie/app/tests/Unit/Controllers/ClusterControllerTest.php') {
+        //     ray($file_manipulations);
+        //     ray()->trace();
+        // }
+
         if (!isset(self::$file_manipulations[$file_path])) {
             self::$file_manipulations[$file_path] = [];
         }
@@ -38,7 +44,7 @@ class FileManipulationBuffer
     }
 
     /** @param CodeMigration[] $code_migrations */
-    public static function addCodeMigrations(array $code_migrations) : void
+    public static function addCodeMigrations(array $code_migrations): void
     {
         self::$code_migrations = array_merge(self::$code_migrations, $code_migrations);
     }
@@ -50,7 +56,7 @@ class FileManipulationBuffer
         string $source_file_path,
         int $source_start,
         int $source_end
-    ) : array {
+    ): array {
         if (!isset(self::$file_manipulations[$source_file_path])) {
             return [0, 0];
         }
@@ -64,7 +70,8 @@ class FileManipulationBuffer
             if ($fm->end < $source_start) {
                 $start_offset += $offset;
                 $middle_offset += $offset;
-            } elseif ($fm->start > $source_start
+            } elseif (
+                $fm->start > $source_start
                 && $fm->end < $source_end
             ) {
                 $middle_offset += $offset;
