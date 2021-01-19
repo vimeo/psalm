@@ -1626,6 +1626,22 @@ class AssertAnnotationTest extends TestCase
                 'error_message' => 'RedundantConditionGivenDocblockType - src'
                                     . DIRECTORY_SEPARATOR . 'somefile.php:19:29',
             ],
+            'assertBooleanNotEmpty' => [
+                '<?php
+                     /**
+                      * @param mixed $value
+                      * @psalm-assert !empty $value
+                      */
+                    function assertNotEmpty($value) : void {}
+
+                    function foo(bool $bar) : void {
+                        assertNotEmpty($bar);
+
+                        if ($bar) {}
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType - src'
+                    . DIRECTORY_SEPARATOR . 'somefile.php:11:29',
+            ],
             'assertOneOfStrings' => [
                 '<?php
                     /**

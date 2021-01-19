@@ -560,6 +560,12 @@ class Union implements TypeNode
                 unset($this->types[$literal_key]);
             }
             $this->literal_float_types = [];
+        } elseif ($type_string === 'false' && isset($this->types['bool'])) {
+            unset($this->types['bool']);
+            $this->addType(new Type\Atomic\TTrue());
+        } elseif ($type_string === 'true' && isset($this->types['bool'])) {
+            unset($this->types['bool']);
+            $this->addType(new Type\Atomic\TFalse());
         }
 
         return false;
