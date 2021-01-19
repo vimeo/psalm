@@ -50,6 +50,8 @@ return [
 'curl_share_init' => ['CurlShareHandle'],
 'curl_share_setopt' => ['bool', 'sh'=>'CurlShareHandle', 'option'=>'int', 'value'=>'mixed'],
 'curl_unescape' => ['string|false', 'ch'=>'CurlShareHandle', 'string'=>'string'],
+'DateTime::createFromInterface' => ['DateTimeInterface', 'self'],
+'DateTimeImmutable::createFromInterface' => ['DateTimeInterface', 'self'],
 'date_add' => ['DateTime', 'object'=>'DateTime', 'interval'=>'DateInterval'],
 'date_date_set' => ['DateTime', 'object'=>'DateTime', 'year'=>'int', 'month'=>'int', 'day'=>'int'],
 'date_diff' => ['DateInterval', 'obj1'=>'DateTimeInterface', 'obj2'=>'DateTimeInterface', 'absolute='=>'bool'],
