@@ -22,7 +22,7 @@ class UnionTest extends TestCase
     public function removedTypes(): array
     {
         return [
-            'true - true => ""' => [
+            'true - true => ∅' => [
                 new Union([new TTrue()]),
                 'true',
                 '',
@@ -37,7 +37,7 @@ class UnionTest extends TestCase
                 'true',
                 'false',
             ],
-            'false - false => ""' => [
+            'false - false => ∅' => [
                 new Union([new TTrue()]),
                 'true',
                 '',
