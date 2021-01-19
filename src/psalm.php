@@ -337,6 +337,7 @@ if (isset($options['i'])) {
         echo "Calculating best config level based on project files\n";
         \Psalm\Config\Creator::createBareConfig($current_dir, $init_source_dir, $vendor_dir);
         $config = \Psalm\Config::getInstance();
+        $config->setComposerClassLoader($first_autoloader);
     } else {
         try {
             $template_contents = \Psalm\Config\Creator::getContents(
