@@ -2024,7 +2024,8 @@ class ClassTemplateTest extends TestCase
             ],
             'yieldFromGenericObjectNotExtendingIterator' => [
                 '<?php
-                    class Foo{}
+                    /** @extends \ArrayObject<int, int> */
+                    class Foo extends \ArrayObject {}
 
                     class A {
                         /**
@@ -2037,6 +2038,11 @@ class ClassTemplateTest extends TestCase
                          */
                         public function __construct(Foo $v) {
                             $this->vector = $v;
+                        }
+
+                        public function getIterator(): Iterator
+                        {
+                            yield from $this->vector;
                         }
                     }',
                 [],
