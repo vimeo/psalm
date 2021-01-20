@@ -2024,7 +2024,8 @@ class ClassTemplateTest extends TestCase
             ],
             'yieldFromGenericObjectNotExtendingIterator' => [
                 '<?php
-                    class Foo{}
+                    /** @extends \ArrayObject<int, int> */
+                    class Foo extends \ArrayObject {}
 
                     class A {
                         /**

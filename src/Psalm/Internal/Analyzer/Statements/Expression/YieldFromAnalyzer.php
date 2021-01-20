@@ -5,6 +5,7 @@ use PhpParser;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
 use Psalm\Type;
 use function strtolower;
 
@@ -26,6 +27,24 @@ class YieldFromAnalyzer
         }
 
         if ($stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr)) {
+            $key_type = null;
+            $value_type = null;
+            $always_non_empty_array = true;
+            if (ForeachAnalyzer::checkIteratorType(
+                $statements_analyzer,
+                $stmt,
+                $stmt->expr,
+                $stmt_expr_type,
+                $statements_analyzer->getCodebase(),
+                $context,
+                $key_type,
+                $value_type,
+                $always_non_empty_array
+            ) === false
+            ) {
+                return false;
+            }
+            
             $yield_from_type = null;
 
             foreach ($stmt_expr_type->getAtomicTypes() as $atomic_type) {

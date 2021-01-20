@@ -314,6 +314,63 @@ class GeneratorTest extends TestCase
                     }',
                 'error_message' => 'NullableReturnStatement',
             ],
+            'invalidIterator' => [
+                '<?php
+                    function example() : int {
+                        return 0;
+                    }
+
+                    function example2() : Generator {
+                        yield from example();
+                    }',
+                'error_message' => 'InvalidIterator',
+            ],
+            'rawObjectIteration' => [
+                '<?php
+                    class A {
+                        /** @var ?string */
+                        public $foo;
+                    }
+                    function example() : Generator {
+                        $arr = new A;
+
+                        yield from $arr;
+                    }',
+                'error_message' => 'RawObjectIteration',
+            ],
+            'possibleRawObjectIteration' => [
+                '<?php
+                    class A {
+                        /** @var ?string */
+                        public $foo;
+                    }
+
+                    class B extends A {}
+
+                    function bar(A $a): void {}
+
+                    function gen() : Generator {
+                        $arr = [];
+
+                        if (rand(0, 10) > 5) {
+                            $arr[] = new A;
+                        } else {
+                            $arr = new B;
+                        }
+
+                        yield from $arr;
+                    }',
+                'error_message' => 'PossibleRawObjectIteration',
+            ],
+            'possibleRawObjectIterationFromIsset' => [
+                '<?php
+                    function foo(array $a) : Generator {
+                        if (isset($a["a"]["b"])) {
+                            yield from $a["a"];
+                        }
+                    }',
+                'error_message' => 'PossibleRawObjectIteration',
+            ],
         ];
     }
 }
