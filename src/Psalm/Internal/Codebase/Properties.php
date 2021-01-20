@@ -101,7 +101,7 @@ class Properties
             }
         }
 
-        $class_storage = $this->getClasslikeStorage($fq_class_name);
+        $class_storage = $this->classlikes->getStorageFor($fq_class_name);
 
         if (!$class_storage) {
             return false;
@@ -185,7 +185,7 @@ class Properties
             }
         }
 
-        $class_storage = $this->getClasslikeStorage($fq_class_name);
+        $class_storage = $this->classlikes->getStorageFor($fq_class_name);
 
         if ($class_storage && isset($class_storage->declaring_property_ids[$property_name])) {
             return $class_storage->declaring_property_ids[$property_name];
@@ -216,7 +216,7 @@ class Properties
             }
         }
 
-        $class_storage = $this->getClasslikeStorage($fq_class_name);
+        $class_storage = $this->classlikes->getStorageFor($fq_class_name);
 
         if ($class_storage && isset($class_storage->appearing_property_ids[$property_name])) {
             $appearing_property_id = $class_storage->appearing_property_ids[$property_name];
@@ -273,7 +273,7 @@ class Properties
             }
         }
 
-        $class_storage = $this->getClasslikeStorage($fq_class_name);
+        $class_storage = $this->classlikes->getStorageFor($fq_class_name);
 
         if ($class_storage && isset($class_storage->declaring_property_ids[$property_name])) {
             $declaring_property_class = $class_storage->declaring_property_ids[$property_name];
@@ -315,19 +315,5 @@ class Properties
         }
 
         return null;
-    }
-
-    /**
-     * Returns ClassLikeStorage for the given class name, resolving aliases
-     */
-    private function getClasslikeStorage(string $fq_class_name): ?ClassLikeStorage
-    {
-        $fq_class_name = strtolower($this->classlikes->getUnAliasedName($fq_class_name));
-
-        try {
-            return $this->classlike_storage_provider->get($fq_class_name);
-        } catch (\InvalidArgumentException $e) {
-            return null;
-        }
     }
 }
