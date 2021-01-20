@@ -2182,6 +2182,16 @@ class UnusedVariableTest extends TestCase
                         print_r(...$d);
                     }'
             ],
+            'explicitSpread' => [
+                '<?php
+                    function f(): array {
+                        $s = [1, 2, 3];
+                        $b = ["a", "b", "c"];
+
+                        $r = [...$s, ...$b];
+                        return $r;
+                    }'
+            ],
             'funcGetArgs' => [
                 '<?php
                     function validate(bool $b, bool $c) : void {

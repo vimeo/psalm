@@ -241,6 +241,30 @@ class ArrayAnalyzer
                 $unpacked_array_type
             );
 
+            if (($data_flow_graph = $statements_analyzer->data_flow_graph)
+                && $data_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph
+                && $unpacked_array_type->parent_nodes
+            ) {
+                $var_location = new CodeLocation($statements_analyzer->getSource(), $item->value);
+
+                $new_parent_node = \Psalm\Internal\DataFlow\DataFlowNode::getForAssignment(
+                    'array',
+                    $var_location
+                );
+
+                $data_flow_graph->addNode($new_parent_node);
+
+                foreach ($unpacked_array_type->parent_nodes as $parent_node) {
+                    $data_flow_graph->addPath(
+                        $parent_node,
+                        $new_parent_node,
+                        'array-assignment'
+                    );
+                }
+
+                $array_creation_info->parent_taint_nodes += [$new_parent_node->id => $new_parent_node];
+            }
+
             return;
         }
 
