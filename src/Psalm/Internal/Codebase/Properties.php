@@ -11,6 +11,7 @@ use Psalm\Internal\Provider\PropertyExistenceProvider;
 use Psalm\Internal\Provider\PropertyTypeProvider;
 use Psalm\Internal\Provider\PropertyVisibilityProvider;
 use Psalm\StatementsSource;
+use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
 use function strtolower;
 
@@ -25,6 +26,9 @@ class Properties
      * @var ClassLikeStorageProvider
      */
     private $classlike_storage_provider;
+
+    /** @var ClassLikes */
+    private $classlikes;
 
     /**
      * @var bool
@@ -51,15 +55,18 @@ class Properties
      */
     public $property_visibility_provider;
 
+
     public function __construct(
         ClassLikeStorageProvider $storage_provider,
-        FileReferenceProvider $file_reference_provider
+        FileReferenceProvider $file_reference_provider,
+        ClassLikes $classlikes
     ) {
         $this->classlike_storage_provider = $storage_provider;
         $this->file_reference_provider = $file_reference_provider;
         $this->property_existence_provider = new PropertyExistenceProvider();
         $this->property_visibility_provider = new PropertyVisibilityProvider();
         $this->property_type_provider = new PropertyTypeProvider();
+        $this->classlikes = $classlikes;
     }
 
     /**
@@ -94,7 +101,11 @@ class Properties
             }
         }
 
-        $class_storage = $this->classlike_storage_provider->get($fq_class_name);
+        $class_storage = $this->getClasslikeStorage($fq_class_name);
+
+        if (!$class_storage) {
+            return false;
+        }
 
         if ($source
             && $context
@@ -174,9 +185,9 @@ class Properties
             }
         }
 
-        $class_storage = $this->classlike_storage_provider->get($fq_class_name);
+        $class_storage = $this->getClasslikeStorage($fq_class_name);
 
-        if (isset($class_storage->declaring_property_ids[$property_name])) {
+        if ($class_storage && isset($class_storage->declaring_property_ids[$property_name])) {
             return $class_storage->declaring_property_ids[$property_name];
         }
 
@@ -205,9 +216,9 @@ class Properties
             }
         }
 
-        $class_storage = $this->classlike_storage_provider->get($fq_class_name);
+        $class_storage = $this->getClasslikeStorage($fq_class_name);
 
-        if (isset($class_storage->appearing_property_ids[$property_name])) {
+        if ($class_storage && isset($class_storage->appearing_property_ids[$property_name])) {
             $appearing_property_id = $class_storage->appearing_property_ids[$property_name];
 
             return explode('::$', $appearing_property_id)[0];
@@ -262,9 +273,9 @@ class Properties
             }
         }
 
-        $class_storage = $this->classlike_storage_provider->get($fq_class_name);
+        $class_storage = $this->getClasslikeStorage($fq_class_name);
 
-        if (isset($class_storage->declaring_property_ids[$property_name])) {
+        if ($class_storage && isset($class_storage->declaring_property_ids[$property_name])) {
             $declaring_property_class = $class_storage->declaring_property_ids[$property_name];
             $declaring_class_storage = $this->classlike_storage_provider->get($declaring_property_class);
 
@@ -304,5 +315,19 @@ class Properties
         }
 
         return null;
+    }
+
+    /**
+     * Returns ClassLikeStorage for the given class name, resolving aliases
+     */
+    private function getClasslikeStorage(string $fq_class_name): ?ClassLikeStorage
+    {
+        $fq_class_name = strtolower($this->classlikes->getUnAliasedName($fq_class_name));
+
+        try {
+            return $this->classlike_storage_provider->get($fq_class_name);
+        } catch (\InvalidArgumentException $e) {
+            return null;
+        }
     }
 }
