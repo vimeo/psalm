@@ -40,6 +40,7 @@ use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use function strpos;
 use function substr;
+use function count;
 
 class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
 {
@@ -1988,7 +1989,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                 $type = new TCallableList($type->type_param);
                 $callable_types[] = $type;
                 $did_remove_type = true;
-            } elseif ($type instanceof TKeyedArray) {
+            } elseif ($type instanceof TKeyedArray && count($type->properties) === 2) {
                 $type = clone $type;
                 $type = new TCallableKeyedArray($type->properties);
                 $callable_types[] = $type;
