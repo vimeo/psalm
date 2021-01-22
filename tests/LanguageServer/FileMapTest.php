@@ -59,7 +59,7 @@ class FileMapTest extends \Psalm\Tests\TestCase
         $this->assertTrue(!empty($type_map));
 
         $codebase->file_provider->setOpenContents('somefile.php', '');
-        $codebase->reloadFiles( $this->project_analyzer, [ 'somefile.php'] );
+        $codebase->reloadFiles($this->project_analyzer, ['somefile.php']);
         [ $type_map ] = $codebase->analyzer->getMapsForFile('somefile.php');
 
         $this->assertSame([], $type_map);

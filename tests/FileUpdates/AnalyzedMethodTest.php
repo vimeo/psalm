@@ -1334,23 +1334,23 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
             foo();
         ');
 
-        $codebase->addFilesToAnalyze( ['somefile.php' => 'somefile.php']);
+        $codebase->addFilesToAnalyze(['somefile.php' => 'somefile.php']);
         $codebase->scanFiles();
         $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
 
-        $maps = $codebase->analyzer->getMapsForFile( 'somefile.php' );
+        $maps = $codebase->analyzer->getMapsForFile('somefile.php');
 
-        $this->assertNotEmpty( $maps[0] );
+        $this->assertNotEmpty($maps[0]);
 
         $this->file_provider->setOpenContents('somefile.php', '');
 
         $codebase->reloadFiles($this->project_analyzer, ['somefile.php']);
         $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
 
-        $updated_maps = $codebase->analyzer->getMapsForFile( 'somefile.php' );
+        $updated_maps = $codebase->analyzer->getMapsForFile('somefile.php');
 
-        $this->assertSame( [], $updated_maps[0] );
-        $this->assertSame( [], $updated_maps[1] );
-        $this->assertSame( [], $updated_maps[2] );
+        $this->assertSame([], $updated_maps[0]);
+        $this->assertSame([], $updated_maps[1]);
+        $this->assertSame([], $updated_maps[2]);
     }
 }
