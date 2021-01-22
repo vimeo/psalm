@@ -1319,7 +1319,8 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
         ];
     }
 
-    public function testFileMapsUpdated(): void {
+    public function testFileMapsUpdated(): void
+    {
         $codebase = $this->project_analyzer->getCodebase();
 
         $config = $codebase->config;
