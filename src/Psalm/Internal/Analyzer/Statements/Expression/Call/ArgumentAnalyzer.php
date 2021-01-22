@@ -459,7 +459,9 @@ class ArgumentAnalyzer
                     ) {
                         $arg_type = clone $unpacked_atomic_array->properties[$unpacked_argument_offset];
                     } else {
-                        $arg_type = Type::getMixed();
+                        $arg_type = $function_param->is_optional
+                            ? ($function_param->default_type ?: Type::getMixed())
+                            : Type::getMixed();
                     }
                 } elseif ($unpacked_atomic_array instanceof Type\Atomic\TList) {
                     $arg_type = $unpacked_atomic_array->type_param;
