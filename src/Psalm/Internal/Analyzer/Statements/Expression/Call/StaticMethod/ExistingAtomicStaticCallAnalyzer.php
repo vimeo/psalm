@@ -299,7 +299,8 @@ class ExistingAtomicStaticCallAnalyzer
                     true,
                     false,
                     \is_string($static_type)
-                        && $static_type !== $context->self
+                        && ($static_type !== $context->self
+                            || $class_storage->final)
                 );
 
                 $return_type_location = $codebase->methods->getMethodReturnTypeLocation(
