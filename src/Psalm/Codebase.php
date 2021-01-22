@@ -309,17 +309,18 @@ class Codebase
 
         $this->functions = new Internal\Codebase\Functions($providers->file_storage_provider, $reflection);
 
-        $this->properties = new Internal\Codebase\Properties(
-            $providers->classlike_storage_provider,
-            $providers->file_reference_provider
-        );
-
         $this->classlikes = new Internal\Codebase\ClassLikes(
             $this->config,
             $providers->classlike_storage_provider,
             $providers->file_reference_provider,
             $providers->statements_provider,
             $this->scanner
+        );
+
+        $this->properties = new Internal\Codebase\Properties(
+            $providers->classlike_storage_provider,
+            $providers->file_reference_provider,
+            $this->classlikes
         );
 
         $this->methods = new Internal\Codebase\Methods(

@@ -2076,4 +2076,15 @@ class ClassLikes
         $this->existing_interfaces = array_merge($existing_interfaces, $this->existing_interfaces);
         $this->existing_classes = array_merge($existing_classes, $this->existing_classes);
     }
+
+    public function getStorageFor(string $fq_class_name): ?ClassLikeStorage
+    {
+        $fq_class_name = $this->getUnAliasedName($fq_class_name);
+
+        try {
+            return $this->classlike_storage_provider->get($fq_class_name);
+        } catch (\InvalidArgumentException $e) {
+            return null;
+        }
+    }
 }

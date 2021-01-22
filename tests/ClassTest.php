@@ -481,6 +481,15 @@ class ClassTest extends TestCase
                     action(new OldA());
                     action(new OldAChild());'
             ],
+            'classAliasStaticProperty' => [
+                '<?php
+                    class A {
+                        /** @var int */
+                        public static $prop = 1;
+                    }
+                    class_alias(A::class, B::class);
+                    B::$prop = 123;'
+            ],
             'resourceAndNumericSoftlyReserved' => [
                 '<?php
                     namespace {
