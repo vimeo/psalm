@@ -139,14 +139,15 @@ abstract class DataFlowGraph
     }
 
     /**
-     * @psalm-return list<list<string>>|array<empty, empty>
+     * @psalm-return list<list<string>>
      */
     public function summarizeEdges(): array
     {
         $edges = [];
-        array_walk($this->forward_edges, function (array $destinations, string $source) use (&$edges) : void {
+
+        foreach ($this->forward_edges as $source => $destinations) {
             $edges[] = array_merge([$source], array_keys($destinations));
-        });
+        }
 
         return $edges;
     }
