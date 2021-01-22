@@ -283,6 +283,7 @@ $run_taint_analysis = (isset($options['track-tainted-input'])
     || isset($options['security-analysis'])
     || isset($options['taint-analysis']));
 
+/** @var string|null $dump_taint_graph */
 $dump_taint_graph = $options['dump-taint-graph'] ?? null;
 
 if (array_key_exists('v', $options)) {
@@ -686,13 +687,14 @@ if ($find_references_to) {
     $project_analyzer->findReferencesTo($find_references_to);
 }
 
-if ($project_analyzer->getCodebase()->taint_flow_graph !== null && $dump_taint_graph !== null) {
+$flow_graph = $project_analyzer->getCodebase()->taint_flow_graph;
+if ($flow_graph !== null && $dump_taint_graph !== null) {
     file_put_contents($dump_taint_graph, "digraph Taints {\n\t".
         implode("\n\t", array_map(
-            function ($edges) {
+            function (array $edges) {
                 return '"'.implode('" -> "', $edges).'"';
             },
-            $project_analyzer->getCodebase()->taint_flow_graph->summarizeEdges()
+            $flow_graph->summarizeEdges()
         )) .
         "\n}\n");
 }
