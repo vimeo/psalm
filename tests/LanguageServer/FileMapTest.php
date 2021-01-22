@@ -8,7 +8,7 @@ use Psalm\Internal\Provider\Providers;
 use Psalm\Tests\Internal\Provider;
 use Psalm\Tests\TestConfig;
 
-class MapTest extends \Psalm\Tests\TestCase
+class FileMapTest extends \Psalm\Tests\TestCase
 {
     public function setUp() : void
     {
@@ -35,8 +35,6 @@ class MapTest extends \Psalm\Tests\TestCase
         $this->project_analyzer->getCodebase()->store_node_types = true;
     }
 
-
-
     public function testMapIsUpdatedOnReloadFiles(): void
     {
         $codebase = $this->project_analyzer->getCodebase();
@@ -58,12 +56,13 @@ class MapTest extends \Psalm\Tests\TestCase
         $this->analyzeFile('somefile.php', new Context());
         [ $type_map ] = $codebase->analyzer->getMapsForFile('somefile.php');
 
-        $this->assertTrue( ! empty( $type_map ) );
+        $this->assertTrue(!empty($type_map));
 
         $codebase->file_provider->setOpenContents('somefile.php', '');
         $codebase->reloadFiles( $this->project_analyzer, [ 'somefile.php'] );
-        $map = $codebase->analyzer->getMapsForFile('somefile.php');
-        var_dump( $map );
+        [ $type_map ] = $codebase->analyzer->getMapsForFile('somefile.php');
+
+        $this->assertSame([], $type_map);
     }
 
     public function testGetTypeMap(): void
