@@ -40,6 +40,13 @@ class FakeFileProvider extends \Psalm\Internal\Provider\FileProvider
         $this->fake_files[$file_path] = $file_contents;
     }
 
+    public function setOpenContents(string $file_path, string $file_contents): void
+    {
+        if (isset($this->fake_files[strtolower($file_path)])) {
+            $this->fake_files[strtolower($file_path)] = $file_contents;
+        }
+    }
+
     public function getModifiedTime(string $file_path): int
     {
         if (isset($this->fake_file_times[$file_path])) {

@@ -1318,4 +1318,39 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
             ],
         ];
     }
+
+    public function testFileMapsUpdated(): void {
+        $codebase = $this->project_analyzer->getCodebase();
+
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $this->file_provider->registerFile('somefile.php', '
+            <?php
+
+            function foo() : void {
+            }
+
+            foo();
+        ');
+
+        $codebase->addFilesToAnalyze( ['somefile.php' => 'somefile.php']);
+        $codebase->scanFiles();
+        $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
+
+        $maps = $codebase->analyzer->getMapsForFile( 'somefile.php' );
+
+        $this->assertNotEmpty( $maps[0] );
+
+        $this->file_provider->setOpenContents('somefile.php', '');
+
+        $codebase->reloadFiles($this->project_analyzer, ['somefile.php']);
+        $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
+
+        $updated_maps = $codebase->analyzer->getMapsForFile( 'somefile.php' );
+
+        $this->assertSame( [], $updated_maps[0] );
+        $this->assertSame( [], $updated_maps[1] );
+        $this->assertSame( [], $updated_maps[2] );
+    }
 }
