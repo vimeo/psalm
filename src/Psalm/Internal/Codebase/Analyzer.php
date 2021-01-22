@@ -1167,6 +1167,9 @@ class Analyzer
         ];
     }
 
+    /**
+     * @param string $reference The symbol name for the reference. Prepend with an asterisk (*) SOME REASON!.
+     */
     public function addNodeReference(string $file_path, PhpParser\Node $node, string $reference): void
     {
         if (!$reference) {
