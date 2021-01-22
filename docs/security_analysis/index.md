@@ -81,3 +81,12 @@ To generate a SARIF report run Psalm with the `--report` flag and a `.sarif` ext
 ```bash
 psalm --report=results.sarif
 ```
+
+## Debugging the taint graph
+
+Psalm can output the taint graph using the DOT language. This is useful when expected taints are not detected. To generate a DOT graph run Psalm with the `--dump-taint-graph` flag. For example:
+
+```bash
+psalm --taint-analysis --dump-taint-graph=taints.dot
+dot -Tsvg -o taints.svg taints.dot
+```

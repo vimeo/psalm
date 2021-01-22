@@ -126,6 +126,7 @@ $valid_long_options = [
     'track-tainted-input',
     'taint-analysis',
     'security-analysis',
+    'dump-taint-graph:',
     'find-unused-psalm-suppress',
     'error-level:',
 ];
@@ -281,6 +282,8 @@ $first_autoloader = $include_collector->runAndCollect(
 $run_taint_analysis = (isset($options['track-tainted-input'])
     || isset($options['security-analysis'])
     || isset($options['taint-analysis']));
+
+$dump_taint_graph = $options['dump-taint-graph'] ?? null;
 
 if (array_key_exists('v', $options)) {
     echo 'Psalm ' . PSALM_VERSION . PHP_EOL;
@@ -681,6 +684,17 @@ if ($paths_to_check === null) {
 
 if ($find_references_to) {
     $project_analyzer->findReferencesTo($find_references_to);
+}
+
+if ($project_analyzer->getCodebase()->taint_flow_graph !== null && $dump_taint_graph !== null) {
+    file_put_contents($dump_taint_graph, "digraph Taints {\n\t".
+        implode("\n\t", array_map(
+            function ($edges) {
+                return '"'.implode('" -> "', $edges).'"';
+            },
+            $project_analyzer->getCodebase()->taint_flow_graph->summarizeEdges()
+        )) .
+        "\n}\n");
 }
 
 if (isset($options['set-baseline']) && is_string($options['set-baseline'])) {
