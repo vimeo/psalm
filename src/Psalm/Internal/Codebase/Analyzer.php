@@ -576,6 +576,11 @@ class Analyzer
             $i = 0;
 
             foreach ($this->files_to_analyze as $file_path => $_) {
+                // Remove all current maps for the file, so new analysis doesn't
+                // only append to existing data.
+                unset($this->reference_map[$file_path]);
+                unset($this->type_map[$file_path]);
+                unset($this->argument_map[$file_path]);
                 $analysis_worker($i, $file_path);
                 ++$i;
 
