@@ -8,6 +8,9 @@ use function substr;
 use function strlen;
 use function array_reverse;
 use function array_sum;
+use function array_walk;
+use function array_merge;
+use function array_keys;
 
 abstract class DataFlowGraph
 {
@@ -133,5 +136,19 @@ abstract class DataFlowGraph
         $mean = $lengths / $count;
 
         return [$count, \count($origin_counts), \count($destination_counts), $mean];
+    }
+
+    /**
+     * @psalm-return list<list<string>>
+     */
+    public function summarizeEdges(): array
+    {
+        $edges = [];
+
+        foreach ($this->forward_edges as $source => $destinations) {
+            $edges[] = array_merge([$source], array_keys($destinations));
+        }
+
+        return $edges;
     }
 }

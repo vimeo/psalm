@@ -169,6 +169,25 @@ class PsalmEndToEndTest extends TestCase
         $this->assertSame(1, $result['CODE']);
     }
 
+    public function testTaintGraphDumping(): void
+    {
+        $this->runPsalmInit(1);
+        $result = $this->runPsalm(
+            [
+                '--taint-analysis',
+                '--dump-taint-graph='.self::$tmpDir.'/taints.dot',
+            ],
+            self::$tmpDir,
+            true
+        );
+
+        $this->assertSame(1, $result['CODE']);
+        $this->assertFileEquals(
+            __DIR__ . '/../fixtures/expected_taint_graph.dot',
+            self::$tmpDir.'/taints.dot'
+        );
+    }
+
     public function testLegacyConfigWithoutresolveFromConfigFile(): void
     {
         $this->runPsalmInit(1);
