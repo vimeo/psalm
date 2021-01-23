@@ -412,6 +412,9 @@ class MethodCallTest extends TestCase
 
                         throw new RuntimeException("unexpected type");
                     }',
+                    'assertions' => [],
+                    'error_levels' => [],
+                    'php_version' =>  '8.0'
             ],
             'PDOMethod' => [
                 '<?php
