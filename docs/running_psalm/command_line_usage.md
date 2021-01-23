@@ -16,6 +16,13 @@ If you want to run on specific files, use
 
 Run with `--help` to see a list of options that Psalm supports.
 
+## Exit status
+
+Psalm exits with status `0` when it successfully completed and found no issues,
+`1` when there was a problem running Psalm and `2` when it completed
+successfully but found some issues. Any exit status apart from those indicate
+some internal problem.
+
 ## Shepherd
 
 Psalm currently offers some GitHub integration with public projects.
