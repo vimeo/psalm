@@ -1273,7 +1273,7 @@ class Codebase
                         return null;
                     }
 
-                    return [$recent_type, '[', $offset];
+                    return [$recent_type, $gap, $offset];
                 }
             }
 
