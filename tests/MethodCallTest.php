@@ -402,7 +402,15 @@ class MethodCallTest extends TestCase
                             return "mixed";
                         }
 
-                        return $type->getName();
+                        if ($type instanceof ReflectionUnionType) {
+                            return "union";
+                        }
+
+                        if ($type instanceof ReflectionNamedType) {
+                            return $type->getName();
+                        }
+
+                        throw new RuntimeException("unexpected type");
                     }',
             ],
             'PDOMethod' => [
