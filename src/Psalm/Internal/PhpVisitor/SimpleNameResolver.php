@@ -28,17 +28,8 @@ class SimpleNameResolver extends NodeVisitorAbstract
     private $end_change;
 
     /**
-     * Constructs a name resolution visitor.
-     *
-     * Options:
-     *  * preserveOriginalNames (default false): An "originalName" attribute will be added to
-     *    all name nodes that underwent resolution.
-     *  * replaceNodes (default true): Resolved names are replaced in-place. Otherwise, a
-     *    resolvedName attribute is added. (Names that cannot be statically resolved receive a
-     *    namespacedName attribute, as usual.)
-     *
      * @param ErrorHandler $errorHandler Error handler
-     * @param array<int, array{int, int, int, int}> $offset_map
+     * @param null|array<int, array{int, int, int, int, int, string}> $offset_map
      */
     public function __construct(ErrorHandler $errorHandler, ?array $offset_map = null)
     {
@@ -73,6 +64,17 @@ class SimpleNameResolver extends NodeVisitorAbstract
         } elseif ($node instanceof Stmt\GroupUse) {
             foreach ($node->uses as $use) {
                 $this->addAlias($use, $node->type, $node->prefix);
+            }
+        } elseif ($node instanceof Stmt\Class_) {
+            if (null !== $node->extends) {
+                $node->extends = $this->resolveClassName($node->extends);
+            }
+            foreach ($node->implements as &$interface) {
+                $interface = $this->resolveClassName($interface);
+            }
+            $this->resolveAttrGroups($node);
+            if (null !== $node->name) {
+                $this->addNamespacedName($node);
             }
         }
 
@@ -190,6 +192,9 @@ class SimpleNameResolver extends NodeVisitorAbstract
     /**
      * Resolve name, according to name resolver options.
      *
+     * CAVE: Attribute values are of type `string`, this is
+     * different to PhpParser's `NameResolver` using objects.
+     *
      * @param Name $name Function or constant name to resolve
      * @param Stmt\Use_::TYPE_*  $type One of Stmt\Use_::TYPE_*
      *
@@ -200,14 +205,40 @@ class SimpleNameResolver extends NodeVisitorAbstract
         $resolvedName = $this->nameContext->getResolvedName($name, $type);
         if (null !== $resolvedName) {
             $name->setAttribute('resolvedName', $resolvedName->toString());
+        } else {
+            $namespaceName = Name\FullyQualified::concat(
+                $this->nameContext->getNamespace(),
+                $name,
+                $name->getAttributes()
+            );
+            if ($namespaceName instanceof Name) {
+                $name->setAttribute('namespacedName', $namespaceName->toString());
+            }
         }
-
         return $name;
     }
 
     protected function resolveClassName(Name $name): Name
     {
         return $this->resolveName($name, Stmt\Use_::TYPE_NORMAL);
+    }
+
+    protected function addNamespacedName(Stmt\Class_ $node): void
+    {
+        /** @psalm-suppress UndefinedPropertyAssignment */
+        $node->namespacedName = Name::concat(
+            $this->nameContext->getNamespace(),
+            (string)$node->name
+        );
+    }
+
+    protected function resolveAttrGroups(Stmt\Class_ $node): void
+    {
+        foreach ($node->attrGroups as $attrGroup) {
+            foreach ($attrGroup->attrs as $attr) {
+                $attr->name = $this->resolveClassName($attr->name);
+            }
+        }
     }
 
     protected function resolveTrait(Stmt\Trait_ $node): void
