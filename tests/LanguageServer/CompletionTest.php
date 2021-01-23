@@ -815,4 +815,39 @@ class CompletionTest extends \Psalm\Tests\TestCase
         $codebase->scanFiles();
         $this->analyzeFile('somefile.php', new Context());
     }
+
+    public function testCompletionOnArrayKey(): void
+    {
+
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @var array{ foo: int, bar: int } */
+                $my_array = ["foo" => 1, "bar" => 2];
+                $my_array[]
+                '
+        );
+
+        $codebase->file_provider->openFile('somefile.php');
+        $codebase->scanFiles();
+        $this->analyzeFile('somefile.php', new Context());
+
+        $completion_data = $codebase->getCompletionDataAtPosition('somefile.php', new Position(3, 26));
+        $this->assertSame(
+            [
+                'array{bar: int, foo: int}',
+                '[',
+                142,
+            ],
+            $completion_data
+        );
+
+        $completion_items = $codebase->getCompletionItemsForArrayKeys($completion_data[0]);
+
+        $this->assertCount(2, $completion_items);
+    }
 }

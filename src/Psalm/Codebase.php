@@ -1230,7 +1230,7 @@ class Codebase
     }
 
     /**
-     * @return array{0: string, 1: '->'|'::'|'symbol', 2: int}|null
+     * @return array{0: string, 1: '->'|'::'|'['|'symbol', 2: int}|null
      */
     public function getCompletionDataAtPosition(string $file_path, Position $position): ?array
     {
@@ -1262,10 +1262,25 @@ class Codebase
                 : 0;
             $end_pos = $end_pos_excluding_whitespace + $num_whitespace_bytes;
 
+            if ($offset - $end_pos === 1) {
+                $candidate_gap = substr($file_contents, $end_pos, 1);
+
+                if ($candidate_gap == '[') {
+                    $gap = $candidate_gap;
+                    $recent_type = $possible_type;
+
+                    if ($recent_type === 'mixed') {
+                        return null;
+                    }
+
+                    return [$recent_type, '[', $offset];
+                }
+            }
+
             if ($offset - $end_pos === 2 || $offset - $end_pos === 3) {
                 $candidate_gap = substr($file_contents, $end_pos, 2);
 
-                if ($candidate_gap === '->' || $candidate_gap === '::') {
+                if ($candidate_gap === '->' || $candidate_gap === '::' ) {
                     $gap = $candidate_gap;
                     $recent_type = $possible_type;
 
@@ -1496,6 +1511,33 @@ class Codebase
             );
         }
 
+        return $completion_items;
+    }
+
+    /**
+     * @return list<\LanguageServerProtocol\CompletionItem>
+     */
+    public function getCompletionItemsForArrayKeys(
+        string $type_string,
+    ) : array {
+        $completion_items = [];
+        $type = Type::parseString($type_string);
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof Type\Atomic\TKeyedArray) {
+                foreach($atomic_type->properties as $property_name => $property ) {
+                    $completion_items[] = new \LanguageServerProtocol\CompletionItem(
+                        (string) $property_name,
+                        \LanguageServerProtocol\CompletionItemKind::PROPERTY,
+                        (string) $property,
+                        null,
+                        null,
+                        null,
+                        "'$property_name'",
+                    );
+                }
+
+            }
+        }
         return $completion_items;
     }
 

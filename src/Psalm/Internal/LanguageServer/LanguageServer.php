@@ -247,7 +247,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
                 if ($this->project_analyzer->provide_completion) {
                     $serverCapabilities->completionProvider = new CompletionOptions();
                     $serverCapabilities->completionProvider->resolveProvider = false;
-                    $serverCapabilities->completionProvider->triggerCharacters = ['$', '>', ':'];
+                    $serverCapabilities->completionProvider->triggerCharacters = ['$', '>', ':',"["];
                 }
 
                 $serverCapabilities->signatureHelpProvider = new SignatureHelpOptions(['(', ',']);
