@@ -7,6 +7,7 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Tests\Internal\Provider;
 use Psalm\Tests\TestConfig;
+use Psalm\Type;
 
 class CompletionTest extends \Psalm\Tests\TestCase
 {
@@ -849,5 +850,80 @@ class CompletionTest extends \Psalm\Tests\TestCase
         $completion_items = $codebase->getCompletionItemsForArrayKeys($completion_data[0]);
 
         $this->assertCount(2, $completion_items);
+    }
+
+    public function testTypeContextForFunctionArgument(): void
+    {
+
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace Bar;
+                function my_func(string $arg_a, bool $arg_b) : string {
+                }
+
+                my_func()'
+        );
+
+        $codebase->file_provider->openFile('somefile.php');
+        $codebase->scanFiles();
+        $this->analyzeFile('somefile.php', new Context());
+
+        $type = $codebase->getTypeContextAtPosition('somefile.php', new Position(5, 24));
+        $this->assertSame('string', (string) $type);
+    }
+
+    public function testTypeContextForFunctionArgumentWithWhiteSpace(): void
+    {
+
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace Bar;
+                function my_func(string $arg_a, bool $arg_b) : string {
+                }
+
+                my_func( "yes", )'
+        );
+
+        $codebase->file_provider->openFile('somefile.php');
+        $codebase->scanFiles();
+        $this->analyzeFile('somefile.php', new Context());
+
+        $type = $codebase->getTypeContextAtPosition('somefile.php', new Position(5, 32));
+        $this->assertSame('bool', (string) $type);
+    }
+
+    public function testCompletionsForType(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $completion_items = $codebase->getCompletionItemsForType(Type::parseString('bool'));
+        $this->assertCount(2, $completion_items);
+
+        $completion_items = $codebase->getCompletionItemsForType(Type::parseString('true'));
+        $this->assertCount(1, $completion_items);
+
+        $completion_items = $codebase->getCompletionItemsForType(Type::parseString("'yes'|'no'"));
+        $this->assertCount(2, $completion_items);
+
+        $completion_items = $codebase->getCompletionItemsForType(Type::parseString("1|2|3"));
+        $this->assertCount(3, $completion_items);
+
+        $completion_items = $codebase->getCompletionItemsForType(Type::parseString("1.0"));
+        $this->assertCount(1, $completion_items);
+
+        $completion_items = $codebase->getCompletionItemsForType(Type::parseString("DateTime::RFC3339"));
+        $this->assertCount(1, $completion_items);
     }
 }

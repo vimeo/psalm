@@ -249,20 +249,26 @@ class TextDocument
             return new Success([]);
         }
 
-        if (!$completion_data) {
+        $type_context = $this->codebase->getTypeContextAtPosition($file_path, $position);
+
+        if (!$completion_data && !$type_context) {
             error_log('completion not found at ' . $position->line . ':' . $position->character);
 
             return new Success([]);
         }
 
-        [$recent_type, $gap, $offset] = $completion_data;
+        if ($completion_data) {
+            [$recent_type, $gap, $offset] = $completion_data;
 
-        if ($gap === '->' || $gap === '::') {
-            $completion_items = $this->codebase->getCompletionItemsForClassishThing($recent_type, $gap);
-        } else if ($gap === '[') {
-            $completion_items = $this->codebase->getCompletionItemsForArrayKeys($recent_type);
+            if ($gap === '->' || $gap === '::') {
+                $completion_items = $this->codebase->getCompletionItemsForClassishThing($recent_type, $gap);
+            } else if ($gap === '[') {
+                $completion_items = $this->codebase->getCompletionItemsForArrayKeys($recent_type);
+            } else {
+                $completion_items = $this->codebase->getCompletionItemsForPartialSymbol($recent_type, $offset, $file_path);
+            }
         } else {
-            $completion_items = $this->codebase->getCompletionItemsForPartialSymbol($recent_type, $offset, $file_path);
+            $completion_items = $this->codebase->getCompletionItemsForType($type_context);
         }
 
         return new Success(new CompletionList($completion_items, false));

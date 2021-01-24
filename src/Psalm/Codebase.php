@@ -900,6 +900,40 @@ class Codebase
         $this->file_storage_provider->remove($file_path);
     }
 
+    public function getFunctionStorageForSymbol(string $file_path, string $symbol): ?FunctionLikeStorage {
+        if (strpos($symbol, '::')) {
+            $symbol = substr($symbol, 0, -2);
+            /** @psalm-suppress ArgumentTypeCoercion */
+            $method_id = new \Psalm\Internal\MethodIdentifier(...explode('::', $symbol));
+
+            $declaring_method_id = $this->methods->getDeclaringMethodId($method_id);
+
+            if (!$declaring_method_id) {
+                return null;
+            }
+
+            $storage = $this->methods->getStorage($declaring_method_id);
+            return $storage;
+        }
+
+        $function_id = strtolower(substr($symbol, 0, -2));
+        $file_storage = $this->file_storage_provider->get($file_path);
+
+        if (isset($file_storage->functions[$function_id])) {
+            $function_storage = $file_storage->functions[$function_id];
+
+            return $function_storage;
+        }
+
+        if (!$function_id) {
+            return null;
+        }
+
+        $function = $this->functions->getStorage(null, $function_id);
+
+        return $function;
+    }
+
     public function getSymbolInformation(string $file_path, string $symbol): ?string
     {
         if (\is_numeric($symbol[0])) {
@@ -1245,7 +1279,7 @@ class Codebase
         $offset = $position->toOffset($file_contents);
 
         [$reference_map, $type_map] = $this->analyzer->getMapsForFile($file_path);
-
+        print_r([$reference_map, $type_map]);
         if (!$reference_map && !$type_map) {
             return null;
         }
@@ -1312,6 +1346,31 @@ class Codebase
 
                 return [$recent_type, 'symbol', $offset];
             }
+        }
+
+        return null;
+    }
+
+    public function getTypeContextAtPosition(string $file_path, Position $position): ?Type\Union
+    {
+        $file_contents = $this->getFileContents($file_path);
+        $offset = $position->toOffset($file_contents);
+
+        [$reference_map, $type_map, $argument_map] = $this->analyzer->getMapsForFile($file_path);
+        if (!$reference_map && !$type_map && !$argument_map) {
+            return null;
+        }
+        foreach ($argument_map as $start_pos => [$end_pos, $function, $argument_num]) {
+            if ($offset < $start_pos || $offset > $end_pos) {
+                continue;
+            }
+            // First parameter to a function-like
+            $function_storage = $this->getFunctionStorageForSymbol($file_path, $function . '()');
+            if (!$function_storage || !$function_storage->params){
+                return null;
+            }
+            $parameter = $function_storage->params[$argument_num];
+            return $parameter->type;
         }
 
         return null;
@@ -1511,6 +1570,62 @@ class Codebase
             );
         }
 
+        return $completion_items;
+    }
+
+    /**
+     * @return list<\LanguageServerProtocol\CompletionItem>
+     */
+    public function getCompletionItemsForType(Type\Union $type): array
+    {
+        $completion_items = [];
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof Type\Atomic\TBool) {
+                $bools = (string) $atomic_type === 'bool' ? ['true', 'false'] : [(string) $atomic_type];
+                foreach( $bools as $property_name) {
+                    $completion_items[] = new \LanguageServerProtocol\CompletionItem(
+                        $property_name,
+                        \LanguageServerProtocol\CompletionItemKind::VALUE,
+                        'bool',
+                        null,
+                        null,
+                        null,
+                        $property_name,
+                    );
+                }
+            } elseif ($atomic_type instanceof Type\Atomic\TLiteralString) {
+                $completion_items[] = new \LanguageServerProtocol\CompletionItem(
+                    $atomic_type->value,
+                    \LanguageServerProtocol\CompletionItemKind::VALUE,
+                    $atomic_type->getId(),
+                    null,
+                    null,
+                    null,
+                    "'$atomic_type->value'",
+                );
+            } elseif ($atomic_type instanceof Type\Atomic\TLiteralFloat || $atomic_type instanceof Type\Atomic\TLiteralInt) {
+                $completion_items[] = new \LanguageServerProtocol\CompletionItem(
+                    (string) $atomic_type->value,
+                    \LanguageServerProtocol\CompletionItemKind::VALUE,
+                    $atomic_type->getId(),
+                    null,
+                    null,
+                    null,
+                    (string) $atomic_type->value,
+                );
+            } elseif ($atomic_type instanceof Type\Atomic\TScalarClassConstant) {
+                $const = $atomic_type->fq_classlike_name . '::' . $atomic_type->const_name;
+                $completion_items[] = new \LanguageServerProtocol\CompletionItem(
+                    $const,
+                    \LanguageServerProtocol\CompletionItemKind::VALUE,
+                    $atomic_type->getId(),
+                    null,
+                    null,
+                    null,
+                    $const,
+                );
+            }
+        }
         return $completion_items;
     }
 
