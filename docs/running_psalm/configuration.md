@@ -384,13 +384,13 @@ Contains a list of all the directories that Psalm should inspect. You can also s
 Optional. Same format as `<projectFiles>`. Directories Psalm should load but not inspect.
 
 #### &lt;fileExtensions&gt;
-Optional.  A list of extensions to search over. See [Checking non-PHP files](checking_non_php_files.md) to understand how to extend this.
+Optional. A list of extensions to search over. See [Checking non-PHP files](checking_non_php_files.md) to understand how to extend this.
 
 #### &lt;plugins&gt;
-Optional.  A list of `<plugin filename="path_to_plugin.php" />` entries. See the [Plugins](plugins/using_plugins.md) section for more information.
+Optional. A list of `<plugin filename="path_to_plugin.php" />` entries. See the [Plugins](plugins/using_plugins.md) section for more information.
 
 #### &lt;issueHandlers&gt;
-Optional.  If you don't want Psalm to complain about every single issue it finds, the issueHandler tag allows you to configure that. [Dealing with code issues](dealing_with_code_issues.md) tells you more.
+Optional. If you don't want Psalm to complain about every single issue it finds, the issueHandler tag allows you to configure that. [Dealing with code issues](dealing_with_code_issues.md) tells you more.
 
 #### &lt;mockClasses&gt;
 Optional. Do you use mock classes in your tests? If you want Psalm to ignore them when checking files, include a fully-qualified path to the class with `<class name="Your\Namespace\ClassName" />`
@@ -402,7 +402,7 @@ Optional. Do you have objects with properties that cannot be determined statical
 Optional. If your codebase uses classes and functions that are not visible to Psalm via reflection (e.g. if there are internal packages that your codebase relies on that are not available on the machine running Psalm), you can use stub files. Used by PhpStorm (a popular IDE) and others, stubs provide a description of classes and functions without the implementations. You can find a list of stubs for common classes [here](https://github.com/JetBrains/phpstorm-stubs). List out each file with `<file name="path/to/file.php" />`.
 
 #### &lt;ignoreExceptions&gt;
-Optional.  A list of exceptions to not report for `checkForThrowsDocblock` or `checkForThrowsInGlobalScope`. If an exception has `onlyGlobalScope` set to `true`, only `checkForThrowsInGlobalScope` is ignored for that exception, e.g.
+Optional. A list of exceptions to not report for `checkForThrowsDocblock` or `checkForThrowsInGlobalScope`. If an exception has `onlyGlobalScope` set to `true`, only `checkForThrowsInGlobalScope` is ignored for that exception, e.g.
 ```xml
 <ignoreExceptions>
   <class name="fully\qualified\path\Exc" onlyGlobalScope="true" />
@@ -410,9 +410,39 @@ Optional.  A list of exceptions to not report for `checkForThrowsDocblock` or `c
 ```
 
 #### &lt;globals&gt;
-Optional.  If your codebase uses global variables that are accessed with the `global` keyword, you can declare their type.  e.g.
+Optional. If your codebase uses global variables that are accessed with the `global` keyword, you can declare their type.  e.g.
 ```xml
 <globals>
   <var name="globalVariableName" type="type" />
 </globals>
+```
+
+Some frameworks and libraries expose functionalities through e.g. `$GLOBALS[DB]->query($query)`.
+The  following configuration declares custom types for super-globals (`$GLOBALS`, `$_GET`, ...).
+
+```xml
+<globals>
+  <var name="$GLOBALS" type="array{DB: MyVendor\DatabaseConnection, VIEW: MyVendor\TemplateView}" />
+  <var name="$_GET" type="array{data: array<string, string>}" />     
+</globals>
+```
+
+The example above declares global variables as shown below
+
+* `$GLOBALS`
+  + `DB` of type `MyVendor\DatabaseConnection`
+  + `VIEW` of type `MyVendor\TemplateView`
+* `$_GET`
+  + `data` e.g. like `["id" => "123", "title" => "Nice"]`
+
+## Accessing Psalm configuration in plugins
+
+Plugins can access or modify the global configuration in plugins using
+[singleton Psalm\Config](https://github.com/vimeo/psalm/blob/master/src/Psalm/Config.php).
+
+```php
+$config = \Psalm\Config::getInstance();
+if (!isset($config->globals['$GLOBALS'])) {
+    $config->globals['$GLOBALS'] = 'array{data: array<string, string>}';
+}
 ```
