@@ -1,6 +1,6 @@
 # Avoiding false-positives
 
-When you run Psalm’s taint analysis for the first time you may see a bunch of false-positives.
+When you run Psalm's taint analysis for the first time you may see a bunch of false-positives.
 
 Nobody likes false-positives!
 
@@ -24,6 +24,29 @@ function echoVar(string $str) : void {
 }
 
 echoVar($_GET["text"]);
+```
+
+## Conditional escaping tainted input
+
+A slightly modified version of the previous example is using a condition to determine whether the return value
+is considered secure. Only in case function argument `$escape` is true, the corresponding annotation
+`@psalm-taint-escape` is applied for taint type `html` .
+
+```php
+/**
+ * @param string $str
+ * @param bool $escape
+ * @psalm-taint-escape ($escape is true ? 'html' : null)
+ */
+function processVar(string $str, bool $escape = true) : string {
+    if ($escape) {
+      $str = str_replace(['<', '>'], '', $str);
+    }
+    return $str;
+}
+
+echo processVar($_GET['text'], false); // detects tainted HTML
+echo processVar($_GET['text'], true); // considered secure
 ```
 
 ## Specializing taints in functions
