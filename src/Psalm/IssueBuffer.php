@@ -686,7 +686,7 @@ class IssueBuffer
                 && $project_analyzer->generated_report_options
                 && isset($_SERVER['GITHUB_WORKFLOW']))
         ) {
-            exit(1);
+            exit(2);
         }
     }
 
