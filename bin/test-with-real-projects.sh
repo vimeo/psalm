@@ -26,7 +26,7 @@ collections)
 proxymanager)
 	git clone git@github.com:muglug/ProxyManager.git
 	cd ProxyManager
-	composer install
+	php -dextension=intl.so composer install
 	~/project/psalm --monochrome
 	;;
 
