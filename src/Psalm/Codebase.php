@@ -1279,7 +1279,7 @@ class Codebase
         $offset = $position->toOffset($file_contents);
 
         [$reference_map, $type_map] = $this->analyzer->getMapsForFile($file_path);
-        print_r([$reference_map, $type_map]);
+
         if (!$reference_map && !$type_map) {
             return null;
         }
@@ -1314,7 +1314,7 @@ class Codebase
             if ($offset - $end_pos === 2 || $offset - $end_pos === 3) {
                 $candidate_gap = substr($file_contents, $end_pos, 2);
 
-                if ($candidate_gap === '->' || $candidate_gap === '::' ) {
+                if ($candidate_gap === '->' || $candidate_gap === '::') {
                     $gap = $candidate_gap;
                     $recent_type = $possible_type;
 
