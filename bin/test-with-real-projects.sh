@@ -23,14 +23,6 @@ collections)
 	~/project/psalm --monochrome --show-info=false
 	;;
 
-proxymanager)
-	git clone git@github.com:muglug/ProxyManager.git
-	cd ProxyManager
-	whereis composer
-	php -dextension=intl.so /usr/local/bin/composer install
-	~/project/psalm --monochrome
-	;;
-
 psl)
 	git clone git@github.com:muglug/psl.git
 	cd psl
