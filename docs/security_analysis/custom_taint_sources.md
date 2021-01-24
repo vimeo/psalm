@@ -6,7 +6,7 @@ You can define your own taint sources with an annotation or a plugin.
 
 You can use the annotation `@psalm-taint-source <taint-type>` to indicate a function or method that provides user input.
 
-In the below example the `input` taint type is specified as a standin for the four input taints `text`, `html`, `sql` and `shell`.
+In the below example the `input` taint type is specified as a standin for input taints as defined in [Psalm\Type\TaintKindGroup](https://github.com/vimeo/psalm/blob/master/src/Psalm/Type/TaintKindGroup.php).
 
 ```php
 /**
