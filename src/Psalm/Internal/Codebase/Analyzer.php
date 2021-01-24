@@ -1173,7 +1173,8 @@ class Analyzer
     }
 
     /**
-     * @param string $reference The symbol name for the reference. Prepend with an asterisk (*) to signify a reference that doesn't exist.
+     * @param string $reference The symbol name for the reference.
+     *                          Prepend with an asterisk (*) to signify a reference that doesn't exist.
      */
     public function addNodeReference(string $file_path, PhpParser\Node $node, string $reference): void
     {
