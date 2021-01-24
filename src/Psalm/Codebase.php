@@ -1279,7 +1279,16 @@ class Codebase
         }
 
         foreach ($reference_map as $start_pos => [$end_pos, $possible_reference]) {
-            if ($offset < $start_pos || $possible_reference[0] !== '*') {
+            if ($offset < $start_pos) {
+                continue;
+            }
+            // If the reference precedes a "::" then treat it as a class reference.
+            if ($offset - $end_pos === 2 && substr($file_contents, $end_pos, 2) === '::') {
+                return [$possible_reference, '::', $offset];
+            }
+
+            // Only continue for references that are partial / don't exist.
+            if ($possible_reference[0] !== '*') {
                 continue;
             }
 

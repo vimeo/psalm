@@ -766,4 +766,36 @@ class CompletionTest extends \Psalm\Tests\TestCase
 
         $this->assertCount(2, $completion_items);
     }
+
+    public function testCompletionOnClassReference(): void
+    {
+
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace Bar;
+
+                class Alpha {
+                    const FOO = "123";
+                    static function add() : void {
+                    }
+                }
+                Alpha::'
+        );
+
+        $codebase->file_provider->openFile('somefile.php');
+        $codebase->scanFiles();
+        $this->analyzeFile('somefile.php', new Context());
+
+        $completion_data = $codebase->getCompletionDataAtPosition('somefile.php', new Position(8, 23));
+
+        $this->assertSame(['Bar\Alpha', '::', 221], $completion_data);
+
+        $completion_items = $codebase->getCompletionItemsForClassishThing($completion_data[0], $completion_data[1]);
+        $this->assertCount(2, $completion_items);
+    }
 }
