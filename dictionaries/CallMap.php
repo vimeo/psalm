@@ -2,7 +2,7 @@
 namespace Phan\Language\Internal;
 
 /**
- * CURRENT PHP TARGET VERSION: 7.4
+ * CURRENT PHP TARGET VERSION: 8.0
  * The version above has to match Psalm\Internal\Codebase\InternalCallMapHandler::PHP_(MAJOR|MINOR)_VERSION
  *
  * Format
