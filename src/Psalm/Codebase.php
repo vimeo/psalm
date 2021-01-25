@@ -1633,7 +1633,7 @@ class Codebase
      * @return list<\LanguageServerProtocol\CompletionItem>
      */
     public function getCompletionItemsForArrayKeys(
-        string $type_string,
+        string $type_string
     ) : array {
         $completion_items = [];
         $type = Type::parseString($type_string);
