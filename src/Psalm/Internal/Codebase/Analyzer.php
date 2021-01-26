@@ -1144,7 +1144,7 @@ class Analyzer
         string $node_type,
         PhpParser\Node $parent_node = null
     ): void {
-        if (!$node_type) {
+        if ($node_type === '') {
             throw new \UnexpectedValueException('non-empty node_type expected');
         }
 
@@ -1161,8 +1161,8 @@ class Analyzer
         string $reference,
         int $argument_number
     ): void {
-        if (!$reference) {
-            throw new \UnexpectedValueException('non-empty node_type expected');
+        if ($reference === '') {
+            throw new \UnexpectedValueException('non-empty reference expected');
         }
 
         $this->argument_map[$file_path][$start_position] = [

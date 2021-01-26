@@ -798,4 +798,21 @@ class CompletionTest extends \Psalm\Tests\TestCase
         $completion_items = $codebase->getCompletionItemsForClassishThing($completion_data[0], $completion_data[1]);
         $this->assertCount(2, $completion_items);
     }
+
+    public function testNoCrashOnLoopId(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                for ($x = 0; $x <= 10; $x++) {}'
+        );
+
+        $codebase->file_provider->openFile('somefile.php');
+        $codebase->scanFiles();
+        $this->analyzeFile('somefile.php', new Context());
+    }
 }
