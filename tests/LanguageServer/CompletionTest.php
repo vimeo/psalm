@@ -919,8 +919,9 @@ class CompletionTest extends \Psalm\Tests\TestCase
         $completion_items = $codebase->getCompletionItemsForType(Type::parseString("1|2|3"));
         $this->assertCount(3, $completion_items);
 
+        // Floats not supported.
         $completion_items = $codebase->getCompletionItemsForType(Type::parseString("1.0"));
-        $this->assertCount(1, $completion_items);
+        $this->assertCount(0, $completion_items);
 
         $completion_items = $codebase->getCompletionItemsForType(Type::parseString("DateTime::RFC3339"));
         $this->assertCount(1, $completion_items);
