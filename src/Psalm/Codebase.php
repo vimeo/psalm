@@ -900,7 +900,8 @@ class Codebase
         $this->file_storage_provider->remove($file_path);
     }
 
-    public function getFunctionStorageForSymbol(string $file_path, string $symbol): ?FunctionLikeStorage {
+    public function getFunctionStorageForSymbol(string $file_path, string $symbol): ?FunctionLikeStorage
+    {
         if (strpos($symbol, '::')) {
             $symbol = substr($symbol, 0, -2);
             /** @psalm-suppress ArgumentTypeCoercion */
@@ -1366,7 +1367,7 @@ class Codebase
             }
             // First parameter to a function-like
             $function_storage = $this->getFunctionStorageForSymbol($file_path, $function . '()');
-            if (!$function_storage || !$function_storage->params){
+            if (!$function_storage || !$function_storage->params) {
                 return null;
             }
             $parameter = $function_storage->params[$argument_num];
@@ -1582,7 +1583,7 @@ class Codebase
         foreach ($type->getAtomicTypes() as $atomic_type) {
             if ($atomic_type instanceof Type\Atomic\TBool) {
                 $bools = (string) $atomic_type === 'bool' ? ['true', 'false'] : [(string) $atomic_type];
-                foreach( $bools as $property_name) {
+                foreach ($bools as $property_name) {
                     $completion_items[] = new \LanguageServerProtocol\CompletionItem(
                         $property_name,
                         \LanguageServerProtocol\CompletionItemKind::VALUE,
@@ -1603,7 +1604,9 @@ class Codebase
                     null,
                     "'$atomic_type->value'",
                 );
-            } elseif ($atomic_type instanceof Type\Atomic\TLiteralFloat || $atomic_type instanceof Type\Atomic\TLiteralInt) {
+            } elseif ($atomic_type instanceof Type\Atomic\TLiteralFloat
+                    || $atomic_type instanceof Type\Atomic\TLiteralInt
+                ) {
                 $completion_items[] = new \LanguageServerProtocol\CompletionItem(
                     (string) $atomic_type->value,
                     \LanguageServerProtocol\CompletionItemKind::VALUE,
@@ -1639,7 +1642,7 @@ class Codebase
         $type = Type::parseString($type_string);
         foreach ($type->getAtomicTypes() as $atomic_type) {
             if ($atomic_type instanceof Type\Atomic\TKeyedArray) {
-                foreach($atomic_type->properties as $property_name => $property ) {
+                foreach ($atomic_type->properties as $property_name => $property) {
                     $completion_items[] = new \LanguageServerProtocol\CompletionItem(
                         (string) $property_name,
                         \LanguageServerProtocol\CompletionItemKind::PROPERTY,
@@ -1650,7 +1653,6 @@ class Codebase
                         "'$property_name'",
                     );
                 }
-
             }
         }
         return $completion_items;

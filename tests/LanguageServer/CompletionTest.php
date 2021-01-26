@@ -827,7 +827,6 @@ class CompletionTest extends \Psalm\Tests\TestCase
         $this->addFile(
             'somefile.php',
             '<?php
-                /** @var array{ foo: int, bar: int } */
                 $my_array = ["foo" => 1, "bar" => 2];
                 $my_array[]
                 '
@@ -837,12 +836,12 @@ class CompletionTest extends \Psalm\Tests\TestCase
         $codebase->scanFiles();
         $this->analyzeFile('somefile.php', new Context());
 
-        $completion_data = $codebase->getCompletionDataAtPosition('somefile.php', new Position(3, 26));
+        $completion_data = $codebase->getCompletionDataAtPosition('somefile.php', new Position(2, 26));
         $this->assertSame(
             [
-                'array{bar: int, foo: int}',
+                'array{bar: 2, foo: 1}',
                 '[',
-                142,
+                86,
             ],
             $completion_data
         );

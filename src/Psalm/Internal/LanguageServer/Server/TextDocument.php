@@ -262,10 +262,14 @@ class TextDocument
 
             if ($gap === '->' || $gap === '::') {
                 $completion_items = $this->codebase->getCompletionItemsForClassishThing($recent_type, $gap);
-            } else if ($gap === '[') {
+            } elseif ($gap === '[') {
                 $completion_items = $this->codebase->getCompletionItemsForArrayKeys($recent_type);
             } else {
-                $completion_items = $this->codebase->getCompletionItemsForPartialSymbol($recent_type, $offset, $file_path);
+                $completion_items = $this->codebase->getCompletionItemsForPartialSymbol(
+                    $recent_type,
+                    $offset,
+                    $file_path
+                );
             }
         } else {
             $completion_items = $this->codebase->getCompletionItemsForType($type_context);
