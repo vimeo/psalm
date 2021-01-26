@@ -1604,9 +1604,7 @@ class Codebase
                     null,
                     "'$atomic_type->value'",
                 );
-            } elseif ($atomic_type instanceof Type\Atomic\TLiteralFloat
-                    || $atomic_type instanceof Type\Atomic\TLiteralInt
-                ) {
+            } elseif ($atomic_type instanceof Type\Atomic\TLiteralInt) {
                 $completion_items[] = new \LanguageServerProtocol\CompletionItem(
                     (string) $atomic_type->value,
                     \LanguageServerProtocol\CompletionItemKind::VALUE,
