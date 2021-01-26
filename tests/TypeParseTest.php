@@ -717,7 +717,7 @@ class TypeParseTest extends TestCase
     public function testCombineLiteralStringWithClassString(): void
     {
         $this->assertSame(
-            'class-string|string(array)',
+            '"array"|class-string',
             Type::parseString('"array"|class-string')->getId()
         );
     }
@@ -902,26 +902,26 @@ class TypeParseTest extends TestCase
     {
         $docblock_type = Type::parseString('int-mask<0, 1, 2, 4>');
 
-        $this->assertSame('int(0)|int(1)|int(2)|int(3)|int(4)|int(5)|int(6)|int(7)', $docblock_type->getId());
+        $this->assertSame('0|1|2|3|4|5|6|7', $docblock_type->getId());
 
         $docblock_type = Type::parseString('int-mask<1, 2, 4>');
 
-        $this->assertSame('int(1)|int(2)|int(3)|int(4)|int(5)|int(6)|int(7)', $docblock_type->getId());
+        $this->assertSame('1|2|3|4|5|6|7', $docblock_type->getId());
 
         $docblock_type = Type::parseString('int-mask<1, 4>');
 
-        $this->assertSame('int(1)|int(4)|int(5)', $docblock_type->getId());
+        $this->assertSame('1|4|5', $docblock_type->getId());
 
         $docblock_type = Type::parseString('int-mask<PREG_PATTERN_ORDER, PREG_OFFSET_CAPTURE, PREG_UNMATCHED_AS_NULL>');
 
-        $this->assertSame('int(1)|int(256)|int(257)|int(512)|int(513)|int(768)|int(769)', $docblock_type->getId());
+        $this->assertSame('1|256|257|512|513|768|769', $docblock_type->getId());
     }
 
     public function testIntMaskWithClassConstant(): void
     {
         $docblock_type = Type::parseString('int-mask<0, A::FOO, A::BAR>');
 
-        $this->assertSame('int-mask<int(0), scalar-class-constant(A::FOO), scalar-class-constant(A::BAR)>', $docblock_type->getId());
+        $this->assertSame('int-mask<0, A::FOO, A::BAR>', $docblock_type->getId());
     }
 
     public function testIntMaskWithInvalidClassConstant(): void

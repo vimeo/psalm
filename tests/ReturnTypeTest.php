@@ -1288,7 +1288,7 @@ class ReturnTypeTest extends TestCase
                         return 1;
                     };
                 }',
-                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:28 - The inferred type \'pure-Closure(iterable<int, T:fn-map as mixed>):int(1)\' does not match the declared return type \'callable(iterable<int, T:fn-map as mixed>):iterable<int, U:fn-map as mixed>\' for map',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:28 - The inferred type \'pure-Closure(iterable<int, T:fn-map as mixed>):1\' does not match the declared return type \'callable(iterable<int, T:fn-map as mixed>):iterable<int, U:fn-map as mixed>\' for map',
             ],
             'cannotInferReturnClosureWithDifferentTypes' => [
                 '<?php

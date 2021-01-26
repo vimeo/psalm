@@ -101,7 +101,7 @@ class ReconcilerTest extends \Psalm\Tests\TestCase
             'falsyWithMyObjectPipeBool' => ['false', 'falsy', 'MyObject|bool'],
             'falsyWithMixed' => ['empty-mixed', 'falsy', 'mixed'],
             'falsyWithBool' => ['false', 'falsy', 'bool'],
-            'falsyWithStringOrNull' => ['null|string()|string(0)', 'falsy', 'string|null'],
+            'falsyWithStringOrNull' => ['""|"0"|null', 'falsy', 'string|null'],
             'falsyWithScalarOrNull' => ['empty-scalar', 'falsy', 'scalar'],
 
             'notMyObjectWithMyObjectPipeBool' => ['bool', '!MyObject', 'MyObject|bool'],

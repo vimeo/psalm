@@ -340,7 +340,7 @@ class ClosureTest extends TestCase
                     $a = function() : Closure { return function() : string { return "hello"; }; };
                     $b = $a()();',
                 'assertions' => [
-                    '$a' => 'pure-Closure():pure-Closure():string(hello)',
+                    '$a' => 'pure-Closure():pure-Closure():"hello"',
                     '$b' => 'string',
                 ],
             ],

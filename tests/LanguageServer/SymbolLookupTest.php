@@ -216,13 +216,13 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
 
         $this->assertNotNull($symbol_at_position);
 
-        $this->assertSame('213-214:int(1)', $symbol_at_position[0]);
+        $this->assertSame('213-214:1', $symbol_at_position[0]);
 
         $symbol_at_position = $codebase->getReferenceAtPosition('somefile.php', new Position(17, 30));
 
         $this->assertNotNull($symbol_at_position);
 
-        $this->assertSame('425-426:int(2)', $symbol_at_position[0]);
+        $this->assertSame('425-426:2', $symbol_at_position[0]);
     }
 
     public function testGetSymbolPositionMissingArg(): void

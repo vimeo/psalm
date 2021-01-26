@@ -20,7 +20,7 @@ class TLiteralString extends TString
 
     public function getKey(bool $include_extra = true) : string
     {
-        return $this->getId();
+        return 'string(' . $this->value . ')';
     }
 
     public function __toString(): string
@@ -32,10 +32,15 @@ class TLiteralString extends TString
     {
         $no_newline_value = preg_replace("/\n/m", '\n', $this->value);
         if (strlen($this->value) > 80) {
-            return 'string(' . substr($no_newline_value, 0, 80) . '...' . ')';
+            return '"' . substr($no_newline_value, 0, 80) . '...' . '"';
         }
 
-        return 'string(' . $no_newline_value . ')';
+        return '"' . $no_newline_value . '"';
+    }
+
+    public function getAssertionString(bool $exact = false): string
+    {
+        return 'string(' . $this->value . ')';
     }
 
     /**

@@ -30,7 +30,12 @@ class TScalarClassConstant extends Scalar
 
     public function getId(bool $nested = false): string
     {
-        return $this->getKey();
+        return $this->fq_classlike_name . '::' . $this->const_name;
+    }
+
+    public function getAssertionString(bool $exact = false): string
+    {
+        return 'scalar-class-constant(' . $this->fq_classlike_name . '::' . $this->const_name . ')';
     }
 
     /**
@@ -68,10 +73,5 @@ class TScalarClassConstant extends Scalar
         return \Psalm\Type::getStringFromFQCLN($this->fq_classlike_name, $namespace, $aliased_classes, $this_class)
             . '::'
             . $this->const_name;
-    }
-
-    public function getAssertionString(bool $exact = false): string
-    {
-        return 'mixed';
     }
 }

@@ -1219,7 +1219,7 @@ class AssertionFinder
                                 null,
                                 null,
                                 null
-                            )->getId();
+                            )->getAssertionString();
                         }
                     }
                 }
@@ -1284,7 +1284,7 @@ class AssertionFinder
                                 null,
                                 null,
                                 null
-                            )->getId();
+                            )->getAssertionString();
                         }
                     }
                 }
@@ -3696,7 +3696,7 @@ class AssertionFinder
                         $literal_assertions = [];
 
                         foreach ($array_literal_types as $array_literal_type) {
-                            $literal_assertions[] = '=' . $array_literal_type->getId();
+                            $literal_assertions[] = '=' . $array_literal_type->getAssertionString();
                         }
 
                         if ($value_type->isFalsable()) {
@@ -3766,11 +3766,11 @@ class AssertionFinder
 
                     if ($key_type->allStringLiterals() && !$key_type->possibly_undefined) {
                         foreach ($key_type->getLiteralStrings() as $array_literal_type) {
-                            $literal_assertions[] = '=' . $array_literal_type->getId();
+                            $literal_assertions[] = '=' . $array_literal_type->getAssertionString();
                         }
                     } elseif ($key_type->allIntLiterals() && !$key_type->possibly_undefined) {
                         foreach ($key_type->getLiteralInts() as $array_literal_type) {
-                            $literal_assertions[] = '=' . $array_literal_type->getId();
+                            $literal_assertions[] = '=' . $array_literal_type->getAssertionString();
                         }
                     }
                 }

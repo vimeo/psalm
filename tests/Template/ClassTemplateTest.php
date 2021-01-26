@@ -1045,7 +1045,7 @@ class ClassTemplateTest extends TestCase
 
                     $c = new C();',
                 'assertions' => [
-                    '$c===' => 'C<string(hello)>',
+                    '$c===' => 'C<"hello">',
                 ],
             ],
             'SKIPPED-templateDefaultConstant' => [
@@ -3601,7 +3601,7 @@ class ClassTemplateTest extends TestCase
                     $mario = new CharacterRow(["id" => 5, "name" => "Mario", "height" => 3.5]);
 
                     $mario->ame = "Luigi";',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:47:29 - Argument 1 of CharacterRow::__set expects string(height)|string(id)|string(name), string(ame) provided',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:47:29 - Argument 1 of CharacterRow::__set expects "height"|"id"|"name", "ame" provided',
             ],
             'specialiseTypeBeforeReturning' => [
                 '<?php

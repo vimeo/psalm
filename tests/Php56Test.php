@@ -59,8 +59,8 @@ class Php56Test extends TestCase
                     $bitxor = C::BITXOR;',
                 'assertions' => [
                     '$c1' => 'int',
-                    '$c2===' => 'int(2)',
-                    '$c3===' => 'int(3)',
+                    '$c2===' => '2',
+                    '$c3===' => '3',
                     '$c1_3rd' => 'float|int',
                     '$c_sentence' => 'string',
                     '$cf' => 'int',

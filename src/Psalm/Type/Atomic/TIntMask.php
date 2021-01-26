@@ -31,7 +31,13 @@ class TIntMask extends TInt
 
     public function getId(bool $nested = false): string
     {
-        return $this->getKey();
+        $s = '';
+
+        foreach ($this->values as $value) {
+            $s .= $value->getId() . ', ';
+        }
+
+        return 'int-mask<' . substr($s, 0, -2) . '>';
     }
 
     /**

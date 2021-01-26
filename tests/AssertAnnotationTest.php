@@ -1244,7 +1244,7 @@ class AssertAnnotationTest extends TestCase
             'convertConstStringType' => [
                 '<?php
                     class A {
-                        const T1  = 1;
+                        const T1 = 1;
                         const T2 = 2;
 
                         /**
@@ -1259,7 +1259,6 @@ class AssertAnnotationTest extends TestCase
                             return in_array($t, [self::T1, self::T2], true);
                         }
                     }
-
 
                     function takesA(int $a) : void {
                         if (A::isValid($a)) {

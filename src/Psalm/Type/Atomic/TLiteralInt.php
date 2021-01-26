@@ -21,6 +21,11 @@ class TLiteralInt extends TInt
 
     public function getId(bool $nested = false): string
     {
+        return (string) $this->value;
+    }
+
+    public function getAssertionString(bool $exact = false): string
+    {
         return 'int(' . $this->value . ')';
     }
 
