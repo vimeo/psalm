@@ -97,9 +97,6 @@ jobs:
           name: Analyse Collections
           command: bin/test-with-real-projects.sh collections
       - run:
-          name: Analyse ProxyManager
-          command: bin/test-with-real-projects.sh proxymanager
-      - run:
           name: Analyse Psl
           command: bin/test-with-real-projects.sh psl
 
