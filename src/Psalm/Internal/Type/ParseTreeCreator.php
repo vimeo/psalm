@@ -764,7 +764,7 @@ class ParseTreeCreator
                     );
                 } else {
                     throw new TypeParseTreeException(
-                        'Bracket must be preceded by “Closure”, “callable”, "pure-callable" or a valid @method name'
+                        'Paranthesis must be preceded by “Closure”, “callable”, "pure-callable" or a valid @method name'
                     );
                 }
 
