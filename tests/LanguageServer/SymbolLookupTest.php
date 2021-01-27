@@ -44,6 +44,8 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
             '<?php
                 namespace B;
 
+                const APPLE = "🍏";
+
                 class A {
                     /** @var int|null */
                     protected $a;
@@ -81,6 +83,23 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
         $this->assertSame('<?php BANANA', $codebase->getSymbolInformation('somefile.php', 'B\A::BANANA'));
         $this->assertSame("<?php function B\baz(\n    int \$a\n) : int", $codebase->getSymbolInformation('somefile.php', 'B\baz()'));
         $this->assertSame("<?php function B\qux(\n    int \$a,\n    int \$b\n) : int", $codebase->getSymbolInformation('somefile.php', 'B\qux()'));
+        $this->assertSame("<?php const B\APPLE string", $codebase->getSymbolInformation('somefile.php', 'B\APPLE'));
+    }
+
+    public function testSimpleSymbolLookupGlobalConst(): void
+    {
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                const APPLE = "🍏";'
+        );
+
+        new FileAnalyzer($this->project_analyzer, 'somefile.php', 'somefile.php');
+
+        $codebase = $this->project_analyzer->getCodebase();
+
+        $this->analyzeFile('somefile.php', new Context());
+        $this->assertSame("<?php const APPLE string", $codebase->getSymbolInformation('somefile.php', 'APPLE'));
     }
 
     public function testSimpleSymbolLocation(): void
