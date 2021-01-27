@@ -9,5 +9,5 @@ class PdoStatement implements Traversable {
      * @param array $ctorArgs
      * @return false|T
      */
-    public function fetchObject($class = "stdclass", array $ctorArgs = array()) {}
+    public function fetchObject($class = \stdclass::class, array $ctorArgs = array()) {}
 }
