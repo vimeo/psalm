@@ -569,7 +569,16 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
 
         $new_type = null;
 
-        foreach ($stmt_class_type->getAtomicTypes() as $lhs_type_part) {
+        $stmt_class_types = $stmt_class_type->getAtomicTypes();
+
+        while ($stmt_class_types) {
+            $lhs_type_part = \array_shift($stmt_class_types);
+
+            if ($lhs_type_part instanceof Type\Atomic\TTemplateParam) {
+                $stmt_class_types = \array_merge($stmt_class_types, $lhs_type_part->as->getAtomicTypes());
+                continue;
+            }
+
             if ($lhs_type_part instanceof Type\Atomic\TTemplateParamClass) {
                 if (!$statements_analyzer->node_data->getType($stmt)) {
                     $new_type_part = new Type\Atomic\TTemplateParam(
@@ -735,9 +744,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                 )) {
                     // fall through
                 }
-            } elseif ($lhs_type_part instanceof Type\Atomic\TMixed
-                || $lhs_type_part instanceof Type\Atomic\TTemplateParam
-            ) {
+            } elseif ($lhs_type_part instanceof Type\Atomic\TMixed) {
                 if (IssueBuffer::accepts(
                     new MixedMethodCall(
                         'Cannot call constructor on an unknown class',

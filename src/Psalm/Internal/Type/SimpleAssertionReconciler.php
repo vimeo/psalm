@@ -1995,12 +1995,24 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                 $callable_types[] = $type;
                 $did_remove_type = true;
             } elseif ($type instanceof TTemplateParam) {
-                if ($type->as->isMixed()) {
+                if ($type->as->hasCallableType() || $type->as->hasMixed()) {
                     $type = clone $type;
-                    $type->as = new Type\Union([new Type\Atomic\TCallable]);
+
+                    $type->as = self::reconcileCallable(
+                        $codebase,
+                        $type->as,
+                        null,
+                        $negated,
+                        null,
+                        $suppressed_issues,
+                        $failed_reconciliation,
+                        $is_equality
+                    );
                 }
-                $callable_types[] = $type;
+
                 $did_remove_type = true;
+
+                $callable_types[] = $type;
             } else {
                 $did_remove_type = true;
             }

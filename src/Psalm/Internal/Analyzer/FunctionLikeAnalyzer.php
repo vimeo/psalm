@@ -978,18 +978,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         $check_stmts = false;
                     }
                 }
-
-                if (!$storage instanceof MethodStorage
-                    && $param_type->hasTemplate()
-                    && $param_type->isSingle()
-                ) {
-                    /** @var Type\Atomic\TTemplateParam */
-                    $template_type = \array_values($param_type->getAtomicTypes())[0];
-
-                    if ($template_type->as->getTemplateTypes()) {
-                        $param_type = $template_type->as;
-                    }
-                }
             } else {
                 $param_type = Type::getMixed();
             }

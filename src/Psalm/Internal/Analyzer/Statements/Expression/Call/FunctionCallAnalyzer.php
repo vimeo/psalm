@@ -554,7 +554,16 @@ class FunctionCallAnalyzer extends CallAnalyzer
             $invalid_function_call_types = [];
             $has_valid_function_call_type = false;
 
-            foreach ($stmt_name_type->getAtomicTypes() as $var_type_part) {
+            $var_atomic_types = $stmt_name_type->getAtomicTypes();
+
+            while ($var_atomic_types) {
+                $var_type_part = \array_shift($var_atomic_types);
+
+                if ($var_type_part instanceof TTemplateParam) {
+                    $var_atomic_types = \array_merge($var_atomic_types, $var_type_part->as->getAtomicTypes());
+                    continue;
+                }
+
                 if ($var_type_part instanceof Type\Atomic\TClosure || $var_type_part instanceof TCallable) {
                     if (!$var_type_part->is_pure && $context->pure) {
                         if (IssueBuffer::accepts(
@@ -592,8 +601,6 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     }
 
                     $function_call_info->function_exists = true;
-                    $has_valid_function_call_type = true;
-                } elseif ($var_type_part instanceof TTemplateParam && $var_type_part->as->hasCallableType()) {
                     $has_valid_function_call_type = true;
                 } elseif ($var_type_part instanceof TMixed || $var_type_part instanceof TTemplateParam) {
                     $has_valid_function_call_type = true;
