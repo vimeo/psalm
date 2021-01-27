@@ -2395,6 +2395,19 @@ class PropertyTypeTest extends TestCase
                         echo $foo->{$b} ?? null;
                     }'
             ],
+            'nullCoalesceWithNullablePropertyAccess' => [
+                '<?php
+                    class Bar {
+                        public ?string $a = null;
+                    }
+
+                    function takesBar(?Bar $bar) : string {
+                        return $bar?->a ?? "default";
+                    }',
+                [],
+                [],
+                '8.0'
+            ],
         ];
     }
 
