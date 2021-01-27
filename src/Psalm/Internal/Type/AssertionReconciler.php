@@ -390,22 +390,13 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
         }
 
         if ($new_type_part instanceof TNamedObject
-            && ((
-                $new_type_has_interface
-                    && !UnionTypeComparator::isContainedBy(
-                        $codebase,
-                        $existing_var_type,
-                        $new_type
-                    )
+            && ($new_type_has_interface || $old_type_has_interface)
+            && !UnionTypeComparator::canExpressionTypesBeIdentical(
+                $codebase,
+                $new_type,
+                $existing_var_type,
+                false
             )
-                || (
-                    $old_type_has_interface
-                    && !UnionTypeComparator::isContainedBy(
-                        $codebase,
-                        $new_type,
-                        $existing_var_type
-                    )
-                ))
         ) {
             $acceptable_atomic_types = [];
 

@@ -941,6 +941,40 @@ class InterfaceTest extends TestCase
                     }',
                 'error_message' => 'MissingParamType'
             ],
+            'reconcileAfterClassInstanceof' => [
+                '<?php
+                    interface Base {}
+
+                    class E implements Base {
+                        public function bar() : void {}
+                    }
+
+                    function foobar(Base $foo) : void {
+                        if ($foo instanceof E) {
+                            $foo->bar();
+                        }
+
+                        $foo->bar();
+                    }',
+                'error_message' => 'UndefinedInterfaceMethod - src' . \DIRECTORY_SEPARATOR . 'somefile.php:13:31',
+            ],
+            'reconcileAfterInterfaceInstanceof' => [
+                '<?php
+                    interface Base {}
+
+                    interface E extends Base {
+                        public function bar() : void;
+                    }
+
+                    function foobar(Base $foo) : void {
+                        if ($foo instanceof E) {
+                            $foo->bar();
+                        }
+
+                        $foo->bar();
+                    }',
+                'error_message' => 'UndefinedInterfaceMethod - src' . \DIRECTORY_SEPARATOR . 'somefile.php:13:31',
+            ],
         ];
     }
 }

@@ -639,7 +639,8 @@ class AtomicTypeComparator
     public static function canBeIdentical(
         Codebase $codebase,
         Type\Atomic $type1_part,
-        Type\Atomic $type2_part
+        Type\Atomic $type2_part,
+        bool $allow_interface_equality = true
     ) : bool {
         if ((get_class($type1_part) === TList::class
                 && $type2_part instanceof Type\Atomic\TNonEmptyList)
@@ -673,11 +674,11 @@ class AtomicTypeComparator
         $first_comparison_result = new TypeComparisonResult();
         $second_comparison_result = new TypeComparisonResult();
 
-        $either_contains = (AtomicTypeComparator::isContainedBy(
+        return (AtomicTypeComparator::isContainedBy(
             $codebase,
             $type1_part,
             $type2_part,
-            true,
+            $allow_interface_equality,
             false,
             $first_comparison_result
         )
@@ -686,7 +687,7 @@ class AtomicTypeComparator
             $codebase,
             $type2_part,
             $type1_part,
-            true,
+            $allow_interface_equality,
             false,
             $second_comparison_result
         )
@@ -694,11 +695,5 @@ class AtomicTypeComparator
         ) || ($first_comparison_result->type_coerced
             && $second_comparison_result->type_coerced
         );
-
-        if ($either_contains) {
-            return true;
-        }
-
-        return false;
     }
 }
