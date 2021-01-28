@@ -41,6 +41,8 @@ use function strrpos;
 use function strtolower;
 use function substr;
 use function substr_count;
+use function array_pop;
+use function implode;
 
 class Codebase
 {
@@ -1008,7 +1010,7 @@ class Codebase
             } catch (\InvalidArgumentException $e) {
             }
 
-            if (strpos($symbol,'\\')) {
+            if (strpos($symbol, '\\')) {
                 $const_name_parts = explode('\\', $symbol);
                 $const_name = array_pop($const_name_parts);
                 $namespace_name = implode('\\', $const_name_parts);
