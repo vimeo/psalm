@@ -79,7 +79,7 @@ This is the config I used (for Vim):
 au User lsp_setup call lsp#register_server({
      \ 'name': 'psalm-language-server',
      \ 'cmd': {server_info->[expand('vendor/bin/psalm-language-server')]},
-     \ 'whitelist': ['php'],
+     \ 'allowlist': ['php'],
      \ })
 ```
 
