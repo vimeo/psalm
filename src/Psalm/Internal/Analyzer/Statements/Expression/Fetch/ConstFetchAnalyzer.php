@@ -58,6 +58,25 @@ class ConstFetchAnalyzer
                     $context
                 );
 
+                $codebase = $statements_analyzer->getCodebase();
+
+                $aliased_constants = $statements_analyzer->getAliases()->constants;
+                if (isset($aliased_constants[$const_name])) {
+                    $fq_const_name = $aliased_constants[$const_name];
+                } elseif ($stmt->name instanceof PhpParser\Node\Name\FullyQualified) {
+                    $fq_const_name = $const_name;
+                } else {
+                    $fq_const_name = Type::getFQCLNFromString($const_name, $statements_analyzer->getAliases());
+                }
+
+                $codebase->analyzer->addNodeReference(
+                    $statements_analyzer->getFilePath(),
+                    $stmt,
+                    $const_type
+                        ? $fq_const_name
+                        : '*' . $fq_const_name
+                );
+
                 if ($const_type) {
                     $statements_analyzer->node_data->setType($stmt, clone $const_type);
                 } elseif ($context->check_consts) {

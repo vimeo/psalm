@@ -18,7 +18,9 @@ use const PHP_MINOR_VERSION;
 use PhpParser;
 use function preg_match;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
@@ -39,6 +41,8 @@ use function strrpos;
 use function strtolower;
 use function substr;
 use function substr_count;
+use function array_pop;
+use function implode;
 
 class Codebase
 {
@@ -1000,9 +1004,37 @@ class Codebase
                 return '<?php ' . $function->getSignature(true);
             }
 
-            $storage = $this->classlike_storage_provider->get($symbol);
+            try {
+                $storage = $this->classlike_storage_provider->get($symbol);
+                return '<?php ' . ($storage->abstract ? 'abstract ' : '') . 'class ' . $storage->name;
+            } catch (\InvalidArgumentException $e) {
+            }
 
-            return '<?php ' . ($storage->abstract ? 'abstract ' : '') . 'class ' . $storage->name;
+            if (strpos($symbol, '\\')) {
+                $const_name_parts = explode('\\', $symbol);
+                $const_name = array_pop($const_name_parts);
+                $namespace_name = implode('\\', $const_name_parts);
+
+                $namespace_constants = NamespaceAnalyzer::getConstantsForNamespace(
+                    $namespace_name,
+                    \ReflectionProperty::IS_PUBLIC
+                );
+                if (isset($namespace_constants[$const_name])) {
+                    $type = $namespace_constants[$const_name];
+                    return '<?php const ' . $symbol . ' ' . $type;
+                }
+            } else {
+                $file_storage = $this->file_storage_provider->get($file_path);
+                if (isset($file_storage->constants[$symbol])) {
+                    return '<?php const ' . $symbol . ' ' . $file_storage->constants[$symbol];
+                }
+                $constant = ConstFetchAnalyzer::getGlobalConstType($this, $symbol, $symbol);
+
+                if ($constant) {
+                    return '<?php const ' . $symbol . ' ' . $constant;
+                }
+            }
+            return null;
         } catch (\Exception $e) {
             error_log($e->getMessage());
 
