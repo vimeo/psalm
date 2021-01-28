@@ -622,6 +622,7 @@ class ArgumentsAnalyzer
         }
 
         $arg_function_params = [];
+        $matched_args = [];
 
         foreach ($args as $argument_offset => $arg) {
             if ($arg->unpack && $function_param_count > $argument_offset) {
@@ -631,6 +632,24 @@ class ArgumentsAnalyzer
             } elseif ($arg->name && (!$function_storage || $function_storage->allow_named_arg_calls)) {
                 foreach ($function_params as $candidate_param) {
                     if ($candidate_param->name === $arg->name->name || $candidate_param->is_variadic) {
+                        if ($candidate_param->name === $arg->name->name) {
+                            if (isset($matched_args[$candidate_param->name])) {
+                                if (IssueBuffer::accepts(
+                                    new InvalidNamedArgument(
+                                        'Parameter $' . $arg->name->name . ' has already been used in '
+                                            . ($cased_method_id ?: $method_id),
+                                        new CodeLocation($statements_analyzer, $arg->name),
+                                        (string) $method_id
+                                    ),
+                                    $statements_analyzer->getSuppressedIssues()
+                                )) {
+                                    // fall through
+                                }
+                            }
+
+                            $matched_args[$candidate_param->name] = true;
+                        }
+
                         $arg_function_params[$argument_offset] = [$candidate_param];
                         break;
                     }
@@ -651,8 +670,10 @@ class ArgumentsAnalyzer
                 }
             } elseif ($function_param_count > $argument_offset) {
                 $arg_function_params[$argument_offset] = [$function_params[$argument_offset]];
+                $matched_args[$function_params[$argument_offset]->name] = true;
             } elseif ($last_param && $last_param->is_variadic) {
                 $arg_function_params[$argument_offset] = [$last_param];
+                $matched_args[$last_param->name] = true;
             }
         }
 

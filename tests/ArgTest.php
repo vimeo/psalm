@@ -480,6 +480,30 @@ class ArgTest extends TestCase
                     echo $b;',
                 'error_message' => 'PossiblyUndefinedGlobalVariable',
             ],
+            'overwriteNamedParam' => [
+                '<?php
+                    function test(int $param, int $param2): void {
+                        echo $param + $param2;
+                    }
+
+                    test(param: 1, param: 2);',
+                'error_message' => 'InvalidNamedArgument',
+                [],
+                false,
+                '8.0'
+            ],
+            'overwriteOrderedNamedParam' => [
+                '<?php
+                    function test(int $param, int $param2): void {
+                        echo $param + $param2;
+                    }
+
+                    test(1, param: 2);',
+                'error_message' => 'InvalidNamedArgument',
+                [],
+                false,
+                '8.0'
+            ],
         ];
     }
 }
