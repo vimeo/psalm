@@ -39,6 +39,9 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
 
     public function testSimpleSymbolLookup(): void
     {
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+        $config->globals['$my_global'] = 'string';
         $this->addFile(
             'somefile.php',
             '<?php
@@ -68,7 +71,9 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
 
                 function qux(int $a, int $b) : int {
                     return $a + $b;
-                }'
+                }
+
+                $_SERVER;'
         );
 
         new FileAnalyzer($this->project_analyzer, 'somefile.php', 'somefile.php');
@@ -83,7 +88,8 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
         $this->assertSame('<?php BANANA', $codebase->getSymbolInformation('somefile.php', 'B\A::BANANA'));
         $this->assertSame("<?php function B\baz(\n    int \$a\n) : int", $codebase->getSymbolInformation('somefile.php', 'B\baz()'));
         $this->assertSame("<?php function B\qux(\n    int \$a,\n    int \$b\n) : int", $codebase->getSymbolInformation('somefile.php', 'B\qux()'));
-        $this->assertSame("<?php const B\APPLE string", $codebase->getSymbolInformation('somefile.php', 'B\APPLE'));
+        $this->assertSame("<?php array<array-key, mixed>", $codebase->getSymbolInformation('somefile.php', '$_SERVER'));
+        $this->assertSame("<?php string", $codebase->getSymbolInformation('somefile.php', '$my_global'));
     }
 
     public function testSimpleSymbolLookupGlobalConst(): void
@@ -277,6 +283,35 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
         $this->assertNotNull($symbol_at_position);
 
         $this->assertSame('B\A::foo()', $symbol_at_position[0]);
+    }
+
+    public function testGetSymbolPositionGlobalVariable(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->reportUnusedVariables();
+        $config = $codebase->config;
+        $config->throw_exception = false;
+        $config->globals['$my_global'] = 'string';
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                function foo() : void {
+                    global $my_global;
+                    echo $my_global;
+                }'
+
+        );
+
+        $codebase->file_provider->openFile('somefile.php');
+        $codebase->scanFiles();
+        $this->analyzeFile('somefile.php', new Context());
+
+        $symbol_at_position = $codebase->getReferenceAtPosition('somefile.php', new Position(2, 31));
+        $this->assertSame('$my_global', $symbol_at_position[0]);
+
+        $symbol_at_position = $codebase->getReferenceAtPosition('somefile.php', new Position(3, 28));
+        $this->assertSame('73-82:string', $symbol_at_position[0]);
     }
 
     public function testGetSymbolPositionNullableArg(): void
