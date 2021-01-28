@@ -300,7 +300,6 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
                     global $my_global;
                     echo $my_global;
                 }'
-
         );
 
         $codebase->file_provider->openFile('somefile.php');
