@@ -628,7 +628,7 @@ class ArgumentsAnalyzer
                 for ($i = $argument_offset; $i < $function_param_count; $i++) {
                     $arg_function_params[$argument_offset][] = $function_params[$i];
                 }
-            } elseif ($arg->name && $function_storage && $function_storage->allow_named_arg_calls) {
+            } elseif ($arg->name && (!$function_storage || $function_storage->allow_named_arg_calls)) {
                 foreach ($function_params as $candidate_param) {
                     if ($candidate_param->name === $arg->name->name || $candidate_param->is_variadic) {
                         $arg_function_params[$argument_offset] = [$candidate_param];

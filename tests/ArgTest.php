@@ -273,6 +273,13 @@ class ArgTest extends TestCase
                     bar(...["aaaaa"]);
                     function bar(string $p1, int $p3 = 10) : void {}'
             ],
+            'mkdirNamedParameters' => [
+                '<?php declare(strict_types=1);
+                    mkdir("/var/test/123", recursive: true);',
+                [],
+                [],
+                '8.0'
+            ],
         ];
     }
 
