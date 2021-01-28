@@ -308,9 +308,11 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
         $this->analyzeFile('somefile.php', new Context());
 
         $symbol_at_position = $codebase->getReferenceAtPosition('somefile.php', new Position(2, 31));
+        $this->assertNotNull($symbol_at_position);
         $this->assertSame('$my_global', $symbol_at_position[0]);
 
         $symbol_at_position = $codebase->getReferenceAtPosition('somefile.php', new Position(3, 28));
+        $this->assertNotNull($symbol_at_position);
         $this->assertSame('73-82:string', $symbol_at_position[0]);
     }
 
