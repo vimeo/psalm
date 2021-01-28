@@ -20,6 +20,7 @@ use function preg_match;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
@@ -1021,9 +1022,14 @@ class Codebase
                     return '<?php const ' . $symbol . ' ' . $type;
                 }
             } else {
-                $constant = $this->getStubbedConstantType($symbol);
-                if ( $constant ) {
-                    return $constant;
+                $file_storage = $this->file_storage_provider->get($file_path);
+                if (isset($file_storage->constants[$symbol])) {
+                    return '<?php const ' . $symbol . ' ' . $file_storage->constants[$symbol];
+                }
+                $constant = ConstFetchAnalyzer::getGlobalConstType($this, $symbol, $symbol);
+
+                if ($constant) {
+                    return '<?php const ' . $symbol . ' ' . $constant;
                 }
             }
             return null;

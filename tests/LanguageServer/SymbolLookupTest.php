@@ -91,6 +91,7 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
         $this->addFile(
             'somefile.php',
             '<?php
+                define("BANANA", "🍌");
                 const APPLE = "🍏";'
         );
 
@@ -100,6 +101,7 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
 
         $this->analyzeFile('somefile.php', new Context());
         $this->assertSame("<?php const APPLE string", $codebase->getSymbolInformation('somefile.php', 'APPLE'));
+        $this->assertSame("<?php const BANANA string", $codebase->getSymbolInformation('somefile.php', 'BANANA'));
     }
 
     public function testSimpleSymbolLocation(): void
