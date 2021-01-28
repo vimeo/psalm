@@ -165,6 +165,12 @@ class VariableFetchAnalyzer
             $context->vars_in_scope[$var_name] = clone $type;
             $context->vars_possibly_in_scope[$var_name] = true;
 
+            $codebase->analyzer->addNodeReference(
+                $statements_analyzer->getFilePath(),
+                $stmt,
+                $var_name
+            );
+
             return true;
         }
 

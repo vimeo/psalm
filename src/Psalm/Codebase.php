@@ -21,6 +21,7 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
@@ -1002,6 +1003,13 @@ class Codebase
 
                 $function = $this->functions->getStorage(null, $function_id);
                 return '<?php ' . $function->getSignature(true);
+            }
+
+            if (strpos($symbol, '$') === 0) {
+                $type = VariableFetchAnalyzer::getGlobalType($symbol);
+                if (!$type->isMixed()) {
+                    return '<?php ' . $type;
+                }
             }
 
             try {
