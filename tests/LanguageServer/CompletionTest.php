@@ -892,8 +892,8 @@ class CompletionTest extends \Psalm\Tests\TestCase
         $codebase->scanFiles();
         $this->analyzeFile('somefile.php', new Context());
 
-        // $functions = $codebase->functions->getMatchingFunctionNames( '*Foo\array_su', 45, 'somefile.php', $codebase);
-        // $this->assertSame(1, count($functions));
+        $functions = $codebase->functions->getMatchingFunctionNames( '*Foo\array_su', 45, 'somefile.php', $codebase);
+        $this->assertSame(1, count($functions));
 
         $functions = $codebase->functions->getMatchingFunctionNames('Foo\my_funct', 45, 'somefile.php', $codebase);
         $this->assertSame(1, count($functions));

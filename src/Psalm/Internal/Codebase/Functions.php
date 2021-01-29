@@ -292,7 +292,7 @@ class Functions
 
         if ($current_namespace_aliases) {
             // As the stub still include the current namespace in the symbol,
-            // remote the current namespace to provide the function-only token
+            // remove the current namespace to provide the function-only token
             // and match against global functions and all imported namespaces.
             // "Bar/foo" will become "foo".
             if ($current_namespace_aliases->namespace
