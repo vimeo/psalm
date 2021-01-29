@@ -18,6 +18,10 @@ use function strtolower;
 use function substr;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Internal\MethodIdentifier;
+use function strlen;
+use function rtrim;
+use function is_bool;
+use function array_values;
 
 /**
  * @internal
@@ -250,6 +254,100 @@ class Functions
         $namespace = $source->getNamespace();
 
         return ($namespace ? $namespace . '\\' : '') . $function_name;
+    }
+
+    /**
+     * @return list<FunctionStorage>
+     */
+    public function getMatchingFunctionNames(
+        string $stub,
+        int $offset,
+        string $file_path,
+        Codebase $codebase
+    ) : array {
+        if ($stub[0] === '*') {
+            $stub = substr($stub, 1);
+        }
+
+        /** @var array<string, FunctionStorage> */
+        $matching_functions = [];
+
+        $stub = strtolower($stub);
+        $file_storage = $this->file_storage_provider->get($file_path);
+
+        $current_namespace_aliases = null;
+        foreach ($file_storage->namespace_aliases as $namespace_start => $namespace_aliases) {
+            if ($namespace_start < $offset) {
+                $current_namespace_aliases = $namespace_aliases;
+                break;
+            }
+        }
+
+        // We will search all functions for several patterns. This will
+        // be for all used namespaces, the global namespace and matched
+        // used functions.
+        $match_function_patterns = [
+            $stub . '*',
+        ];
+
+        if ($current_namespace_aliases) {
+            // As the stub still include the current namespace in the symbol,
+            // remote the current namespace to provide the function-only token
+            // and match against global functions and all imported namespaces.
+            // "Bar/foo" will become "foo".
+            if ($current_namespace_aliases->namespace
+                && strpos($stub, strtolower($current_namespace_aliases->namespace) . '\\') === 0
+            ) {
+                $stub = substr($stub, strlen($current_namespace_aliases->namespace) + 1);
+                $match_function_patterns[] = $stub . '*';
+            }
+
+            foreach ($current_namespace_aliases->functions as $alias_name => $function_name) {
+                if (strpos($alias_name, $stub) === 0) {
+                    try {
+                        $match_function_patterns[] = $function_name;
+                    } catch (\Exception $e) {
+                    }
+                }
+            }
+            foreach ($current_namespace_aliases->uses as $namespace_name) {
+                $match_function_patterns[] = $namespace_name . '\\' . $stub . '*';
+            }
+        }
+
+        $function_maps = [
+            $file_storage->functions,
+            $this->getAllStubbedFunctions(),
+            $this->reflection->getFunctions(),
+            $codebase->config->getPredefinedFunctions(),
+        ];
+
+        foreach ($function_maps as $function_map) {
+            foreach ($function_map as $function_name => $function) {
+                if (isset($matching_functions[$function_name])) {
+                    continue;
+                }
+                foreach ($match_function_patterns as $pattern) {
+                    if (substr($pattern, -1, 1) === '*') {
+                        if (strpos($function_name, rtrim($pattern, '*')) !== 0) {
+                            continue;
+                        }
+                    } elseif ($function_name !== $pattern) {
+                        continue;
+                    }
+                    if (is_bool($function)) {
+                        /** @var callable-string $function_name */
+                        if ($this->reflection->registerFunction($function_name) === false) {
+                            continue;
+                        }
+                        $function = $this->reflection->getFunctionStorage($function_name);
+                    }
+                    $matching_functions[$function_name] = $function;
+                }
+            }
+        }
+
+        return array_values($matching_functions);
     }
 
     public static function isVariadic(Codebase $codebase, string $function_id, string $file_path): bool

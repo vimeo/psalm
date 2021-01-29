@@ -8,6 +8,7 @@ use Psalm\Internal\Provider\Providers;
 use Psalm\Tests\Internal\Provider;
 use Psalm\Tests\TestConfig;
 use Psalm\Type;
+use function count;
 
 class CompletionTest extends \Psalm\Tests\TestCase
 {
@@ -724,6 +725,178 @@ class CompletionTest extends \Psalm\Tests\TestCase
         $this->assertSame(44, $completion_items[0]->additionalTextEdits[0]->range->start->character);
         $this->assertSame(3, $completion_items[0]->additionalTextEdits[0]->range->end->line);
         $this->assertSame(44, $completion_items[0]->additionalTextEdits[0]->range->end->character);
+    }
+
+    public function testCompletionForFunctionNames(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace Bar;
+
+                function my_function_in_bar() : void {
+
+                }
+
+                my_function_in'
+        );
+
+        $codebase->file_provider->openFile('somefile.php');
+        $codebase->scanFiles();
+        $this->analyzeFile('somefile.php', new Context());
+
+        $completion_data = $codebase->getCompletionDataAtPosition('somefile.php', new Position(7, 30));
+        $this->assertNotNull($completion_data);
+        $this->assertSame('*Bar\my_function_in', $completion_data[0]);
+
+        $completion_items = $codebase->getCompletionItemsForPartialSymbol($completion_data[0], $completion_data[2], 'somefile.php');
+        $this->assertSame(1, count($completion_items));
+    }
+
+    public function testCompletionForFunctionNamesRespectUsedNamespaces(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace Bar;
+                use phpunit\framework as phpf;
+                atleaston'
+        );
+
+        $codebase->file_provider->openFile('somefile.php');
+        $codebase->scanFiles();
+        $this->analyzeFile('somefile.php', new Context());
+
+        $completion_data = $codebase->getCompletionDataAtPosition('somefile.php', new Position(3, 25));
+        $this->assertNotNull($completion_data);
+        $this->assertSame('*Bar\atleaston', $completion_data[0]);
+
+        $completion_items = $codebase->getCompletionItemsForPartialSymbol($completion_data[0], $completion_data[2], 'somefile.php');
+        $this->assertSame(1, count($completion_items));
+        $this->assertSame('phpf\\atLeastOnce', $completion_items[0]->label);
+    }
+
+    public function testGetMatchingFunctionNames(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+
+            function my_function() {
+            }'
+        );
+
+        $codebase->file_provider->openFile('somefile.php');
+        $codebase->scanFiles();
+        $this->analyzeFile('somefile.php', new Context());
+
+        $functions = $codebase->functions->getMatchingFunctionNames('array_su', 0, 'somefile.php', $codebase);
+        $this->assertSame(1, count($functions));
+
+        $functions = $codebase->functions->getMatchingFunctionNames('my_funct', 0, 'somefile.php', $codebase);
+        $this->assertSame(1, count($functions));
+    }
+
+    public function testGetMatchingFunctionNamesFromPredefinedFunctions(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php'
+        );
+
+        $codebase->file_provider->openFile('somefile.php');
+        $codebase->scanFiles();
+        $this->analyzeFile('somefile.php', new Context());
+
+        $functions = $codebase->functions->getMatchingFunctionNames('urlencod', 0, 'somefile.php', $codebase);
+        $this->assertSame(1, count($functions));
+    }
+
+    public function testGetMatchingFunctionNamesFromUsedFunction(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+
+            namespace Foo;
+            use function phpunit\framework\atleastonce;
+            '
+        );
+
+        $codebase->file_provider->openFile('somefile.php');
+        $codebase->scanFiles();
+        $this->analyzeFile('somefile.php', new Context());
+
+        $functions = $codebase->functions->getMatchingFunctionNames('Foo\atleaston', 81, 'somefile.php', $codebase);
+        $this->assertSame(1, count($functions));
+    }
+
+    public function testGetMatchingFunctionNamesFromUsedNamespace(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+
+            namespace Foo;
+            use phpunit\framework;
+            '
+        );
+
+        $codebase->file_provider->openFile('somefile.php');
+        $codebase->scanFiles();
+        $this->analyzeFile('somefile.php', new Context());
+
+        $functions = $codebase->functions->getMatchingFunctionNames('Foo\atleaston', 81, 'somefile.php', $codebase);
+        $this->assertSame(1, count($functions));
+    }
+
+    public function testGetMatchingFunctionNamesWithNamespace(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+            namespace Foo;
+            function my_function() {
+            }'
+        );
+
+        $codebase->file_provider->openFile('somefile.php');
+        $codebase->scanFiles();
+        $this->analyzeFile('somefile.php', new Context());
+
+        // $functions = $codebase->functions->getMatchingFunctionNames( '*Foo\array_su', 45, 'somefile.php', $codebase);
+        // $this->assertSame(1, count($functions));
+
+        $functions = $codebase->functions->getMatchingFunctionNames('Foo\my_funct', 45, 'somefile.php', $codebase);
+        $this->assertSame(1, count($functions));
     }
 
     public function testCompletionOnInstanceofWithNamespaceAndUse(): void

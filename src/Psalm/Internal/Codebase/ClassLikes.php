@@ -39,6 +39,7 @@ use function strlen;
 use function strrpos;
 use function strtolower;
 use function substr;
+use function preg_quote;
 
 /**
  * @internal
@@ -238,7 +239,7 @@ class ClassLikes
             $stub = substr($stub, 1);
         }
 
-        $stub = strtolower($stub);
+        $stub = preg_quote(strtolower($stub));
 
         foreach ($this->existing_classes as $fq_classlike_name => $found) {
             if (!$found) {
