@@ -1724,34 +1724,6 @@ class PropertyTypeTest extends TestCase
 
                     class Bar extends Foo {}',
             ],
-            'parentSetsWiderTypeInConstructor' => [
-                '<?php
-                    interface Foo {}
-
-                    interface FooMore extends Foo {
-                        public function something(): void;
-                    }
-
-                    class Bar {
-                        /** @var Foo */
-                        protected $foo;
-
-                        public function __construct(Foo $foo) {
-                            $this->foo = $foo;
-                        }
-                    }
-
-
-                    class BarMore extends Bar {
-                        /** @var FooMore */
-                        protected $foo;
-
-                        public function __construct(FooMore $foo) {
-                            parent::__construct($foo);
-                            $this->foo->something();
-                        }
-                    }',
-            ],
             'inferPropertyTypesForSimpleConstructors' => [
                 '<?php
                     class A {
@@ -3259,32 +3231,6 @@ class PropertyTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'PropertyNotSetInConstructor',
-            ],
-            'parentSetsWiderTypeInConstructor' => [
-                '<?php
-                    interface Foo {}
-
-                    interface FooMore extends Foo {}
-
-                    class Bar {
-                        /** @var Foo */
-                        protected $foo;
-
-                        public function __construct(Foo $foo) {
-                            $this->foo = $foo;
-                        }
-                    }
-
-                    class BarMore extends Bar {
-                        /** @var FooMore */
-                        protected $foo;
-
-                        public function __construct(FooMore $foo) {
-                            parent::__construct($foo);
-                            $this->foo->something();
-                        }
-                    }',
-                'error_message' => 'UndefinedInterfaceMethod',
             ],
             'nullableTypedPropertyNoConstructor' => [
                 '<?php
