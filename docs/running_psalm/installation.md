@@ -28,7 +28,7 @@ While Psalm can figure out the types used by various libraries based on the
 their source code and docblocks, it works even better with custom-tailored types
 provided by Psalm plugins.
 
-Check out the list of existing plugins on Packagist: https://packagist.org/?type=psalm-plugin
+Check out the [list of existing plugins on Packagist](https://packagist.org/?type=psalm-plugin). 
 Install them with `composer require --dev <plugin/package> && vendor/bin/psalm-plugin enable <plugin/package>`
 
 Read more about plugins in [Using Plugins chapter](plugins/using_plugins.md).
