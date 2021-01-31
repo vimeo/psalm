@@ -679,15 +679,6 @@ class MethodComparator
 
         $guide_class_name = $guide_classlike_storage->name;
 
-        if ($implementer_classlike_storage->template_extended_params) {
-            self::transformTemplates(
-                $implementer_classlike_storage->template_extended_params,
-                $guide_class_name,
-                $guide_method_storage_param_type,
-                $codebase
-            );
-        }
-
         if ($implementer_classlike_storage->is_trait) {
             $implementer_called_class_storage = $codebase->classlike_storage_provider->get(
                 $implementer_called_class_name
@@ -734,6 +725,15 @@ class MethodComparator
                     $guide_method_storage_param_type->addType($as_t);
                 }
             }
+        }
+
+        if ($implementer_classlike_storage->template_extended_params) {
+            self::transformTemplates(
+                $implementer_classlike_storage->template_extended_params,
+                $guide_class_name,
+                $guide_method_storage_param_type,
+                $codebase
+            );
         }
 
         $union_comparison_results = new TypeComparisonResult();
