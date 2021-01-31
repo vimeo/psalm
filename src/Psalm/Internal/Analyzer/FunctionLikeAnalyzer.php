@@ -71,6 +71,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
     /**
      * @var StatementsSource
+     * @psalm-suppress NonInvariantPropertyType
      */
     protected $source;
 

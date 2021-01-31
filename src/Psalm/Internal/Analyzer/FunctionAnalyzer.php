@@ -13,6 +13,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
 {
     /**
      * @var PhpParser\Node\Stmt\Function_
+     * @psalm-suppress NonInvariantPropertyType
      */
     protected $function;
 

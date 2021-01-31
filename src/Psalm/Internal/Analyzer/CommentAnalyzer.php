@@ -225,6 +225,10 @@ class CommentAnalyzer
             $var_comment->psalm_internal = reset($parsed_docblock->tags['psalm-internal']);
             $var_comment->internal = true;
         }
+
+        if (isset($parsed_docblock->tags['psalm-suppress'])) {
+            $var_comment->suppressed_issues = $parsed_docblock->tags['psalm-suppress'];
+        }
     }
 
     /**

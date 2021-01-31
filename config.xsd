@@ -312,6 +312,7 @@
             <xs:element name="NoInterfaceProperties" type="ClassIssueHandlerType" minOccurs="0" />
             <xs:element name="NonStaticSelfCall" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="NoValue" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="NonInvariantPropertyType" type="MethodIssueHandlerType" minOccurs="0" />
             <xs:element name="NullableReturnStatement" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="NullArgument" type="ArgumentIssueHandlerType" minOccurs="0" />
             <xs:element name="NullArrayAccess" type="IssueHandlerType" minOccurs="0" />

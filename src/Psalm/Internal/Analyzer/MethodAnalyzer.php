@@ -22,6 +22,7 @@ use function in_array;
 class MethodAnalyzer extends FunctionLikeAnalyzer
 {
     /**
+     * @psalm-suppress NonInvariantPropertyType
      * @var PhpParser\Node\Stmt\ClassMethod
      */
     protected $function;
