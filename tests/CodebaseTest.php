@@ -7,8 +7,13 @@ use PhpParser\Node\Stmt\Class_;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Exception\UnpopulatedClasslikeException;
+use Psalm\Issue\InvalidReturnStatement;
+use Psalm\Issue\InvalidReturnType;
+use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\AfterClassLikeVisitInterface;
+use Psalm\Plugin\EventHandler\BeforeAddIssueInterface;
 use Psalm\Plugin\EventHandler\Event\AfterClassLikeVisitEvent;
+use Psalm\Plugin\EventHandler\Event\BeforeAddIssueEvent;
 use Psalm\PluginRegistrationSocket;
 use Psalm\Tests\Internal\Provider\ClassLikeStorageInstanceCacheProvider;
 use Psalm\Type;
@@ -206,5 +211,46 @@ class CodebaseTest extends TestCase
         $this->expectException(UnpopulatedClasslikeException::class);
 
         $this->codebase->classExtends('A', 'B');
+    }
+
+    /**
+     * @test
+     */
+    public function addingCodeIssueIsIntercepted(): void
+    {
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace Psalm\CurrentTest;
+                function invalidReturnType(int $value): string
+                {
+                    return $value;
+                }
+                echo invalidReturnType(123);
+            '
+        );
+
+        $eventHandler = new class implements BeforeAddIssueInterface
+        {
+            public static function beforeAddIssue(BeforeAddIssueEvent $event): ?bool
+            {
+                $issue = $event->getIssue();
+                if ($issue->code_location->file_path !== 'somefile.php') {
+                    return null;
+                }
+                if ($issue instanceof InvalidReturnStatement && $event->isFixable() === false) {
+                    return false;
+                } elseif ($issue instanceof InvalidReturnType && $event->isFixable() === true) {
+                    return false;
+                }
+                return null;
+            }
+        };
+
+        (new PluginRegistrationSocket($this->codebase->config, $this->codebase))
+            ->registerHooksFromClass(get_class($eventHandler));
+
+        $this->analyzeFile('somefile.php', new Context);
+        self::assertSame(0, IssueBuffer::getErrorCount());
     }
 }

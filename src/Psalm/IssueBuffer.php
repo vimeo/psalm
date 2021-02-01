@@ -16,6 +16,7 @@ use Psalm\Issue\MixedIssue;
 use Psalm\Issue\TaintedInput;
 use Psalm\Issue\UnusedPsalmSuppress;
 use Psalm\Plugin\EventHandler\Event\AfterAnalysisEvent;
+use Psalm\Plugin\EventHandler\Event\BeforeAddIssueEvent;
 use Psalm\Report\CheckstyleReport;
 use Psalm\Report\CodeClimateReport;
 use Psalm\Report\CompactReport;
@@ -249,6 +250,11 @@ class IssueBuffer
     public static function add(CodeIssue $e, bool $is_fixable = false): bool
     {
         $config = Config::getInstance();
+
+        $event = new BeforeAddIssueEvent($e, $is_fixable);
+        if ($config->eventDispatcher->dispatchBeforeAddIssue($event) === false) {
+            return false;
+        };
 
         $fqcn_parts = explode('\\', get_class($e));
         $issue_type = array_pop($fqcn_parts);

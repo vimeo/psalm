@@ -81,6 +81,7 @@ class SomePlugin implements \Psalm\Plugin\EventHandler\AfterStatementAnalysisInt
 - `AfterFunctionLikeAnalysisInterface` - called after Psalm has completed its analysis of a given function-like.
 - `AfterMethodCallAnalysisInterface` - called after Psalm analyzes a method call.
 - `AfterStatementAnalysisInterface` - called after Psalm evaluates an statement.
+- `BeforeAddIssueInterface` - called before Psalm adds an item to it's internal `IssueBuffer`, allows handling code issues individually
 - `BeforeFileAnalysisInterface` - called before Psalm analyzes a file.
 - `FunctionExistenceProviderInterface` - can be used to override Psalm's builtin function existence checks for one or more functions.
 - `FunctionParamsProviderInterface.php` - can be used to override Psalm's builtin function parameter lookup for one or more functions.
