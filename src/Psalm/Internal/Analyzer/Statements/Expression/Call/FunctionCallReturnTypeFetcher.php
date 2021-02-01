@@ -572,46 +572,16 @@ class FunctionCallReturnTypeFetcher
                 }
             }
 
-            foreach ($function_storage->return_source_params as $i => $path_type) {
-                if (!isset($stmt->args[$i])) {
-                    continue;
-                }
-
-                $current_arg_is_variadic = $function_storage->params[$i]->is_variadic;
-                $taintableArgIndex = [$i];
-
-                if ($current_arg_is_variadic) {
-                    $max_params = count($stmt->args) - 1;
-                    for ($arg_index = $i + 1; $arg_index <= $max_params; $arg_index++) {
-                        $taintableArgIndex[] = $arg_index;
-                    }
-                }
-
-                foreach ($taintableArgIndex as $argIndex) {
-                    $arg_location = new CodeLocation(
-                        $statements_analyzer->getSource(),
-                        $stmt->args[$argIndex]->value
-                    );
-
-                    $function_param_sink = DataFlowNode::getForMethodArgument(
-                        $function_id,
-                        $function_id,
-                        $argIndex,
-                        $arg_location,
-                        $function_storage->specialize_call ? $node_location : null
-                    );
-
-                    $statements_analyzer->data_flow_graph->addNode($function_param_sink);
-
-                    $statements_analyzer->data_flow_graph->addPath(
-                        $function_param_sink,
-                        $function_call_node,
-                        $path_type,
-                        $function_storage->added_taints,
-                        $removed_taints
-                    );
-                }
-            }
+            self::taintUsingFlows(
+                $statements_analyzer,
+                $function_storage,
+                $statements_analyzer->data_flow_graph,
+                $function_id,
+                $stmt->args,
+                $node_location,
+                $function_call_node,
+                $removed_taints
+            );
         }
 
         if ($function_storage->taint_source_types) {
@@ -627,6 +597,62 @@ class FunctionCallReturnTypeFetcher
         }
 
         return $function_call_node;
+    }
+
+    /**
+     * @param  array<PhpParser\Node\Arg>   $args
+     * @param  array<string> $removed_taints
+     */
+    public static function taintUsingFlows(
+        StatementsAnalyzer $statements_analyzer,
+        FunctionLikeStorage $function_storage,
+        TaintFlowGraph $graph,
+        string $function_id,
+        array $args,
+        CodeLocation $node_location,
+        DataFlowNode $function_call_node,
+        array $removed_taints
+    ) : void {
+        foreach ($function_storage->return_source_params as $i => $path_type) {
+            if (!isset($args[$i])) {
+                continue;
+            }
+
+            $current_arg_is_variadic = $function_storage->params[$i]->is_variadic;
+            $taintable_arg_index = [$i];
+
+            if ($current_arg_is_variadic) {
+                $max_params = count($args) - 1;
+                for ($arg_index = $i + 1; $arg_index <= $max_params; $arg_index++) {
+                    $taintable_arg_index[] = $arg_index;
+                }
+            }
+
+            foreach ($taintable_arg_index as $arg_index) {
+                $arg_location = new CodeLocation(
+                    $statements_analyzer,
+                    $args[$arg_index]->value
+                );
+
+                $function_param_sink = DataFlowNode::getForMethodArgument(
+                    $function_id,
+                    $function_id,
+                    $arg_index,
+                    $arg_location,
+                    $function_storage->specialize_call ? $node_location : null
+                );
+
+                $graph->addNode($function_param_sink);
+
+                $graph->addPath(
+                    $function_param_sink,
+                    $function_call_node,
+                    $path_type,
+                    $function_storage->added_taints,
+                    $removed_taints
+                );
+            }
+        }
     }
 
     /**

@@ -5,6 +5,7 @@ use PhpParser;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallReturnTypeFetcher;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Context;
@@ -194,6 +195,7 @@ class MethodCallReturnTypeFetcher
             $return_type_candidate,
             $stmt->name,
             $stmt->var,
+            $args,
             $method_id,
             $declaring_method_id,
             $cased_method_id,
@@ -203,11 +205,15 @@ class MethodCallReturnTypeFetcher
         return $return_type_candidate;
     }
 
+    /**
+     * @param  array<PhpParser\Node\Arg>   $args
+     */
     public static function taintMethodCallResult(
         StatementsAnalyzer $statements_analyzer,
         Type\Union $return_type_candidate,
         PhpParser\Node $name_expr,
         PhpParser\Node\Expr $var_expr,
+        array $args,
         MethodIdentifier $method_id,
         ?MethodIdentifier $declaring_method_id,
         string $cased_method_id,
@@ -308,6 +314,10 @@ class MethodCallReturnTypeFetcher
                     );
 
                     $method_call_nodes[$method_call_node->id] = $method_call_node;
+                }
+
+                if (!$method_call_nodes) {
+                    throw new \UnexpectedValueException('bad');
                 }
 
                 foreach ($method_call_nodes as $method_call_node) {
@@ -428,6 +438,17 @@ class MethodCallReturnTypeFetcher
 
                 $statements_analyzer->data_flow_graph->addSource($method_node);
             }
+
+            FunctionCallReturnTypeFetcher::taintUsingFlows(
+                $statements_analyzer,
+                $method_storage,
+                $statements_analyzer->data_flow_graph,
+                (string) $method_id,
+                $args,
+                $node_location,
+                $method_call_node,
+                $method_storage->removed_taints
+            );
         }
     }
 

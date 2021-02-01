@@ -416,6 +416,7 @@ class CastAnalyzer
                                 $return_type,
                                 $stmt,
                                 $stmt,
+                                [],
                                 $intersection_method_id,
                                 $declaring_method_id,
                                 $intersection_type->value . '::__toString',

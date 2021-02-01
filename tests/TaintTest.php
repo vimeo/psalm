@@ -2051,6 +2051,58 @@ class TaintTest extends TestCase
                     echo data($_GET, "x", "int");',
                 'error_message' => 'TaintedHtml',
             ],
+            'psalmFlowOnInstanceMethod' => [
+                '<?php //--taint-analysis
+                    class Wdb {
+                        /**
+                          * @psalm-pure
+                          *
+                          * @param string $text
+                          * @return string
+                          * @psalm-flow ($text) -> return
+                          */
+                        public function esc_like($text) {}
+
+                        /**
+                          * @param string $query
+                          * @return int|bool
+                          *
+                          * @psalm-taint-sink sql $query
+                          */
+                        public function query($query){}
+                    }
+
+                    $wdb = new Wdb();
+
+                    $order = $wdb->esc_like($_GET["order"]);
+                    $res = $wdb->query("SELECT blah FROM tablea ORDER BY ". $order. " DESC");',
+                'error_message' => 'TaintedSql',
+            ],
+            'psalmFlowOnStaticMethod' => [
+                '<?php //--taint-analysis
+                    class Wdb {
+                        /**
+                          * @psalm-pure
+                          *
+                          * @param string $text
+                          * @return string
+                          * @psalm-flow ($text) -> return
+                          */
+                        public static function esc_like($text) {}
+
+                        /**
+                          * @param string $query
+                          * @return int|bool
+                          *
+                          * @psalm-taint-sink sql $query
+                          */
+                        public static function query($query){}
+                    }
+
+                    $order = Wdb::esc_like($_GET["order"]);
+                    $res = Wdb::query("SELECT blah FROM tablea ORDER BY ". $order. " DESC");',
+                'error_message' => 'TaintedSql',
+            ],
             /*
             // TODO: Stubs do not support this type of inference even with $this->message = $message.
             // Most uses of getMessage() would be with caught exceptions, so this is not representative of real code.
