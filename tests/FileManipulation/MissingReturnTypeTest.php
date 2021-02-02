@@ -1012,6 +1012,53 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                 false,
                 true,
             ],
+            'returnExtendedAnonymClass' => [
+                '<?php
+                    class A {}
+
+                    function f()
+                    {
+                        $a = new class extends A {};
+                        /** @psalm-trace $a */;
+                        return $a;
+                    }',
+                '<?php
+                    class A {}
+
+                    function f(): A
+                    {
+                        $a = new class extends A {};
+                        /** @psalm-trace $a */;
+                        return $a;
+                    }',
+                '8.0',
+                ['MissingReturnType'],
+                false,
+                true,
+            ],
+            'returnExtendedAnonymClassOld' => [
+                '<?php
+                    class A {}
+
+                    function f()
+                    {
+                        return new class extends A {};
+                    }',
+                '<?php
+                    class A {}
+
+                    /**
+                     * @return A
+                     */
+                    function f()
+                    {
+                        return new class extends A {};
+                    }',
+                '7.0',
+                ['MissingReturnType'],
+                false,
+                true,
+            ],
         ];
     }
 }
