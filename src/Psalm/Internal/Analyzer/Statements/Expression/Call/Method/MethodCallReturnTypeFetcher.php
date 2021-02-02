@@ -317,7 +317,7 @@ class MethodCallReturnTypeFetcher
                 }
 
                 if (!$method_call_nodes) {
-                    throw new \UnexpectedValueException('bad');
+                    return;
                 }
 
                 foreach ($method_call_nodes as $method_call_node) {
