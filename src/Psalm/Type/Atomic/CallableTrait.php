@@ -222,16 +222,15 @@ trait CallableTrait
             }
         }
 
-        if (($input_type instanceof Atomic\TCallable || $input_type instanceof Atomic\TClosure)
-            && $callable->return_type
-            && $input_type->return_type
-        ) {
+        if ($callable->return_type) {
             $callable->return_type = TemplateStandinTypeReplacer::replace(
                 $callable->return_type,
                 $template_result,
                 $codebase,
                 $statements_analyzer,
-                $input_type->return_type,
+                $input_type instanceof Atomic\TCallable || $input_type instanceof Atomic\TClosure
+                    ? $input_type->return_type
+                    : null,
                 $input_arg_offset,
                 $calling_class,
                 $calling_function,

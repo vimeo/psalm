@@ -4282,29 +4282,6 @@ class ClassTemplateExtendsTest extends TestCase
                         function getIterator(): Traversable;
                     }'
             ],
-            'extendsWithoutAlias' => [
-                '<?php
-                    /**
-                     * @template TAValue
-                     */
-                    abstract class A {
-                        /**
-                         * @psalm-param TAValue $val
-                         */
-                        abstract public function foo($val): void;
-                    }
-
-                    /**
-                     * @template TBValue
-                     * @extends A<TBValue>
-                     */
-                    abstract class B extends A {
-                        /**
-                         * @psalm-param TBValue $val
-                         */
-                        abstract public function foo($val): void;
-                    }'
-            ],
             'extendsWithAlias' => [
                 '<?php
                     /**
@@ -4330,6 +4307,44 @@ class ClassTemplateExtendsTest extends TestCase
                          * @psalm-param TBValueNew $val
                          */
                         abstract public function foo($val): void;
+                    }'
+            ],
+            'extendsWithTemplatedClosureProperty' => [
+                '<?php
+                    /**
+                     * @template T1
+                     */
+                    class A
+                    {
+                        /**
+                         * @var T1|null
+                         */
+                        protected $type;
+
+                        /**
+                         * @var (Closure(): T1)|null
+                         */
+                        protected $closure;
+                    }
+
+                    /**
+                     * @template T2
+                     * @extends A<T2>
+                     */
+                    class B extends A {
+                        /**
+                         * @return T2|null
+                         */
+                        public function getType() {
+                            return $this->type;
+                        }
+
+                        /**
+                         * @return (Closure(): T2)|null
+                         */
+                        public function getClosureReturningType() {
+                            return $this->closure;
+                        }
                     }'
             ],
         ];
