@@ -226,21 +226,17 @@ class TemplateInferredTypeReplacer
                     $matching_else_types = [];
 
                     foreach ($template_type->getAtomicTypes() as $candidate_atomic_type) {
-                        if (UnionTypeComparator::isContainedBy(
-                            $codebase,
-                            new Type\Union([$candidate_atomic_type]),
-                            $atomic_type->conditional_type
-                        )
-                            && (!$candidate_atomic_type instanceof Type\Atomic\TInt
-                                || $atomic_type->conditional_type->getId() !== 'float')
-                        ) {
-                            $matching_if_types[] = $candidate_atomic_type;
-                        } elseif (!UnionTypeComparator::isContainedBy(
-                            $codebase,
-                            $atomic_type->conditional_type,
-                            new Type\Union([$candidate_atomic_type])
-                        )) {
-                            $matching_else_types[] = $candidate_atomic_type;
+                        $comparison_result = self::compareUnionType($codebase, $atomic_type, $candidate_atomic_type);
+                        if ($comparison_result !== null) {
+                            // comparison=true and inverse=false
+                            // comparison=false and inverse=true
+                            if ($comparison_result xor $atomic_type->inverse) {
+                                $matching_if_types[] = $candidate_atomic_type;
+                            // comparison=false and inverse=false
+                            // comparison=true and inverse=true
+                            } else {
+                                $matching_else_types[] = $candidate_atomic_type;
+                            }
                         }
                     }
 
@@ -356,5 +352,30 @@ class TemplateInferredTypeReplacer
                 $codebase
             )->getAtomicTypes()
         );
+    }
+
+    private static function compareUnionType(
+        Codebase $codebase,
+        Atomic\TConditional $atomic_type,
+        Atomic $candidate_atomic_type
+    ) : ?bool {
+        if ((!$candidate_atomic_type instanceof Type\Atomic\TInt
+            || $atomic_type->conditional_type->getId() !== 'float')
+            && UnionTypeComparator::isContainedBy(
+                $codebase,
+                new Type\Union([$candidate_atomic_type]),
+                $atomic_type->conditional_type
+            )
+        ) {
+            return true;
+        }
+        if (!UnionTypeComparator::isContainedBy(
+            $codebase,
+            $atomic_type->conditional_type,
+            new Type\Union([$candidate_atomic_type])
+        )) {
+            return false;
+        }
+        return null;
     }
 }

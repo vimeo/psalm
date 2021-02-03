@@ -745,6 +745,33 @@ class ConditionalReturnTypeTest extends TestCase
                         }
                     }'
             ],
+            'inversion' => [
+                '<?php
+                    /**
+                     * @template T1 as string|int
+                     * @param T1 $value
+                     * @psalm-return (T1 is string ? string : int)
+                     */
+                    function first($value) { return $value; }
+
+                    /**
+                     * @template T2 as string|int
+                     * @param T2 $value
+                     * @psalm-return (T2 not int ? string : int)
+                     */
+                    function second($value) { return $value; }
+
+                    $a = first("string");
+                    $b = first(123);
+                    $c = second("string");
+                    $d = second(123);',
+                [
+                    '$a' => 'string',
+                    '$b' => 'int',
+                    '$c' => 'string',
+                    '$d' => 'int',
+                ],
+            ]
         ];
     }
 }

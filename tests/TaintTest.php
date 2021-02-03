@@ -607,6 +607,22 @@ class TaintTest extends TestCase
                     echo foo($_GET["foo"], true);
                     echo foo($_GET["foo"]);'
             ],
+            'conditionallyInverseEscapedTaintPassedTrue' => [
+                '<?php
+                    /**
+                     * @psalm-taint-escape ($escape not true ? null : "html")
+                     */
+                    function foo(string $string, bool $escape = true): string {
+                        if ($escape) {
+                            $string = htmlspecialchars($string);
+                        }
+
+                        return $string;
+                    }
+
+                    echo foo($_GET["foo"], true);
+                    echo foo($_GET["foo"]);'
+            ],
             'conditionallyEscapedTaintPassedTrueStaticCall' => [
                 '<?php
                     class U {

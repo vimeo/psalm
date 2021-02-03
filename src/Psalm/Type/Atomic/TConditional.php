@@ -41,13 +41,19 @@ class TConditional extends \Psalm\Type\Atomic
      */
     public $else_type;
 
+    /**
+     * @var bool
+     */
+    public $inverse;
+
     public function __construct(
         string $param_name,
         string $defining_class,
         Union $as_type,
         Union $conditional_type,
         Union $if_type,
-        Union $else_type
+        Union $else_type,
+        bool $inverse = false
     ) {
         $this->param_name = $param_name;
         $this->defining_class = $defining_class;
@@ -55,6 +61,7 @@ class TConditional extends \Psalm\Type\Atomic
         $this->conditional_type = $conditional_type;
         $this->if_type = $if_type;
         $this->else_type = $else_type;
+        $this->inverse = $inverse;
     }
 
     public function __toString(): string

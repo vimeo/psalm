@@ -127,12 +127,23 @@ class TypeTokenizer
                 $type_tokens[++$rtc] = [' ', $i - 1];
                 $type_tokens[++$rtc] = ['', $i];
             } elseif ($was_space
+                // 'as' or 'is'
                 && ($char === 'a' || $char === 'i')
                 && ($chars[$i + 1] ?? null) === 's'
                 && ($chars[$i + 2] ?? null) === ' '
             ) {
                 $type_tokens[++$rtc] = [$char . 's', $i - 1];
                 $type_tokens[++$rtc] = ['', ++$i];
+                continue;
+            } elseif ($was_space
+                // 'not'
+                && ($char === 'n')
+                && ($chars[$i + 1] ?? null) === 'o'
+                && ($chars[$i + 2] ?? null) === 't'
+                && ($chars[$i + 3] ?? null) === ' '
+            ) {
+                $type_tokens[++$rtc] = ['not', $i - 1];
+                $type_tokens[++$rtc] = ['', $i += 2];
                 continue;
             } elseif ($was_char) {
                 $type_tokens[++$rtc] = ['', $i];
@@ -356,7 +367,8 @@ class TypeTokenizer
             if (in_array(
                 $string_type_token[0],
                 [
-                    '<', '>', '|', '?', ',', '{', '}', ':', '::', '[', ']', '(', ')', '&', '=', '...', 'as', 'is',
+                    '<', '>', '|', '?', ',', '{', '}', ':', '::',
+                    '[', ']', '(', ')', '&', '=', '...', 'as', 'is', 'not',
                 ],
                 true
             )) {

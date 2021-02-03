@@ -352,11 +352,14 @@ class AtomicTypeComparator
                     $allow_float_int_equality,
                     $atomic_comparison_result
                 )) {
-                    return true;
+                    // with inverse=false -> true
+                    // with inverse=true -> false
+                    return true xor $container_type_part->inverse;
                 }
             }
-
-            return false;
+            // with inverse=false -> false
+            // with inverse=true -> true
+            return false xor $container_type_part->inverse;
         }
 
         if ($input_type_part instanceof TTemplateParam) {
@@ -410,11 +413,14 @@ class AtomicTypeComparator
                     $allow_float_int_equality,
                     $atomic_comparison_result
                 )) {
-                    return true;
+                    // with inverse=false -> true
+                    // with inverse=true -> false
+                    return true xor $input_type_part->inverse;
                 }
             }
-
-            return false;
+            // with inverse=false -> false
+            // with inverse=true -> true
+            return true xor $input_type_part->inverse;
         }
 
         if ($input_type_part instanceof TNamedObject

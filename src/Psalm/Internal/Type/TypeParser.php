@@ -285,7 +285,8 @@ class TypeParser
                 $template_type_map[$template_param_name][$first_class],
                 $conditional_type,
                 $if_type,
-                $else_type
+                $else_type,
+                $parse_tree->condition->inverse
             );
         }
 

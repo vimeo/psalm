@@ -118,9 +118,13 @@ class ParseTreeCreator
                     $this->handleAmpersand();
                     break;
 
-                case 'is':
                 case 'as':
-                    $this->handleIsOrAs($type_token);
+                    $this->handleAs($type_token);
+                    break;
+
+                case 'is':
+                case 'not':
+                    $this->handleIsOrNot($type_token);
                     break;
 
                 default:
@@ -673,7 +677,7 @@ class ParseTreeCreator
     }
 
     /** @param array{0: string, 1: int} $type_token */
-    private function handleIsOrAs(array $type_token) : void
+    private function handleAs(array $type_token) : void
     {
         if ($this->t === 0) {
             $this->handleValue($type_token);
@@ -684,33 +688,50 @@ class ParseTreeCreator
                 array_pop($current_parent->children);
             }
 
-            if ($type_token[0] === 'as') {
-                $next_token = $this->t + 1 < $this->type_token_count ? $this->type_tokens[$this->t + 1] : null;
+            $next_token = $this->t + 1 < $this->type_token_count ? $this->type_tokens[$this->t + 1] : null;
 
-                if (!$this->current_leaf instanceof ParseTree\Value
-                    || !$current_parent instanceof ParseTree\GenericTree
-                    || !$next_token
-                ) {
-                    throw new TypeParseTreeException('Unexpected token ' . $type_token[0]);
-                }
+            if (!$this->current_leaf instanceof ParseTree\Value
+                || !$current_parent instanceof ParseTree\GenericTree
+                || !$next_token
+            ) {
+                throw new TypeParseTreeException('Unexpected token ' . $type_token[0]);
+            }
 
-                $this->current_leaf = new ParseTree\TemplateAsTree(
-                    $this->current_leaf->value,
-                    $next_token[0],
-                    $current_parent
-                );
+            $this->current_leaf = new ParseTree\TemplateAsTree(
+                $this->current_leaf->value,
+                $next_token[0],
+                $current_parent
+            );
 
+            $current_parent->children[] = $this->current_leaf;
+            ++$this->t;
+        }
+    }
+
+    /** @param array{0: string, 1: int} $type_token */
+    private function handleIsOrNot(array $type_token) : void
+    {
+        if ($this->t === 0) {
+            $this->handleValue($type_token);
+        } else {
+            $current_parent = $this->current_leaf->parent;
+
+            if ($current_parent) {
+                array_pop($current_parent->children);
+            }
+
+            if (!$this->current_leaf instanceof ParseTree\Value) {
+                return;
+            }
+
+            $this->current_leaf = new ParseTree\TemplateIsTree(
+                $this->current_leaf->value,
+                $type_token[0] === 'not',
+                $current_parent
+            );
+
+            if ($current_parent) {
                 $current_parent->children[] = $this->current_leaf;
-                ++$this->t;
-            } elseif ($this->current_leaf instanceof ParseTree\Value) {
-                $this->current_leaf = new ParseTree\TemplateIsTree(
-                    $this->current_leaf->value,
-                    $current_parent
-                );
-
-                if ($current_parent) {
-                    $current_parent->children[] = $this->current_leaf;
-                }
             }
         }
     }
