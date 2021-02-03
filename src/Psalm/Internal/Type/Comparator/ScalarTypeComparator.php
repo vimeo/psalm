@@ -420,6 +420,12 @@ class ScalarTypeComparator
             return true;
         }
 
+        if ($input_type_part instanceof TNumericString
+            && get_class($container_type_part) === TNonEmptyString::class
+        ) {
+            return true;
+        }
+
         if ($container_type_part instanceof TString
             && ($input_type_part instanceof TNumericString
                 || $input_type_part instanceof THtmlEscapedString)

@@ -672,6 +672,20 @@ class TypeCombinationTest extends TestCase
                     'non-falsy-string'
                 ]
             ],
+            'combineNonEmptyStringAndNumericString' => [
+                'non-empty-string',
+                [
+                    'non-empty-string',
+                    'numeric-string'
+                ]
+            ],
+            'combineNumericStringAndNonEmptyString' => [
+                'non-empty-string',
+                [
+                    'numeric-string',
+                    'non-empty-string'
+                ]
+            ],
         ];
     }
 
