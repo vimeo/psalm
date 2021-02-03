@@ -1053,40 +1053,6 @@ class ValueTest extends \Psalm\Tests\TestCase
                     }',
                 'error_message' => 'ArgumentTypeCoercion'
             ],
-            'zeroIsEmptyString' => [
-                '<?php
-                    /**
-                     * @param non-empty-string $s
-                     */
-                    function foo(string $s) : void {}
-
-                    foo("0");',
-                'error_message' => 'InvalidArgument'
-            ],
-            'notLiteralEmptyIsNotNotEmptyString' => [
-                '<?php
-                    /**
-                     * @param non-empty-string $s
-                     */
-                    function foo(string $s) : void {}
-
-                    function takesString(string $s) : void {
-                        if ($s !== "") {
-                            foo($s);
-                        }
-                    }',
-                'error_message' => 'ArgumentTypeCoercion'
-            ],
-            'nonEmptyStringCannotBeStringZero' => [
-                '<?php
-                    /**
-                     * @param non-empty-string $s
-                     */
-                    function foo(string $s) : void {
-                        if ($s === "0") {}
-                    }',
-                'error_message' => 'TypeDoesNotContainType'
-            ],
         ];
     }
 }

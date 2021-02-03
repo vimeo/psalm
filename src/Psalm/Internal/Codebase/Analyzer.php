@@ -31,7 +31,7 @@ use function array_values;
 use const PATHINFO_EXTENSION;
 
 /**
- * @psalm-type  TaggedCodeType = array<int, array{0: int, 1: string}>
+ * @psalm-type  TaggedCodeType = array<int, array{0: int, 1: non-empty-string}>
  *
  * @psalm-type  FileMapType = array{
  *      0: TaggedCodeType,
@@ -153,12 +153,12 @@ class Analyzer
     private $existing_issues = [];
 
     /**
-     * @var array<string, array<int, array{0: int, 1: string}>>
+     * @var array<string, array<int, array{0: int, 1: non-empty-string}>>
      */
     private $reference_map = [];
 
     /**
-     * @var array<string, array<int, array{0: int, 1: string}>>
+     * @var array<string, array<int, array{0: int, 1: non-empty-string}>>
      */
     private $type_map = [];
 
@@ -1161,7 +1161,7 @@ class Analyzer
         string $reference,
         int $argument_number
     ): void {
-        if (!$reference) {
+        if ($reference === '') {
             throw new \UnexpectedValueException('non-empty reference expected');
         }
 

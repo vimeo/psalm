@@ -2411,7 +2411,7 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                         return [$type];
                     }'
             ],
-            'SKIPPED-nonEmptyStringAfterLiteralCheck' => [
+            'nonEmptyStringAfterLiteralCheck' => [
                 '<?php
                     /**
                      * @param non-empty-string $greeting
@@ -2423,7 +2423,7 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                     /** @var string */
                     $hello = "foo";
 
-                    if ($hello === "" || $hello === "0") {
+                    if ($hello === "") {
                         throw new \Exception("an empty string is not a greeting");
                     }
 

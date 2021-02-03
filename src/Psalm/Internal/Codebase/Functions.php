@@ -216,7 +216,7 @@ class Functions
         if ($function_name[0] === '\\') {
             $function_name = substr($function_name, 1);
 
-            if (!$function_name) {
+            if ($function_name === '') {
                 throw new \UnexpectedValueException('Malformed function name');
             }
 

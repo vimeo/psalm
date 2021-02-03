@@ -362,6 +362,8 @@ class NegatedAssertionReconciler extends Reconciler
 
                         $did_remove_type = true;
                     }
+                } elseif ($assertion === 'string()') {
+                    $existing_var_type->addType(new Type\Atomic\TNonEmptyString());
                 }
             } elseif ($scalar_type === 'string') {
                 $scalar_value = substr($assertion, $bracket_pos + 1, -1);
