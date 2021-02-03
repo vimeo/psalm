@@ -260,7 +260,8 @@ class ScalarTypeComparator
 
         if ($container_type_part instanceof TNonEmptyString
             && $input_type_part instanceof TLiteralString
-            && $input_type_part->value === ''
+            && ($input_type_part->value === ''
+                || $input_type_part->value === '0')
         ) {
             return false;
         }
