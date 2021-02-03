@@ -36,6 +36,7 @@ use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNonEmptyLowercaseString;
 use Psalm\Type\Atomic\TNonEmptyMixed;
 use Psalm\Type\Atomic\TNonEmptyString;
+use Psalm\Type\Atomic\TNonFalsyString;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TPositiveInt;
@@ -932,8 +933,13 @@ class TypeCombiner
                         ) {
                             // do nothing
                         } elseif (isset($combination->value_types['string'])
-                            && $combination->value_types['string'] instanceof Type\Atomic\TNonEmptyString
+                            && $combination->value_types['string'] instanceof Type\Atomic\TNonFalsyString
                             && $type->value
+                        ) {
+                            // do nothing
+                        } elseif (isset($combination->value_types['string'])
+                            && $combination->value_types['string'] instanceof Type\Atomic\TNonEmptyString
+                            && $type->value !== ''
                         ) {
                             // do nothing
                         } else {
@@ -1036,10 +1042,20 @@ class TypeCombiner
                         unset($combination->value_types['string']);
                     } elseif (get_class($combination->value_types['string']) !== get_class($type)) {
                         if (get_class($type) === TNonEmptyString::class
+                            && get_class($combination->value_types['string']) === TNonFalsyString::class
+                        ) {
+                            $combination->value_types['string'] = $type;
+                        } elseif (get_class($type) === TNonFalsyString::class
+                            && get_class($combination->value_types['string']) === TNonEmptyString::class
+                        ) {
+                            // do nothing
+                        } elseif ((get_class($type) === TNonEmptyString::class
+                                || get_class($type) === TNonFalsyString::class)
                             && get_class($combination->value_types['string']) === TNonEmptyLowercaseString::class
                         ) {
                             $combination->value_types['string'] = $type;
-                        } elseif (get_class($combination->value_types['string']) === TNonEmptyString::class
+                        } elseif ((get_class($combination->value_types['string']) === TNonEmptyString::class
+                                || get_class($combination->value_types['string']) === TNonFalsyString::class)
                             && get_class($type) === TNonEmptyLowercaseString::class
                         ) {
                             //no-change

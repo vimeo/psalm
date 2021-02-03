@@ -1971,6 +1971,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                 $callable_types[] = $type;
             } elseif (get_class($type) === TString::class
                 || get_class($type) === Type\Atomic\TNonEmptyString::class
+                || get_class($type) === Type\Atomic\TNonFalsyString::class
             ) {
                 $callable_types[] = new Type\Atomic\TCallableString();
                 $did_remove_type = true;
@@ -2202,6 +2203,8 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
 
                     if (!$existing_var_atomic_types['string'] instanceof Type\Atomic\TNonEmptyString) {
                         $existing_var_type->addType(new Type\Atomic\TLiteralString(''));
+                        $existing_var_type->addType(new Type\Atomic\TLiteralString('0'));
+                    } elseif (!$existing_var_atomic_types['string'] instanceof Type\Atomic\TNonFalsyString) {
                         $existing_var_type->addType(new Type\Atomic\TLiteralString('0'));
                     }
                 }

@@ -27,6 +27,7 @@ use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyString;
+use Psalm\Type\Atomic\TNonFalsyString;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TNumericString;
 use Psalm\Type\Atomic\TPositiveInt;
@@ -259,14 +260,38 @@ class ScalarTypeComparator
         }
 
         if ($container_type_part instanceof TNonEmptyString
+            && $input_type_part instanceof TNonFalsyString
+        ) {
+            return true;
+        }
+
+        if ($container_type_part instanceof TNonFalsyString
+            && get_class($input_type_part) === TNonEmptyString::class
+        ) {
+            if ($atomic_comparison_result) {
+                $atomic_comparison_result->type_coerced = true;
+            }
+
+            return false;
+        }
+
+        if ($container_type_part instanceof TNonEmptyString
             && $input_type_part instanceof TLiteralString
             && $input_type_part->value === ''
         ) {
             return false;
         }
 
+        if ($container_type_part instanceof TNonFalsyString
+            && $input_type_part instanceof TLiteralString
+            && $input_type_part->value === '0'
+        ) {
+            return false;
+        }
+
         if ((get_class($container_type_part) === TString::class
                 || get_class($container_type_part) === TNonEmptyString::class
+                || get_class($container_type_part) === TNonFalsyString::class
                 || get_class($container_type_part) === TSingleLetter::class)
             && $input_type_part instanceof TLiteralString
         ) {
@@ -321,7 +346,8 @@ class ScalarTypeComparator
 
         if ((get_class($input_type_part) === TString::class
                 || get_class($input_type_part) === TSingleLetter::class
-                || get_class($input_type_part) === TNonEmptyString::class)
+                || get_class($input_type_part) === TNonEmptyString::class
+                || get_class($input_type_part) === TNonFalsyString::class)
             && $container_type_part instanceof TLiteralString
         ) {
             if ($atomic_comparison_result) {
@@ -365,7 +391,8 @@ class ScalarTypeComparator
 
         if ($container_type_part instanceof TTraitString
             && (get_class($input_type_part) === TString::class
-                || get_class($input_type_part) === TNonEmptyString::class)
+                || get_class($input_type_part) === TNonEmptyString::class
+                || get_class($input_type_part) === TNonFalsyString::class)
         ) {
             if ($atomic_comparison_result) {
                 $atomic_comparison_result->type_coerced = true;
@@ -378,7 +405,8 @@ class ScalarTypeComparator
             || $input_type_part instanceof TLiteralClassString)
             && (get_class($container_type_part) === TString::class
                 || get_class($container_type_part) === TSingleLetter::class
-                || get_class($container_type_part) === TNonEmptyString::class)
+                || get_class($container_type_part) === TNonEmptyString::class
+                || get_class($container_type_part) === TNonFalsyString::class)
         ) {
             return true;
         }
@@ -386,7 +414,8 @@ class ScalarTypeComparator
         if ($input_type_part instanceof TCallableString
             && (get_class($container_type_part) === TString::class
                 || get_class($container_type_part) === TSingleLetter::class
-                || get_class($container_type_part) === TNonEmptyString::class)
+                || get_class($container_type_part) === TNonEmptyString::class
+                || get_class($container_type_part) === TNonFalsyString::class)
         ) {
             return true;
         }

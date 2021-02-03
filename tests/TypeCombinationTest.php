@@ -637,25 +637,39 @@ class TypeCombinationTest extends TestCase
                     'positive-int',
                 ],
             ],
-            'combinNonEmptyArrayAndKeyedArray' => [
+            'combineNonEmptyArrayAndKeyedArray' => [
                 'array<int, int>',
                 [
                     'non-empty-array<int, int>',
                     'array{0?:int}',
                 ]
             ],
-            'combinNonEmptyStringAndLiteral' => [
+            'combineNonEmptyStringAndLiteral' => [
                 'non-empty-string',
                 [
                     'non-empty-string',
                     '"foo"',
                 ]
             ],
-            'combinLiteralAndNonEmptyString' => [
+            'combineLiteralAndNonEmptyString' => [
                 'non-empty-string',
                 [
                     '"foo"',
                     'non-empty-string'
+                ]
+            ],
+            'combineNonFalsyNonEmptyString' => [
+                'non-empty-string',
+                [
+                    'non-falsy-string',
+                    'non-empty-string'
+                ]
+            ],
+            'combineNonEmptyNonFalsyString' => [
+                'non-empty-string',
+                [
+                    'non-empty-string',
+                    'non-falsy-string'
                 ]
             ],
         ];

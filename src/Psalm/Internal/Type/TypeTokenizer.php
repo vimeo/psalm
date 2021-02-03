@@ -34,6 +34,7 @@ class TypeTokenizer
         'array' => true,
         'non-empty-array' => true,
         'non-empty-string' => true,
+        'non-falsy-string' => true,
         'iterable' => true,
         'null' => true,
         'mixed' => true,

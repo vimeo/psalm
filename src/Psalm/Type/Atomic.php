@@ -177,6 +177,9 @@ abstract class Atomic implements TypeNode
             case 'non-empty-string':
                 return new Type\Atomic\TNonEmptyString();
 
+            case 'non-falsy-string':
+                return new Type\Atomic\TNonFalsyString();
+
             case 'lowercase-string':
                 return new Type\Atomic\TLowercaseString();
 

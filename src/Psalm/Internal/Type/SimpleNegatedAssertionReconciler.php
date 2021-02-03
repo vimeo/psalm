@@ -582,7 +582,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                 if ($existing_var_atomic_types['string'] instanceof Type\Atomic\TLowercaseString) {
                     $existing_var_type->addType(new Type\Atomic\TNonEmptyLowercaseString);
                 } else {
-                    $existing_var_type->addType(new Type\Atomic\TNonEmptyString);
+                    $existing_var_type->addType(new Type\Atomic\TNonFalsyString);
                 }
             }
 
@@ -707,7 +707,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         }
 
         if (isset($existing_var_atomic_types['string'])) {
-            if (!$existing_var_atomic_types['string'] instanceof Type\Atomic\TNonEmptyString
+            if (!$existing_var_atomic_types['string'] instanceof Type\Atomic\TNonFalsyString
                 && !$existing_var_atomic_types['string'] instanceof Type\Atomic\TClassString
                 && !$existing_var_atomic_types['string'] instanceof Type\Atomic\TDependentGetClass
             ) {
@@ -718,7 +718,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                 if ($existing_var_atomic_types['string'] instanceof Type\Atomic\TLowercaseString) {
                     $existing_var_type->addType(new Type\Atomic\TNonEmptyLowercaseString);
                 } else {
-                    $existing_var_type->addType(new Type\Atomic\TNonEmptyString);
+                    $existing_var_type->addType(new Type\Atomic\TNonFalsyString);
                 }
             } elseif ($existing_var_type->isSingle() && !$is_equality) {
                 if ($code_location && $key) {
