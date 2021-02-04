@@ -186,7 +186,8 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
             }
 
             if ($stmt->class instanceof PhpParser\Node\Stmt\Class_) {
-                $result_atomic_type = new Type\Atomic\TAnonymousClassInstance($fq_class_name);
+                $extends = $stmt->class->extends ? (string) $stmt->class->extends : null;
+                $result_atomic_type = new Type\Atomic\TAnonymousClassInstance($fq_class_name, false, $extends);
             } else {
                 $result_atomic_type = new TNamedObject($fq_class_name);
                 $result_atomic_type->was_static = $from_static;
