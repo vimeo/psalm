@@ -399,7 +399,21 @@ Optional. Do you use mock classes in your tests? If you want Psalm to ignore the
 Optional. Do you have objects with properties that cannot be determined statically? If you want Psalm to treat all properties on a given classlike as mixed, include a fully-qualified path to the class with `<class name="Your\Namespace\ClassName" />`. By default, `stdClass` and `SimpleXMLElement` are configured to be universal object crates.
 
 #### &lt;stubs&gt;
-Optional. If your codebase uses classes and functions that are not visible to Psalm via reflection (e.g. if there are internal packages that your codebase relies on that are not available on the machine running Psalm), you can use stub files. Used by PhpStorm (a popular IDE) and others, stubs provide a description of classes and functions without the implementations. You can find a list of stubs for common classes [here](https://github.com/JetBrains/phpstorm-stubs). List out each file with `<file name="path/to/file.php" />`.
+Optional. If your codebase uses classes and functions that are not visible to Psalm via reflection
+(e.g. if there are internal packages that your codebase relies on that are not available on the machine running Psalm),
+you can use stub files. Used by PhpStorm (a popular IDE) and others, stubs provide a description of classes and
+functions without the implementations.
+
+You can find a list of stubs for common classes [here](https://github.com/JetBrains/phpstorm-stubs).
+List out each file with `<file name="path/to/file.php" />`. In case classes to be tested use parent classes
+or interfaces defined in a stub file, this stub should be configured with attribute `preloadClasses="true"`.
+
+```xml
+<stubs>
+  <file name="path/to/file.php" />
+  <file name="path/to/abstract-class.php" preloadClasses="true" />
+</stubs>
+```
 
 #### &lt;ignoreExceptions&gt;
 Optional. A list of exceptions to not report for `checkForThrowsDocblock` or `checkForThrowsInGlobalScope`. If an exception has `onlyGlobalScope` set to `true`, only `checkForThrowsInGlobalScope` is ignored for that exception, e.g.
