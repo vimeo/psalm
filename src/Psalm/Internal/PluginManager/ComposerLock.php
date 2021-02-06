@@ -31,11 +31,8 @@ class ComposerLock
     public function isPlugin($package): bool
     {
         return is_array($package)
-            && isset($package['name'])
+            && isset($package['name'], $package['extra']['psalm']['pluginClass'])
             && is_string($package['name'])
-            && isset($package['type'])
-            && $package['type'] === 'psalm-plugin'
-            && isset($package['extra']['psalm']['pluginClass'])
             && is_array($package['extra'])
             && is_array($package['extra']['psalm'])
             && is_string($package['extra']['psalm']['pluginClass']);
@@ -71,7 +68,7 @@ class ComposerLock
     }
 
     /**
-     * @return list<array{type:string,name:string,extra:array{psalm:array{pluginClass:string}}}>
+     * @return list<array{name:string,extra:array{psalm:array{pluginClass:string}}}>
      */
     private function getAllPluginPackages(): array
     {
@@ -80,7 +77,7 @@ class ComposerLock
         /** @psalm-suppress MixedAssignment */
         foreach ($packages as $package) {
             if ($this->isPlugin($package)) {
-                /** @var array{type:'psalm-plugin',name:string,extra:array{psalm:array{pluginClass:string}}} */
+                /** @var array{name:string,extra:array{psalm:array{pluginClass:string}}} */
                 $ret[] = $package;
             }
         }
