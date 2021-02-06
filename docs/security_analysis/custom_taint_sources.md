@@ -9,6 +9,7 @@ You can use the annotation `@psalm-taint-source <taint-type>` to indicate a func
 In the below example the `input` taint type is specified as a standin for input taints as defined in [Psalm\Type\TaintKindGroup](https://github.com/vimeo/psalm/blob/master/src/Psalm/Type/TaintKindGroup.php).
 
 ```php
+<?php
 /**
  * @psalm-taint-source input
  */
