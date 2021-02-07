@@ -2300,6 +2300,23 @@ class UnusedVariableTest extends TestCase
                         }
                     }'
             ],
+            'usedThrow' => [
+                '<?php
+                    function f(Exception $e): void {
+                        throw $e;
+                    }
+                ',
+            ],
+            'usedThrowInReturnedCallable' => [
+                '<?php
+                    function createFailingFunction(RuntimeException $exception): Closure
+                    {
+                        return static function () use ($exception): void {
+                            throw $exception;
+                        };
+                    }
+                ',
+            ]
         ];
     }
 
