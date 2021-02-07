@@ -670,16 +670,25 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                                 && $guide_property_storage->signature_type)
                             || ($property_storage->signature_type
                                 && $guide_property_storage->signature_type
-                                && !$property_storage->type->equals($guide_property_storage->type)))
+                                && !$property_storage->signature_type->equals(
+                                    $guide_property_storage->signature_type
+                                )))
                         && $property_storage->location
                     ) {
                         if (IssueBuffer::accepts(
                             new NonInvariantPropertyType(
                                 'Property ' . $fq_class_name . '::$' . $property_name
-                                    . ' has type ' . $property_storage->type->getId()
+                                    . ' has type '
+                                    . ($property_storage->signature_type
+                                        ? $property_storage->signature_type->getId()
+                                        : '<empty>'
+                                    )
                                     . ", not invariant with " . $guide_class_name . '::$'
                                     . $property_name . ' of type '
-                                    . $guide_property_storage->type->getId(),
+                                    . ($guide_property_storage->signature_type
+                                        ? $guide_property_storage->signature_type->getId()
+                                        : '<empty>'
+                                    ),
                                 $property_storage->location
                             ),
                             $property_storage->suppressed_issues
