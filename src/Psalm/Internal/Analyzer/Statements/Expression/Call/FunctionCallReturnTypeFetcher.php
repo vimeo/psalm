@@ -118,7 +118,11 @@ class FunctionCallReturnTypeFetcher
                             $return_type,
                             null,
                             null,
-                            null
+                            null,
+                            true,
+                            false,
+                            false,
+                            true
                         );
 
                         $return_type_location = $function_storage->return_type_location;

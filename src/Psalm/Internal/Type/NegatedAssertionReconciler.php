@@ -224,7 +224,7 @@ class NegatedAssertionReconciler extends Reconciler
                         continue;
                     }
 
-                    $new_type_part = Atomic::create($assertion);
+                    $new_type_part = Atomic::create($assertion, null, $template_type_map);
 
                     if (!$new_type_part instanceof TNamedObject) {
                         continue;

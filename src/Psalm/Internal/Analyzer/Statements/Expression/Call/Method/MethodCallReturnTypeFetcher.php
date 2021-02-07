@@ -120,7 +120,11 @@ class MethodCallReturnTypeFetcher
                 $return_type_candidate,
                 $fq_class_name,
                 $static_type,
-                $class_storage->parent_class
+                $class_storage->parent_class,
+                true,
+                false,
+                false,
+                true
             );
         } else {
             $self_fq_class_name = $fq_class_name;
@@ -152,7 +156,8 @@ class MethodCallReturnTypeFetcher
                     true,
                     false,
                     $static_type instanceof Type\Atomic\TNamedObject
-                        && $codebase->classlike_storage_provider->get($static_type->value)->final
+                        && $codebase->classlike_storage_provider->get($static_type->value)->final,
+                    true
                 );
 
                 $return_type_location = $codebase->methods->getMethodReturnTypeLocation(

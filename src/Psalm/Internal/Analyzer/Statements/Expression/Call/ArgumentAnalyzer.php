@@ -252,7 +252,8 @@ class ArgumentAnalyzer
             $parent_class,
             true,
             false,
-            $static_classlike_storage ? $static_classlike_storage->final : false
+            $static_classlike_storage ? $static_classlike_storage->final : false,
+            true
         );
 
         if ($class_generic_params) {
@@ -378,7 +379,8 @@ class ArgumentAnalyzer
                 $parent_class,
                 true,
                 false,
-                $static_classlike_storage ? $static_classlike_storage->final : false
+                $static_classlike_storage ? $static_classlike_storage->final : false,
+                true
             );
         }
 

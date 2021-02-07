@@ -3309,6 +3309,19 @@ class ClassTemplateTest extends TestCase
                         }
                     }'
             ],
+            'templatedTypeWithLimitGoesIntoTemplatedType' => [
+                '<?php
+                    /**
+                     * @template T as object
+                     */
+                    abstract class A {}
+
+                    function takesA(A $a) : void {}
+
+                    function foo(A $a) : void {
+                        takesA($a);
+                    }',
+            ],
         ];
     }
 
@@ -3913,6 +3926,40 @@ class ClassTemplateTest extends TestCase
                         $c->map($fn);
                     }',
                 'error_message' => 'InvalidScalarArgument',
+            ],
+            'limitTemplateTypeWithSameName' => [
+                '<?php
+                    /**
+                     * @template T as object
+                     */
+                    abstract class A {}
+
+                    function takesA(A $a) : void {}
+
+                    /** @param A<stdClass> $a */
+                    function foo(A $a) : void {
+                        takesA($a);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'limitTemplateTypeExtended' => [
+                '<?php
+
+                    /**
+                     * @template T as object
+                     */
+                    abstract class A {}
+
+                    /**
+                     * @extends A<stdClass>
+                     */
+                    class AChild extends A {}
+
+                    function takesA(A $a) : void {}
+
+                    $child = new AChild();
+                    takesA($child);',
+                'error_message' => 'InvalidArgument',
             ],
         ];
     }

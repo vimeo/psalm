@@ -31,7 +31,8 @@ class TypeExpander
         ?string $parent_class,
         bool $evaluate_class_constants = true,
         bool $evaluate_conditional_types = false,
-        bool $final = false
+        bool $final = false,
+        bool $expand_generic = false
     ): Type\Union {
         $return_type = clone $return_type;
 
@@ -48,7 +49,8 @@ class TypeExpander
                 $parent_class,
                 $evaluate_class_constants,
                 $evaluate_conditional_types,
-                $final
+                $final,
+                $expand_generic
             );
 
             if (is_array($parts)) {
@@ -95,7 +97,8 @@ class TypeExpander
         ?string $parent_class,
         bool $evaluate_class_constants = true,
         bool $evaluate_conditional_types = false,
-        bool $final = false
+        bool $final = false,
+        bool $expand_generic = false
     ) {
         if ($return_type instanceof TNamedObject
             || $return_type instanceof TTemplateParam
@@ -129,6 +132,38 @@ class TypeExpander
             }
 
             if ($return_type instanceof TNamedObject) {
+                if ($expand_generic
+                    && \get_class($return_type) === TNamedObject::class
+                    && !$return_type->extra_types
+                    && $codebase->classOrInterfaceExists($return_type->value)
+                ) {
+                    $value = $codebase->classlikes->getUnAliasedName($return_type->value);
+                    $container_class_storage = $codebase->classlike_storage_provider->get(
+                        $value
+                    );
+
+                    if ($container_class_storage->template_types
+                        && \array_filter(
+                            $container_class_storage->template_types,
+                            function ($type_map) {
+                                return !reset($type_map)->hasMixed();
+                            }
+                        )
+                    ) {
+                        $return_type = new Type\Atomic\TGenericObject(
+                            $return_type->value,
+                            \array_values(
+                                \array_map(
+                                    function ($type_map) {
+                                        return clone reset($type_map);
+                                    },
+                                    $container_class_storage->template_types
+                                )
+                            )
+                        );
+                    }
+                }
+
                 $return_type_lc = strtolower($return_type->value);
 
                 if ($static_class_type && ($return_type_lc === 'static' || $return_type_lc === '$this')) {
@@ -190,7 +225,8 @@ class TypeExpander
                 $parent_class,
                 $evaluate_class_constants,
                 $evaluate_conditional_types,
-                $final
+                $final,
+                $expand_generic
             );
 
             if ($new_as_type instanceof TNamedObject) {
@@ -206,7 +242,8 @@ class TypeExpander
                 $parent_class,
                 $evaluate_class_constants,
                 $evaluate_conditional_types,
-                $final
+                $final,
+                $expand_generic
             );
 
             $return_type->as = $new_as_type;
@@ -303,7 +340,9 @@ class TypeExpander
                                 $static_class_type,
                                 $parent_class,
                                 $evaluate_class_constants,
-                                $evaluate_conditional_types
+                                $evaluate_conditional_types,
+                                $final,
+                                $expand_generic
                             );
 
                             if (is_array($recursively_fleshed_out_type)) {
@@ -380,7 +419,8 @@ class TypeExpander
                     $parent_class,
                     $evaluate_class_constants,
                     $evaluate_conditional_types,
-                    $final
+                    $final,
+                    $expand_generic
                 );
 
                 if (\is_array($new_value_type)) {
@@ -412,7 +452,8 @@ class TypeExpander
                 $parent_class,
                 $evaluate_class_constants,
                 $evaluate_conditional_types,
-                $final
+                $final,
+                $expand_generic
             );
 
             if (!is_array($new_value_types)) {
@@ -446,7 +487,8 @@ class TypeExpander
                     $parent_class,
                     $evaluate_class_constants,
                     $evaluate_conditional_types,
-                    $final
+                    $final,
+                    $expand_generic
                 );
             }
         } elseif ($return_type instanceof Type\Atomic\TKeyedArray) {
@@ -459,7 +501,8 @@ class TypeExpander
                     $parent_class,
                     $evaluate_class_constants,
                     $evaluate_conditional_types,
-                    $final
+                    $final,
+                    $expand_generic
                 );
             }
         } elseif ($return_type instanceof Type\Atomic\TList) {
@@ -471,7 +514,8 @@ class TypeExpander
                 $parent_class,
                 $evaluate_class_constants,
                 $evaluate_conditional_types,
-                $final
+                $final,
+                $expand_generic
             );
         }
 
@@ -485,7 +529,8 @@ class TypeExpander
                     $parent_class,
                     $evaluate_class_constants,
                     $evaluate_conditional_types,
-                    $final
+                    $final,
+                    $expand_generic
                 );
             }
         }
@@ -504,7 +549,8 @@ class TypeExpander
                             $parent_class,
                             $evaluate_class_constants,
                             $evaluate_conditional_types,
-                            $final
+                            $final,
+                            $expand_generic
                         );
                     }
                 }
@@ -518,7 +564,8 @@ class TypeExpander
                     $parent_class,
                     $evaluate_class_constants,
                     $evaluate_conditional_types,
-                    $final
+                    $final,
+                    $expand_generic
                 );
             }
         }
@@ -537,7 +584,8 @@ class TypeExpander
                             $parent_class,
                             $evaluate_class_constants,
                             $evaluate_conditional_types,
-                            $final
+                            $final,
+                            $expand_generic
                         );
 
                         if (!is_array($candidate)) {
@@ -557,7 +605,8 @@ class TypeExpander
                         $parent_class,
                         $evaluate_class_constants,
                         $evaluate_conditional_types,
-                        $final
+                        $final,
+                        $expand_generic
                     );
 
                     $candidate_types = is_array($candidate) ? $candidate : [$candidate];
@@ -579,7 +628,8 @@ class TypeExpander
                         $parent_class,
                         $evaluate_class_constants,
                         $evaluate_conditional_types,
-                        $final
+                        $final,
+                        $expand_generic
                     );
 
                     $candidate_types = is_array($candidate) ? $candidate : [$candidate];
@@ -654,7 +704,8 @@ class TypeExpander
                 $parent_class,
                 $evaluate_class_constants,
                 $evaluate_conditional_types,
-                $final
+                $final,
+                $expand_generic
             );
 
             $return_type->if_type = self::expandUnion(
@@ -665,7 +716,8 @@ class TypeExpander
                 $parent_class,
                 $evaluate_class_constants,
                 $evaluate_conditional_types,
-                $final
+                $final,
+                $expand_generic
             );
 
             $return_type->else_type = self::expandUnion(
@@ -676,7 +728,8 @@ class TypeExpander
                 $parent_class,
                 $evaluate_class_constants,
                 $evaluate_conditional_types,
-                $final
+                $final,
+                $expand_generic
             );
         }
 

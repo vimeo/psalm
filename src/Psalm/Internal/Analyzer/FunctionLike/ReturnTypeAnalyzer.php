@@ -15,6 +15,7 @@ use Psalm\Internal\Analyzer\SourceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\FileManipulation\FunctionDocblockManipulator;
@@ -453,7 +454,7 @@ class ReturnTypeAnalyzer
                 return null;
             }
 
-            $union_comparison_results = new \Psalm\Internal\Type\Comparator\TypeComparisonResult();
+            $union_comparison_results = new TypeComparisonResult();
 
             if (!UnionTypeComparator::isContainedBy(
                 $codebase,
@@ -824,11 +825,16 @@ class ReturnTypeAnalyzer
             }
         }
 
+        $union_comparison_result = new TypeComparisonResult();
+
         if (!UnionTypeComparator::isContainedBy(
             $codebase,
             $fleshed_out_return_type,
-            $fleshed_out_signature_type
-        )
+            $fleshed_out_signature_type,
+            false,
+            false,
+            $union_comparison_result
+        ) && !$union_comparison_result->type_coerced_from_mixed
         ) {
             if ($codebase->alter_code
                 && isset($project_analyzer->getIssuesToFix()['MismatchingDocblockReturnType'])
