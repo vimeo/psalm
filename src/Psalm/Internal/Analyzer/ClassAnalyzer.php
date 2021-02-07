@@ -2056,8 +2056,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 true
             );
 
-            if (
-                $fq_interface_name_lc === 'traversable'
+            if ($fq_interface_name_lc === 'traversable'
                 && !$storage->abstract
                 && !(
                     isset($storage->class_implements['iteratoraggregate'])
@@ -2069,7 +2068,6 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         'Traversable should be implemented by implementing IteratorAggregate or Iterator',
                         $code_location,
                         $fq_class_name
-
                     )
                 )) {
                     // fall through
