@@ -1,7 +1,7 @@
 <?php
 namespace Psalm\Tests;
 
-class PropertyTypeInvariance extends TestCase
+class PropertyTypeInvarianceTest extends TestCase
 {
     use Traits\InvalidCodeAnalysisTestTrait;
     use Traits\ValidCodeAnalysisTestTrait;
@@ -12,35 +12,52 @@ class PropertyTypeInvariance extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
-            'validcode' =>
-                ['<?php
+            'validcode' => [
+                '<?php
+                    class ParentClass
+                    {
+                        /** @var null|string */
+                        protected $mightExist;
 
-                class ParentClass
-                {
-                    /** @var null|string */
-                    protected $mightExist;
+                        protected ?string $mightExistNative = null;
 
-                    protected ?string $mightExistNative = null;
+                        /** @var string */
+                        protected $doesExist = "";
 
-                    /** @var string */
-                    protected $doesExist = "";
+                        protected string $doesExistNative = "";
+                    }
 
-                    protected string $doesExistNative = "";
-                }
+                    class ChildClass extends ParentClass
+                    {
+                        /** @var null|string */
+                        protected $mightExist = "";
 
-                class ChildClass extends ParentClass
-                {
-                    /** @var null|string */
-                    protected $mightExist = "";
+                        protected ?string $mightExistNative = null;
 
-                    protected ?string $mightExistNative = null;
+                        /** @var string */
+                        protected $doesExist = "";
 
-                    /** @var string */
-                    protected $doesExist = "";
+                        protected string $doesExistNative = "";
+                    }'
+            ],
+            'allowTemplatedInvariance' => [
+                '<?php
+                    /**
+                     * @template T as string|null
+                     */
+                    abstract class A {
+                        /** @var T */
+                        public $foo;
+                    }
 
-                    protected string $doesExistNative = "";
-                }
-                '],
+                    /**
+                     * @extends A<string>
+                     */
+                    class AChild extends A {
+                        /** @var string */
+                        public $foo = "foo";
+                    }'
+            ],
         ];
     }
 
