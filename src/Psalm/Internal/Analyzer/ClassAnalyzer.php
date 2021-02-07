@@ -2082,10 +2082,12 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
             if ($fq_interface_name_lc === 'traversable'
                 && !$storage->abstract
-                && !(
-                    isset($storage->class_implements['iteratoraggregate'])
-                    || isset($storage->class_implements['iterator'])
-                )
+                && !isset($storage->class_implements['iteratoraggregate'])
+                && !isset($storage->class_implements['iterator'])
+                && !isset($storage->parent_classes['pdostatement'])
+                && !isset($storage->parent_classes['ds\collection'])
+                && !isset($storage->parent_classes['domnodelist'])
+                && !isset($storage->parent_classes['dateperiod'])
             ) {
                 if (IssueBuffer::accepts(
                     new InvalidTraversableImplementation(
