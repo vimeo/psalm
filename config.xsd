@@ -266,6 +266,7 @@
             <xs:element name="InvalidTemplateParam" type="FunctionIssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidThrow" type="ClassIssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidToString" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="InvalidTraversableImplementation" type="ClassIssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidTypeImport" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="LessSpecificImplementedReturnType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="LessSpecificReturnStatement" type="IssueHandlerType" minOccurs="0" />

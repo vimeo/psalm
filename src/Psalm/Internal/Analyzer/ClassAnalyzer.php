@@ -23,6 +23,7 @@ use Psalm\Issue\InaccessibleMethod;
 use Psalm\Issue\InternalClass;
 use Psalm\Issue\InvalidExtendClass;
 use Psalm\Issue\InvalidTemplateParam;
+use Psalm\Issue\InvalidTraversableImplementation;
 use Psalm\Issue\MethodSignatureMismatch;
 use Psalm\Issue\MismatchingDocblockPropertyType;
 use Psalm\Issue\MissingConstructor;
@@ -2054,6 +2055,24 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 $class_context->include_location,
                 true
             );
+
+            if ($fq_interface_name_lc === 'traversable'
+                && !$storage->abstract
+                && !(
+                    isset($storage->class_implements['iteratoraggregate'])
+                    || isset($storage->class_implements['iterator'])
+                )
+            ) {
+                if (IssueBuffer::accepts(
+                    new InvalidTraversableImplementation(
+                        'Traversable should be implemented by implementing IteratorAggregate or Iterator',
+                        $code_location,
+                        $fq_class_name
+                    )
+                )) {
+                    // fall through
+                }
+            }
 
             if ($interface_storage->deprecated) {
                 if (IssueBuffer::accepts(
