@@ -33,6 +33,7 @@ is considered secure. Only in case function argument `$escape` is true, the corr
 `@psalm-taint-escape` is applied for taint type `html` .
 
 ```php
+<?php
 /**
  * @param string $str
  * @param bool $escape
