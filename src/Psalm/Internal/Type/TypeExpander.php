@@ -133,87 +133,15 @@ class TypeExpander
             }
 
             if ($return_type instanceof TNamedObject) {
-                if ($expand_generic
-                    && \get_class($return_type) === TNamedObject::class
-                    && !$return_type->extra_types
-                    && $codebase->classOrInterfaceExists($return_type->value)
-                ) {
-                    $value = $codebase->classlikes->getUnAliasedName($return_type->value);
-                    $container_class_storage = $codebase->classlike_storage_provider->get(
-                        $value
-                    );
-
-                    if ($container_class_storage->template_types
-                        && \array_filter(
-                            $container_class_storage->template_types,
-                            function ($type_map) {
-                                return !reset($type_map)->hasMixed();
-                            }
-                        )
-                    ) {
-                        $return_type = new Type\Atomic\TGenericObject(
-                            $return_type->value,
-                            \array_values(
-                                \array_map(
-                                    function ($type_map) {
-                                        return clone reset($type_map);
-                                    },
-                                    $container_class_storage->template_types
-                                )
-                            )
-                        );
-
-                        // we don't want to expand generic types recursively
-                        $expand_generic = false;
-                    }
-
-                }
-
-                $return_type_lc = strtolower($return_type->value);
-
-                if ($static_class_type && ($return_type_lc === 'static' || $return_type_lc === '$this')) {
-                    if (is_string($static_class_type)) {
-                        $return_type->value = $static_class_type;
-                    } else {
-                        if ($return_type instanceof Type\Atomic\TGenericObject
-                            && $static_class_type instanceof Type\Atomic\TGenericObject
-                        ) {
-                            $return_type->value = $static_class_type->value;
-                        } else {
-                            $return_type = clone $static_class_type;
-                        }
-                    }
-
-                    if (!$final && $return_type instanceof TNamedObject) {
-                        $return_type->was_static = true;
-                    }
-                } elseif ($return_type->was_static
-                    && ($static_class_type instanceof Type\Atomic\TNamedObject
-                        || $static_class_type instanceof Type\Atomic\TTemplateParam)
-                ) {
-                    $return_type = clone $return_type;
-                    $cloned_static = clone $static_class_type;
-                    $extra_static = $cloned_static->extra_types ?: [];
-                    $cloned_static->extra_types = null;
-
-                    if ($cloned_static->getKey(false) !== $return_type->getKey(false)) {
-                        $return_type->extra_types[$static_class_type->getKey()] = clone $cloned_static;
-                    }
-
-                    foreach ($extra_static as $extra_static_type) {
-                        if ($extra_static_type->getKey(false) !== $return_type->getKey(false)) {
-                            $return_type->extra_types[$extra_static_type->getKey()] = clone $extra_static_type;
-                        }
-                    }
-                } elseif ($return_type->was_static && is_string($static_class_type) && $final) {
-                    $return_type->value = $static_class_type;
-                } elseif ($self_class && $return_type_lc === 'self') {
-                    $return_type->value = $self_class;
-                } elseif ($parent_class && $return_type_lc === 'parent') {
-                    $return_type->value = $parent_class;
-                } else {
-                    $return_type->value = $codebase->classlikes->getUnAliasedName($return_type->value);
-                }
+                $return_type = self::expandNamedObject(
+                    $codebase,
+                    $return_type,
+                    $self_class,
+                    $static_class_type,
+                    $parent_class,
+                    $final,
+                    $expand_generic
+                );
             }
         }
 
@@ -576,158 +504,9 @@ class TypeExpander
         }
 
         if ($return_type instanceof Type\Atomic\TConditional) {
-            if ($evaluate_conditional_types) {
-                $assertion = null;
-
-                if ($return_type->conditional_type->isSingle()) {
-                    foreach ($return_type->conditional_type->getAtomicTypes() as $condition_atomic_type) {
-                        $candidate = self::expandAtomic(
-                            $codebase,
-                            $condition_atomic_type,
-                            $self_class,
-                            $static_class_type,
-                            $parent_class,
-                            $evaluate_class_constants,
-                            $evaluate_conditional_types,
-                            $final,
-                            $expand_generic
-                        );
-
-                        if (!is_array($candidate)) {
-                            $assertion = $candidate->getAssertionString();
-                        }
-                    }
-                }
-
-                $if_conditional_return_types = [];
-
-                foreach ($return_type->if_type->getAtomicTypes() as $if_atomic_type) {
-                    $candidate = self::expandAtomic(
-                        $codebase,
-                        $if_atomic_type,
-                        $self_class,
-                        $static_class_type,
-                        $parent_class,
-                        $evaluate_class_constants,
-                        $evaluate_conditional_types,
-                        $final,
-                        $expand_generic
-                    );
-
-                    $candidate_types = is_array($candidate) ? $candidate : [$candidate];
-
-                    $if_conditional_return_types = array_merge(
-                        $if_conditional_return_types,
-                        $candidate_types
-                    );
-                }
-
-                $else_conditional_return_types = [];
-
-                foreach ($return_type->else_type->getAtomicTypes() as $else_atomic_type) {
-                    $candidate = self::expandAtomic(
-                        $codebase,
-                        $else_atomic_type,
-                        $self_class,
-                        $static_class_type,
-                        $parent_class,
-                        $evaluate_class_constants,
-                        $evaluate_conditional_types,
-                        $final,
-                        $expand_generic
-                    );
-
-                    $candidate_types = is_array($candidate) ? $candidate : [$candidate];
-
-                    $else_conditional_return_types = array_merge(
-                        $else_conditional_return_types,
-                        $candidate_types
-                    );
-                }
-
-                if ($assertion && $return_type->param_name === (string) $return_type->if_type) {
-                    $if_conditional_return_type = TypeCombiner::combine(
-                        $if_conditional_return_types,
-                        $codebase
-                    );
-
-                    $if_conditional_return_type = \Psalm\Internal\Type\SimpleAssertionReconciler::reconcile(
-                        $assertion,
-                        $codebase,
-                        $if_conditional_return_type
-                    );
-
-
-                    if ($if_conditional_return_type) {
-                        $if_conditional_return_types = array_values($if_conditional_return_type->getAtomicTypes());
-                    }
-                }
-
-                if ($assertion && $return_type->param_name === (string) $return_type->else_type) {
-                    $else_conditional_return_type = TypeCombiner::combine(
-                        $else_conditional_return_types,
-                        $codebase
-                    );
-
-                    $else_conditional_return_type = \Psalm\Internal\Type\SimpleNegatedAssertionReconciler::reconcile(
-                        $assertion,
-                        $else_conditional_return_type
-                    );
-
-                    if ($else_conditional_return_type) {
-                        $else_conditional_return_types = array_values($else_conditional_return_type->getAtomicTypes());
-                    }
-                }
-
-                $all_conditional_return_types = array_merge(
-                    $if_conditional_return_types,
-                    $else_conditional_return_types
-                );
-
-                foreach ($all_conditional_return_types as $i => $conditional_return_type) {
-                    if ($conditional_return_type instanceof Type\Atomic\TVoid
-                        && count($all_conditional_return_types) > 1
-                    ) {
-                        $all_conditional_return_types[$i] = new Type\Atomic\TNull();
-                        $all_conditional_return_types[$i]->from_docblock = true;
-                    }
-                }
-
-                $combined = TypeCombiner::combine(
-                    array_values($all_conditional_return_types),
-                    $codebase
-                );
-
-                return array_values($combined->getAtomicTypes());
-            }
-
-            $return_type->conditional_type = self::expandUnion(
+            return self::expandConditional(
                 $codebase,
-                $return_type->conditional_type,
-                $self_class,
-                $static_class_type,
-                $parent_class,
-                $evaluate_class_constants,
-                $evaluate_conditional_types,
-                $final,
-                $expand_generic
-            );
-
-            $return_type->if_type = self::expandUnion(
-                $codebase,
-                $return_type->if_type,
-                $self_class,
-                $static_class_type,
-                $parent_class,
-                $evaluate_class_constants,
-                $evaluate_conditional_types,
-                $final,
-                $expand_generic
-            );
-
-            $return_type->else_type = self::expandUnion(
-                $codebase,
-                $return_type->else_type,
+                $return_type,
                 $self_class,
                 $static_class_type,
                 $parent_class,
@@ -737,6 +516,283 @@ class TypeExpander
                 $expand_generic
             );
         }
+
+        return $return_type;
+    }
+
+    /**
+     * @param  string|Type\Atomic\TNamedObject|Type\Atomic\TTemplateParam|null $static_class_type
+     * @return Type\Atomic\TNamedObject|Type\Atomic\TTemplateParam
+     */
+    private static function expandNamedObject(
+        Codebase $codebase,
+        Type\Atomic\TNamedObject $return_type,
+        ?string $self_class,
+        $static_class_type,
+        ?string $parent_class,
+        bool $final = false,
+        bool &$expand_generic = false
+    ) {
+        if ($expand_generic
+            && \get_class($return_type) === TNamedObject::class
+            && !$return_type->extra_types
+            && $codebase->classOrInterfaceExists($return_type->value)
+        ) {
+            $value = $codebase->classlikes->getUnAliasedName($return_type->value);
+            $container_class_storage = $codebase->classlike_storage_provider->get(
+                $value
+            );
+
+            if ($container_class_storage->template_types
+                && \array_filter(
+                    $container_class_storage->template_types,
+                    function ($type_map) {
+                        return !reset($type_map)->hasMixed();
+                    }
+                )
+            ) {
+                $return_type = new Type\Atomic\TGenericObject(
+                    $return_type->value,
+                    \array_values(
+                        \array_map(
+                            function ($type_map) {
+                                return clone reset($type_map);
+                            },
+                            $container_class_storage->template_types
+                        )
+                    )
+                );
+
+                // we don't want to expand generic types recursively
+                $expand_generic = false;
+            }
+        }
+
+        $return_type_lc = strtolower($return_type->value);
+
+        if ($static_class_type && ($return_type_lc === 'static' || $return_type_lc === '$this')) {
+            if (is_string($static_class_type)) {
+                $return_type->value = $static_class_type;
+            } else {
+                if ($return_type instanceof Type\Atomic\TGenericObject
+                    && $static_class_type instanceof Type\Atomic\TGenericObject
+                ) {
+                    $return_type->value = $static_class_type->value;
+                } else {
+                    $return_type = clone $static_class_type;
+                }
+            }
+
+            if (!$final && $return_type instanceof TNamedObject) {
+                $return_type->was_static = true;
+            }
+        } elseif ($return_type->was_static
+            && ($static_class_type instanceof Type\Atomic\TNamedObject
+                || $static_class_type instanceof Type\Atomic\TTemplateParam)
+        ) {
+            $return_type = clone $return_type;
+            $cloned_static = clone $static_class_type;
+            $extra_static = $cloned_static->extra_types ?: [];
+            $cloned_static->extra_types = null;
+
+            if ($cloned_static->getKey(false) !== $return_type->getKey(false)) {
+                $return_type->extra_types[$static_class_type->getKey()] = clone $cloned_static;
+            }
+
+            foreach ($extra_static as $extra_static_type) {
+                if ($extra_static_type->getKey(false) !== $return_type->getKey(false)) {
+                    $return_type->extra_types[$extra_static_type->getKey()] = clone $extra_static_type;
+                }
+            }
+        } elseif ($return_type->was_static && is_string($static_class_type) && $final) {
+            $return_type->value = $static_class_type;
+        } elseif ($self_class && $return_type_lc === 'self') {
+            $return_type->value = $self_class;
+        } elseif ($parent_class && $return_type_lc === 'parent') {
+            $return_type->value = $parent_class;
+        } else {
+            $return_type->value = $codebase->classlikes->getUnAliasedName($return_type->value);
+        }
+
+        return $return_type;
+    }
+
+    /**
+     * @param  string|Type\Atomic\TNamedObject|Type\Atomic\TTemplateParam|null $static_class_type
+     *
+     * @return Type\Atomic|non-empty-list<Type\Atomic>
+     */
+    private static function expandConditional(
+        Codebase $codebase,
+        Type\Atomic\TConditional $return_type,
+        ?string $self_class,
+        $static_class_type,
+        ?string $parent_class,
+        bool $evaluate_class_constants = true,
+        bool $evaluate_conditional_types = false,
+        bool $final = false,
+        bool &$expand_generic = false
+    ) {
+        if ($evaluate_conditional_types) {
+            $assertion = null;
+
+            if ($return_type->conditional_type->isSingle()) {
+                foreach ($return_type->conditional_type->getAtomicTypes() as $condition_atomic_type) {
+                    $candidate = self::expandAtomic(
+                        $codebase,
+                        $condition_atomic_type,
+                        $self_class,
+                        $static_class_type,
+                        $parent_class,
+                        $evaluate_class_constants,
+                        $evaluate_conditional_types,
+                        $final,
+                        $expand_generic
+                    );
+
+                    if (!is_array($candidate)) {
+                        $assertion = $candidate->getAssertionString();
+                    }
+                }
+            }
+
+            $if_conditional_return_types = [];
+
+            foreach ($return_type->if_type->getAtomicTypes() as $if_atomic_type) {
+                $candidate = self::expandAtomic(
+                    $codebase,
+                    $if_atomic_type,
+                    $self_class,
+                    $static_class_type,
+                    $parent_class,
+                    $evaluate_class_constants,
+                    $evaluate_conditional_types,
+                    $final,
+                    $expand_generic
+                );
+
+                $candidate_types = is_array($candidate) ? $candidate : [$candidate];
+
+                $if_conditional_return_types = array_merge(
+                    $if_conditional_return_types,
+                    $candidate_types
+                );
+            }
+
+            $else_conditional_return_types = [];
+
+            foreach ($return_type->else_type->getAtomicTypes() as $else_atomic_type) {
+                $candidate = self::expandAtomic(
+                    $codebase,
+                    $else_atomic_type,
+                    $self_class,
+                    $static_class_type,
+                    $parent_class,
+                    $evaluate_class_constants,
+                    $evaluate_conditional_types,
+                    $final,
+                    $expand_generic
+                );
+
+                $candidate_types = is_array($candidate) ? $candidate : [$candidate];
+
+                $else_conditional_return_types = array_merge(
+                    $else_conditional_return_types,
+                    $candidate_types
+                );
+            }
+
+            if ($assertion && $return_type->param_name === (string) $return_type->if_type) {
+                $if_conditional_return_type = TypeCombiner::combine(
+                    $if_conditional_return_types,
+                    $codebase
+                );
+
+                $if_conditional_return_type = \Psalm\Internal\Type\SimpleAssertionReconciler::reconcile(
+                    $assertion,
+                    $codebase,
+                    $if_conditional_return_type
+                );
+
+
+                if ($if_conditional_return_type) {
+                    $if_conditional_return_types = array_values($if_conditional_return_type->getAtomicTypes());
+                }
+            }
+
+            if ($assertion && $return_type->param_name === (string) $return_type->else_type) {
+                $else_conditional_return_type = TypeCombiner::combine(
+                    $else_conditional_return_types,
+                    $codebase
+                );
+
+                $else_conditional_return_type = \Psalm\Internal\Type\SimpleNegatedAssertionReconciler::reconcile(
+                    $assertion,
+                    $else_conditional_return_type
+                );
+
+                if ($else_conditional_return_type) {
+                    $else_conditional_return_types = array_values($else_conditional_return_type->getAtomicTypes());
+                }
+            }
+
+            $all_conditional_return_types = array_merge(
+                $if_conditional_return_types,
+                $else_conditional_return_types
+            );
+
+            foreach ($all_conditional_return_types as $i => $conditional_return_type) {
+                if ($conditional_return_type instanceof Type\Atomic\TVoid
+                    && count($all_conditional_return_types) > 1
+                ) {
+                    $all_conditional_return_types[$i] = new Type\Atomic\TNull();
+                    $all_conditional_return_types[$i]->from_docblock = true;
+                }
+            }
+
+            $combined = TypeCombiner::combine(
+                array_values($all_conditional_return_types),
+                $codebase
+            );
+
+            return array_values($combined->getAtomicTypes());
+        }
+
+        $return_type->conditional_type = self::expandUnion(
+            $codebase,
+            $return_type->conditional_type,
+            $self_class,
+            $static_class_type,
+            $parent_class,
+            $evaluate_class_constants,
+            $evaluate_conditional_types,
+            $final,
+            $expand_generic
+        );
+
+        $return_type->if_type = self::expandUnion(
+            $codebase,
+            $return_type->if_type,
+            $self_class,
+            $static_class_type,
+            $parent_class,
+            $evaluate_class_constants,
+            $evaluate_conditional_types,
+            $final,
+            $expand_generic
+        );
+
+        $return_type->else_type = self::expandUnion(
+            $codebase,
+            $return_type->else_type,
+            $self_class,
+            $static_class_type,
+            $parent_class,
+            $evaluate_class_constants,
+            $evaluate_conditional_types,
+            $final,
+            $expand_generic
+        );
 
         return $return_type;
     }
