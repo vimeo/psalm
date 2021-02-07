@@ -2,6 +2,7 @@
 namespace Psalm\Internal\Analyzer;
 
 use PhpParser;
+use PhpParser\Node\Expr\ArrowFunction;
 use Psalm\Context;
 use function strtolower;
 use function is_string;
@@ -11,12 +12,6 @@ use function is_string;
  */
 class FunctionAnalyzer extends FunctionLikeAnalyzer
 {
-    /**
-     * @var PhpParser\Node\Stmt\Function_
-     * @psalm-suppress NonInvariantDocblockPropertyType
-     */
-    protected $function;
-
     public function __construct(PhpParser\Node\Stmt\Function_ $function, SourceAnalyzer $source)
     {
         $codebase = $source->getCodebase();
@@ -42,9 +37,14 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
 
     /**
      * @return non-empty-lowercase-string
+     * @throws \UnexpectedValueException if function is closure or arrow function.
      */
     public function getFunctionId(): string
     {
+        if ($this->function instanceof PhpParser\Node\Expr\Closure || $this->function instanceof ArrowFunction) {
+            throw new \UnexpectedValueException("Can't get ID for a closure or arrow function");
+        }
+
         $namespace = $this->source->getNamespace();
 
         /** @var non-empty-lowercase-string */

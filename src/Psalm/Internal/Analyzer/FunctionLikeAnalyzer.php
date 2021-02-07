@@ -70,12 +70,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     protected $is_static = false;
 
     /**
-     * @var StatementsSource
-     * @psalm-suppress NonInvariantDocblockPropertyType
-     */
-    protected $source;
-
-    /**
      * @var ?array<string, Type\Union>
      */
     protected $return_vars_in_scope = [];
@@ -1624,11 +1618,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     public function isStatic(): bool
     {
         return $this->is_static;
-    }
-
-    public function getSource(): StatementsSource
-    {
-        return $this->source;
     }
 
     public function getCodebase() : Codebase

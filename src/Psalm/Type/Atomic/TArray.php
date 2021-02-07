@@ -13,12 +13,6 @@ class TArray extends \Psalm\Type\Atomic
     use GenericTrait;
 
     /**
-     * @var array{\Psalm\Type\Union, \Psalm\Type\Union}
-     * @psalm-suppress NonInvariantDocblockPropertyType
-     */
-    public $type_params;
-
-    /**
      * @var string
      */
     public $value = 'array';
