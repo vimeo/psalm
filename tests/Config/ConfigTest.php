@@ -1142,6 +1142,7 @@ class ConfigTest extends \Psalm\Tests\TestCase
                         <class name="Exc2" onlyGlobalScope="true" />
                         <classAndDescendants name="Exc3" />
                         <classAndDescendants name="Exc4" onlyGlobalScope="true" />
+                        <classAndDescendants name="Exc5" />
                     </ignoreExceptions>
                 </psalm>'
             )
@@ -1153,18 +1154,40 @@ class ConfigTest extends \Psalm\Tests\TestCase
             $file_path,
             '<?php
                 class Exc1 extends Exception {}
-                class Exc2 extends Exception {}
-                class Exc3 extends Exception {}
-                class Exc4 extends Exception {}
+                /** @throws Exc1 */
+                function throwsExc1(): void {}
 
-                throw new Exc1();
-                throw new Exc2();
-                throw new Exc3();
-                throw new Exc4();
+                class Exc2 extends Exception {}
+                /** @throws Exc2 */
+                function throwsExc2(): void {}
+
+                class Exc3 extends Exception {}
+                /** @throws Exc3 */
+                function throwsExc3(): void {}
+
+                class Exc4 extends Exception {}
+                /** @throws Exc4 */
+                function throwsExc4(): void {}
+
+                interface Exc5 {}
+                interface Exc6 extends Exc5 {}
+                /**
+                 * @psalm-suppress InvalidThrow
+                 * @throws Exc6
+                 */
+                function throwsExc6() : void {}
+
+                throwsExc1();
+                throwsExc2();
+                throwsExc3();
+                throwsExc4();
+                throwsExc6();
 
                 function example() : void {
-                    throw new Exc1();
-                    throw new Exc3();
+                    throwsExc6();
+                    throwsExc1();
+                    throwsExc3();
+                    throwsExc6();
                 }'
         );
 
