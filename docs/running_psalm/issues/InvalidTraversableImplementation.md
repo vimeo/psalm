@@ -1,0 +1,10 @@
+# InvalidTraversableImplementation
+
+Emitted when class incorrectly implements Traversable. Traversable needs to be
+implemented by implementing either `IteratorAggregate` or `Iterator`
+
+```php
+<?php
+
+final class C implements Traversable {} // will cause fatal error
+```
