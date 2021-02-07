@@ -615,6 +615,37 @@ class ClassTest extends TestCase
                         return $b;
                     }'
             ],
+            'allowTraversableImplementationAlongWithIteratorAggregate' => [
+                '<?php
+                    final class C implements Traversable, IteratorAggregate {
+                        public function getIterator() {
+                            yield 1;
+                        }
+                    }
+                ',
+            ],
+            'allowTraversableImplementationAlongWithIterator' => [
+                '<?php
+                    final class C implements Traversable, Iterator {
+                        public function current() { return 1; }
+                        public function key() { return 1; }
+                        public function next() { }
+                        public function rewind() { }
+                        public function valid() { return false; }
+                    }
+                ',
+            ],
+            'allowTraversableImplementationOnAbstractClass' => [
+                '<?php
+                    abstract class C implements Traversable {}
+                ',
+            ],
+            'allowIndirectTraversableImplementationOnAbstractClass' => [
+                '<?php
+                    interface I extends Traversable {}
+                    abstract class C implements I {}
+                ',
+            ],
         ];
     }
 
@@ -878,6 +909,19 @@ class ClassTest extends TestCase
 
                     AGrandChild::getInstance()->foo();',
                 'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'preventTraversableImplementation' => [
+                '<?php
+                    final class C implements Traversable {}
+                ',
+                'error_message' => 'InvalidTraversableImplementation',
+            ],
+            'preventIndirectTraversableImplementation' => [
+                '<?php
+                    interface I extends Traversable {}
+                    final class C implements I {}
+                ',
+                'error_message' => 'InvalidTraversableImplementation',
             ],
         ];
     }
