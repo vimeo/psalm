@@ -50,38 +50,34 @@ class PropertyTypeInvariance extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'variantDocblockProperties' => [
+                '<?php
+                    class ParentClass
+                    {
+                        /** @var null|string */
+                        protected $mightExist;
+                    }
+
+                    class ChildClass extends ParentClass
+                    {
+                        /** @var string */
+                        protected $mightExist = "";
+                    }',
+                'error_message' => 'NonInvariantDocblockPropertyType',
+            ],
             'variantProperties' => [
-                '
-                <?php
+                '<?php
+                    class ParentClass
+                    {
+                        protected ?string $mightExist = null;
+                    }
 
-                class ParentClass
-                {
-                    /** @var null|string */
-                    protected $mightExist;
-
-                    protected ?string $mightExistNative = null;
-
-                    /** @var string */
-                    protected $doesExist = "";
-
-                    protected string $doesExistNative = "";
-                }
-
-                class ChildClass extends ParentClass
-                {
-                    /** @var string */
-                    protected $mightExist = "";
-
-                    protected string $mightExistNative = "";
-
-                    /** @var null|string */
-                    protected $doesExist = "";
-
-                    protected ?string $doesExistNative = "";
-                }
-                ',
+                    class ChildClass extends ParentClass
+                    {
+                        protected string $mightExist = "";
+                    }',
                 'error_message' => 'NonInvariantPropertyType',
-            ]
+            ],
         ];
     }
 }

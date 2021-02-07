@@ -22,7 +22,7 @@ use function in_array;
 class MethodAnalyzer extends FunctionLikeAnalyzer
 {
     /**
-     * @psalm-suppress NonInvariantPropertyType
+     * @psalm-suppress NonInvariantDocblockPropertyType
      * @var PhpParser\Node\Stmt\ClassMethod
      */
     protected $function;
@@ -166,7 +166,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
 
         return null;
     }
-    
+
     public static function isMethodVisible(
         \Psalm\Internal\MethodIdentifier $method_id,
         Context $context,

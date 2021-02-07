@@ -31,6 +31,7 @@ use Psalm\Issue\MissingImmutableAnnotation;
 use Psalm\Issue\MissingPropertyType;
 use Psalm\Issue\MissingTemplateParam;
 use Psalm\Issue\MutableDependency;
+use Psalm\Issue\NonInvariantDocblockPropertyType;
 use Psalm\Issue\NonInvariantPropertyType;
 use Psalm\Issue\OverriddenPropertyAccess;
 use Psalm\Issue\PropertyNotSetInConstructor;
@@ -663,20 +664,43 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         }
                     }
 
-                    if ($property_storage->type && $guide_property_storage->type && $property_storage->location &&
-                        !$property_storage->type->equals($guide_property_storage->type)) {
-                        if (IssueBuffer::accepts(
-                            new NonInvariantPropertyType(
-                                'Property ' . $fq_class_name . '::$' . $property_name
-                                . ' has type ' . $property_storage->type->getId()
-                                . ", not invariant with " . $guide_class_name . '::$' . $property_name . ' of type ' .
-                                $guide_property_storage->type->getId(),
-                                $property_storage->location
-                            ),
-                            $property_storage->suppressed_issues
-                        )) {
-                            // fall through
+                    if ($property_storage->type
+                        && $guide_property_storage->type
+                        && $property_storage->location
+                        && !$property_storage->type->equals($guide_property_storage->type)
+                    ) {
+                        if ($property_storage->type->from_docblock
+                            && $guide_property_storage->type->from_docblock
+                        ) {
+                            if (IssueBuffer::accepts(
+                                new NonInvariantDocblockPropertyType(
+                                    'Property ' . $fq_class_name . '::$' . $property_name
+                                        . ' has type ' . $property_storage->type->getId()
+                                        . ", not invariant with " . $guide_class_name . '::$'
+                                        . $property_name . ' of type '
+                                        . $guide_property_storage->type->getId(),
+                                    $property_storage->location
+                                ),
+                                $property_storage->suppressed_issues
+                            )) {
+                                // fall through
+                            }
+                        } else {
+                            if (IssueBuffer::accepts(
+                                new NonInvariantPropertyType(
+                                    'Property ' . $fq_class_name . '::$' . $property_name
+                                        . ' has type ' . $property_storage->type->getId()
+                                        . ", not invariant with " . $guide_class_name . '::$'
+                                        . $property_name . ' of type '
+                                        . $guide_property_storage->type->getId(),
+                                    $property_storage->location
+                                ),
+                                $property_storage->suppressed_issues
+                            )) {
+                                // fall through
+                            }
                         }
+
                     }
                 }
             }

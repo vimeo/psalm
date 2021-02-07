@@ -97,7 +97,7 @@ class PropertyTypeProvider
     ): ?Type\Union {
 
         if ($source) {
-            $source->addSuppressedIssues(['NonInvariantPropertyType']);
+            $source->addSuppressedIssues(['NonInvariantDocblockPropertyType']);
         }
 
         foreach (self::$handlers[strtolower($fq_classlike_name)] ?? [] as $property_handler) {

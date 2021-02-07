@@ -14,7 +14,7 @@ class TArray extends \Psalm\Type\Atomic
 
     /**
      * @var array{\Psalm\Type\Union, \Psalm\Type\Union}
-     * @psalm-suppress NonInvariantPropertyType
+     * @psalm-suppress NonInvariantDocblockPropertyType
      */
     public $type_params;
 

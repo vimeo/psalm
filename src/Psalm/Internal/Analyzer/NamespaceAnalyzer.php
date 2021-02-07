@@ -20,7 +20,7 @@ class NamespaceAnalyzer extends SourceAnalyzer
 
     /**
      * @var FileAnalyzer
-     * @psalm-suppress NonInvariantPropertyType
+     * @psalm-suppress NonInvariantDocblockPropertyType
      */
     protected $source;
 

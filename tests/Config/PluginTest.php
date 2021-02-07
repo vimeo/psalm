@@ -40,7 +40,7 @@ class PluginTest extends \Psalm\Tests\TestCase
 
     /**
      * @var ?\Psalm\Internal\Analyzer\ProjectAnalyzer
-     * @psalm-suppress NonInvariantPropertyType
+     * @psalm-suppress NonInvariantDocblockPropertyType
      */
     protected $project_analyzer;
 
