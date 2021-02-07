@@ -10,10 +10,39 @@ class ComposerLockTest extends TestCase
     /**
      * @test
      */
-    public function pluginIsPackageOfTypePsalmPlugin(): void
+    public function packageIsPsalmPlugin(): void
     {
         $lock = new ComposerLock([$this->jsonFile((object)[])]);
-        $this->assertTrue($lock->isPlugin($this->pluginEntry('vendor/package', 'Some\Class')));
+
+        $this->assertTrue($lock->isPlugin([
+            'name' => 'vendor/package',
+            'type' => 'psalm-plugin',
+            'extra' => [
+                'psalm' => [
+                    'pluginClass' => 'Some\Class'
+                ]
+            ]
+        ]), 'Non-plugin should not be considered a plugin');
+
+        $this->assertTrue($lock->isPlugin([
+            'name' => 'vendor/package',
+            'type' => 'library',
+            'extra' => [
+                'psalm' => [
+                    'pluginClass' => 'Some\Class'
+                ]
+            ]
+        ]), 'Non-plugin should not be considered a plugin');
+
+        $this->assertTrue($lock->isPlugin([
+            'name' => 'vendor/package',
+            'extra' => [
+                'psalm' => [
+                    'pluginClass' => 'Some\Class'
+                ]
+            ]
+        ]), 'Non-plugin should not be considered a plugin');
+
         // counterexamples
 
         $this->assertFalse($lock->isPlugin([]), 'Non-package should not be considered a plugin');
