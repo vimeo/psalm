@@ -114,7 +114,8 @@ class TypeExpander
                         $static_class_type,
                         $parent_class,
                         $evaluate_class_constants,
-                        $evaluate_conditional_types
+                        $evaluate_conditional_types,
+                        $expand_generic
                     );
 
                     if ($extra_type instanceof TNamedObject && $extra_type->extra_types) {
@@ -161,7 +162,11 @@ class TypeExpander
                                 )
                             )
                         );
+
+                        // we don't want to expand generic types recursively
+                        $expand_generic = false;
                     }
+
                 }
 
                 $return_type_lc = strtolower($return_type->value);
