@@ -24,12 +24,6 @@ use function preg_match;
 class ClosureAnalyzer extends FunctionLikeAnalyzer
 {
     /**
-     * @psalm-suppress NonInvariantDocblockPropertyType
-     * @var PhpParser\Node\Expr\Closure|PhpParser\Node\Expr\ArrowFunction
-     */
-    protected $function;
-
-    /**
      * @param PhpParser\Node\Expr\Closure|PhpParser\Node\Expr\ArrowFunction $function
      */
     public function __construct(PhpParser\Node\FunctionLike $function, SourceAnalyzer $source)

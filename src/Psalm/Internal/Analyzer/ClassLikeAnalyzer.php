@@ -71,12 +71,6 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
      */
     protected $class;
 
-    /**
-     * @psalm-suppress NonInvariantDocblockPropertyType
-     * @var StatementsSource
-     */
-    protected $source;
-
     /** @var FileAnalyzer */
     public $file_analyzer;
 

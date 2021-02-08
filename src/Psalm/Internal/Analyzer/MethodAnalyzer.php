@@ -2,6 +2,7 @@
 namespace Psalm\Internal\Analyzer;
 
 use PhpParser;
+use PhpParser\Node\Expr\ArrowFunction;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Context;
@@ -21,11 +22,6 @@ use function in_array;
  */
 class MethodAnalyzer extends FunctionLikeAnalyzer
 {
-    /**
-     * @psalm-suppress NonInvariantDocblockPropertyType
-     * @var PhpParser\Node\Stmt\ClassMethod
-     */
-    protected $function;
 
     public function __construct(
         PhpParser\Node\Stmt\ClassMethod $function,
@@ -281,6 +277,10 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
 
     public function getMethodId(?string $context_self = null): \Psalm\Internal\MethodIdentifier
     {
+        if ($this->function instanceof PhpParser\Node\Expr\Closure || $this->function instanceof ArrowFunction) {
+            throw new \UnexpectedValueException("Can't get ID for a closure or arrow function");
+        }
+
         $function_name = (string)$this->function->name;
 
         return new \Psalm\Internal\MethodIdentifier(

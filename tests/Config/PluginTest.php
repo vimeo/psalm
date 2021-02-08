@@ -38,12 +38,6 @@ class PluginTest extends \Psalm\Tests\TestCase
     /** @var TestConfig */
     protected static $config;
 
-    /**
-     * @var ?\Psalm\Internal\Analyzer\ProjectAnalyzer
-     * @psalm-suppress NonInvariantDocblockPropertyType
-     */
-    protected $project_analyzer;
-
     public static function setUpBeforeClass() : void
     {
         self::$config = new TestConfig();
