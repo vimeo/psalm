@@ -949,6 +949,7 @@ class StatementsAnalyzer extends SourceAnalyzer
                         try {
                             if ($expected_exception === strtolower($possibly_thrown_exception)
                                 || $this->codebase->classExtends($possibly_thrown_exception, $expected_exception)
+                                || $this->codebase->interfaceExtends($possibly_thrown_exception, $expected_exception)
                             ) {
                                 $is_expected = true;
                                 break;
