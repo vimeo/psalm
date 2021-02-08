@@ -369,10 +369,24 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\EventHandler\FunctionR
                             $function_call_arg->getAttributes()
                         );
 
+                        $lhs_instance_type = null;
+
+                        $callable_type = $statements_source->node_data->getType($function_call_arg->value);
+
+                        foreach ($callable_type->getAtomicTypes() as $atomic_type) {
+                            if ($atomic_type instanceof Type\Atomic\TKeyedArray
+                                && \count($atomic_type->properties) === 2
+                                && isset($atomic_type->properties[0])
+                            ) {
+                                $lhs_instance_type = clone $atomic_type->properties[0];
+                            }
+                        }
+
                         $context->vars_in_scope['$__fake_offset_var__'] = Type::getMixed();
-                        $context->vars_in_scope['$__fake_method_call_var__'] = new Type\Union([
-                            new Type\Atomic\TNamedObject($callable_fq_class_name)
-                        ]);
+                        $context->vars_in_scope['$__fake_method_call_var__'] = $lhs_instance_type
+                            ?: new Type\Union([
+                                new Type\Atomic\TNamedObject($callable_fq_class_name)
+                            ]);
 
                         $fake_method_return_type = self::executeFakeCall(
                             $statements_source,
