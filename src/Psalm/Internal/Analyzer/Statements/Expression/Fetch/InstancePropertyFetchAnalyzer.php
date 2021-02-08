@@ -177,7 +177,7 @@ class InstancePropertyFetchAnalyzer
 
         if ($stmt_var_type->isNullable() && !$stmt_var_type->ignore_nullable_issues) {
             // we can only be sure that the variable is possibly null if we know the var_id
-            if (!$context->inside_isset && $var_id) {
+            if (!$context->inside_isset && $stmt->name instanceof PhpParser\Node\Identifier) {
                 if (IssueBuffer::accepts(
                     new PossiblyNullPropertyFetch(
                         'Cannot get property on possibly null variable ' . $stmt_var_id . ' of type ' . $stmt_var_type,

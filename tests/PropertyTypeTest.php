@@ -2380,6 +2380,18 @@ class PropertyTypeTest extends TestCase
                 [],
                 '8.0'
             ],
+            'possiblyNullOnFunctionCallCoalesced' => [
+                '<?php
+                    class Foo
+                    {
+                        /** @var int */
+                        public $a = 0;
+                    }
+
+                    function accessOnVar(?Foo $bar, string $b) : void {
+                        echo $bar->{$b} ?? null;
+                    }',
+            ],
         ];
     }
 
@@ -3510,6 +3522,21 @@ class PropertyTypeTest extends TestCase
                         public string $s = [];
                     }',
                 'error_message' => 'MismatchingDocblockPropertyType',
+            ],
+            'possiblyNullOnFunctionCallNotCoalesced' => [
+                '<?php
+                    function getC() : ?C {
+                        return rand(0, 1) ? new C() : null;
+                    }
+
+                    function foo() : void {
+                        echo getC()->id;
+                    }
+
+                    class C {
+                        public int $id = 1;
+                    }',
+                'error_message' => 'PossiblyNullPropertyFetch',
             ],
         ];
     }
