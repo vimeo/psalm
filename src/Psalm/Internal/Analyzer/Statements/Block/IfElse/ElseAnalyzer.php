@@ -83,6 +83,16 @@ class ElseAnalyzer
             $else_context->vars_in_scope = $else_vars_reconciled;
 
             $else_context->clauses = Context::removeReconciledClauses($else_context->clauses, $changed_var_ids)[0];
+
+            foreach ($changed_var_ids as $changed_var_id => $_) {
+                foreach ($else_context->vars_in_scope as $var_id => $_) {
+                    if (preg_match('/' . preg_quote($changed_var_id, '/') . '[\]\[\-]/', $var_id)
+                        && !\array_key_exists($var_id, $changed_var_ids)
+                    ) {
+                        unset($else_context->vars_in_scope[$var_id]);
+                    }
+                }
+            }
         }
 
         $old_else_context = clone $else_context;

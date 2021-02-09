@@ -533,6 +533,7 @@ class ArrayAccessTest extends TestCase
                      * @psalm-suppress MixedAssignment
                      * @psalm-suppress MixedOperand
                      * @psalm-suppress MixedArrayAssignment
+                     * @psalm-suppress MixedArrayAccess
                      * @param mixed[] $line
                      */
                     function _renderCells(array $line): void {
