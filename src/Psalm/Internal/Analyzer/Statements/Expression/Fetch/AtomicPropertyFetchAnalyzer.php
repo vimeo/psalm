@@ -64,20 +64,6 @@ class AtomicPropertyFetchAnalyzer
             return;
         }
 
-        if ($lhs_type_part instanceof Type\Atomic\TTemplateParam) {
-            $extra_types = $lhs_type_part->extra_types;
-
-            $lhs_type_part = array_values(
-                $lhs_type_part->as->getAtomicTypes()
-            )[0];
-
-            $lhs_type_part->from_docblock = true;
-
-            if ($lhs_type_part instanceof TNamedObject) {
-                $lhs_type_part->extra_types = $extra_types;
-            }
-        }
-
         if ($lhs_type_part instanceof Type\Atomic\TMixed) {
             $statements_analyzer->node_data->setType($stmt, Type::getMixed());
             return;

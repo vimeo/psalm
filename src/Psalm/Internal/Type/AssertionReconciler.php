@@ -198,7 +198,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
             return $new_type;
         }
 
-        return self::refine(
+        $refined_type = self::refine(
             $statements_analyzer,
             $assertion,
             $original_assertion,
@@ -212,6 +212,18 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
             $is_loose_equality,
             $suppressed_issues,
             $failed_reconciliation
+        );
+
+        return TypeExpander::expandUnion(
+            $codebase,
+            $refined_type,
+            null,
+            null,
+            null,
+            true,
+            false,
+            false,
+            true
         );
     }
 
