@@ -46,11 +46,12 @@ use Psalm\Storage\FunctionStorage;
 
 /**
  * @internal
+ * @template-covariant TFunction as Closure|Function_|ClassMethod|ArrowFunction
  */
 abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 {
     /**
-     * @var Closure|Function_|ClassMethod|ArrowFunction
+     * @var TFunction
      */
     protected $function;
 
@@ -117,7 +118,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     protected $storage;
 
     /**
-     * @param Closure|Function_|ClassMethod|ArrowFunction $function
+     * @param TFunction $function
      */
     public function __construct($function, SourceAnalyzer $source, FunctionLikeStorage $storage)
     {
@@ -201,7 +202,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
         $statements_analyzer = new StatementsAnalyzer($this, $type_provider);
 
-        if ($this->function instanceof Closure) {
+        if ($this instanceof ClosureAnalyzer && $this->function instanceof Closure) {
             $byref_uses = [];
 
             foreach ($this->function->uses as $use) {
@@ -279,8 +280,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         }
 
         foreach ($codebase->methods_to_rename as $original_method_id => $new_method_name) {
-            if ($this->function instanceof ClassMethod
-                && $this instanceof MethodAnalyzer
+            if ($this instanceof MethodAnalyzer
                 && strtolower((string) $this->getMethodId()) === $original_method_id
             ) {
                 $file_manipulations = [
@@ -813,13 +813,11 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 continue;
             }
 
-            if (!($storage instanceof MethodStorage)
+            if (!$storage instanceof MethodStorage
                 || !$storage->cased_name
                 || $storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
             ) {
-                if ($this->function instanceof Closure
-                    || $this->function instanceof ArrowFunction
-                ) {
+                if ($this instanceof ClosureAnalyzer) {
                     if (IssueBuffer::accepts(
                         new UnusedClosureParam(
                             'Param ' . $var_name . ' is never referenced in this method',
@@ -1370,7 +1368,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         $is_final = true;
         $fqcln = $this->source->getFQCLN();
 
-        if ($fqcln !== null && $this->function instanceof ClassMethod) {
+        if ($fqcln !== null && $this instanceof MethodAnalyzer) {
             $class_storage = $codebase->classlike_storage_provider->get($fqcln);
             $is_final = $this->function->isFinal() || $class_storage->final;
         }
@@ -1380,7 +1378,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             && (
                 $codebase->allow_backwards_incompatible_changes
                 || $is_final
-                || !$this->function instanceof PhpParser\Node\Stmt\ClassMethod
+                || !$this instanceof MethodAnalyzer
             );
 
         $manipulator->setParamType(
@@ -1723,8 +1721,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         $appearing_class_storage = null;
         $overridden_method_ids = [];
 
-        if ($this->function instanceof ClassMethod) {
-            if (!$storage instanceof MethodStorage || !$this instanceof MethodAnalyzer) {
+        if ($this instanceof MethodAnalyzer) {
+            if (!$storage instanceof MethodStorage) {
                 throw new \UnexpectedValueException('$storage must be MethodStorage');
             }
 
@@ -1883,12 +1881,12 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             if (!$context->calling_method_id || !$context->collect_initializations) {
                 $context->calling_method_id = strtolower((string)$method_id);
             }
-        } elseif ($this->function instanceof Function_) {
+        } elseif ($this instanceof FunctionAnalyzer) {
             $function_name = $this->function->name->name;
             $namespace_prefix = $this->getNamespace();
             $cased_method_id = ($namespace_prefix !== null ? $namespace_prefix . '\\' : '') . $function_name;
             $context->calling_function_id = strtolower($cased_method_id);
-        } else { // Closure
+        } elseif ($this instanceof ClosureAnalyzer) {
             if ($storage->return_type) {
                 $closure_return_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
                     $codebase,
@@ -1918,6 +1916,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     $closure_type,
                 ])
             );
+        } else {
+            throw new \UnexpectedValueException('Impossible');
         }
 
         return [

@@ -20,6 +20,7 @@ use function preg_match;
 
 /**
  * @internal
+ * @extends FunctionLikeAnalyzer<PhpParser\Node\Expr\Closure|PhpParser\Node\Expr\ArrowFunction>
  */
 class ClosureAnalyzer extends FunctionLikeAnalyzer
 {

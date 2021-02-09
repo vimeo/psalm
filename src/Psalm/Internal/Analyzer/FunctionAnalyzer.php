@@ -9,6 +9,7 @@ use function is_string;
 
 /**
  * @internal
+ * @extends FunctionLikeAnalyzer<PhpParser\Node\Stmt\Function_>
  */
 class FunctionAnalyzer extends FunctionLikeAnalyzer
 {
@@ -41,10 +42,6 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
      */
     public function getFunctionId(): string
     {
-        if ($this->function instanceof PhpParser\Node\Expr\Closure || $this->function instanceof ArrowFunction) {
-            throw new \UnexpectedValueException("Can't get ID for a closure or arrow function");
-        }
-
         $namespace = $this->source->getNamespace();
 
         /** @var non-empty-lowercase-string */

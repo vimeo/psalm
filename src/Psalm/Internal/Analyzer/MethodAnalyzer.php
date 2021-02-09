@@ -19,10 +19,10 @@ use function in_array;
 
 /**
  * @internal
+ * @extends FunctionLikeAnalyzer<PhpParser\Node\Stmt\ClassMethod>
  */
 class MethodAnalyzer extends FunctionLikeAnalyzer
 {
-
     public function __construct(
         PhpParser\Node\Stmt\ClassMethod $function,
         SourceAnalyzer $source,
@@ -277,10 +277,6 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
 
     public function getMethodId(?string $context_self = null): \Psalm\Internal\MethodIdentifier
     {
-        if ($this->function instanceof PhpParser\Node\Expr\Closure || $this->function instanceof ArrowFunction) {
-            throw new \UnexpectedValueException("Can't get ID for a closure or arrow function");
-        }
-
         $function_name = (string)$this->function->name;
 
         return new \Psalm\Internal\MethodIdentifier(
