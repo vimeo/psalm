@@ -145,7 +145,11 @@ class MethodCallPurityAnalyzer
                     && isset($context->vars_in_scope[$mutation_var_id])
                     && !isset($class_storage->declaring_property_ids[$name]);
 
-                $context->remove($mutation_var_id);
+                $current_context = $context;
+
+                do {
+                    $current_context->remove($mutation_var_id);
+                } while ($current_context = $current_context->parent_context);
 
                 if ($this_property_didnt_exist) {
                     $context->vars_in_scope[$mutation_var_id] = Type::getMixed();

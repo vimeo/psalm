@@ -2392,6 +2392,28 @@ class PropertyTypeTest extends TestCase
                         echo $bar->{$b} ?? null;
                     }',
             ],
+            'dontMemoizeConditionalAssignment' => [
+                '<?php
+                    class A {}
+
+                    class B {
+                        protected ?A $a = null;
+
+                        public function test(): void {
+                            if (!$this->a) {
+                                $this->mayBeSetA();
+                            }
+                            if ($this->a instanceof A) {
+                            }
+                        }
+
+                        protected function mayBeSetA(): void {
+                            if (mt_rand(0, 1)) {
+                                $this->a = new A();
+                            }
+                        }
+                    }'
+            ],
         ];
     }
 
