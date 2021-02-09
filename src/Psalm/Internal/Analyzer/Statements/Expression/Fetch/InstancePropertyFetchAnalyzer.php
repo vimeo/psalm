@@ -71,7 +71,12 @@ class InstancePropertyFetchAnalyzer
             $statements_analyzer
         );
 
-        if ($var_id && $context->hasVariable($var_id)) {
+        if ($var_id
+            && $context->hasVariable($var_id)
+            && (!$stmt_var_id === '$this'
+                || (isset($context->vars_in_scope['$this'])
+                    && $context->self === $context->vars_in_scope['$this']->getId()))
+        ) {
             self::handleScopedProperty(
                 $context,
                 $var_id,
