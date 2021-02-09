@@ -197,7 +197,12 @@ class SwitchAnalyzer
             $stmt->allMatched = true;
         } elseif ($switch_scope->possibly_redefined_vars) {
             foreach ($switch_scope->possibly_redefined_vars as $var_id => $type) {
-                $context->vars_in_scope[$var_id] = Type::combineUnionTypes($type, $context->vars_in_scope[$var_id]);
+                if (isset($context->vars_in_scope[$var_id])) {
+                    $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                        $type,
+                        $context->vars_in_scope[$var_id]
+                    );
+                }
             }
         }
 
