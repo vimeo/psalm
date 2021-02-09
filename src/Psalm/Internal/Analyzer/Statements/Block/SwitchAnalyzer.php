@@ -183,6 +183,7 @@ class SwitchAnalyzer
                 foreach ($switch_scope->possibly_redefined_vars as $var_id => $type) {
                     if (!isset($switch_scope->redefined_vars[$var_id])
                         && !isset($switch_scope->new_vars_in_scope[$var_id])
+                        && isset($context->vars_in_scope[$var_id])
                     ) {
                         $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                             $type,
