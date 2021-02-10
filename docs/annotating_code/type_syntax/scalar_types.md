@@ -52,7 +52,9 @@ Psalm also supports a `trait-string` annotation denote a trait that exists.
 
 ### lowercase-string, non-empty-string, non-empty-lowercase-string
 
-an empty string, lowercased or both at once.
+An empty string, lowercased or both at once.
+
+`empty` here is defined as all strings except the empty string `''`. Another type `non-falsy-string` is effectively a subtype of `non-empty-string`, and also precludes the string value `'0'`.
 
 ### html-escaped-string
 
