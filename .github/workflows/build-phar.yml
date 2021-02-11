@@ -58,3 +58,6 @@ jobs:
           
       - name: Release psalm/phar
         run: bin/github-deploy-phar.sh
+        env:
+          PHAR_REPO_TOKEN: ${{ secrets.PHAR_REPO_TOKEN }}
+
