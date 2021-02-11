@@ -53,4 +53,4 @@ jobs:
           tag: ${{ github.ref }}
           
       - name: Release psalm/phar
-        run: build/github-deploy-phar.sh
+        run: bin/github-deploy-phar.sh
