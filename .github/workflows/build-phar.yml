@@ -51,3 +51,6 @@ jobs:
           file: build/psalm.phar*
           file_glob: true
           tag: ${{ github.ref }}
+          
+      - name: Release psalm/phar
+        run: build/github-deploy-phar.sh
