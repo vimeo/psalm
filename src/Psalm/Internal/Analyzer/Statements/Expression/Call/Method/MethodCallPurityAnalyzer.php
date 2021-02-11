@@ -4,7 +4,8 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Call\Method;
 use PhpParser;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
+use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer
+    as AssignmentAnalyzer;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Context;
@@ -149,7 +150,7 @@ class MethodCallPurityAnalyzer
                 if ($this_property_didnt_exist) {
                     $context->vars_in_scope[$mutation_var_id] = Type::getMixed();
                 } else {
-                    $context->vars_in_scope[$mutation_var_id] = self::getExpandedPropertyType(
+                    $context->vars_in_scope[$mutation_var_id] = AssignmentAnalyzer::getExpandedPropertyType(
                         $codebase,
                         $class_storage->name,
                         $name,
@@ -158,71 +159,5 @@ class MethodCallPurityAnalyzer
                 }
             }
         }
-    }
-
-    private static function getExpandedPropertyType(
-        Codebase $codebase,
-        string $fq_class_name,
-        string $property_name,
-        \Psalm\Storage\ClassLikeStorage $storage
-    ) : ?Type\Union {
-        $property_class_name = $codebase->properties->getDeclaringClassForProperty(
-            $fq_class_name . '::$' . $property_name,
-            true
-        );
-
-        if ($property_class_name === null) {
-            return null;
-        }
-
-        $property_class_storage = $codebase->classlike_storage_provider->get($property_class_name);
-
-        $property_storage = $property_class_storage->properties[$property_name];
-
-        if (!$property_storage->type) {
-            return null;
-        }
-
-        $property_type = clone $property_storage->type;
-
-        $fleshed_out_type = !$property_type->isMixed()
-            ? \Psalm\Internal\Type\TypeExpander::expandUnion(
-                $codebase,
-                $property_type,
-                $fq_class_name,
-                $fq_class_name,
-                $storage->parent_class,
-                true,
-                false,
-                $storage->final
-            )
-            : $property_type;
-
-        $class_template_params = ClassTemplateParamCollector::collect(
-            $codebase,
-            $property_class_storage,
-            $storage,
-            null,
-            new Type\Atomic\TNamedObject($fq_class_name),
-            true
-        );
-
-        $template_result = new \Psalm\Internal\Type\TemplateResult(
-            $class_template_params ?: [],
-            []
-        );
-
-        if ($class_template_params) {
-            $fleshed_out_type = \Psalm\Internal\Type\TemplateStandinTypeReplacer::replace(
-                $fleshed_out_type,
-                $template_result,
-                $codebase,
-                null,
-                null,
-                null
-            );
-        }
-
-        return $fleshed_out_type;
     }
 }
