@@ -2431,6 +2431,13 @@ class PropertyTypeTest extends TestCase
                         public $foo = ["hello"];
                     }'
             ],
+            'allowBuiltinPropertyDocblock' => [
+                '<?php
+                    class FooException extends LogicException {
+                        /** @var int */
+                        protected $code = 404;
+                    }'
+            ],
         ];
     }
 
