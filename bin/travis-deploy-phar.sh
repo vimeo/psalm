@@ -3,14 +3,14 @@
 set -e
 
 
-if [[ ${TRAVIS_REPO_SLUG} != 'vimeo/psalm'  &&  -z ${PHAR_REPO_SLUG} ]]; then
+if [[ ${GITHUB_REPOSITORY} != 'vimeo/psalm'  &&  -z ${PHAR_REPO_SLUG} ]]; then
     echo 'Not attempting phar deployment, as this is not vimeo/psalm, and $PHAR_REPO_SLUG is unset or empty'
     exit 0;
 fi;
 
 PHAR_REPO_SLUG=${PHAR_REPO_SLUG:=psalm/phar}
 
-git clone https://${GITHUB_TOKEN}@github.com/${PHAR_REPO_SLUG}.git phar > /dev/null 2>&1
+git clone https://${PHAR_REPO_TOKEN}@github.com/${PHAR_REPO_SLUG}.git phar > /dev/null 2>&1
 
 set -x # don't do set x above this point to protect the GITHUB_TOKEN
 
@@ -19,13 +19,13 @@ rm -rf *
 cp ../build/psalm.phar ../assets/psalm-phar/* .
 cp ../build/psalm.phar.asc || true # not all users have GPG keys
 mv dot-gitignore .gitignore
-git config user.email "travis@travis-ci.org"
-git config user.name "Travis CI"
+git config user.email "github@muglug.com"
+git config user.name "Automated commit"
 git add --all .
-git commit -m "Updated Psalm phar to commit ${TRAVIS_COMMIT}"
+git commit -m "Updated Psalm phar to commit ${GITHUB_SHA}"
 git push --quiet origin master > /dev/null 2>&1
 
-if [[ "$TRAVIS_TAG" != '' ]] ; then
-    git tag "$TRAVIS_TAG"
-    git push origin "$TRAVIS_TAG"
+if [[ "$GITHUB_REF" != '' ]] ; then
+    git tag "$GITHUB_REF"
+    git push origin "$GITHUB_REF"
 fi
