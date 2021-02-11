@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Internal\PhpVisitor;
 
+use Psalm\Internal\PhpVisitor\Reflector\ClassLikeDocblockParser;
+use Psalm\Internal\PhpVisitor\Reflector\ClassLikeNodeScanner;
 use Psalm\Plugin\EventHandler\Event\AfterClassLikeVisitEvent;
 use function array_pop;
 use function count;
@@ -38,11 +40,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
      * @var Aliases
      */
     private $aliases;
-
-    /**
-     * @var string[]
-     */
-    private $fq_classlike_names = [];
 
     /**
      * @var FileScanner
@@ -125,13 +122,32 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
     public function enterNode(PhpParser\Node $node): ?int
     {
         foreach ($node->getComments() as $comment) {
-            if ($comment instanceof PhpParser\Comment\Doc && !$node instanceof PhpParser\Node\Stmt\ClassLike) {
+            if ($comment instanceof PhpParser\Comment\Doc) {
                 $self_fqcln = $node instanceof PhpParser\Node\Stmt\ClassLike
-                    && $node->name !== null
+                && $node->name !== null
                     ? ($this->aliases->namespace ? $this->aliases->namespace . '\\' : '') . $node->name->name
                     : null;
 
                 try {
+                    $imported_types = [];
+                    if ($node instanceof PhpParser\Node\Stmt\ClassLike) {
+                        $imported_types = ClassLikeNodeScanner::getImportedTypeAliases(
+                            $node,
+                            ClassLikeDocblockParser::parse(
+                                $node,
+                                $comment,
+                                $this->aliases
+                            ),
+                            $this->codebase,
+                            $this->aliases,
+                            $this->file_storage,
+                            $this->file_scanner,
+                            $this->file_path
+                        );
+                    }
+
+                    $this->type_aliases += $imported_types;
+
                     $type_aliases = Reflector\ClassLikeNodeScanner::getTypeAliasesFromComment(
                         $comment,
                         $this->aliases,
@@ -175,6 +191,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                 $this->file_storage,
                 $this->file_scanner,
                 $this->aliases,
+                $this->type_aliases,
                 $this->namespace_name
             );
 
@@ -185,7 +202,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                 return PhpParser\NodeTraverser::DONT_TRAVERSE_CHILDREN;
             }
 
-            $this->type_aliases += $classlike_node_scanner->type_aliases;
+            $this->type_aliases = $this->type_aliases + $classlike_node_scanner->type_aliases;
         } elseif ($node instanceof PhpParser\Node\Stmt\TryCatch) {
             foreach ($node->catches as $catch) {
                 foreach ($catch->types as $catch_type) {
@@ -298,14 +315,14 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                 $this->file_storage->declaring_constants[$fq_const_name] = $this->file_path;
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\If_ && !$this->skip_if_descendants) {
-            if (!$this->fq_classlike_names && !$this->functionlike_node_scanners) {
+            if (!$this->functionlike_node_scanners) {
                 $this->exists_cond_expr = $node->cond;
 
                 if (Reflector\ExpressionResolver::enterConditional(
-                    $this->codebase,
-                    $this->file_path,
-                    $this->exists_cond_expr
-                ) === false
+                        $this->codebase,
+                        $this->file_path,
+                        $this->exists_cond_expr
+                    ) === false
                 ) {
                     // the else node should terminate the agreement
                     $this->skip_if_descendants = $node->else ? $node->else->getLine() : $node->getLine();
@@ -589,10 +606,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
 
                         throw new \Psalm\Exception\CodeException(
                             'Error with core stub file docblocks: '
-                                . $issue_type
-                                . ' - ' . $e->getShortLocationWithPrevious()
-                                . ':' . $e->code_location->getColumn()
-                                . ' - ' . $message
+                            . $issue_type
+                            . ' - ' . $e->getShortLocationWithPrevious()
+                            . ':' . $e->code_location->getColumn()
+                            . ' - ' . $message
                         );
                     }
                 }
