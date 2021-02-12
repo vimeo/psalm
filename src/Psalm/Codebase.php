@@ -1627,7 +1627,7 @@ class Codebase
         ksort($namespace_map);
         $namespace_map = array_reverse($namespace_map);
 
-        foreach ($functions as $function) {
+        foreach ($functions as $function_lowercase => $function) {
             // Transform FQFN relative to all uses namespaces
             $function_name = $function->cased_name;
             if (!$function_name) {
@@ -1635,7 +1635,7 @@ class Codebase
             }
             $in_namespace_map = false;
             foreach ($namespace_map as $namespace_name => $namespace_alias) {
-                if (strpos(strtolower($function_name), $namespace_name . '\\') === 0) {
+                if (strpos($function_lowercase, $namespace_name . '\\') === 0) {
                     $function_name = $namespace_alias . '\\' . substr($function_name, strlen($namespace_name) + 1);
                     $in_namespace_map = true;
                 }

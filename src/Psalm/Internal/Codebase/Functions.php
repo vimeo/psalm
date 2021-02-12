@@ -257,7 +257,7 @@ class Functions
     }
 
     /**
-     * @return list<FunctionStorage>
+     * @return array<lowercase-string,FunctionStorage>
      */
     public function getMatchingFunctionNames(
         string $stub,
@@ -269,7 +269,7 @@ class Functions
             $stub = substr($stub, 1);
         }
 
-        /** @var array<string, FunctionStorage> */
+        /** @var array<lowercase-string, FunctionStorage> */
         $matching_functions = [];
 
         $stub = strtolower($stub);
@@ -336,6 +336,7 @@ class Functions
                     }
                     $function = $this->reflection->getFunctionStorage($function_name);
                 }
+                /** @var lowercase-string $function_name */
                 $matching_functions[$function_name] = $function;
             }
         }
