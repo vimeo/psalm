@@ -31,7 +31,7 @@ jobs:
             ${{ runner.os }}-composer-
 
       - name: Run composer install
-        run: composer install -o
+        run: composer install -o --ignore-platform-reqs
         env:
           COMPOSER_ROOT_VERSION: dev-master
 
