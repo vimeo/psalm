@@ -2,6 +2,7 @@
 namespace Psalm\Internal\PhpVisitor\Reflector;
 
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
+use Psalm\Internal\Scanner\ClassLikeDocblockComment;
 use function array_pop;
 use function count;
 use function explode;
@@ -273,380 +274,22 @@ class ClassLikeNodeScanner
             $this->codebase->classlikes->addFullyQualifiedTraitName($fq_classlike_name, $this->file_path);
         }
 
+        $docblock_info = null;
         $doc_comment = $node->getDocComment();
         if ($doc_comment) {
-            $docblock_info = null;
             try {
                 $docblock_info = ClassLikeDocblockParser::parse(
                     $node,
                     $doc_comment,
                     $this->aliases
                 );
+
+                $this->type_aliases += $this->getImportedTypeAliases($docblock_info, $fq_classlike_name);
             } catch (DocblockParseException $e) {
                 $storage->docblock_issues[] = new InvalidDocblock(
                     $e->getMessage() . ' in docblock for ' . $fq_classlike_name,
                     $name_location ?: $class_location
                 );
-            }
-
-            if ($docblock_info) {
-                if ($docblock_info->stub_override && !$is_classlike_overridden) {
-                    throw new InvalidClasslikeOverrideException(
-                        'Class/interface/trait ' . $fq_classlike_name . ' is marked as stub override,'
-                        . ' but no original counterpart found'
-                    );
-                }
-
-                if ($docblock_info->templates) {
-                    $storage->template_types = [];
-
-                    \usort(
-                        $docblock_info->templates,
-                        function (array $l, array $r) : int {
-                            return $l[4] > $r[4] ? 1 : -1;
-                        }
-                    );
-
-                    foreach ($docblock_info->templates as $i => $template_map) {
-                        $template_name = $template_map[0];
-
-                        if ($template_map[1] !== null && $template_map[2] !== null) {
-                            if (trim($template_map[2])) {
-                                try {
-                                    $template_type = TypeParser::parseTokens(
-                                        TypeTokenizer::getFullyQualifiedTokens(
-                                            $template_map[2],
-                                            $this->aliases,
-                                            $storage->template_types,
-                                            $this->type_aliases
-                                        ),
-                                        null,
-                                        $storage->template_types,
-                                        $this->type_aliases
-                                    );
-                                } catch (TypeParseTreeException $e) {
-                                    $storage->docblock_issues[] = new InvalidDocblock(
-                                        $e->getMessage() . ' in docblock for ' . $fq_classlike_name,
-                                        $name_location ?: $class_location
-                                    );
-
-                                    continue;
-                                }
-
-                                $storage->template_types[$template_name] = [
-                                    $fq_classlike_name => $template_type,
-                                ];
-                            } else {
-                                $storage->docblock_issues[] = new InvalidDocblock(
-                                    'Template missing as type',
-                                    $name_location ?: $class_location
-                                );
-                            }
-                        } else {
-                            /** @psalm-suppress PropertyTypeCoercion due to a Psalm bug */
-                            $storage->template_types[$template_name][$fq_classlike_name] = Type::getMixed();
-                        }
-
-                        $storage->template_covariants[$i] = $template_map[3];
-                    }
-
-                    $this->class_template_types = $storage->template_types;
-                }
-
-                foreach ($docblock_info->template_extends as $extended_class_name) {
-                    $this->extendTemplatedType($storage, $node, $extended_class_name);
-                }
-
-                foreach ($docblock_info->template_implements as $implemented_class_name) {
-                    $this->implementTemplatedType($storage, $node, $implemented_class_name);
-                }
-
-                if ($docblock_info->yield) {
-                    try {
-                        $yield_type_tokens = TypeTokenizer::getFullyQualifiedTokens(
-                            $docblock_info->yield,
-                            $this->aliases,
-                            $storage->template_types,
-                            $this->type_aliases
-                        );
-
-                        $yield_type = TypeParser::parseTokens(
-                            $yield_type_tokens,
-                            null,
-                            $storage->template_types ?: [],
-                            $this->type_aliases
-                        );
-                        $yield_type->setFromDocblock();
-                        $yield_type->queueClassLikesForScanning(
-                            $this->codebase,
-                            $this->file_storage,
-                            $storage->template_types ?: []
-                        );
-
-                        $storage->yield = $yield_type;
-                    } catch (TypeParseTreeException $e) {
-                        // do nothing
-                    }
-                }
-
-                if ($docblock_info->extension_requirement !== null) {
-                    $storage->extension_requirement = (string) TypeParser::parseTokens(
-                        TypeTokenizer::getFullyQualifiedTokens(
-                            $docblock_info->extension_requirement,
-                            $this->aliases,
-                            $this->class_template_types,
-                            $this->type_aliases
-                        ),
-                        null,
-                        $this->class_template_types,
-                        $this->type_aliases
-                    );
-                }
-
-                foreach ($docblock_info->implementation_requirements as $implementation_requirement) {
-                    $storage->implementation_requirements[] = (string) TypeParser::parseTokens(
-                        TypeTokenizer::getFullyQualifiedTokens(
-                            $implementation_requirement,
-                            $this->aliases,
-                            $this->class_template_types,
-                            $this->type_aliases
-                        ),
-                        null,
-                        $this->class_template_types,
-                        $this->type_aliases
-                    );
-                }
-
-                $storage->sealed_properties = $docblock_info->sealed_properties;
-                $storage->sealed_methods = $docblock_info->sealed_methods;
-
-                if ($docblock_info->properties) {
-                    foreach ($docblock_info->properties as $property) {
-                        $pseudo_property_type_tokens = TypeTokenizer::getFullyQualifiedTokens(
-                            $property['type'],
-                            $this->aliases,
-                            $this->class_template_types,
-                            $this->type_aliases
-                        );
-
-                        try {
-                            $pseudo_property_type = TypeParser::parseTokens(
-                                $pseudo_property_type_tokens,
-                                null,
-                                $this->class_template_types,
-                                $this->type_aliases
-                            );
-                            $pseudo_property_type->setFromDocblock();
-                            $pseudo_property_type->queueClassLikesForScanning(
-                                $this->codebase,
-                                $this->file_storage,
-                                $storage->template_types ?: []
-                            );
-
-                            if ($property['tag'] !== 'property-read' && $property['tag'] !== 'psalm-property-read') {
-                                $storage->pseudo_property_set_types[$property['name']] = $pseudo_property_type;
-                            }
-
-                            if ($property['tag'] !== 'property-write' && $property['tag'] !== 'psalm-property-write') {
-                                $storage->pseudo_property_get_types[$property['name']] = $pseudo_property_type;
-                            }
-                        } catch (TypeParseTreeException $e) {
-                            $storage->docblock_issues[] = new InvalidDocblock(
-                                $e->getMessage() . ' in docblock for ' . $fq_classlike_name,
-                                $name_location ?: $class_location
-                            );
-                        }
-                    }
-
-                    $storage->sealed_properties = true;
-                }
-
-                foreach ($docblock_info->methods as $method) {
-                    $functionlike_node_scanner = new FunctionLikeNodeScanner(
-                        $this->codebase,
-                        $this->file_scanner,
-                        $this->file_storage,
-                        $this->aliases,
-                        $this->type_aliases,
-                        $this->storage,
-                        []
-                    );
-
-                    /** @var MethodStorage */
-                    $pseudo_method_storage = $functionlike_node_scanner->start($method, true);
-
-                    if ($pseudo_method_storage->is_static) {
-                        $storage->pseudo_static_methods[strtolower($method->name->name)] = $pseudo_method_storage;
-                    } else {
-                        $storage->pseudo_methods[strtolower($method->name->name)] = $pseudo_method_storage;
-                    }
-
-                    $storage->sealed_methods = true;
-                }
-
-                foreach ($docblock_info->imported_types as $import_type_entry) {
-                    $imported_type_data = $import_type_entry['parts'];
-                    $location = new DocblockTypeLocation(
-                        $this->file_scanner,
-                        $import_type_entry['start_offset'],
-                        $import_type_entry['end_offset'],
-                        $import_type_entry['line_number']
-                    );
-                    // There are two valid forms:
-                    // @psalm-import Thing from Something
-                    // @psalm-import Thing from Something as Alias
-                    // but there could be leftovers after that
-                    if (count($imported_type_data) < 3) {
-                        $storage->docblock_issues[] = new InvalidTypeImport(
-                            'Invalid import in docblock for ' . $fq_classlike_name
-                            . ', expecting "<TypeName> from <ClassName>",'
-                            . ' got "' . implode(' ', $imported_type_data) . '" instead.',
-                            $location
-                        );
-                        continue;
-                    }
-
-                    if ($imported_type_data[1] === 'from'
-                        && !empty($imported_type_data[0])
-                        && !empty($imported_type_data[2])
-                    ) {
-                        $type_alias_name = $as_alias_name = $imported_type_data[0];
-                        $declaring_classlike_name = $imported_type_data[2];
-                    } else {
-                        $storage->docblock_issues[] = new InvalidTypeImport(
-                            'Invalid import in docblock for ' . $fq_classlike_name
-                            . ', expecting "<TypeName> from <ClassName>", got "'
-                            . implode(
-                                ' ',
-                                [$imported_type_data[0], $imported_type_data[1], $imported_type_data[2]]
-                            ) . '" instead.',
-                            $location
-                        );
-                        continue;
-                    }
-
-                    if (count($imported_type_data) >= 4 && $imported_type_data[3] === 'as') {
-                        // long form
-                        if (empty($imported_type_data[4])) {
-                            $storage->docblock_issues[] = new InvalidTypeImport(
-                                'Invalid import in docblock for ' . $fq_classlike_name
-                                . ', expecting "as <TypeName>", got "'
-                                . $imported_type_data[3] . ' ' . ($imported_type_data[4] ?? '') . '" instead.',
-                                $location
-                            );
-                            continue;
-                        }
-
-                        $as_alias_name = $imported_type_data[4];
-                    }
-
-                    $declaring_fq_classlike_name = Type::getFQCLNFromString(
-                        $declaring_classlike_name,
-                        $this->aliases
-                    );
-
-                    $this->codebase->scanner->queueClassLikeForScanning($declaring_fq_classlike_name);
-                    $this->file_storage->referenced_classlikes[strtolower($declaring_fq_classlike_name)]
-                        = $declaring_fq_classlike_name;
-
-                    $this->type_aliases[$as_alias_name] = new TypeAlias\LinkableTypeAlias(
-                        $declaring_fq_classlike_name,
-                        $type_alias_name,
-                        $import_type_entry['line_number'],
-                        $import_type_entry['start_offset'],
-                        $import_type_entry['end_offset']
-                    );
-                }
-
-                $storage->deprecated = $docblock_info->deprecated;
-
-                if ($docblock_info->internal
-                    && !$docblock_info->psalm_internal
-                    && $this->aliases->namespace
-                ) {
-                    $storage->internal = explode('\\', $this->aliases->namespace)[0];
-                } else {
-                    $storage->internal = $docblock_info->psalm_internal ?? '';
-                }
-
-                if ($docblock_info->final && !$storage->final) {
-                    $storage->final = true;
-                    $storage->final_from_docblock = true;
-                }
-
-                $storage->preserve_constructor_signature = $docblock_info->consistent_constructor;
-
-                if ($storage->preserve_constructor_signature) {
-                    $has_constructor = false;
-
-                    foreach ($node->stmts as $stmt) {
-                        if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod
-                            && $stmt->name->name === '__construct'
-                        ) {
-                            $has_constructor = true;
-                            break;
-                        }
-                    }
-
-                    if (!$has_constructor) {
-                        self::registerEmptyConstructor($storage);
-                    }
-                }
-
-                foreach ($docblock_info->mixins as $key => $mixin) {
-                    $mixin_type = TypeParser::parseTokens(
-                        TypeTokenizer::getFullyQualifiedTokens(
-                            $mixin,
-                            $this->aliases,
-                            $this->class_template_types,
-                            $this->type_aliases,
-                            $fq_classlike_name
-                        ),
-                        null,
-                        $this->class_template_types,
-                        $this->type_aliases
-                    );
-
-                    $mixin_type->queueClassLikesForScanning(
-                        $this->codebase,
-                        $this->file_storage,
-                        $storage->template_types ?: []
-                    );
-
-                    $mixin_type->setFromDocblock();
-
-                    if ($mixin_type->isSingle()) {
-                        $mixin_type = \array_values($mixin_type->getAtomicTypes())[0];
-
-                        if ($mixin_type instanceof Type\Atomic\TNamedObject) {
-                            $storage->namedMixins[] = $mixin_type;
-                        }
-
-                        if ($mixin_type instanceof Type\Atomic\TTemplateParam) {
-                            $storage->templatedMixins[] = $mixin_type;
-                        }
-                    }
-
-                    if ($key === 0) {
-                        $storage->mixin_declaring_fqcln = $storage->name;
-
-                        // backwards compatibility
-                        if ($mixin_type instanceof Type\Atomic\TNamedObject
-                            || $mixin_type instanceof Type\Atomic\TTemplateParam) {
-                            /** @psalm-suppress DeprecatedProperty **/
-                            $storage->mixin = $mixin_type;
-                        }
-                    }
-                }
-
-                $storage->mutation_free = $docblock_info->mutation_free;
-                $storage->external_mutation_free = $docblock_info->external_mutation_free;
-                $storage->specialize_instance = $docblock_info->taint_specialize;
-
-                $storage->override_property_visibility = $docblock_info->override_property_visibility;
-                $storage->override_method_visibility = $docblock_info->override_method_visibility;
-
-                $storage->suppressed_issues = $docblock_info->suppressed_issues;
             }
         }
 
@@ -684,6 +327,293 @@ class ClassLikeNodeScanner
                     new CodeLocation($this->file_scanner, $node, null, true)
                 );
             }
+        }
+
+        if ($docblock_info) {
+            if ($docblock_info->stub_override && !$is_classlike_overridden) {
+                throw new InvalidClasslikeOverrideException(
+                    'Class/interface/trait ' . $fq_classlike_name . ' is marked as stub override,'
+                    . ' but no original counterpart found'
+                );
+            }
+
+            if ($docblock_info->templates) {
+                $storage->template_types = [];
+
+                \usort(
+                    $docblock_info->templates,
+                    function (array $l, array $r) : int {
+                        return $l[4] > $r[4] ? 1 : -1;
+                    }
+                );
+
+                foreach ($docblock_info->templates as $i => $template_map) {
+                    $template_name = $template_map[0];
+
+                    if ($template_map[1] !== null && $template_map[2] !== null) {
+                        if (trim($template_map[2])) {
+                            try {
+                                $template_type = TypeParser::parseTokens(
+                                    TypeTokenizer::getFullyQualifiedTokens(
+                                        $template_map[2],
+                                        $this->aliases,
+                                        $storage->template_types,
+                                        $this->type_aliases
+                                    ),
+                                    null,
+                                    $storage->template_types,
+                                    $this->type_aliases
+                                );
+                            } catch (TypeParseTreeException $e) {
+                                $storage->docblock_issues[] = new InvalidDocblock(
+                                    $e->getMessage() . ' in docblock for ' . $fq_classlike_name,
+                                    $name_location ?: $class_location
+                                );
+
+                                continue;
+                            }
+
+                            $storage->template_types[$template_name] = [
+                                $fq_classlike_name => $template_type,
+                            ];
+                        } else {
+                            $storage->docblock_issues[] = new InvalidDocblock(
+                                'Template missing as type',
+                                $name_location ?: $class_location
+                            );
+                        }
+                    } else {
+                        /** @psalm-suppress PropertyTypeCoercion due to a Psalm bug */
+                        $storage->template_types[$template_name][$fq_classlike_name] = Type::getMixed();
+                    }
+
+                    $storage->template_covariants[$i] = $template_map[3];
+                }
+
+                $this->class_template_types = $storage->template_types;
+            }
+
+            foreach ($docblock_info->template_extends as $extended_class_name) {
+                $this->extendTemplatedType($storage, $node, $extended_class_name);
+            }
+
+            foreach ($docblock_info->template_implements as $implemented_class_name) {
+                $this->implementTemplatedType($storage, $node, $implemented_class_name);
+            }
+
+            if ($docblock_info->yield) {
+                try {
+                    $yield_type_tokens = TypeTokenizer::getFullyQualifiedTokens(
+                        $docblock_info->yield,
+                        $this->aliases,
+                        $storage->template_types,
+                        $this->type_aliases
+                    );
+
+                    $yield_type = TypeParser::parseTokens(
+                        $yield_type_tokens,
+                        null,
+                        $storage->template_types ?: [],
+                        $this->type_aliases
+                    );
+                    $yield_type->setFromDocblock();
+                    $yield_type->queueClassLikesForScanning(
+                        $this->codebase,
+                        $this->file_storage,
+                        $storage->template_types ?: []
+                    );
+
+                    $storage->yield = $yield_type;
+                } catch (TypeParseTreeException $e) {
+                    // do nothing
+                }
+            }
+
+            if ($docblock_info->extension_requirement !== null) {
+                $storage->extension_requirement = (string) TypeParser::parseTokens(
+                    TypeTokenizer::getFullyQualifiedTokens(
+                        $docblock_info->extension_requirement,
+                        $this->aliases,
+                        $this->class_template_types,
+                        $this->type_aliases
+                    ),
+                    null,
+                    $this->class_template_types,
+                    $this->type_aliases
+                );
+            }
+
+            foreach ($docblock_info->implementation_requirements as $implementation_requirement) {
+                $storage->implementation_requirements[] = (string) TypeParser::parseTokens(
+                    TypeTokenizer::getFullyQualifiedTokens(
+                        $implementation_requirement,
+                        $this->aliases,
+                        $this->class_template_types,
+                        $this->type_aliases
+                    ),
+                    null,
+                    $this->class_template_types,
+                    $this->type_aliases
+                );
+            }
+
+            $storage->sealed_properties = $docblock_info->sealed_properties;
+            $storage->sealed_methods = $docblock_info->sealed_methods;
+
+            if ($docblock_info->properties) {
+                foreach ($docblock_info->properties as $property) {
+                    $pseudo_property_type_tokens = TypeTokenizer::getFullyQualifiedTokens(
+                        $property['type'],
+                        $this->aliases,
+                        $this->class_template_types,
+                        $this->type_aliases
+                    );
+
+                    try {
+                        $pseudo_property_type = TypeParser::parseTokens(
+                            $pseudo_property_type_tokens,
+                            null,
+                            $this->class_template_types,
+                            $this->type_aliases
+                        );
+                        $pseudo_property_type->setFromDocblock();
+                        $pseudo_property_type->queueClassLikesForScanning(
+                            $this->codebase,
+                            $this->file_storage,
+                            $storage->template_types ?: []
+                        );
+
+                        if ($property['tag'] !== 'property-read' && $property['tag'] !== 'psalm-property-read') {
+                            $storage->pseudo_property_set_types[$property['name']] = $pseudo_property_type;
+                        }
+
+                        if ($property['tag'] !== 'property-write' && $property['tag'] !== 'psalm-property-write') {
+                            $storage->pseudo_property_get_types[$property['name']] = $pseudo_property_type;
+                        }
+                    } catch (TypeParseTreeException $e) {
+                        $storage->docblock_issues[] = new InvalidDocblock(
+                            $e->getMessage() . ' in docblock for ' . $fq_classlike_name,
+                            $name_location ?: $class_location
+                        );
+                    }
+                }
+
+                $storage->sealed_properties = true;
+            }
+
+            foreach ($docblock_info->methods as $method) {
+                $functionlike_node_scanner = new FunctionLikeNodeScanner(
+                    $this->codebase,
+                    $this->file_scanner,
+                    $this->file_storage,
+                    $this->aliases,
+                    $this->type_aliases,
+                    $this->storage,
+                    []
+                );
+
+                /** @var MethodStorage */
+                $pseudo_method_storage = $functionlike_node_scanner->start($method, true);
+
+                if ($pseudo_method_storage->is_static) {
+                    $storage->pseudo_static_methods[strtolower($method->name->name)] = $pseudo_method_storage;
+                } else {
+                    $storage->pseudo_methods[strtolower($method->name->name)] = $pseudo_method_storage;
+                }
+
+                $storage->sealed_methods = true;
+            }
+
+
+            $storage->deprecated = $docblock_info->deprecated;
+
+            if ($docblock_info->internal
+                && !$docblock_info->psalm_internal
+                && $this->aliases->namespace
+            ) {
+                $storage->internal = explode('\\', $this->aliases->namespace)[0];
+            } else {
+                $storage->internal = $docblock_info->psalm_internal ?? '';
+            }
+
+            if ($docblock_info->final && !$storage->final) {
+                $storage->final = true;
+                $storage->final_from_docblock = true;
+            }
+
+            $storage->preserve_constructor_signature = $docblock_info->consistent_constructor;
+
+            if ($storage->preserve_constructor_signature) {
+                $has_constructor = false;
+
+                foreach ($node->stmts as $stmt) {
+                    if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod
+                        && $stmt->name->name === '__construct'
+                    ) {
+                        $has_constructor = true;
+                        break;
+                    }
+                }
+
+                if (!$has_constructor) {
+                    self::registerEmptyConstructor($storage);
+                }
+            }
+
+            foreach ($docblock_info->mixins as $key => $mixin) {
+                $mixin_type = TypeParser::parseTokens(
+                    TypeTokenizer::getFullyQualifiedTokens(
+                        $mixin,
+                        $this->aliases,
+                        $this->class_template_types,
+                        $this->type_aliases,
+                        $fq_classlike_name
+                    ),
+                    null,
+                    $this->class_template_types,
+                    $this->type_aliases
+                );
+
+                $mixin_type->queueClassLikesForScanning(
+                    $this->codebase,
+                    $this->file_storage,
+                    $storage->template_types ?: []
+                );
+
+                $mixin_type->setFromDocblock();
+
+                if ($mixin_type->isSingle()) {
+                    $mixin_type = \array_values($mixin_type->getAtomicTypes())[0];
+
+                    if ($mixin_type instanceof Type\Atomic\TNamedObject) {
+                        $storage->namedMixins[] = $mixin_type;
+                    }
+
+                    if ($mixin_type instanceof Type\Atomic\TTemplateParam) {
+                        $storage->templatedMixins[] = $mixin_type;
+                    }
+                }
+
+                if ($key === 0) {
+                    $storage->mixin_declaring_fqcln = $storage->name;
+
+                    // backwards compatibility
+                    if ($mixin_type instanceof Type\Atomic\TNamedObject
+                        || $mixin_type instanceof Type\Atomic\TTemplateParam) {
+                        /** @psalm-suppress DeprecatedProperty **/
+                        $storage->mixin = $mixin_type;
+                    }
+                }
+            }
+
+            $storage->mutation_free = $docblock_info->mutation_free;
+            $storage->external_mutation_free = $docblock_info->external_mutation_free;
+            $storage->specialize_instance = $docblock_info->taint_specialize;
+
+            $storage->override_property_visibility = $docblock_info->override_property_visibility;
+            $storage->override_method_visibility = $docblock_info->override_method_visibility;
+
+            $storage->suppressed_issues = $docblock_info->suppressed_issues;
         }
 
         foreach ($node->stmts as $node_stmt) {
@@ -1475,6 +1405,94 @@ class ClassLikeNodeScanner
                 }
             }
         }
+    }
+
+    /**
+     * @param ClassLikeDocblockComment $comment
+     * @param string $fq_classlike_name
+     *
+     * @return array<string, TypeAlias\LinkableTypeAlias>
+     */
+    private function getImportedTypeAliases(ClassLikeDocblockComment $comment, string $fq_classlike_name) : array
+    {
+        /** @var array<string, TypeAlias\LinkableTypeAlias> $results */
+        $results = [];
+
+        foreach ($comment->imported_types as $import_type_entry) {
+            $imported_type_data = $import_type_entry['parts'];
+            $location = new DocblockTypeLocation(
+                $this->file_scanner,
+                $import_type_entry['start_offset'],
+                $import_type_entry['end_offset'],
+                $import_type_entry['line_number']
+            );
+            // There are two valid forms:
+            // @psalm-import Thing from Something
+            // @psalm-import Thing from Something as Alias
+            // but there could be leftovers after that
+            if (count($imported_type_data) < 3) {
+                $this->file_storage->docblock_issues[] = new InvalidTypeImport(
+                    'Invalid import in docblock for ' . $fq_classlike_name
+                    . ', expecting "<TypeName> from <ClassName>",'
+                    . ' got "' . implode(' ', $imported_type_data) . '" instead.',
+                    $location
+                );
+                continue;
+            }
+
+            if ($imported_type_data[1] === 'from'
+                && !empty($imported_type_data[0])
+                && !empty($imported_type_data[2])
+            ) {
+                $type_alias_name = $as_alias_name = $imported_type_data[0];
+                $declaring_classlike_name = $imported_type_data[2];
+            } else {
+                $this->file_storage->docblock_issues[] = new InvalidTypeImport(
+                    'Invalid import in docblock for ' . $fq_classlike_name
+                    . ', expecting "<TypeName> from <ClassName>", got "'
+                    . implode(
+                        ' ',
+                        [$imported_type_data[0], $imported_type_data[1], $imported_type_data[2]]
+                    ) . '" instead.',
+                    $location
+                );
+                continue;
+            }
+
+            if (count($imported_type_data) >= 4 && $imported_type_data[3] === 'as') {
+                // long form
+                if (empty($imported_type_data[4])) {
+                    $this->file_storage->docblock_issues[] = new InvalidTypeImport(
+                        'Invalid import in docblock for ' . $fq_classlike_name
+                        . ', expecting "as <TypeName>", got "'
+                        . $imported_type_data[3] . ' ' . ($imported_type_data[4] ?? '') . '" instead.',
+                        $location
+                    );
+                    continue;
+                }
+
+                $as_alias_name = $imported_type_data[4];
+            }
+
+            $declaring_fq_classlike_name = Type::getFQCLNFromString(
+                $declaring_classlike_name,
+                $this->aliases
+            );
+
+            $this->codebase->scanner->queueClassLikeForScanning($declaring_fq_classlike_name);
+            $this->file_storage->referenced_classlikes[strtolower($declaring_fq_classlike_name)]
+                = $declaring_fq_classlike_name;
+
+            $results[$as_alias_name] = new TypeAlias\LinkableTypeAlias(
+                $declaring_fq_classlike_name,
+                $type_alias_name,
+                $import_type_entry['line_number'],
+                $import_type_entry['start_offset'],
+                $import_type_entry['end_offset']
+            );
+        }
+
+        return $results;
     }
 
     /**
