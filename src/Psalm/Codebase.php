@@ -1631,7 +1631,7 @@ class Codebase
                         null,
                         null,
                         null,
-                        $property_name,
+                        $property_name
                     );
                 }
             } elseif ($atomic_type instanceof Type\Atomic\TLiteralString) {
@@ -1642,7 +1642,7 @@ class Codebase
                     null,
                     null,
                     null,
-                    "'$atomic_type->value'",
+                    "'$atomic_type->value'"
                 );
             } elseif ($atomic_type instanceof Type\Atomic\TLiteralInt) {
                 $completion_items[] = new \LanguageServerProtocol\CompletionItem(
@@ -1652,7 +1652,7 @@ class Codebase
                     null,
                     null,
                     null,
-                    (string) $atomic_type->value,
+                    (string) $atomic_type->value
                 );
             } elseif ($atomic_type instanceof Type\Atomic\TScalarClassConstant) {
                 $const = $atomic_type->fq_classlike_name . '::' . $atomic_type->const_name;
@@ -1663,7 +1663,7 @@ class Codebase
                     null,
                     null,
                     null,
-                    $const,
+                    $const
                 );
             }
         }
@@ -1688,7 +1688,7 @@ class Codebase
                         null,
                         null,
                         null,
-                        "'$property_name'",
+                        "'$property_name'"
                     );
                 }
             }
