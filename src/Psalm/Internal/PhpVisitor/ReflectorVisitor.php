@@ -40,6 +40,11 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
     private $aliases;
 
     /**
+     * @var string[]
+     */
+    private $fq_classlike_names = [];
+
+    /**
      * @var FileScanner
      */
     private $file_scanner;
@@ -122,7 +127,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
         foreach ($node->getComments() as $comment) {
             if ($comment instanceof PhpParser\Comment\Doc && !$node instanceof PhpParser\Node\Stmt\ClassLike) {
                 $self_fqcln = $node instanceof PhpParser\Node\Stmt\ClassLike
-                && $node->name !== null
+                    && $node->name !== null
                     ? ($this->aliases->namespace ? $this->aliases->namespace . '\\' : '') . $node->name->name
                     : null;
 
@@ -180,7 +185,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                 return PhpParser\NodeTraverser::DONT_TRAVERSE_CHILDREN;
             }
 
-            $this->type_aliases = $this->type_aliases + $classlike_node_scanner->type_aliases;
+            $this->type_aliases += $classlike_node_scanner->type_aliases;
         } elseif ($node instanceof PhpParser\Node\Stmt\TryCatch) {
             foreach ($node->catches as $catch) {
                 foreach ($catch->types as $catch_type) {
@@ -293,7 +298,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                 $this->file_storage->declaring_constants[$fq_const_name] = $this->file_path;
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\If_ && !$this->skip_if_descendants) {
-            if (!$this->functionlike_node_scanners) {
+            if (!$this->fq_classlike_names && !$this->functionlike_node_scanners) {
                 $this->exists_cond_expr = $node->cond;
 
                 if (Reflector\ExpressionResolver::enterConditional(
@@ -584,10 +589,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
 
                         throw new \Psalm\Exception\CodeException(
                             'Error with core stub file docblocks: '
-                            . $issue_type
-                            . ' - ' . $e->getShortLocationWithPrevious()
-                            . ':' . $e->code_location->getColumn()
-                            . ' - ' . $message
+                                . $issue_type
+                                . ' - ' . $e->getShortLocationWithPrevious()
+                                . ':' . $e->code_location->getColumn()
+                                . ' - ' . $message
                         );
                     }
                 }
