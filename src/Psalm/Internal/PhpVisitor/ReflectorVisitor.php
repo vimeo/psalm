@@ -1,8 +1,6 @@
 <?php
 namespace Psalm\Internal\PhpVisitor;
 
-use Psalm\Internal\PhpVisitor\Reflector\ClassLikeDocblockParser;
-use Psalm\Internal\PhpVisitor\Reflector\ClassLikeNodeScanner;
 use Psalm\Plugin\EventHandler\Event\AfterClassLikeVisitEvent;
 use function array_pop;
 use function count;
@@ -122,32 +120,13 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
     public function enterNode(PhpParser\Node $node): ?int
     {
         foreach ($node->getComments() as $comment) {
-            if ($comment instanceof PhpParser\Comment\Doc) {
+            if ($comment instanceof PhpParser\Comment\Doc && !$node instanceof PhpParser\Node\Stmt\ClassLike) {
                 $self_fqcln = $node instanceof PhpParser\Node\Stmt\ClassLike
                 && $node->name !== null
                     ? ($this->aliases->namespace ? $this->aliases->namespace . '\\' : '') . $node->name->name
                     : null;
 
                 try {
-                    $imported_types = [];
-                    if ($node instanceof PhpParser\Node\Stmt\ClassLike) {
-                        $imported_types = ClassLikeNodeScanner::getImportedTypeAliases(
-                            $node,
-                            ClassLikeDocblockParser::parse(
-                                $node,
-                                $comment,
-                                $this->aliases
-                            ),
-                            $this->codebase,
-                            $this->aliases,
-                            $this->file_storage,
-                            $this->file_scanner,
-                            $this->file_path
-                        );
-                    }
-
-                    $this->type_aliases += $imported_types;
-
                     $type_aliases = Reflector\ClassLikeNodeScanner::getTypeAliasesFromComment(
                         $comment,
                         $this->aliases,
@@ -191,7 +170,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                 $this->file_storage,
                 $this->file_scanner,
                 $this->aliases,
-                $this->type_aliases,
                 $this->namespace_name
             );
 

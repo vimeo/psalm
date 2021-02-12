@@ -506,6 +506,38 @@ class TypeAnnotationTest extends TestCase
                      */
                     class C extends A {}',
             ],
+            'importedTypeInsideLocalTypeAliasUsedAsTypeParameter' => [
+                '<?php
+                    /** @template T */
+                    abstract class A {
+                        /** @var T */
+                        public $value;
+
+                        /** @param T $value */
+                        public function __construct($value) {
+                            $this->value = $value;
+                        }
+                    }
+
+                    /**
+                     * @psalm-type Foo=string
+                     */
+                    class B {}
+
+                    /**
+                     * @psalm-import-type Foo from B
+                     * @psalm-type Baz=Foo
+                     *
+                     * @extends A<Baz>
+                     */
+                    class C extends A {}
+
+                    $instance = new C("hello");
+                    $output = $instance->value;',
+                [
+                    '$output' => 'string',
+                ],
+            ],
         ];
     }
 
@@ -702,6 +734,35 @@ class TypeAnnotationTest extends TestCase
                      */
                     function test(array $input):void {}',
                 'error_message' => 'InvalidDocblock',
+            ],
+            'invalidTypeWhenNotImported' => [
+                '<?php
+
+                    /** @psalm-type Foo = string */
+                    class A {}
+
+                    /** @template T */
+                    interface B {}
+
+                    /** @implements B<Foo> */
+                    class C implements B {}',
+                'error_message' => 'UndefinedDocblockClass',
+            ],
+            'invalidTypeWhenNotImportedInsideAnotherTypeAlias' => [
+                '<?php
+
+                    /** @psalm-type Foo = string */
+                    class A {}
+
+                    /** @template T */
+                    interface B {}
+
+                    /**
+                     * @psalm-type Baz=Foo
+                     * @implements B<Baz>
+                     */
+                    class C implements B {}',
+                'error_message' => 'UndefinedDocblockClass',
             ],
         ];
     }
