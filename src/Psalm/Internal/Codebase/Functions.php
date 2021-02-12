@@ -315,39 +315,32 @@ class Functions
             }
         }
 
-        $function_maps = [
-            $file_storage->functions,
-            $this->getAllStubbedFunctions(),
-            $this->reflection->getFunctions(),
-            $codebase->config->getPredefinedFunctions(),
-        ];
+        $function_map = $file_storage->functions
+            + $this->getAllStubbedFunctions()
+            + $this->reflection->getFunctions()
+            + $codebase->config->getPredefinedFunctions();
 
-        foreach ($function_maps as $function_map) {
-            foreach ($function_map as $function_name => $function) {
-                if (isset($matching_functions[$function_name])) {
-                    continue;
-                }
-                foreach ($match_function_patterns as $pattern) {
-                    if (substr($pattern, -1, 1) === '*') {
-                        if (strpos($function_name, rtrim($pattern, '*')) !== 0) {
-                            continue;
-                        }
-                    } elseif ($function_name !== $pattern) {
+        foreach ($function_map as $function_name => $function) {
+           foreach ($match_function_patterns as $pattern) {
+                if (substr($pattern, -1, 1) === '*') {
+                    if (strpos($function_name, rtrim($pattern, '*')) !== 0) {
                         continue;
                     }
-                    if (is_bool($function)) {
-                        /** @var callable-string $function_name */
-                        if ($this->reflection->registerFunction($function_name) === false) {
-                            continue;
-                        }
-                        $function = $this->reflection->getFunctionStorage($function_name);
-                    }
-                    $matching_functions[$function_name] = $function;
+                } elseif ($function_name !== $pattern) {
+                    continue;
                 }
+                if (is_bool($function)) {
+                    /** @var callable-string $function_name */
+                    if ($this->reflection->registerFunction($function_name) === false) {
+                        continue;
+                    }
+                    $function = $this->reflection->getFunctionStorage($function_name);
+                }
+                $matching_functions[$function_name] = $function;
             }
         }
 
-        return array_values($matching_functions);
+        return $matching_functions;
     }
 
     public static function isVariadic(Codebase $codebase, string $function_id, string $file_path): bool
