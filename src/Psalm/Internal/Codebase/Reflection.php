@@ -517,6 +517,14 @@ class Reflection
         throw new \UnexpectedValueException('Expecting to have a function for ' . $function_id);
     }
 
+    /**
+     * @return array<string, FunctionStorage>
+     */
+    public function getFunctions(): array
+    {
+        return self::$builtin_functions;
+    }
+
     public static function clearCache() : void
     {
         self::$builtin_functions = [];

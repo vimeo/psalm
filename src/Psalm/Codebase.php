@@ -44,6 +44,7 @@ use function substr;
 use function substr_count;
 use function array_pop;
 use function implode;
+use function array_reverse;
 
 class Codebase
 {
@@ -1608,6 +1609,51 @@ class Codebase
                 $insertion_text,
                 null,
                 $extra_edits
+            );
+        }
+
+        $functions = $this->functions->getMatchingFunctionNames($type_string, $offset, $file_path, $this);
+
+        $namespace_map = [];
+        if ($aliases) {
+            $namespace_map += $aliases->uses_flipped;
+            if ($aliases->namespace) {
+                $namespace_map[$aliases->namespace] = '';
+            }
+        }
+
+        // Sort the map by longest first, so we replace most specific
+        // used namespaces first.
+        ksort($namespace_map);
+        $namespace_map = array_reverse($namespace_map);
+
+        foreach ($functions as $function_lowercase => $function) {
+            // Transform FQFN relative to all uses namespaces
+            $function_name = $function->cased_name;
+            if (!$function_name) {
+                continue;
+            }
+            $in_namespace_map = false;
+            foreach ($namespace_map as $namespace_name => $namespace_alias) {
+                if (strpos($function_lowercase, $namespace_name . '\\') === 0) {
+                    $function_name = $namespace_alias . '\\' . substr($function_name, strlen($namespace_name) + 1);
+                    $in_namespace_map = true;
+                }
+            }
+            // If the function is not use'd, and it's not a global function
+            // prepend it with a backslash.
+            if (!$in_namespace_map && strpos($function_name, '\\') !== false) {
+                $function_name = '\\' . $function_name;
+            }
+            $completion_items[] = new \LanguageServerProtocol\CompletionItem(
+                $function_name,
+                \LanguageServerProtocol\CompletionItemKind::FUNCTION,
+                $function->getSignature(false),
+                null,
+                null,
+                $function_name,
+                $function_name . '()',
+                null
             );
         }
 
