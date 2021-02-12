@@ -11563,7 +11563,6 @@ return [
 'ReflectionProperty::getDocComment' => ['string|false'],
 'ReflectionProperty::getModifiers' => ['int'],
 'ReflectionProperty::getName' => ['string'],
-'ReflectionProperty::getType' => ['?ReflectionType'],
 'ReflectionProperty::getValue' => ['mixed', 'object='=>'object'],
 'ReflectionProperty::isDefault' => ['bool'],
 'ReflectionProperty::isPrivate' => ['bool'],
