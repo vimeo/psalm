@@ -19,7 +19,7 @@ return [
     'password_hash' => ['string|null', 'password'=>'string', 'algo'=>'int|string|null', 'options='=>'array'],
     'password_needs_rehash' => ['bool', 'hash'=>'string', 'algo'=>'int|string|null', 'options='=>'array'],
     'proc_open' => ['resource|false', 'command'=>'string|array', 'descriptorspec'=>'array', '&w_pipes'=>'resource[]', 'cwd='=>'?string', 'env='=>'?array', 'other_options='=>'array'],
-    'ReflectionProperty::getType' => ['?ReflectionType'],
+    'ReflectionProperty::getType' => ['?ReflectionNamedType'],
 ],
 'old' => [
     'gzread' => ['string|0', 'stream'=>'resource', 'length'=>'int'],
