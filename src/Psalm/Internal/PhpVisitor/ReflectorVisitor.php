@@ -319,10 +319,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                 $this->exists_cond_expr = $node->cond;
 
                 if (Reflector\ExpressionResolver::enterConditional(
-                        $this->codebase,
-                        $this->file_path,
-                        $this->exists_cond_expr
-                    ) === false
+                    $this->codebase,
+                    $this->file_path,
+                    $this->exists_cond_expr
+                ) === false
                 ) {
                     // the else node should terminate the agreement
                     $this->skip_if_descendants = $node->else ? $node->else->getLine() : $node->getLine();
