@@ -1734,7 +1734,7 @@ class Codebase
                         null,
                         null,
                         null,
-                        "'$property_name'",
+                        "'$property_name'"
                     );
                 }
             }
