@@ -580,6 +580,11 @@ class Union implements TypeNode
         return isset($this->types['array']);
     }
 
+    public function hasIterable(): bool
+    {
+        return isset($this->types['iterable']);
+    }
+
     public function hasList(): bool
     {
         return isset($this->types['array']) && $this->types['array'] instanceof Atomic\TList;
