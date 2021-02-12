@@ -38,7 +38,7 @@ return [
     'session_create_id' => ['string', 'prefix='=>'string'],
     'session_gc' => ['int'],
     'unpack' => ['array', 'format'=>'string', 'string'=>'string', 'offset='=>'int'],
-    'ReflectionFunction::getReturnType()' => ['?ReflectionNamedType'],
+    'ReflectionFunction::getReturnType' => ['?ReflectionNamedType'],
     'ReflectionFunctionAbstract::getReturnType' => ['?ReflectionNamedType'],
     'ReflectionMethod::getReturnType' => ['?ReflectionNamedType'],
     'ReflectionParameter::getType' => ['?ReflectionNamedType']
