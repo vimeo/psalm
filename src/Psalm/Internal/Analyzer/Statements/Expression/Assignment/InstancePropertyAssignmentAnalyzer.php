@@ -4,11 +4,13 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Assignment;
 use PhpParser;
 use PhpParser\Node\Expr\PropertyFetch;
 use PhpParser\Node\Stmt\PropertyProperty;
+use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\ClassAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -94,12 +96,11 @@ class InstancePropertyAssignmentAnalyzer
             if ($class_property_type) {
                 $class_storage = $codebase->classlike_storage_provider->get($context->self);
 
-                $class_property_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                $class_property_type = self::getExpandedPropertyType(
                     $codebase,
-                    clone $class_property_type,
-                    $class_storage->name,
-                    $class_storage->name,
-                    $class_storage->parent_class
+                    $context->self,
+                    $prop_name,
+                    $class_storage
                 );
             }
 
@@ -1376,5 +1377,71 @@ class InstancePropertyAssignmentAnalyzer
             $property_id,
             $assignment_value_type
         );
+    }
+
+    public static function getExpandedPropertyType(
+        Codebase $codebase,
+        string $fq_class_name,
+        string $property_name,
+        \Psalm\Storage\ClassLikeStorage $storage
+    ) : ?Type\Union {
+        $property_class_name = $codebase->properties->getDeclaringClassForProperty(
+            $fq_class_name . '::$' . $property_name,
+            true
+        );
+
+        if ($property_class_name === null) {
+            return null;
+        }
+
+        $property_class_storage = $codebase->classlike_storage_provider->get($property_class_name);
+
+        $property_storage = $property_class_storage->properties[$property_name];
+
+        if (!$property_storage->type) {
+            return null;
+        }
+
+        $property_type = clone $property_storage->type;
+
+        $fleshed_out_type = !$property_type->isMixed()
+            ? \Psalm\Internal\Type\TypeExpander::expandUnion(
+                $codebase,
+                $property_type,
+                $fq_class_name,
+                $fq_class_name,
+                $storage->parent_class,
+                true,
+                false,
+                $storage->final
+            )
+            : $property_type;
+
+        $class_template_params = ClassTemplateParamCollector::collect(
+            $codebase,
+            $property_class_storage,
+            $storage,
+            null,
+            new Type\Atomic\TNamedObject($fq_class_name),
+            true
+        );
+
+        $template_result = new \Psalm\Internal\Type\TemplateResult(
+            $class_template_params ?: [],
+            []
+        );
+
+        if ($class_template_params) {
+            $fleshed_out_type = \Psalm\Internal\Type\TemplateStandinTypeReplacer::replace(
+                $fleshed_out_type,
+                $template_result,
+                $codebase,
+                null,
+                null,
+                null
+            );
+        }
+
+        return $fleshed_out_type;
     }
 }

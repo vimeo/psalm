@@ -702,6 +702,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         && $property_storage->location
                         && !$property_storage->type->equals($guide_property_storage->type)
                         && !$guide_property_storage->type->hasTemplate()
+                        && $guide_class_storage->user_defined
                     ) {
                         if (IssueBuffer::accepts(
                             new NonInvariantDocblockPropertyType(
