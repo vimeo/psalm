@@ -321,7 +321,7 @@ class Functions
             + $codebase->config->getPredefinedFunctions();
 
         foreach ($function_map as $function_name => $function) {
-           foreach ($match_function_patterns as $pattern) {
+            foreach ($match_function_patterns as $pattern) {
                 if (substr($pattern, -1, 1) === '*') {
                     if (strpos($function_name, rtrim($pattern, '*')) !== 0) {
                         continue;
