@@ -71,7 +71,7 @@ class StubTest extends TestCase
                     </projectFiles>
 
                     <stubs>
-                        <file name="stubs/invalidfile.php" />
+                        <file name="stubs/invalidfile.phpstub" />
                     </stubs>
                 </psalm>'
             )
@@ -92,7 +92,7 @@ class StubTest extends TestCase
                     </projectFiles>
 
                     <stubs>
-                        <file name="tests/fixtures/stubs/systemclass.php" />
+                        <file name="tests/fixtures/stubs/systemclass.phpstub" />
                     </stubs>
                 </psalm>'
             )
@@ -132,13 +132,13 @@ class StubTest extends TestCase
                     errorLevel="1"
                 >
                     <stubs>
-                        <file name="./tests/../tests/fixtures/stubs/systemclass.php" />
+                        <file name="./tests/../tests/fixtures/stubs/systemclass.phpstub" />
                     </stubs>
                 </psalm>'
             )
         );
 
-        $path = $this->getOperatingSystemStyledPath('tests/fixtures/stubs/systemclass.php');
+        $path = $this->getOperatingSystemStyledPath('tests/fixtures/stubs/systemclass.phpstub');
         $stub_files = $this->project_analyzer->getConfig()->getStubFiles();
         $this->assertStringContainsString($path, \reset($stub_files));
     }
@@ -154,13 +154,13 @@ class StubTest extends TestCase
                     errorLevel="1"
                 >
                     <stubs>
-                        <file name="' . $runDir . '/tests/fixtures/stubs/systemclass.php" />
+                        <file name="' . $runDir . '/tests/fixtures/stubs/systemclass.phpstub" />
                     </stubs>
                 </psalm>'
             )
         );
 
-        $path = $this->getOperatingSystemStyledPath('tests/fixtures/stubs/systemclass.php');
+        $path = $this->getOperatingSystemStyledPath('tests/fixtures/stubs/systemclass.phpstub');
         $stub_files = $this->project_analyzer->getConfig()->getStubFiles();
         $this->assertStringContainsString($path, \reset($stub_files));
     }
@@ -179,7 +179,7 @@ class StubTest extends TestCase
                     </projectFiles>
 
                     <stubs>
-                        <file name="tests/fixtures/stubs/systemclass.php" />
+                        <file name="tests/fixtures/stubs/systemclass.phpstub" />
                     </stubs>
                 </psalm>'
             )
@@ -302,7 +302,7 @@ class StubTest extends TestCase
                     </projectFiles>
 
                     <stubs>
-                        <file name="tests/fixtures/stubs/namespaced_class.php" />
+                        <file name="tests/fixtures/stubs/namespaced_class.phpstub" />
                     </stubs>
                 </psalm>'
             )
@@ -339,7 +339,7 @@ class StubTest extends TestCase
                     </projectFiles>
 
                     <stubs>
-                        <file name="tests/fixtures/stubs/custom_functions.php" />
+                        <file name="tests/fixtures/stubs/custom_functions.phpstub" />
                     </stubs>
                 </psalm>'
             )
@@ -370,7 +370,7 @@ class StubTest extends TestCase
                     </projectFiles>
 
                     <stubs>
-                        <file name="tests/fixtures/stubs/custom_functions.php" />
+                        <file name="tests/fixtures/stubs/custom_functions.phpstub" />
                     </stubs>
                 </psalm>'
             )
@@ -403,7 +403,7 @@ class StubTest extends TestCase
                     </projectFiles>
 
                     <stubs>
-                        <file name="tests/fixtures/stubs/custom_functions.php" />
+                        <file name="tests/fixtures/stubs/custom_functions.phpstub" />
                     </stubs>
                 </psalm>'
             )
@@ -464,7 +464,7 @@ class StubTest extends TestCase
                 '<?xml version="1.0"?>
                 <psalm
                     errorLevel="1"
-                    autoloader="tests/fixtures/stubs/polyfill.php"
+                    autoloader="tests/fixtures/stubs/polyfill.phpstub"
                 >
                     <projectFiles>
                         <directory name="src" />
@@ -496,7 +496,7 @@ class StubTest extends TestCase
                 '<?xml version="1.0"?>
                 <psalm
                     errorLevel="1"
-                    autoloader="tests/fixtures/stubs/conditional_constant_define_inferred.php"
+                    autoloader="tests/fixtures/stubs/conditional_constant_define_inferred.phpstub"
                 >
                     <projectFiles>
                         <directory name="src" />
@@ -528,7 +528,7 @@ class StubTest extends TestCase
                 '<?xml version="1.0"?>
                 <psalm
                     errorLevel="1"
-                    autoloader="tests/fixtures/stubs/class_alias.php"
+                    autoloader="tests/fixtures/stubs/class_alias.phpstub"
                 >
                     <projectFiles>
                         <directory name="src" />
@@ -592,7 +592,7 @@ class StubTest extends TestCase
                     </projectFiles>
 
                     <stubs>
-                        <file name="tests/fixtures/stubs/custom_functions.php" />
+                        <file name="tests/fixtures/stubs/custom_functions.phpstub" />
                     </stubs>
                 </psalm>'
             )
@@ -624,7 +624,7 @@ class StubTest extends TestCase
                     </projectFiles>
 
                     <stubs>
-                        <file name="tests/fixtures/stubs/custom_functions.php" />
+                        <file name="tests/fixtures/stubs/custom_functions.phpstub" />
                     </stubs>
                 </psalm>'
             )
@@ -686,7 +686,7 @@ class StubTest extends TestCase
                     </projectFiles>
 
                     <stubs>
-                        <file name="tests/fixtures/stubs/namespaced_functions.php" />
+                        <file name="tests/fixtures/stubs/namespaced_functions.phpstub" />
                     </stubs>
                 </psalm>'
             )
@@ -717,7 +717,7 @@ class StubTest extends TestCase
                     </projectFiles>
 
                     <stubs>
-                        <file name="tests/fixtures/stubs/conditional_namespaced_functions.php" />
+                        <file name="tests/fixtures/stubs/conditional_namespaced_functions.phpstub" />
                     </stubs>
                 </psalm>'
             )
@@ -748,7 +748,7 @@ class StubTest extends TestCase
                     </projectFiles>
 
                     <stubs>
-                        <file name="tests/fixtures/stubs/conditional_interface.php" />
+                        <file name="tests/fixtures/stubs/conditional_interface.phpstub" />
                     </stubs>
                 </psalm>'
             )
@@ -795,7 +795,7 @@ class StubTest extends TestCase
                     </projectFiles>
 
                     <stubs>
-                        <file name="tests/fixtures/stubs/DomainException.php" />
+                        <file name="tests/fixtures/stubs/DomainException.phpstub" />
                     </stubs>
                 </psalm>'
             )
@@ -826,7 +826,7 @@ class StubTest extends TestCase
                     </projectFiles>
 
                     <stubs>
-                        <file name="tests/fixtures/stubs/partial_class.php" />
+                        <file name="tests/fixtures/stubs/partial_class.phpstub" />
                     </stubs>
                 </psalm>'
             )
@@ -874,7 +874,7 @@ class StubTest extends TestCase
                     </projectFiles>
 
                     <stubs>
-                        <file name="tests/fixtures/stubs/partial_class.php" />
+                        <file name="tests/fixtures/stubs/partial_class.phpstub" />
                     </stubs>
                 </psalm>'
             )
@@ -909,7 +909,7 @@ class StubTest extends TestCase
                     </projectFiles>
 
                     <stubs>
-                        <file name="tests/fixtures/stubs/partial_class.php" />
+                        <file name="tests/fixtures/stubs/partial_class.phpstub" />
                     </stubs>
                 </psalm>'
             )
@@ -946,7 +946,7 @@ class StubTest extends TestCase
                     </projectFiles>
 
                     <stubs>
-                        <file name="tests/fixtures/stubs/partial_class.php" />
+                        <file name="tests/fixtures/stubs/partial_class.phpstub" />
                     </stubs>
                 </psalm>'
             )
@@ -991,7 +991,7 @@ class StubTest extends TestCase
                     </projectFiles>
 
                     <stubs>
-                        <file name="tests/fixtures/stubs/partial_class.php" />
+                        <file name="tests/fixtures/stubs/partial_class.phpstub" />
                     </stubs>
                 </psalm>'
             )
@@ -1032,7 +1032,7 @@ class StubTest extends TestCase
                     </projectFiles>
 
                     <stubs>
-                        <file name="tests/fixtures/stubs/templated_class.php" />
+                        <file name="tests/fixtures/stubs/templated_class.phpstub" />
                     </stubs>
                 </psalm>'
             )
@@ -1128,7 +1128,7 @@ class StubTest extends TestCase
                         <directory name="src" />
                     </projectFiles>
                     <stubs>
-                        <file name="tests/fixtures/stubs/MissingClass.php" />
+                        <file name="tests/fixtures/stubs/MissingClass.phpstub" />
                     </stubs>
                 </psalm>'
             )
@@ -1159,7 +1159,7 @@ class StubTest extends TestCase
                         <directory name="src" />
                     </projectFiles>
                     <stubs>
-                        <file name="tests/fixtures/stubs/MissingMethod.php" />
+                        <file name="tests/fixtures/stubs/MissingMethod.phpstub" />
                     </stubs>
                 </psalm>'
             )
@@ -1190,7 +1190,7 @@ class StubTest extends TestCase
                         <directory name="src" />
                     </projectFiles>
                     <stubs>
-                        <file name="tests/fixtures/stubs/Doctrine.php" />
+                        <file name="tests/fixtures/stubs/Doctrine.phpstub" />
                     </stubs>
                 </psalm>'
             )

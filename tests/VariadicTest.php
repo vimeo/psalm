@@ -42,7 +42,7 @@ class VariadicTest extends TestCase
                 dirname(__DIR__),
                 '<?xml version="1.0"?>
                 <psalm
-                    autoloader="tests/fixtures/stubs/custom_functions.php"
+                    autoloader="tests/fixtures/stubs/custom_functions.phpstub"
                 >
                     <projectFiles>
                         <directory name="src" />

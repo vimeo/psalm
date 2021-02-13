@@ -1659,7 +1659,7 @@ class Config
         $core_generic_files = [];
 
         if (\PHP_VERSION_ID < 80000 && $codebase->php_major_version >= 8) {
-            $stringable_path = dirname(__DIR__, 2) . '/stubs/Php80.php';
+            $stringable_path = dirname(__DIR__, 2) . '/stubs/Php80.phpstub';
 
             if (!file_exists($stringable_path)) {
                 throw new \UnexpectedValueException('Cannot locate PHP 8.0 classes');
@@ -1734,7 +1734,7 @@ class Config
         ];
 
         if (\PHP_VERSION_ID >= 80000 && $codebase->php_major_version >= 8) {
-            $stringable_path = dirname(__DIR__, 2) . '/stubs/Php80.php';
+            $stringable_path = dirname(__DIR__, 2) . '/stubs/Php80.phpstub';
 
             if (!file_exists($stringable_path)) {
                 throw new \UnexpectedValueException('Cannot locate PHP 8.0 classes');
@@ -1744,7 +1744,7 @@ class Config
         }
 
         if (\extension_loaded('PDO')) {
-            $ext_pdo_path = dirname(__DIR__, 2) . '/stubs/pdo.php';
+            $ext_pdo_path = dirname(__DIR__, 2) . '/stubs/pdo.phpstub';
 
             if (!file_exists($ext_pdo_path)) {
                 throw new \UnexpectedValueException('Cannot locate pdo classes');
@@ -1754,7 +1754,7 @@ class Config
         }
 
         if (\extension_loaded('soap')) {
-            $ext_pdo_path = dirname(__DIR__, 2) . '/stubs/soap.php';
+            $ext_pdo_path = dirname(__DIR__, 2) . '/stubs/soap.phpstub';
 
             if (!file_exists($ext_pdo_path)) {
                 throw new \UnexpectedValueException('Cannot locate soap classes');
@@ -1764,7 +1764,7 @@ class Config
         }
 
         if (\extension_loaded('ds')) {
-            $ext_ds_path = dirname(__DIR__, 2) . '/stubs/ext-ds.php';
+            $ext_ds_path = dirname(__DIR__, 2) . '/stubs/ext-ds.phpstub';
 
             if (!file_exists($ext_ds_path)) {
                 throw new \UnexpectedValueException('Cannot locate ext-ds classes');
@@ -1776,7 +1776,7 @@ class Config
         $stub_files = array_merge($core_generic_files, $this->stub_files);
 
         if ($this->load_xdebug_stub) {
-            $xdebug_stub_path = dirname(__DIR__, 2) . '/stubs/Xdebug.php';
+            $xdebug_stub_path = dirname(__DIR__, 2) . '/stubs/Xdebug.phpstub';
 
             if (!file_exists($xdebug_stub_path)) {
                 throw new \UnexpectedValueException('Cannot locate Xdebug stub');
