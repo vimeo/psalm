@@ -494,7 +494,7 @@ class PluginTest extends \Psalm\Tests\TestCase
 
     public function testInheritedHookHandlersAreCalled(): void
     {
-        require_once dirname(__DIR__) . '/fixtures/stubs/extending_plugin_entrypoint.php';
+        require_once dirname(__DIR__) . '/fixtures/stubs/extending_plugin_entrypoint.phpstub';
 
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
