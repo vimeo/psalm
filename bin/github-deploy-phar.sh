@@ -25,7 +25,9 @@ git add --all .
 git commit -m "Updated Psalm phar to commit ${GITHUB_SHA}"
 git push --quiet origin master > /dev/null 2>&1
 
-if [[ "$GITHUB_REF" != '' && "$GITHUB_REF" != 'refs/heads/master' ]] ; then
-    git tag "$GITHUB_REF"
-    git push origin "$GITHUB_REF"
+tag=${GITHUB_REF/refs\/heads\//}
+
+if [[ "$tag" != 'master' ]] ; then
+    git tag "$tag"
+    git push origin "$tag"
 fi
