@@ -436,8 +436,7 @@ class CallAnalyzer
         string $fq_class_name,
         string $template_name,
         array $template_extended_params,
-        array $found_generic_params,
-        bool $mapped = false
+        array $found_generic_params
     ): Type\Union {
         if (isset($found_generic_params[$template_name][$fq_class_name])) {
             return $found_generic_params[$template_name][$fq_class_name];
@@ -454,8 +453,7 @@ class CallAnalyzer
                             $extended_class_name,
                             $extended_template_name,
                             $template_extended_params,
-                            $found_generic_params,
-                            true
+                            $found_generic_params
                         );
                     }
                 }
