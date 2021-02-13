@@ -4372,6 +4372,16 @@ class ClassTemplateExtendsTest extends TestCase
                     /** @extends Collection<string> */
                     class StringCollection extends Collection {}',
             ],
+            'noInfiniteLoop' => [
+                '<?php
+                    /**
+                     * @template TValue
+                     * @template-extends SplObjectStorage<object, TValue>
+                     */
+                    class ObjectStorage extends SplObjectStorage {}
+
+                    $foo = new ObjectStorage();'
+            ],
         ];
     }
 

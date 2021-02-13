@@ -440,28 +440,18 @@ class CallAnalyzer
         bool $mapped = false
     ): Type\Union {
         if (isset($found_generic_params[$template_name][$fq_class_name])) {
-            if (!$mapped && isset($template_extended_params[$fq_class_name][$template_name])) {
-                foreach ($template_extended_params[$fq_class_name][$template_name]->getAtomicTypes() as $t) {
-                    if ($t instanceof Type\Atomic\TTemplateParam) {
-                        if ($t->param_name !== $template_name) {
-                            return $t->as;
-                        }
-                    }
-                }
-            }
-
             return $found_generic_params[$template_name][$fq_class_name];
         }
 
-        foreach ($template_extended_params as $type_map) {
+        foreach ($template_extended_params as $extended_class_name => $type_map) {
             foreach ($type_map as $extended_template_name => $extended_type) {
                 foreach ($extended_type->getAtomicTypes() as $extended_atomic_type) {
                     if ($extended_atomic_type instanceof Type\Atomic\TTemplateParam
                         && $extended_atomic_type->param_name === $template_name
-                        && $extended_template_name !== $template_name
+                        && $extended_atomic_type->defining_class === $fq_class_name
                     ) {
                         return self::getGenericParamForOffset(
-                            $fq_class_name,
+                            $extended_class_name,
                             $extended_template_name,
                             $template_extended_params,
                             $found_generic_params,
