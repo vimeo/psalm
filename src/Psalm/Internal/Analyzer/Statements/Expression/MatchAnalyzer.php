@@ -7,6 +7,17 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Issue\UnhandledMatchCondition;
 use Psalm\Context;
+use Psalm\Node\Expr\BinaryOp\VirtualIdentical;
+use Psalm\Node\Expr\VirtualArray;
+use Psalm\Node\Expr\VirtualArrayItem;
+use Psalm\Node\Expr\VirtualConstFetch;
+use Psalm\Node\Expr\VirtualFuncCall;
+use Psalm\Node\Expr\VirtualNew;
+use Psalm\Node\Expr\VirtualTernary;
+use Psalm\Node\Expr\VirtualThrow;
+use Psalm\Node\Expr\VirtualVariable;
+use Psalm\Node\Name\VirtualFullyQualified;
+use Psalm\Node\VirtualArg;
 use Psalm\Type;
 
 use function substr;
@@ -64,11 +75,11 @@ class MatchAnalyzer
 
                     $context->vars_in_scope[$switch_var_id] = $condition_type;
 
-                    $match_condition = new PhpParser\Node\Expr\FuncCall(
+                    $match_condition = new VirtualFuncCall(
                         $stmt->cond->name,
                         [
-                            new PhpParser\Node\Arg(
-                                new PhpParser\Node\Expr\Variable(
+                            new VirtualArg(
+                                new VirtualVariable(
                                     substr($switch_var_id, 1),
                                     $first_arg->value->getAttributes()
                                 ),
@@ -90,7 +101,7 @@ class MatchAnalyzer
 
                 $context->vars_in_scope[$switch_var_id] = $condition_type;
 
-                $match_condition = new PhpParser\Node\Expr\Variable(
+                $match_condition = new VirtualVariable(
                     substr($switch_var_id, 1),
                     $stmt->cond->getAttributes()
                 );
@@ -132,12 +143,12 @@ class MatchAnalyzer
         if (!$last_arm->conds) {
             $ternary = $last_arm->body;
         } else {
-            $ternary = new PhpParser\Node\Expr\Ternary(
+            $ternary = new VirtualTernary(
                 self::convertCondsToConditional($last_arm->conds, $match_condition, $last_arm->getAttributes()),
                 $last_arm->body,
-                new PhpParser\Node\Expr\Throw_(
-                    new PhpParser\Node\Expr\New_(
-                        new PhpParser\Node\Name\FullyQualified(
+                new VirtualThrow(
+                    new VirtualNew(
+                        new VirtualFullyQualified(
                             'UnhandledMatchError',
                             $stmt->getAttributes()
                         ),
@@ -154,7 +165,7 @@ class MatchAnalyzer
                 continue;
             }
 
-            $ternary = new PhpParser\Node\Expr\Ternary(
+            $ternary = new VirtualTernary(
                 self::convertCondsToConditional($arm->conds, $match_condition, $arm->getAttributes()),
                 $arm->body,
                 $ternary,
@@ -273,7 +284,7 @@ class MatchAnalyzer
         array $attributes
     ) : PhpParser\Node\Expr {
         if (count($conds) === 1) {
-            return new PhpParser\Node\Expr\BinaryOp\Identical(
+            return new VirtualIdentical(
                 $match_condition,
                 $conds[0],
                 $attributes
@@ -282,22 +293,22 @@ class MatchAnalyzer
 
         $array_items = array_map(
             function ($cond): PhpParser\Node\Expr\ArrayItem {
-                return new PhpParser\Node\Expr\ArrayItem($cond, null, false, $cond->getAttributes());
+                return new VirtualArrayItem($cond, null, false, $cond->getAttributes());
             },
             $conds
         );
 
-        return new PhpParser\Node\Expr\FuncCall(
-            new PhpParser\Node\Name\FullyQualified(['in_array']),
+        return new VirtualFuncCall(
+            new VirtualFullyQualified(['in_array']),
             [
-                new PhpParser\Node\Arg(
+                new VirtualArg(
                     $match_condition,
                     false,
                     false,
                     $attributes
                 ),
-                new PhpParser\Node\Arg(
-                    new PhpParser\Node\Expr\Array_(
+                new VirtualArg(
+                    new VirtualArray(
                         $array_items,
                         $attributes
                     ),
@@ -305,9 +316,9 @@ class MatchAnalyzer
                     false,
                     $attributes
                 ),
-                new PhpParser\Node\Arg(
-                    new PhpParser\Node\Expr\ConstFetch(
-                        new PhpParser\Node\Name\FullyQualified(['true']),
+                new VirtualArg(
+                    new VirtualConstFetch(
+                        new VirtualFullyQualified(['true']),
                         $attributes
                     ),
                     false,

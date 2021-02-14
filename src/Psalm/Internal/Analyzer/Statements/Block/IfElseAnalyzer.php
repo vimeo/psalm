@@ -10,6 +10,7 @@ use Psalm\Internal\Clause;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Scope\IfScope;
+use Psalm\Node\Expr\VirtualBooleanNot;
 use Psalm\Type;
 use Psalm\Internal\Algebra;
 use Psalm\Type\Reconciler;
@@ -204,7 +205,7 @@ class IfElseAnalyzer
                 $if_scope->negated_clauses = FormulaGenerator::getFormula(
                     $cond_object_id,
                     $cond_object_id,
-                    new PhpParser\Node\Expr\BooleanNot($stmt->cond),
+                    new VirtualBooleanNot($stmt->cond),
                     $context->self,
                     $statements_analyzer,
                     $codebase,

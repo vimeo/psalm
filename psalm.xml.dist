@@ -73,6 +73,7 @@
             <errorLevel type="suppress">
                 <directory name="examples"/>
                 <directory name="src/Psalm/Internal/Fork" />
+                <directory name="src/Psalm/Node" />
                 <file name="src/Psalm/Plugin/Shepherd.php" />
                 <file name="src/Psalm/Plugin/Hook/MethodReturnTypeProviderInterface.php"/>
             </errorLevel>
@@ -131,5 +132,23 @@
                 <directory name="tests"/>
             </errorLevel>
         </PossiblyUndefinedStringArrayOffset>
+
+        <MixedPropertyTypeCoercion>
+            <errorLevel type="suppress">
+                <directory name="vendor/nikic/php-parser" />
+            </errorLevel>
+        </MixedPropertyTypeCoercion>
+
+        <PropertyTypeCoercion>
+            <errorLevel type="suppress">
+                <directory name="vendor/nikic/php-parser" />
+            </errorLevel>
+        </PropertyTypeCoercion>
+
+        <MixedAssignment>
+            <errorLevel type="suppress">
+                <directory name="vendor/nikic/php-parser" />
+            </errorLevel>
+        </MixedAssignment>
     </issueHandlers>
 </psalm>

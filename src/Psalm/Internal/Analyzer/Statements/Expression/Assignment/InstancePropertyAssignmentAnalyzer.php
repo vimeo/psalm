@@ -42,6 +42,10 @@ use Psalm\Issue\UndefinedPropertyAssignment;
 use Psalm\Issue\UndefinedMagicPropertyAssignment;
 use Psalm\Issue\UndefinedThisPropertyAssignment;
 use Psalm\IssueBuffer;
+use Psalm\Node\Expr\VirtualMethodCall;
+use Psalm\Node\Scalar\VirtualString;
+use Psalm\Node\VirtualArg;
+use Psalm\Node\VirtualIdentifier;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
@@ -995,17 +999,17 @@ class InstancePropertyAssignmentAnalyzer
 
                 $statements_analyzer->node_data = clone $statements_analyzer->node_data;
 
-                $fake_method_call = new PhpParser\Node\Expr\MethodCall(
+                $fake_method_call = new VirtualMethodCall(
                     $stmt->var,
-                    new PhpParser\Node\Identifier('__set', $stmt->name->getAttributes()),
+                    new VirtualIdentifier('__set', $stmt->name->getAttributes()),
                     [
-                        new PhpParser\Node\Arg(
-                            new PhpParser\Node\Scalar\String_(
+                        new VirtualArg(
+                            new VirtualString(
                                 $prop_name,
                                 $stmt->name->getAttributes()
                             )
                         ),
-                        new PhpParser\Node\Arg(
+                        new VirtualArg(
                             $assignment_value
                         )
                     ]

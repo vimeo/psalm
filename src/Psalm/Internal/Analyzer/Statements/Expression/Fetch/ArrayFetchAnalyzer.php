@@ -32,6 +32,11 @@ use Psalm\Issue\PossiblyUndefinedArrayOffset;
 use Psalm\Issue\PossiblyUndefinedIntArrayOffset;
 use Psalm\Issue\PossiblyUndefinedStringArrayOffset;
 use Psalm\IssueBuffer;
+use Psalm\Node\Expr\VirtualConstFetch;
+use Psalm\Node\Expr\VirtualMethodCall;
+use Psalm\Node\VirtualArg;
+use Psalm\Node\VirtualIdentifier;
+use Psalm\Node\VirtualName;
 use Psalm\Type;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TArray;
@@ -1741,11 +1746,11 @@ class ArrayFetchAnalyzer
 
             $statements_analyzer->node_data = clone $statements_analyzer->node_data;
 
-            $fake_method_call = new PhpParser\Node\Expr\MethodCall(
+            $fake_method_call = new VirtualMethodCall(
                 $stmt->var,
-                new PhpParser\Node\Identifier('item', $stmt->var->getAttributes()),
+                new VirtualIdentifier('item', $stmt->var->getAttributes()),
                 [
-                    new PhpParser\Node\Arg($stmt->dim)
+                    new VirtualArg($stmt->dim)
                 ]
             );
 
@@ -1794,22 +1799,22 @@ class ArrayFetchAnalyzer
 
                 $statements_analyzer->node_data = clone $statements_analyzer->node_data;
 
-                $fake_set_method_call = new PhpParser\Node\Expr\MethodCall(
+                $fake_set_method_call = new VirtualMethodCall(
                     $stmt->var,
-                    new PhpParser\Node\Identifier('offsetSet', $stmt->var->getAttributes()),
+                    new VirtualIdentifier('offsetSet', $stmt->var->getAttributes()),
                     [
-                        new PhpParser\Node\Arg(
+                        new VirtualArg(
                             $stmt->dim
                                 ? $stmt->dim
-                                : new PhpParser\Node\Expr\ConstFetch(
-                                    new PhpParser\Node\Name('null'),
+                                : new VirtualConstFetch(
+                                    new VirtualName('null'),
                                     $stmt->var->getAttributes()
                                 )
                         ),
-                        new PhpParser\Node\Arg(
+                        new VirtualArg(
                             $assign_value
-                                ?: new PhpParser\Node\Expr\ConstFetch(
-                                    new PhpParser\Node\Name('null'),
+                                ?: new VirtualConstFetch(
+                                    new VirtualName('null'),
                                     $stmt->var->getAttributes()
                                 )
                         ),
@@ -1830,11 +1835,11 @@ class ArrayFetchAnalyzer
 
                 $statements_analyzer->node_data = clone $statements_analyzer->node_data;
 
-                $fake_get_method_call = new PhpParser\Node\Expr\MethodCall(
+                $fake_get_method_call = new VirtualMethodCall(
                     $stmt->var,
-                    new PhpParser\Node\Identifier('offsetGet', $stmt->var->getAttributes()),
+                    new VirtualIdentifier('offsetGet', $stmt->var->getAttributes()),
                     [
-                        new PhpParser\Node\Arg(
+                        new VirtualArg(
                             $stmt->dim
                         )
                     ]

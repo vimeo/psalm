@@ -25,6 +25,10 @@ use Psalm\Issue\UndefinedMagicPropertyFetch;
 use Psalm\Issue\UndefinedPropertyFetch;
 use Psalm\Issue\UndefinedThisPropertyFetch;
 use Psalm\IssueBuffer;
+use Psalm\Node\Expr\VirtualMethodCall;
+use Psalm\Node\Scalar\VirtualString;
+use Psalm\Node\VirtualArg;
+use Psalm\Node\VirtualIdentifier;
 use Psalm\Type;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type\Atomic\TGenericObject;
@@ -517,12 +521,12 @@ class AtomicPropertyFetchAnalyzer
 
             $statements_analyzer->node_data->setType($stmt->var, new Type\Union([$lhs_type_part]));
 
-            $fake_method_call = new PhpParser\Node\Expr\MethodCall(
+            $fake_method_call = new VirtualMethodCall(
                 $stmt->var,
-                new PhpParser\Node\Identifier('__get', $stmt->name->getAttributes()),
+                new VirtualIdentifier('__get', $stmt->name->getAttributes()),
                 [
-                    new PhpParser\Node\Arg(
-                        new PhpParser\Node\Scalar\String_(
+                    new VirtualArg(
+                        new VirtualString(
                             $prop_name,
                             $stmt->name->getAttributes()
                         )

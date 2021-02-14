@@ -9,6 +9,8 @@ use Psalm\Internal\Analyzer\Statements\Block\IfElseAnalyzer;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Algebra;
+use Psalm\Node\Stmt\VirtualExpression;
+use Psalm\Node\Stmt\VirtualIf;
 use Psalm\Type\Reconciler;
 use function array_merge;
 use function array_diff_key;
@@ -28,11 +30,11 @@ class AndAnalyzer
         bool $from_stmt = false
     ) : bool {
         if ($from_stmt) {
-            $fake_if_stmt = new PhpParser\Node\Stmt\If_(
+            $fake_if_stmt = new VirtualIf(
                 $stmt->left,
                 [
                     'stmts' => [
-                        new PhpParser\Node\Stmt\Expression(
+                        new VirtualExpression(
                             $stmt->right
                         )
                     ]

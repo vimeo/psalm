@@ -3,6 +3,15 @@
 namespace Psalm\Internal\Stubs\Generator;
 
 use PhpParser;
+use Psalm\Node\Name\VirtualFullyQualified;
+use Psalm\Node\Stmt\VirtualClass;
+use Psalm\Node\Stmt\VirtualClassConst;
+use Psalm\Node\Stmt\VirtualClassMethod;
+use Psalm\Node\Stmt\VirtualInterface;
+use Psalm\Node\Stmt\VirtualProperty;
+use Psalm\Node\Stmt\VirtualPropertyProperty;
+use Psalm\Node\Stmt\VirtualTrait;
+use Psalm\Node\VirtualConst;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Scanner\ParsedDocblock;
@@ -60,11 +69,11 @@ class ClassLikeStubGenerator
                 $subnodes['extends'] = [];
 
                 foreach ($storage->direct_interface_parents as $direct_interface_parent) {
-                    $subnodes['extends'][] = new PhpParser\Node\Name\FullyQualified($direct_interface_parent);
+                    $subnodes['extends'][] = new VirtualFullyQualified($direct_interface_parent);
                 }
             }
 
-            return new PhpParser\Node\Stmt\Interface_(
+            return new VirtualInterface(
                 $classlike_name,
                 $subnodes,
                 $attrs
@@ -72,7 +81,7 @@ class ClassLikeStubGenerator
         }
 
         if ($storage->is_trait) {
-            return new PhpParser\Node\Stmt\Trait_(
+            return new VirtualTrait(
                 $classlike_name,
                 $subnodes,
                 $attrs
@@ -80,17 +89,17 @@ class ClassLikeStubGenerator
         }
 
         if ($storage->parent_class) {
-            $subnodes['extends'] = new PhpParser\Node\Name\FullyQualified($storage->parent_class);
+            $subnodes['extends'] = new VirtualFullyQualified($storage->parent_class);
         } else
 
         if ($storage->direct_class_interfaces) {
             $subnodes['implements'] = [];
             foreach ($storage->direct_class_interfaces as $direct_class_interface) {
-                $subnodes['implements'][] = new PhpParser\Node\Name\FullyQualified($direct_class_interface);
+                $subnodes['implements'][] = new VirtualFullyQualified($direct_class_interface);
             }
         }
 
-        return new PhpParser\Node\Stmt\Class_(
+        return new VirtualClass(
             $classlike_name,
             $subnodes,
             $attrs
@@ -118,9 +127,9 @@ class ClassLikeStubGenerator
                 throw new \UnexpectedValueException('bad');
             }
 
-            $constant_nodes[] = new PhpParser\Node\Stmt\ClassConst(
+            $constant_nodes[] = new VirtualClassConst(
                 [
-                    new PhpParser\Node\Const_(
+                    new VirtualConst(
                         $constant_name,
                         StubsGenerator::getExpressionFromType($type)
                     )
@@ -171,10 +180,10 @@ class ClassLikeStubGenerator
                 );
             }
 
-            $property_nodes[] = new PhpParser\Node\Stmt\Property(
+            $property_nodes[] = new VirtualProperty(
                 $flag | ($property_storage->is_static ? PhpParser\Node\Stmt\Class_::MODIFIER_STATIC : 0),
                 [
-                    new PhpParser\Node\Stmt\PropertyProperty(
+                    new VirtualPropertyProperty(
                         $property_name,
                         $property_storage->suggested_type
                             ? StubsGenerator::getExpressionFromType($property_storage->suggested_type)
@@ -268,7 +277,7 @@ class ClassLikeStubGenerator
                 );
             }
 
-            $method_nodes[] = new PhpParser\Node\Stmt\ClassMethod(
+            $method_nodes[] = new VirtualClassMethod(
                 $method_storage->cased_name,
                 [
                     'flags' => $flag

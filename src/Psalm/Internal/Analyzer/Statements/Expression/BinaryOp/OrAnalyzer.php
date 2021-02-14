@@ -11,6 +11,9 @@ use Psalm\Internal\Analyzer\Statements\Block\IfElse\IfAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\IfConditionalAnalyzer;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Node\Expr\VirtualBooleanNot;
+use Psalm\Node\Stmt\VirtualExpression;
+use Psalm\Node\Stmt\VirtualIf;
 use Psalm\Type;
 use Psalm\Internal\Algebra;
 use Psalm\Type\Reconciler;
@@ -33,11 +36,11 @@ class OrAnalyzer
         bool $from_stmt = false
     ) : bool {
         if ($from_stmt) {
-            $fake_if_stmt = new PhpParser\Node\Stmt\If_(
-                new PhpParser\Node\Expr\BooleanNot($stmt->left, $stmt->left->getAttributes()),
+            $fake_if_stmt = new VirtualIf(
+                new VirtualBooleanNot($stmt->left, $stmt->left->getAttributes()),
                 [
                     'stmts' => [
-                        new PhpParser\Node\Stmt\Expression(
+                        new VirtualExpression(
                             $stmt->right
                         )
                     ]
@@ -137,7 +140,7 @@ class OrAnalyzer
                 $negated_left_clauses = FormulaGenerator::getFormula(
                     $left_cond_id,
                     $left_cond_id,
-                    new PhpParser\Node\Expr\BooleanNot($stmt->left),
+                    new VirtualBooleanNot($stmt->left),
                     $context->self,
                     $statements_analyzer,
                     $codebase,

@@ -13,6 +13,10 @@ use Psalm\Context;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Issue\ForbiddenCode;
 use Psalm\IssueBuffer;
+use Psalm\Node\Expr\VirtualArray;
+use Psalm\Node\Expr\VirtualArrayItem;
+use Psalm\Node\Expr\VirtualVariable;
+use Psalm\Node\Scalar\VirtualString;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Reconciler;
@@ -188,16 +192,16 @@ class NamedFunctionCallHandler
 
                 $var_name = $arg_type->getSingleStringLiteral()->value;
 
-                $new_items[] = new PhpParser\Node\Expr\ArrayItem(
-                    new PhpParser\Node\Expr\Variable($var_name, $arg->value->getAttributes()),
-                    new PhpParser\Node\Scalar\String_($var_name, $arg->value->getAttributes()),
+                $new_items[] = new VirtualArrayItem(
+                    new VirtualVariable($var_name, $arg->value->getAttributes()),
+                    new VirtualString($var_name, $arg->value->getAttributes()),
                     false,
                     $arg->getAttributes()
                 );
             }
 
             if ($all_args_string_literals) {
-                $arr = new PhpParser\Node\Expr\Array_($new_items, $stmt->getAttributes());
+                $arr = new VirtualArray($new_items, $stmt->getAttributes());
                 $old_node_data = $statements_analyzer->node_data;
                 $statements_analyzer->node_data = clone $statements_analyzer->node_data;
 

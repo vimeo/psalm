@@ -7,6 +7,9 @@ use Psalm\FileSource;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
 use Psalm\Internal\Clause;
+use Psalm\Node\Expr\BinaryOp\VirtualBooleanAnd;
+use Psalm\Node\Expr\BinaryOp\VirtualBooleanOr;
+use Psalm\Node\Expr\VirtualBooleanNot;
 use function array_merge;
 use function count;
 use function strlen;
@@ -88,12 +91,12 @@ class FormulaGenerator
 
         if ($conditional instanceof PhpParser\Node\Expr\BooleanNot) {
             if ($conditional->expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr) {
-                $and_expr = new PhpParser\Node\Expr\BinaryOp\BooleanAnd(
-                    new PhpParser\Node\Expr\BooleanNot(
+                $and_expr = new VirtualBooleanAnd(
+                    new VirtualBooleanNot(
                         $conditional->expr->left,
                         $conditional->getAttributes()
                     ),
-                    new PhpParser\Node\Expr\BooleanNot(
+                    new VirtualBooleanNot(
                         $conditional->expr->right,
                         $conditional->getAttributes()
                     ),
@@ -170,12 +173,12 @@ class FormulaGenerator
             }
 
             if ($conditional->expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd) {
-                $and_expr = new PhpParser\Node\Expr\BinaryOp\BooleanOr(
-                    new PhpParser\Node\Expr\BooleanNot(
+                $and_expr = new VirtualBooleanOr(
+                    new VirtualBooleanNot(
                         $conditional->expr->left,
                         $conditional->getAttributes()
                     ),
-                    new PhpParser\Node\Expr\BooleanNot(
+                    new VirtualBooleanNot(
                         $conditional->expr->right,
                         $conditional->getAttributes()
                     ),

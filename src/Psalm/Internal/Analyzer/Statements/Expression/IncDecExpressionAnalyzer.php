@@ -9,6 +9,10 @@ use PhpParser\Node\Expr\PreDec;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Context;
+use Psalm\Node\Expr\BinaryOp\VirtualMinus;
+use Psalm\Node\Expr\BinaryOp\VirtualPlus;
+use Psalm\Node\Expr\VirtualAssign;
+use Psalm\Node\Scalar\VirtualLNumber;
 use Psalm\Type;
 
 class IncDecExpressionAnalyzer
@@ -47,7 +51,7 @@ class IncDecExpressionAnalyzer
         ) {
             $return_type = null;
 
-            $fake_right_expr = new PhpParser\Node\Scalar\LNumber(1, $stmt->getAttributes());
+            $fake_right_expr = new VirtualLNumber(1, $stmt->getAttributes());
             $statements_analyzer->node_data->setType($fake_right_expr, Type::getInt());
 
             BinaryOp\NonDivArithmeticOpAnalyzer::analyze(
@@ -93,21 +97,21 @@ class IncDecExpressionAnalyzer
                 );
             }
         } else {
-            $fake_right_expr = new PhpParser\Node\Scalar\LNumber(1, $stmt->getAttributes());
+            $fake_right_expr = new VirtualLNumber(1, $stmt->getAttributes());
 
             $operation = $stmt instanceof PostInc || $stmt instanceof PreInc
-                ? new PhpParser\Node\Expr\BinaryOp\Plus(
+                ? new VirtualPlus(
                     $stmt->var,
                     $fake_right_expr,
                     $stmt->var->getAttributes()
                 )
-                : new PhpParser\Node\Expr\BinaryOp\Minus(
+                : new VirtualMinus(
                     $stmt->var,
                     $fake_right_expr,
                     $stmt->var->getAttributes()
                 );
 
-            $fake_assignment = new PhpParser\Node\Expr\Assign(
+            $fake_assignment = new VirtualAssign(
                 $stmt->var,
                 $operation,
                 $stmt->getAttributes()

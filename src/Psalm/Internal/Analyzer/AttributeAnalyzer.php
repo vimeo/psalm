@@ -2,6 +2,11 @@
 namespace Psalm\Internal\Analyzer;
 
 use PhpParser;
+use Psalm\Node\Expr\VirtualNew;
+use Psalm\Node\Name\VirtualFullyQualified;
+use Psalm\Node\Stmt\VirtualExpression;
+use Psalm\Node\VirtualArg;
+use Psalm\Node\VirtualIdentifier;
 use Psalm\Storage\AttributeStorage;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
@@ -123,13 +128,13 @@ class AttributeAnalyzer
 
             $type_expr->setAttributes($arg_attributes);
 
-            $node_args[] = new PhpParser\Node\Arg(
+            $node_args[] = new VirtualArg(
                 $type_expr,
                 false,
                 false,
                 $arg_attributes,
                 $storage_arg->name
-                    ? new PhpParser\Node\Identifier(
+                    ? new VirtualIdentifier(
                         $storage_arg->name,
                         $arg_attributes
                     )
@@ -137,8 +142,8 @@ class AttributeAnalyzer
             );
         }
 
-        $new_stmt = new PhpParser\Node\Expr\New_(
-            new PhpParser\Node\Name\FullyQualified(
+        $new_stmt = new VirtualNew(
+            new VirtualFullyQualified(
                 $attribute->fq_class_name,
                 [
                     'startFilePos' => $attribute->name_location->raw_file_start,
@@ -160,7 +165,7 @@ class AttributeAnalyzer
         );
 
         $statements_analyzer->analyze(
-            [new PhpParser\Node\Stmt\Expression($new_stmt)],
+            [new VirtualExpression($new_stmt)],
             new \Psalm\Context()
         );
     }
