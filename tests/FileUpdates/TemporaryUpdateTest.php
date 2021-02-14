@@ -862,6 +862,178 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
                 ],
                 'error_positions' => [[196], []],
             ],
+            'changeUseShouldInvalidateBadReturn' => [
+                [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo {
+                                use Baz\B;
+
+                                class A {
+                                    public function foo() : ?B {
+                                        return null;
+                                    }
+                                }
+                            }
+
+                            namespace Bar {
+                                class B {}
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo {
+                                use Bar\B;
+
+                                class A {
+                                    public function foo() : ?B {
+                                        return null;
+                                    }
+                                }
+                            }
+
+                            namespace Bar {
+                                class B {}
+                            }',
+                    ],
+                ],
+                'error_positions' => [[196], []],
+            ],'changeUseShouldInvalidateBadDocblockReturn' => [
+                [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo {
+                                use Baz\B;
+
+                                class A {
+                                    /** @return ?B */
+                                    public function foo() {
+                                        return null;
+                                    }
+                                }
+                            }
+
+                            namespace Bar {
+                                class B {}
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo {
+                                use Bar\B;
+
+                                class A {
+                                    /** @return ?B */
+                                    public function foo() {
+                                        return null;
+                                    }
+                                }
+                            }
+
+                            namespace Bar {
+                                class B {}
+                            }',
+                    ],
+                ],
+                'error_positions' => [[184], []],
+            ],
+            'changeUseShouldInvalidateBadParam' => [
+                [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo {
+                                use Baz\B;
+
+                                class A {
+                                    public function foo(B $b) : void {}
+                                }
+                            }
+
+                            namespace Bar {
+                                class B {}
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo {
+                                use Bar\B;
+
+                                class A {
+                                    public function foo(B $b) : void {}
+                                }
+                            }
+
+                            namespace Bar {
+                                class B {}
+                            }',
+                    ],
+                ],
+                'error_positions' => [[192], []],
+            ],
+            'changeUseShouldInvalidateBadDocblockParam' => [
+                [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo {
+                                use Baz\B;
+
+                                class A {
+                                    /** @param B $b */
+                                    public function foo($b) : void {}
+                                }
+                            }
+
+                            namespace Bar {
+                                class B {}
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo {
+                                use Bar\B;
+
+                                class A {
+                                    /** @param B $b */
+                                    public function foo($b) : void {}
+                                }
+                            }
+
+                            namespace Bar {
+                                class B {}
+                            }',
+                    ],
+                ],
+                'error_positions' => [[183], []],
+            ],
+            'changeUseShouldInvalidateBadParam' => [
+                [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo {
+                                use Baz\B;
+
+                                class A extends B {}
+                            }
+
+                            namespace Bar {
+                                class B {}
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo {
+                                use Bar\B;
+
+                                class A extends B {}
+                            }
+
+                            namespace Bar {
+                                class B {}
+                            }',
+                    ],
+                ],
+                'error_positions' => [[142], []],
+            ],
             'fixMissingProperty' => [
                 [
                     [

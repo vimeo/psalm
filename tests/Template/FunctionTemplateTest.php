@@ -1511,12 +1511,22 @@ class FunctionTemplateTest extends TestCase
             'isArrayCheckOnTemplated' => [
                 '<?php
                     /**
-                     * @psalm-pure
                      * @template TIterable of iterable
                      */
-                    function toList(iterable $iterable): void
-                    {
+                    function toList(iterable $iterable): void {
                         if (is_array($iterable)) {}
+                    }'
+            ],
+            'transformNestedTemplateWherePossible' => [
+                '<?php
+                    /**
+                     * @template TValue
+                     * @template TArray of non-empty-array<TValue>
+                     * @param TArray $arr
+                     * @return TValue
+                     */
+                    function toList(array $arr): array {
+                        return reset($arr);
                     }'
             ],
         ];

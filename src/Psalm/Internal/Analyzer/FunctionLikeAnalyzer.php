@@ -970,7 +970,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         false,
                         false,
                         $this->function instanceof ClassMethod
-                            && strtolower($this->function->name->name) !== '__construct'
+                            && strtolower($this->function->name->name) !== '__construct',
+                        $context->calling_method_id
                     ) === false) {
                         $check_stmts = false;
                     }
