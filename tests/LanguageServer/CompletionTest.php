@@ -628,7 +628,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
         $codebase->scanFiles();
         $this->analyzeFile('somefile.php', new Context());
 
-        $this->assertSame(['*Ex', 'symbol', 78], $codebase->getCompletionDataAtPosition('somefile.php', new Position(2, 32)));
+        $this->assertSame(['*-Ex', 'symbol', 78], $codebase->getCompletionDataAtPosition('somefile.php', new Position(2, 32)));
     }
 
     public function testCompletionOnNewExceptionWithNamespaceNoUse(): void
@@ -655,7 +655,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
 
         $this->assertSame(
             [
-                '*Ex',
+                '*Bar-Ex',
                 'symbol',
                 110,
             ],
@@ -707,7 +707,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
 
         $this->assertSame(
             [
-                '*ArrayO',
+                '*Bar-ArrayO',
                 'symbol',
                 220,
             ],
@@ -725,6 +725,93 @@ class CompletionTest extends \Psalm\Tests\TestCase
         $this->assertSame(44, $completion_items[0]->additionalTextEdits[0]->range->start->character);
         $this->assertSame(3, $completion_items[0]->additionalTextEdits[0]->range->end->line);
         $this->assertSame(44, $completion_items[0]->additionalTextEdits[0]->range->end->character);
+    }
+
+    public function testCompletionOnNamespaceWithFullyQualified(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace Bar\Baz\Bat;
+
+                class B {
+                    public function foo() : void {
+                        \Ex
+                    }
+                }'
+        );
+
+        $codebase->file_provider->openFile('somefile.php');
+        $codebase->scanFiles();
+        $this->analyzeFile('somefile.php', new Context());
+
+        $completion_data = $codebase->getCompletionDataAtPosition('somefile.php', new Position(5, 27));
+
+        $this->assertSame(
+            [
+                '*\Ex',
+                'symbol',
+                150,
+            ],
+            $completion_data
+        );
+
+        $completion_items = $codebase->getCompletionItemsForPartialSymbol($completion_data[0], $completion_data[2], 'somefile.php');
+
+        $this->assertNotEmpty($completion_items);
+
+        $this->assertSame('Exception', $completion_items[0]->label);
+        $this->assertSame('\Exception', $completion_items[0]->insertText);
+
+        $this->assertEmpty($completion_items[0]->additionalTextEdits);
+    }
+
+    public function testCompletionOnExceptionWithNamespaceAndUseInClass(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace Bar\Baz\Bat;
+
+                class B {
+                    public function foo() : void {
+                        Ex
+                    }
+                }'
+        );
+
+        $codebase->file_provider->openFile('somefile.php');
+        $codebase->scanFiles();
+        $this->analyzeFile('somefile.php', new Context());
+
+        $completion_data = $codebase->getCompletionDataAtPosition('somefile.php', new Position(5, 26));
+
+        $this->assertSame(
+            [
+                '*Bar\Baz\Bat-Ex',
+                'symbol',
+                149,
+            ],
+            $completion_data
+        );
+
+        $completion_items = $codebase->getCompletionItemsForPartialSymbol($completion_data[0], $completion_data[2], 'somefile.php');
+
+        $this->assertNotEmpty($completion_items);
+
+        $this->assertSame('Exception', $completion_items[0]->label);
+        $this->assertSame('Exception', $completion_items[0]->insertText);
+
+        $this->assertNotNull($completion_items[0]->additionalTextEdits);
+        $this->assertCount(1, $completion_items[0]->additionalTextEdits);
     }
 
     public function testCompletionForFunctionNames(): void
@@ -751,10 +838,40 @@ class CompletionTest extends \Psalm\Tests\TestCase
 
         $completion_data = $codebase->getCompletionDataAtPosition('somefile.php', new Position(7, 30));
         $this->assertNotNull($completion_data);
-        $this->assertSame('*Bar\my_function_in', $completion_data[0]);
+        $this->assertSame('*Bar-my_function_in', $completion_data[0]);
 
         $completion_items = $codebase->getCompletionItemsForPartialSymbol($completion_data[0], $completion_data[2], 'somefile.php');
         $this->assertSame(1, count($completion_items));
+    }
+
+    public function testCompletionForNamespacedOverriddenFunctionNames(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace Bar;
+
+                function strlen() : void {
+
+                }
+
+                strlen'
+        );
+
+        $codebase->file_provider->openFile('somefile.php');
+        $codebase->scanFiles();
+        $this->analyzeFile('somefile.php', new Context());
+
+        $completion_data = $codebase->getCompletionDataAtPosition('somefile.php', new Position(7, 22));
+        $this->assertNotNull($completion_data);
+        $this->assertSame('*Bar-strlen', $completion_data[0]);
+
+        $completion_items = $codebase->getCompletionItemsForPartialSymbol($completion_data[0], $completion_data[2], 'somefile.php');
+        $this->assertSame(2, count($completion_items));
     }
 
     public function testCompletionForFunctionNamesRespectUsedNamespaces(): void
@@ -777,7 +894,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
 
         $completion_data = $codebase->getCompletionDataAtPosition('somefile.php', new Position(3, 25));
         $this->assertNotNull($completion_data);
-        $this->assertSame('*Bar\atleaston', $completion_data[0]);
+        $this->assertSame('*Bar-atleaston', $completion_data[0]);
 
         $completion_items = $codebase->getCompletionItemsForPartialSymbol($completion_data[0], $completion_data[2], 'somefile.php');
         $this->assertSame(1, count($completion_items));
@@ -804,7 +921,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
 
         $completion_data = $codebase->getCompletionDataAtPosition('somefile.php', new Position(3, 25));
         $this->assertNotNull($completion_data);
-        $this->assertSame('*Bar\Atleaston', $completion_data[0]);
+        $this->assertSame('*Bar-Atleaston', $completion_data[0]);
 
         $completion_items = $codebase->getCompletionItemsForPartialSymbol($completion_data[0], $completion_data[2], 'somefile.php');
         $this->assertSame(0, count($completion_items));
@@ -828,10 +945,10 @@ class CompletionTest extends \Psalm\Tests\TestCase
         $codebase->scanFiles();
         $this->analyzeFile('somefile.php', new Context());
 
-        $functions = $codebase->functions->getMatchingFunctionNames('array_su', 0, 'somefile.php', $codebase);
+        $functions = $codebase->functions->getMatchingFunctionNames('*-array_su', 0, 'somefile.php', $codebase);
         $this->assertSame(1, count($functions));
 
-        $functions = $codebase->functions->getMatchingFunctionNames('my_funct', 0, 'somefile.php', $codebase);
+        $functions = $codebase->functions->getMatchingFunctionNames('*-my_funct', 0, 'somefile.php', $codebase);
         $this->assertSame(1, count($functions));
     }
 
@@ -850,7 +967,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
         $codebase->scanFiles();
         $this->analyzeFile('somefile.php', new Context());
 
-        $functions = $codebase->functions->getMatchingFunctionNames('urlencod', 0, 'somefile.php', $codebase);
+        $functions = $codebase->functions->getMatchingFunctionNames('*-urlencod', 0, 'somefile.php', $codebase);
         $this->assertSame(1, count($functions));
     }
 
@@ -873,7 +990,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
         $codebase->scanFiles();
         $this->analyzeFile('somefile.php', new Context());
 
-        $functions = $codebase->functions->getMatchingFunctionNames('Foo\atleaston', 81, 'somefile.php', $codebase);
+        $functions = $codebase->functions->getMatchingFunctionNames('*Foo-atleaston', 81, 'somefile.php', $codebase);
         $this->assertSame(1, count($functions));
     }
 
@@ -896,7 +1013,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
         $codebase->scanFiles();
         $this->analyzeFile('somefile.php', new Context());
 
-        $functions = $codebase->functions->getMatchingFunctionNames('Foo\atleaston', 81, 'somefile.php', $codebase);
+        $functions = $codebase->functions->getMatchingFunctionNames('*Foo-atleaston', 81, 'somefile.php', $codebase);
         $this->assertSame(1, count($functions));
     }
 
@@ -919,7 +1036,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
         $codebase->scanFiles();
         $this->analyzeFile('somefile.php', new Context());
 
-        $functions = $codebase->functions->getMatchingFunctionNames('Foo\Atleaston', 81, 'somefile.php', $codebase);
+        $functions = $codebase->functions->getMatchingFunctionNames('*Foo-Atleaston', 81, 'somefile.php', $codebase);
         $this->assertSame(0, count($functions));
     }
 
@@ -941,10 +1058,10 @@ class CompletionTest extends \Psalm\Tests\TestCase
         $codebase->scanFiles();
         $this->analyzeFile('somefile.php', new Context());
 
-        $functions = $codebase->functions->getMatchingFunctionNames('*Foo\array_su', 45, 'somefile.php', $codebase);
+        $functions = $codebase->functions->getMatchingFunctionNames('*Foo-array_su', 45, 'somefile.php', $codebase);
         $this->assertSame(1, count($functions));
 
-        $functions = $codebase->functions->getMatchingFunctionNames('Foo\my_funct', 45, 'somefile.php', $codebase);
+        $functions = $codebase->functions->getMatchingFunctionNames('Foo-my_funct', 45, 'somefile.php', $codebase);
         $this->assertSame(1, count($functions));
     }
 
@@ -978,7 +1095,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
 
         $this->assertSame(
             [
-                '*Ant',
+                '*Bar-Ant',
                 'symbol',
                 267,
             ],

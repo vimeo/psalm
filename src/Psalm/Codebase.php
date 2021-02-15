@@ -1517,6 +1517,12 @@ class Codebase
         int $offset,
         string $file_path
     ) : array {
+        $fq_suggestion = false;
+
+        if (($type_string[1] ?? '') === '\\') {
+            $fq_suggestion = true;
+        }
+
         $matching_classlike_names = $this->classlikes->getMatchingClassLikeNames($type_string);
 
         $completion_items = [];
@@ -1568,6 +1574,7 @@ class Codebase
             );
 
             if ($aliases
+                && !$fq_suggestion
                 && $aliases->namespace
                 && $insertion_text === '\\' . $fq_class_name
                 && $aliases->namespace_first_stmt_start

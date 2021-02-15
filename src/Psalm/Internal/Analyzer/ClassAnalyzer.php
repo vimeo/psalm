@@ -2007,7 +2007,11 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 $interface_name,
                 $codebase->classlikes->interfaceExists($fq_interface_name)
                     ? $fq_interface_name
-                    : '*' . implode('\\', $interface_name->parts)
+                    : '*'
+                        . ($interface_name instanceof PhpParser\Node\Name\FullyQualified
+                            ? '\\'
+                            : $this->getNamespace() . '-')
+                        . implode('\\', $interface_name->parts)
             );
 
             $interface_location = new CodeLocation($this, $interface_name);
@@ -2392,7 +2396,11 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     $extended_class,
                     $codebase->classlikes->classExists($parent_fq_class_name)
                         ? $parent_fq_class_name
-                        : '*' . implode('\\', $extended_class->parts)
+                        : '*'
+                            . ($extended_class instanceof PhpParser\Node\Name\FullyQualified
+                                ? '\\'
+                                : $this->getNamespace() . '-')
+                            . implode('\\', $extended_class->parts)
                 );
             }
 

@@ -103,7 +103,11 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                     $stmt->class,
                     $codebase->classlikes->classExists($fq_class_name)
                         ? $fq_class_name
-                        : '*' . implode('\\', $stmt->class->parts)
+                        : '*'
+                            . ($stmt->class instanceof PhpParser\Node\Name\FullyQualified
+                                ? '\\'
+                                : $statements_analyzer->getNamespace() . '-')
+                            . implode('\\', $stmt->class->parts)
                 );
             }
         } elseif ($stmt->class instanceof PhpParser\Node\Stmt\Class_) {

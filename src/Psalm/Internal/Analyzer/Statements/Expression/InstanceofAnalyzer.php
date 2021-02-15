@@ -51,7 +51,11 @@ class InstanceofAnalyzer
                         $stmt->class,
                         $codebase->classlikes->classOrInterfaceExists($fq_class_name)
                             ? $fq_class_name
-                            : '*' . implode('\\', $stmt->class->parts)
+                            : '*'
+                                . ($stmt->class instanceof PhpParser\Node\Name\FullyQualified
+                                    ? '\\'
+                                    : $statements_analyzer->getNamespace() . '-')
+                                . implode('\\', $stmt->class->parts)
                     );
                 }
 

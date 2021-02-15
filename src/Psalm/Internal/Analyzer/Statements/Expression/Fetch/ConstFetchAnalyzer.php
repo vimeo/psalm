@@ -74,7 +74,11 @@ class ConstFetchAnalyzer
                     $stmt,
                     $const_type
                         ? $fq_const_name
-                        : '*' . $fq_const_name
+                        : '*'
+                            . ($stmt->name instanceof PhpParser\Node\Name\FullyQualified
+                                ? '\\'
+                                : $statements_analyzer->getNamespace() . '-')
+                            . $const_name
                 );
 
                 if ($const_type) {

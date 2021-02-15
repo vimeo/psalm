@@ -239,14 +239,30 @@ class ClassLikes
             $stub = substr($stub, 1);
         }
 
+        $fully_qualified = false;
+
+        if ($stub[0] === '\\') {
+            $fully_qualified = true;
+            $stub = substr($stub, 1);
+        } else {
+            // for any not-fully-qualified class name the bit we care about comes after a dash
+            [, $stub] = explode('-', $stub);
+        }
+
         $stub = preg_quote(strtolower($stub));
+
+        if ($fully_qualified) {
+            $stub = '^' . $stub;
+        } else {
+            $stub = '(^|\\\)' . $stub;
+        }
 
         foreach ($this->existing_classes as $fq_classlike_name => $found) {
             if (!$found) {
                 continue;
             }
 
-            if (preg_match('@(^|\\\)' . $stub . '.*@i', $fq_classlike_name)) {
+            if (preg_match('@' . $stub . '.*@i', $fq_classlike_name)) {
                 $matching_classes[] = $fq_classlike_name;
             }
         }
@@ -256,7 +272,7 @@ class ClassLikes
                 continue;
             }
 
-            if (preg_match('@(^|\\\)' . $stub . '.*@i', $fq_classlike_name)) {
+            if (preg_match('@' . $stub . '.*@i', $fq_classlike_name)) {
                 $matching_classes[] = $fq_classlike_name;
             }
         }

@@ -269,10 +269,21 @@ class Functions
             $stub = substr($stub, 1);
         }
 
+        $fully_qualified = false;
+
+        if ($stub[0] === '\\') {
+            $fully_qualified = true;
+            $stub = substr($stub, 1);
+            $stub_namespace = '';
+        } else {
+            // functions can reference either the current namespace or root-namespaced
+            // equivalents. We therefore want to make both candidates.
+            [$stub_namespace, $stub] = explode('-', $stub);
+        }
+
         /** @var array<lowercase-string, FunctionStorage> */
         $matching_functions = [];
 
-        $stub_lc = strtolower($stub);
         $file_storage = $this->file_storage_provider->get($file_path);
 
         $current_namespace_aliases = null;
@@ -290,18 +301,11 @@ class Functions
             $stub . '*',
         ];
 
-        if ($current_namespace_aliases) {
-            // As the stub still include the current namespace in the symbol,
-            // remove the current namespace to provide the function-only token
-            // and match against global functions and all imported namespaces.
-            // "Bar/foo" will become "foo".
-            if ($current_namespace_aliases->namespace
-                && strpos($stub_lc, strtolower($current_namespace_aliases->namespace) . '\\') === 0
-            ) {
-                $stub = substr($stub, strlen($current_namespace_aliases->namespace) + 1);
-                $match_function_patterns[] = $stub . '*';
-            }
+        if ($stub_namespace) {
+            $match_function_patterns[] = $stub_namespace . '\\' . $stub . '*';
+        }
 
+        if ($current_namespace_aliases) {
             foreach ($current_namespace_aliases->functions as $alias_name => $function_name) {
                 if (strpos($alias_name, $stub) === 0) {
                     try {
@@ -310,8 +314,11 @@ class Functions
                     }
                 }
             }
-            foreach ($current_namespace_aliases->uses as $namespace_name) {
-                $match_function_patterns[] = $namespace_name . '\\' . $stub . '*';
+
+            if (!$fully_qualified) {
+                foreach ($current_namespace_aliases->uses as $namespace_name) {
+                    $match_function_patterns[] = $namespace_name . '\\' . $stub . '*';
+                }
             }
         }
 
