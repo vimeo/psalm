@@ -144,6 +144,55 @@ class CompletionTest extends \Psalm\Tests\TestCase
         $this->assertSame(['B\A&static', '->', 220], $codebase->getCompletionDataAtPosition('somefile.php', new Position(8, 31)));
     }
 
+    public function testCompletionOnSelfWithIfBelow(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace B;
+
+                class A {
+                    /** @var int|null */
+                    protected static $a;
+
+                    public function foo() : self {
+                        A
+
+                        if(rand(0, 1)) {}
+                    }
+                }'
+        );
+
+        $codebase->file_provider->openFile('somefile.php');
+        $codebase->scanFiles();
+        $this->analyzeFile('somefile.php', new Context());
+
+        $codebase->addTemporaryFileChanges(
+            'somefile.php',
+            '<?php
+                namespace B;
+
+                class A {
+                    /** @var int|null */
+                    protected static $a;
+
+                    public function foo() : self {
+                        A::
+
+                        if(rand(0, 1)) {}
+                    }
+                }'
+        );
+        $codebase->reloadFiles($this->project_analyzer, ['somefile.php']);
+        $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
+
+        $this->assertSame(['B\A', '::', 223], $codebase->getCompletionDataAtPosition('somefile.php', new Position(8, 27)));
+    }
+
     public function testCompletionOnThisProperty(): void
     {
         $codebase = $this->project_analyzer->getCodebase();

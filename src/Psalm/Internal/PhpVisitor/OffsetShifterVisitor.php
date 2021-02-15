@@ -14,10 +14,17 @@ class OffsetShifterVisitor extends PhpParser\NodeVisitorAbstract
     /** @var int */
     private $line_offset;
 
-    public function __construct(int $offset, int $line_offset)
+    /** @var array<int, int> */
+    private $extra_offsets;
+
+    /**
+     * @param array<int, int> $extra_offsets
+     */
+    public function __construct(int $offset, int $line_offset, array $extra_offsets)
     {
         $this->file_offset = $offset;
         $this->line_offset = $line_offset;
+        $this->extra_offsets = $extra_offsets;
     }
 
     /**
@@ -36,13 +43,13 @@ class OffsetShifterVisitor extends PhpParser\NodeVisitorAbstract
                     $new_comments[] = new PhpParser\Comment\Doc(
                         $c->getText(),
                         $c->getStartLine() + $this->line_offset,
-                        $c->getStartFilePos() + $this->file_offset
+                        $c->getStartFilePos() + $this->file_offset + ($this->extra_offsets[$c->getStartFilePos()] ?? 0)
                     );
                 } else {
                     $new_comments[] = new PhpParser\Comment(
                         $c->getText(),
                         $c->getStartLine() + $this->line_offset,
-                        $c->getStartFilePos() + $this->file_offset
+                        $c->getStartFilePos() + $this->file_offset + ($this->extra_offsets[$c->getStartFilePos()] ?? 0)
                     );
                 }
             }
@@ -53,8 +60,14 @@ class OffsetShifterVisitor extends PhpParser\NodeVisitorAbstract
         /**
          * @psalm-suppress MixedOperand
          */
-        $node->setAttribute('startFilePos', $attrs['startFilePos'] + $this->file_offset);
-        $node->setAttribute('endFilePos', $attrs['endFilePos'] + $this->file_offset);
+        $node->setAttribute(
+            'startFilePos',
+            $attrs['startFilePos'] + $this->file_offset + ($this->extra_offsets[$attrs['startFilePos']] ?? 0)
+        );
+        $node->setAttribute(
+            'endFilePos',
+            $attrs['endFilePos'] + $this->file_offset + ($this->extra_offsets[$attrs['endFilePos']] ?? 0)
+        );
         $node->setAttribute('startLine', $attrs['startLine'] + $this->line_offset);
     }
 }

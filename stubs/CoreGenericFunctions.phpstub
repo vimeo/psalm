@@ -843,7 +843,7 @@ function preg_replace($search, $replace, $subject, int $limit = -1, &$count = nu
  * @psalm-taint-specialize
  * @psalm-flow ($subject) -> return
  */
-function preg_replace_callback($search, $replace, $subject, int $limit = -1, &$count = null) {}
+function preg_replace_callback($search, $replace, $subject, int $limit = -1, &$count = null, int $flags = 0) {}
 
 /**
  * @psalm-pure

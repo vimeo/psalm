@@ -163,6 +163,8 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
                             $error_handler
                         ) ?: [];
 
+                        $extra_characters = [];
+
                         if (!$replacement_stmts
                             || !$replacement_stmts[0] instanceof PhpParser\Node\Stmt\ClassLike
                             || count($replacement_stmts[0]->stmts) !== 1
@@ -181,8 +183,34 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
                             // changes "): {" to ") {"
                             $hacky_class_fix = preg_replace('/(\)[\s]*):([\s]*\{)/', '$1 $2', $hacky_class_fix);
 
-                            // allows autocompletion
-                            $hacky_class_fix = preg_replace('/(->|::)(\n\s*if\s*\()/', '~;$2', $hacky_class_fix);
+                            // here we replace
+                            //
+                            // Foo::
+                            // if (...) {}
+                            //
+                            // with
+                            //
+                            // Foo::;
+                            // if (...) {}
+                            //
+                            // Because we insert the extra colon we have to keep track of the places
+                            // we inserted it, and then shift the file offsets accordingly after
+                            // parsing has been done
+                            $hacky_class_fix = preg_replace_callback(
+                                '/(->|::)(\n\s*if\s*\()/',
+                                function (array $match) use (&$extra_characters) {
+                                    /**
+                                     * @var array<int, array{int, int}> $match
+                                     * @psalm-suppress MixedArrayAssignment
+                                     */
+                                    $extra_characters[] = $match[2][1];
+                                    return $match[1][0] . ';' . $match[2][0];
+                                },
+                                $hacky_class_fix,
+                                -1,
+                                $count,
+                                \PREG_OFFSET_CAPTURE
+                            );
 
                             if ($hacky_class_fix !== $fake_class) {
                                 $replacement_stmts = $this->parser->parse(
@@ -203,10 +231,26 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
 
                         $replacement_stmts = $replacement_stmts[0]->stmts;
 
+                        $extra_offsets = [];
+
+                        /** @var int $extra_offset */
+                        foreach ($extra_characters as $extra_offset) {
+                            $l = strlen($fake_class);
+
+                            for ($i = $extra_offset; $i < $l; $i++) {
+                                if (isset($extra_offsets[$i])) {
+                                    $extra_offsets[$i]--;
+                                } else {
+                                    $extra_offsets[$i] = -1;
+                                }
+                            }
+                        }
+
                         $renumbering_traverser = new PhpParser\NodeTraverser;
                         $position_shifter = new \Psalm\Internal\PhpVisitor\OffsetShifterVisitor(
                             $stmt_start_pos - 15,
-                            $current_line
+                            $current_line,
+                            $extra_offsets
                         );
                         $renumbering_traverser->addVisitor($position_shifter);
                         $replacement_stmts = $renumbering_traverser->traverse($replacement_stmts);
