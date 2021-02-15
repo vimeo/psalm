@@ -862,43 +862,7 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
                 ],
                 'error_positions' => [[196], []],
             ],
-            'changeUseShouldInvalidateBadReturn' => [
-                [
-                    [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
-                            namespace Foo {
-                                use Baz\B;
-
-                                class A {
-                                    public function foo() : ?B {
-                                        return null;
-                                    }
-                                }
-                            }
-
-                            namespace Bar {
-                                class B {}
-                            }',
-                    ],
-                    [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
-                            namespace Foo {
-                                use Bar\B;
-
-                                class A {
-                                    public function foo() : ?B {
-                                        return null;
-                                    }
-                                }
-                            }
-
-                            namespace Bar {
-                                class B {}
-                            }',
-                    ],
-                ],
-                'error_positions' => [[196], []],
-            ],'changeUseShouldInvalidateBadDocblockReturn' => [
+            'changeUseShouldInvalidateBadDocblockReturn' => [
                 [
                     [
                         getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
@@ -1005,7 +969,7 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
                 ],
                 'error_positions' => [[183], []],
             ],
-            'changeUseShouldInvalidateBadParam' => [
+            'changeUseShouldInvalidateBadExtends' => [
                 [
                     [
                         getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
