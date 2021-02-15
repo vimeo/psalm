@@ -13,6 +13,11 @@ use Psalm\Issue\ConflictingReferenceConstraint;
 use Psalm\IssueBuffer;
 use Psalm\Internal\Scope\IfScope;
 use Psalm\Internal\Scope\IfConditionalScope;
+use Psalm\Node\Expr\BinaryOp\VirtualBooleanOr;
+use Psalm\Node\Expr\VirtualBooleanNot;
+use Psalm\Node\Expr\VirtualFuncCall;
+use Psalm\Node\Name\VirtualFullyQualified;
+use Psalm\Node\VirtualArg;
 use Psalm\Type;
 use Psalm\Internal\Algebra;
 use Psalm\Type\Reconciler;
@@ -356,7 +361,7 @@ class IfAnalyzer
 
         foreach ($exprs as $expr) {
             if ($expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd) {
-                $fake_not = new PhpParser\Node\Expr\BinaryOp\BooleanOr(
+                $fake_not = new VirtualBooleanOr(
                     self::negateExpr($expr->left),
                     self::negateExpr($expr->right),
                     $expr->getAttributes()
@@ -365,9 +370,9 @@ class IfAnalyzer
                 $fake_not = self::negateExpr($expr);
             }
 
-            $fake_negated_expr = new PhpParser\Node\Expr\FuncCall(
-                new PhpParser\Node\Name\FullyQualified('assert'),
-                [new PhpParser\Node\Arg(
+            $fake_negated_expr = new VirtualFuncCall(
+                new VirtualFullyQualified('assert'),
+                [new VirtualArg(
                     $fake_not,
                     false,
                     false,
@@ -424,7 +429,7 @@ class IfAnalyzer
             return $expr->expr;
         }
 
-        return new PhpParser\Node\Expr\BooleanNot($expr, $expr->getAttributes());
+        return new VirtualBooleanNot($expr, $expr->getAttributes());
     }
 
     /**

@@ -17,6 +17,9 @@ use Psalm\Issue\MixedArgumentTypeCoercion;
 use Psalm\Issue\ArgumentTypeCoercion;
 use Psalm\Issue\UndefinedFunction;
 use Psalm\IssueBuffer;
+use Psalm\Node\Expr\BinaryOp\VirtualIdentical;
+use Psalm\Node\Expr\VirtualConstFetch;
+use Psalm\Node\VirtualName;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
@@ -733,9 +736,9 @@ class CallAnalyzer
                 }
             } elseif ($arg_value && ($assertion->rule === [['!falsy']] || $assertion->rule === [['true']])) {
                 if ($assertion->rule === [['true']]) {
-                    $conditional = new PhpParser\Node\Expr\BinaryOp\Identical(
+                    $conditional = new VirtualIdentical(
                         $arg_value,
-                        new PhpParser\Node\Expr\ConstFetch(new PhpParser\Node\Name('true'))
+                        new VirtualConstFetch(new VirtualName('true'))
                     );
 
                     $assert_clauses = FormulaGenerator::getFormula(

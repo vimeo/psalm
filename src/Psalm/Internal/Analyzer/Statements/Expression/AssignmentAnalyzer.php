@@ -39,6 +39,7 @@ use Psalm\Issue\PossiblyUndefinedArrayOffset;
 use Psalm\Issue\ReferenceConstraintViolation;
 use Psalm\Issue\UnnecessaryVarAnnotation;
 use Psalm\IssueBuffer;
+use Psalm\Node\Expr\BinaryOp\VirtualCoalesce;
 use Psalm\Type;
 use function is_string;
 use function strpos;
@@ -738,7 +739,7 @@ class AssignmentAnalyzer
 
             $statements_analyzer->node_data = clone $statements_analyzer->node_data;
 
-            $fake_coalesce_expr = new PhpParser\Node\Expr\BinaryOp\Coalesce(
+            $fake_coalesce_expr = new VirtualCoalesce(
                 $stmt->var,
                 $stmt->expr,
                 $stmt->getAttributes()

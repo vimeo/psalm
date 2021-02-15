@@ -23,6 +23,7 @@ use Psalm\Issue\PropertyTypeCoercion;
 use Psalm\Issue\UndefinedThisPropertyAssignment;
 use Psalm\Issue\UndefinedThisPropertyFetch;
 use Psalm\IssueBuffer;
+use Psalm\Node\Expr\VirtualFuncCall;
 use Psalm\Plugin\EventHandler\Event\AfterMethodCallAnalysisEvent;
 use Psalm\Storage\Assertion;
 use Psalm\Type;
@@ -88,7 +89,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
         if ($fq_class_name === 'Closure' && $method_name_lc === '__invoke') {
             $statements_analyzer->node_data = clone $statements_analyzer->node_data;
 
-            $fake_function_call = new PhpParser\Node\Expr\FuncCall(
+            $fake_function_call = new VirtualFuncCall(
                 $stmt->var,
                 $args,
                 $stmt->getAttributes()

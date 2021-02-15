@@ -5,6 +5,13 @@ use PhpParser;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Context;
+use Psalm\Node\Expr\BinaryOp\VirtualIdentical;
+use Psalm\Node\Expr\VirtualConstFetch;
+use Psalm\Node\Expr\VirtualMethodCall;
+use Psalm\Node\Expr\VirtualPropertyFetch;
+use Psalm\Node\Expr\VirtualTernary;
+use Psalm\Node\Expr\VirtualVariable;
+use Psalm\Node\VirtualName;
 use Psalm\Type;
 
 /**
@@ -30,7 +37,7 @@ class NullsafeAnalyzer
             if ($condition_type) {
                 $context->vars_in_scope['$' . $tmp_name] = $condition_type;
 
-                $tmp_var = new PhpParser\Node\Expr\Variable($tmp_name, $stmt->var->getAttributes());
+                $tmp_var = new VirtualVariable($tmp_name, $stmt->var->getAttributes());
             } else {
                 $tmp_var = $stmt->var;
             }
@@ -41,34 +48,34 @@ class NullsafeAnalyzer
         $old_node_data = $statements_analyzer->node_data;
         $statements_analyzer->node_data = clone $statements_analyzer->node_data;
 
-        $null_value1 = new PhpParser\Node\Expr\ConstFetch(
-            new PhpParser\Node\Name('null'),
+        $null_value1 = new VirtualConstFetch(
+            new VirtualName('null'),
             $stmt->var->getAttributes()
         );
 
-        $null_comparison = new PhpParser\Node\Expr\BinaryOp\Identical(
+        $null_comparison = new VirtualIdentical(
             $tmp_var,
             $null_value1,
             $stmt->var->getAttributes()
         );
 
-        $null_value2 = new PhpParser\Node\Expr\ConstFetch(
-            new PhpParser\Node\Name('null'),
+        $null_value2 = new VirtualConstFetch(
+            new VirtualName('null'),
             $stmt->var->getAttributes()
         );
 
         if ($stmt instanceof PhpParser\Node\Expr\NullsafePropertyFetch) {
-            $ternary = new PhpParser\Node\Expr\Ternary(
+            $ternary = new VirtualTernary(
                 $null_comparison,
                 $null_value2,
-                new PhpParser\Node\Expr\PropertyFetch($tmp_var, $stmt->name, $stmt->getAttributes()),
+                new VirtualPropertyFetch($tmp_var, $stmt->name, $stmt->getAttributes()),
                 $stmt->getAttributes()
             );
         } else {
-            $ternary = new PhpParser\Node\Expr\Ternary(
+            $ternary = new VirtualTernary(
                 $null_comparison,
                 $null_value2,
-                new PhpParser\Node\Expr\MethodCall($tmp_var, $stmt->name, $stmt->args, $stmt->getAttributes()),
+                new VirtualMethodCall($tmp_var, $stmt->name, $stmt->args, $stmt->getAttributes()),
                 $stmt->getAttributes()
             );
         }

@@ -20,6 +20,11 @@ use Psalm\Issue\PossiblyInvalidFunctionCall;
 use Psalm\Issue\PossiblyNullFunctionCall;
 use Psalm\Issue\UnusedFunctionCall;
 use Psalm\IssueBuffer;
+use Psalm\Node\Expr\VirtualFuncCall;
+use Psalm\Node\Expr\VirtualMethodCall;
+use Psalm\Node\Name\VirtualFullyQualified;
+use Psalm\Node\VirtualArg;
+use Psalm\Node\VirtualIdentifier;
 use Psalm\Plugin\EventHandler\Event\AfterEveryFunctionCallAnalysisEvent;
 use Psalm\Storage\Assertion;
 use Psalm\Type;
@@ -75,7 +80,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
 
                 $function_name = $stmt->args[0]->value;
 
-                $stmt = new PhpParser\Node\Expr\FuncCall(
+                $stmt = new VirtualFuncCall(
                     $function_name,
                     $other_args,
                     $stmt->getAttributes()
@@ -85,9 +90,9 @@ class FunctionCallAnalyzer extends CallAnalyzer
             if ($original_function_id === 'call_user_func_array' && isset($stmt->args[1])) {
                 $function_name = $stmt->args[0]->value;
 
-                $stmt = new PhpParser\Node\Expr\FuncCall(
+                $stmt = new VirtualFuncCall(
                     $function_name,
-                    [new PhpParser\Node\Arg($stmt->args[1]->value, false, true)],
+                    [new VirtualArg($stmt->args[1]->value, false, true)],
                     $stmt->getAttributes()
                 );
             }
@@ -653,7 +658,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                             $fq_class_name = \preg_replace('/^\\\\/', '', $fq_class_name);
                             $potential_method_id = new \Psalm\Internal\MethodIdentifier($fq_class_name, $parts[1]);
                         } else {
-                            $function_call_info->new_function_name = new PhpParser\Node\Name\FullyQualified(
+                            $function_call_info->new_function_name = new VirtualFullyQualified(
                                 $var_type_part->value,
                                 $function_name->getAttributes()
                             );
@@ -768,9 +773,9 @@ class FunctionCallAnalyzer extends CallAnalyzer
 
         $statements_analyzer->node_data = clone $statements_analyzer->node_data;
 
-        $fake_method_call = new PhpParser\Node\Expr\MethodCall(
+        $fake_method_call = new VirtualMethodCall(
             $function_name,
-            new PhpParser\Node\Identifier('__invoke', $function_name->getAttributes()),
+            new VirtualIdentifier('__invoke', $function_name->getAttributes()),
             $stmt->args
         );
 

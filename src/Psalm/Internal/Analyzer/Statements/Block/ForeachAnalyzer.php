@@ -28,6 +28,8 @@ use Psalm\Issue\RawObjectIteration;
 use Psalm\Issue\UnnecessaryVarAnnotation;
 use Psalm\IssueBuffer;
 use Psalm\Internal\Scope\LoopScope;
+use Psalm\Node\Expr\VirtualMethodCall;
+use Psalm\Node\VirtualIdentifier;
 use Psalm\Type;
 use function is_string;
 use function in_array;
@@ -777,9 +779,9 @@ class ForeachAnalyzer
 
                     $statements_analyzer->node_data = clone $statements_analyzer->node_data;
 
-                    $fake_method_call = new PhpParser\Node\Expr\MethodCall(
+                    $fake_method_call = new VirtualMethodCall(
                         $foreach_expr,
-                        new PhpParser\Node\Identifier('getIterator', $foreach_expr->getAttributes())
+                        new VirtualIdentifier('getIterator', $foreach_expr->getAttributes())
                     );
 
                     $suppressed_issues = $statements_analyzer->getSuppressedIssues();
@@ -1061,9 +1063,9 @@ class ForeachAnalyzer
 
         $statements_analyzer->node_data = clone $statements_analyzer->node_data;
 
-        $fake_method_call = new PhpParser\Node\Expr\MethodCall(
+        $fake_method_call = new VirtualMethodCall(
             $foreach_expr,
-            new PhpParser\Node\Identifier($method_name, $foreach_expr->getAttributes())
+            new VirtualIdentifier($method_name, $foreach_expr->getAttributes())
         );
 
         $suppressed_issues = $statements_analyzer->getSuppressedIssues();

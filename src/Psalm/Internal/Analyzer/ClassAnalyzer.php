@@ -43,6 +43,14 @@ use Psalm\Issue\UndefinedTrait;
 use Psalm\Issue\UnimplementedAbstractMethod;
 use Psalm\Issue\UnimplementedInterfaceMethod;
 use Psalm\IssueBuffer;
+use Psalm\Node\Expr\VirtualStaticCall;
+use Psalm\Node\Expr\VirtualVariable;
+use Psalm\Node\Name\VirtualFullyQualified;
+use Psalm\Node\Stmt\VirtualClassMethod;
+use Psalm\Node\Stmt\VirtualExpression;
+use Psalm\Node\VirtualArg;
+use Psalm\Node\VirtualIdentifier;
+use Psalm\Node\VirtualParam;
 use Psalm\Plugin\EventHandler\Event\AfterClassLikeAnalysisEvent;
 use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
@@ -1042,8 +1050,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                             ]
                             : [];
 
-                        return new PhpParser\Node\Arg(
-                            new PhpParser\Node\Expr\Variable($param->name, $attributes),
+                        return new VirtualArg(
+                            new VirtualVariable($param->name, $attributes),
                             false,
                             $param->is_variadic,
                             $attributes
@@ -1068,10 +1076,10 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     ];
 
                 $fake_constructor_stmts = [
-                    new PhpParser\Node\Stmt\Expression(
-                        new PhpParser\Node\Expr\StaticCall(
-                            new PhpParser\Node\Name\FullyQualified($constructor_declaring_fqcln),
-                            new PhpParser\Node\Identifier('__construct', $fake_constructor_attributes),
+                    new VirtualExpression(
+                        new VirtualStaticCall(
+                            new VirtualFullyQualified($constructor_declaring_fqcln),
+                            new VirtualIdentifier('__construct', $fake_constructor_attributes),
                             $fake_constructor_stmt_args,
                             $fake_call_attributes
                         ),
@@ -1079,8 +1087,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     ),
                 ];
 
-                $fake_stmt = new PhpParser\Node\Stmt\ClassMethod(
-                    new PhpParser\Node\Identifier('__construct'),
+                $fake_stmt = new VirtualClassMethod(
+                    new VirtualIdentifier('__construct'),
                     [
                         'type' => PhpParser\Node\Stmt\Class_::MODIFIER_PUBLIC,
                         'params' => $fake_constructor_params,

@@ -12,6 +12,10 @@ use Psalm\Context;
 use Psalm\Issue\ParentNotFound;
 use Psalm\Issue\UndefinedPropertyFetch;
 use Psalm\IssueBuffer;
+use Psalm\Node\Expr\VirtualPropertyFetch;
+use Psalm\Node\Expr\VirtualStaticPropertyFetch;
+use Psalm\Node\Expr\VirtualVariable;
+use Psalm\Node\Name\VirtualFullyQualified;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use function strtolower;
@@ -387,12 +391,12 @@ class StaticPropertyFetchAnalyzer
                     : null);
 
             if ($string_type) {
-                $new_stmt_name = new PhpParser\Node\Name\FullyQualified(
+                $new_stmt_name = new VirtualFullyQualified(
                     $string_type,
                     $stmt_class->getAttributes()
                 );
 
-                $fake_static_property = new PhpParser\Node\Expr\StaticPropertyFetch(
+                $fake_static_property = new VirtualStaticPropertyFetch(
                     $new_stmt_name,
                     $stmt->name,
                     $stmt->getAttributes()
@@ -405,14 +409,14 @@ class StaticPropertyFetchAnalyzer
             } else {
                 $fake_var_name = '__fake_var_' . (string) $stmt->getAttribute('startFilePos');
 
-                $fake_var = new PhpParser\Node\Expr\Variable(
+                $fake_var = new VirtualVariable(
                     $fake_var_name,
                     $stmt_class->getAttributes()
                 );
 
                 $context->vars_in_scope['$' . $fake_var_name] = new Type\Union([$class_atomic_type]);
 
-                $fake_instance_property = new PhpParser\Node\Expr\PropertyFetch(
+                $fake_instance_property = new VirtualPropertyFetch(
                     $fake_var,
                     $stmt->name,
                     $stmt->getAttributes()

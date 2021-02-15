@@ -9,6 +9,10 @@ use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Node\Expr\VirtualArray;
+use Psalm\Node\Expr\VirtualArrayItem;
+use Psalm\Node\Scalar\VirtualString;
+use Psalm\Node\VirtualArg;
 use Psalm\Type;
 use function array_map;
 use function array_merge;
@@ -154,7 +158,7 @@ class MissingMethodCallHandler
              * @return PhpParser\Node\Expr\ArrayItem
              */
             function (PhpParser\Node\Arg $arg): PhpParser\Node\Expr\ArrayItem {
-                return new PhpParser\Node\Expr\ArrayItem(
+                return new VirtualArrayItem(
                     $arg->value,
                     null,
                     false,
@@ -170,14 +174,14 @@ class MissingMethodCallHandler
         return new AtomicCallContext(
             new MethodIdentifier($fq_class_name, '__call'),
             [
-                new PhpParser\Node\Arg(
-                    new PhpParser\Node\Scalar\String_($method_name_lc),
+                new VirtualArg(
+                    new VirtualString($method_name_lc),
                     false,
                     false,
                     $stmt->getAttributes()
                 ),
-                new PhpParser\Node\Arg(
-                    new PhpParser\Node\Expr\Array_(
+                new VirtualArg(
+                    new VirtualArray(
                         $array_values,
                         $stmt->getAttributes()
                     ),

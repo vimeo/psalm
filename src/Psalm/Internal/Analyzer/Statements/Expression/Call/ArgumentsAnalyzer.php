@@ -26,6 +26,7 @@ use Psalm\Issue\PossiblyUndefinedVariable;
 use Psalm\Issue\TooFewArguments;
 use Psalm\Issue\TooManyArguments;
 use Psalm\IssueBuffer;
+use Psalm\Node\VirtualArg;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
@@ -603,7 +604,7 @@ class ArgumentsAnalyzer
                         $i,
                         $i,
                         $function_storage ? $function_storage->allow_named_arg_calls : true,
-                        new PhpParser\Node\Arg(
+                        new VirtualArg(
                             StubsGenerator::getExpressionFromType($function_params[$i]->default_type)
                         ),
                         $function_params[$i]->default_type,
