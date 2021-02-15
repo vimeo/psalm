@@ -664,6 +664,7 @@ class NonDivArithmeticOpAnalyzer
                         $always_positive = false;
                     } elseif ($left_is_positive && $right_is_positive) {
                         if ($parent instanceof PhpParser\Node\Expr\BinaryOp\BitwiseXor
+                            || $parent instanceof PhpParser\Node\Expr\BinaryOp\BitwiseAnd
                             || $parent instanceof PhpParser\Node\Expr\BinaryOp\ShiftLeft
                             || $parent instanceof PhpParser\Node\Expr\BinaryOp\ShiftRight
                         ) {
