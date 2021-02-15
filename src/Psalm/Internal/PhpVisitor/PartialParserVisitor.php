@@ -183,7 +183,7 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
                             // changes "): {" to ") {"
                             $hacky_class_fix = preg_replace('/(\)[\s]*):([\s]*\{)/', '$1 $2', $hacky_class_fix);
 
-                            // here we replace
+                            // To avoid a parser error during completion we replace
                             //
                             // Foo::
                             // if (...) {}
@@ -193,9 +193,17 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
                             // Foo::;
                             // if (...) {}
                             //
-                            // Because when insert the extra semicolon we have to keep track of the places
+                            // When we insert the extra semicolon we have to keep track of the places
                             // we inserted it, and then shift the AST node offsets accordingly after parsing
                             // is complete.
+                            //
+                            // If anyone's unlucky enough to have a static method named "if" with a newline
+                            // before the method name e.g.
+                            //
+                            // Foo::
+                            // if(...);
+                            //
+                            // This transformation will break that.
                             $hacky_class_fix = \preg_replace_callback(
                                 '/(->|::)(\n\s*if\s*\()/',
                                 function (array $match) use (&$extra_characters) {
