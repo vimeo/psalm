@@ -1818,6 +1818,96 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
                 false,
                 true
             ],
+            'syntaxErrorFixed' => [
+                [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            class A {
+                                public static function foo() : void {
+                                    $a = 5;
+                                    //foreach ([1, 2, 3] as $b) {
+                                        echo $b;
+                                    }
+                                    echo $a;
+                                }
+
+                                public static function bar() : void {
+                                    echo $a;
+                                }
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            class A {
+                                public static function foo() : void {
+                                    $a = 5;
+                                    foreach ([1, 2, 3] as $b) {
+                                        echo $b;
+                                    }
+                                    echo $a;
+                                }
+
+                                public static function bar() : void {
+                                    echo $a;
+                                }
+                            }',
+                    ],
+                ],
+                'error_positions' => [[347, 452, 538], [500, 500]],
+            ],
+            'updateExampleWithSyntaxErrorThen' => [
+                [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            class A {
+                                public static function foo() : void {
+                                    $a = 5;
+                                    foreach ([1, 2, 3] as $b) {
+                                        echo $b;
+                                    }
+                                    echo $a;
+                                }
+
+                                public static function bar() : void {
+                                    echo $a;
+                                }
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            class A {
+                                public static function foo() : void {
+                                    $a = 5;
+                                    //foreach ([1, 2, 3] as $b) {
+                                        echo $b;
+                                    }
+                                    echo $a;
+                                }
+
+                                public static function bar() : void {
+                                    echo $a;
+                                }
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            class A {
+                                public static function foo() : void {
+                                    $a = 5;
+                                    foreach ([1, 2, 3] as $b) {
+                                        echo $b;
+                                    }
+                                    echo $a;
+                                }
+
+                                public static function bar() : void {
+                                    echo $a;
+                                }
+                            }',
+                    ],
+                ],
+                'error_positions' => [[500, 500], [347, 452, 538], [500, 500]],
+            ],
         ];
     }
 }

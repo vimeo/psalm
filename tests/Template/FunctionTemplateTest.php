@@ -1517,7 +1517,7 @@ class FunctionTemplateTest extends TestCase
                         if (is_array($iterable)) {}
                     }'
             ],
-            'transformNestedTemplateWherePossible' => [
+            'SKIPPED-transformNestedTemplateWherePossible' => [
                 '<?php
                     /**
                      * @template TValue

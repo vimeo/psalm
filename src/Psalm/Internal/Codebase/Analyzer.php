@@ -611,6 +611,7 @@ class Analyzer
 
         $changed_members = $statements_provider->getChangedMembers();
         $unchanged_signature_members = $statements_provider->getUnchangedSignatureMembers();
+        $errored_files = $statements_provider->getErrors();
 
         $diff_map = $statements_provider->getDiffMap();
 
@@ -749,6 +750,11 @@ class Analyzer
                     unset($method_param_uses[$i][$j][$method_id]);
                 }
             }
+        }
+
+        foreach ($errored_files as $file_path => $_) {
+            unset($this->analyzed_methods[$file_path]);
+            unset($this->existing_issues[$file_path]);
         }
 
         foreach ($this->analyzed_methods as $file_path => $analyzed_methods) {

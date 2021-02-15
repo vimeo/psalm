@@ -52,6 +52,7 @@ use function substr;
  *     changed_members:array<string, array<string, bool>>,
  *     unchanged_signature_members:array<string, array<string, bool>>,
  *     diff_map:array<string, array<int, array{0:int, 1:int, 2:int, 3:int}>>,
+ *     errors:array<string, bool>,
  *     classlike_storage:array<string, \Psalm\Storage\ClassLikeStorage>,
  *     file_storage:array<lowercase-string, \Psalm\Storage\FileStorage>,
  *     new_file_content_hashes: array<string, string>,
@@ -377,6 +378,7 @@ class Scanner
                         'changed_members' => $statements_provider->getChangedMembers(),
                         'unchanged_signature_members' => $statements_provider->getUnchangedSignatureMembers(),
                         'diff_map' => $statements_provider->getDiffMap(),
+                        'errors' => $statements_provider->getErrors(),
                         'classlike_storage' => $codebase->classlike_storage_provider->getAll(),
                         'file_storage' => $codebase->file_storage_provider->getAll(),
                         'new_file_content_hashes' => $statements_provider->parser_cache_provider
@@ -405,6 +407,8 @@ class Scanner
                 $this->codebase->statements_provider->addDiffMap(
                     $pool_data['diff_map']
                 );
+                $this->codebase->statements_provider->addErrors($pool_data['errors']);
+
                 if ($this->codebase->taint_flow_graph && $pool_data['taint_data']) {
                     $this->codebase->taint_flow_graph->addGraph($pool_data['taint_data']);
                 }

@@ -28,8 +28,10 @@ class FileDiffTest extends TestCase
             $this->markTestSkipped();
         }
 
-        $a_stmts = \Psalm\Internal\Provider\StatementsProvider::parseStatements($a, '7.4');
-        $b_stmts = \Psalm\Internal\Provider\StatementsProvider::parseStatements($b, '7.4');
+        $has_errors = false;
+
+        $a_stmts = \Psalm\Internal\Provider\StatementsProvider::parseStatements($a, '7.4', $has_errors);
+        $b_stmts = \Psalm\Internal\Provider\StatementsProvider::parseStatements($b, '7.4', $has_errors);
 
         $diff = \Psalm\Internal\Diff\FileStatementsDiffer::diff($a_stmts, $b_stmts, $a, $b);
 
@@ -88,7 +90,9 @@ class FileDiffTest extends TestCase
 
         $file_changes = \Psalm\Internal\Diff\FileDiffer::getDiff($a, $b);
 
-        $a_stmts = \Psalm\Internal\Provider\StatementsProvider::parseStatements($a, '7.4');
+        $has_errors = false;
+
+        $a_stmts = \Psalm\Internal\Provider\StatementsProvider::parseStatements($a, '7.4', $has_errors);
 
         $traverser = new PhpParser\NodeTraverser;
         $traverser->addVisitor(new \Psalm\Internal\PhpVisitor\CloningVisitor);
@@ -98,8 +102,8 @@ class FileDiffTest extends TestCase
 
         $this->assertTreesEqual($a_stmts, $a_stmts_copy);
 
-        $b_stmts = \Psalm\Internal\Provider\StatementsProvider::parseStatements($b, '7.4', null, $a, $a_stmts_copy, $file_changes);
-        $b_clean_stmts = \Psalm\Internal\Provider\StatementsProvider::parseStatements($b, '7.4');
+        $b_stmts = \Psalm\Internal\Provider\StatementsProvider::parseStatements($b, '7.4', $has_errors, null, $a, $a_stmts_copy, $file_changes);
+        $b_clean_stmts = \Psalm\Internal\Provider\StatementsProvider::parseStatements($b, '7.4', $has_errors);
 
         $this->assertTreesEqual($b_clean_stmts, $b_stmts);
 

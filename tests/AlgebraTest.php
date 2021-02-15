@@ -79,7 +79,9 @@ class AlgebraTest extends TestCase
                   || ($b3 === true && $b4 === true && $b5 === true)
                   || ($b6 === true && $b7 === true && $b8 === true);';
 
-        $dnf_stmt = StatementsProvider::parseStatements($dnf, '7.4')[0];
+        $has_errors = false;
+
+        $dnf_stmt = StatementsProvider::parseStatements($dnf, '7.4', $has_errors)[0];
 
         $this->assertInstanceOf(PhpParser\Node\Stmt\Expression::class, $dnf_stmt);
 
