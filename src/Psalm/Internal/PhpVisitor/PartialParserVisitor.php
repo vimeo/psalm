@@ -193,9 +193,9 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
                             // Foo::;
                             // if (...) {}
                             //
-                            // Because when insert the extra colon we have to keep track of the places
-                            // we inserted it, and then shift the file offsets accordingly after
-                            // parsing has been done
+                            // Because when insert the extra semicolon we have to keep track of the places
+                            // we inserted it, and then shift the AST node offsets accordingly after parsing
+                            // is complete.
                             $hacky_class_fix = \preg_replace_callback(
                                 '/(->|::)(\n\s*if\s*\()/',
                                 function (array $match) use (&$extra_characters) {
