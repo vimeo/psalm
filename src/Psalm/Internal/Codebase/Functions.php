@@ -272,7 +272,7 @@ class Functions
         /** @var array<lowercase-string, FunctionStorage> */
         $matching_functions = [];
 
-        $stub = strtolower($stub);
+        $stub_lc = strtolower($stub);
         $file_storage = $this->file_storage_provider->get($file_path);
 
         $current_namespace_aliases = null;
@@ -296,7 +296,7 @@ class Functions
             // and match against global functions and all imported namespaces.
             // "Bar/foo" will become "foo".
             if ($current_namespace_aliases->namespace
-                && strpos($stub, strtolower($current_namespace_aliases->namespace) . '\\') === 0
+                && strpos($stub_lc, strtolower($current_namespace_aliases->namespace) . '\\') === 0
             ) {
                 $stub = substr($stub, strlen($current_namespace_aliases->namespace) + 1);
                 $match_function_patterns[] = $stub . '*';
@@ -322,8 +322,10 @@ class Functions
 
         foreach ($function_map as $function_name => $function) {
             foreach ($match_function_patterns as $pattern) {
+                $pattern_lc = \strtolower($pattern);
+
                 if (substr($pattern, -1, 1) === '*') {
-                    if (strpos($function_name, rtrim($pattern, '*')) !== 0) {
+                    if (strpos($function_name, rtrim($pattern_lc, '*')) !== 0) {
                         continue;
                     }
                 } elseif ($function_name !== $pattern) {
@@ -336,6 +338,16 @@ class Functions
                     }
                     $function = $this->reflection->getFunctionStorage($function_name);
                 }
+
+                if ($function->cased_name) {
+                    $cased_name_parts = \explode('\\', $function->cased_name);
+                    $pattern_parts = \explode('\\', $pattern);
+
+                    if (end($cased_name_parts)[0] !== end($pattern_parts)[0]) {
+                        continue;
+                    }
+                }
+
                 /** @var lowercase-string $function_name */
                 $matching_functions[$function_name] = $function;
             }

@@ -784,6 +784,32 @@ class CompletionTest extends \Psalm\Tests\TestCase
         $this->assertSame('phpf\\atLeastOnce', $completion_items[0]->label);
     }
 
+    public function testCompletionForFunctionNamesRespectCase(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace Bar;
+                use phpunit\framework as phpf;
+                Atleaston'
+        );
+
+        $codebase->file_provider->openFile('somefile.php');
+        $codebase->scanFiles();
+        $this->analyzeFile('somefile.php', new Context());
+
+        $completion_data = $codebase->getCompletionDataAtPosition('somefile.php', new Position(3, 25));
+        $this->assertNotNull($completion_data);
+        $this->assertSame('*Bar\Atleaston', $completion_data[0]);
+
+        $completion_items = $codebase->getCompletionItemsForPartialSymbol($completion_data[0], $completion_data[2], 'somefile.php');
+        $this->assertSame(0, count($completion_items));
+    }
+
     public function testGetMatchingFunctionNames(): void
     {
         $codebase = $this->project_analyzer->getCodebase();
@@ -872,6 +898,29 @@ class CompletionTest extends \Psalm\Tests\TestCase
 
         $functions = $codebase->functions->getMatchingFunctionNames('Foo\atleaston', 81, 'somefile.php', $codebase);
         $this->assertSame(1, count($functions));
+    }
+
+    public function testGetMatchingFunctionNamesFromUsedNamespaceRespectFirstCharCase(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+
+            namespace Foo;
+            use phpunit\framework;
+            '
+        );
+
+        $codebase->file_provider->openFile('somefile.php');
+        $codebase->scanFiles();
+        $this->analyzeFile('somefile.php', new Context());
+
+        $functions = $codebase->functions->getMatchingFunctionNames('Foo\Atleaston', 81, 'somefile.php', $codebase);
+        $this->assertSame(0, count($functions));
     }
 
     public function testGetMatchingFunctionNamesWithNamespace(): void
