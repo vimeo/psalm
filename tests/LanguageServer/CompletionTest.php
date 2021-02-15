@@ -1139,6 +1139,75 @@ class CompletionTest extends \Psalm\Tests\TestCase
         $this->assertCount(2, $completion_items);
     }
 
+    public function testCompletionOnClassInstanceReferenceWithAssignmentAfter(): void
+    {
+
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace Bar;
+
+                class Alpha {
+                    public function add() : void {}
+                }
+
+                $alpha = new Alpha;
+
+                $alpha->
+
+                $a = 5;'
+        );
+
+        $codebase->file_provider->openFile('somefile.php');
+        $codebase->scanFiles();
+        $this->analyzeFile('somefile.php', new Context());
+
+        $completion_data = $codebase->getCompletionDataAtPosition('somefile.php', new Position(9, 24));
+
+        $this->assertSame(['Bar\Alpha', '->', 200], $completion_data);
+
+        $completion_items = $codebase->getCompletionItemsForClassishThing($completion_data[0], $completion_data[1]);
+        $this->assertCount(1, $completion_items);
+    }
+
+    public function testCompletionOnClassStaticReferenceWithAssignmentAfter(): void
+    {
+
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace Bar;
+
+                class Alpha {
+                    const FOO = "123";
+                    static function add() : void {}
+                }
+
+                Alpha::
+
+                $a = 5;'
+        );
+
+        $codebase->file_provider->openFile('somefile.php');
+        $codebase->scanFiles();
+        $this->analyzeFile('somefile.php', new Context());
+
+        $completion_data = $codebase->getCompletionDataAtPosition('somefile.php', new Position(8, 23));
+
+        $this->assertSame(['Bar\Alpha', '::', 201], $completion_data);
+
+        $completion_items = $codebase->getCompletionItemsForClassishThing($completion_data[0], $completion_data[1]);
+        $this->assertCount(2, $completion_items);
+    }
+
     public function testNoCrashOnLoopId(): void
     {
         $codebase = $this->project_analyzer->getCodebase();

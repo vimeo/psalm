@@ -91,6 +91,23 @@ class StaticPropertyAssignmentAnalyzer
 
             $property_id = $fq_class_name . '::$' . $prop_name;
 
+            if ($codebase->store_node_types
+                && !$context->collect_initializations
+                && !$context->collect_mutations
+            ) {
+                $codebase->analyzer->addNodeReference(
+                    $statements_analyzer->getFilePath(),
+                    $stmt->class,
+                    $fq_class_name
+                );
+
+                $codebase->analyzer->addNodeReference(
+                    $statements_analyzer->getFilePath(),
+                    $stmt->name,
+                    $property_id
+                );
+            }
+
             if (!$codebase->properties->propertyExists($property_id, false, $statements_analyzer, $context)) {
                 if (IssueBuffer::accepts(
                     new UndefinedPropertyAssignment(
