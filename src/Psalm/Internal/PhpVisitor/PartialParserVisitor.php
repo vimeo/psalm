@@ -158,12 +158,49 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
 
                         $fake_class = '<?php class _ {' . $method_contents . '}';
 
+                        $extra_characters = [];
+
+                        // To avoid a parser error during completion we replace
+                        //
+                        // Foo::
+                        // if (...) {}
+                        //
+                        // with
+                        //
+                        // Foo::;
+                        // if (...) {}
+                        //
+                        // When we insert the extra semicolon we have to keep track of the places
+                        // we inserted it, and then shift the AST node offsets accordingly after parsing
+                        // is complete.
+                        //
+                        // If anyone's unlucky enough to have a static method named "if" with a newline
+                        // before the method name e.g.
+                        //
+                        // Foo::
+                        // if(...);
+                        //
+                        // This transformation will break that.
+                        $fake_class = \preg_replace_callback(
+                            '/(->|::)(\n\s*(if|list)\s*\()/',
+                            function (array $match) use (&$extra_characters) {
+                                /**
+                                 * @var array<int, array{int, int}> $match
+                                 * @psalm-suppress MixedArrayAssignment
+                                 */
+                                $extra_characters[] = $match[2][1];
+                                return $match[1][0] . ';' . $match[2][0];
+                            },
+                            $fake_class,
+                            -1,
+                            $count,
+                            \PREG_OFFSET_CAPTURE
+                        );
+
                         $replacement_stmts = $this->parser->parse(
                             $fake_class,
                             $error_handler
                         ) ?: [];
-
-                        $extra_characters = [];
 
                         if (!$replacement_stmts
                             || !$replacement_stmts[0] instanceof PhpParser\Node\Stmt\ClassLike
@@ -182,43 +219,6 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
 
                             // changes "): {" to ") {"
                             $hacky_class_fix = preg_replace('/(\)[\s]*):([\s]*\{)/', '$1 $2', $hacky_class_fix);
-
-                            // To avoid a parser error during completion we replace
-                            //
-                            // Foo::
-                            // if (...) {}
-                            //
-                            // with
-                            //
-                            // Foo::;
-                            // if (...) {}
-                            //
-                            // When we insert the extra semicolon we have to keep track of the places
-                            // we inserted it, and then shift the AST node offsets accordingly after parsing
-                            // is complete.
-                            //
-                            // If anyone's unlucky enough to have a static method named "if" with a newline
-                            // before the method name e.g.
-                            //
-                            // Foo::
-                            // if(...);
-                            //
-                            // This transformation will break that.
-                            $hacky_class_fix = \preg_replace_callback(
-                                '/(->|::)(\n\s*if\s*\()/',
-                                function (array $match) use (&$extra_characters) {
-                                    /**
-                                     * @var array<int, array{int, int}> $match
-                                     * @psalm-suppress MixedArrayAssignment
-                                     */
-                                    $extra_characters[] = $match[2][1];
-                                    return $match[1][0] . ';' . $match[2][0];
-                                },
-                                $hacky_class_fix,
-                                -1,
-                                $count,
-                                \PREG_OFFSET_CAPTURE
-                            );
 
                             if ($hacky_class_fix !== $fake_class) {
                                 $replacement_stmts = $this->parser->parse(
