@@ -1659,7 +1659,7 @@ class Codebase
                 null,
                 null,
                 $function_name,
-                $function_name . '()',
+                $function_name . (count($function->params) !== 0 ? '($0)' : '()'),
                 null
             );
         }
