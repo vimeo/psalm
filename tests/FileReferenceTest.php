@@ -400,6 +400,9 @@ class FileReferenceTest extends TestCase
                         use T;
                     }',
                 [
+                    'use:A:d7863b8594fe57f85cb8183fe55a6c15' => [
+                        'ns\c::bar' => true
+                    ],
                     'ns\a::foo' => [
                         'ns\c::bar' => true,
                     ],
