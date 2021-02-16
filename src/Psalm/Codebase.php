@@ -1425,6 +1425,7 @@ class Codebase
     {
         $instance_completion_items = [];
         $static_completion_items = [];
+        $static_completion_methods = [];
 
         $type = Type::parseString($type_string);
 
@@ -1452,6 +1453,7 @@ class Codebase
 
                         if ($method_storage->is_static) {
                             $static_completion_items[] = $completion_item;
+                            $static_completion_methods[] = $completion_item;
                         } else {
                             $instance_completion_items[] = $completion_item;
                         }
@@ -1497,9 +1499,16 @@ class Codebase
             }
         }
 
+        if ($gap === '->') {
+            return array_merge(
+                $instance_completion_items,
+                $static_completion_methods
+            );
+        }
+
         return array_merge(
-            $instance_completion_items,
-            $static_completion_items
+                $instance_completion_items,
+                $static_completion_items
         );
     }
 
