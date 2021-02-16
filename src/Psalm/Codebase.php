@@ -1497,16 +1497,10 @@ class Codebase
             }
         }
 
-        if ($gap === '->') {
-            $completion_items = $instance_completion_items;
-        } else {
-            $completion_items = array_merge(
-                $instance_completion_items,
-                $static_completion_items
-            );
-        }
-
-        return $completion_items;
+        return array_merge(
+            $instance_completion_items,
+            $static_completion_items
+        );
     }
 
     /**
