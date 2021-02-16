@@ -663,7 +663,15 @@ class NonDivArithmeticOpAnalyzer
                     if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Minus) {
                         $always_positive = false;
                     } elseif ($left_is_positive && $right_is_positive) {
-                        $always_positive = true;
+                        if ($parent instanceof PhpParser\Node\Expr\BinaryOp\BitwiseXor
+                            || $parent instanceof PhpParser\Node\Expr\BinaryOp\BitwiseAnd
+                            || $parent instanceof PhpParser\Node\Expr\BinaryOp\ShiftLeft
+                            || $parent instanceof PhpParser\Node\Expr\BinaryOp\ShiftRight
+                        ) {
+                            $always_positive = false;
+                        } else {
+                            $always_positive = true;
+                        }
                     } elseif ($parent instanceof PhpParser\Node\Expr\BinaryOp\Plus
                         && ($left_type_part instanceof TLiteralInt && $left_type_part->value === 0)
                         && $right_is_positive
