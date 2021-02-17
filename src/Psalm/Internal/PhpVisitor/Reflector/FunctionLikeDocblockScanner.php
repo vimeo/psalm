@@ -510,9 +510,7 @@ class FunctionLikeDocblockScanner
                     $self_fqcln,
                     null,
                     true
-                ),
-                null,
-                $function_template_types + $class_template_types
+                )
             );
         } catch (TypeParseTreeException $e) {
             $storage->docblock_issues[] = new InvalidDocblock(

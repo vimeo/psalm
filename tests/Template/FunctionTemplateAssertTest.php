@@ -767,17 +767,6 @@ class FunctionTemplateAssertTest extends TestCase
                         }
                     }'
             ],
-            'noCrashWhenAssertingTemplatedKeyOf' => [
-                '<?php
-                    /**
-                     * @template TArray as array
-                     * @template TCandidateKey as array-key
-                     * @param TArray $arr
-                     * @param array-key $key
-                     * @psalm-assert key-of<TArray> $key
-                     */
-                    function keyExists(array $arr, $key) : void {}'
-            ],
         ];
     }
 
