@@ -121,7 +121,7 @@ Optional keys can be denoted by a trailing `?`, e.g.:
 
 ## Callable arrays
 
-a array holding a callable, like phps native `call_user_func()` and friends supports it:
+An array holding a callable, like PHP's native `call_user_func()` and friends supports it:
 
 ```php
 <?php
@@ -132,4 +132,4 @@ $callable = [$object, 'aMethod'];
 
 ## non-empty-array
 
-a array which is not allowed to be empty
+An array which is not allowed to be empty.
