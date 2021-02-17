@@ -29,7 +29,7 @@
         "dnoegel/php-xdg-base-dir": "^0.1.1",
         "felixfbecker/advanced-json-rpc": "^3.0.3",
         "felixfbecker/language-server-protocol": "^1.4",
-        "netresearch/jsonmapper": "^1.0 || ^2.0 || ^3.0",
+        "netresearch/jsonmapper": "^1.0 || ^2.0 || ^3.0 || ^4.0",
         "nikic/php-parser": "^4.10.1",
         "openlss/lib-array2xml": "^1.0",
         "sebastian/diff": "^3.0 || ^4.0",
