@@ -181,21 +181,23 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
                         // if(...);
                         //
                         // This transformation will break that.
-                        $fake_class = \preg_replace_callback(
+                        \preg_match_all(
                             '/(->|::)(\n\s*(if|list)\s*\()/',
-                            function (array $match) use (&$extra_characters) {
-                                /**
-                                 * @var array<int, array{int, int}> $match
-                                 * @psalm-suppress MixedArrayAssignment
-                                 */
-                                $extra_characters[] = $match[2][1];
-                                return $match[1][0] . ';' . $match[2][0];
-                            },
                             $fake_class,
-                            -1,
-                            $count,
-                            \PREG_OFFSET_CAPTURE
+                            $matches,
+                            \PREG_OFFSET_CAPTURE | \PREG_SET_ORDER
                         );
+
+                        foreach ($matches as $match) {
+                            $fake_class = \substr_replace(
+                                $fake_class,
+                                $match[1][0] . ';' . $match[2][0],
+                                $match[0][1],
+                                \strlen($match[0][0])
+                            );
+
+                            $extra_characters[] = $match[2][1];
+                        }
 
                         $replacement_stmts = $this->parser->parse(
                             $fake_class,
@@ -241,7 +243,6 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
 
                         $extra_offsets = [];
 
-                        /** @var int $extra_offset */
                         foreach ($extra_characters as $extra_offset) {
                             $l = strlen($fake_class);
 
