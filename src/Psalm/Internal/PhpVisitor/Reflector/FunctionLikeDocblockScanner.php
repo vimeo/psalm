@@ -734,7 +734,7 @@ class FunctionLikeDocblockScanner
                 $config = Config::getInstance();
 
                 if ($config->add_param_default_to_docblock_type
-                    && $storage_param->default_type
+                    && $storage_param->default_type instanceof Type\Union
                     && !$storage_param->default_type->hasMixed()
                     && (!$storage_param->type || !$storage_param->type->hasMixed())
                 ) {

@@ -139,6 +139,21 @@ class MethodCallReturnTypeFetcher
             if ($return_type_candidate) {
                 $return_type_candidate = clone $return_type_candidate;
 
+                if ($template_result->upper_bounds) {
+                    $return_type_candidate = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                        $codebase,
+                        $return_type_candidate,
+                        $fq_class_name,
+                        $static_type,
+                        $class_storage->parent_class,
+                        true,
+                        false,
+                        $static_type instanceof Type\Atomic\TNamedObject
+                            && $codebase->classlike_storage_provider->get($static_type->value)->final,
+                        true
+                    );
+                }
+
                 $return_type_candidate = self::replaceTemplateTypes(
                     $return_type_candidate,
                     $template_result,

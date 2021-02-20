@@ -752,6 +752,28 @@ class FunctionLikeNodeScanner
             throw new \UnexpectedValueException('Not expecting param name to be non-string');
         }
 
+        $default_type = null;
+
+        if ($param->default) {
+            $default_type = SimpleTypeInferer::infer(
+                $this->codebase,
+                new \Psalm\Internal\Provider\NodeDataProvider(),
+                $param->default,
+                $this->aliases,
+                null,
+                null,
+                $fq_classlike_name
+            );
+
+            if (!$default_type) {
+                $default_type = ExpressionResolver::getUnresolvedClassConstExpr(
+                    $param->default,
+                    $this->aliases,
+                    $fq_classlike_name
+                );
+            }
+        }
+
         return new FunctionLikeParameter(
             $param->var->name,
             $param->byRef,
@@ -777,17 +799,7 @@ class FunctionLikeNodeScanner
             $is_optional,
             $is_nullable,
             $param->variadic,
-            $param->default
-                ? SimpleTypeInferer::infer(
-                    $this->codebase,
-                    new \Psalm\Internal\Provider\NodeDataProvider(),
-                    $param->default,
-                    $this->aliases,
-                    null,
-                    null,
-                    $fq_classlike_name
-                )
-                : null
+            $default_type
         );
     }
 

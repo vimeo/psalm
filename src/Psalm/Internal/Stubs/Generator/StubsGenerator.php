@@ -267,7 +267,7 @@ class StubsGenerator
         foreach ($method_storage->params as $param) {
             $param_nodes[] = new VirtualParam(
                 new VirtualVariable($param->name),
-                $param->default_type
+                $param->default_type instanceof Type\Union
                     ? self::getExpressionFromType($param->default_type)
                     : null,
                 $param->signature_type

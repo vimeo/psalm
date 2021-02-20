@@ -975,7 +975,7 @@ class FunctionTemplateAssertTest extends TestCase
                     }',
                 'error_message' => 'string, string',
             ],
-            'noCrashWhenOnUnparseableTemplatedAssertion' => [
+            'SKIPPED-noCrashWhenOnUnparseableTemplatedAssertion' => [
                 '<?php
                     /**
                      * @template TCandidateKey as array-key

@@ -15,6 +15,7 @@ use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
@@ -460,10 +461,20 @@ class ArgumentAnalyzer
                         && isset($unpacked_atomic_array->properties[$unpacked_argument_offset])
                     ) {
                         $arg_type = clone $unpacked_atomic_array->properties[$unpacked_argument_offset];
+                    } elseif ($function_param->is_optional && $function_param->default_type) {
+                        if ($function_param->default_type instanceof Type\Union) {
+                            $arg_type = $function_param->default_type;
+                        } else {
+                            $arg_type_atomic = \Psalm\Internal\Codebase\ConstantTypeResolver::resolve(
+                                $codebase->classlikes,
+                                $function_param->default_type,
+                                $statements_analyzer
+                            );
+
+                            $arg_type = new Type\Union([$arg_type_atomic]);
+                        }
                     } else {
-                        $arg_type = $function_param->is_optional
-                            ? ($function_param->default_type ?: Type::getMixed())
-                            : Type::getMixed();
+                        $arg_type = Type::getMixed();
                     }
                 } elseif ($unpacked_atomic_array instanceof Type\Atomic\TList) {
                     $arg_type = $unpacked_atomic_array->type_param;
