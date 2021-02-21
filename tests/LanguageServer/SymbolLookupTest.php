@@ -580,7 +580,8 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
         }
     }
 
-    public function testGetSignatureHelpIncludesParamDescription(): void {
+    public function testGetSignatureHelpIncludesParamDescription(): void
+    {
         $codebase = $this->project_analyzer->getCodebase();
         $config = $codebase->config;
         $config->throw_exception = false;

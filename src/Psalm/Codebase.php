@@ -45,6 +45,7 @@ use function substr_count;
 use function array_pop;
 use function implode;
 use function array_reverse;
+use function dirname;
 
 class Codebase
 {
@@ -1269,8 +1270,10 @@ class Codebase
     /**
      * @param  non-empty-string $function_symbol
      */
-    public function getSignatureInformation(string $function_symbol, string $file_path = null) : ?\LanguageServerProtocol\SignatureInformation
-    {
+    public function getSignatureInformation(
+        string $function_symbol,
+        string $file_path = null
+    ): ?\LanguageServerProtocol\SignatureInformation {
         $signature_label = '';
         $signature_documentation = null;
         if (strpos($function_symbol, '::') !== false) {
@@ -1290,7 +1293,12 @@ class Codebase
         } else {
             try {
                 if ($file_path) {
-                    $function_storage = $this->functions->getStorage(null, strtolower($function_symbol), dirname($file_path), $file_path);
+                    $function_storage = $this->functions->getStorage(
+                        null,
+                        strtolower($function_symbol),
+                        dirname($file_path),
+                        $file_path
+                    );
                 } else {
                     $function_storage = $this->functions->getStorage(null, strtolower($function_symbol));
                 }
