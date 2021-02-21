@@ -101,6 +101,11 @@ class PropertyStorage
      */
     public $suppressed_issues = [];
 
+    /**
+     * @var ?string
+     */
+    public $description;
+
     public function getInfo() : string
     {
         switch ($this->visibility) {

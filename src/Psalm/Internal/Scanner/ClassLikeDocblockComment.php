@@ -137,4 +137,9 @@ class ClassLikeDocblockComment
      * @var array<int, string>
      */
     public $implementation_requirements = [];
+
+    /**
+     * @var ?string
+     */
+    public $description;
 }

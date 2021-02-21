@@ -227,6 +227,11 @@ abstract class FunctionLikeStorage
      */
     public $proxy_calls = [];
 
+    /**
+     * @var ?string
+     */
+    public $description;
+
     public function __toString(): string
     {
         return $this->getSignature(false);

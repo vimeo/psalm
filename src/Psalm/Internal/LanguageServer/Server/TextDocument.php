@@ -9,7 +9,8 @@ use function error_log;
 use LanguageServerProtocol\CompletionList;
 use LanguageServerProtocol\Hover;
 use LanguageServerProtocol\Location;
-use LanguageServerProtocol\MarkedString;
+use LanguageServerProtocol\MarkupContent;
+use LanguageServerProtocol\MarkupKind;
 use LanguageServerProtocol\Position;
 use LanguageServerProtocol\Range;
 use LanguageServerProtocol\TextDocumentIdentifier;
@@ -211,8 +212,14 @@ class TextDocument
             return new Success(null);
         }
 
-        $contents = [];
-        $contents[] = new MarkedString('php', $symbol_information);
+        $content = "```php\n" . $symbol_information['type'] . "\n```";
+        if (isset($symbol_information['description'])) {
+            $content .= "\n---\n" . $symbol_information['description'];
+        }
+        $contents = new MarkupContent(
+            MarkupKind::MARKDOWN,
+            $content
+        );
 
         return new Success(new Hover($contents, $range));
     }
@@ -295,7 +302,7 @@ class TextDocument
             return new Success(new \LanguageServerProtocol\SignatureHelp());
         }
 
-        $signature_information = $this->codebase->getSignatureInformation($argument_location[0]);
+        $signature_information = $this->codebase->getSignatureInformation($argument_location[0], $file_path);
 
         if (!$signature_information) {
             return new Success(new \LanguageServerProtocol\SignatureHelp());
