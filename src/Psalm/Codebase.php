@@ -1642,11 +1642,18 @@ class Codebase
                 $insertion_text = $class_name;
             }
 
+            try {
+                $class_storage = $this->classlike_storage_provider->get($fq_class_name);
+                $description = $class_storage->description;
+            } catch (\Exception $e) {
+                $description = null;
+            }
+
             $completion_items[] = new \LanguageServerProtocol\CompletionItem(
                 $fq_class_name,
                 \LanguageServerProtocol\CompletionItemKind::CLASS_,
                 null,
-                null,
+                $description,
                 null,
                 $fq_class_name,
                 $insertion_text,
