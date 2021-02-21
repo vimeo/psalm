@@ -119,7 +119,7 @@ class NamedFunctionCallHandler
             return;
         }
 
-        if ($function_id === 'file_exists' && $first_arg) {
+        if (\in_array($function_id, ['is_file', 'file_exists']) && $first_arg) {
             $var_id = ExpressionIdentifier::getArrayVarId($first_arg->value, null);
 
             if ($var_id) {
