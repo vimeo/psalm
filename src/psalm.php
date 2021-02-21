@@ -2,6 +2,60 @@
 
 namespace Psalm;
 
+use Psalm\Exception\ConfigException;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Composer;
+use Psalm\Internal\IncludeCollector;
+use Psalm\Internal\Provider;
+use Psalm\Progress\DebugProgress;
+use Psalm\Progress\DefaultProgress;
+use Psalm\Progress\LongProgress;
+use Psalm\Progress\VoidProgress;
+
+use function array_filter;
+use function array_key_exists;
+use function array_map;
+use function array_merge;
+use function array_slice;
+use function array_sum;
+use function array_values;
+use function chdir;
+use function count;
+use function error_reporting;
+use function file_exists;
+use function file_put_contents;
+use function fwrite;
+use function gc_collect_cycles;
+use function gc_disable;
+use function getcwd;
+use function getopt;
+use function implode;
+use function in_array;
+use function ini_get;
+use function ini_set;
+use function is_array;
+use function is_numeric;
+use function is_scalar;
+use function is_string;
+use function json_encode;
+use function max;
+use function microtime;
+use function preg_match;
+use function preg_replace;
+use function realpath;
+use function setlocale;
+use function strpos;
+use function str_repeat;
+use function substr;
+use function version_compare;
+
+use const DIRECTORY_SEPARATOR;
+use const LC_CTYPE;
+use const PHP_EOL;
+use const PHP_OS;
+use const PHP_VERSION;
+use const STDERR;
+
 gc_collect_cycles();
 gc_disable();
 
@@ -12,57 +66,6 @@ require_once('command_functions.php');
 require_once __DIR__ . '/Psalm/Internal/Composer.php';
 require_once __DIR__ . '/Psalm/Internal/exception_handler.php';
 
-use Psalm\Exception\ConfigException;
-use Psalm\Internal\Analyzer\ProjectAnalyzer;
-use Psalm\Internal\Composer;
-use Psalm\Internal\Provider;
-use Psalm\Internal\IncludeCollector;
-use Psalm\Progress\DebugProgress;
-use Psalm\Progress\DefaultProgress;
-use Psalm\Progress\LongProgress;
-use Psalm\Progress\VoidProgress;
-use function array_slice;
-use function getopt;
-use function implode;
-use function is_scalar;
-use function array_map;
-use function substr;
-use function preg_replace;
-use function in_array;
-use function fwrite;
-use const STDERR;
-use const PHP_EOL;
-use function array_key_exists;
-use function ini_set;
-use function is_array;
-use function getcwd;
-use const DIRECTORY_SEPARATOR;
-use function is_string;
-use function realpath;
-use function file_exists;
-use function array_values;
-use function array_filter;
-use function strpos;
-use function count;
-use function preg_match;
-use function file_put_contents;
-use function is_numeric;
-use function chdir;
-use function max;
-use function ini_get;
-use const PHP_OS;
-use function version_compare;
-use const PHP_VERSION;
-use function setlocale;
-use const LC_CTYPE;
-use function microtime;
-use function str_repeat;
-use function json_encode;
-use function array_merge;
-use function array_sum;
-use function gc_collect_cycles;
-use function gc_disable;
-use function error_reporting;
 
 $valid_short_options = [
     'f:',

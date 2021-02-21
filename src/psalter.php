@@ -2,52 +2,55 @@
 
 namespace Psalm;
 
-require_once('command_functions.php');
-require_once __DIR__ . '/Psalm/Internal/Composer.php';
-
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Composer;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Progress\DebugProgress;
 use Psalm\Progress\DefaultProgress;
-use function error_reporting;
-use function ini_set;
-use function gc_collect_cycles;
-use function gc_disable;
-use function array_slice;
-use function getopt;
-use function implode;
-use function array_map;
-use function substr;
-use function preg_replace;
-use function in_array;
-use function fwrite;
-use const STDERR;
-use const PHP_EOL;
+
+use function array_filter;
 use function array_key_exists;
-use function is_array;
-use function getcwd;
-use const DIRECTORY_SEPARATOR;
-use function is_string;
-use function realpath;
+use function array_map;
+use function array_shift;
+use function array_slice;
 use function chdir;
+use function count;
+use function error_reporting;
 use function explode;
 use function file_exists;
 use function file_get_contents;
+use function filter_var;
+use function fwrite;
+use function gc_collect_cycles;
+use function gc_disable;
+use function getcwd;
+use function getopt;
+use function implode;
+use function in_array;
+use function ini_set;
+use function is_array;
+use function is_dir;
+use function is_string;
+use function microtime;
+use function pathinfo;
+use function preg_replace;
 use function preg_split;
-use function array_shift;
-use function array_filter;
-use function trim;
+use function realpath;
 use function strpos;
 use function strtolower;
-use function is_dir;
-use function pathinfo;
-use const PATHINFO_EXTENSION;
-use function filter_var;
-use const FILTER_VALIDATE_BOOLEAN;
+use function substr;
+use function trim;
+
+use const DIRECTORY_SEPARATOR;
 use const FILTER_NULL_ON_FAILURE;
-use function microtime;
-use function count;
+use const FILTER_VALIDATE_BOOLEAN;
+use const PATHINFO_EXTENSION;
+use const PHP_EOL;
+use const STDERR;
+
+require_once('command_functions.php');
+require_once __DIR__ . '/Psalm/Internal/Composer.php';
+
 
 // show all errors
 error_reporting(-1);
