@@ -4,6 +4,7 @@ namespace Psalm;
 
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Composer;
+use Psalm\Internal\ErrorHandler;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Progress\DebugProgress;
 use Psalm\Progress\DefaultProgress;
@@ -15,7 +16,6 @@ use function array_shift;
 use function array_slice;
 use function chdir;
 use function count;
-use function error_reporting;
 use function explode;
 use function file_exists;
 use function file_get_contents;
@@ -48,24 +48,20 @@ use const PATHINFO_EXTENSION;
 use const PHP_EOL;
 use const STDERR;
 
+gc_collect_cycles();
+gc_disable();
+
+require_once __DIR__ . '/Psalm/Internal/ErrorHandler.php';
+ErrorHandler::install();
+
 require_once('command_functions.php');
 require_once __DIR__ . '/Psalm/Internal/Composer.php';
 
-
-// show all errors
-error_reporting(-1);
-ini_set('display_errors', '1');
-ini_set('display_startup_errors', '1');
 $memLimit = getMemoryLimitInBytes();
 // Magic number is 4096M in bytes
 if ($memLimit > 0 && $memLimit < 8 * 1024 * 1024 * 1024) {
     ini_set('memory_limit', (string) (8 * 1024 * 1024 * 1024));
 }
-
-gc_collect_cycles();
-gc_disable();
-
-require_once __DIR__ . '/Psalm/Internal/exception_handler.php';
 
 $args = array_slice($argv, 1);
 

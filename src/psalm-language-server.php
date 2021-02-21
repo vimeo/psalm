@@ -4,6 +4,7 @@ namespace Psalm;
 
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Composer;
+use Psalm\Internal\ErrorHandler;
 use Psalm\Internal\IncludeCollector;
 
 use function array_key_exists;
@@ -12,7 +13,6 @@ use function array_search;
 use function array_slice;
 use function chdir;
 use function error_log;
-use function error_reporting;
 use function fwrite;
 use function gc_disable;
 use function getcwd;
@@ -33,15 +33,13 @@ use const LC_CTYPE;
 use const PHP_EOL;
 use const STDERR;
 
-require_once('command_functions.php');
-require_once __DIR__ . '/Psalm/Internal/Composer.php';
-
 gc_disable();
 
-// show all errors
-error_reporting(-1);
+require_once __DIR__ . '/Psalm/Internal/ErrorHandler.php';
+ErrorHandler::install();
 
-require_once __DIR__ . '/Psalm/Internal/exception_handler.php';
+require_once('command_functions.php');
+require_once __DIR__ . '/Psalm/Internal/Composer.php';
 
 $valid_short_options = [
     'h',

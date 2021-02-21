@@ -5,6 +5,7 @@ namespace Psalm;
 use Psalm\Exception\ConfigException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Composer;
+use Psalm\Internal\ErrorHandler;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Provider;
 use Psalm\Progress\DebugProgress;
@@ -21,7 +22,6 @@ use function array_sum;
 use function array_values;
 use function chdir;
 use function count;
-use function error_reporting;
 use function file_exists;
 use function file_put_contents;
 use function fwrite;
@@ -59,12 +59,11 @@ use const STDERR;
 gc_collect_cycles();
 gc_disable();
 
-// show all errors
-error_reporting(-1);
+require_once __DIR__ . '/Psalm/Internal/ErrorHandler.php';
+ErrorHandler::install();
 
 require_once('command_functions.php');
 require_once __DIR__ . '/Psalm/Internal/Composer.php';
-require_once __DIR__ . '/Psalm/Internal/exception_handler.php';
 
 
 $valid_short_options = [
