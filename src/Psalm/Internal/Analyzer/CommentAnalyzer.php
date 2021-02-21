@@ -217,7 +217,9 @@ class CommentAnalyzer
             = isset($parsed_docblock->tags['psalm-allow-private-mutation'])
             || isset($parsed_docblock->tags['psalm-readonly-allow-private-mutation']);
 
-        $var_comment->description = $parsed_docblock->description;
+        if (!$var_comment->description) {
+            $var_comment->description = $parsed_docblock->description;
+        }
 
         if (isset($parsed_docblock->tags['psalm-taint-escape'])) {
             foreach ($parsed_docblock->tags['psalm-taint-escape'] as $param) {
