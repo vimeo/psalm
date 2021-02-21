@@ -16,13 +16,36 @@ use const E_ALL;
 use const E_STRICT;
 use const STDERR;
 
-abstract class ErrorHandler
+final class ErrorHandler
 {
+    /** @var bool */
+    private static $exceptions_enabled = true;
+
     public static function install(): void
     {
         self::setErrorReporting();
         self::installErrorHandler();
         self::installExceptionHandler();
+    }
+
+    /**
+     * @template T
+     * @param callable():T $f
+     * @return T
+     */
+    public static function runWithExceptionsSuppressed(callable $f)
+    {
+        try {
+            self::$exceptions_enabled = false;
+            return $f();
+        } finally {
+            self::$exceptions_enabled = true;
+        }
+    }
+
+    /** @psalm-suppress UnusedConstructor added to prevent instantiations */
+    private function __construct()
+    {
     }
 
     private static function setErrorReporting(): void
@@ -39,7 +62,7 @@ abstract class ErrorHandler
             string $error_filename = 'unknown',
             int $error_line = -1
         ): bool {
-            if ($error_code & error_reporting()) {
+            if (ErrorHandler::$exceptions_enabled && ($error_code & error_reporting())) {
                 throw new RuntimeException(
                     'PHP Error: ' . $error_message . ' in ' . $error_filename . ':' . $error_line,
                     $error_code
