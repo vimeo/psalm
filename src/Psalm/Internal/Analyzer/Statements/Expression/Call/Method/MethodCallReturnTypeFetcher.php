@@ -144,7 +144,7 @@ class MethodCallReturnTypeFetcher
                         $codebase,
                         $return_type_candidate,
                         $fq_class_name,
-                        $static_type,
+                        null,
                         $class_storage->parent_class,
                         true,
                         false,
