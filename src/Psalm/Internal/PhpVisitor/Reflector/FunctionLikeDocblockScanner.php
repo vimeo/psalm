@@ -727,6 +727,10 @@ class FunctionLikeDocblockScanner
 
             $existing_param_type_nullable = $storage_param->is_nullable;
 
+            if (isset($docblock_param['description'])) {
+                $storage_param->description = $docblock_param['description'];
+            }
+
             if (!$storage_param->type || $storage_param->type->hasMixed() || $storage->template_types) {
                 if ($existing_param_type_nullable
                     && !$new_param_type->isNullable()
@@ -779,10 +783,6 @@ class FunctionLikeDocblockScanner
 
             $storage_param->type = $new_param_type;
             $storage_param->type_location = $docblock_type_location;
-
-            if (isset($docblock_param['description'])) {
-                $storage_param->description = $docblock_param['description'];
-            }
         }
 
         $params_without_docblock_type = array_filter(
