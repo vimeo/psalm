@@ -15,11 +15,14 @@ use const PHP_EOL;
 use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\IssueData;
+use Psalm\Internal\ErrorHandler;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Progress\Progress;
+use ReflectionClass;
+
 use function realpath;
 use function strtolower;
 use function substr;
@@ -683,24 +686,29 @@ class Scanner
             return true;
         }
 
-        $old_level = error_reporting();
+        $reflected_class = ErrorHandler::runWithExceptionsSuppressed(
+            function () use ($fq_class_name): ?ReflectionClass {
+                $old_level = error_reporting();
+                $this->progress->setErrorReporting();
 
-        $this->progress->setErrorReporting();
+                try {
+                    $this->progress->debug('Using reflection to locate file for ' . $fq_class_name . "\n");
 
-        try {
-            $this->progress->debug('Using reflection to locate file for ' . $fq_class_name . "\n");
+                    /** @psalm-suppress ArgumentTypeCoercion */
+                    return new ReflectionClass($fq_class_name);
+                } catch (\Throwable $e) {
+                    // do not cache any results here (as case-sensitive filenames can screw things up)
 
-            /** @psalm-suppress ArgumentTypeCoercion */
-            $reflected_class = new \ReflectionClass($fq_class_name);
-        } catch (\Throwable $e) {
-            error_reporting($old_level);
+                    return null;
+                } finally {
+                    error_reporting($old_level);
+                }
+            }
+        );
 
-            // do not cache any results here (as case-sensitive filenames can screw things up)
-
+        if (null === $reflected_class) {
             return false;
         }
-
-        error_reporting($old_level);
 
         $file_path = (string)$reflected_class->getFileName();
 

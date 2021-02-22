@@ -2,51 +2,52 @@
 
 namespace Psalm;
 
-require_once('command_functions.php');
-require_once __DIR__ . '/Psalm/Internal/Composer.php';
-// show all errors
-error_reporting(-1);
-ini_set('display_errors', '1');
-ini_set('display_startup_errors', '1');
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Composer;
+use Psalm\Internal\ErrorHandler;
+use Psalm\Internal\IncludeCollector;
+use Psalm\Progress\DebugProgress;
+use Psalm\Progress\DefaultProgress;
+
+use function array_key_exists;
+use function array_map;
+use function array_slice;
+use function chdir;
+use function end;
+use function explode;
+use function fwrite;
+use function gc_collect_cycles;
+use function gc_disable;
+use function getcwd;
+use function getopt;
+use function implode;
+use function in_array;
+use function ini_set;
+use function is_array;
+use function is_string;
+use function max;
+use function microtime;
+use function preg_replace;
+use function preg_split;
+use function realpath;
+use function strpos;
+use function substr;
+
+use const DIRECTORY_SEPARATOR;
+use const PHP_EOL;
+use const STDERR;
+
 ini_set('memory_limit', '8192M');
 
 gc_collect_cycles();
 gc_disable();
 
-require_once __DIR__ . '/Psalm/Internal/exception_handler.php';
+require_once __DIR__ . '/Psalm/Internal/ErrorHandler.php';
+ErrorHandler::install();
 
-use Psalm\Internal\Analyzer\ProjectAnalyzer;
-use Psalm\Internal\Composer;
-use Psalm\Internal\IncludeCollector;
-use Psalm\Progress\DebugProgress;
-use Psalm\Progress\DefaultProgress;
-use function error_reporting;
-use function ini_set;
-use function gc_collect_cycles;
-use function gc_disable;
-use function array_slice;
-use function getopt;
-use function implode;
-use function array_map;
-use function substr;
-use function preg_replace;
-use function in_array;
-use function fwrite;
-use const STDERR;
-use const PHP_EOL;
-use function array_key_exists;
-use function is_array;
-use function getcwd;
-use const DIRECTORY_SEPARATOR;
-use function is_string;
-use function realpath;
-use function preg_split;
-use function strpos;
-use function explode;
-use function end;
-use function chdir;
-use function max;
-use function microtime;
+require_once('command_functions.php');
+require_once __DIR__ . '/Psalm/Internal/Composer.php';
+
 
 $args = array_slice($argv, 1);
 

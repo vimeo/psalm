@@ -4,42 +4,42 @@ namespace Psalm;
 
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Composer;
+use Psalm\Internal\ErrorHandler;
 use Psalm\Internal\IncludeCollector;
-use function gc_disable;
-use function error_reporting;
-use function array_slice;
-use function array_search;
+
+use function array_key_exists;
 use function array_map;
-use function substr;
-use function preg_replace;
-use function in_array;
-use function fwrite;
-use const STDERR;
-use const PHP_EOL;
+use function array_search;
+use function array_slice;
+use function chdir;
 use function error_log;
+use function fwrite;
+use function gc_disable;
+use function getcwd;
 use function getopt;
 use function implode;
-use function array_key_exists;
+use function in_array;
 use function ini_set;
 use function is_array;
-use function getcwd;
-use const DIRECTORY_SEPARATOR;
 use function is_string;
+use function preg_replace;
 use function realpath;
 use function setlocale;
-use const LC_CTYPE;
-use function chdir;
 use function strtolower;
+use function substr;
 
-require_once('command_functions.php');
-require_once __DIR__ . '/Psalm/Internal/Composer.php';
+use const DIRECTORY_SEPARATOR;
+use const LC_CTYPE;
+use const PHP_EOL;
+use const STDERR;
 
 gc_disable();
 
-// show all errors
-error_reporting(-1);
+require_once __DIR__ . '/Psalm/Internal/ErrorHandler.php';
+ErrorHandler::install();
 
-require_once __DIR__ . '/Psalm/Internal/exception_handler.php';
+require_once('command_functions.php');
+require_once __DIR__ . '/Psalm/Internal/Composer.php';
 
 $valid_short_options = [
     'h',
