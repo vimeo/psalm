@@ -3,6 +3,7 @@ namespace Psalm\Storage;
 
 use Psalm\CodeLocation;
 use Psalm\Type;
+use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 
 class FunctionLikeParameter
 {
@@ -49,7 +50,7 @@ class FunctionLikeParameter
     public $is_nullable;
 
     /**
-     * @var Type\Union|null
+     * @var Type\Union|UnresolvedConstantComponent|null
      */
     public $default_type;
 
@@ -108,6 +109,9 @@ class FunctionLikeParameter
      */
     public $description;
 
+    /**
+     * @param Type\Union|UnresolvedConstantComponent|null $default_type
+     */
     public function __construct(
         string $name,
         bool $by_ref,
@@ -117,7 +121,7 @@ class FunctionLikeParameter
         bool $is_optional = true,
         bool $is_nullable = false,
         bool $is_variadic = false,
-        ?Type\Union $default_type = null
+        $default_type = null
     ) {
         $this->name = $name;
         $this->by_ref = $by_ref;

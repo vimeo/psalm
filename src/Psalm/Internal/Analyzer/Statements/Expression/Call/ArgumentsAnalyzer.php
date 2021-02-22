@@ -591,29 +591,42 @@ class ArgumentsAnalyzer
                 if ($function_params[$i]->default_type
                     && $function_params[$i]->type
                     && $function_params[$i]->type->hasTemplate()
-                    && $function_params[$i]->default_type->hasLiteralValue()
                 ) {
-                    ArgumentAnalyzer::checkArgumentMatches(
-                        $statements_analyzer,
-                        $cased_method_id,
-                        $method_id instanceof MethodIdentifier ? $method_id : null,
-                        $self_fq_class_name,
-                        $static_fq_class_name,
-                        $code_location,
-                        $function_params[$i],
-                        $i,
-                        $i,
-                        $function_storage ? $function_storage->allow_named_arg_calls : true,
-                        new VirtualArg(
-                            StubsGenerator::getExpressionFromType($function_params[$i]->default_type)
-                        ),
-                        $function_params[$i]->default_type,
-                        $context,
-                        $class_generic_params,
-                        $template_result,
-                        $function_storage ? $function_storage->specialize_call : true,
-                        $in_call_map
-                    );
+                    if ($function_params[$i]->default_type instanceof Type\Union) {
+                        $default_type = $function_params[$i]->default_type;
+                    } else {
+                        $default_type_atomic = \Psalm\Internal\Codebase\ConstantTypeResolver::resolve(
+                            $codebase->classlikes,
+                            $function_params[$i]->default_type,
+                            $statements_analyzer
+                        );
+
+                        $default_type = new Type\Union([$default_type_atomic]);
+                    }
+
+                    if ($default_type->hasLiteralValue()) {
+                        ArgumentAnalyzer::checkArgumentMatches(
+                            $statements_analyzer,
+                            $cased_method_id,
+                            $method_id instanceof MethodIdentifier ? $method_id : null,
+                            $self_fq_class_name,
+                            $static_fq_class_name,
+                            $code_location,
+                            $function_params[$i],
+                            $i,
+                            $i,
+                            $function_storage ? $function_storage->allow_named_arg_calls : true,
+                            new VirtualArg(
+                                StubsGenerator::getExpressionFromType($default_type)
+                            ),
+                            $default_type,
+                            $context,
+                            $class_generic_params,
+                            $template_result,
+                            $function_storage ? $function_storage->specialize_call : true,
+                            $in_call_map
+                        );
+                    }
                 }
             }
         }
@@ -1398,12 +1411,24 @@ class ArgumentsAnalyzer
                     && !$param->is_variadic
                     && $template_result
                 ) {
+                    if ($param->default_type instanceof Type\Union) {
+                        $default_type = clone $param->default_type;
+                    } else {
+                        $default_type_atomic = \Psalm\Internal\Codebase\ConstantTypeResolver::resolve(
+                            $codebase->classlikes,
+                            $param->default_type,
+                            $statements_analyzer
+                        );
+
+                        $default_type = new Type\Union([$default_type_atomic]);
+                    }
+
                     TemplateStandinTypeReplacer::replace(
                         $param->type,
                         $template_result,
                         $codebase,
                         $statements_analyzer,
-                        clone $param->default_type,
+                        $default_type,
                         $i,
                         $context->self,
                         $context->calling_method_id ?: $context->calling_function_id,

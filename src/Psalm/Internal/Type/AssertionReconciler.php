@@ -185,7 +185,11 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                 $assertion = 'class-string';
             }
 
-            $new_type = Type::parseString($assertion, null, $template_type_map);
+            try {
+                $new_type = Type::parseString($assertion, null, $template_type_map);
+            } catch (\Psalm\Exception\TypeParseTreeException $e) {
+                $new_type = Type::getMixed();
+            }
         }
 
         if ($existing_var_type->hasMixed()) {

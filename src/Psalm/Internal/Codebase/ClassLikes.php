@@ -1824,9 +1824,21 @@ class ClassLikes
                             }
 
                             if ($method_storage->params[$offset]->default_type) {
+                                if ($method_storage->params[$offset]->default_type instanceof Type\Union) {
+                                    $default_type = clone $method_storage->params[$offset]->default_type;
+                                } else {
+                                    $default_type_atomic = \Psalm\Internal\Codebase\ConstantTypeResolver::resolve(
+                                        $codebase->classlikes,
+                                        $method_storage->params[$offset]->default_type,
+                                        null
+                                    );
+
+                                    $default_type = new Type\Union([$default_type_atomic]);
+                                }
+
                                 $possible_type = \Psalm\Type::combineUnionTypes(
                                     $possible_type,
-                                    $method_storage->params[$offset]->default_type
+                                    $default_type
                                 );
                             }
 

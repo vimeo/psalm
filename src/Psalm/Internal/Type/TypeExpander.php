@@ -633,6 +633,20 @@ class TypeExpander
         bool $final = false,
         bool &$expand_generic = false
     ) {
+        $new_as_type = self::expandUnion(
+            $codebase,
+            $return_type->as_type,
+            $self_class,
+            $static_class_type,
+            $parent_class,
+            $evaluate_class_constants,
+            $evaluate_conditional_types,
+            $final,
+            $expand_generic
+        );
+
+        $return_type->as_type = $new_as_type;
+
         if ($evaluate_conditional_types) {
             $assertion = null;
 
