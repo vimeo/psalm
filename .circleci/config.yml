@@ -89,15 +89,11 @@ workflows:
   Welcome:
     jobs:
       - install-and-self-analyse
-      - test:
-          requires:
-            - install-and-self-analyse
       - "Code Style Analysis":
           requires:
             - install-and-self-analyse
       - phar-build:
           requires:
-            - test
             - "Code Style Analysis"
       - test-with-real-projects:
           requires:
