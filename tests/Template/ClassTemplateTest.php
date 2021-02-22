@@ -3322,6 +3322,28 @@ class ClassTemplateTest extends TestCase
                         takesA($a);
                     }',
             ],
+            'commentAfterTemplateDoesNotBreakAnalysys' => [
+                '<?php
+                interface I {};
+
+                /**
+                 * @template T of I
+                 *
+                 * test
+                 */
+                class MyContainer {
+                    /** @var T */
+                    private $value;
+                    /** @param T $value */
+                    public function __construct($value) {
+                        $this->value = $value;
+                    }
+                    /** @return T */
+                    public function getValue() {
+                      return $this->value;
+                    }
+                }'
+            ],
         ];
     }
 

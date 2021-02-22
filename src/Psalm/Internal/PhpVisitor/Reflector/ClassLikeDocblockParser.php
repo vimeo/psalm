@@ -53,7 +53,8 @@ class ClassLikeDocblockParser
         $info = new ClassLikeDocblockComment();
 
         if (isset($parsed_docblock->combined_tags['template'])) {
-            foreach ($parsed_docblock->combined_tags['template'] as $offset => $template_line) {
+            foreach ($parsed_docblock->combined_tags['template'] as $offset => $template_tag) {
+                $template_line = preg_replace('/\n.*/m', '', $template_tag);
                 $template_type = preg_split('/[\s]+/', preg_replace('@^[ \t]*\*@m', '', $template_line));
 
                 $template_name = array_shift($template_type);
