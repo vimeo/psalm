@@ -1330,7 +1330,7 @@ class Codebase
                     strlen($signature_label),
                     strlen($signature_label) + strlen($parameter_label),
                 ],
-                $param->description ?? null,
+                $param->description ?? null
             );
 
             $signature_label .= $parameter_label;
