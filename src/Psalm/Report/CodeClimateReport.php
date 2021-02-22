@@ -52,8 +52,8 @@ class CodeClimateReport extends Report
                     'location' => [
                         'path' => $issue->file_path,
                         'lines' => [
-                            'begin' => $issue->from,
-                            'end' => $issue->to,
+                            'begin' => $issue->line_from,
+                            'end' => $issue->line_to,
                         ],
                     ],
                 ];
