@@ -45,22 +45,6 @@ jobs:
       - run:
           name: Code Style Analysis with PHPCS
           command: vendor/bin/phpcs
-  test:
-    executor: php-74
-    steps:
-      - attach_workspace:
-            at: /home/docker/project/
-      - run:
-          name: PHPUnit test
-          command: php vendor/bin/paratest --runner=WrapperRunner --log-junit build/phpunit/phpunit.xml
-      - store_test_results:
-          path: build/
-      - store_artifacts:
-          path: build/phpunit
-      - persist_to_workspace:
-          root: /home/docker/project/
-          paths:
-            - .
   phar-build:
     executor: php-74
     steps:
