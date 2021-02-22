@@ -371,21 +371,20 @@ class ExpressionAnalyzer
             return Expression\YieldFromAnalyzer::analyze($statements_analyzer, $stmt, $context);
         }
 
-        if ($stmt instanceof PhpParser\Node\Expr\Match_
-            && $statements_analyzer->getCodebase()->php_major_version >= 8
-        ) {
+        $php_major_version = $statements_analyzer->getCodebase()->php_major_version;
+        $php_minor_version = $statements_analyzer->getCodebase()->php_minor_version;
+
+        if ($stmt instanceof PhpParser\Node\Expr\Match_ && $php_major_version >= 8) {
             return Expression\MatchAnalyzer::analyze($statements_analyzer, $stmt, $context);
         }
 
-        if ($stmt instanceof PhpParser\Node\Expr\Throw_
-            && $statements_analyzer->getCodebase()->php_major_version >= 8
-        ) {
+        if ($stmt instanceof PhpParser\Node\Expr\Throw_ && $php_major_version >= 8) {
             return ThrowAnalyzer::analyze($statements_analyzer, $stmt, $context);
         }
 
         if (($stmt instanceof PhpParser\Node\Expr\NullsafePropertyFetch
                 || $stmt instanceof PhpParser\Node\Expr\NullsafeMethodCall)
-            && $statements_analyzer->getCodebase()->php_major_version >= 8
+            && $php_major_version >= 8
         ) {
             return Expression\NullsafeAnalyzer::analyze($statements_analyzer, $stmt, $context);
         }
@@ -397,7 +396,8 @@ class ExpressionAnalyzer
 
         if (IssueBuffer::accepts(
             new UnrecognizedExpression(
-                'Psalm does not understand ' . get_class($stmt),
+                'Psalm does not understand ' . get_class($stmt) . ' for PHP ' .
+                $php_major_version . ' ' . $php_minor_version,
                 new CodeLocation($statements_analyzer->getSource(), $stmt)
             ),
             $statements_analyzer->getSuppressedIssues()
