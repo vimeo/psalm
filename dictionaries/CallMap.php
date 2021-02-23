@@ -12010,7 +12010,7 @@ return [
 'session_encode' => ['string'],
 'session_gc' => ['int|false'],
 'session_get_cookie_params' => ['array'],
-'session_id' => ['string', 'id='=>'string'],
+'session_id' => ['string|false', 'id='=>'string'],
 'session_is_registered' => ['bool', 'name'=>'string'],
 'session_module_name' => ['string', 'module='=>'string'],
 'session_name' => ['string|false', 'name='=>'string'],
