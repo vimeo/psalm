@@ -285,8 +285,6 @@ $project_analyzer->provide_completion = !isset($options['enable-autocomplete'])
     || !is_string($options['enable-autocomplete'])
     || strtolower($options['enable-autocomplete']) !== 'false';
 
-$config->visitComposerAutoloadFiles($project_analyzer);
-
 if ($find_unused_code) {
     $project_analyzer->getCodebase()->reportUnusedCode($find_unused_code);
 }
