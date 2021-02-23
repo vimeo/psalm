@@ -865,6 +865,7 @@ class AtomicStaticCallAnalyzer
         if ($lhs_type_part instanceof Type\Atomic\TMixed
             || $lhs_type_part instanceof Type\Atomic\TTemplateParam
             || $lhs_type_part instanceof Type\Atomic\TClassString
+            || $lhs_type_part instanceof Type\Atomic\TObject
         ) {
             if ($stmt->name instanceof PhpParser\Node\Identifier) {
                 $codebase->analyzer->addMixedMemberName(
