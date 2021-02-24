@@ -614,6 +614,10 @@ class ClassLikeNodeScanner
             $storage->override_method_visibility = $docblock_info->override_method_visibility;
 
             $storage->suppressed_issues = $docblock_info->suppressed_issues;
+
+            if ($docblock_info->description) {
+                $storage->description = $docblock_info->description;
+            }
         }
 
         foreach ($node->stmts as $node_stmt) {
@@ -1115,6 +1119,7 @@ class ClassLikeNodeScanner
 
         $comment = $stmt->getDocComment();
         $deprecated = false;
+        $description = null;
         $config = $this->config;
 
         if ($comment && $comment->getText() && ($config->use_docblock_types || $config->use_docblock_property_types)) {
@@ -1123,6 +1128,8 @@ class ClassLikeNodeScanner
             if (isset($comments->tags['deprecated'])) {
                 $deprecated = true;
             }
+
+            $description = $comments->description;
         }
 
         foreach ($stmt->consts as $const) {
@@ -1177,6 +1184,8 @@ class ClassLikeNodeScanner
             if ($deprecated) {
                 $constant_storage->deprecated = true;
             }
+
+            $constant_storage->description = $description;
 
             foreach ($stmt->attrGroups as $attr_group) {
                 foreach ($attr_group->attrs as $attr) {
@@ -1286,6 +1295,7 @@ class ClassLikeNodeScanner
             }
             $property_storage->readonly = $var_comment ? $var_comment->readonly : false;
             $property_storage->allow_private_mutation = $var_comment ? $var_comment->allow_private_mutation : false;
+            $property_storage->description = $var_comment ? $var_comment->description : null;
 
             if (!$signature_type && !$doc_var_group_type) {
                 if ($property->default) {

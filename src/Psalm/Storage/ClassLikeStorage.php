@@ -418,6 +418,11 @@ class ClassLikeStorage
      */
     public $attributes = [];
 
+    /**
+     * @var ?string
+     */
+    public $description;
+
     public function __construct(string $name)
     {
         $this->name = $name;

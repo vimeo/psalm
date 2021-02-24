@@ -43,6 +43,11 @@ class ClassConstantStorage
     public $attributes = [];
 
     /**
+     * @var ?string
+     */
+    public $description;
+
+    /**
      * @param ClassLikeAnalyzer::VISIBILITY_* $visibility
      */
     public function __construct(?Type\Union $type, int $visibility, ?CodeLocation $location)

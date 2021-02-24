@@ -77,13 +77,26 @@ class FunctionLikeDocblockParser
                             throw new IncorrectDocblockException('Misplaced variable');
                         }
 
-                        $info->params[] = [
+                        $info_param = [
                             'name' => trim($line_parts[1]),
                             'type' => $line_parts[0],
                             'line_number' => $comment->getStartLine() + substr_count($comment_text, "\n", 0, $offset),
                             'start' => $start,
                             'end' => $end,
                         ];
+
+                        if (isset($line_parts[1]) && isset($line_parts[2])) {
+                            $description = substr($param, strlen($line_parts[0]) + strlen($line_parts[1]) + 2);
+                            $info_param['description'] = trim($description);
+                            // Handle multiline description.
+                            $info_param['description'] = preg_replace(
+                                '/\\n \\*\\s+/um',
+                                ' ',
+                                $info_param['description']
+                            );
+                        }
+
+                        $info->params[] = $info_param;
                     }
                 } else {
                     throw new DocblockParseException('Badly-formatted @param');
@@ -435,6 +448,10 @@ class FunctionLikeDocblockParser
         $info->ignore_nullable_return = isset($parsed_docblock->tags['psalm-ignore-nullable-return']);
         $info->ignore_falsable_return = isset($parsed_docblock->tags['psalm-ignore-falsable-return']);
         $info->stub_override = isset($parsed_docblock->tags['psalm-stub-override']);
+
+        if (!empty($parsed_docblock->description)) {
+            $info->description = $parsed_docblock->description;
+        }
 
         return $info;
     }

@@ -352,6 +352,10 @@ class FunctionLikeDocblockScanner
                 $file_storage
             );
         }
+
+        if ($docblock_info->description) {
+            $storage->description = $docblock_info->description;
+        }
     }
 
     /**
@@ -359,7 +363,10 @@ class FunctionLikeDocblockScanner
      * @param  array<string, TypeAlias>|null   $type_aliases
      * @param  array<string, array<string, Type\Union>> $function_template_types
      *
-     * @return array{array<int, array{0: string, 1: int, 2?: string}>, array<string, array<string, Type\Union>>}
+     * @return array{
+     *     array<int, array{0: string, 1: int, 2?: string}>,
+     *     array<string, array<string, Type\Union>>
+     * }
      */
     private static function getConditionalSanitizedTypeTokens(
         string $docblock_return_type,
@@ -564,7 +571,17 @@ class FunctionLikeDocblockScanner
      * @param array<string, array<string, Type\Union>> $class_template_types
      * @param array<string, non-empty-array<string, Type\Union>> $function_template_types
      * @param array<string, TypeAlias> $type_aliases
-     * @param array<int, array{type:string,name:string,line_number:int,start:int,end:int}>  $docblock_params
+     * @param array<
+     *     int,
+     *     array{
+     *         type:string,
+     *         name:string,
+     *         line_number:int,
+     *         start:int,
+     *         end:int,
+     *         description?:string
+     *     }
+     * > $docblock_params
      */
     private static function improveParamsFromDocblock(
         Codebase $codebase,
@@ -722,6 +739,10 @@ class FunctionLikeDocblockScanner
             }
 
             $existing_param_type_nullable = $storage_param->is_nullable;
+
+            if (isset($docblock_param['description'])) {
+                $storage_param->description = $docblock_param['description'];
+            }
 
             if (!$storage_param->type || $storage_param->type->hasMixed() || $storage->template_types) {
                 if ($existing_param_type_nullable

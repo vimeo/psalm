@@ -45,6 +45,7 @@ use function substr_count;
 use function array_pop;
 use function implode;
 use function array_reverse;
+use function dirname;
 
 class Codebase
 {
@@ -941,10 +942,15 @@ class Codebase
         return $function;
     }
 
-    public function getSymbolInformation(string $file_path, string $symbol): ?string
+    /**
+     * @param string $file_path
+     * @param string $symbol
+     * @return array{ type: string, description?: string|null}|null
+     */
+    public function getSymbolInformation(string $file_path, string $symbol): ?array
     {
         if (\is_numeric($symbol[0])) {
-            return \preg_replace('/^[^:]*:/', '', $symbol);
+            return ['type' => \preg_replace('/^[^:]*:/', '', $symbol)];
         }
 
         try {
@@ -963,7 +969,10 @@ class Codebase
 
                     $storage = $this->methods->getStorage($declaring_method_id);
 
-                    return '<?php ' . $storage->getSignature(true);
+                    return [
+                        'type' => '<?php ' . $storage->getSignature(true),
+                        'description' => $storage->description,
+                    ];
                 }
 
                 [, $symbol_name] = explode('::', $symbol);
@@ -971,7 +980,10 @@ class Codebase
                 if (strpos($symbol, '$') !== false) {
                     $storage = $this->properties->getStorage($symbol);
 
-                    return '<?php ' . $storage->getInfo() . ' ' . $symbol_name;
+                    return [
+                        'type' => '<?php ' . $storage->getInfo() . ' ' . $symbol_name,
+                        'description' => $storage->description,
+                    ];
                 }
 
                 [$fq_classlike_name, $const_name] = explode('::', $symbol);
@@ -985,7 +997,10 @@ class Codebase
                     return null;
                 }
 
-                return '<?php ' . $const_name;
+                return [
+                    'type' => '<?php ' . $const_name,
+                    'description' => $class_constants[$const_name]->description,
+                ];
             }
 
             if (strpos($symbol, '()')) {
@@ -995,7 +1010,10 @@ class Codebase
                 if (isset($file_storage->functions[$function_id])) {
                     $function_storage = $file_storage->functions[$function_id];
 
-                    return '<?php ' . $function_storage->getSignature(true);
+                    return [
+                        'type' => '<?php ' . $function_storage->getSignature(true),
+                        'description' => $function_storage->description,
+                    ];
                 }
 
                 if (!$function_id) {
@@ -1003,19 +1021,25 @@ class Codebase
                 }
 
                 $function = $this->functions->getStorage(null, $function_id);
-                return '<?php ' . $function->getSignature(true);
+                return [
+                    'type' => '<?php ' . $function->getSignature(true),
+                    'description' => $function->description,
+                ];
             }
 
             if (strpos($symbol, '$') === 0) {
                 $type = VariableFetchAnalyzer::getGlobalType($symbol);
                 if (!$type->isMixed()) {
-                    return '<?php ' . $type;
+                    return ['type' => '<?php ' . $type];
                 }
             }
 
             try {
                 $storage = $this->classlike_storage_provider->get($symbol);
-                return '<?php ' . ($storage->abstract ? 'abstract ' : '') . 'class ' . $storage->name;
+                return [
+                    'type' => '<?php ' . ($storage->abstract ? 'abstract ' : '') . 'class ' . $storage->name,
+                    'description' => $storage->description,
+                ];
             } catch (\InvalidArgumentException $e) {
             }
 
@@ -1030,17 +1054,17 @@ class Codebase
                 );
                 if (isset($namespace_constants[$const_name])) {
                     $type = $namespace_constants[$const_name];
-                    return '<?php const ' . $symbol . ' ' . $type;
+                    return ['type' => '<?php const ' . $symbol . ' ' . $type];
                 }
             } else {
                 $file_storage = $this->file_storage_provider->get($file_path);
                 if (isset($file_storage->constants[$symbol])) {
-                    return '<?php const ' . $symbol . ' ' . $file_storage->constants[$symbol];
+                    return ['type' => '<?php const ' . $symbol . ' ' . $file_storage->constants[$symbol]];
                 }
                 $constant = ConstFetchAnalyzer::getGlobalConstType($this, $symbol, $symbol);
 
                 if ($constant) {
-                    return '<?php const ' . $symbol . ' ' . $constant;
+                    return ['type' => '<?php const ' . $symbol . ' ' . $constant];
                 }
             }
             return null;
@@ -1246,8 +1270,12 @@ class Codebase
     /**
      * @param  non-empty-string $function_symbol
      */
-    public function getSignatureInformation(string $function_symbol) : ?\LanguageServerProtocol\SignatureInformation
-    {
+    public function getSignatureInformation(
+        string $function_symbol,
+        string $file_path = null
+    ): ?\LanguageServerProtocol\SignatureInformation {
+        $signature_label = '';
+        $signature_documentation = null;
         if (strpos($function_symbol, '::') !== false) {
             /** @psalm-suppress ArgumentTypeCoercion */
             $method_id = new \Psalm\Internal\MethodIdentifier(...explode('::', $function_symbol));
@@ -1260,11 +1288,23 @@ class Codebase
 
             $method_storage = $this->methods->getStorage($declaring_method_id);
             $params = $method_storage->params;
+            $signature_label = $method_storage->cased_name;
+            $signature_documentation = $method_storage->description;
         } else {
             try {
-                $function_storage = $this->functions->getStorage(null, strtolower($function_symbol));
-
+                if ($file_path) {
+                    $function_storage = $this->functions->getStorage(
+                        null,
+                        strtolower($function_symbol),
+                        dirname($file_path),
+                        $file_path
+                    );
+                } else {
+                    $function_storage = $this->functions->getStorage(null, strtolower($function_symbol));
+                }
                 $params = $function_storage->params;
+                $signature_label = $function_storage->cased_name;
+                $signature_documentation = $function_storage->description;
             } catch (\Exception $exception) {
                 if (InternalCallMapHandler::inCallMap($function_symbol)) {
                     $callables = InternalCallMapHandler::getCallablesFromCallMap($function_symbol);
@@ -1280,15 +1320,18 @@ class Codebase
             }
         }
 
-        $signature_label = '(';
+        $signature_label .= '(';
         $parameters = [];
 
         foreach ($params as $i => $param) {
             $parameter_label = ($param->type ?: 'mixed') . ' $' . $param->name;
-            $parameters[] = new \LanguageServerProtocol\ParameterInformation([
-                strlen($signature_label),
-                strlen($signature_label) + strlen($parameter_label),
-            ]);
+            $parameters[] = new \LanguageServerProtocol\ParameterInformation(
+                [
+                    strlen($signature_label),
+                    strlen($signature_label) + strlen($parameter_label),
+                ],
+                $param->description ?? null
+            );
 
             $signature_label .= $parameter_label;
 
@@ -1301,7 +1344,8 @@ class Codebase
 
         return new \LanguageServerProtocol\SignatureInformation(
             $signature_label,
-            $parameters
+            $parameters,
+            $signature_documentation
         );
     }
 
@@ -1440,7 +1484,7 @@ class Codebase
                             $method_storage->cased_name,
                             \LanguageServerProtocol\CompletionItemKind::METHOD,
                             (string)$method_storage,
-                            null,
+                            $method_storage->description,
                             (string)$method_storage->visibility,
                             $method_storage->cased_name,
                             $method_storage->cased_name . (count($method_storage->params) !== 0 ? '($0)' : '()'),
@@ -1466,7 +1510,7 @@ class Codebase
                             '$' . $property_name,
                             \LanguageServerProtocol\CompletionItemKind::PROPERTY,
                             $property_storage->getInfo(),
-                            null,
+                            $property_storage->description,
                             (string)$property_storage->visibility,
                             $property_name,
                             ($gap === '::' ? '$' : '') . $property_name
@@ -1479,12 +1523,12 @@ class Codebase
                         }
                     }
 
-                    foreach ($class_storage->constants as $const_name => $_) {
+                    foreach ($class_storage->constants as $const_name => $const) {
                         $static_completion_items[] = new \LanguageServerProtocol\CompletionItem(
                             $const_name,
                             \LanguageServerProtocol\CompletionItemKind::VARIABLE,
                             'const ' . $const_name,
-                            null,
+                            $const->description,
                             null,
                             $const_name,
                             $const_name
@@ -1606,11 +1650,18 @@ class Codebase
                 $insertion_text = $class_name;
             }
 
+            try {
+                $class_storage = $this->classlike_storage_provider->get($fq_class_name);
+                $description = $class_storage->description;
+            } catch (\Exception $e) {
+                $description = null;
+            }
+
             $completion_items[] = new \LanguageServerProtocol\CompletionItem(
                 $fq_class_name,
                 \LanguageServerProtocol\CompletionItemKind::CLASS_,
                 null,
-                null,
+                $description,
                 null,
                 $fq_class_name,
                 $insertion_text,
@@ -1656,7 +1707,7 @@ class Codebase
                 $function_name,
                 \LanguageServerProtocol\CompletionItemKind::FUNCTION,
                 $function->getSignature(false),
-                null,
+                $function->description,
                 null,
                 $function_name,
                 $function_name . (count($function->params) !== 0 ? '($0)' : '()'),

@@ -923,6 +923,11 @@ class CompletionTest extends \Psalm\Tests\TestCase
             '<?php
                 namespace Bar;
 
+                /**
+                 * My Function in a Bar
+                 *
+                 * @return void
+                 */
                 function my_function_in_bar() : void {
 
                 }
@@ -934,12 +939,13 @@ class CompletionTest extends \Psalm\Tests\TestCase
         $codebase->scanFiles();
         $this->analyzeFile('somefile.php', new Context());
 
-        $completion_data = $codebase->getCompletionDataAtPosition('somefile.php', new Position(7, 30));
+        $completion_data = $codebase->getCompletionDataAtPosition('somefile.php', new Position(12, 30));
         $this->assertNotNull($completion_data);
         $this->assertSame('*Bar-my_function_in', $completion_data[0]);
 
         $completion_items = $codebase->getCompletionItemsForPartialSymbol($completion_data[0], $completion_data[2], 'somefile.php');
         $this->assertSame(1, count($completion_items));
+        $this->assertEquals('My Function in a Bar', $completion_items[0]->documentation);
     }
 
     public function testCompletionForNamespacedOverriddenFunctionNames(): void

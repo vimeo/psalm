@@ -32,7 +32,17 @@ class FunctionDocblockComment
     public $return_type_line_number;
 
     /**
-     * @var array<int, array{name:string, type:string, line_number: int, start: int, end: int}>
+     * @var array<
+     *     int,
+     *     array{
+     *         name:string,
+     *         type:string,
+     *         line_number: int,
+     *         start: int,
+     *         end: int,
+     *         description?: string
+     *     }
+     * >
      */
     public $params = [];
 
@@ -201,4 +211,9 @@ class FunctionDocblockComment
      * @var int
      */
     public $since_php_minor_version = 0;
+
+    /**
+     * @var ?string
+     */
+    public $description;
 }

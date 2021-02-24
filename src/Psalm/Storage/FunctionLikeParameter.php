@@ -105,6 +105,11 @@ class FunctionLikeParameter
     public $attributes = [];
 
     /**
+     * @var ?string
+     */
+    public $description;
+
+    /**
      * @param Type\Union|UnresolvedConstantComponent|null $default_type
      */
     public function __construct(

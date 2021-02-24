@@ -414,6 +414,10 @@ class ClassLikeDocblockParser
             $info->stub_override = true;
         }
 
+        if ($parsed_docblock->description) {
+            $info->description = $parsed_docblock->description;
+        }
+
         self::addMagicPropertyToInfo($comment, $info, $parsed_docblock->tags, 'property');
         self::addMagicPropertyToInfo($comment, $info, $parsed_docblock->tags, 'psalm-property');
         self::addMagicPropertyToInfo($comment, $info, $parsed_docblock->tags, 'property-read');
