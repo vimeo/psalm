@@ -138,6 +138,7 @@ class ReconcilerTest extends \Psalm\Tests\TestCase
             'iterableAndObject' => ['Traversable<int, string>', 'object', 'iterable<int, string>'],
             'iterableAndNotObject' => ['array<int, string>', '!object', 'iterable<int, string>'],
             'boolNotEmptyIsTrue' => ['true', '!empty', 'bool'],
+            'interfaceAssertionOnClassInterfaceUnion' => ['SomeInterface|SomeInterface&SomeClass', 'SomeInterface', 'SomeClass|SomeInterface'],
         ];
     }
 

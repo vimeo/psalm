@@ -634,17 +634,51 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                             $new_type_part->value,
                             $existing_type_part->type_params
                         );
+                    } elseif ($new_type_part instanceof Type\Atomic\TNamedObject
+                        && $existing_type_part instanceof Type\Atomic\TTemplateParam
+                        && $existing_type_part->as->hasObjectType()
+                    ) {
+                        $existing_type_part = clone $existing_type_part;
+                        $existing_type_part->as = self::filterTypeWithAnother(
+                            $codebase,
+                            $existing_type_part->as,
+                            new Type\Union([$new_type_part]),
+                            $template_type_map
+                        );
+
+                        $matching_atomic_types[] = $existing_type_part;
+                    } else {
+                        $matching_atomic_types[] = clone $new_type_part;
                     }
-                } elseif (AtomicTypeComparator::isContainedBy(
+
+                    continue;
+                }
+
+                if (AtomicTypeComparator::isContainedBy(
                     $codebase,
                     $existing_type_part,
                     $new_type_part,
-                    true,
+                    false,
                     false,
                     null
                 )) {
                     $has_local_match = true;
                     $matching_atomic_types[] = $existing_type_part;
+
+                    continue;
+                }
+
+                if ($existing_type_part instanceof Type\Atomic\TNamedObject
+                    && $new_type_part instanceof Type\Atomic\TNamedObject
+                    && ($codebase->interfaceExists($existing_type_part->value)
+                        || $codebase->interfaceExists($new_type_part->value))
+                ) {
+                    $matching_atomic_type = clone $new_type_part;
+                    $matching_atomic_type->extra_types[$existing_type_part->getKey()] = $existing_type_part;
+                    $matching_atomic_types[] = $matching_atomic_type;
+                    $has_local_match = true;
+
+                    continue;
                 }
 
                 if ($new_type_part instanceof Type\Atomic\TKeyedArray
@@ -690,27 +724,10 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                     && $new_type_part->as->hasObject()
                     && $existing_type_part->as->hasObject()
                 ) {
-                    $new_type_part->extra_types[$existing_type_part->getKey()] = $existing_type_part;
-                    $matching_atomic_types[] = $new_type_part;
-                    $has_local_match = true;
+                    $matching_atomic_type = clone $new_type_part;
 
-                    continue;
-                }
-
-                if ($has_local_match
-                    && $new_type_part instanceof Type\Atomic\TNamedObject
-                    && $existing_type_part instanceof Type\Atomic\TTemplateParam
-                    && $existing_type_part->as->hasObjectType()
-                ) {
-                    $existing_type_part = clone $existing_type_part;
-                    $existing_type_part->as = self::filterTypeWithAnother(
-                        $codebase,
-                        $existing_type_part->as,
-                        new Type\Union([$new_type_part]),
-                        $template_type_map
-                    );
-
-                    $matching_atomic_types[] = $existing_type_part;
+                    $matching_atomic_type->extra_types[$existing_type_part->getKey()] = $existing_type_part;
+                    $matching_atomic_types[] = $matching_atomic_type;
                     $has_local_match = true;
 
                     continue;
@@ -816,31 +833,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                     }
                 }
 
-                if ($atomic_contained_by || $atomic_comparison_results->type_coerced) {
-                    if ($atomic_contained_by
-                        && $existing_type_part instanceof TNamedObject
-                        && $new_type_part instanceof TNamedObject
-                        && $existing_type_part->extra_types
-                        && !$codebase->classExists($existing_type_part->value)
-                        && !$codebase->classExists($new_type_part->value)
-                        && !array_filter(
-                            $existing_type_part->extra_types,
-                            function ($extra_type) use ($codebase): bool {
-                                return $extra_type instanceof TNamedObject
-                                    && $codebase->classExists($extra_type->value);
-                            }
-                        )
-                    ) {
-                        if (!$has_cloned_type) {
-                            $new_type = clone $new_type;
-                            $has_cloned_type = true;
-                        }
-
-                        $new_type->removeType($key);
-                        $new_type->addType($existing_type_part);
-                        $new_type->from_docblock = $existing_type_part->from_docblock;
-                    }
-
+                if ($atomic_comparison_results->type_coerced) {
                     continue;
                 }
 
