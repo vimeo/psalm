@@ -606,6 +606,7 @@ class TypeExpander
             }
         } elseif ($return_type->was_static && is_string($static_class_type) && $final) {
             $return_type->value = $static_class_type;
+            $return_type->was_static = false;
         } elseif ($self_class && $return_type_lc === 'self') {
             $return_type->value = $self_class;
         } elseif ($parent_class && $return_type_lc === 'parent') {

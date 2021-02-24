@@ -903,6 +903,16 @@ class MethodSignatureTest extends TestCase
                 [],
                 '8.0'
             ],
+            'notExtendedStaticReturntypeInFinal' => [
+                '<?php
+                    final class X
+                    {
+                        public static function create(): static
+                        {
+                            return new self();
+                        }
+                    }'
+            ],
         ];
     }
 
