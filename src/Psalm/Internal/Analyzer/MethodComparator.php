@@ -918,7 +918,9 @@ class MethodComparator
         $implementer_method_storage_return_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
             $codebase,
             $implementer_return_type,
-            $implementer_classlike_storage->name,
+            $implementer_classlike_storage->is_trait
+                ? $implementer_called_class_name
+                : $implementer_classlike_storage->name,
             $implementer_called_class_name,
             $implementer_classlike_storage->parent_class
         );

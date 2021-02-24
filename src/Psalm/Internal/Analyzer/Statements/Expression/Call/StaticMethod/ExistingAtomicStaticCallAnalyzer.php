@@ -270,6 +270,12 @@ class ExistingAtomicStaticCallAnalyzer
                             : Type::getObject(),
                         $lhs_type_part->defining_class
                     );
+                } elseif ($stmt->class instanceof PhpParser\Node\Name
+                    && count($stmt->class->parts) === 1
+                    && in_array(strtolower($stmt->class->parts[0]), ['self', 'static', 'parent'], true)
+                    && $lhs_type_part instanceof Type\Atomic\TNamedObject
+                ) {
+                    $static_type = $context->self;
                 } else {
                     $static_type = $fq_class_name;
                 }
