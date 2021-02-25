@@ -422,22 +422,28 @@ class NamedFunctionCallHandler
                 $var_id = '$' . $var->name;
 
                 if (isset($context->vars_in_scope[$var_id])) {
-                    if ($function_id === 'get_class') {
-                        $atomic_type = new Type\Atomic\TDependentGetClass(
-                            $var_id,
-                            $context->vars_in_scope[$var_id]->hasMixed()
-                                ? Type::getObject()
-                                : $context->vars_in_scope[$var_id]
-                        );
-                    } elseif ($function_id === 'gettype') {
-                        $atomic_type = new Type\Atomic\TDependentGetType($var_id);
-                    } else {
-                        $atomic_type = new Type\Atomic\TDependentGetDebugType($var_id);
-                    }
+                    if (!$context->vars_in_scope[$var_id]->hasTemplate()) {
+                        if ($function_id === 'get_class') {
+                            $atomic_type = new Type\Atomic\TDependentGetClass(
+                                $var_id,
+                                $context->vars_in_scope[$var_id]->hasMixed()
+                                    ? Type::getObject()
+                                    : $context->vars_in_scope[$var_id]
+                            );
+                        } elseif ($function_id === 'gettype') {
+                            $atomic_type = new Type\Atomic\TDependentGetType($var_id);
+                        } else {
+                            $atomic_type = new Type\Atomic\TDependentGetDebugType($var_id);
+                        }
 
-                    $statements_analyzer->node_data->setType($real_stmt, new Type\Union([$atomic_type]));
+                        $statements_analyzer->node_data->setType($real_stmt, new Type\Union([$atomic_type]));
+
+                        return;
+                    }
                 }
-            } elseif (($var_type = $statements_analyzer->node_data->getType($var))
+            }
+
+            if (($var_type = $statements_analyzer->node_data->getType($var))
                 && ($function_id === 'get_class'
                     || $function_id === 'get_debug_type'
                 )
