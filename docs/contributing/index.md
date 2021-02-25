@@ -30,7 +30,7 @@ Before you send a pull request, make sure you follow these guidelines:
 
 Run integration checks locally:
 
-- `composer phpcs` - checks the code is properly linted
+- `composer cs` - checks the code is properly linted
 - `vendor/bin/paratest` - runs PHPUnit tests in parallel
 - `./psalm` - runs Psalm on itself
 
