@@ -239,6 +239,10 @@ class FileFilter
                     );
 
                     if (empty($globs)) {
+                        if ($allow_missing_files) {
+                            continue;
+                        }
+
                         throw new ConfigException(
                             'Could not resolve config path to ' . $base_dir . DIRECTORY_SEPARATOR .
                                 (string)$file['name']
@@ -246,7 +250,7 @@ class FileFilter
                     }
 
                     foreach ($globs as $glob_index => $file_path) {
-                        if (!$file_path) {
+                        if (!$file_path && !$allow_missing_files) {
                             throw new ConfigException(
                                 'Could not resolve config path to ' . $base_dir . DIRECTORY_SEPARATOR .
                                     (string)$file['name'] . ':' . $glob_index
