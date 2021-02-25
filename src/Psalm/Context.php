@@ -712,6 +712,10 @@ class Context
         }
 
         $this->clauses = $clauses_to_keep;
+
+        if ($this->parent_context) {
+            $this->parent_context->removeMutableObjectVars();
+        }
     }
 
     public function updateChecks(Context $op_context): void

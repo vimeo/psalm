@@ -114,6 +114,38 @@ class PropertyTypeTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testFooBar(): void
+    {
+        Config::getInstance()->remember_property_assignments_after_call = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                    class A {
+                        private ?int $bar = null;
+
+                        public function baz(): void
+                        {
+                            $this->bar = null;
+
+                            foreach (range(1, 5) as $part) {
+                                if ($part === 3) {
+                                    $this->foo();
+                                }
+                            }
+
+                            if ($this->bar === null) {}
+                        }
+
+                        private function foo() : void {
+                            $this->bar = 5;
+                        }
+                    }'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     public function testForgetFinalMethodCalls(): void
     {
         Config::getInstance()->remember_property_assignments_after_call = false;
