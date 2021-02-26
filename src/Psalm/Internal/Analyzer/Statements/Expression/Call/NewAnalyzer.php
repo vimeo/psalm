@@ -29,6 +29,7 @@ use function strtolower;
 use function implode;
 use function array_values;
 use function array_map;
+use function reset;
 
 /**
  * @internal
@@ -477,7 +478,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                 $fq_class_name,
                 array_values(
                     array_map(
-                        function($map) {
+                        function ($map) {
                             return clone reset($map);
                         },
                         $storage->template_types
