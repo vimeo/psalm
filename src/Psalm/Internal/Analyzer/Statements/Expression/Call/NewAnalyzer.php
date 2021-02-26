@@ -472,6 +472,25 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
             )) {
                 // fall through
             }
+        } elseif ($storage->template_types) {
+            $result_atomic_type = new Type\Atomic\TGenericObject(
+                $fq_class_name,
+                array_values(
+                    array_map(
+                        function($map) {
+                            return clone reset($map);
+                        },
+                        $storage->template_types
+                    )
+                )
+            );
+
+            $result_atomic_type->was_static = $from_static;
+
+            $statements_analyzer->node_data->setType(
+                $stmt,
+                new Type\Union([$result_atomic_type])
+            );
         }
 
         if ($storage->external_mutation_free) {
