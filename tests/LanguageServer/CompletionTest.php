@@ -1438,4 +1438,191 @@ class CompletionTest extends \Psalm\Tests\TestCase
         $completion_items = $codebase->getCompletionItemsForType(Type::parseString("DateTime::RFC3339"));
         $this->assertCount(1, $completion_items);
     }
+
+    public function testCompletionStaticMethodDynamicCall(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace B;
+
+                class A {
+                    public static function bar() {
+                    }
+
+                    public function foo() {
+                        $this->
+                    }
+                }'
+        );
+
+        $codebase->file_provider->openFile('somefile.php');
+        $codebase->scanFiles();
+        $this->analyzeFile('somefile.php', new Context());
+
+        $completion_data = $codebase->getCompletionDataAtPosition('somefile.php', new Position(8, 31));
+
+        $this->assertSame(['B\A&static', '->', 211], $completion_data);
+
+        $completion_items = $codebase->getCompletionItemsForClassishThing($completion_data[0], $completion_data[1]);
+
+        $this->assertCount(2, $completion_items);
+        $this->assertEquals('foo()', $completion_items[0]->insertText);
+        $this->assertEquals('bar()', $completion_items[1]->insertText);
+    }
+
+    public function testCompletionStaticMethodSelfKeyword(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace B;
+
+                class A {
+                    public static function bar() {
+                    }
+
+                    public function foo() {
+                        self::
+                    }
+                }'
+        );
+
+        $codebase->file_provider->openFile('somefile.php');
+        $codebase->scanFiles();
+        $this->analyzeFile('somefile.php', new Context());
+
+        $completion_data = $codebase->getCompletionDataAtPosition('somefile.php', new Position(8, 30));
+
+        $this->assertSame(['B\A', '::', 210], $completion_data);
+
+        $completion_items = $codebase->getCompletionItemsForClassishThing($completion_data[0], $completion_data[1]);
+
+        $this->assertCount(2, $completion_items);
+        $this->assertEquals('foo()', $completion_items[0]->insertText);
+        $this->assertEquals('bar()', $completion_items[1]->insertText);
+    }
+
+    public function testCompletionStaticMethodParentKeyword(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace B;
+
+                class A {
+                    public static function bar() {
+                    }
+                }
+
+                class C extends A {
+                    public function foo() {
+                        parent::
+                    }
+                }'
+        );
+
+        $codebase->file_provider->openFile('somefile.php');
+        $codebase->scanFiles();
+        $this->analyzeFile('somefile.php', new Context());
+
+        $completion_data = $codebase->getCompletionDataAtPosition('somefile.php', new Position(10, 32));
+
+        $this->assertSame(['B\A', '::', 266], $completion_data);
+
+        $completion_items = $codebase->getCompletionItemsForClassishThing($completion_data[0], $completion_data[1]);
+
+        $this->assertCount(1, $completion_items);
+        $this->assertEquals('bar()', $completion_items[0]->insertText);
+    }
+
+    public function testCompletionStaticMethodSelfKeywordInherited(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace B;
+
+                class A {
+                    public static function bar() {
+                    }
+                }
+
+                class C extends A {
+                    public static function baz() {
+                    }
+
+                    public function foo() {
+                        self::
+                    }
+                }'
+        );
+
+        $codebase->file_provider->openFile('somefile.php');
+        $codebase->scanFiles();
+        $this->analyzeFile('somefile.php', new Context());
+
+        $completion_data = $codebase->getCompletionDataAtPosition('somefile.php', new Position(13, 30));
+
+        $this->assertSame(['B\C', '::', 338], $completion_data);
+
+        $completion_items = $codebase->getCompletionItemsForClassishThing($completion_data[0], $completion_data[1]);
+
+        $this->assertCount(3, $completion_items);
+        $this->assertEquals('foo()', $completion_items[0]->insertText);
+        $this->assertEquals('baz()', $completion_items[1]->insertText);
+        $this->assertEquals('bar()', $completion_items[2]->insertText);
+    }
+
+    public function testCompletionStaticMethodStaticKeyword(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace B;
+
+                class A {
+                    public static function bar() {
+                    }
+
+                    public function foo() {
+                        static::
+                    }
+                }'
+        );
+
+        $codebase->file_provider->openFile('somefile.php');
+        $codebase->scanFiles();
+        $this->analyzeFile('somefile.php', new Context());
+
+        $completion_data = $codebase->getCompletionDataAtPosition('somefile.php', new Position(8, 32));
+
+        $this->assertSame(['B\A', '::', 212], $completion_data);
+
+        $completion_items = $codebase->getCompletionItemsForClassishThing($completion_data[0], $completion_data[1]);
+
+        $this->assertCount(2, $completion_items);
+        $this->assertEquals('foo()', $completion_items[0]->insertText);
+        $this->assertEquals('bar()', $completion_items[1]->insertText);
+    }
 }
