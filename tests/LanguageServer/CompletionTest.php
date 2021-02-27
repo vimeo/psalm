@@ -1390,7 +1390,6 @@ class CompletionTest extends \Psalm\Tests\TestCase
 
     public function testTypeContextForFunctionArgumentWithWhiteSpace(): void
     {
-
         $codebase = $this->project_analyzer->getCodebase();
         $config = $codebase->config;
         $config->throw_exception = false;
@@ -1411,6 +1410,42 @@ class CompletionTest extends \Psalm\Tests\TestCase
 
         $type = $codebase->getTypeContextAtPosition('somefile.php', new Position(5, 32));
         $this->assertSame('bool', (string) $type);
+    }
+
+    public function testCallStaticInInstance(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class Foo
+                {
+                    public function testFoo() {
+                        $this->
+                    }
+
+                    public static function bar() : void {}
+
+                    public function baz() : void {}
+                }'
+        );
+
+        $codebase = $this->project_analyzer->getCodebase();
+
+        $codebase->file_provider->openFile('somefile.php');
+        $codebase->scanFiles();
+        $this->analyzeFile('somefile.php', new Context());
+
+        $completion_data = $codebase->getCompletionDataAtPosition('somefile.php', new Position(4, 31));
+
+        $this->assertSame(['Foo&static', '->', 129], $completion_data);
+
+        $completion_items = $codebase->getCompletionItemsForClassishThing($completion_data[0], $completion_data[1]);
+
+        $this->assertCount(3, $completion_items);
     }
 
     public function testCompletionsForType(): void

@@ -1467,8 +1467,7 @@ class Codebase
      */
     public function getCompletionItemsForClassishThing(string $type_string, string $gap) : array
     {
-        $instance_completion_items = [];
-        $static_completion_items = [];
+        $completion_items = [];
 
         $type = Type::parseString($type_string);
 
@@ -1480,24 +1479,25 @@ class Codebase
                     foreach ($class_storage->appearing_method_ids as $declaring_method_id) {
                         $method_storage = $this->methods->getStorage($declaring_method_id);
 
-                        $completion_item = new \LanguageServerProtocol\CompletionItem(
-                            $method_storage->cased_name,
-                            \LanguageServerProtocol\CompletionItemKind::METHOD,
-                            (string)$method_storage,
-                            $method_storage->description,
-                            (string)$method_storage->visibility,
-                            $method_storage->cased_name,
-                            $method_storage->cased_name . (count($method_storage->params) !== 0 ? '($0)' : '()'),
-                            null,
-                            null,
-                            new Command('Trigger parameter hints', 'editor.action.triggerParameterHints')
-                        );
-                        $completion_item->insertTextFormat = \LanguageServerProtocol\InsertTextFormat::SNIPPET;
+                        if ($method_storage->is_static || $gap === '->') {
+                            $completion_item = new \LanguageServerProtocol\CompletionItem(
+                                $method_storage->cased_name,
+                                \LanguageServerProtocol\CompletionItemKind::METHOD,
+                                (string)$method_storage,
+                                $method_storage->description,
+                                (string)$method_storage->visibility,
+                                $method_storage->cased_name,
+                                $method_storage->cased_name . (count($method_storage->params) !== 0 ? '($0)' : '()'),
+                                null,
+                                null,
+                                new Command('Trigger parameter hints', 'editor.action.triggerParameterHints'),
+                                null,
+                                2
+                            );
 
-                        if ($method_storage->is_static) {
-                            $static_completion_items[] = $completion_item;
-                        } else {
-                            $instance_completion_items[] = $completion_item;
+                            $completion_item->insertTextFormat = \LanguageServerProtocol\InsertTextFormat::SNIPPET;
+
+                            $completion_items[] = $completion_item;
                         }
                     }
 
@@ -1506,25 +1506,21 @@ class Codebase
                             $declaring_class . '::$' . $property_name
                         );
 
-                        $completion_item = new \LanguageServerProtocol\CompletionItem(
-                            '$' . $property_name,
-                            \LanguageServerProtocol\CompletionItemKind::PROPERTY,
-                            $property_storage->getInfo(),
-                            $property_storage->description,
-                            (string)$property_storage->visibility,
-                            $property_name,
-                            ($gap === '::' ? '$' : '') . $property_name
-                        );
-
-                        if ($property_storage->is_static) {
-                            $static_completion_items[] = $completion_item;
-                        } else {
-                            $instance_completion_items[] = $completion_item;
+                        if ($property_storage->is_static || $gap === '->') {
+                            $completion_items[] = new \LanguageServerProtocol\CompletionItem(
+                                '$' . $property_name,
+                                \LanguageServerProtocol\CompletionItemKind::PROPERTY,
+                                $property_storage->getInfo(),
+                                $property_storage->description,
+                                (string)$property_storage->visibility,
+                                $property_name,
+                                ($gap === '::' ? '$' : '') . $property_name
+                            );
                         }
                     }
 
                     foreach ($class_storage->constants as $const_name => $const) {
-                        $static_completion_items[] = new \LanguageServerProtocol\CompletionItem(
+                        $completion_items[] = new \LanguageServerProtocol\CompletionItem(
                             $const_name,
                             \LanguageServerProtocol\CompletionItemKind::VARIABLE,
                             'const ' . $const_name,
@@ -1539,15 +1535,6 @@ class Codebase
                     continue;
                 }
             }
-        }
-
-        if ($gap === '->') {
-            $completion_items = $instance_completion_items;
-        } else {
-            $completion_items = array_merge(
-                $instance_completion_items,
-                $static_completion_items
-            );
         }
 
         return $completion_items;
@@ -1713,7 +1700,7 @@ class Codebase
                 $function_name . (count($function->params) !== 0 ? '($0)' : '()'),
                 null,
                 null,
-                null,
+                new Command('Trigger parameter hints', 'editor.action.triggerParameterHints'),
                 null,
                 2
             );
