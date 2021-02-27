@@ -40,7 +40,8 @@ class TTemplateParamClass extends TClassString
 
     public function getId(bool $nested = false): string
     {
-        return 'class-string<' . $this->param_name . ':' . $this->defining_class . ' as ' . $this->as . '>';
+        return 'class-string<' . $this->param_name . ':' . $this->defining_class
+            . ' as ' . ($this->as_type ? $this->as_type->getId() : $this->as) . '>';
     }
 
     public function getAssertionString(bool $exact = false): string

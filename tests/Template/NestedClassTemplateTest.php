@@ -78,6 +78,35 @@ class NestedClassTemplateTest extends TestCase
                         return $wrapper->unwrap();
                     }'
             ],
+            'unwrapFromTemplatedClassString' => [
+                '<?php
+                    /**
+                     * @template TInner
+                     */
+                    interface Wrapper {
+                        /** @return TInner */
+                        public function unwrap();
+                    }
+
+                    /**
+                     * @extends Wrapper<string>
+                     */
+                    interface StringWrapper extends Wrapper {}
+
+                    /**
+                     * @template TInner
+                     * @template TWrapper of Wrapper<TInner>
+                     *
+                     * @param  class-string<TWrapper> $class
+                     * @return TInner
+                     */
+                    function load(string $class) {
+                        $package = new $class();
+                        return $package->unwrap();
+                    }
+
+                    $result = load(StringWrapper::class);'
+            ],
         ];
     }
 

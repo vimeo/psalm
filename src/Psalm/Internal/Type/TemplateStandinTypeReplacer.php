@@ -157,9 +157,16 @@ class TemplateStandinTypeReplacer
                     $atomic_type,
                     $input_type,
                     $input_arg_offset,
+                    $calling_class,
+                    $calling_function,
                     $template_result,
+                    $codebase,
+                    $statements_analyzer,
+                    $replace,
+                    $add_upper_bound,
                     $depth,
-                    $was_single
+                    $was_single,
+                    $had_template
                 );
             }
         }
@@ -806,12 +813,17 @@ class TemplateStandinTypeReplacer
         Atomic\TTemplateParamClass $atomic_type,
         ?Union $input_type,
         ?int $input_arg_offset,
+        ?string $calling_class,
+        ?string $calling_function,
         TemplateResult $template_result,
+        ?Codebase $codebase,
+        ?StatementsAnalyzer $statements_analyzer,
+        bool $replace,
+        bool $add_upper_bound,
         int $depth,
-        bool $was_single
+        bool $was_single,
+        bool &$had_template
     ) : array {
-        $class_string = new Atomic\TClassString($atomic_type->as, $atomic_type->as_type);
-
         $atomic_types = [];
 
         if ($input_type && !$template_result->readonly) {
@@ -856,6 +868,34 @@ class TemplateStandinTypeReplacer
                 $generic_param = \Psalm\Type::getMixed();
             }
 
+            if ($atomic_type->as_type) {
+                // sometimes templated class-strings can contain nested templates
+                // in the as type that need to be resolved as well.
+                $as_type_union = self::replace(
+                    new Union([$atomic_type->as_type]),
+                    $template_result,
+                    $codebase,
+                    $statements_analyzer,
+                    $generic_param,
+                    $input_arg_offset,
+                    $calling_class,
+                    $calling_function,
+                    $replace,
+                    $add_upper_bound,
+                    $depth + 1
+                );
+
+                $as_type_union_types = $as_type_union->getAtomicTypes();
+
+                $first = \reset($as_type_union_types);
+
+                if (count($as_type_union_types) === 1 && $first instanceof Atomic\TNamedObject) {
+                    $atomic_type->as_type = $first;
+                } else {
+                    $atomic_type->as_type = null;
+                }
+            }
+
             if ($generic_param) {
                 if (isset($template_result->upper_bounds[$atomic_type->param_name][$atomic_type->defining_class])) {
                     $template_result->upper_bounds[$atomic_type->param_name][$atomic_type->defining_class] = new TemplateBound(
@@ -878,17 +918,19 @@ class TemplateStandinTypeReplacer
                 [$atomic_type->param_name]
                 [$atomic_type->defining_class];
 
-            foreach ($template_type->getAtomicTypes() as $atomic_type) {
-                if ($atomic_type instanceof Atomic\TNamedObject) {
+            foreach ($template_type->getAtomicTypes() as $template_atomic_type) {
+                if ($template_atomic_type instanceof Atomic\TNamedObject) {
                     $atomic_types[] = new Atomic\TClassString(
-                        $atomic_type->value,
-                        $atomic_type
+                        $template_atomic_type->value,
+                        $template_atomic_type
                     );
-                } elseif ($atomic_type instanceof Atomic\TObject) {
+                } elseif ($template_atomic_type instanceof Atomic\TObject) {
                     $atomic_types[] = new Atomic\TClassString();
                 }
             }
         }
+
+        $class_string = new Atomic\TClassString($atomic_type->as, $atomic_type->as_type);
 
         if (!$atomic_types) {
             $atomic_types[] = $class_string;
