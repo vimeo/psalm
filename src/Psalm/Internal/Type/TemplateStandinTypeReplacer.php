@@ -263,11 +263,11 @@ class TemplateStandinTypeReplacer
 
         if ($input_type && $codebase && !$input_type->hasMixed()) {
             $matching_atomic_types = self::findMatchingAtomicTypesForTemplate(
-                $input_type,
                 $atomic_type,
                 $key,
                 $codebase,
-                $statements_analyzer
+                $statements_analyzer,
+                $input_type
             );
         }
 
@@ -309,14 +309,21 @@ class TemplateStandinTypeReplacer
     }
 
     /**
+     * This method attempts to find bits of the input type (normally the argument type of a method call)
+     * that match the base type (normally the param type of the method). These matches are used to infer
+     * more template types
+     *
+     * Example: when passing `array<string|int>` to a function that expects `array<T>`, a rule in this method
+     * identifies the matching atomic types for `T` as `string|int`
+     *
      * @return list<Atomic>
      */
     private static function findMatchingAtomicTypesForTemplate(
-        Union $input_type,
         Atomic $base_type,
         string $key,
         Codebase $codebase,
-        ?StatementsAnalyzer $statements_analyzer
+        ?StatementsAnalyzer $statements_analyzer,
+        ?Union $input_type
     ) : array {
         $matching_atomic_types = [];
 
@@ -439,6 +446,19 @@ class TemplateStandinTypeReplacer
                 } catch (\InvalidArgumentException $e) {
                     // do nothing
                 }
+            }
+
+            if ($atomic_input_type instanceof Atomic\TTemplateParam) {
+                $matching_atomic_types = array_merge(
+                    $matching_atomic_types,
+                    self::findMatchingAtomicTypesForTemplate(
+                        $base_type,
+                        $key,
+                        $codebase,
+                        $statements_analyzer,
+                        $atomic_input_type->as
+                    )
+                );
             }
         }
 
