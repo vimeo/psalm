@@ -323,7 +323,7 @@ class TemplateStandinTypeReplacer
         string $key,
         Codebase $codebase,
         ?StatementsAnalyzer $statements_analyzer,
-        ?Union $input_type
+        Union $input_type
     ) : array {
         $matching_atomic_types = [];
 
