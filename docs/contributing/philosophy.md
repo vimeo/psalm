@@ -34,11 +34,13 @@ Psalm does a lot, but people mainly use it to find potential bugs in their code.
 
 All other functionality – the language server, security analysis, manipulating/fixing code is a secondary concern.
 
-## Psalm’s primary execution environment is the command line
+## It's designed to be run on syntactically-correct code
 
-Psalm is mostly run on PHP code that parses a lint check (`php -l`). Psalm does not replace that check for verifying PHP syntax.
+Psalm is almost always run on PHP code that parses a lint check (`php -l <filename>`) – i.e. syntactically-correct code. Psalm is not a replacement for that syntax check.
 
 Given Psalm is almost always used on syntatically-correct code it should use a parser built for that purpose, and `nikic/php-parser` is the gold-standard.
+
+Where Psalm needs to run on syntactically-incorrect code (e.g. in language server mode) Psalm should still use the same parser (and work around any issues that produces).
 
 ## Annotations are better than type-providing plugins
 
