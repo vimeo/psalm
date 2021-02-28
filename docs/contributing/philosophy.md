@@ -4,6 +4,8 @@ This is about why Psalm is the way it is. This is a living document!
 
 ## Psalm is a tool for PHP written in PHP
 
+### Advantages
+
 - PHP is fast enough for most use-cases
 - Writing the tool in PHP guarantees that PHP community members can contribute to it without too much difficulty
 
