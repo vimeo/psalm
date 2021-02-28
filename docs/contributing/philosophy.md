@@ -1,6 +1,6 @@
-# The Governing Philosophy for Psalm development
+# Philosophy
 
-This is a living document!
+This is about why Psalm is the way it is. This is a living document!
 
 ## Psalm is a tool for PHP written in PHP
 
@@ -21,12 +21,12 @@ Python is a special case where the semi-official typechecker [MyPy can also comp
 Some interpreted languages have unofficial typecheckers written in faster compiled languages:
 
 - PHP
-  - [NoVerify](https://github.com/VKCOM/noverify) – open-source tool written in Go. Runs much faster than Psalm (but does not support many modern PHP features)
-  - PhpStorm – closed-source tool written in Java
+    - [NoVerify](https://github.com/VKCOM/noverify) – open-source tool written in Go. Runs much faster than Psalm (but does not support many modern PHP features)
+    - PhpStorm – closed-source tool written in Java
 - Ruby
-  - [Sorbet](https://sorbet.org/) - open-source tool written in C
+    - [Sorbet](https://sorbet.org/) - open-source tool written in C
 - Python
-  - [Pyre](https://github.com/facebook/pyre-check) - open-source tool written in OCaml
+    - [Pyre](https://github.com/facebook/pyre-check) - open-source tool written in OCaml
 - [Hack](https://github.com/facebook/hhvm) - the typechecker uses OCaml and Rust
 
 ## Psalm's primary purpose is finding bugs
