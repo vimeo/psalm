@@ -9,14 +9,14 @@ This is a living document!
 
 ### Drawbacks
 
-- Psalm struggles in very large monorepos (> 5M LOC) because it stretches beyond bthe limits of what PHP was designed for.
-- Psalm’s language slower is more limited in what it can provide (e.g. finding/changing all occurences of a symbol is infeasible to perform live) than comparable compiled-language tools.
+- Psalm is slow in very large monorepos (over 5 million lines of checked-in code).
+- Psalm’s language server is more limited in what it can provide than comparable compiled-language tools. For example, it's infeasible to find/change all occurences of a symbol, in all files that use it, as you type.
 
-### Comparisons
+### Comparison to other languages & tools
 
 Many languages have typecheckers/compilers written in the same language. Popular examples include Go, Rust, and TypeScript.
 
-Python is a special case where the semi-official typechecker [MyPy can also compile to a C Python extension](https://github.com/python/mypy/blame/master/mypyc/README.md#L6-L10), which runs 4x faster.
+Python is a special case where the semi-official typechecker [MyPy can also compile to a C Python extension](https://github.com/python/mypy/blame/master/mypyc/README.md#L6-L10), which runs 4x faster than the interpreted equivalent.
 
 Some interpreted languages have unofficial typecheckers written in faster compiled languages:
 
