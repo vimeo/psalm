@@ -28,7 +28,9 @@ Some interpreted languages have unofficial open-source typecheckers written in f
 
 ## Psalm's primary purpose is finding bugs
 
-Psalm does a lot, but the main thing people use it for is to find potential bugs in their code.
+Psalm does a lot, but people mainly use it to find potential bugs in their code.
+
+All other functionality – the language server, security analysis, manipulating/fixing code is a secondary concern.
 
 ## Psalm’s primary execution environment is the command line
 
