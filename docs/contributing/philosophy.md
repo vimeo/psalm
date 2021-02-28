@@ -16,7 +16,7 @@ This is about why Psalm is the way it is. This is a living document!
 
 Many languages have typecheckers/compilers written in the same language. Popular examples include Go, Rust, and TypeScript.
 
-Python is a special case where the semi-official typechecker MyPy [can also compile to a C Python extension](https://github.com/python/mypy/blame/master/mypyc/README.md#L6-L10), which runs 4x faster than the interpreted equivalent.
+Python is a special case where the semi-official typechecker [MyPy]((https://github.com/python/mypy), written in Python, can also [compile to a C Python extension](https://github.com/python/mypy/blame/master/mypyc/README.md#L6-L10), which runs 4x faster than the interpreted equivalent.
 
 Some interpreted languages have unofficial typecheckers written in faster compiled languages. In all cases a single mid-to-large company is behind each effort, with a small number of contributors not employed by that company:
 
