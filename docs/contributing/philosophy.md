@@ -2,7 +2,7 @@
 
 This is about why Psalm is the way it is. This is a living document!
 
-## 1. Psalm is a tool for PHP written in PHP
+## Psalm is a tool for PHP written in PHP
 
 - PHP is fast enough for most use-cases
 - Writing the tool in PHP guarantees that PHP community members can contribute to it without too much difficulty
@@ -29,17 +29,17 @@ Some interpreted languages have unofficial typecheckers written in faster compil
     - [Pyre](https://github.com/facebook/pyre-check) - written in OCaml
 - [Hack](https://github.com/facebook/hhvm) - the typechecker is written in OCaml and Rust
 
-## 2. Psalm's primary purpose is finding bugs
+## Psalm's primary purpose is finding bugs
 
 Psalm does a lot, but the main thing people use it for is to find potential bugs in their code.
 
-## 3. Psalm’s primary execution environment is the command line
+## Psalm’s primary execution environment is the command line
 
 Psalm is mostly run on PHP code that parses a lint check (`php -l`). Psalm does not replace that check for verifying PHP syntax.
 
 Since most of the time Psalm is used on syntatically-correct code it should use a parser built for that purpose, and `nikic/php-parser` is the best candidate.
 
-## 4. Annotations are better than type-providing plugins
+## Annotations are better than type-providing plugins
 
 Psalm offers a plugin API that allows you to tell it what about your program's property types, return types and parameter types.
 
@@ -47,7 +47,7 @@ Psalm aims to operate in a space with other static analysis tools. The more user
 
 So wherever possible Psalm should encourage developers to use annotations rather than type-providing plugins. This was a driving force in the adoption of [Conditional Types](../annotating_code/type_syntax/conditional_types.md) which allowed Psalm to replace some of its own internal type-providing plugins.
 
-## 5. In certain circumstances docblocks > PHP 8 attributes
+## In certain circumstances docblocks > PHP 8 attributes
 
 For information that's just designed to be consumed by static analysis tools, docblocks are a better home than PHP 8 attributes.
 
