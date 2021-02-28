@@ -876,7 +876,7 @@ class Analyzer
      */
     public function shiftFileOffsets(array $diff_map, array $deletion_ranges): void
     {
-        foreach ($this->existing_issues as $file_path => &$file_issues) {
+        foreach ($this->existing_issues as $file_path => $file_issues) {
             if (!isset($this->analyzed_methods[$file_path])) {
                 continue;
             }
@@ -890,7 +890,7 @@ class Analyzer
                         if ($issue_data->from >= $from
                             && $issue_data->from <= $to
                         ) {
-                            unset($file_issues[$i]);
+                            unset($this->existing_issues[$file_path][$i]);
                             break;
                         }
                     }
@@ -929,7 +929,7 @@ class Analyzer
                 foreach ($reference_map as $reference_from => $_) {
                     foreach ($file_deletion_ranges as [$from, $to]) {
                         if ($reference_from >= $from && $reference_from <= $to) {
-                            unset($reference_map[$reference_from]);
+                            unset($this->reference_map[$file_path][$reference_from]);
                             break;
                         }
                     }
@@ -940,11 +940,12 @@ class Analyzer
                 foreach ($reference_map as $reference_from => [$reference_to, $tag]) {
                     foreach ($file_diff_map as [$from, $to, $file_offset]) {
                         if ($reference_from >= $from && $reference_from <= $to) {
-                            unset($reference_map[$reference_from]);
-                            $reference_map[$reference_from += $file_offset] = [
-                                $reference_to += $file_offset,
+                            unset($this->reference_map[$file_path][$reference_from]);
+                            $this->reference_map[$file_path][$reference_from + $file_offset] = [
+                                $reference_to + $file_offset,
                                 $tag,
                             ];
+                            break;
                         }
                     }
                 }
@@ -964,7 +965,7 @@ class Analyzer
                 foreach ($type_map as $type_from => $_) {
                     foreach ($file_deletion_ranges as [$from, $to]) {
                         if ($type_from >= $from && $type_from <= $to) {
-                            unset($type_map[$type_from]);
+                            unset($this->type_map[$file_path][$type_from]);
                             break;
                         }
                     }
@@ -975,11 +976,12 @@ class Analyzer
                 foreach ($type_map as $type_from => [$type_to, $tag]) {
                     foreach ($file_diff_map as [$from, $to, $file_offset]) {
                         if ($type_from >= $from && $type_from <= $to) {
-                            unset($type_map[$type_from]);
-                            $type_map[$type_from += $file_offset] = [
-                                $type_to += $file_offset,
+                            unset($this->type_map[$file_path][$type_from]);
+                            $this->type_map[$file_path][$type_from + $file_offset] = [
+                                $type_to + $file_offset,
                                 $tag,
                             ];
+                            break;
                         }
                     }
                 }
@@ -1010,12 +1012,13 @@ class Analyzer
                 foreach ($argument_map as $argument_from => [$argument_to, $method_id, $argument_number]) {
                     foreach ($file_diff_map as [$from, $to, $file_offset]) {
                         if ($argument_from >= $from && $argument_from <= $to) {
-                            unset($argument_map[$argument_from]);
-                            $argument_map[$argument_from += $file_offset] = [
-                                $argument_to += $file_offset,
+                            unset($this->argument_map[$file_path][$argument_from]);
+                            $this->argument_map[$file_path][$argument_from + $file_offset] = [
+                                $argument_to + $file_offset,
                                 $method_id,
                                 $argument_number,
                             ];
+                            break;
                         }
                     }
                 }
