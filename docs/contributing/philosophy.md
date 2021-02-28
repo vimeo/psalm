@@ -42,7 +42,9 @@ Psalm offers a plugin API that allows you to tell it what about your program's p
 
 Psalm aims to operate in a space with other static analysis tools. The more users rely on plugins, the less chance those other tools have to understand the user's intent.
 
-So wherever possible Psalm should encourage developers to use annotations rather than type-providing plugins. This was a driving force in the adoption of [Conditional Types](../annotating_code/type_syntax/conditional_types.md) which allowed Psalm to replace some of its own internal type-providing plugins.
+Psalm should encourage developers to use docblock annotations rather than type-providing plugins. This was a driving force in the adoption of [Conditional Types](../annotating_code/type_syntax/conditional_types.md) which allowed Psalm to replace some of its own internal type-providing plugins.
+
+The other benefit to docblock annotations is verifiability – for the most part Psalm is able to verify that docblock annotations are correct, but it cannot provide many assurances when plugins are used.
 
 ## In certain circumstances docblocks > PHP 8 attributes
 
