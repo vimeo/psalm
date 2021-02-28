@@ -14,7 +14,7 @@ This is about why Psalm is the way it is. This is a living document!
 
 ### Comparison to other languages & tools
 
-Many languages have typecheckers/compilers written in the same language. Popular examples include Go, Rust, and TypeScript. Python is a special case where the semi-official typechecker [MyPy](https://github.com/python/mypy), written in Python, can also [compile to a C Python extension](https://github.com/python/mypy/blame/master/mypyc/README.md#L6-L10), which runs 4x faster than the interpreted equivalent.
+Many languages have typecheckers/compilers written in the same language. Popular examples include Go, Rust, and TypeScript. Python is a special case where the semi-official typechecker [MyPy](https://github.com/python/mypy) (written in Python) can also [compile to a C Python extension](https://github.com/python/mypy/blame/master/mypyc/README.md#L6-L10), which runs 4x faster than the interpreted equivalent.
 
 Some interpreted languages have unofficial open-source typecheckers written in faster compiled languages. In all cases a single mid-to-large company is behind each effort, with a small number of contributors not employed by that company:
 
@@ -36,7 +36,7 @@ All other functionality – the language server, security analysis, manipulating
 
 Psalm is mostly run on PHP code that parses a lint check (`php -l`). Psalm does not replace that check for verifying PHP syntax.
 
-Since most of the time Psalm is used on syntatically-correct code it should use a parser built for that purpose, and `nikic/php-parser` is the best candidate.
+Given Psalm is almost always used on syntatically-correct code it should use a parser built for that purpose, and `nikic/php-parser` is the gold-standard.
 
 ## Annotations are better than type-providing plugins
 
