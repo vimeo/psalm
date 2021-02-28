@@ -8,6 +8,8 @@ Hopefully you can be one of them?
 
 [Here’s a rough guide to the codebase](how_psalm_works.md).
 
+[Here's the philosophy underpinning the Psalm’s development](philosophy.md).
+
 I've also put together [a list of Psalm’s complexities](what_makes_psalm_complicated.md).
 
 Are you looking for low-hanging fruit? Here are some [GitHub issues](https://github.com/vimeo/psalm/issues?q=is%3Aissue+is%3Aopen+label%3A%22easy+problems%22) that shouldn't be too difficult to resolve.
