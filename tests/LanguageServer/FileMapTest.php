@@ -155,7 +155,101 @@ class FileMapTest extends \Psalm\Tests\TestCase
         $this->assertCount(\count($before), $after);
     }
 
-    public function testMapIsUpdatedAfterDeletingMethod(): void
+    public function testMapIsUpdatedAfterDeletingFirstMethod(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->diff_methods = true;
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace Foo;
+
+                class A {
+                    public function first(\DateTimeImmutable $d) : void {
+                        echo $d->format("Y");
+                        echo "\n";
+                    }
+
+                    public function second_method(\DateTimeImmutable $d) : void {
+                        new \DateTimeImmutable("2010-01-01");
+                        echo $d->format("Y");
+                    }
+                }'
+        );
+
+        $codebase->file_provider->openFile('somefile.php');
+        $codebase->addFilesToAnalyze(['somefile.php' => 'somefile.php']);
+        $codebase->scanFiles();
+        $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
+        $this->assertCount(9, $codebase->analyzer->getMapsForFile('somefile.php')[0]);
+
+        $codebase->addTemporaryFileChanges(
+            'somefile.php',
+            '<?php
+                namespace Foo;
+
+                class A {
+                    public function second_method(\DateTimeImmutable $d) : void {
+                        new \DateTimeImmutable("2010-01-01");
+                        echo $d->format("Y");
+                    }
+                }'
+        );
+        $codebase->reloadFiles($this->project_analyzer, ['somefile.php']);
+        $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
+        $this->assertCount(5, $codebase->analyzer->getMapsForFile('somefile.php')[0]);
+    }
+
+    public function testMapIsUpdatedAfterDeletingSecondMethod(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->diff_methods = true;
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace Foo;
+
+                class A {
+                    public function first(\DateTimeImmutable $d) : void {
+                        echo $d->format("Y");
+                        echo "\n";
+                    }
+
+                    public function second(\DateTimeImmutable $d) : void {
+                       echo $d->format("Y");
+                    }
+                }'
+        );
+
+        $codebase->file_provider->openFile('somefile.php');
+        $codebase->addFilesToAnalyze(['somefile.php' => 'somefile.php']);
+        $codebase->scanFiles();
+        $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
+        $this->assertCount(8, $codebase->analyzer->getMapsForFile('somefile.php')[0]);
+
+        $codebase->addTemporaryFileChanges(
+            'somefile.php',
+            '<?php
+                namespace Foo;
+
+                class A {
+                    public function second(\DateTimeImmutable $d) : void {
+                        echo $d->format("Y");
+                    }
+                }'
+        );
+        $codebase->reloadFiles($this->project_analyzer, ['somefile.php']);
+        $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
+        $this->assertCount(4, $codebase->analyzer->getMapsForFile('somefile.php')[0]);
+    }
+
+    public function testMapIsUpdatedAfterAddingMethod(): void
     {
         $codebase = $this->project_analyzer->getCodebase();
         $codebase->diff_methods = true;
@@ -191,6 +285,15 @@ class FileMapTest extends \Psalm\Tests\TestCase
                 namespace Foo;
 
                 class A {
+                    public function first(\DateTimeImmutable $d) : void {
+                        echo $d->format("Y");
+                        echo "\n";
+                    }
+
+                    public function third(\DateTimeImmutable $d) : void {
+                        echo $d->format("Y");
+                    }
+
                     public function second(\DateTimeImmutable $d) : void {
                         echo $d->format("Y");
                     }
@@ -198,6 +301,6 @@ class FileMapTest extends \Psalm\Tests\TestCase
         );
         $codebase->reloadFiles($this->project_analyzer, ['somefile.php']);
         $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
-        $this->assertCount(4, $codebase->analyzer->getMapsForFile('somefile.php')[0]);
+        $this->assertCount(12, $codebase->analyzer->getMapsForFile('somefile.php')[0]);
     }
 }
