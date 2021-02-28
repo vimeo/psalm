@@ -54,7 +54,8 @@ use function substr;
  *     issues:array<string, list<IssueData>>,
  *     changed_members:array<string, array<string, bool>>,
  *     unchanged_signature_members:array<string, array<string, bool>>,
- *     diff_map:array<string, array<int, array{0:int, 1:int, 2:int, 3:int}>>,
+ *     diff_map:array<string, array<int, array{int, int, int, int}>>,
+ *     deletion_ranges:array<string, array<int, array{int, int}>>,
  *     errors:array<string, bool>,
  *     classlike_storage:array<string, \Psalm\Storage\ClassLikeStorage>,
  *     file_storage:array<lowercase-string, \Psalm\Storage\FileStorage>,
@@ -381,6 +382,7 @@ class Scanner
                         'changed_members' => $statements_provider->getChangedMembers(),
                         'unchanged_signature_members' => $statements_provider->getUnchangedSignatureMembers(),
                         'diff_map' => $statements_provider->getDiffMap(),
+                        'deletion_ranges' => $statements_provider->getDeletionRanges(),
                         'errors' => $statements_provider->getErrors(),
                         'classlike_storage' => $codebase->classlike_storage_provider->getAll(),
                         'file_storage' => $codebase->file_storage_provider->getAll(),
@@ -409,6 +411,9 @@ class Scanner
                 );
                 $this->codebase->statements_provider->addDiffMap(
                     $pool_data['diff_map']
+                );
+                $this->codebase->statements_provider->addDeletionRanges(
+                    $pool_data['deletion_ranges']
                 );
                 $this->codebase->statements_provider->addErrors($pool_data['errors']);
 

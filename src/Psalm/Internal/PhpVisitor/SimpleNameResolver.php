@@ -37,7 +37,7 @@ class SimpleNameResolver extends NodeVisitorAbstract
      *    namespacedName attribute, as usual.)
      *
      * @param ErrorHandler $errorHandler Error handler
-     * @param array<int, array{0: int, 1: int, 2: int, 3: int}> $offset_map
+     * @param array<int, array{int, int, int, int}> $offset_map
      */
     public function __construct(ErrorHandler $errorHandler, ?array $offset_map = null)
     {

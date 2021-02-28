@@ -576,11 +576,6 @@ class Analyzer
             $i = 0;
 
             foreach ($this->files_to_analyze as $file_path => $_) {
-                // Remove all current maps for the file, so new analysis doesn't
-                // only append to existing data.
-                unset($this->reference_map[$file_path]);
-                unset($this->type_map[$file_path]);
-                unset($this->argument_map[$file_path]);
                 $analysis_worker($i, $file_path);
                 ++$i;
 
@@ -614,6 +609,7 @@ class Analyzer
         $errored_files = $statements_provider->getErrors();
 
         $diff_map = $statements_provider->getDiffMap();
+        $deletion_ranges = $statements_provider->getDeletionRanges();
 
         $method_references_to_class_members
             = $file_reference_provider->getAllMethodReferencesToClassMembers();
@@ -774,7 +770,7 @@ class Analyzer
             }
         }
 
-        $this->shiftFileOffsets($diff_map);
+        $this->shiftFileOffsets($diff_map, $deletion_ranges);
 
         foreach ($this->files_to_analyze as $file_path) {
             $file_reference_provider->clearExistingIssuesForFile($file_path);
@@ -876,9 +872,9 @@ class Analyzer
 
     /**
      * @param array<string, array<int, array{int, int, int, int}>> $diff_map
-     *
+     * @param array<string, array<int, array{int, int}>> $deletion_ranges
      */
-    public function shiftFileOffsets(array $diff_map): void
+    public function shiftFileOffsets(array $diff_map, array $deletion_ranges): void
     {
         foreach ($this->existing_issues as $file_path => &$file_issues) {
             if (!isset($this->analyzed_methods[$file_path])) {
@@ -886,39 +882,36 @@ class Analyzer
             }
 
             $file_diff_map = $diff_map[$file_path] ?? [];
+            $file_deletion_ranges = $deletion_ranges[$file_path] ?? [];
 
-            if (!$file_diff_map) {
-                continue;
-            }
-
-            $first_diff_offset = $file_diff_map[0][0];
-            $last_diff_offset = $file_diff_map[count($file_diff_map) - 1][1];
-
-            foreach ($file_issues as $i => &$issue_data) {
-                if ($issue_data->to < $first_diff_offset || $issue_data->from > $last_diff_offset) {
-                    unset($file_issues[$i]);
-                    continue;
-                }
-
-                $matched = false;
-
-                foreach ($file_diff_map as [$from, $to, $file_offset, $line_offset]) {
-                    if ($issue_data->from >= $from
-                        && $issue_data->from <= $to
-                        && !$matched
-                    ) {
-                        $issue_data->from += $file_offset;
-                        $issue_data->to += $file_offset;
-                        $issue_data->snippet_from += $file_offset;
-                        $issue_data->snippet_to += $file_offset;
-                        $issue_data->line_from += $line_offset;
-                        $issue_data->line_to += $line_offset;
-                        $matched = true;
+            if ($file_deletion_ranges) {
+                foreach ($file_issues as $i => &$issue_data) {
+                    foreach ($file_deletion_ranges as [$from, $to]) {
+                        if ($issue_data->from >= $from
+                            && $issue_data->from <= $to
+                        ) {
+                            unset($file_issues[$i]);
+                            break;
+                        }
                     }
                 }
+            }
 
-                if (!$matched) {
-                    unset($file_issues[$i]);
+            if ($file_diff_map) {
+                foreach ($file_issues as $issue_data) {
+                    foreach ($file_diff_map as [$from, $to, $file_offset, $line_offset]) {
+                        if ($issue_data->from >= $from
+                            && $issue_data->from <= $to
+                        ) {
+                            $issue_data->from += $file_offset;
+                            $issue_data->to += $file_offset;
+                            $issue_data->snippet_from += $file_offset;
+                            $issue_data->snippet_to += $file_offset;
+                            $issue_data->line_from += $line_offset;
+                            $issue_data->line_to += $line_offset;
+                            break;
+                        }
+                    }
                 }
             }
         }
@@ -930,26 +923,29 @@ class Analyzer
             }
 
             $file_diff_map = $diff_map[$file_path] ?? [];
+            $file_deletion_ranges = $deletion_ranges[$file_path] ?? [];
 
-            if (!$file_diff_map) {
-                continue;
+            if ($file_deletion_ranges) {
+                foreach ($reference_map as $reference_from => $_) {
+                    foreach ($file_deletion_ranges as [$from, $to]) {
+                        if ($reference_from >= $from && $reference_from <= $to) {
+                            unset($reference_map[$reference_from]);
+                            break;
+                        }
+                    }
+                }
             }
 
-            $first_diff_offset = $file_diff_map[0][0];
-            $last_diff_offset = $file_diff_map[count($file_diff_map) - 1][1];
-
-            foreach ($reference_map as $reference_from => [$reference_to, $tag]) {
-                if ($reference_to < $first_diff_offset || $reference_from > $last_diff_offset) {
-                    continue;
-                }
-
-                foreach ($file_diff_map as [$from, $to, $file_offset]) {
-                    if ($reference_from >= $from && $reference_from <= $to) {
-                        unset($reference_map[$reference_from]);
-                        $reference_map[$reference_from += $file_offset] = [
-                            $reference_to += $file_offset,
-                            $tag,
-                        ];
+            if ($file_diff_map) {
+                foreach ($reference_map as $reference_from => [$reference_to, $tag]) {
+                    foreach ($file_diff_map as [$from, $to, $file_offset]) {
+                        if ($reference_from >= $from && $reference_from <= $to) {
+                            unset($reference_map[$reference_from]);
+                            $reference_map[$reference_from += $file_offset] = [
+                                $reference_to += $file_offset,
+                                $tag,
+                            ];
+                        }
                     }
                 }
             }
@@ -962,26 +958,29 @@ class Analyzer
             }
 
             $file_diff_map = $diff_map[$file_path] ?? [];
+            $file_deletion_ranges = $deletion_ranges[$file_path] ?? [];
 
-            if (!$file_diff_map) {
-                continue;
+            if ($file_deletion_ranges) {
+                foreach ($type_map as $type_from => $_) {
+                    foreach ($file_deletion_ranges as [$from, $to]) {
+                        if ($type_from >= $from && $type_from <= $to) {
+                            unset($type_map[$type_from]);
+                            break;
+                        }
+                    }
+                }
             }
 
-            $first_diff_offset = $file_diff_map[0][0];
-            $last_diff_offset = $file_diff_map[count($file_diff_map) - 1][1];
-
-            foreach ($type_map as $type_from => [$type_to, $tag]) {
-                if ($type_to < $first_diff_offset || $type_from > $last_diff_offset) {
-                    continue;
-                }
-
-                foreach ($file_diff_map as [$from, $to, $file_offset]) {
-                    if ($type_from >= $from && $type_from <= $to) {
-                        unset($type_map[$type_from]);
-                        $type_map[$type_from += $file_offset] = [
-                            $type_to += $file_offset,
-                            $tag,
-                        ];
+            if ($file_diff_map) {
+                foreach ($type_map as $type_from => [$type_to, $tag]) {
+                    foreach ($file_diff_map as [$from, $to, $file_offset]) {
+                        if ($type_from >= $from && $type_from <= $to) {
+                            unset($type_map[$type_from]);
+                            $type_map[$type_from += $file_offset] = [
+                                $type_to += $file_offset,
+                                $tag,
+                            ];
+                        }
                     }
                 }
             }
@@ -994,27 +993,30 @@ class Analyzer
             }
 
             $file_diff_map = $diff_map[$file_path] ?? [];
+            $file_deletion_ranges = $deletion_ranges[$file_path] ?? [];
 
-            if (!$file_diff_map) {
-                continue;
+            if ($file_deletion_ranges) {
+                foreach ($argument_map as $argument_from => $_) {
+                    foreach ($file_deletion_ranges as [$from, $to]) {
+                        if ($argument_from >= $from && $argument_from <= $to) {
+                            unset($argument_map[$argument_from]);
+                            break;
+                        }
+                    }
+                }
             }
 
-            $first_diff_offset = $file_diff_map[0][0];
-            $last_diff_offset = $file_diff_map[count($file_diff_map) - 1][1];
-
-            foreach ($argument_map as $argument_from => [$argument_to, $method_id, $argument_number]) {
-                if ($argument_to < $first_diff_offset || $argument_from > $last_diff_offset) {
-                    continue;
-                }
-
-                foreach ($file_diff_map as [$from, $to, $file_offset]) {
-                    if ($argument_from >= $from && $argument_from <= $to) {
-                        unset($argument_map[$argument_from]);
-                        $argument_map[$argument_from += $file_offset] = [
-                            $argument_to += $file_offset,
-                            $method_id,
-                            $argument_number,
-                        ];
+            if ($file_diff_map) {
+                foreach ($argument_map as $argument_from => [$argument_to, $method_id, $argument_number]) {
+                    foreach ($file_diff_map as [$from, $to, $file_offset]) {
+                        if ($argument_from >= $from && $argument_from <= $to) {
+                            unset($argument_map[$argument_from]);
+                            $argument_map[$argument_from += $file_offset] = [
+                                $argument_to += $file_offset,
+                                $method_id,
+                                $argument_number,
+                            ];
+                        }
                     }
                 }
             }

@@ -17,7 +17,7 @@ use function substr_count;
  */
 class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
 {
-    /** @var array<int, array{0: int, 1: int, 2: int, 3: int, 4:int}> */
+    /** @var array<int, array{int, int, int, int, int}> */
     private $offset_map;
 
     /** @var bool */
@@ -41,7 +41,7 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
     /** @var PhpParser\ErrorHandler\Collecting */
     private $error_handler;
 
-    /** @param array<int, array{0: int, 1: int, 2: int, 3: int, 4:int}> $offset_map */
+    /** @param array<int, array{int, int, int, int, int}> $offset_map */
     public function __construct(
         PhpParser\Parser $parser,
         PhpParser\ErrorHandler\Collecting $error_handler,

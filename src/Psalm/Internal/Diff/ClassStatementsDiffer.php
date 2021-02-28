@@ -24,7 +24,8 @@ class ClassStatementsDiffer extends AstDiffer
      *      0: list<string>,
      *      1: list<string>,
      *      2: list<string>,
-     *      3: array<int, array{0: int, 1: int, 2: int, 3: int}>
+     *      3: array<int, array{int, int, int, int}>,
+     *      4: list<array{int, int}>
      * }
      */
     public static function diff(string $name, array $a, array $b, string $a_code, string $b_code): array
@@ -187,6 +188,7 @@ class ClassStatementsDiffer extends AstDiffer
         $keep = [];
         $keep_signature = [];
         $add_or_delete = [];
+        $deletion_ranges = [];
 
         foreach ($diff as $diff_elem) {
             if ($diff_elem->type === DiffElem::TYPE_KEEP) {
@@ -214,7 +216,7 @@ class ClassStatementsDiffer extends AstDiffer
                     }
                 }
             } elseif ($diff_elem->type === DiffElem::TYPE_REMOVE || $diff_elem->type === DiffElem::TYPE_ADD) {
-                /** @psalm-suppress MixedAssignment */
+                /** @var PhpParser\Node */
                 $affected_elem = $diff_elem->type === DiffElem::TYPE_REMOVE ? $diff_elem->old : $diff_elem->new;
                 if ($affected_elem instanceof PhpParser\Node\Stmt\ClassMethod) {
                     $add_or_delete[] = strtolower($name) . '::' . strtolower((string) $affected_elem->name);
@@ -231,10 +233,23 @@ class ClassStatementsDiffer extends AstDiffer
                         $add_or_delete[] = strtolower($name . '&' . (string) $trait->getAttribute('resolvedName'));
                     }
                 }
+
+                if ($diff_elem->type === DiffElem::TYPE_REMOVE) {
+                    if ($doc = $affected_elem->getDocComment()) {
+                        $start = $doc->getStartFilePos();
+                    } else {
+                        $start = (int)$affected_elem->getAttribute('startFilePos');
+                    }
+
+                    $deletion_ranges[] = [
+                        $start,
+                        (int)$affected_elem->getAttribute('endFilePos')
+                    ];
+                }
             }
         }
 
-        /** @var array<int, array{0: int, 1: int, 2: int, 3: int}> $diff_map */
-        return [$keep, $keep_signature, $add_or_delete, $diff_map];
+        /** @var array<int, array{int, int, int, int}> $diff_map */
+        return [$keep, $keep_signature, $add_or_delete, $diff_map, $deletion_ranges];
     }
 }
