@@ -52,6 +52,8 @@ Psalm should encourage developers to use docblock annotations rather than type-p
 
 The other benefit to docblock annotations is verifiability – for the most part Psalm is able to verify that docblock annotations are correct, but it cannot provide many assurances when plugins are used.
 
+This doesn’t mean that plugins as a whole are bad, or that they can’t provide useful types. A great adjacent use of plugins is to provide stubs with Psalm type annotations for libraries that don’t have them. This helps the PHP ecosystem because those stubs may eventually make their way into the project currently being stubbed.
+
 ## In certain circumstances docblocks > PHP 8 attributes
 
 For information that's just designed to be consumed by static analysis tools, docblocks are a better home than PHP 8 attributes.
