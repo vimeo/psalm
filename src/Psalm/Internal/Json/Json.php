@@ -4,6 +4,7 @@ namespace Psalm\Internal\Json;
 use RuntimeException;
 
 use function json_encode;
+use function json_last_error_msg;
 use const JSON_PRETTY_PRINT;
 use const JSON_UNESCAPED_SLASHES;
 use const JSON_UNESCAPED_UNICODE;
