@@ -336,8 +336,6 @@ echo Arithmetic::addCumulative(3); // outputs 3
 echo Arithmetic::addCumulative(3); // outputs 6
 ```
 
-### `@pure-callable`
-
 On the other hand, `pure-callable` can be used to denote a callable which needs to be pure.
 
 ```php
