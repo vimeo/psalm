@@ -885,7 +885,7 @@ class Analyzer
             $file_deletion_ranges = $deletion_ranges[$file_path] ?? [];
 
             if ($file_deletion_ranges) {
-                foreach ($file_issues as $i => &$issue_data) {
+                foreach ($file_issues as $i => $issue_data) {
                     foreach ($file_deletion_ranges as [$from, $to]) {
                         if ($issue_data->from >= $from
                             && $issue_data->from <= $to
@@ -916,7 +916,7 @@ class Analyzer
             }
         }
 
-        foreach ($this->reference_map as $file_path => &$reference_map) {
+        foreach ($this->reference_map as $file_path => $reference_map) {
             if (!isset($this->analyzed_methods[$file_path])) {
                 unset($this->reference_map[$file_path]);
                 continue;
@@ -952,7 +952,7 @@ class Analyzer
             }
         }
 
-        foreach ($this->type_map as $file_path => &$type_map) {
+        foreach ($this->type_map as $file_path => $type_map) {
             if (!isset($this->analyzed_methods[$file_path])) {
                 unset($this->type_map[$file_path]);
                 continue;
@@ -988,7 +988,7 @@ class Analyzer
             }
         }
 
-        foreach ($this->argument_map as $file_path => &$argument_map) {
+        foreach ($this->argument_map as $file_path => $argument_map) {
             if (!isset($this->analyzed_methods[$file_path])) {
                 unset($this->argument_map[$file_path]);
                 continue;
