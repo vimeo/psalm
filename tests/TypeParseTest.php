@@ -860,6 +860,15 @@ class TypeParseTest extends TestCase
         $this->assertSame($resolved_type->getId(), $docblock_type->getId());
     }
 
+    public function testLongUtf8LiteralString(): void
+    {
+        $string = "АаБбВвГгДдЕеЁёЖжЗзИиЙйКкЛлМмНнОоПпРрСсТтУуФфХхЦцЧчШшЩщЪъЫыЬьЭэЮюЯя";
+        $string .= $string;
+        $expected = mb_substr($string, 0, 80);
+        $this->assertSame("\"$expected...\"", Type:: parseString("'$string'")->getId());
+        $this->assertSame("\"$expected...\"", Type:: parseString("\"$string\"")->getId());
+    }
+
     public function testSingleLiteralString(): void
     {
         $this->assertSame(

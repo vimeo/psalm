@@ -34,7 +34,8 @@ class Json
 
         $result = json_encode($data, $options);
         if ($result === false) {
-            throw new RuntimeException('Cannot create JSON string.');
+            /** @psalm-suppress ImpureFunctionCall */
+            throw new RuntimeException('Cannot create JSON string: '.json_last_error_msg());
         }
 
         return $result;
