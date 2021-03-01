@@ -3,10 +3,11 @@ namespace Psalm\Tests;
 
 use function function_exists;
 use function print_r;
+use function mb_substr;
+use function stripos;
 
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Type;
-use function stripos;
 
 class TypeParseTest extends TestCase
 {
@@ -858,6 +859,15 @@ class TypeParseTest extends TestCase
         ]);
 
         $this->assertSame($resolved_type->getId(), $docblock_type->getId());
+    }
+
+    public function testLongUtf8LiteralString(): void
+    {
+        $string = "АаБбВвГгДдЕеЁёЖжЗзИиЙйКкЛлМмНнОоПпРрСсТтУуФфХхЦцЧчШшЩщЪъЫыЬьЭэЮюЯя";
+        $string .= $string;
+        $expected = mb_substr($string, 0, 80);
+        $this->assertSame("\"$expected...\"", Type:: parseString("'$string'")->getId());
+        $this->assertSame("\"$expected...\"", Type:: parseString("\"$string\"")->getId());
     }
 
     public function testSingleLiteralString(): void
