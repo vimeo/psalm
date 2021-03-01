@@ -42,7 +42,7 @@ Given Psalm is almost always used on syntatically-correct code it should use a p
 
 Where Psalm needs to run on syntactically-incorrect code (e.g. in language server mode) Psalm should still use the same parser (and work around any issues that produces).
 
-## Annotations are better than type-providing plugins
+## Docblock annotations are better than type-providing plugins
 
 Psalm offers a plugin API that allows you to tell it what about your program's property types, return types and parameter types.
 
@@ -54,7 +54,16 @@ The other benefit to docblock annotations is verifiability – for the most part
 
 This doesn’t mean that plugins as a whole are bad, or that they can’t provide useful types. A great adjacent use of plugins is to provide stubs with Psalm type annotations for libraries that don’t have them. This helps the PHP ecosystem because those stubs may eventually make their way into the project currently being stubbed.
 
-## In certain circumstances docblocks > PHP 8 attributes
+## Docblock annotations that can be verified are better than those that cannot
+
+Psalm currently supports a number of function/class docblock annotations that it's unable to verify:
+
+- `@psalm-assert`, `@psalm-assert-if-true`, `@psalm-assert-if-false`
+- `@property`, `@method`, `@mixin`
+
+Whenever new docblock annotations are added, effort should be made to allow Psalm to verify their correctness.
+
+## In certain circumstances docblock annotations are better than PHP 8 attributes
 
 For information that's just designed to be consumed by static analysis tools, docblocks are a better home than PHP 8 attributes.
 
