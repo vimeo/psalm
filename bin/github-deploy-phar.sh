@@ -23,7 +23,7 @@ git config user.email "github@muglug.com"
 git config user.name "Automated commit"
 git add --all .
 git commit -m "Updated Psalm phar to commit ${GITHUB_SHA}"
-git push origin master > /dev/null 2>&1
+git push origin master
 
 tag=${GITHUB_REF/refs\/heads\//}
 
