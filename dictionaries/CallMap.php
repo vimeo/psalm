@@ -8470,7 +8470,7 @@ return [
 'mysqli_get_server_version' => ['int', 'mysql'=>'mysqli'],
 'mysqli_get_warnings' => ['mysqli_warning', 'mysql'=>'mysqli'],
 'mysqli_info' => ['?string', 'mysql'=>'mysqli'],
-'mysqli_init' => ['mysqli'],
+'mysqli_init' => ['mysqli|false'],
 'mysqli_insert_id' => ['int|string', 'mysql'=>'mysqli'],
 'mysqli_kill' => ['bool', 'mysql'=>'mysqli', 'process_id'=>'int'],
 'mysqli_link_construct' => ['object'],
