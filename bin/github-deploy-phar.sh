@@ -17,13 +17,13 @@ set -x # don't do set x above this point to protect the GITHUB_TOKEN
 cd phar
 rm -rf *
 cp ../build/psalm.phar ../assets/psalm-phar/* .
-cp ../build/psalm.phar.asc || true # not all users have GPG keys
+cp ../build/psalm.phar.asc . || true # not all users have GPG keys
 mv dot-gitignore .gitignore
 git config user.email "github@muglug.com"
 git config user.name "Automated commit"
 git add --all .
 git commit -m "Updated Psalm phar to commit ${GITHUB_SHA}"
-git push --quiet origin master > /dev/null 2>&1
+git push origin master > /dev/null 2>&1
 
 tag=${GITHUB_REF/refs\/heads\//}
 
