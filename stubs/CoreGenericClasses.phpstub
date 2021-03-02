@@ -1694,3 +1694,41 @@ interface Serializable {
      */
     public function unserialize($serialized);
 }
+
+/**
+ * @template TKey of object
+ * @template TVal of mixed
+ * @implements ArrayAccess<TKey, TVal>
+ * @implements IteratorAggregate<TKey,TVal>
+ * @implements Traversable<TKey,TVal>
+ *
+ * @since 8.0.0
+ */
+final class WeakMap implements ArrayAccess, Countable, IteratorAggregate, Traversable
+{
+    /**
+     * @param TKey $offset
+     * @return bool
+     */
+    public function offsetExists($offset) {}
+
+    /**
+     * @param TKey $offset
+     * @return TVal|null
+     * @psalm-ignore-nullable-return
+     */
+    public function offsetGet($offset) {}
+
+    /**
+     * @param TKey $offset
+     * @param TVal $value
+     * @return void
+     */
+    public function offsetSet($offset, $value) {}
+
+    /**
+     * @param TKey $offset
+     * @return void
+     */
+    public function offsetUnset($offset) {}
+}
