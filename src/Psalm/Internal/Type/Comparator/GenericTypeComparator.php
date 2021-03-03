@@ -26,6 +26,7 @@ class GenericTypeComparator
         ?TypeComparisonResult $atomic_comparison_result = null
     ) : bool {
         $all_types_contain = true;
+        $container_was_iterable = false;
 
         if ($container_type_part instanceof TIterable
             && !$container_type_part->extra_types
@@ -35,6 +36,8 @@ class GenericTypeComparator
                 'Traversable',
                 $container_type_part->type_params
             );
+
+            $container_was_iterable = true;
         }
 
         if (!$input_type_part instanceof TGenericObject && !$input_type_part instanceof TIterable) {
@@ -131,7 +134,8 @@ class GenericTypeComparator
                             && $atomic_comparison_result->type_coerced_from_mixed !== false;
 
                     $atomic_comparison_result->type_coerced_from_as_mixed
-                        = $param_comparison_result->type_coerced_from_as_mixed === true
+                        = !$container_was_iterable
+                            && $param_comparison_result->type_coerced_from_as_mixed === true
                             && $atomic_comparison_result->type_coerced_from_as_mixed !== false;
 
                     $atomic_comparison_result->to_string_cast
@@ -147,7 +151,9 @@ class GenericTypeComparator
                             && $atomic_comparison_result->scalar_type_match_found !== false;
                 }
 
-                if (!$param_comparison_result->type_coerced_from_as_mixed) {
+                // if the container was an iterable then there was no mapping
+                // from a template type
+                if ($container_was_iterable || !$param_comparison_result->type_coerced_from_as_mixed) {
                     $all_types_contain = false;
                 }
             } elseif (!$input_type_part instanceof TIterable
