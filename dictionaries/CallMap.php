@@ -8427,7 +8427,7 @@ return [
 'mysqli_commit' => ['bool', 'mysql'=>'mysqli', 'flags='=>'int', 'name='=>'string'],
 'mysqli_connect' => ['mysqli|false', 'hostname='=>'string', 'username='=>'string', 'password='=>'string', 'database='=>'string', 'port='=>'int', 'socket='=>'string'],
 'mysqli_connect_errno' => ['int'],
-'mysqli_connect_error' => ['string'],
+'mysqli_connect_error' => ['?string'],
 'mysqli_data_seek' => ['bool', 'result'=>'mysqli_result', 'offset'=>'int'],
 'mysqli_debug' => ['bool', 'options'=>'string'],
 'mysqli_disable_reads_from_master' => ['bool', 'link'=>'mysqli'],
