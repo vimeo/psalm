@@ -29,6 +29,7 @@ use function substr;
 use function usort;
 use function array_values;
 use const PATHINFO_EXTENSION;
+use function implode;
 
 /**
  * @psalm-type  TaggedCodeType = array<int, array{0: int, 1: non-empty-string}>
