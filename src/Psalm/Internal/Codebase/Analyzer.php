@@ -1253,18 +1253,21 @@ class Analyzer
 
         $total_files = count($all_deep_scanned_files);
 
+        $lines = [];
+        
         if (!$total_files) {
-            return 'No files analyzed';
+            $lines[] = 'No files analyzed';
         }
 
         if (!$total) {
-            return 'Psalm was unable to infer types in the codebase';
+            $lines[] = 'Psalm was unable to infer types in the codebase';
+        } else {
+            $percentage = $nonmixed_count === $total ? '100' : number_format(100 * $nonmixed_count / $total, 4);
+            $lines[] = 'Psalm was able to infer types for ' . $percentage . '%'
+                . ' of the codebase';
         }
-
-        $percentage = $nonmixed_count === $total ? '100' : number_format(100 * $nonmixed_count / $total, 4);
-
-        return 'Psalm was able to infer types for ' . $percentage . '%'
-            . ' of the codebase';
+        
+        return implode("\n", $lines);
     }
 
     public function getNonMixedStats(): string
