@@ -674,13 +674,14 @@ class Context
         }
     }
 
-    public function removeMutableObjectVars(): void
+    public function removeMutableObjectVars(bool $methods_only = false): void
     {
         $vars_to_remove = [];
 
         foreach ($this->vars_in_scope as $var_id => $type) {
             if ($type->has_mutations
                 && (strpos($var_id, '->') !== false || strpos($var_id, '::') !== false)
+                && (!$methods_only || strpos($var_id, '()'))
             ) {
                 $vars_to_remove[] = $var_id;
             }
@@ -700,7 +701,9 @@ class Context
             $abandon_clause = false;
 
             foreach (array_keys($clause->possibilities) as $key) {
-                if (strpos($key, '->') !== false || strpos($key, '::') !== false) {
+                if ((strpos($key, '->') !== false || strpos($key, '::') !== false)
+                    && (!$methods_only || strpos($key, '()'))
+                ) {
                     $abandon_clause = true;
                     break;
                 }
@@ -714,7 +717,7 @@ class Context
         $this->clauses = $clauses_to_keep;
 
         if ($this->parent_context) {
-            $this->parent_context->removeMutableObjectVars();
+            $this->parent_context->removeMutableObjectVars($methods_only);
         }
     }
 

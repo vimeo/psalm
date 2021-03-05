@@ -140,6 +140,10 @@ class MethodCallPurityAnalyzer
         ) {
             $context->removeMutableObjectVars();
         } elseif ($method_storage->this_property_mutations) {
+            if (!$method_pure_compatible) {
+                $context->removeMutableObjectVars(true);
+            }
+
             foreach ($method_storage->this_property_mutations as $name => $_) {
                 $mutation_var_id = $lhs_var_id . '->' . $name;
 
