@@ -9883,7 +9883,7 @@ return [
 'PDOStatement::errorInfo' => ['array'],
 'PDOStatement::execute' => ['bool', 'params='=>'?array'],
 'PDOStatement::fetch' => ['mixed', 'mode='=>'int', 'cursorOrientation='=>'int', 'cursorOffset='=>'int'],
-'PDOStatement::fetchAll' => ['array', 'mode='=>'int', '...args='=>'mixed'],
+'PDOStatement::fetchAll' => ['array|false', 'mode='=>'int', '...args='=>'mixed'],
 'PDOStatement::fetchColumn' => ['mixed', 'column='=>'int'],
 'PDOStatement::fetchObject' => ['object|false', 'class='=>'?string', 'ctorArgs='=>'?array'],
 'PDOStatement::getAttribute' => ['mixed', 'attribute'=>'int'],
