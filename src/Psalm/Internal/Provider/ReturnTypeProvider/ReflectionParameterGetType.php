@@ -7,7 +7,7 @@ namespace Psalm\Internal\Provider\ReturnTypeProvider;
 use Psalm\Plugin\EventHandler\Event\MethodReturnTypeProviderEvent;
 use Psalm\Type;
 use ReflectionType;
-use function array_key_exists;
+use function is_string;
 
 class ReflectionParameterGetType implements \Psalm\Plugin\EventHandler\MethodReturnTypeProviderInterface
 {

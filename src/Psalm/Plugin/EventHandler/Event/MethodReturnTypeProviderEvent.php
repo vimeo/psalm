@@ -126,7 +126,8 @@ class MethodReturnTypeProviderEvent
     /**
      * @return PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall
      */
-    public function getStmt() {
+    public function getStmt()
+    {
         return $this->stmt;
     }
 
