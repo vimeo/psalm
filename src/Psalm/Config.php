@@ -1698,40 +1698,21 @@ class Config
 
         $codebase->register_stub_files = true;
 
-        // note: don't realpath $generic_stubs_path, or phar version will fail
-        $generic_stubs_path = dirname(__DIR__, 2) . '/stubs/CoreGenericFunctions.phpstub';
-
-        if (!file_exists($generic_stubs_path)) {
-            throw new \UnexpectedValueException('Cannot locate core generic stubs');
-        }
-
-        // note: don't realpath $generic_classes_path, or phar version will fail
-        $generic_classes_path = dirname(__DIR__, 2) . '/stubs/CoreGenericClasses.phpstub';
-
-        if (!file_exists($generic_classes_path)) {
-            throw new \UnexpectedValueException('Cannot locate core generic classes');
-        }
-
-        // note: don't realpath $generic_iterator_path, or phar version will fail
-        $generic_iterator_path = dirname(__DIR__, 2) . '/stubs/CoreGenericIterators.phpstub';
-
-        if (!file_exists($generic_iterator_path)) {
-            throw new \UnexpectedValueException('Cannot locate core generic Iterator classes');
-        }
-
-        // note: don't realpath $immutable_classes_path, or phar version will fail
-        $immutable_classes_path = dirname(__DIR__, 2) . '/stubs/CoreImmutableClasses.phpstub';
-
-        if (!file_exists($immutable_classes_path)) {
-            throw new \UnexpectedValueException('Cannot locate core immutable classes');
-        }
-
         $core_generic_files = [
-            $generic_stubs_path,
-            $generic_classes_path,
-            $generic_iterator_path,
-            $immutable_classes_path
+            dirname(__DIR__, 2) . '/stubs/CoreGenericFunctions.phpstub',
+            dirname(__DIR__, 2) . '/stubs/CoreGenericClasses.phpstub',
+            dirname(__DIR__, 2) . '/stubs/CoreGenericIterators.phpstub',
+            dirname(__DIR__, 2) . '/stubs/CoreImmutableClasses.phpstub',
+            dirname(__DIR__, 2) . '/stubs/DOM.phpstub',
+            dirname(__DIR__, 2) . '/stubs/Reflection.phpstub',
+            dirname(__DIR__, 2) . '/stubs/SPL.phpstub',
         ];
+
+        foreach ($core_generic_files as $stub_path) {
+            if (!file_exists($stub_path)) {
+                throw new \UnexpectedValueException('Cannot locate ' . $stub_path);
+            }
+        }
 
         if (\PHP_VERSION_ID >= 80000 && $codebase->php_major_version >= 8) {
             $stringable_path = dirname(__DIR__, 2) . '/stubs/Php80.phpstub';
