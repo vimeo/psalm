@@ -1,0 +1,16 @@
+<?php
+class SomeClass
+{
+    /**
+     * @return void
+     * @since 7.0
+     */
+    public function something(string $param) {}
+
+
+    /**
+     * @return void
+     * @since 8.0
+     */
+    public function something() {}
+}
