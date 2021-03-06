@@ -7,6 +7,7 @@ namespace Psalm\Internal\Provider\ReturnTypeProvider;
 use Psalm\Plugin\EventHandler\Event\MethodReturnTypeProviderEvent;
 use Psalm\Type;
 use ReflectionType;
+use function array_key_exists;
 
 class ReflectionParameterGetType implements \Psalm\Plugin\EventHandler\MethodReturnTypeProviderInterface
 {
@@ -34,16 +35,17 @@ class ReflectionParameterGetType implements \Psalm\Plugin\EventHandler\MethodRet
             return null;
         }
 
-        foreach ($event->getContext()->vars_in_scope as $name => $type) {
-            if (strpos($name, '$' . $stmt->var->name . '->hastype()') !== false) {
-                if ($type->isTrue()) {
-                    return Type::parseString(ReflectionType::class);
-                }
-
-                return Type::getNull();
-            }
+        $scopedVarName = '$' . $stmt->var->name . '->hastype()';
+        if (!isset($event->getContext()->vars_in_scope[$scopedVarName])) {
+            return null;
         }
 
-        return null;
+        $type = $event->getContext()->vars_in_scope[$scopedVarName];
+
+        if ($type->isTrue()) {
+            return Type::parseString(ReflectionType::class);
+        }
+
+        return Type::getNull();
     }
 }
