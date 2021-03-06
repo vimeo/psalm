@@ -466,6 +466,7 @@ class AtomicStaticCallAnalyzer
                         $stmt->args,
                         $context,
                         new CodeLocation($statements_analyzer->getSource(), $stmt_name),
+                        $stmt,
                         null,
                         null,
                         strtolower($stmt_name->name)

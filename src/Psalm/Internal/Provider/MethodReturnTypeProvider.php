@@ -49,6 +49,7 @@ class MethodReturnTypeProvider
         $this->registerClass(ReturnTypeProvider\SimpleXmlElementAsXml::class);
         $this->registerClass(ReturnTypeProvider\PdoStatementReturnTypeProvider::class);
         $this->registerClass(ReturnTypeProvider\ClosureFromCallableReturnTypeProvider::class);
+        $this->registerClass(ReturnTypeProvider\ReflectionParameterGetType::class);
     }
 
     /**
@@ -107,6 +108,7 @@ class MethodReturnTypeProvider
     /**
      * @param list<PhpParser\Node\Arg>  $call_args
      * @param  ?array<Type\Union> $template_type_parameters
+     * @param PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $stmt
      *
      */
     public function getReturnType(
@@ -116,6 +118,7 @@ class MethodReturnTypeProvider
         array $call_args,
         Context $context,
         CodeLocation $code_location,
+        $stmt,
         ?array $template_type_parameters = null,
         ?string $called_fq_classlike_name = null,
         ?string $called_method_name = null
@@ -128,6 +131,7 @@ class MethodReturnTypeProvider
                 $call_args,
                 $context,
                 $code_location,
+                $stmt,
                 $template_type_parameters,
                 $called_fq_classlike_name,
                 $called_method_name ? strtolower($called_method_name) : null

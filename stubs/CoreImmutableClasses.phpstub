@@ -219,3 +219,10 @@ class Error implements Throwable
      */
     public function __toString() {}
 }
+
+/**
+ * @psalm-mutation-free
+ */
+class ReflectionParameter {
+
+}
