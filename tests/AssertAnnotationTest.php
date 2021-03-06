@@ -1453,6 +1453,40 @@ class AssertAnnotationTest extends TestCase
                         return $value;
                     }'
             ],
+            'implicitReflectionParameterAssertion' => [
+                '<?php
+                    $method = new ReflectionMethod(stdClass::class);
+                    $parameters = $method->getParameters();
+                    foreach ($parameters as $parameter) {
+                        if ($parameter->hasType()) {
+                            $parameter->getType()->__toString();
+                        }
+                    }',
+            ],
+            'withHasTypeCall' => [
+                '<?php
+                    /**
+                     * @psalm-immutable
+                     */
+                    class Param {
+                        /**
+                         * @psalm-assert-if-true ReflectionType $this->getType()
+                         */
+                        public function hasType() : bool {
+                            return true;
+                        }
+
+                        public function getType() : ?ReflectionType {
+                            return null;
+                        }
+                    }
+
+                    function takesParam(Param $p) : void {
+                        if ($p->hasType()) {
+                            echo $p->getType()->__toString();
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -1708,6 +1742,15 @@ class AssertAnnotationTest extends TestCase
                         if ($bar) {}
                     }',
                 'error_message' => 'RedundantConditionGivenDocblockType',
+            ],
+            'withoutHasTypeCall' => [
+                '<?php
+                    $method = new ReflectionMethod(stdClass::class);
+                    $parameters = $method->getParameters();
+                    foreach ($parameters as $parameter) {
+                        $parameter->getType()->__toString();
+                    }',
+                'error_message' => 'PossiblyNullReference',
             ],
         ];
     }

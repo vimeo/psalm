@@ -455,6 +455,18 @@ class FunctionLikeDocblockParser
 
         $line_parts[0] = CommentAnalyzer::sanitizeDocblockType($line_parts[0]);
 
+        if ($line_parts[1][0] === '$') {
+            $param_name_parts = explode('->', $line_parts[1]);
+
+            foreach ($param_name_parts as $i => $param_name_part) {
+                if (substr($param_name_part, -2) === '()') {
+                    $param_name_parts[$i] = strtolower($param_name_part);
+                }
+            }
+
+            $line_parts[1] = implode('->', $param_name_parts);
+        }
+
         return $line_parts;
     }
 
