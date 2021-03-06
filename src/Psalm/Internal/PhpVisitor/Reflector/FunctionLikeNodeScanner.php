@@ -943,6 +943,29 @@ class FunctionLikeNodeScanner
                     $duplicate_method_storage->has_visitor_issues = true;
 
                     return false;
+                } else {
+                    // skip methods based on @since docblock tag
+                    $doc_comment = $stmt->getDocComment();
+
+                    if ($doc_comment) {
+                        $docblock_info = null;
+                        try {
+                            $docblock_info = FunctionLikeDocblockParser::parse($doc_comment);
+                        } catch (IncorrectDocblockException|DocblockParseException $e) {
+                        }
+                        if ($docblock_info) {
+                            if ($docblock_info->since_php_major_version && !$this->aliases->namespace) {
+                                if ($docblock_info->since_php_major_version > $this->codebase->php_major_version) {
+                                    return false;
+                                }
+                                if ($docblock_info->since_php_major_version === $this->codebase->php_major_version
+                                    && $docblock_info->since_php_minor_version > $this->codebase->php_minor_version
+                                ) {
+                                    return false;
+                                }
+                            }
+                        }
+                    }
                 }
 
                 $is_functionlike_override = true;

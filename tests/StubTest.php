@@ -812,6 +812,52 @@ class StubTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    /** @return iterable<string, array{string,string}> */
+    public function versionDependentStubsProvider(): iterable
+    {
+        yield '7.0' => [
+            '7.0',
+            '<?php
+                $a = new SomeClass;
+                $a->something("zzz");'
+        ];
+        yield '8.0' => [
+            '8.0',
+            '<?php
+                $a = new SomeClass;
+                $a->something();'
+        ];
+    }
+
+    /** @dataProvider versionDependentStubsProvider */
+    public function testVersionDependentStubs(string $php_version, string $code): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/VersionDependentMethods.phpstub" />
+                    </stubs>
+                </psalm>'
+            )
+        );
+        $this->project_analyzer->setPhpVersion($php_version);
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile($file_path, $code);
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
     public function testStubFileWithPartialClassDefinitionWithMoreMethods(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
