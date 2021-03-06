@@ -21,17 +21,21 @@ class ReflectionParameterGetType implements \Psalm\Plugin\EventHandler\MethodRet
             return null;
         }
 
-        $variable = $event->getStmt()->var;
-        if (!$variable instanceof \PhpParser\Node\Expr\Variable) {
+        $stmt = $event->getStmt();
+        if (!$stmt instanceof \PhpParser\Node\Expr\MethodCall) {
             return null;
         }
 
-        if (!is_string($variable->name)) {
+        if (!$stmt->var instanceof \PhpParser\Node\Expr\Variable) {
+            return null;
+        }
+
+        if (!is_string($stmt->var->name)) {
             return null;
         }
 
         foreach ($event->getContext()->vars_in_scope as $name => $type) {
-            if (strpos($name, '$' . $variable->name . '->hastype()') !== false) {
+            if (strpos($name, '$' . $stmt->var->name . '->hastype()') !== false) {
                 if ($type->isTrue()) {
                     return Type::parseString(ReflectionType::class);
                 }
