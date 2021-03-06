@@ -43,7 +43,9 @@ class ReflectionParameterGetType implements \Psalm\Plugin\EventHandler\MethodRet
         $type = $event->getContext()->vars_in_scope[$scopedVarName];
 
         if ($type->isTrue()) {
-            return Type::parseString(ReflectionType::class);
+            return new Type\Union([
+                new Type\Atomic\TNamedObject(ReflectionType::class)
+            ]);
         }
 
         return Type::getNull();
