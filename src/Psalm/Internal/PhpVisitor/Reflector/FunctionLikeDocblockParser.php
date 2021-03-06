@@ -384,13 +384,7 @@ class FunctionLikeDocblockParser
 
         if (isset($parsed_docblock->tags['psalm-assert'])) {
             foreach ($parsed_docblock->tags['psalm-assert'] as $assertion) {
-                $line_parts = CommentAnalyzer::splitDocLine($assertion);
-
-                if (count($line_parts) < 2 || strpos($line_parts[1], '$') === false) {
-                    throw new IncorrectDocblockException('Misplaced variable');
-                }
-
-                $line_parts[0] = CommentAnalyzer::sanitizeDocblockType($line_parts[0]);
+                $line_parts = self::sanitizeAssertionLineParts(CommentAnalyzer::splitDocLine($assertion));
 
                 $info->assertions[] = [
                     'type' => $line_parts[0],
@@ -401,11 +395,7 @@ class FunctionLikeDocblockParser
 
         if (isset($parsed_docblock->tags['psalm-assert-if-true'])) {
             foreach ($parsed_docblock->tags['psalm-assert-if-true'] as $assertion) {
-                $line_parts = CommentAnalyzer::splitDocLine($assertion);
-
-                if (count($line_parts) < 2 || strpos($line_parts[1], '$') === false) {
-                    throw new IncorrectDocblockException('Misplaced variable');
-                }
+                $line_parts = self::sanitizeAssertionLineParts(CommentAnalyzer::splitDocLine($assertion));
 
                 $info->if_true_assertions[] = [
                     'type' => $line_parts[0],
@@ -416,11 +406,7 @@ class FunctionLikeDocblockParser
 
         if (isset($parsed_docblock->tags['psalm-assert-if-false'])) {
             foreach ($parsed_docblock->tags['psalm-assert-if-false'] as $assertion) {
-                $line_parts = CommentAnalyzer::splitDocLine($assertion);
-
-                if (count($line_parts) < 2 || strpos($line_parts[1], '$') === false) {
-                    throw new IncorrectDocblockException('Misplaced variable');
-                }
+                $line_parts = self::sanitizeAssertionLineParts(CommentAnalyzer::splitDocLine($assertion));
 
                 $info->if_false_assertions[] = [
                     'type' => $line_parts[0],
@@ -454,6 +440,22 @@ class FunctionLikeDocblockParser
         }
 
         return $info;
+    }
+
+    /**
+     * @psalm-pure
+     * @param list<string> $line_parts
+     * @return array{string, string} $line_parts
+     */
+    private static function sanitizeAssertionLineParts(array $line_parts)
+    {
+        if (count($line_parts) < 2 || strpos($line_parts[1], '$') === false) {
+            throw new IncorrectDocblockException('Misplaced variable');
+        }
+
+        $line_parts[0] = CommentAnalyzer::sanitizeDocblockType($line_parts[0]);
+
+        return $line_parts;
     }
 
     /**
