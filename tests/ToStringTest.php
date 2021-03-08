@@ -408,6 +408,66 @@ class ToStringTest extends TestCase
                 false,
                 '7.4',
             ],
+            'implicitCastInArray' => [
+                '<?php
+                    interface S {
+                        public function __toString(): string;
+                    }
+                    /** @return array<array-key, string> */
+                    function f(S $s): array {
+                        return [$s];
+                    }
+                ',
+                'error_message' => 'ImplicitToStringCast'
+            ],
+            'implicitCastInList' => [
+                '<?php
+                    interface S {
+                        public function __toString(): string;
+                    }
+                    /** @return list<string> */
+                    function f(S $s): array {
+                        return [$s];
+                    }
+                ',
+                'error_message' => 'ImplicitToStringCast'
+            ],
+            'implicitCastInTuple' => [
+                '<?php
+                    interface S {
+                        public function __toString(): string;
+                    }
+                    /** @return array{string} */
+                    function f(S $s): array {
+                        return [$s];
+                    }
+                ',
+                'error_message' => 'ImplicitToStringCast'
+            ],
+            'implicitCastInShape' => [
+                '<?php
+                    interface S {
+                        public function __toString(): string;
+                    }
+                    /** @return array{0:string} */
+                    function f(S $s): array {
+                        return [$s];
+                    }
+                ',
+                'error_message' => 'ImplicitToStringCast'
+            ],
+            'implicitCastInIterable' => [
+                '<?php
+                    interface S {
+                        public function __toString(): string;
+                    }
+                    /** @return iterable<int, string> */
+                    function f(S $s) {
+                        return [$s];
+                    }
+                ',
+                'error_message' => 'ImplicitToStringCast'
+            ],
         ];
     }
 }
