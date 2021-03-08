@@ -1499,6 +1499,29 @@ class FunctionCallTest extends TestCase
                 [],
                 '8.0'
             ],
+            'maxWithFloats' => [
+                '<?php
+                    function foo(float $_float): void
+                    {}
+
+                    foo(max(1.1, 1.2));',
+            ],
+            'maxWithObjects' => [
+                '<?php
+                    function foo(DateTimeImmutable $fooDate): string
+                    {
+                        return $fooDate->format("Y");
+                    }
+
+                    foo(max(new DateTimeImmutable(), new DateTimeImmutable()));',
+            ],
+            'maxWithMisc' => [
+                '<?php
+                    $a = max(new DateTimeImmutable(), 1.2);',
+                [
+                    '$a' => 'DateTimeImmutable|float',
+                ],
+            ],
         ];
     }
 
@@ -2023,6 +2046,13 @@ class FunctionCallTest extends TestCase
                         return preg_split("/ /", $s, -1, PREG_SPLIT_NO_EMPTY);
                     }',
                 'error_message' => 'InvalidReturnStatement'
+            ],
+            'maxWithMixed' => [
+                '<?php
+                    /** @var mixed $b */;
+                    /** @var mixed $c */;
+                    $a = max($b, $c);',
+                'error_message' => 'MixedAssignment'
             ],
         ];
     }
