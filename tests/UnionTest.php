@@ -2,6 +2,7 @@
 
 namespace Psalm\Tests;
 
+use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
@@ -63,6 +64,21 @@ class UnionTest extends TestCase
                         Atomic::create($a)
                     ]))->getId(),
                     "$a|$b != $b|$a",
+                );
+            }
+        }
+    }
+
+    public function testUnionsFromTypeCombinerAreCommutative(): void
+    {
+        foreach (self::KNOWN_ATOMICS as $a) {
+            $a = Atomic::create($a);
+            foreach (self::KNOWN_ATOMICS as $b) {
+                $b = Atomic::create($b);
+                $this->assertSame(
+                    TypeCombiner::combine([$a, $b])->getId(),
+                    TypeCombiner::combine([$b, $a])->getId(),
+                    "$a|$b != $b|$a"
                 );
             }
         }
