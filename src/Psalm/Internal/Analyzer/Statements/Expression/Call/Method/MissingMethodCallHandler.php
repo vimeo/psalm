@@ -77,7 +77,7 @@ class MissingMethodCallHandler
 
         if (isset($class_storage->pseudo_methods[$method_name_lc])) {
             $result->has_valid_method_call_type = true;
-            $result->existent_method_ids[] = $method_id;
+            $result->existent_method_ids[] = $method_id->__toString();
 
             $pseudo_method_storage = $class_storage->pseudo_methods[$method_name_lc];
 
@@ -144,14 +144,14 @@ class MissingMethodCallHandler
             );
 
             if ($class_storage->sealed_methods || $config->seal_all_methods) {
-                $result->non_existent_magic_method_ids[] = $method_id;
+                $result->non_existent_magic_method_ids[] = $method_id->__toString();
 
                 return null;
             }
         }
 
         $result->has_valid_method_call_type = true;
-        $result->existent_method_ids[] = $method_id;
+        $result->existent_method_ids[] = $method_id->__toString();
 
         $array_values = array_map(
             /**
@@ -220,7 +220,7 @@ class MissingMethodCallHandler
             && isset($class_storage->pseudo_methods[$method_name_lc])
         ) {
             $result->has_valid_method_call_type = true;
-            $result->existent_method_ids[] = $method_id;
+            $result->existent_method_ids[] = $method_id->__toString();
 
             $pseudo_method_storage = $class_storage->pseudo_methods[$method_name_lc];
 

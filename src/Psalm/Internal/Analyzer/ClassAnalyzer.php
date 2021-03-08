@@ -1850,15 +1850,23 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     $interface_return_type,
                     $interface_class,
                     $interface_return_type_location,
-                    [$analyzed_method_id],
+                    [$analyzed_method_id->__toString()],
                     $did_explicitly_return
                 );
             }
         }
 
+        $overridden_method_ids = array_map(
+            function ($method_id) {
+                return $method_id->__toString();
+            },
+            $overridden_method_ids
+        );
+
         if ($actual_method_storage->overridden_downstream) {
             $overridden_method_ids['overridden::downstream'] = 'overridden::downstream';
         }
+
 
         FunctionLike\ReturnTypeAnalyzer::verifyReturnType(
             $stmt,
