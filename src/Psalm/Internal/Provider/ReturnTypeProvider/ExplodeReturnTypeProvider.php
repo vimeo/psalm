@@ -54,18 +54,36 @@ class ExplodeReturnTypeProvider implements \Psalm\Plugin\EventHandler\FunctionRe
             } elseif (($first_arg_type = $statements_source->node_data->getType($call_args[0]->value))
                 && $first_arg_type->hasString()
             ) {
-                $falsable_array = new Type\Union([
-                    $can_return_empty
-                        ? new Type\Atomic\TList($inner_type)
-                        : new Type\Atomic\TNonEmptyList($inner_type),
-                    new Type\Atomic\TFalse
-                ]);
+                $can_be_false = true;
+                if ($first_arg_type->isString()) {
+                    $can_be_false = false;
+                    foreach ($first_arg_type->getAtomicTypes() as $string_type) {
+                        if (!($string_type instanceof Type\Atomic\TNonEmptyString)) {
+                            $can_be_false = true;
+                            break;
+                        }
+                    }
+                }
+                if ($can_be_false) {
+                    $array_type = new Type\Union([
+                        $can_return_empty
+                            ? new Type\Atomic\TList($inner_type)
+                            : new Type\Atomic\TNonEmptyList($inner_type),
+                        new Type\Atomic\TFalse
+                    ]);
 
-                if ($statements_source->getCodebase()->config->ignore_internal_falsable_issues) {
-                    $falsable_array->ignore_falsable_issues = true;
+                    if ($statements_source->getCodebase()->config->ignore_internal_falsable_issues) {
+                        $array_type->ignore_falsable_issues = true;
+                    }
+                } else {
+                    $array_type = new Type\Union([
+                        $can_return_empty
+                            ? new Type\Atomic\TList($inner_type)
+                            : new Type\Atomic\TNonEmptyList($inner_type),
+                    ]);
                 }
 
-                return $falsable_array;
+                return $array_type;
             }
         }
 
