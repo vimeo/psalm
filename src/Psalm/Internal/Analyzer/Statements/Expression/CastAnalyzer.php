@@ -71,10 +71,18 @@ class CastAnalyzer
 
                 if (count($maybe) === 1 && current($maybe) instanceof Type\Atomic\TBool) {
                     $as_int = false;
-                    $statements_analyzer->node_data->setType($stmt, new Type\Union([
+                    $type = new Type\Union([
                         new Type\Atomic\TLiteralInt(0),
                         new Type\Atomic\TLiteralInt(1),
-                    ]));
+                    ]);
+
+                    if ($statements_analyzer->data_flow_graph
+                        && $statements_analyzer->data_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph
+                    ) {
+                        $type->parent_nodes = $maybe_type->parent_nodes;
+                    }
+
+                    $statements_analyzer->node_data->setType($stmt, $type);
                 }
             }
 
