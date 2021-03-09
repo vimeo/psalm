@@ -1013,7 +1013,7 @@ return [
 'CallbackFilterIterator::next' => ['void'],
 'CallbackFilterIterator::rewind' => ['void'],
 'CallbackFilterIterator::valid' => ['bool'],
-'ceil' => ['float|int', 'num'=>'float'],
+'ceil' => ['float', 'num'=>'float'],
 'chdb::__construct' => ['void', 'pathname'=>'string'],
 'chdb::get' => ['string', 'key'=>'string'],
 'chdb_create' => ['bool', 'pathname'=>'string', 'data'=>'array'],
