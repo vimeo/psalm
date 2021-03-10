@@ -5,6 +5,7 @@ namespace Psalm\Tests;
 use DOMDocument;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\ExecutionEnvironment\BuildInfoCollector;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\IssueBuffer;
 use Psalm\Report;
@@ -68,13 +69,13 @@ class ReportOutputTest extends TestCase
     public function analyzeTaintFlowFilesForReport() : void
     {
         $vulnerable_file_contents = '<?php
- 
+
 function addPrefixToInput($prefix, $input): string {
     return $prefix . $input;
 }
 
 $prefixedData = addPrefixToInput(\'myprefix\', $_POST[\'cmd\']);
-        
+
 shell_exec($prefixedData);
 
 echo "Successfully executed the command: " . $prefixedData;';
@@ -1052,7 +1053,7 @@ column_to: 8
         );
 
         ob_start();
-        IssueBuffer::finish($this->project_analyzer, true, 0);
+        IssueBuffer::finish($this->project_analyzer, new BuildInfoCollector([]), true, 0);
         ob_end_clean();
         $this->assertFileExists(__DIR__ . '/test-report.json');
         $this->assertSame('[]

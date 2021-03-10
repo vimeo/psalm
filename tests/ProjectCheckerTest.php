@@ -13,6 +13,7 @@ use function ob_get_clean;
 use function ob_start;
 use Psalm\Codebase;
 use Psalm\Config;
+use Psalm\Internal\ExecutionEnvironment\BuildInfoCollector;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Plugin\EventHandler\AfterCodebasePopulatedInterface;
@@ -156,7 +157,7 @@ class ProjectCheckerTest extends TestCase
 
         $this->project_analyzer->check('tests/fixtures/DummyProject', true);
         ob_start();
-        \Psalm\IssueBuffer::finish($this->project_analyzer, true, microtime(true));
+        \Psalm\IssueBuffer::finish($this->project_analyzer, new BuildInfoCollector([]), true, microtime(true));
         ob_end_clean();
 
         $this->assertSame(
@@ -200,7 +201,7 @@ class ProjectCheckerTest extends TestCase
 
         $this->project_analyzer->check('tests/fixtures/DummyProject', true);
         ob_start();
-        \Psalm\IssueBuffer::finish($this->project_analyzer, true, microtime(true));
+        \Psalm\IssueBuffer::finish($this->project_analyzer, new BuildInfoCollector([]), true, microtime(true));
         ob_end_clean();
 
         $this->assertSame(

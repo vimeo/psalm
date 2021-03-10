@@ -6,6 +6,7 @@ use Psalm\Exception\ConfigException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Composer;
 use Psalm\Internal\ErrorHandler;
+use Psalm\Internal\ExecutionEnvironment\BuildInfoCollector;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Provider;
 use Psalm\Progress\DebugProgress;
@@ -60,6 +61,7 @@ require_once __DIR__ . '/Psalm/Internal/ErrorHandler.php';
 require_once __DIR__ . '/command_functions.php' ;
 require_once __DIR__ . '/Psalm/Internal/Composer.php';
 require_once __DIR__ . '/' . 'Psalm/Internal/IncludeCollector.php';
+require_once __DIR__ . '/' . 'Psalm/Internal/ExecutionEnvironment/BuildInfoCollector.php';
 
 (
     /**
@@ -281,6 +283,8 @@ require_once __DIR__ . '/' . 'Psalm/Internal/IncludeCollector.php';
 
         $vendor_dir = \Psalm\getVendorDir($current_dir);
 
+        // capture environment before registering autoloader (it may destroy it)
+        $build_info_collector = new BuildInfoCollector($_SERVER);
 
         $include_collector = new IncludeCollector();
         $first_autoloader = $include_collector->runAndCollect(
@@ -838,6 +842,7 @@ require_once __DIR__ . '/' . 'Psalm/Internal/IncludeCollector.php';
         if (!isset($options['i'])) {
             IssueBuffer::finish(
                 $project_analyzer,
+                $build_info_collector,
                 !$paths_to_check,
                 $start_time,
                 isset($options['stats']),

@@ -23,6 +23,7 @@ use function getcwd;
 use function microtime;
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Internal\ExecutionEnvironment\BuildInfoCollector;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Plugin\EventHandler\AfterCodebasePopulatedInterface;
@@ -955,7 +956,7 @@ class PluginTest extends \Psalm\Tests\TestCase
 
         $this->project_analyzer->check('tests/fixtures/DummyProject', true);
         ob_start();
-        \Psalm\IssueBuffer::finish($this->project_analyzer, true, microtime(true));
+        \Psalm\IssueBuffer::finish($this->project_analyzer, new BuildInfoCollector([]), true, microtime(true));
         ob_end_clean();
     }
 

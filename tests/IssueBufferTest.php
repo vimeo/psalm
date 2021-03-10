@@ -7,6 +7,7 @@ use Psalm\Config;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Codebase\Analyzer;
 use Psalm\Internal\EventDispatcher;
+use Psalm\Internal\ExecutionEnvironment\BuildInfoCollector;
 use Psalm\IssueBuffer;
 use Psalm\Report\ReportOptions;
 
@@ -80,7 +81,7 @@ class IssueBufferTest extends TestCase
         $projectAnalzyer->generated_report_options = [];
 
         \ob_start();
-        IssueBuffer::finish($projectAnalzyer, false, \microtime(true), false, $baseline);
+        IssueBuffer::finish($projectAnalzyer, new BuildInfoCollector([]), false, \microtime(true), false, $baseline);
         $output = \ob_get_clean();
         $this->assertStringNotContainsString("ERROR", $output, "all issues baselined");
         IssueBuffer::clear();
