@@ -42,7 +42,7 @@ trait PsalmRunnerTrait
             $process->mustRun();
         } else {
             $process->run();
-            $this->assertGreaterThan(0, $process->getExitCode());
+            $this->assertEquals(2, $process->getExitCode());
         }
 
         return [
