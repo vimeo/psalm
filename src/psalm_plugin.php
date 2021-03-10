@@ -2,9 +2,6 @@
 
 namespace Psalm;
 
-require_once('command_functions.php');
-require_once __DIR__ . '/Psalm/Internal/Composer.php';
-
 use PackageVersions\Versions;
 use Psalm\Internal\PluginManager\Command\DisableCommand;
 use Psalm\Internal\PluginManager\Command\EnableCommand;
@@ -12,29 +9,38 @@ use Psalm\Internal\PluginManager\Command\ShowCommand;
 use Psalm\Internal\PluginManager\PluginListFactory;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Input\InputOption;
-use function getcwd;
-use const DIRECTORY_SEPARATOR;
+
 use function dirname;
+use function getcwd;
 
-$current_dir = (string)getcwd() . DIRECTORY_SEPARATOR;
-$vendor_dir = \Psalm\getVendorDir($current_dir);
-requireAutoloaders($current_dir, false, $vendor_dir);
+use const DIRECTORY_SEPARATOR;
 
-$app = new Application('psalm-plugin', Versions::getVersion('vimeo/psalm'));
+require_once __DIR__ . '/command_functions.php';
+require_once __DIR__ . '/Psalm/Internal/Composer.php';
 
-$psalm_root = dirname(__DIR__) . DIRECTORY_SEPARATOR;
+(
+    function (): void {
+        $current_dir = (string)getcwd() . DIRECTORY_SEPARATOR;
+        $vendor_dir = \Psalm\getVendorDir($current_dir);
+        requireAutoloaders($current_dir, false, $vendor_dir);
 
-$plugin_list_factory = new PluginListFactory($current_dir, $psalm_root);
+        $app = new Application('psalm-plugin', Versions::getVersion('vimeo/psalm'));
 
-$app->addCommands([
-    new ShowCommand($plugin_list_factory),
-    new EnableCommand($plugin_list_factory),
-    new DisableCommand($plugin_list_factory),
-]);
+        $psalm_root = dirname(__DIR__) . DIRECTORY_SEPARATOR;
 
-$app->getDefinition()->addOption(
-    new InputOption('config', 'c', InputOption::VALUE_REQUIRED, 'Path to Psalm config file')
-);
+        $plugin_list_factory = new PluginListFactory($current_dir, $psalm_root);
 
-$app->setDefaultCommand('show');
-$app->run();
+        $app->addCommands([
+            new ShowCommand($plugin_list_factory),
+            new EnableCommand($plugin_list_factory),
+            new DisableCommand($plugin_list_factory),
+        ]);
+
+        $app->getDefinition()->addOption(
+            new InputOption('config', 'c', InputOption::VALUE_REQUIRED, 'Path to Psalm config file')
+        );
+
+        $app->setDefaultCommand('show');
+        $app->run();
+    }
+)();
