@@ -457,8 +457,8 @@ class AtomicTypeComparator
 
                     $array_comparison_result = new TypeComparisonResult();
 
-                    if (!$input_param->isEmpty()
-                        && !UnionTypeComparator::isContainedBy(
+                    if (!$input_param->isEmpty()) {
+                        if (!UnionTypeComparator::isContainedBy(
                             $codebase,
                             $input_param,
                             $container_param,
@@ -467,24 +467,22 @@ class AtomicTypeComparator
                             $array_comparison_result,
                             $allow_interface_equality
                         )
-                        && !$array_comparison_result->type_coerced_from_scalar
-                    ) {
-                        if ($atomic_comparison_result && $array_comparison_result->type_coerced_from_mixed) {
-                            $atomic_comparison_result->type_coerced_from_mixed = true;
+                            && !$array_comparison_result->type_coerced_from_scalar
+                        ) {
+                            if ($atomic_comparison_result && $array_comparison_result->type_coerced_from_mixed) {
+                                $atomic_comparison_result->type_coerced_from_mixed = true;
+                            }
+                            $all_types_contain = false;
+                        } else {
+                            if ($atomic_comparison_result) {
+                                $atomic_comparison_result->to_string_cast
+                                    = $atomic_comparison_result->to_string_cast === true
+                                        || $array_comparison_result->to_string_cast === true;
+                            }
                         }
-                        $all_types_contain = false;
                     }
                 }
-
-                if ($all_types_contain) {
-                    if ($atomic_comparison_result) {
-                        $atomic_comparison_result->to_string_cast = false;
-                    }
-
-                    return true;
-                }
-
-                return false;
+                return $all_types_contain;
             }
 
             if ($input_type_part->hasTraversableInterface($codebase)) {
