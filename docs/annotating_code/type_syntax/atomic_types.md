@@ -8,7 +8,7 @@ Atomic types are the basic building block of all type information used in Psalm.
 - [positive-int](scalar_types.md#positive-int)
 - [float](scalar_types.md)
 - [string](scalar_types.md)
-- [class-string and class-string&lt;Foo&gt;](scalar_types.md#class-string)
+- [class-string and class-string&lt;Foo&gt;](scalar_types.md#class-string-interface-string)
 - [trait-string](scalar_types.md#trait-string)
 - [callable-string](scalar_types.md#callable-string)
 - [numeric-string](scalar_types.md#numeric-string)
