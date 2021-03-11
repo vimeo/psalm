@@ -188,8 +188,6 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
                             );
                         }
                     }
-                } else {
-                    $use_context->vars_in_scope[$use_var_id] = Type::getMixed();
                 }
 
                 $use_context->vars_possibly_in_scope[$use_var_id] = true;

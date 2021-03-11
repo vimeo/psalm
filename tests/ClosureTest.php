@@ -889,6 +889,24 @@ class ClosureTest extends TestCase
                     );',
                 'error_message' => 'InvalidArgument'
             ],
+            'undefinedVariableInEncapsedString' => [
+                '<?php
+                    fn(): string => "$a";
+                ',
+                'error_message' => 'UndefinedVariable',
+                [],
+                false,
+                '7.4'
+            ],
+            'undefinedVariableInStringCast' => [
+                '<?php
+                    fn(): string => (string) $a;
+                ',
+                'error_message' => 'UndefinedVariable',
+                [],
+                false,
+                '7.4'
+            ],
         ];
     }
 }
