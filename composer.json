@@ -21,7 +21,7 @@
         "ext-libxml": "*",
         "ext-tokenizer": "*",
         "ext-mbstring": "*",
-        "amphp/amp": "^2.1",
+        "amphp/amp": "^2.4.2",
         "amphp/byte-stream": "^1.5",
         "composer/package-versions-deprecated": "^1.8.0",
         "composer/semver": "^1.4 || ^2.0 || ^3.0",
@@ -41,7 +41,6 @@
     },
     "require-dev": {
         "ext-curl": "*",
-        "amphp/amp": "^2.4.2",
         "bamarni/composer-bin-plugin": "^1.2",
         "brianium/paratest": "^4.0||^6.0",
         "php-parallel-lint/php-parallel-lint": "^1.2",
