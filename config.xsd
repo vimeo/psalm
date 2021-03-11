@@ -63,7 +63,7 @@
         <xs:attribute name="strictBinaryOperands" type="xs:boolean" default="false" />
         <xs:attribute name="throwExceptionOnError" type="xs:boolean" default="false" />
         <xs:attribute name="totallyTyped" type="xs:boolean" default="false" />
-        <xs:attribute name="errorLevel" type="xs:integer" default="1" />
+        <xs:attribute name="errorLevel" type="xs:integer" default="2" />
         <xs:attribute name="reportMixedIssues" type="xs:boolean" default="true" />
         <xs:attribute name="useDocblockTypes" type="xs:boolean" default="true" />
         <xs:attribute name="useDocblockPropertyTypes" type="xs:boolean" default="false" />
