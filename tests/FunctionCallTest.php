@@ -428,6 +428,37 @@ class FunctionCallTest extends TestCase
                     '$elements' => 'false|list<string>',
                 ],
             ],
+            'explodeWithDynamicNonEmptyDelimiter' => [
+                '<?php
+                    /**
+                     * @var non-empty-string $delim
+                     * @var string $string
+                     */
+                    $elements = explode($delim, $string);',
+                'assertions' => [
+                    '$elements' => 'non-empty-list<string>',
+                ],
+            ],
+            'explodeWithLiteralNonEmptyDelimiter' => [
+                '<?php
+                    /**
+                     * @var string $string
+                     */
+                    $elements = explode(" ", $string);',
+                'assertions' => [
+                    '$elements' => 'non-empty-list<string>',
+                ],
+            ],
+            'explodeWithLiteralEmptyDelimiter' => [
+                '<?php
+                    /**
+                     * @var string $string
+                     */
+                    $elements = explode("", $string);',
+                'assertions' => [
+                    '$elements' => 'false',
+                ],
+            ],
             'explodeWithPossiblyFalse' => [
                 '<?php
                     /** @return non-empty-list<string> */
