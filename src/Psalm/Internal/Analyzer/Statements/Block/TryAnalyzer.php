@@ -225,7 +225,7 @@ class TryAnalyzer
                         $statements_analyzer->getSuppressedIssues(),
                         false
                     ) === false) {
-                        return false;
+                        // fall through
                     }
                 }
 
@@ -245,7 +245,7 @@ class TryAnalyzer
                         ),
                         $statements_analyzer->getSuppressedIssues()
                     )) {
-                        return false;
+                        // fall through
                     }
                 }
 
