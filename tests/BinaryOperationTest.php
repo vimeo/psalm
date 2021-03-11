@@ -388,6 +388,13 @@ class BinaryOperationTest extends TestCase
                             echo "Actually, zero\n";
                         }
                     }'
+            ],
+            'IntOverflow' => [
+                '<?php
+                    $a = (1024 * 1024 * 1024 * 1024 * 1024 * 1024 * 1024);',
+                'assertions' => [
+                    '$a' => 'float'
+                ],
             ]
         ];
     }

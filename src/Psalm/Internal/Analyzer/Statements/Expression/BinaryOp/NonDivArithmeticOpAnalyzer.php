@@ -37,6 +37,7 @@ use function array_values;
 use function preg_match;
 use function strtolower;
 use function is_int;
+use const PHP_INT_MAX;
 
 /**
  * @internal
@@ -312,7 +313,12 @@ class NonDivArithmeticOpAnalyzer
             } elseif ($parent instanceof PhpParser\Node\Expr\BinaryOp\Mod) {
                 $calculated_type = Type::getInt(false, $left_type_part->value % $right_type_part->value);
             } elseif ($parent instanceof PhpParser\Node\Expr\BinaryOp\Mul) {
-                $calculated_type = Type::getInt(false, $left_type_part->value * $right_type_part->value);
+                $result = $left_type_part->value * $right_type_part->value;
+                if ($result <= PHP_INT_MAX) {
+                    $calculated_type = Type::getInt(false, $result);
+                } else {
+                    $calculated_type = Type::getFloat($result);
+                }
             } elseif ($parent instanceof PhpParser\Node\Expr\BinaryOp\Pow) {
                 $calculated_type = Type::getInt(false, $left_type_part->value ** $right_type_part->value);
             } elseif ($parent instanceof PhpParser\Node\Expr\BinaryOp\BitwiseOr) {
