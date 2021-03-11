@@ -98,7 +98,8 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\EventHandler\FunctionR
                 $generic_key_type = Type::getInt();
             }
 
-            if ($closure_types = $function_call_type->getClosureTypes()) {
+            if ($function_call_type->hasCallableType()) {
+                $closure_types = $function_call_type->getClosureTypes() ?: $function_call_type->getCallableTypes();
                 $closure_atomic_type = \reset($closure_types);
 
                 $closure_return_type = $closure_atomic_type->return_type ?: Type::getMixed();
