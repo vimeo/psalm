@@ -23,6 +23,7 @@ use function ob_start;
 use function sprintf;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\ExecutionEnvironment\BuildInfoCollector;
 use Psalm\Issue\CodeIssue;
 use Psalm\Issue\UnusedPsalmSuppress;
 use Psalm\Report\CheckstyleReport;
@@ -440,6 +441,7 @@ class IssueBuffer
      */
     public static function finish(
         ProjectAnalyzer $project_analyzer,
+        BuildInfoCollector $build_info_collector,
         bool $is_full,
         float $start_time,
         bool $add_stats = false,
@@ -542,7 +544,7 @@ class IssueBuffer
         }
 
         $source_control_info = null;
-        $build_info = (new \Psalm\Internal\ExecutionEnvironment\BuildInfoCollector($_SERVER))->collect();
+        $build_info = $build_info_collector->collect();
 
         if ($codebase->config->eventDispatcher->after_analysis
             || $codebase->config->eventDispatcher->legacy_after_analysis

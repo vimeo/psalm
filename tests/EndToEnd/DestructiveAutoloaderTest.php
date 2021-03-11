@@ -1,0 +1,20 @@
+<?php
+namespace Psalm\Tests\EndToEnd;
+
+use PHPUnit\Framework\TestCase;
+
+class DestructiveAutoloaderTest extends TestCase
+{
+    use PsalmRunnerTrait;
+
+    public function testSucceedsWithEmptyFile(): void
+    {
+        if (\version_compare(\PHP_VERSION, '7.2.0', '<')) {
+            $this->markTestSkipped('Test case requires PHP 7.2.');
+
+            return;
+        }
+
+        $this->runPsalm(['--no-cache'], __DIR__ . '/' . '../fixtures/DestructiveAutoloader/', true);
+    }
+}
