@@ -633,7 +633,7 @@ class Union implements TypeNode
     /**
      * @return array<string, Atomic\TCallable>
      */
-    private function getCallableTypes(): array
+    public function getCallableTypes(): array
     {
         return array_filter(
             $this->types,
