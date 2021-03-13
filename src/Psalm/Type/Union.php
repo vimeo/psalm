@@ -20,7 +20,6 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
-use function assert;
 use function reset;
 use function sort;
 use function strpos;
@@ -851,8 +850,17 @@ class Union implements TypeNode
     {
         return (bool) array_filter(
             $this->types,
-            function (Atomic $type): bool {
-                return $type->hasTemplate();
+            function (Atomic $type) : bool {
+                return $type instanceof Type\Atomic\TTemplateParam
+                    || ($type instanceof Type\Atomic\TNamedObject
+                        && $type->extra_types
+                        && array_filter(
+                            $type->extra_types,
+                            function ($t): bool {
+                                return $t instanceof Type\Atomic\TTemplateParam;
+                            }
+                        )
+                    );
             }
         );
     }
@@ -1309,6 +1317,18 @@ class Union implements TypeNode
         $classlike_visitor->traverseArray($this->types);
 
         return $classlike_visitor->matches();
+    }
+
+    /**
+     * Returns true if union contains template at any nested level.
+     */
+    public function containsTemplate(): bool
+    {
+        $template_visitor = new \Psalm\Internal\TypeVisitor\ContainsTemplateVisitor();
+
+        $template_visitor->traverseArray($this->types);
+
+        return $template_visitor->matches();
     }
 
     /**
