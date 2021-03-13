@@ -20,6 +20,7 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
+use function assert;
 use function reset;
 use function sort;
 use function strpos;
@@ -874,11 +875,11 @@ class Union implements TypeNode
                         return true;
                     }
                 }
-            } else if ($array instanceof Atomic\TList) {
+            } elseif ($array instanceof Atomic\TList) {
                 if ($array->type_param->hasTemplate()) {
                     return true;
                 }
-            } else if ($array instanceof Atomic\TClassStringMap) {
+            } elseif ($array instanceof Atomic\TClassStringMap) {
                 if ($array->value_param->hasTemplate()) {
                     return true;
                 }

@@ -67,7 +67,7 @@ class PropertyTypeInvarianceTest extends TestCase
                     abstract class ItemCollection
                     {
                         /** @var list<TItem> */
-                        protected $items = [];    
+                        protected $items = [];
                     }
 
                     /** @extends ItemCollection<Foo> */
