@@ -439,7 +439,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                         if ($fq_class_name === 'SplObjectStorage') {
                             $generic_param_type = Type::getEmpty();
                         } else {
-                            $generic_param_type = array_values($base_type)[0];
+                            $generic_param_type = clone array_values($base_type)[0];
                         }
                     }
 
