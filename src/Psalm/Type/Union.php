@@ -848,7 +848,7 @@ class Union implements TypeNode
 
     public function hasTemplate(): bool
     {
-        return (bool) array_filter(
+        if ((bool) array_filter(
             $this->types,
             function (Atomic $type) : bool {
                 return $type instanceof Type\Atomic\TTemplateParam
@@ -862,7 +862,39 @@ class Union implements TypeNode
                         )
                     );
             }
-        );
+        )) {
+            return true;
+        }
+
+        if (isset($this->types['array'])) {
+            $array = $this->types['array'];
+            if ($array instanceof Atomic\TArray) {
+                foreach ($array->type_params as $type) {
+                    if ($type->hasTemplate()) {
+                        return true;
+                    }
+                }
+            } else if ($array instanceof Atomic\TList) {
+                if ($array->type_param->hasTemplate()) {
+                    return true;
+                }
+            } else if ($array instanceof Atomic\TClassStringMap) {
+                if ($array->value_param->hasTemplate()) {
+                    return true;
+                }
+            }
+        }
+
+        if (isset($this->types['iterable'])) {
+            assert($this->types['iterable'] instanceof Atomic\TIterable);
+            foreach ($this->types['iterable']->type_params as $type) {
+                if ($type->hasTemplate()) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     public function hasConditional(): bool
