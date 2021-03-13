@@ -597,6 +597,21 @@ abstract class Atomic implements TypeNode
         // do nothing
     }
 
+    public function hasTemplate(): bool
+    {
+        if ($this instanceof TTemplateParam) {
+            return true;
+        }
+        
+        foreach ($this->getChildNodes() as $childType) {
+            if ($childType->hasTemplate()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public function equals(Atomic $other_type): bool
     {
         return get_class($other_type) === get_class($this);

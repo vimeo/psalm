@@ -849,53 +849,12 @@ class Union implements TypeNode
 
     public function hasTemplate(): bool
     {
-        if ((bool) array_filter(
+        return (bool) array_filter(
             $this->types,
-            function (Atomic $type) : bool {
-                return $type instanceof Type\Atomic\TTemplateParam
-                    || ($type instanceof Type\Atomic\TNamedObject
-                        && $type->extra_types
-                        && array_filter(
-                            $type->extra_types,
-                            function ($t): bool {
-                                return $t instanceof Type\Atomic\TTemplateParam;
-                            }
-                        )
-                    );
+            function (Atomic $type): bool {
+                return $type->hasTemplate();
             }
-        )) {
-            return true;
-        }
-
-        if (isset($this->types['array'])) {
-            $array = $this->types['array'];
-            if ($array instanceof Atomic\TArray) {
-                foreach ($array->type_params as $type) {
-                    if ($type->hasTemplate()) {
-                        return true;
-                    }
-                }
-            } elseif ($array instanceof Atomic\TList) {
-                if ($array->type_param->hasTemplate()) {
-                    return true;
-                }
-            } elseif ($array instanceof Atomic\TClassStringMap) {
-                if ($array->value_param->hasTemplate()) {
-                    return true;
-                }
-            }
-        }
-
-        if (isset($this->types['iterable'])) {
-            assert($this->types['iterable'] instanceof Atomic\TIterable);
-            foreach ($this->types['iterable']->type_params as $type) {
-                if ($type->hasTemplate()) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
+        );
     }
 
     public function hasConditional(): bool
