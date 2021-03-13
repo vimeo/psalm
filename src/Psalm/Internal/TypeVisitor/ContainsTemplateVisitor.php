@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\TypeVisitor;
 
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\TypeNode;
 use Psalm\Type\NodeVisitor;
 
@@ -17,7 +18,7 @@ class ContainsTemplateVisitor extends NodeVisitor
 
     protected function enterNode(TypeNode $type): ?int
     {
-        if ($type instanceof TTemplateParam) {
+        if ($type instanceof TTemplateParam || $type instanceof TTemplateParamClass) {
             $this->contains_template = true;
             return NodeVisitor::STOP_TRAVERSAL;
         }
