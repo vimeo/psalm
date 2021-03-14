@@ -157,14 +157,14 @@ class ArrayFunctionCallTest extends TestCase
                 '<?php
                     $c = array_combine(["a", "b", "c"], [1, 2, 3]);',
                 'assertions' => [
-                    '$c' => 'array<string, int>|false',
+                    '$c' => 'false|non-empty-array<string, int>',
                 ],
             ],
             'arrayCombineFalse' => [
                 '<?php
                     $c = array_combine(["a", "b"], [1, 2, 3]);',
                 'assertions' => [
-                    '$c' => 'array<string, int>|false',
+                    '$c' => 'false|non-empty-array<string, int>',
                 ],
             ],
             'arrayMergeIntArrays' => [
