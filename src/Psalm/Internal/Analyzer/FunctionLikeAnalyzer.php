@@ -792,6 +792,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 continue;
             }
 
+            if ($storage->params[$position]->promoted_property) {
+                continue;
+            }
+
             $did_match_param = false;
 
             foreach ($this->function->params as $param) {
