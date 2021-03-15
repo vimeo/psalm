@@ -805,6 +805,17 @@ class RedundantConditionTest extends \Psalm\Tests\TestCase
                         if ($filter) {}
                     }'
             ],
+            'stringInScalar' => [
+                '<?php
+                    /**
+                     * @template T of scalar
+                     * @param T $value
+                     */
+                    function normalizeValue(bool|int|float|string $value): void
+                    {
+                        assert(is_string($value));
+                    }'
+            ],
         ];
     }
 
