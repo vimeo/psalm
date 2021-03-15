@@ -2,6 +2,7 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
+use Psalm\Codebase;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\CodeLocation;
@@ -12,6 +13,8 @@ use Psalm\Issue\MixedArrayOffset;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Internal\Type\TypeCombiner;
+use Psalm\Plugin\EventHandler\Event\ShouldTaintEvent;
+
 use function preg_match;
 use function array_merge;
 use function array_values;
@@ -56,7 +59,8 @@ class ArrayAnalyzer
                 $context,
                 $array_creation_info,
                 $int_offset,
-                $item
+                $item,
+                $codebase
             );
         }
 
@@ -220,7 +224,8 @@ class ArrayAnalyzer
         Context $context,
         ArrayCreationInfo $array_creation_info,
         int $int_offset,
-        PhpParser\Node\Expr\ArrayItem $item
+        PhpParser\Node\Expr\ArrayItem $item,
+        Codebase $codebase = null
     ) : void {
         if (ExpressionAnalyzer::analyze($statements_analyzer, $item->value, $context) === false) {
             return;
@@ -338,9 +343,16 @@ class ArrayAnalyzer
             $array_creation_info->array_keys[$item_key_value] = true;
         }
 
+        $should_taint = true;
+        if ($codebase) {
+            $event = new ShouldTaintEvent($item, $context, $statements_analyzer, $codebase);
+            $should_taint = $codebase->config->eventDispatcher->dispatchShouldTaint($event);
+        }
+
         if (($data_flow_graph = $statements_analyzer->data_flow_graph)
             && ($data_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph
                 || !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues()))
+            && $should_taint
         ) {
             if ($item_value_type = $statements_analyzer->node_data->getType($item->value)) {
                 if ($item_value_type->parent_nodes

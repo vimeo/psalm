@@ -147,6 +147,13 @@ class EventDispatcher
     public $legacy_after_functionlike_checks = [];
 
     /**
+     * Static methods to be called to see if a statement should be tainted.
+     *
+     * @var list<class-string<EventHandler\ShouldTaintInterface>>
+     */
+    public $should_taint_checks = [];
+
+    /**
      * @param class-string $class
      */
     public function registerClass(string $class): void
@@ -233,6 +240,10 @@ class EventDispatcher
             $this->legacy_after_functionlike_checks[] = $class;
         } elseif (is_subclass_of($class, EventHandler\AfterFunctionLikeAnalysisInterface::class)) {
             $this->after_functionlike_checks[] = $class;
+        }
+
+        if (is_subclass_of($class, EventHandler\ShouldTaintInterface::class)) {
+            $this->should_taint_checks[] = $class;
         }
     }
 
@@ -524,5 +535,16 @@ class EventDispatcher
         }
 
         return null;
+    }
+
+    public function dispatchShouldTaint(Event\ShouldTaintEvent $event): bool
+    {
+        foreach ($this->should_taint_checks as $handler) {
+            if ($handler::shouldTaint($event) === false) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }
