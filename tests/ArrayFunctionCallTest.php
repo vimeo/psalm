@@ -159,12 +159,36 @@ class ArrayFunctionCallTest extends TestCase
                 'assertions' => [
                     '$c' => 'false|non-empty-array<string, int>',
                 ],
+                'error_levels' => [],
+                '7.4',
             ],
-            'arrayCombineFalse' => [
+            'arrayCombinePHP8' => [
+                '<?php
+                    $c = array_combine(["a", "b"], [1, 2, 3]);',
+                'assertions' => [
+                    '$c' => 'non-empty-array<string, int>',
+                ],
+                'error_levels' => [],
+                '8.0',
+            ],
+            'arrayCombineNotMatching' => [
                 '<?php
                     $c = array_combine(["a", "b"], [1, 2, 3]);',
                 'assertions' => [
                     '$c' => 'false|non-empty-array<string, int>',
+                ],
+                'error_levels' => [],
+                '7.4',
+            ],
+            'arrayCombineDynamicParams' => [
+                '<?php
+                    /** @return array<string> */
+                    function getStrings(): array{ return []; }
+                    /** @return array<int> */
+                    function getInts(): array{ return []; }
+                    $c = array_combine(getStrings(), getInts());',
+                'assertions' => [
+                    '$c' => 'array<string, int>|false',
                 ],
             ],
             'arrayMergeIntArrays' => [
