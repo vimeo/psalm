@@ -66,7 +66,7 @@ function array_intersect_assoc(array $arr, array $arr2, array ...$arr3)
  * @param array<mixed, TKey> $arr
  * @param array<mixed, TValue> $arr2
  *
- * @return array<TKey, TValue>|false
+ * @return ($arr is non-empty-array ? non-empty-array<TKey, TValue>|false : array<empty, empty>|false)
  * @psalm-ignore-falsable-return
  * @psalm-pure
  */
