@@ -81,7 +81,7 @@ class PropertyTypeInvarianceTest extends TestCase
                 '<?php
                     abstract class Item {}
                     class Foo extends Item {}
-                    
+
                     /** @template T */
                     class Collection {}
 
@@ -99,7 +99,7 @@ class PropertyTypeInvarianceTest extends TestCase
                         protected $items;
                     }',
             ],
-            'allowTemplatedInvarianceWithClassString' => [
+            'allowTemplatedInvarianceWithClassStringTemplate' => [
                 '<?php
                     abstract class Item {}
                     class Foo extends Item {}
@@ -155,26 +155,25 @@ class PropertyTypeInvarianceTest extends TestCase
                     }',
                 'error_message' => 'NonInvariantPropertyType',
             ],
-            // TODO support property invariance checks with templates
-            // 'disallowInvalidTemplatedInvariance' => [
-            //     '<?php
-            //         /**
-            //          * @template T as string|null
-            //          */
-            //         abstract class A {
-            //             /** @var T */
-            //             public $foo;
-            //         }
+            'variantTemplatedProperties' => [
+                '<?php
+                    /**
+                     * @template T as string|null
+                     */
+                    abstract class A {
+                        /** @var T */
+                        public $foo;
+                    }
 
-            //         /**
-            //          * @extends A<string>
-            //          */
-            //         class AChild extends A {
-            //             /** @var int */
-            //             public $foo = 0;
-            //         }',
-            //     'error_message' => 'NonInvariantPropertyType',
-            // ],
+                    /**
+                     * @extends A<string>
+                     */
+                    class AChild extends A {
+                        /** @var int */
+                        public $foo = 0;
+                    }',
+                'error_message' => 'NonInvariantDocblockPropertyType',
+            ],
         ];
     }
 }

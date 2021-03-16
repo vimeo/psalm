@@ -14,6 +14,7 @@ use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Issue\DeprecatedClass;
 use Psalm\Issue\DeprecatedInterface;
 use Psalm\Issue\DeprecatedTrait;
@@ -705,11 +706,30 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         }
                     }
 
+                    $guide_template_result = new \Psalm\Internal\Type\TemplateResult(
+                        $guide_class_storage->template_types ?? [],
+                        []
+                    );
+
+                    $guide_property_type = TemplateStandinTypeReplacer::replace(
+                        $guide_property_storage->type ?? Type::getMixed(),
+                        $guide_template_result,
+                        $codebase,
+                        null,
+                        $property_storage->type
+                    );
+
+                    $guide_property_type = $guide_property_storage->type;
+                    TemplateInferredTypeReplacer::replace(
+                        $guide_property_type ?? Type::getMixed(),
+                        $guide_template_result,
+                        $codebase
+                    );
+
                     if ($property_storage->type
                         && $guide_property_storage->type
                         && $property_storage->location
-                        && !$property_storage->type->equals($guide_property_storage->type)
-                        && !$guide_property_storage->type->containsTemplate()
+                        && !$property_storage->type->equals($guide_property_type)
                         && $guide_class_storage->user_defined
                     ) {
                         if (IssueBuffer::accepts(
