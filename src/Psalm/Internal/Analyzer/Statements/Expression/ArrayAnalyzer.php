@@ -343,11 +343,8 @@ class ArrayAnalyzer
             $array_creation_info->array_keys[$item_key_value] = true;
         }
 
-        $should_taint = true;
-        if ($codebase) {
-            $event = new ShouldTaintEvent($item, $context, $statements_analyzer, $codebase);
-            $should_taint = $codebase->config->eventDispatcher->dispatchShouldTaint($event);
-        }
+        $event = new ShouldTaintEvent($item, $context, $statements_analyzer, $codebase);
+        $should_taint = $codebase->config->eventDispatcher->dispatchShouldTaint($event);
 
         if (($data_flow_graph = $statements_analyzer->data_flow_graph)
             && ($data_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph
