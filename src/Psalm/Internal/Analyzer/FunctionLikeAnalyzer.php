@@ -1034,7 +1034,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $context->vars_in_scope['$' . $function_param->name]->by_ref = true;
             }
 
-            $parser_param = $this->function->getParams()[$offset];
+            $parser_param = $this->function->getParams()[$offset] ?? null;
 
             if ($function_param->location) {
                 $statements_analyzer->registerVariable(
@@ -1045,7 +1045,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
 
             if (!$function_param->type_location || !$function_param->location) {
-                if ($parser_param->default) {
+                if ($parser_param && $parser_param->default) {
                     ExpressionAnalyzer::analyze($statements_analyzer, $parser_param->default, $context);
                 }
 
@@ -1098,7 +1098,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 }
             }
 
-            if ($parser_param->default) {
+            if ($parser_param && $parser_param->default) {
                 ExpressionAnalyzer::analyze($statements_analyzer, $parser_param->default, $context);
 
                 $default_type = $statements_analyzer->node_data->getType($parser_param->default);
