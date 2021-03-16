@@ -1053,7 +1053,7 @@ column_to: 8
         );
 
         ob_start();
-        IssueBuffer::finish($this->project_analyzer, new BuildInfoCollector([]), true, 0);
+        IssueBuffer::finish($this->project_analyzer, true, 0);
         ob_end_clean();
         $this->assertFileExists(__DIR__ . '/test-report.json');
         $this->assertSame('[]

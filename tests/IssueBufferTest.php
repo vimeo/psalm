@@ -81,7 +81,7 @@ class IssueBufferTest extends TestCase
         $projectAnalzyer->generated_report_options = [];
 
         \ob_start();
-        IssueBuffer::finish($projectAnalzyer, new BuildInfoCollector([]), false, \microtime(true), false, $baseline);
+        IssueBuffer::finish($projectAnalzyer, false, \microtime(true), false, $baseline);
         $output = \ob_get_clean();
         $this->assertStringNotContainsString("ERROR", $output, "all issues baselined");
         IssueBuffer::clear();

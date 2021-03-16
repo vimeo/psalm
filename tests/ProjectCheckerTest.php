@@ -157,7 +157,7 @@ class ProjectCheckerTest extends TestCase
 
         $this->project_analyzer->check('tests/fixtures/DummyProject', true);
         ob_start();
-        \Psalm\IssueBuffer::finish($this->project_analyzer, new BuildInfoCollector([]), true, microtime(true));
+        \Psalm\IssueBuffer::finish($this->project_analyzer, true, microtime(true));
         ob_end_clean();
 
         $this->assertSame(
@@ -201,7 +201,7 @@ class ProjectCheckerTest extends TestCase
 
         $this->project_analyzer->check('tests/fixtures/DummyProject', true);
         ob_start();
-        \Psalm\IssueBuffer::finish($this->project_analyzer, new BuildInfoCollector([]), true, microtime(true));
+        \Psalm\IssueBuffer::finish($this->project_analyzer, true, microtime(true));
         ob_end_clean();
 
         $this->assertSame(
