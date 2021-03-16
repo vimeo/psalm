@@ -225,7 +225,7 @@ class ArrayAnalyzer
         ArrayCreationInfo $array_creation_info,
         int $int_offset,
         PhpParser\Node\Expr\ArrayItem $item,
-        Codebase $codebase = null
+        Codebase $codebase
     ) : void {
         if (ExpressionAnalyzer::analyze($statements_analyzer, $item->value, $context) === false) {
             return;
