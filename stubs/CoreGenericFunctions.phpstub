@@ -952,7 +952,7 @@ function realpath(string $path) {}
  *
  * @param numeric-string $left_operand
  * @param numeric-string $right_operand
- * @return ($right_operand is "0" ? null : numeric-string)
+ * @return (PHP_MAJOR_VERSION is 8 ? numeric-string : ($right_operand is "0" ? null : numeric-string))
  */
 function bcdiv(string $left_operand, string $right_operand, int $scale = 0): ?string {}
 
