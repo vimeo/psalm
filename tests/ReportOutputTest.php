@@ -68,13 +68,13 @@ class ReportOutputTest extends TestCase
     public function analyzeTaintFlowFilesForReport() : void
     {
         $vulnerable_file_contents = '<?php
- 
+
 function addPrefixToInput($prefix, $input): string {
     return $prefix . $input;
 }
 
 $prefixedData = addPrefixToInput(\'myprefix\', $_POST[\'cmd\']);
-        
+
 shell_exec($prefixedData);
 
 echo "Successfully executed the command: " . $prefixedData;';
@@ -907,19 +907,19 @@ INFO: PossiblyUndefinedGlobalVariable - somefile.php:17:6 - Possibly undefined g
             '<?xml version="1.0" encoding="UTF-8"?>
 <checkstyle>
 <file name="somefile.php">
- <error line="3" column="10" severity="error" message="UndefinedVariable: Cannot find referenced variable $as_you_____type"/>
+ <error line="3" column="10" severity="error" source="Psalm.CodeIssue.UndefinedVariable" message="UndefinedVariable: Cannot find referenced variable $as_you_____type"/>
 </file>
 <file name="somefile.php">
- <error line="3" column="10" severity="error" message="MixedReturnStatement: Could not infer a return type"/>
+ <error line="3" column="10" severity="error" source="Psalm.CodeIssue.MixedReturnStatement" message="MixedReturnStatement: Could not infer a return type"/>
 </file>
 <file name="somefile.php">
- <error line="2" column="42" severity="error" message="MixedInferredReturnType: Could not verify return type \'null|string\' for psalmCanVerify"/>
+ <error line="2" column="42" severity="error" source="Psalm.CodeIssue.MixedInferredReturnType" message="MixedInferredReturnType: Could not verify return type \'null|string\' for psalmCanVerify"/>
 </file>
 <file name="somefile.php">
- <error line="8" column="6" severity="error" message="UndefinedConstant: Const CHANGE_ME is not defined"/>
+ <error line="8" column="6" severity="error" source="Psalm.CodeIssue.UndefinedConstant" message="UndefinedConstant: Const CHANGE_ME is not defined"/>
 </file>
 <file name="somefile.php">
- <error line="17" column="6" severity="info" message="PossiblyUndefinedGlobalVariable: Possibly undefined global variable $a, first seen on line 11"/>
+ <error line="17" column="6" severity="info" source="Psalm.UndefinedGlobalVariable.PossiblyUndefinedGlobalVariable" message="PossiblyUndefinedGlobalVariable: Possibly undefined global variable $a, first seen on line 11"/>
 </file>
 </checkstyle>
 ',
