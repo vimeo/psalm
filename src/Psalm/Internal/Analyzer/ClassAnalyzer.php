@@ -654,7 +654,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
             if (isset($storage->overridden_property_ids[$property_name])) {
                 foreach ($storage->overridden_property_ids[$property_name] as $overridden_property_id) {
-                    [$guide_class_name] = explode('::$', $overridden_property_id);
+                    $guide_class_name = $property_class_storage->parent_class;
                     $guide_class_storage = $codebase->classlike_storage_provider->get($guide_class_name);
                     $guide_property_storage = $guide_class_storage->properties[$property_name];
 
@@ -711,7 +711,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         []
                     );
 
-                    $guide_property_type = TemplateStandinTypeReplacer::replace(
+                    TemplateStandinTypeReplacer::replace(
                         $guide_property_storage->type ?? Type::getMixed(),
                         $guide_template_result,
                         $codebase,
