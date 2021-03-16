@@ -8,7 +8,7 @@ use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\StatementsSource;
 
-class ShouldTaintEvent
+class AddRemoveTaintsEvent
 {
     /**
      * @var Expr

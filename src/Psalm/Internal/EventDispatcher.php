@@ -147,11 +147,18 @@ class EventDispatcher
     public $legacy_after_functionlike_checks = [];
 
     /**
-     * Static methods to be called to see if a statement should be tainted.
+     * Static methods to be called to see if taints should be added
      *
-     * @var list<class-string<EventHandler\ShouldTaintInterface>>
+     * @var list<class-string<EventHandler\AddTaintsInterface>>
      */
-    public $should_taint_checks = [];
+    public $add_taints_checks = [];
+
+    /**
+     * Static methods to be called to see if taints should be removed
+     *
+     * @var list<class-string<EventHandler\RemoveTaintsInterface>>
+     */
+    public $remove_taints_checks = [];
 
     /**
      * @param class-string $class
@@ -242,8 +249,12 @@ class EventDispatcher
             $this->after_functionlike_checks[] = $class;
         }
 
-        if (is_subclass_of($class, EventHandler\ShouldTaintInterface::class)) {
-            $this->should_taint_checks[] = $class;
+        if (is_subclass_of($class, EventHandler\AddTaintsInterface::class)) {
+            $this->add_taints_checks[] = $class;
+        }
+
+        if (is_subclass_of($class, EventHandler\RemoveTaintsInterface::class)) {
+            $this->remove_taints_checks[] = $class;
         }
     }
 
@@ -537,14 +548,31 @@ class EventDispatcher
         return null;
     }
 
-    public function dispatchShouldTaint(Event\ShouldTaintEvent $event): bool
+    /**
+     * @return list<string>
+     */
+    public function dispatchAddTaints(Event\AddRemoveTaintsEvent $event): array
     {
-        foreach ($this->should_taint_checks as $handler) {
-            if ($handler::shouldTaint($event) === false) {
-                return false;
-            }
+        $added_taints = [];
+
+        foreach ($this->add_taints_checks as $handler) {
+            $added_taints = array_merge($added_taints, $handler::addTaints($event));
         }
 
-        return true;
+        return $added_taints;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function dispatchRemoveTaints(Event\AddRemoveTaintsEvent $event): array
+    {
+        $removed_taints = [];
+
+        foreach ($this->remove_taints_checks as $handler) {
+            $removed_taints = array_merge($removed_taints, $handler::removeTaints($event));
+        }
+
+        return $removed_taints;
     }
 }

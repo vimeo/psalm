@@ -13,7 +13,7 @@ use Psalm\Issue\MixedArrayOffset;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Internal\Type\TypeCombiner;
-use Psalm\Plugin\EventHandler\Event\ShouldTaintEvent;
+use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 
 use function preg_match;
 use function array_merge;
@@ -343,13 +343,10 @@ class ArrayAnalyzer
             $array_creation_info->array_keys[$item_key_value] = true;
         }
 
-        $event = new ShouldTaintEvent($item, $context, $statements_analyzer, $codebase);
-        $should_taint = $codebase->config->eventDispatcher->dispatchShouldTaint($event);
 
         if (($data_flow_graph = $statements_analyzer->data_flow_graph)
             && ($data_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph
                 || !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues()))
-            && $should_taint
         ) {
             if ($item_value_type = $statements_analyzer->node_data->getType($item->value)) {
                 if ($item_value_type->parent_nodes
@@ -367,12 +364,19 @@ class ArrayAnalyzer
 
                     $data_flow_graph->addNode($new_parent_node);
 
+                    $event = new AddRemoveTaintsEvent($item, $context, $statements_analyzer, $codebase);
+
+                    $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
+                    $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
+
                     foreach ($item_value_type->parent_nodes as $parent_node) {
                         $data_flow_graph->addPath(
                             $parent_node,
                             $new_parent_node,
                             'array-assignment'
-                                . ($item_key_value !== null ? '-\'' . $item_key_value . '\'' : '')
+                                . ($item_key_value !== null ? '-\'' . $item_key_value . '\'' : ''),
+                            $added_taints,
+                            $removed_taints
                         );
                     }
 

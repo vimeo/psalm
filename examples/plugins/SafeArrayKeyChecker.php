@@ -9,22 +9,22 @@ use Psalm\CodeLocation;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\AfterExpressionAnalysisEvent;
-use Psalm\Plugin\EventHandler\Event\ShouldTaintEvent;
-use Psalm\Plugin\EventHandler\ShouldTaintInterface;
+use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
+use Psalm\Plugin\EventHandler\RemoveTaintsInterface;
 use Psalm\Type;
 
-class SafeArrayKeyChecker implements ShouldTaintInterface
+class SafeArrayKeyChecker implements RemoveTaintsInterface
 {
     /**
-     * Called to see if a statement should be tainted.
+     * Called to see what taints should be removed
      *
-     * @return bool
+     * @return list<string>
      */
-    public static function shouldTaint(ShouldTaintEvent $event): bool {
+    public static function removeTaints(AddRemoveTaintsEvent $event): array {
         $item = $event->getExpr();
         $statements_analyzer = $event->getStatementsSource();
         if (!($item instanceof ArrayItem) || (!$statements_analyzer instanceof StatementsAnalyzer)) {
-            return true;
+            return [];
         }
         $item_key_value = '';
         if ($item->key) {
@@ -36,9 +36,10 @@ class SafeArrayKeyChecker implements ShouldTaintInterface
                 }
             }
         }
+
         if ($item_key_value === 'safe_key') {
-            return false;
+            return ['html'];
         }
-        return true;
+        return [];
     }
 }
