@@ -204,6 +204,61 @@ class PropertyTypeInvarianceTest extends TestCase
                     }',
                 'error_message' => 'NonInvariantDocblockPropertyType',
             ],
+            'variantTemplatedGrandchild' => [
+                '<?php
+                    abstract class Item {}
+                    class Foo extends Item {}
+                    class Bar extends Foo {}
+
+                    /** @template T of Item */
+                    abstract class ItemCollection
+                    {
+                        /** @var list<T> */
+                        protected $items = [];
+                    }
+
+                    /**
+                     * @template T of Foo
+                     * @extends ItemCollection<T>
+                     */
+                    class FooCollection extends ItemCollection
+                    {
+                        /** @var list<T> */
+                        protected $items = [];
+                    }
+
+                    /** @extends FooCollection<Bar> */
+                    class BarCollection extends FooCollection
+                    {
+                        /** @var list<Item> */ // Should be list<Bar>
+                        protected $items = [];
+                    }',
+                'error_message' => 'NonInvariantDocblockPropertyType',
+            ],
+            'variantPropertiesWithTemplateNotSpecified' => [
+                '<?php
+                    class Foo {}
+
+                    /** @template T */
+                    class Pair
+                    {
+                        /** @var T|null */
+                        protected $a;
+
+                        /** @var T|null */
+                        protected $b;
+                    }
+
+                    class FooPair extends Pair
+                    {
+                        /** @var Foo|null */ // Template defaults to mixed, this is invariant
+                        protected $a;
+
+                        /** @var Foo|null */
+                        protected $b;
+                    }',
+                'error_message' => 'NonInvariantDocblockPropertyType',
+            ],
         ];
     }
 }

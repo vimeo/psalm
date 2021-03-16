@@ -654,7 +654,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
             if (isset($storage->overridden_property_ids[$property_name])) {
                 foreach ($storage->overridden_property_ids[$property_name] as $overridden_property_id) {
-                    $guide_class_name = $property_class_storage->parent_class;
+                    [$guide_class_name] = explode('::$', $overridden_property_id);
                     $guide_class_storage = $codebase->classlike_storage_provider->get($guide_class_name);
                     $guide_property_storage = $guide_class_storage->properties[$property_name];
 
@@ -706,39 +706,49 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         }
                     }
 
-                    $guide_template_result = new \Psalm\Internal\Type\TemplateResult(
-                        $guide_class_storage->template_types ?? [],
-                        []
+                    $upper_bounds = [];
+                    $extended_templates = $storage->template_extended_params ?? [];
+                    foreach ($extended_templates as $et_name => $et_array) {
+                        foreach ($et_array as $et_class_name => $extended_template) {
+                            if (!isset($upper_bounds[$et_class_name][$et_name])) {
+                                $upper_bounds[$et_class_name][$et_name] = $extended_template;
+                            }
+                        }
+                    }
+                    $template_result = new \Psalm\Internal\Type\TemplateResult(
+                        [],
+                        $upper_bounds
                     );
 
-                    TemplateStandinTypeReplacer::replace(
-                        $guide_property_storage->type ?? Type::getMixed(),
-                        $guide_template_result,
-                        $codebase,
-                        null,
-                        $property_storage->type
-                    );
-
-                    $guide_property_type = $guide_property_storage->type;
+                    $guide_property_type = $guide_property_storage->type === null
+                        ? Type::getMixed()
+                        : clone $guide_property_storage->type;
                     TemplateInferredTypeReplacer::replace(
-                        $guide_property_type ?? Type::getMixed(),
-                        $guide_template_result,
+                        $guide_property_type,
+                        $template_result,
                         $codebase
                     );
 
-                    if ($property_storage->type
-                        && $guide_property_storage->type
-                        && $property_storage->location
-                        && !$property_storage->type->equals($guide_property_type)
+                    $property_type = $property_storage->type === null
+                        ? $guide_property_type
+                        : clone $property_storage->type;
+                    TemplateInferredTypeReplacer::replace(
+                        $property_type,
+                        $template_result,
+                        $codebase
+                    );
+
+                    if ($property_storage->location
+                        && !$property_type->equals($guide_property_type)
                         && $guide_class_storage->user_defined
                     ) {
                         if (IssueBuffer::accepts(
                             new NonInvariantDocblockPropertyType(
                                 'Property ' . $fq_class_name . '::$' . $property_name
-                                    . ' has type ' . $property_storage->type->getId()
+                                    . ' has type ' . $property_type->getId()
                                     . ", not invariant with " . $guide_class_name . '::$'
                                     . $property_name . ' of type '
-                                    . $guide_property_storage->type->getId(),
+                                    . $guide_property_type->getId(),
                                 $property_storage->location
                             ),
                             $property_storage->suppressed_issues

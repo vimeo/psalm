@@ -1320,18 +1320,6 @@ class Union implements TypeNode
     }
 
     /**
-     * Returns true if union contains template at any nested level.
-     */
-    public function containsTemplate(): bool
-    {
-        $template_visitor = new \Psalm\Internal\TypeVisitor\ContainsTemplateVisitor();
-
-        $template_visitor->traverseArray($this->types);
-
-        return $template_visitor->matches();
-    }
-
-    /**
      * @return list<TTemplateParam>
      */
     public function getTemplateTypes(): array
