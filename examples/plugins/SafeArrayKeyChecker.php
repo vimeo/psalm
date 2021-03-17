@@ -1,17 +1,10 @@
 <?php
 namespace Psalm\Example\Plugin;
 
-use PhpParser;
 use PhpParser\Node\Expr\ArrayItem;
-use Psalm\Checker;
-use Psalm\Checker\StatementsChecker;
-use Psalm\CodeLocation;
-use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Plugin\EventHandler\Event\AfterExpressionAnalysisEvent;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Plugin\EventHandler\RemoveTaintsInterface;
-use Psalm\Type;
 
 class SafeArrayKeyChecker implements RemoveTaintsInterface
 {
@@ -23,7 +16,7 @@ class SafeArrayKeyChecker implements RemoveTaintsInterface
     public static function removeTaints(AddRemoveTaintsEvent $event): array {
         $item = $event->getExpr();
         $statements_analyzer = $event->getStatementsSource();
-        if (!($item instanceof ArrayItem) || (!$statements_analyzer instanceof StatementsAnalyzer)) {
+        if (!($item instanceof ArrayItem) || !($statements_analyzer instanceof StatementsAnalyzer)) {
             return [];
         }
         $item_key_value = '';
