@@ -54,6 +54,8 @@ use function count;
 use function in_array;
 use function strtolower;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use function array_merge;
+use function reset;
 
 /**
  * @internal
@@ -1364,10 +1366,32 @@ class InstancePropertyAssignmentAnalyzer
             );
 
             if (!$class_property_type->hasMixed() && $assignment_value_type->hasMixed()) {
+                $origin_locations = [];
+
+                if ($statements_analyzer->data_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph) {
+                    foreach ($assignment_value_type->parent_nodes as $parent_node) {
+                        $origin_locations = array_merge(
+                            $origin_locations,
+                            $statements_analyzer->data_flow_graph->getOriginLocations($parent_node)
+                        );
+                    }
+                }
+
+                $origin_location = count($origin_locations) === 1 ? reset($origin_locations) : null;
+
+                $message = $var_id
+                    ? 'Unable to determine the type that ' . $var_id . ' is being assigned to'
+                    : 'Unable to determine the type of this assignment';
+
+                if ($origin_location && $origin_location->getLineNumber() === $stmt->getLine()) {
+                    $origin_location = null;
+                }
+
                 if (IssueBuffer::accepts(
                     new MixedAssignment(
-                        'Cannot assign' . ($var_id ? ' ' . $var_id . ' ' : ' ') . 'to a mixed type',
-                        new CodeLocation($statements_analyzer->getSource(), $stmt)
+                        $message,
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        $origin_location
                     ),
                     $statements_analyzer->getSuppressedIssues()
                 )) {

@@ -113,7 +113,18 @@ abstract class CodeIssue
             $location->getEndColumn(),
             (int) static::SHORTCODE,
             (int) static::ERROR_LEVEL,
-            $this instanceof TaintedInput ? $this->getTaintTrace() : null,
+            $this instanceof TaintedInput
+                ? $this->getTaintTrace()
+                : null,
+            $this instanceof MixedAssignment && $this->origin_location
+                ? [
+                    TaintedInput::nodeToDataFlowNodeData(
+                        $this->origin_location,
+                        'The type of ' . $location->getSelectedText() . ' is derived from this expression',
+                        ''
+                    )
+                ]
+                : null,
             $this->dupe_key
         );
     }
