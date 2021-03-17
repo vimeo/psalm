@@ -2,8 +2,9 @@
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
+use Psalm\Type\Atomic\TTemplateParam;
+use function array_shift;
 use function assert;
-use PhpParser;
 use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
@@ -84,6 +85,15 @@ class IteratorToArrayReturnTypeProvider implements \Psalm\Plugin\EventHandler\Fu
 
                 if ($key_type->hasMixed()) {
                     $key_type = Type::getArrayKey();
+                }
+
+                if ($key_type->isSingle() && $key_type->hasTemplate()) {
+                    $template_types = $key_type->getTemplateTypes();
+                    $template_type = array_shift($template_types);
+                    if ($template_type->as->hasMixed()) {
+                        $template_type->as = Type::getArrayKey();
+                        $key_type = new Type\Union([$template_type]);
+                    }
                 }
 
                 return new Type\Union([

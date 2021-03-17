@@ -807,7 +807,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                 $string_types[] = new TString;
                 $did_remove_type = true;
             } elseif ($type instanceof TTemplateParam) {
-                if ($type->as->hasString() || $type->as->hasMixed()) {
+                if ($type->as->hasString() || $type->as->hasMixed() || $type->as->hasScalar()) {
                     $type = clone $type;
 
                     $type->as = self::reconcileString(

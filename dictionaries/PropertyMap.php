@@ -365,7 +365,7 @@ return [
         'nodeValue' => 'string',
         'nodeType' => 'int',
         'parentNode' => 'DOMNode|null',
-        'childNodes' => 'DOMNodeList',
+        'childNodes' => 'DomNodeList<DomNode>',
         'firstChild' => 'DOMNode|null',
         'lastChild' => 'DOMNode|null',
         'previousSibling' => 'DOMNode|null',

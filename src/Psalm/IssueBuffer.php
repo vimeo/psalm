@@ -1,11 +1,33 @@
 <?php
 namespace Psalm;
 
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\ExecutionEnvironment\BuildInfoCollector;
+use Psalm\Issue\CodeIssue;
+use Psalm\Issue\UnusedPsalmSuppress;
 use Psalm\Plugin\EventHandler\Event\AfterAnalysisEvent;
+use Psalm\Report\CheckstyleReport;
+use Psalm\Report\CodeClimateReport;
+use Psalm\Report\CompactReport;
+use Psalm\Report\ConsoleReport;
+use Psalm\Report\EmacsReport;
+use Psalm\Report\GithubActionsReport;
+use Psalm\Report\JsonReport;
+use Psalm\Report\JsonSummaryReport;
+use Psalm\Report\JunitReport;
 use Psalm\Report\PhpStormReport;
+use Psalm\Report\PylintReport;
+use Psalm\Report\SarifReport;
+use Psalm\Report\SonarqubeReport;
+use Psalm\Report\TextReport;
+use Psalm\Report\XmlReport;
+
+use function array_merge;
 use function array_pop;
 use function array_search;
 use function array_splice;
+use function array_values;
 use function count;
 use function debug_print_backtrace;
 use function dirname;
@@ -13,40 +35,20 @@ use function explode;
 use function file_put_contents;
 use function fwrite;
 use function get_class;
+use function in_array;
 use function is_dir;
 use function memory_get_peak_usage;
-use function mkdir;
 use function microtime;
+use function mkdir;
 use function number_format;
 use function ob_get_clean;
 use function ob_start;
-use function sprintf;
-use Psalm\Internal\Analyzer\IssueData;
-use Psalm\Internal\Analyzer\ProjectAnalyzer;
-use Psalm\Internal\ExecutionEnvironment\BuildInfoCollector;
-use Psalm\Issue\CodeIssue;
-use Psalm\Issue\UnusedPsalmSuppress;
-use Psalm\Report\CheckstyleReport;
-use Psalm\Report\CodeClimateReport;
-use Psalm\Report\CompactReport;
-use Psalm\Report\ConsoleReport;
-use Psalm\Report\EmacsReport;
-use Psalm\Report\GithubActionsReport;
-use Psalm\Report\SarifReport;
-use Psalm\Report\JsonReport;
-use Psalm\Report\JsonSummaryReport;
-use Psalm\Report\JunitReport;
-use Psalm\Report\PylintReport;
-use Psalm\Report\SonarqubeReport;
-use Psalm\Report\TextReport;
-use Psalm\Report\XmlReport;
 use function sha1;
+use function sprintf;
 use function str_repeat;
 use function str_replace;
 use function usort;
-use function array_merge;
-use function array_values;
-use function in_array;
+
 use const DEBUG_BACKTRACE_IGNORE_ARGS;
 use const STDERR;
 
@@ -92,6 +94,9 @@ class IssueBuffer
      * @var array<string, array<int, bool>>
      */
     protected static $used_suppressions = [];
+
+    /** @var array<array-key,mixed> */
+    private static $server = [];
 
     /**
      * @param   string[]  $suppressed_issues
@@ -249,7 +254,9 @@ class IssueBuffer
 
             $message = $e instanceof \Psalm\Issue\TaintedInput
                 ? $e->getJourneyMessage()
-                : $e->message;
+                : ($e instanceof \Psalm\Issue\MixedAssignment
+                    ? $e->getMessage()
+                    : $e->message);
 
             throw new Exception\CodeException(
                 $issue_type
@@ -441,7 +448,6 @@ class IssueBuffer
      */
     public static function finish(
         ProjectAnalyzer $project_analyzer,
-        BuildInfoCollector $build_info_collector,
         bool $is_full,
         float $start_time,
         bool $add_stats = false,
@@ -543,12 +549,13 @@ class IssueBuffer
             }
         }
 
-        $source_control_info = null;
-        $build_info = $build_info_collector->collect();
 
         if ($codebase->config->eventDispatcher->after_analysis
             || $codebase->config->eventDispatcher->legacy_after_analysis
         ) {
+            $source_control_info = null;
+            $build_info = (new BuildInfoCollector(self::$server))->collect();
+
             try {
                 $source_control_info = (new \Psalm\Internal\ExecutionEnvironment\GitInfoCollector())->collect();
             } catch (\RuntimeException $e) {
@@ -860,5 +867,14 @@ class IssueBuffer
         }
 
         self::$recorded_issues[self::$recording_level][] = $e;
+    }
+
+    /**
+     * @internal
+     * @param array<array-key,mixed> $server
+     */
+    final public static function captureServer(array $server): void
+    {
+        self::$server = $server;
     }
 }

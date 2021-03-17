@@ -37,21 +37,23 @@ class MinMaxReturnTypeProvider implements FunctionReturnTypeProviderInterface
             return $array_type->value;
         }
 
-        $atomics = [];
+        $return_type = null;
+
         foreach ($call_args as $arg) {
             if ($array_arg_type = $nodeTypeProvider->getType($arg->value)) {
-                foreach ($array_arg_type->getAtomicTypes() as $atomicType) {
-                    $atomics[] = $atomicType;
+                if (!$return_type) {
+                    $return_type = $array_arg_type;
+                } else {
+                    $return_type = \Psalm\Type::combineUnionTypes(
+                        $return_type,
+                        $array_arg_type
+                    );
                 }
             } else {
                 return Type::getMixed();
             }
         }
 
-        if ($atomics === []) {
-            return Type::getMixed();
-        }
-
-        return new Type\Union($atomics);
+        return $return_type;
     }
 }

@@ -7,6 +7,7 @@ use Psalm\Context;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\Internal\Provider;
 use function strpos;
+use const DIRECTORY_SEPARATOR;
 
 class UnusedVariableTest extends TestCase
 {
@@ -2328,7 +2329,19 @@ class UnusedVariableTest extends TestCase
                         return $b;
                     }
                 '
-            ]
+            ],
+            'promotedPropertiesAreNeverMarkedAsUnusedParams' => [
+                '<?php
+                    class Container {
+                        private function __construct(
+                            public float $value
+                        ) {}
+
+                        public static function fromValue(float $value): self {
+                            return new self($value);
+                        }
+                    }'
+            ],
         ];
     }
 
@@ -3151,6 +3164,13 @@ class UnusedVariableTest extends TestCase
                     }
                     example();',
                 'error_message' => 'UnusedVariable',
+            ],
+            'warnAboutOriginalBadArray' => [
+                '<?php
+                    function takesArray(array $arr) : void {
+                        foreach ($arr as $a) {}
+                    }',
+                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:42 - Unable to determine the type that $a is being assigned to, derived from expression at src/somefile.php:2:47'
             ],
         ];
     }

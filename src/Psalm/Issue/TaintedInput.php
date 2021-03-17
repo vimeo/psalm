@@ -54,7 +54,7 @@ abstract class TaintedInput extends CodeIssue
         return $nodes;
     }
 
-    private static function nodeToDataFlowNodeData(
+    public static function nodeToDataFlowNodeData(
         CodeLocation $location,
         string $label,
         string $entry_path_type

@@ -38,7 +38,7 @@ class PropertyTypeInvarianceTest extends TestCase
                         protected $doesExist = "";
 
                         protected string $doesExistNative = "";
-                    }'
+                    }',
             ],
             'allowTemplatedInvariance' => [
                 '<?php
@@ -56,7 +56,67 @@ class PropertyTypeInvarianceTest extends TestCase
                     class AChild extends A {
                         /** @var string */
                         public $foo = "foo";
-                    }'
+                    }',
+            ],
+            'allowTemplatedInvarianceWithListTemplate' => [
+                '<?php
+                    abstract class Item {}
+                    class Foo extends Item {}
+
+                    /** @template TItem of Item */
+                    abstract class ItemCollection
+                    {
+                        /** @var list<TItem> */
+                        protected $items = [];
+                    }
+
+                    /** @extends ItemCollection<Foo> */
+                    class FooCollection extends ItemCollection
+                    {
+                        /** @var list<Foo> */
+                        protected $items = [];
+                    }',
+            ],
+            'allowTemplatedInvarianceWithClassTemplate' => [
+                '<?php
+                    abstract class Item {}
+                    class Foo extends Item {}
+                    
+                    /** @template T */
+                    class Collection {}
+
+                    /** @template TItem of Item */
+                    abstract class ItemCollection
+                    {
+                        /** @var Collection<TItem>|null */
+                        protected $items;
+                    }
+
+                    /** @extends ItemCollection<Foo> */
+                    class FooCollection extends ItemCollection
+                    {
+                        /** @var Collection<Foo>|null */
+                        protected $items;
+                    }',
+            ],
+            'allowTemplatedInvarianceWithClassString' => [
+                '<?php
+                    abstract class Item {}
+                    class Foo extends Item {}
+
+                    /** @template T of Item */
+                    abstract class ItemType
+                    {
+                        /** @var class-string<T>|null */
+                        protected $type;
+                    }
+
+                    /** @extends ItemType<Foo> */
+                    class FooTypes extends ItemType
+                    {
+                        /** @var class-string<Foo>|null */
+                        protected $type;
+                    }',
             ],
         ];
     }
@@ -95,6 +155,26 @@ class PropertyTypeInvarianceTest extends TestCase
                     }',
                 'error_message' => 'NonInvariantPropertyType',
             ],
+            // TODO support property invariance checks with templates
+            // 'disallowInvalidTemplatedInvariance' => [
+            //     '<?php
+            //         /**
+            //          * @template T as string|null
+            //          */
+            //         abstract class A {
+            //             /** @var T */
+            //             public $foo;
+            //         }
+
+            //         /**
+            //          * @extends A<string>
+            //          */
+            //         class AChild extends A {
+            //             /** @var int */
+            //             public $foo = 0;
+            //         }',
+            //     'error_message' => 'NonInvariantPropertyType',
+            // ],
         ];
     }
 }

@@ -54,6 +54,14 @@ class ConsoleReport extends Report
             }
         }
 
+        if ($issue_data->other_references) {
+            if ($this->show_snippet) {
+                $issue_string .= "\n";
+            }
+
+            $issue_string .= $this->getTaintSnippets($issue_data->other_references);
+        }
+
         return $issue_string;
     }
 

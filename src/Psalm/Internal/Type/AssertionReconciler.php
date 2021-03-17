@@ -748,6 +748,8 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
 
                         $has_param_match = true;
 
+                        $new_param_id = $new_param->getId();
+
                         $new_param = self::filterTypeWithAnother(
                             $codebase,
                             $existing_param,
@@ -768,7 +770,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                         $existing_type->bustCache();
 
                         if ($has_param_match
-                            && $existing_type_part->type_params[$i]->getId() !== $new_param->getId()
+                            && $existing_type_part->type_params[$i]->getId() !== $new_param_id
                         ) {
                             /** @psalm-suppress PropertyTypeCoercion */
                             $existing_type_part->type_params[$i] = $new_param;

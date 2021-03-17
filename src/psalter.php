@@ -53,7 +53,7 @@ require_once __DIR__ . '/Psalm/Internal/ErrorHandler.php';
 require_once __DIR__ . '/command_functions.php';
 require_once __DIR__ . '/Psalm/Internal/Composer.php';
 require_once __DIR__ . '/Psalm/Internal/IncludeCollector.php';
-require_once __DIR__ . '/' . 'Psalm/Internal/ExecutionEnvironment/BuildInfoCollector.php';
+require_once __DIR__ . '/' . 'Psalm/IssueBuffer.php';
 
 (
     /** @param array<int,string> $argv */
@@ -224,7 +224,7 @@ HELP;
         $vendor_dir = \Psalm\getVendorDir($current_dir);
 
         // capture environment before registering autoloader (it may destroy it)
-        $build_info_collector = new BuildInfoCollector($_SERVER);
+        IssueBuffer::captureServer($_SERVER);
 
         $include_collector = new IncludeCollector();
         $first_autoloader = $include_collector->runAndCollect(
@@ -515,6 +515,6 @@ HELP;
             }
         }
 
-        IssueBuffer::finish($project_analyzer, $build_info_collector, false, $start_time);
+        IssueBuffer::finish($project_analyzer, false, $start_time);
     }
 )($argv);

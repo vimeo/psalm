@@ -46,6 +46,9 @@ use function is_string;
 use function strpos;
 use function strtolower;
 use function substr;
+use function array_merge;
+use function count;
+use function reset;
 
 /**
  * @internal
@@ -339,12 +342,32 @@ class AssignmentAnalyzer
                 && !$comment_type
                 && substr($var_id ?? '', 0, 2) !== '$_'
             ) {
+                $origin_locations = [];
+
+                if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
+                    foreach ($assign_value_type->parent_nodes as $parent_node) {
+                        $origin_locations = array_merge(
+                            $origin_locations,
+                            $statements_analyzer->data_flow_graph->getOriginLocations($parent_node)
+                        );
+                    }
+                }
+
+                $origin_location = count($origin_locations) === 1 ? reset($origin_locations) : null;
+
+                $message = $var_id
+                    ? 'Unable to determine the type that ' . $var_id . ' is being assigned to'
+                    : 'Unable to determine the type of this assignment';
+
+                if ($origin_location && $origin_location->getLineNumber() === $assign_var->getLine()) {
+                    $origin_location = null;
+                }
+
                 if (IssueBuffer::accepts(
                     new MixedAssignment(
-                        $var_id
-                            ? 'Unable to determine the type that ' . $var_id . ' is being assigned to'
-                            : 'Unable to determine the type of this assignment',
-                        new CodeLocation($statements_analyzer->getSource(), $assign_var)
+                        $message,
+                        new CodeLocation($statements_analyzer->getSource(), $assign_var),
+                        $origin_location
                     ),
                     $statements_analyzer->getSuppressedIssues()
                 )) {
