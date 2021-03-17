@@ -72,6 +72,7 @@ use function array_keys;
 use function array_merge;
 use function array_filter;
 use function in_array;
+use function assert;
 
 /**
  * @internal
@@ -706,6 +707,18 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         }
                     }
 
+                    if ($property_storage->type === null) {
+                        // Property type not set, no need to check for docblock invariance
+                        continue;
+                    }
+
+                    $property_type = clone $property_storage->type;
+
+                    $guide_property_type = $guide_property_storage->type === null
+                        ? Type::getMixed()
+                        : clone $guide_property_storage->type;
+
+                    // Set upper bounds for all templates
                     $upper_bounds = [];
                     $extended_templates = $storage->template_extended_params ?? [];
                     foreach ($extended_templates as $et_name => $et_array) {
@@ -715,23 +728,44 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                             }
                         }
                     }
-                    $template_result = new \Psalm\Internal\Type\TemplateResult(
-                        [],
-                        $upper_bounds
+
+                    // Get actual types used for templates (to support @template-covariant)
+                    $template_standins = new \Psalm\Internal\Type\TemplateResult($upper_bounds, []);
+                    TemplateStandinTypeReplacer::replace(
+                        $guide_property_type,
+                        $template_standins,
+                        $codebase,
+                        null,
+                        $property_type
                     );
 
-                    $guide_property_type = $guide_property_storage->type === null
-                        ? Type::getMixed()
-                        : clone $guide_property_storage->type;
+                    // Iterate over parent classes to find template-covariants, and replace the upper bound with the
+                    // standin. Since @template-covariant allows child classes, we want to use the standin type
+                    // instead of the template extended type.
+                    $parent_class = $storage->parent_class;
+                    while ($parent_class !== null) {
+                        $parent_storage = $codebase->classlike_storage_provider->get($parent_class);
+                        foreach ($parent_storage->template_covariants ?? [] as $pt_offset => $covariant) {
+                            if ($covariant) {
+                                // If template_covariants is set template_types should also be set
+                                assert($parent_storage->template_types !== null);
+                                $pt_name = array_keys($parent_storage->template_types)[$pt_offset];
+                                if (isset($template_standins->upper_bounds[$pt_name][$parent_class])) {
+                                    $upper_bounds[$pt_name][$parent_class] =
+                                        $template_standins->upper_bounds[$pt_name][$parent_class]->type;
+                                }
+                            }
+                        }
+                        $parent_class = $parent_storage->parent_class;
+                    }
+
+                    $template_result = new \Psalm\Internal\Type\TemplateResult([], $upper_bounds);
+
                     TemplateInferredTypeReplacer::replace(
                         $guide_property_type,
                         $template_result,
                         $codebase
                     );
-
-                    $property_type = $property_storage->type === null
-                        ? $guide_property_type
-                        : clone $property_storage->type;
                     TemplateInferredTypeReplacer::replace(
                         $property_type,
                         $template_result,
