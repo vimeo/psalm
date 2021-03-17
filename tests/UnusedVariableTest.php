@@ -3172,6 +3172,49 @@ class UnusedVariableTest extends TestCase
                     }',
                 'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:42 - Unable to determine the type that $a is being assigned to, derived from expression at src/somefile.php:2:47'
             ],
+            'warnAboutOriginalBadFunctionCall' => [
+                '<?php
+                    function makeArray() : array {
+                        return ["hello"];
+                    }
+
+                    $arr = makeArray();
+
+                    foreach ($arr as $a) {
+                        echo $a;
+                    }',
+                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:38 - Unable to determine the type that $a is being assigned to, derived from expression at src/somefile.php:2:44'
+            ],
+            'warnAboutOriginalBadStaticCall' => [
+                '<?php
+                    class A {
+                        public static function makeArray() : array {
+                            return ["hello"];
+                        }
+                    }
+
+                    $arr = A::makeArray();
+
+                    foreach ($arr as $a) {
+                        echo $a;
+                    }',
+                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:38 - Unable to determine the type that $a is being assigned to, derived from expression at src/somefile.php:3:62'
+            ],
+            'warnAboutOriginalBadInstanceCall' => [
+                '<?php
+                    class A {
+                        public function makeArray() : array {
+                            return ["hello"];
+                        }
+                    }
+
+                    $arr = (new A)->makeArray();
+
+                    foreach ($arr as $a) {
+                        echo $a;
+                    }',
+                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:38 - Unable to determine the type that $a is being assigned to, derived from expression at src/somefile.php:3:55'
+            ],
         ];
     }
 }
