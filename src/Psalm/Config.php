@@ -3,7 +3,7 @@
 namespace Psalm;
 
 use Composer\Autoload\ClassLoader;
-use Composer\Semver\Semver;
+use Composer\Semver\VersionParser;
 use DOMDocument;
 use LogicException;
 use Psalm\Config\IssueHandler;
@@ -76,6 +76,7 @@ use function sys_get_temp_dir;
 use function trigger_error;
 use function unlink;
 use function version_compare;
+use function str_starts_with;
 
 use const DIRECTORY_SEPARATOR;
 use const E_USER_ERROR;
@@ -2053,8 +2054,10 @@ class Config
             $php_version = $composer_json['require']['php'] ?? null;
 
             if (\is_string($php_version)) {
+                $version_parser = new VersionParser();
+                $min_php_version = $version_parser->parseConstraints($php_version)->getLowerBound()->getVersion();
                 foreach (['5.4', '5.5', '5.6', '7.0', '7.1', '7.2', '7.3', '7.4', '8.0'] as $candidate) {
-                    if (Semver::satisfies($candidate, $php_version)) {
+                    if (str_starts_with($min_php_version, $candidate)) {
                         return $candidate;
                     }
                 }
