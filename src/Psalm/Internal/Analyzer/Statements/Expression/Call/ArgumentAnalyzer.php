@@ -34,6 +34,7 @@ use Psalm\Issue\PossiblyInvalidArgument;
 use Psalm\Issue\PossiblyNullArgument;
 use Psalm\Issue\ArgumentTypeCoercion;
 use Psalm\IssueBuffer;
+use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
@@ -1296,6 +1297,11 @@ class ArgumentAnalyzer
             return $input_type;
         }
 
+        $event = new AddRemoveTaintsEvent($expr, $context, $statements_analyzer, $codebase);
+
+        $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
+        $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
+
         if ($function_param->type && $function_param->type->isString() && !$input_type->isString()) {
             $cast_type = CastAnalyzer::castStringAttempt(
                 $statements_analyzer,
@@ -1352,7 +1358,13 @@ class ArgumentAnalyzer
                     );
 
                     $statements_analyzer->data_flow_graph->addNode($new_sink);
-                    $statements_analyzer->data_flow_graph->addPath($method_node, $new_sink, 'arg');
+                    $statements_analyzer->data_flow_graph->addPath(
+                        $method_node,
+                        $new_sink,
+                        'arg',
+                        $added_taints,
+                        $removed_taints
+                    );
                 }
             }
         }
@@ -1370,7 +1382,13 @@ class ArgumentAnalyzer
                 );
 
                 $statements_analyzer->data_flow_graph->addNode($new_sink);
-                $statements_analyzer->data_flow_graph->addPath($method_node, $new_sink, 'arg');
+                $statements_analyzer->data_flow_graph->addPath(
+                    $method_node,
+                    $new_sink,
+                    'arg',
+                    $added_taints,
+                    $removed_taints
+                );
             }
         }
 
@@ -1383,11 +1401,23 @@ class ArgumentAnalyzer
 
         $statements_analyzer->data_flow_graph->addNode($argument_value_node);
 
-        $statements_analyzer->data_flow_graph->addPath($argument_value_node, $method_node, 'arg');
+        $statements_analyzer->data_flow_graph->addPath(
+            $argument_value_node,
+            $method_node,
+            'arg',
+            $added_taints,
+            $removed_taints
+        );
 
         foreach ($input_type->parent_nodes as $parent_node) {
             $statements_analyzer->data_flow_graph->addNode($method_node);
-            $statements_analyzer->data_flow_graph->addPath($parent_node, $argument_value_node, 'arg');
+            $statements_analyzer->data_flow_graph->addPath(
+                $parent_node,
+                $argument_value_node,
+                'arg',
+                $added_taints,
+                $removed_taints
+            );
         }
 
         if ($function_param->assert_untainted) {

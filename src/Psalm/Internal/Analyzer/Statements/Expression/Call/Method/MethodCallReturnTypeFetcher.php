@@ -19,6 +19,7 @@ use function strtolower;
 use Psalm\Internal\DataFlow\TaintSource;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Codebase\TaintFlowGraph;
+use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 
 class MethodCallReturnTypeFetcher
 {
@@ -259,6 +260,11 @@ class MethodCallReturnTypeFetcher
                 $statements_analyzer
             );
 
+            $event = new AddRemoveTaintsEvent($var_expr, $context, $statements_analyzer, $codebase);
+
+            $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
+            $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
+
             if ($method_storage->specialize_call && $var_id && isset($context->vars_in_scope[$var_id])) {
                 $var_nodes = [];
 
@@ -290,7 +296,13 @@ class MethodCallReturnTypeFetcher
                     );
 
                     foreach ($parent_nodes as $parent_node) {
-                        $statements_analyzer->data_flow_graph->addPath($parent_node, $this_parent_node, '=');
+                        $statements_analyzer->data_flow_graph->addPath(
+                            $parent_node,
+                            $this_parent_node,
+                            '=',
+                            $added_taints,
+                            $removed_taints
+                        );
                     }
                 }
 
@@ -330,7 +342,9 @@ class MethodCallReturnTypeFetcher
                     $statements_analyzer->data_flow_graph->addPath(
                         $universal_method_call_node,
                         $method_call_node,
-                        '='
+                        '=',
+                        $added_taints,
+                        $removed_taints
                     );
 
                     $method_call_nodes[$method_call_node->id] = $method_call_node;
@@ -349,7 +363,9 @@ class MethodCallReturnTypeFetcher
                         $statements_analyzer->data_flow_graph->addPath(
                             $method_call_node,
                             $var_node,
-                            'method-call-' . $method_id->method_name
+                            'method-call-' . $method_id->method_name,
+                            $added_taints,
+                            $removed_taints
                         );
                     }
 
@@ -367,7 +383,9 @@ class MethodCallReturnTypeFetcher
                         $statements_analyzer->data_flow_graph->addPath(
                             $declaring_method_call_node,
                             $method_call_node,
-                            'parent'
+                            'parent',
+                            $added_taints,
+                            $removed_taints
                         );
                     }
                 }
@@ -403,7 +421,9 @@ class MethodCallReturnTypeFetcher
                     $statements_analyzer->data_flow_graph->addPath(
                         $declaring_method_call_node,
                         $method_call_node,
-                        'parent'
+                        'parent',
+                        $added_taints,
+                        $removed_taints
                     );
                 }
 
@@ -436,7 +456,9 @@ class MethodCallReturnTypeFetcher
                     $statements_analyzer->data_flow_graph->addPath(
                         $declaring_method_call_node,
                         $method_call_node,
-                        'parent'
+                        'parent',
+                        $added_taints,
+                        $removed_taints
                     );
                 }
 

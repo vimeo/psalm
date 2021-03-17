@@ -7,6 +7,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type;
 
 class EncapsulatedStringAnalyzer
@@ -51,9 +52,21 @@ class EncapsulatedStringAnalyzer
 
                     $stmt_type->parent_nodes[$new_parent_node->id] = $new_parent_node;
 
+                    $codebase = $statements_analyzer->getCodebase();
+                    $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
+
+                    $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
+                    $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
+
                     if ($casted_part_type->parent_nodes) {
                         foreach ($casted_part_type->parent_nodes as $parent_node) {
-                            $statements_analyzer->data_flow_graph->addPath($parent_node, $new_parent_node, 'concat');
+                            $statements_analyzer->data_flow_graph->addPath(
+                                $parent_node,
+                                $new_parent_node,
+                                'concat',
+                                $added_taints,
+                                $removed_taints
+                            );
                         }
                     }
                 }

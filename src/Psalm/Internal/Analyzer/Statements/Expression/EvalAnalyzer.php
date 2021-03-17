@@ -8,6 +8,7 @@ use Psalm\Internal\DataFlow\TaintSink;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 
 /**
  * @internal
@@ -42,8 +43,20 @@ class EvalAnalyzer
 
                 $statements_analyzer->data_flow_graph->addSink($eval_param_sink);
 
+                $codebase = $statements_analyzer->getCodebase();
+                $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
+
+                $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
+                $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
+
                 foreach ($expr_type->parent_nodes as $parent_node) {
-                    $statements_analyzer->data_flow_graph->addPath($parent_node, $eval_param_sink, 'arg');
+                    $statements_analyzer->data_flow_graph->addPath(
+                        $parent_node,
+                        $eval_param_sink,
+                        'arg',
+                        $added_taints,
+                        $removed_taints
+                    );
                 }
             }
         }

@@ -13,6 +13,8 @@ use Psalm\Exception\FileIncludeException;
 use Psalm\Issue\MissingFile;
 use Psalm\Issue\UnresolvableInclude;
 use Psalm\IssueBuffer;
+use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
+
 use function str_replace;
 use const DIRECTORY_SEPARATOR;
 use function dirname;
@@ -120,8 +122,20 @@ class IncludeAnalyzer
 
             $statements_analyzer->data_flow_graph->addSink($include_param_sink);
 
+            $codebase = $statements_analyzer->getCodebase();
+            $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
+
+            $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
+            $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
+
             foreach ($stmt_expr_type->parent_nodes as $parent_node) {
-                $statements_analyzer->data_flow_graph->addPath($parent_node, $include_param_sink, 'arg');
+                $statements_analyzer->data_flow_graph->addPath(
+                    $parent_node,
+                    $include_param_sink,
+                    'arg',
+                    $added_taints,
+                    $removed_taints
+                );
             }
         }
 

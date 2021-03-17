@@ -11,6 +11,7 @@ use Psalm\Context;
 use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\InvalidOperand;
 use Psalm\IssueBuffer;
+use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 
@@ -142,15 +143,33 @@ class BinaryOpAnalyzer
                     $new_parent_node->id => $new_parent_node
                 ];
 
+                $codebase = $statements_analyzer->getCodebase();
+                $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
+
+                $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
+                $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
+
                 if ($stmt_left_type && $stmt_left_type->parent_nodes) {
                     foreach ($stmt_left_type->parent_nodes as $parent_node) {
-                        $statements_analyzer->data_flow_graph->addPath($parent_node, $new_parent_node, 'concat');
+                        $statements_analyzer->data_flow_graph->addPath(
+                            $parent_node,
+                            $new_parent_node,
+                            'concat',
+                            $added_taints,
+                            $removed_taints
+                        );
                     }
                 }
 
                 if ($stmt_right_type && $stmt_right_type->parent_nodes) {
                     foreach ($stmt_right_type->parent_nodes as $parent_node) {
-                        $statements_analyzer->data_flow_graph->addPath($parent_node, $new_parent_node, 'concat');
+                        $statements_analyzer->data_flow_graph->addPath(
+                            $parent_node,
+                            $new_parent_node,
+                            'concat',
+                            $added_taints,
+                            $removed_taints
+                        );
                     }
                 }
             }

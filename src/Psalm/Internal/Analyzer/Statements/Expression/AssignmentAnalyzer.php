@@ -40,6 +40,7 @@ use Psalm\Issue\ReferenceConstraintViolation;
 use Psalm\Issue\UnnecessaryVarAnnotation;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\BinaryOp\VirtualCoalesce;
+use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type;
 use function is_string;
 use function strpos;
@@ -532,12 +533,21 @@ class AssignmentAnalyzer
                     } else {
                         $var_location = new CodeLocation($statements_analyzer->getSource(), $assign_var);
 
+                        $event = new AddRemoveTaintsEvent($assign_var, $context, $statements_analyzer, $codebase);
+
+                        $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
+                        $removed_taints = \array_merge(
+                            $removed_taints,
+                            $codebase->config->eventDispatcher->dispatchRemoveTaints($event)
+                        );
+
                         self::taintAssignment(
                             $context->vars_in_scope[$var_id],
                             $data_flow_graph,
                             $var_id,
                             $var_location,
-                            $removed_taints
+                            $removed_taints,
+                            $added_taints
                         );
                     }
                 }
@@ -669,7 +679,8 @@ class AssignmentAnalyzer
         \Psalm\Internal\Codebase\DataFlowGraph $data_flow_graph,
         string $var_id,
         CodeLocation $var_location,
-        array $removed_taints
+        array $removed_taints,
+        array $added_taints
     ) : void {
         $parent_nodes = $type->parent_nodes;
 
@@ -699,7 +710,7 @@ class AssignmentAnalyzer
                 $parent_node,
                 $new_parent_node,
                 '=',
-                [],
+                $added_taints,
                 $removed_taints
             );
         }
@@ -714,7 +725,7 @@ class AssignmentAnalyzer
                     $parent_node,
                     $new_parent_node,
                     '=',
-                    [],
+                    $added_taints,
                     $removed_taints
                 );
             }
@@ -1699,12 +1710,21 @@ class AssignmentAnalyzer
                             ) {
                                 $context->vars_in_scope[$list_var_id]->parent_nodes = [];
                             } else {
+                                $event = new AddRemoveTaintsEvent($var, $context, $statements_analyzer, $codebase);
+
+                                $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
+                                $removed_taints = \array_merge(
+                                    $removed_taints,
+                                    $codebase->config->eventDispatcher->dispatchRemoveTaints($event)
+                                );
+
                                 self::taintAssignment(
                                     $context->vars_in_scope[$list_var_id],
                                     $data_flow_graph,
                                     $list_var_id,
                                     $var_location,
-                                    $removed_taints
+                                    $removed_taints,
+                                    $added_taints
                                 );
                             }
                         }

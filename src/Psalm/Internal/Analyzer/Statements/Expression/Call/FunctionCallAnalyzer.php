@@ -47,6 +47,7 @@ use function array_merge;
 use function array_map;
 use function strpos;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\FunctionLikeParameter;
 use function explode;
 
@@ -748,8 +749,19 @@ class FunctionCallAnalyzer extends CallAnalyzer
 
                 $statements_analyzer->data_flow_graph->addSink($custom_call_sink);
 
+                $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
+
+                $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
+                $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
+
                 foreach ($stmt_name_type->parent_nodes as $parent_node) {
-                    $statements_analyzer->data_flow_graph->addPath($parent_node, $custom_call_sink, 'call');
+                    $statements_analyzer->data_flow_graph->addPath(
+                        $parent_node,
+                        $custom_call_sink,
+                        'call',
+                        $added_taints,
+                        $removed_taints
+                    );
                 }
             }
         }
