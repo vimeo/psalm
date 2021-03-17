@@ -1072,7 +1072,7 @@ class PluginTest extends \Psalm\Tests\TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    public function testShouldTaintPlugin(): void
+    public function testRemoveTaints(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
@@ -1107,7 +1107,7 @@ class PluginTest extends \Psalm\Tests\TestCase
 
             $build = [
                 "nested" => [
-                    "safe_key" => $_GET["input_2"],
+                    "safe_key" => $_GET["input"],
                 ],
             ];
             output($build);'
