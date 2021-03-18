@@ -625,6 +625,7 @@ class FunctionCallReturnTypeFetcher
     /**
      * @param  array<PhpParser\Node\Arg>   $args
      * @param  array<string> $removed_taints
+     * @param  array<string> $added_taints
      */
     public static function taintUsingFlows(
         StatementsAnalyzer $statements_analyzer,
