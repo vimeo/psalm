@@ -257,7 +257,9 @@ class StaticCallAnalyzer extends CallAnalyzer
         $node_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
         $method_location = $method_storage
-            ? ($method_storage->signature_return_type_location ?: $method_storage->location)
+            ? ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+                ? ($method_storage->signature_return_type_location ?: $method_storage->location)
+                : ($method_storage->return_type_location ?: $method_storage->location))
             : null;
 
         if ($method_storage && $method_storage->specialize_call) {

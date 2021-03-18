@@ -431,7 +431,9 @@ class MethodCallReturnTypeFetcher
                 (string) $method_id,
                 $cased_method_id,
                 $is_declaring
-                    ? ($method_storage->signature_return_type_location ?: $method_storage->location)
+                    ? ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+                        ? ($method_storage->signature_return_type_location ?: $method_storage->location)
+                        : ($method_storage->return_type_location ?: $method_storage->location))
                     : null,
                 null
             );

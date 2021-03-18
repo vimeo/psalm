@@ -3215,6 +3215,22 @@ class UnusedVariableTest extends TestCase
                     }',
                 'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:38 - Unable to determine the type that $a is being assigned to, derived from expression at src' . DIRECTORY_SEPARATOR . 'somefile.php:3:55'
             ],
+            'warnAboutDocblockReturnType' => [
+                '<?php
+                    /** @return array[] */
+                    function makeArray() : array {
+                        return [["hello"]];
+                    }
+
+                    $arr = makeArray();
+
+                    foreach ($arr as $some_arr) {
+                        foreach ($some_arr as $a) {
+                            echo $a;
+                        }
+                    }',
+                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:47 - Unable to determine the type that $a is being assigned to, derived from expression at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:33'
+            ],
         ];
     }
 }

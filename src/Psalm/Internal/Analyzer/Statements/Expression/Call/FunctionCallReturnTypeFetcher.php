@@ -494,7 +494,9 @@ class FunctionCallReturnTypeFetcher
         $function_call_node = DataFlowNode::getForMethodReturn(
             $function_id,
             $function_id,
-            $function_storage->signature_return_type_location ?: $function_storage->location,
+            $statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+                ? ($function_storage->signature_return_type_location ?: $function_storage->location)
+                : ($function_storage->return_type_location ?: $function_storage->location),
             $function_storage->specialize_call ? $node_location : null
         );
 
