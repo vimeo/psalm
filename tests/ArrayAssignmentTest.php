@@ -862,6 +862,13 @@ class ArrayAssignmentTest extends TestCase
                     '$f' => 'array{0: string}',
                 ],
             ],
+            'dontIncrementIntOffsetForKeyedItems' => [
+                '<?php
+                    $a = [1, "a" => 2, 3];',
+                'assertions' => [
+                    '$a' => 'array{0: int, 1: int, a: int}',
+                ],
+            ],
             'assignArrayOrSetNull' => [
                 '<?php
                     $a = [];
