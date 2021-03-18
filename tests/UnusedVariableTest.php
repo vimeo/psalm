@@ -3170,7 +3170,7 @@ class UnusedVariableTest extends TestCase
                     function takesArray(array $arr) : void {
                         foreach ($arr as $a) {}
                     }',
-                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:42 - Unable to determine the type that $a is being assigned to, derived from expression at src/somefile.php:2:47'
+                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:42 - Unable to determine the type that $a is being assigned to, derived from expression at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:47'
             ],
             'warnAboutOriginalBadFunctionCall' => [
                 '<?php
@@ -3183,7 +3183,7 @@ class UnusedVariableTest extends TestCase
                     foreach ($arr as $a) {
                         echo $a;
                     }',
-                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:38 - Unable to determine the type that $a is being assigned to, derived from expression at src/somefile.php:2:44'
+                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:38 - Unable to determine the type that $a is being assigned to, derived from expression at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:44'
             ],
             'warnAboutOriginalBadStaticCall' => [
                 '<?php
@@ -3198,7 +3198,7 @@ class UnusedVariableTest extends TestCase
                     foreach ($arr as $a) {
                         echo $a;
                     }',
-                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:38 - Unable to determine the type that $a is being assigned to, derived from expression at src/somefile.php:3:62'
+                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:38 - Unable to determine the type that $a is being assigned to, derived from expression at src' . DIRECTORY_SEPARATOR . 'somefile.php:3:62'
             ],
             'warnAboutOriginalBadInstanceCall' => [
                 '<?php
@@ -3213,7 +3213,7 @@ class UnusedVariableTest extends TestCase
                     foreach ($arr as $a) {
                         echo $a;
                     }',
-                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:38 - Unable to determine the type that $a is being assigned to, derived from expression at src/somefile.php:3:55'
+                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:38 - Unable to determine the type that $a is being assigned to, derived from expression at src' . DIRECTORY_SEPARATOR . 'somefile.php:3:55'
             ],
         ];
     }
