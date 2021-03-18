@@ -1922,7 +1922,7 @@ class ArrayFunctionCallTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
+     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {
@@ -2104,9 +2104,9 @@ class ArrayFunctionCallTest extends TestCase
                     $list = [3, 2, 5, 9];
                     usort($list, fn(int $a, string $b): int => (int) ($a > $b));',
                 'error_message' => 'InvalidScalarArgument',
-                2 => [],
-                3 => false,
-                4 => '7.4',
+                [],
+                false,
+                '7.4',
             ],
             'usortInvalidComparison' => [
                 '<?php
