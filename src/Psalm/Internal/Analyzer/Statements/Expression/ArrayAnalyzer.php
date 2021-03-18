@@ -266,10 +266,9 @@ class ArrayAnalyzer
         }
 
         $item_key_value = null;
+        $item_is_list_item = false;
 
         if ($item->key) {
-            $array_creation_info->all_list = false;
-
             $was_inside_use = $context->inside_use;
             $context->inside_use = true;
             if (ExpressionAnalyzer::analyze($statements_analyzer, $item->key, $context) === false) {
@@ -310,14 +309,20 @@ class ArrayAnalyzer
                     $item_key_value = $key_type->getSingleIntLiteral()->value;
 
                     if ($item_key_value >= $array_creation_info->int_offset) {
+                        if ($item_key_value === $array_creation_info->int_offset) {
+                            $item_is_list_item = true;
+                        }
                         $array_creation_info->int_offset = $item_key_value + 1;
                     }
                 }
             }
         } else {
+            $item_is_list_item = true;
             $item_key_value = $array_creation_info->int_offset++;
             $array_creation_info->item_key_atomic_types[] = new Type\Atomic\TInt();
         }
+
+        $array_creation_info->all_list = $array_creation_info->all_list && $item_is_list_item;
 
         if ($item_key_value !== null) {
             if (isset($array_creation_info->array_keys[$item_key_value])) {

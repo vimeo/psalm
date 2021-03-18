@@ -72,6 +72,14 @@ class ListTest extends TestCase
                     '$c' => 'mixed',
                 ],
             ],
+            'explicitLiteralKey' => [
+                '<?php
+                    /** @param list<int> $a */
+                    function takesList($a): void {}
+
+                    $a = [1, 1 => 2, 3];
+                    takesList($a);',
+            ],
         ];
     }
 
@@ -98,6 +106,20 @@ class ListTest extends TestCase
                         }
                     }',
                 'error_message' => 'InvalidPropertyAssignmentValue - src' . DIRECTORY_SEPARATOR . 'somefile.php:11',
+            ],
+            'explicitVariableKey' => [
+                '<?php
+                    /** @param list<int> $a */
+                    function takesList($a): void {}
+
+                    /** @return array-key */
+                    function getKey() {
+                        return 0;
+                    }
+
+                    $a = [getKey() => 1];
+                    takesList($a);',
+                'error_message' => 'MixedArgumentTypeCoercion',
             ],
         ];
     }
