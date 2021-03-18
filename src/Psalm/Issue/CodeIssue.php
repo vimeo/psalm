@@ -120,7 +120,8 @@ abstract class CodeIssue
                 ? [
                     TaintedInput::nodeToDataFlowNodeData(
                         $this->origin_location,
-                        'The type of ' . $location->getSelectedText() . ' is derived from this expression',
+                        'The type of ' . $location->getSelectedText()
+                            . ' is derived from ' . $this->origin_location->label,
                         ''
                     )
                 ]
