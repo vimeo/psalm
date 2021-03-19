@@ -691,6 +691,17 @@ class AtomicPropertyFetchAnalyzer
         $var_location = new CodeLocation($statements_analyzer->getSource(), $stmt->var);
         $property_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
+        $added_taints = [];
+        $removed_taints = [];
+
+        if ($context) {
+            $codebase = $statements_analyzer->getCodebase();
+            $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
+
+            $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
+            $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
+        }
+
         if ($class_storage->specialize_instance) {
             $var_id = ExpressionIdentifier::getArrayVarId(
                 $stmt->var,
@@ -713,17 +724,6 @@ class AtomicPropertyFetchAnalyzer
                 ) {
                     $var_type->parent_nodes = [];
                     return;
-                }
-
-                $added_taints = [];
-                $removed_taints = [];
-
-                if ($context) {
-                    $codebase = $statements_analyzer->getCodebase();
-                    $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
-
-                    $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
-                    $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
                 }
 
                 $var_node = DataFlowNode::getForAssignment(
