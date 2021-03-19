@@ -764,15 +764,29 @@ class Methods
                     return clone $candidate_type;
                 }
 
+                $overridden_class_storage =
+                    $this->classlike_storage_provider->get($overridden_method_id->fq_class_name);
+
+                $overridden_storage_return_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                    $source_analyzer->getCodebase(),
+                    clone $overridden_storage->return_type,
+                    $overridden_method_id->fq_class_name,
+                    $appearing_fq_class_name,
+                    $overridden_class_storage->parent_class,
+                    true,
+                    false,
+                    $storage->final
+                );
+
                 $old_contained_by_new = UnionTypeComparator::isContainedBy(
                     $source_analyzer->getCodebase(),
                     $candidate_type,
-                    $overridden_storage->return_type
+                    $overridden_storage_return_type
                 );
 
                 $new_contained_by_old = UnionTypeComparator::isContainedBy(
                     $source_analyzer->getCodebase(),
-                    $overridden_storage->return_type,
+                    $overridden_storage_return_type,
                     $candidate_type
                 );
 

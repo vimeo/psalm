@@ -246,8 +246,12 @@ class StaticCallAnalyzer extends CallAnalyzer
         ?\Psalm\Internal\Type\TemplateResult $template_result,
         ?Context $context = null
     ) : void {
-        if (!$statements_analyzer->data_flow_graph instanceof TaintFlowGraph
-            || \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
+        if (!$statements_analyzer->data_flow_graph) {
+            return;
+        }
+
+        if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+            && \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
         ) {
             return;
         }
@@ -255,7 +259,9 @@ class StaticCallAnalyzer extends CallAnalyzer
         $node_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
         $method_location = $method_storage
-            ? ($method_storage->signature_return_type_location ?: $method_storage->location)
+            ? ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+                ? ($method_storage->signature_return_type_location ?: $method_storage->location)
+                : ($method_storage->return_type_location ?: $method_storage->location))
             : null;
 
         if ($method_storage && $method_storage->specialize_call) {
@@ -335,7 +341,10 @@ class StaticCallAnalyzer extends CallAnalyzer
             $return_type_candidate->parent_nodes = [$method_source->id => $method_source];
         }
 
-        if ($method_storage && $method_storage->taint_source_types) {
+        if ($method_storage
+            && $method_storage->taint_source_types
+            && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+        ) {
             $method_node = TaintSource::getForMethodReturn(
                 (string) $method_id,
                 $cased_method_id,
@@ -347,7 +356,7 @@ class StaticCallAnalyzer extends CallAnalyzer
             $statements_analyzer->data_flow_graph->addSource($method_node);
         }
 
-        if ($method_storage) {
+        if ($method_storage && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
             FunctionCallReturnTypeFetcher::taintUsingFlows(
                 $statements_analyzer,
                 $method_storage,

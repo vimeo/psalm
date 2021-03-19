@@ -3170,7 +3170,66 @@ class UnusedVariableTest extends TestCase
                     function takesArray(array $arr) : void {
                         foreach ($arr as $a) {}
                     }',
-                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:42 - Unable to determine the type that $a is being assigned to, derived from expression at src/somefile.php:2:47'
+                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:42 - Unable to determine the type that $a is being assigned to, derived from expression at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:47'
+            ],
+            'warnAboutOriginalBadFunctionCall' => [
+                '<?php
+                    function makeArray() : array {
+                        return ["hello"];
+                    }
+
+                    $arr = makeArray();
+
+                    foreach ($arr as $a) {
+                        echo $a;
+                    }',
+                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:38 - Unable to determine the type that $a is being assigned to, derived from expression at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:44'
+            ],
+            'warnAboutOriginalBadStaticCall' => [
+                '<?php
+                    class A {
+                        public static function makeArray() : array {
+                            return ["hello"];
+                        }
+                    }
+
+                    $arr = A::makeArray();
+
+                    foreach ($arr as $a) {
+                        echo $a;
+                    }',
+                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:38 - Unable to determine the type that $a is being assigned to, derived from expression at src' . DIRECTORY_SEPARATOR . 'somefile.php:3:62'
+            ],
+            'warnAboutOriginalBadInstanceCall' => [
+                '<?php
+                    class A {
+                        public function makeArray() : array {
+                            return ["hello"];
+                        }
+                    }
+
+                    $arr = (new A)->makeArray();
+
+                    foreach ($arr as $a) {
+                        echo $a;
+                    }',
+                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:38 - Unable to determine the type that $a is being assigned to, derived from expression at src' . DIRECTORY_SEPARATOR . 'somefile.php:3:55'
+            ],
+            'warnAboutDocblockReturnType' => [
+                '<?php
+                    /** @return array[] */
+                    function makeArray() : array {
+                        return [["hello"]];
+                    }
+
+                    $arr = makeArray();
+
+                    foreach ($arr as $some_arr) {
+                        foreach ($some_arr as $a) {
+                            echo $a;
+                        }
+                    }',
+                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:47 - Unable to determine the type that $a is being assigned to, derived from expression at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:33'
             ],
         ];
     }

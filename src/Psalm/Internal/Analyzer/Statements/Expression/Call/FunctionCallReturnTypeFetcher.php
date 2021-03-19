@@ -192,7 +192,7 @@ class FunctionCallReturnTypeFetcher
             $stmt_type = Type::getMixed();
         }
 
-        if (!$statements_analyzer->data_flow_graph instanceof TaintFlowGraph || !$function_storage) {
+        if (!$statements_analyzer->data_flow_graph || !$function_storage) {
             return $stmt_type;
         }
 
@@ -483,8 +483,12 @@ class FunctionCallReturnTypeFetcher
         TemplateResult $template_result,
         Context $context
     ) : ?DataFlowNode {
-        if (!$statements_analyzer->data_flow_graph instanceof TaintFlowGraph
-            || \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
+        if (!$statements_analyzer->data_flow_graph) {
+            return null;
+        }
+
+        if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+            && \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
         ) {
             return null;
         }
@@ -500,7 +504,9 @@ class FunctionCallReturnTypeFetcher
         $function_call_node = DataFlowNode::getForMethodReturn(
             $function_id,
             $function_id,
-            $function_storage->signature_return_type_location ?: $function_storage->location,
+            $statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+                ? ($function_storage->signature_return_type_location ?: $function_storage->location)
+                : ($function_storage->return_type_location ?: $function_storage->location),
             $function_storage->specialize_call ? $node_location : null
         );
 
@@ -556,7 +562,9 @@ class FunctionCallReturnTypeFetcher
             $stmt_type->parent_nodes[$function_call_node->id] = $function_call_node;
         }
 
-        if ($function_storage->return_source_params) {
+        if ($function_storage->return_source_params
+            && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+        ) {
             $removed_taints = $function_storage->removed_taints;
 
             if ($function_id === 'preg_replace' && count($stmt->args) > 2) {
@@ -607,7 +615,7 @@ class FunctionCallReturnTypeFetcher
             );
         }
 
-        if ($function_storage->taint_source_types) {
+        if ($function_storage->taint_source_types && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
             $method_node = TaintSource::getForMethodReturn(
                 $function_id,
                 $function_id,
