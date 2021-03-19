@@ -696,6 +696,7 @@ class AssignmentAnalyzer
 
     /**
      * @param  array<string> $removed_taints
+     * @param  array<string> $added_taints
      */
     private static function taintAssignment(
         Type\Union $type,

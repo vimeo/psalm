@@ -21,6 +21,7 @@ use function strtolower;
 use Psalm\Internal\DataFlow\TaintSource;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Codebase\TaintFlowGraph;
+use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 
 /**
  * @internal
@@ -242,7 +243,8 @@ class StaticCallAnalyzer extends CallAnalyzer
         string $cased_method_id,
         Type\Union $return_type_candidate,
         ?\Psalm\Storage\MethodStorage $method_storage,
-        ?\Psalm\Internal\Type\TemplateResult $template_result
+        ?\Psalm\Internal\Type\TemplateResult $template_result,
+        ?Context $context = null
     ) : void {
         if (!$statements_analyzer->data_flow_graph instanceof TaintFlowGraph
             || \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
@@ -303,6 +305,16 @@ class StaticCallAnalyzer extends CallAnalyzer
             }
         }
 
+        $added_taints = [];
+        $removed_taints = [];
+
+        if ($context) {
+            $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
+
+            $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
+            $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
+        }
+
         if ($conditionally_removed_taints && $method_location) {
             $assignment_node = DataFlowNode::getForAssignment(
                 $method_id . '-escaped',
@@ -314,8 +326,8 @@ class StaticCallAnalyzer extends CallAnalyzer
                 $method_source,
                 $assignment_node,
                 'conditionally-escaped',
-                [],
-                $conditionally_removed_taints
+                $added_taints,
+                \array_merge($conditionally_removed_taints, $removed_taints)
             );
 
             $return_type_candidate->parent_nodes[$assignment_node->id] = $assignment_node;
@@ -344,7 +356,8 @@ class StaticCallAnalyzer extends CallAnalyzer
                 $stmt->args,
                 $node_location,
                 $method_source,
-                $method_storage->removed_taints
+                \array_merge($method_storage->removed_taints, $removed_taints),
+                $added_taints
             );
         }
     }

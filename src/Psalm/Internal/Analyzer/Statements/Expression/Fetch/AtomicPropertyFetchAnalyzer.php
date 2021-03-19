@@ -42,6 +42,7 @@ use function in_array;
 use function array_keys;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Codebase\TaintFlowGraph;
+use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 
 /**
  * @internal
@@ -412,7 +413,8 @@ class AtomicPropertyFetchAnalyzer
             $class_property_type,
             $property_id,
             $class_storage,
-            $in_assignment
+            $in_assignment,
+            $context
         );
 
         if ($class_storage->mutation_free) {
@@ -509,7 +511,8 @@ class AtomicPropertyFetchAnalyzer
                     $stmt_type,
                     $property_id,
                     $class_storage,
-                    $in_assignment
+                    $in_assignment,
+                    $context
                 );
 
                 return false;
@@ -676,7 +679,8 @@ class AtomicPropertyFetchAnalyzer
         Type\Union $type,
         string $property_id,
         \Psalm\Storage\ClassLikeStorage $class_storage,
-        bool $in_assignment
+        bool $in_assignment,
+        ?Context $context = null
     ) : void {
         if (!$statements_analyzer->data_flow_graph) {
             return;
@@ -711,6 +715,17 @@ class AtomicPropertyFetchAnalyzer
                     return;
                 }
 
+                $added_taints = [];
+                $removed_taints = [];
+
+                if ($context) {
+                    $codebase = $statements_analyzer->getCodebase();
+                    $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
+
+                    $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
+                    $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
+                }
+
                 $var_node = DataFlowNode::getForAssignment(
                     $var_id,
                     $var_location
@@ -729,7 +744,9 @@ class AtomicPropertyFetchAnalyzer
                     $var_node,
                     $property_node,
                     'property-fetch'
-                        . ($stmt->name instanceof PhpParser\Node\Identifier ? '-' . $stmt->name : '')
+                        . ($stmt->name instanceof PhpParser\Node\Identifier ? '-' . $stmt->name : ''),
+                    $added_taints,
+                    $removed_taints
                 );
 
                 if ($var_type && $var_type->parent_nodes) {
@@ -737,7 +754,9 @@ class AtomicPropertyFetchAnalyzer
                         $data_flow_graph->addPath(
                             $parent_node,
                             $var_node,
-                            '='
+                            '=',
+                            $added_taints,
+                            $removed_taints
                         );
                     }
                 }
@@ -769,9 +788,21 @@ class AtomicPropertyFetchAnalyzer
             $data_flow_graph->addNode($property_node);
 
             if ($in_assignment) {
-                $data_flow_graph->addPath($localized_property_node, $property_node, 'property-assignment');
+                $data_flow_graph->addPath(
+                    $localized_property_node,
+                    $property_node,
+                    'property-assignment',
+                    $added_taints,
+                    $removed_taints
+                );
             } else {
-                $data_flow_graph->addPath($property_node, $localized_property_node, 'property-fetch');
+                $data_flow_graph->addPath(
+                    $property_node,
+                    $localized_property_node,
+                    'property-fetch',
+                    $added_taints,
+                    $removed_taints
+                );
             }
 
             $type->parent_nodes = [$localized_property_node->id => $localized_property_node];
@@ -982,7 +1013,8 @@ class AtomicPropertyFetchAnalyzer
                 $stmt_type,
                 $property_id,
                 $class_storage,
-                $in_assignment
+                $in_assignment,
+                $context
             );
 
             return;

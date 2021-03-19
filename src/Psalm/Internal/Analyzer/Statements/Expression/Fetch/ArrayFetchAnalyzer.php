@@ -66,6 +66,7 @@ use function in_array;
 use function is_int;
 use function preg_match;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 
 /**
  * @internal
@@ -150,7 +151,8 @@ class ArrayFetchAnalyzer
                 $stmt->var,
                 $keyed_array_var_id,
                 $stmt_type,
-                $used_key_type
+                $used_key_type,
+                $context
             );
 
             return true;
@@ -320,7 +322,8 @@ class ArrayFetchAnalyzer
             $stmt->var,
             $keyed_array_var_id,
             $stmt_type,
-            $used_key_type
+            $used_key_type,
+            $context
         );
 
         return true;
@@ -334,7 +337,8 @@ class ArrayFetchAnalyzer
         PhpParser\Node\Expr $var,
         ?string $keyed_array_var_id,
         Type\Union $stmt_type,
-        Type\Union $offset_type
+        Type\Union $offset_type,
+        ?Context $context = null
     ) : void {
         if ($statements_analyzer->data_flow_graph
             && ($stmt_var_type = $statements_analyzer->node_data->getType($var))
@@ -345,6 +349,17 @@ class ArrayFetchAnalyzer
             ) {
                 $stmt_var_type->parent_nodes = [];
                 return;
+            }
+
+            $added_taints = [];
+            $removed_taints = [];
+
+            if ($context) {
+                $codebase = $statements_analyzer->getCodebase();
+                $event = new AddRemoveTaintsEvent($var, $context, $statements_analyzer, $codebase);
+
+                $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
+                $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
             }
 
             $var_location = new CodeLocation($statements_analyzer->getSource(), $var);
@@ -366,14 +381,18 @@ class ArrayFetchAnalyzer
                 $statements_analyzer->data_flow_graph->addPath(
                     $parent_node,
                     $new_parent_node,
-                    'array-fetch' . ($dim_value !== null ? '-\'' . $dim_value . '\'' : '')
+                    'array-fetch' . ($dim_value !== null ? '-\'' . $dim_value . '\'' : ''),
+                    $added_taints,
+                    $removed_taints
                 );
 
                 if ($stmt_type->by_ref) {
                     $statements_analyzer->data_flow_graph->addPath(
                         $new_parent_node,
                         $parent_node,
-                        'array-assignment' . ($dim_value !== null ? '-\'' . $dim_value . '\'' : '')
+                        'array-assignment' . ($dim_value !== null ? '-\'' . $dim_value . '\'' : ''),
+                        $added_taints,
+                        $removed_taints
                     );
                 }
             }
