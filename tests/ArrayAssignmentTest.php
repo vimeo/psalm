@@ -1491,6 +1491,38 @@ class ArrayAssignmentTest extends TestCase
                     return [...$data];
                 }'
             ],
+            'unpackCanBeEmpty' => [
+                '<?php
+                    $x = [];
+                    $y = [];
+
+                    $x = [...$x, ...$y];
+
+                    $x ? 1 : 0;
+                ',
+            ],
+            'unpackEmptyKeepsCorrectKeys' => [
+                '<?php
+                    $a = [];
+                    $b = [1];
+                    $c = [];
+                    $d = [2];
+
+                    $e = [...$a, ...$b, ...$c, ...$d, 3];
+                ',
+                'assertions' => ['$e' => 'array{int, int, int}']
+            ],
+            'unpackNonObjectlikePreventsObjectlikeArray' => [
+                '<?php
+                    /** @return list<mixed> */
+                    function test(): array {
+                        return [];
+                    }
+
+                    $x = [...test(), "a" => "b"];
+                ',
+                'assertions' => ['$x' => 'non-empty-array<int|string, mixed>']
+            ],
             'ArrayOffsetNumericSupPHPINTMAX' => [
                 '<?php
                     $_a = [
