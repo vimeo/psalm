@@ -57,7 +57,3 @@ test_script:
     - cd c:\projects\php-project-workspace
     - vendor/bin/paratest --log-junit build/phpunit/phpunit.xml
     - php ./psalm --shepherd
-
-on_finish:
-    - ps: $wc = New-Object 'System.Net.WebClient'
-    - ps: $wc.UploadFile("https://ci.appveyor.com/api/testresults/junit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\build\phpunit\phpunit.xml))
