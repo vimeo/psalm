@@ -1116,5 +1116,30 @@ class PluginTest extends \Psalm\Tests\TestCase
         $this->project_analyzer->trackTaintedInputs();
 
         $this->analyzeFile($file_path, new Context());
+
+        $this->addFile(
+            $file_path,
+            '<?php // --taint-analysis
+
+            /**
+             * @psalm-taint-sink html $build
+             */
+            function output(array $build) {}
+
+            $build = [
+                "nested" => [
+                    "safe_key" => $_GET["input"],
+                    "a" => $_GET["input"],
+                ],
+            ];
+            output($build);'
+        );
+
+        $this->project_analyzer->trackTaintedInputs();
+
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectExceptionMessageRegExp('/TaintedHtml/');
+
+        $this->analyzeFile($file_path, new Context());
     }
 }
