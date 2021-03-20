@@ -147,6 +147,20 @@ class EventDispatcher
     public $legacy_after_functionlike_checks = [];
 
     /**
+     * Static methods to be called to see if taints should be added
+     *
+     * @var list<class-string<EventHandler\AddTaintsInterface>>
+     */
+    public $add_taints_checks = [];
+
+    /**
+     * Static methods to be called to see if taints should be removed
+     *
+     * @var list<class-string<EventHandler\RemoveTaintsInterface>>
+     */
+    public $remove_taints_checks = [];
+
+    /**
      * @param class-string $class
      */
     public function registerClass(string $class): void
@@ -233,6 +247,14 @@ class EventDispatcher
             $this->legacy_after_functionlike_checks[] = $class;
         } elseif (is_subclass_of($class, EventHandler\AfterFunctionLikeAnalysisInterface::class)) {
             $this->after_functionlike_checks[] = $class;
+        }
+
+        if (is_subclass_of($class, EventHandler\AddTaintsInterface::class)) {
+            $this->add_taints_checks[] = $class;
+        }
+
+        if (is_subclass_of($class, EventHandler\RemoveTaintsInterface::class)) {
+            $this->remove_taints_checks[] = $class;
         }
     }
 
@@ -524,5 +546,33 @@ class EventDispatcher
         }
 
         return null;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function dispatchAddTaints(Event\AddRemoveTaintsEvent $event): array
+    {
+        $added_taints = [];
+
+        foreach ($this->add_taints_checks as $handler) {
+            $added_taints = \array_merge($added_taints, $handler::addTaints($event));
+        }
+
+        return $added_taints;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function dispatchRemoveTaints(Event\AddRemoveTaintsEvent $event): array
+    {
+        $removed_taints = [];
+
+        foreach ($this->remove_taints_checks as $handler) {
+            $removed_taints = \array_merge($removed_taints, $handler::removeTaints($event));
+        }
+
+        return $removed_taints;
     }
 }

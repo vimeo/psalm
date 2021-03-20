@@ -54,6 +54,7 @@ use function count;
 use function in_array;
 use function strtolower;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use function array_merge;
 use function reset;
 
@@ -473,16 +474,23 @@ class InstancePropertyAssignmentAnalyzer
 
                 $data_flow_graph->addNode($property_node);
 
+                $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
+
+                $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
+                $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
+
                 $data_flow_graph->addPath(
                     $property_node,
                     $var_node,
                     'property-assignment'
-                        . ($stmt->name instanceof PhpParser\Node\Identifier ? '-' . $stmt->name : '')
+                        . ($stmt->name instanceof PhpParser\Node\Identifier ? '-' . $stmt->name : ''),
+                    $added_taints,
+                    $removed_taints
                 );
 
                 if ($assignment_value_type->parent_nodes) {
                     foreach ($assignment_value_type->parent_nodes as $parent_node) {
-                        $data_flow_graph->addPath($parent_node, $property_node, '=');
+                        $data_flow_graph->addPath($parent_node, $property_node, '=', $added_taints, $removed_taints);
                     }
                 }
 
@@ -490,7 +498,7 @@ class InstancePropertyAssignmentAnalyzer
 
                 if ($context->vars_in_scope[$var_id]->parent_nodes) {
                     foreach ($context->vars_in_scope[$var_id]->parent_nodes as $parent_node) {
-                        $data_flow_graph->addPath($parent_node, $var_node, '=');
+                        $data_flow_graph->addPath($parent_node, $var_node, '=', $added_taints, $removed_taints);
                     }
                 }
 
@@ -529,11 +537,28 @@ class InstancePropertyAssignmentAnalyzer
 
             $data_flow_graph->addNode($property_node);
 
-            $data_flow_graph->addPath($localized_property_node, $property_node, 'property-assignment');
+            $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
+
+            $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
+            $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
+
+            $data_flow_graph->addPath(
+                $localized_property_node,
+                $property_node,
+                'property-assignment',
+                $added_taints,
+                $removed_taints
+            );
 
             if ($assignment_value_type->parent_nodes) {
                 foreach ($assignment_value_type->parent_nodes as $parent_node) {
-                    $data_flow_graph->addPath($parent_node, $localized_property_node, '=');
+                    $data_flow_graph->addPath(
+                        $parent_node,
+                        $localized_property_node,
+                        '=',
+                        $added_taints,
+                        $removed_taints
+                    );
                 }
             }
 
@@ -557,7 +582,13 @@ class InstancePropertyAssignmentAnalyzer
 
                 $data_flow_graph->addNode($declaring_property_node);
 
-                $data_flow_graph->addPath($property_node, $declaring_property_node, 'property-assignment');
+                $data_flow_graph->addPath(
+                    $property_node,
+                    $declaring_property_node,
+                    'property-assignment',
+                    $added_taints,
+                    $removed_taints
+                );
             }
         }
     }

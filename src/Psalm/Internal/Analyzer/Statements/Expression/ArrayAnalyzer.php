@@ -2,6 +2,7 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
+use Psalm\Codebase;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\CodeLocation;
@@ -12,6 +13,8 @@ use Psalm\Issue\MixedArrayOffset;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Internal\Type\TypeCombiner;
+use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
+
 use function preg_match;
 use function array_merge;
 use function array_values;
@@ -55,7 +58,8 @@ class ArrayAnalyzer
                 $statements_analyzer,
                 $context,
                 $array_creation_info,
-                $item
+                $item,
+                $codebase
             );
         }
 
@@ -218,7 +222,8 @@ class ArrayAnalyzer
         StatementsAnalyzer $statements_analyzer,
         Context $context,
         ArrayCreationInfo $array_creation_info,
-        PhpParser\Node\Expr\ArrayItem $item
+        PhpParser\Node\Expr\ArrayItem $item,
+        Codebase $codebase
     ) : void {
         if (ExpressionAnalyzer::analyze($statements_analyzer, $item->value, $context) === false) {
             return;
@@ -340,6 +345,7 @@ class ArrayAnalyzer
             $array_creation_info->array_keys[$item_key_value] = true;
         }
 
+
         if (($data_flow_graph = $statements_analyzer->data_flow_graph)
             && ($data_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph
                 || !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues()))
@@ -360,12 +366,19 @@ class ArrayAnalyzer
 
                     $data_flow_graph->addNode($new_parent_node);
 
+                    $event = new AddRemoveTaintsEvent($item, $context, $statements_analyzer, $codebase);
+
+                    $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
+                    $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
+
                     foreach ($item_value_type->parent_nodes as $parent_node) {
                         $data_flow_graph->addPath(
                             $parent_node,
                             $new_parent_node,
                             'array-assignment'
-                                . ($item_key_value !== null ? '-\'' . $item_key_value . '\'' : '')
+                                . ($item_key_value !== null ? '-\'' . $item_key_value . '\'' : ''),
+                            $added_taints,
+                            $removed_taints
                         );
                     }
 

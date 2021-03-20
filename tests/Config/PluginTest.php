@@ -1071,4 +1071,50 @@ class PluginTest extends \Psalm\Tests\TestCase
 
         $this->analyzeFile($file_path, new Context());
     }
+
+    public function testRemoveTaints(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="6"
+                    runTaintAnalysis="true"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <plugins>
+                        <plugin filename="examples/plugins/SafeArrayKeyChecker.php" />
+                    </plugins>
+                </psalm>'
+            )
+        );
+
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php // --taint-analysis
+
+            /**
+             * @psalm-taint-sink html $build
+             */
+            function output(array $build) {}
+
+            $build = [
+                "nested" => [
+                    "safe_key" => $_GET["input"],
+                ],
+            ];
+            output($build);'
+        );
+
+        $this->project_analyzer->trackTaintedInputs();
+
+        $this->analyzeFile($file_path, new Context());
+    }
 }

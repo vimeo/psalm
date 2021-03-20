@@ -22,6 +22,8 @@ use function strtolower;
 use function strpos;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
+
 use function explode;
 
 /**
@@ -200,7 +202,8 @@ class FunctionCallReturnTypeFetcher
             $function_id,
             $function_storage,
             $stmt_type,
-            $template_result
+            $template_result,
+            $context
         );
 
         if ($function_storage->proxy_calls !== null) {
@@ -477,7 +480,8 @@ class FunctionCallReturnTypeFetcher
         string $function_id,
         FunctionLikeStorage $function_storage,
         Type\Union $stmt_type,
-        TemplateResult $template_result
+        TemplateResult $template_result,
+        Context $context
     ) : ?DataFlowNode {
         if (!$statements_analyzer->data_flow_graph) {
             return null;
@@ -488,6 +492,12 @@ class FunctionCallReturnTypeFetcher
         ) {
             return null;
         }
+
+        $codebase = $statements_analyzer->getCodebase();
+        $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
+
+        $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
+        $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
         $node_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
@@ -543,8 +553,8 @@ class FunctionCallReturnTypeFetcher
                 $function_call_node,
                 $assignment_node,
                 'conditionally-escaped',
-                [],
-                $conditionally_removed_taints
+                $added_taints,
+                \array_merge($removed_taints, $conditionally_removed_taints)
             );
 
             $stmt_type->parent_nodes[$assignment_node->id] = $assignment_node;
@@ -584,6 +594,14 @@ class FunctionCallReturnTypeFetcher
                 }
             }
 
+            $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
+
+            $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
+            $removed_taints = \array_merge(
+                $removed_taints,
+                $codebase->config->eventDispatcher->dispatchRemoveTaints($event)
+            );
+
             self::taintUsingFlows(
                 $statements_analyzer,
                 $function_storage,
@@ -592,7 +610,8 @@ class FunctionCallReturnTypeFetcher
                 $stmt->args,
                 $node_location,
                 $function_call_node,
-                $removed_taints
+                $removed_taints,
+                $added_taints
             );
         }
 
@@ -614,6 +633,7 @@ class FunctionCallReturnTypeFetcher
     /**
      * @param  array<PhpParser\Node\Arg>   $args
      * @param  array<string> $removed_taints
+     * @param  array<string> $added_taints
      */
     public static function taintUsingFlows(
         StatementsAnalyzer $statements_analyzer,
@@ -623,7 +643,8 @@ class FunctionCallReturnTypeFetcher
         array $args,
         CodeLocation $node_location,
         DataFlowNode $function_call_node,
-        array $removed_taints
+        array $removed_taints,
+        array $added_taints = []
     ) : void {
         foreach ($function_storage->return_source_params as $i => $path_type) {
             if (!isset($args[$i])) {
@@ -660,7 +681,7 @@ class FunctionCallReturnTypeFetcher
                     $function_param_sink,
                     $function_call_node,
                     $path_type,
-                    $function_storage->added_taints,
+                    \array_merge($added_taints, $function_storage->added_taints),
                     $removed_taints
                 );
             }
