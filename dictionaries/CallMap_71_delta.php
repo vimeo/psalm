@@ -16,6 +16,7 @@
 return [
 'new' => [
     'Closure::fromCallable' => ['Closure', 'callable'=>'callable'],
+    'DateTimeZone::listIdentifiers' => ['list<string>|false', 'timezoneGroup='=>'int', 'countryCode='=>'string|null'],
     'SQLite3::createFunction' => ['bool', 'name'=>'string', 'callback'=>'callable', 'argCount='=>'int', 'flags='=>'int'],
     'curl_multi_errno' => ['int', 'multi_handle'=>'resource'],
     'curl_share_errno' => ['int', 'share_handle'=>'resource'],
@@ -37,15 +38,18 @@ return [
     'sapi_windows_cp_set' => ['bool', 'codepage'=>'int'],
     'session_create_id' => ['string', 'prefix='=>'string'],
     'session_gc' => ['int'],
+    'timezone_identifiers_list' => ['list<string>|false', 'timezoneGroup='=>'int', 'countryCode='=>'?string'],
     'unpack' => ['array', 'format'=>'string', 'string'=>'string', 'offset='=>'int'],
 ],
 'old' => [
+    'DateTimeZone::listIdentifiers' => ['list<string>|false', 'timezoneGroup='=>'int', 'countryCode='=>'string'],
     'SQLite3::createFunction' => ['bool', 'name'=>'string', 'callback'=>'callable', 'argCount='=>'int'],
     'get_headers' => ['array|false', 'url'=>'string', 'associative='=>'int'],
     'getopt' => ['array<string,string>|array<string,false>|array<string,array<int,string|false>>', 'short_options'=>'string', 'long_options='=>'array'],
     'pg_fetch_all' => ['array', 'result'=>'resource'],
     'pg_last_error' => ['string', 'connection='=>'resource'],
     'pg_select' => ['mixed', 'connection'=>'resource', 'table_name'=>'string', 'conditions'=>'array', 'flags='=>'int'],
+    'timezone_identifiers_list' => ['list<string>|false', 'timezoneGroup='=>'int', 'countryCode='=>'string'],
     'unpack' => ['array', 'format'=>'string', 'string'=>'string'],
 ],
 ];
