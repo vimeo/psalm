@@ -436,6 +436,17 @@ class ArrayAssignmentTest extends TestCase
                     '$foo' => 'array{a: int, b: array{int, int}}',
                 ],
             ],
+            'objectLikeArrayIsNonEmpty' => [
+                '<?php
+                    /**
+                     * @param array{a?: string, b: string} $arg
+                     * @return non-empty-array<string, string>
+                     */
+                    function test(array $arg): array {
+                        return $arg;
+                    }
+                ',
+            ],
             'nestedTKeyedArrayAddition' => [
                 '<?php
                     $foo = [];
@@ -860,6 +871,13 @@ class ArrayAssignmentTest extends TestCase
                     $f[0] = "hello";',
                 'assertions' => [
                     '$f' => 'array{0: string}',
+                ],
+            ],
+            'dontIncrementIntOffsetForKeyedItems' => [
+                '<?php
+                    $a = [1, "a" => 2, 3];',
+                'assertions' => [
+                    '$a' => 'array{0: int, 1: int, a: int}',
                 ],
             ],
             'assignArrayOrSetNull' => [
@@ -1520,7 +1538,7 @@ class ArrayAssignmentTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
+     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {
@@ -1792,6 +1810,19 @@ class ArrayAssignmentTest extends TestCase
                     return [...$data];
                 }',
                 'error_message' => 'DuplicateArrayKey'
+            ],
+            'unpackArrayWithArrayKeyIntoArray' => [
+                '<?php
+
+                /**
+                 * @param array<array-key, mixed> $data
+                 * @return list<mixed>
+                 */
+                function unpackArray(array $data): array
+                {
+                    return [...$data];
+                }',
+                'error_message' => 'DuplicateArrayKey',
             ],
             'ArrayCreateOffsetObject' => [
                 '<?php

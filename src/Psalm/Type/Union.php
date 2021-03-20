@@ -762,6 +762,7 @@ class Union implements TypeNode
             || isset($this->types['trait-string'])
             || isset($this->types['numeric-string'])
             || isset($this->types['callable-string'])
+            || isset($this->types['array-key'])
             || $this->literal_string_types
             || $this->typed_class_strings;
     }
@@ -1317,18 +1318,6 @@ class Union implements TypeNode
         $classlike_visitor->traverseArray($this->types);
 
         return $classlike_visitor->matches();
-    }
-
-    /**
-     * Returns true if union contains template at any nested level.
-     */
-    public function containsTemplate(): bool
-    {
-        $template_visitor = new \Psalm\Internal\TypeVisitor\ContainsTemplateVisitor();
-
-        $template_visitor->traverseArray($this->types);
-
-        return $template_visitor->matches();
     }
 
     /**

@@ -268,7 +268,7 @@ class TKeyedArray extends \Psalm\Type\Atomic
                 $value_type = Type::combineUnionTypes($property, $value_type);
             }
 
-            if (!$value_type->possibly_undefined) {
+            if (!$property->possibly_undefined) {
                 $has_defined_keys = true;
             }
         }

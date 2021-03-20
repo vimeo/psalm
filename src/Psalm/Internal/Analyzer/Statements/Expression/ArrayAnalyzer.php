@@ -42,7 +42,7 @@ class ArrayAnalyzer
 
         $array_creation_info = new ArrayCreationInfo();
 
-        foreach ($stmt->items as $int_offset => $item) {
+        foreach ($stmt->items as $item) {
             if ($item === null) {
                 \Psalm\IssueBuffer::add(
                     new \Psalm\Issue\ParseError(
@@ -57,7 +57,7 @@ class ArrayAnalyzer
             self::analyzeArrayItem(
                 $statements_analyzer,
                 $context,
-                $array_creation_info,
+                $array_creation_info
                 $int_offset,
                 $item,
                 $codebase
@@ -241,7 +241,6 @@ class ArrayAnalyzer
             self::handleUnpackedArray(
                 $statements_analyzer,
                 $array_creation_info,
-                $int_offset,
                 $item,
                 $unpacked_array_type
             );
@@ -274,10 +273,9 @@ class ArrayAnalyzer
         }
 
         $item_key_value = null;
+        $item_is_list_item = false;
 
         if ($item->key) {
-            $array_creation_info->all_list = false;
-
             $was_inside_use = $context->inside_use;
             $context->inside_use = true;
             if (ExpressionAnalyzer::analyze($statements_analyzer, $item->key, $context) === false) {
@@ -317,15 +315,21 @@ class ArrayAnalyzer
                 } elseif ($key_type->isSingleIntLiteral()) {
                     $item_key_value = $key_type->getSingleIntLiteral()->value;
 
-                    if ($item_key_value > $int_offset + $array_creation_info->int_offset_diff) {
-                        $array_creation_info->int_offset_diff = $item_key_value - $int_offset;
+                    if ($item_key_value >= $array_creation_info->int_offset) {
+                        if ($item_key_value === $array_creation_info->int_offset) {
+                            $item_is_list_item = true;
+                        }
+                        $array_creation_info->int_offset = $item_key_value + 1;
                     }
                 }
             }
         } else {
-            $item_key_value = $int_offset + $array_creation_info->int_offset_diff;
+            $item_is_list_item = true;
+            $item_key_value = $array_creation_info->int_offset++;
             $array_creation_info->item_key_atomic_types[] = new Type\Atomic\TInt();
         }
+
+        $array_creation_info->all_list = $array_creation_info->all_list && $item_is_list_item;
 
         if ($item_key_value !== null) {
             if (isset($array_creation_info->array_keys[$item_key_value])) {
@@ -433,13 +437,11 @@ class ArrayAnalyzer
     private static function handleUnpackedArray(
         StatementsAnalyzer $statements_analyzer,
         ArrayCreationInfo $array_creation_info,
-        int $int_offset,
         PhpParser\Node\Expr\ArrayItem $item,
         Type\Union $unpacked_array_type
     ) : void {
         foreach ($unpacked_array_type->getAtomicTypes() as $unpacked_atomic_type) {
             if ($unpacked_atomic_type instanceof Type\Atomic\TKeyedArray) {
-                $unpacked_array_offset = 0;
                 foreach ($unpacked_atomic_type->properties as $key => $property_value) {
                     if (\is_string($key)) {
                         if (IssueBuffer::accepts(
@@ -461,15 +463,11 @@ class ArrayAnalyzer
                         array_values($property_value->getAtomicTypes())
                     );
 
-                    $new_int_offset = $int_offset + $array_creation_info->int_offset_diff + $unpacked_array_offset;
+                    $new_int_offset = $array_creation_info->int_offset++;
 
                     $array_creation_info->array_keys[$new_int_offset] = true;
                     $array_creation_info->property_types[$new_int_offset] = $property_value;
-
-                    $unpacked_array_offset++;
                 }
-
-                $array_creation_info->int_offset_diff += $unpacked_array_offset - 1;
             } else {
                 $array_creation_info->can_create_objectlike = false;
 

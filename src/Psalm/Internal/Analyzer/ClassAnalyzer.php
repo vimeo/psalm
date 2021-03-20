@@ -14,6 +14,7 @@ use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Issue\DeprecatedClass;
 use Psalm\Issue\DeprecatedInterface;
 use Psalm\Issue\DeprecatedTrait;
@@ -71,6 +72,7 @@ use function array_keys;
 use function array_merge;
 use function array_filter;
 use function in_array;
+use function assert;
 
 /**
  * @internal
@@ -705,20 +707,82 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         }
                     }
 
-                    if ($property_storage->type
-                        && $guide_property_storage->type
-                        && $property_storage->location
-                        && !$property_storage->type->equals($guide_property_storage->type)
-                        && !$guide_property_storage->type->containsTemplate()
+                    if ($property_storage->type === null) {
+                        // Property type not set, no need to check for docblock invariance
+                        continue;
+                    }
+
+                    $property_type = clone $property_storage->type;
+
+                    $guide_property_type = $guide_property_storage->type === null
+                        ? Type::getMixed()
+                        : clone $guide_property_storage->type;
+
+                    // Set upper bounds for all templates
+                    $upper_bounds = [];
+                    $extended_templates = $storage->template_extended_params ?? [];
+                    foreach ($extended_templates as $et_name => $et_array) {
+                        foreach ($et_array as $et_class_name => $extended_template) {
+                            if (!isset($upper_bounds[$et_class_name][$et_name])) {
+                                $upper_bounds[$et_class_name][$et_name] = $extended_template;
+                            }
+                        }
+                    }
+
+                    // Get actual types used for templates (to support @template-covariant)
+                    $template_standins = new \Psalm\Internal\Type\TemplateResult($upper_bounds, []);
+                    TemplateStandinTypeReplacer::replace(
+                        $guide_property_type,
+                        $template_standins,
+                        $codebase,
+                        null,
+                        $property_type
+                    );
+
+                    // Iterate over parent classes to find template-covariants, and replace the upper bound with the
+                    // standin. Since @template-covariant allows child classes, we want to use the standin type
+                    // instead of the template extended type.
+                    $parent_class = $storage->parent_class;
+                    while ($parent_class !== null) {
+                        $parent_storage = $codebase->classlike_storage_provider->get($parent_class);
+                        foreach ($parent_storage->template_covariants ?? [] as $pt_offset => $covariant) {
+                            if ($covariant) {
+                                // If template_covariants is set template_types should also be set
+                                assert($parent_storage->template_types !== null);
+                                $pt_name = array_keys($parent_storage->template_types)[$pt_offset];
+                                if (isset($template_standins->upper_bounds[$pt_name][$parent_class])) {
+                                    $upper_bounds[$pt_name][$parent_class] =
+                                        $template_standins->upper_bounds[$pt_name][$parent_class]->type;
+                                }
+                            }
+                        }
+                        $parent_class = $parent_storage->parent_class;
+                    }
+
+                    $template_result = new \Psalm\Internal\Type\TemplateResult([], $upper_bounds);
+
+                    TemplateInferredTypeReplacer::replace(
+                        $guide_property_type,
+                        $template_result,
+                        $codebase
+                    );
+                    TemplateInferredTypeReplacer::replace(
+                        $property_type,
+                        $template_result,
+                        $codebase
+                    );
+
+                    if ($property_storage->location
+                        && !$property_type->equals($guide_property_type)
                         && $guide_class_storage->user_defined
                     ) {
                         if (IssueBuffer::accepts(
                             new NonInvariantDocblockPropertyType(
                                 'Property ' . $fq_class_name . '::$' . $property_name
-                                    . ' has type ' . $property_storage->type->getId()
+                                    . ' has type ' . $property_type->getId()
                                     . ", not invariant with " . $guide_class_name . '::$'
                                     . $property_name . ' of type '
-                                    . $guide_property_storage->type->getId(),
+                                    . $guide_property_type->getId(),
                                 $property_storage->location
                             ),
                             $property_storage->suppressed_issues

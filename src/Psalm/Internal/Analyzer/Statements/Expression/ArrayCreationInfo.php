@@ -38,7 +38,7 @@ class ArrayCreationInfo
     /**
      * @var int
      */
-    public $int_offset_diff = 0;
+    public $int_offset = 0;
 
     /**
      * @var bool
