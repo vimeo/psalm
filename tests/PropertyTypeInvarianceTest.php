@@ -99,7 +99,7 @@ class PropertyTypeInvarianceTest extends TestCase
                         protected $items;
                     }',
             ],
-            'allowTemplatedInvarianceWithClassString' => [
+            'allowTemplatedInvarianceWithClassStringTemplate' => [
                 '<?php
                     abstract class Item {}
                     class Foo extends Item {}
@@ -116,6 +116,118 @@ class PropertyTypeInvarianceTest extends TestCase
                     {
                         /** @var class-string<Foo>|null */
                         protected $type;
+                    }',
+            ],
+            'templatedInvarianceGrandchild' => [
+                '<?php
+                    abstract class Item {}
+                    class Foo extends Item {}
+                    class Bar extends Foo {}
+
+                    /** @template T of Item */
+                    abstract class ItemCollection
+                    {
+                        /** @var list<T> */
+                        protected $items = [];
+                    }
+
+                    /**
+                     * @template T of Foo
+                     * @extends ItemCollection<T>
+                     */
+                    class FooCollection extends ItemCollection
+                    {
+                        /** @var list<T> */
+                        protected $items = [];
+                    }
+
+                    /** @extends FooCollection<Bar> */
+                    class BarCollection extends FooCollection
+                    {
+                        /** @var list<Bar> */
+                        protected $items = [];
+                    }',
+            ],
+            'allowTemplateCovariant' => [
+                '<?php
+                    class Foo {}
+                    class Bar extends Foo {}
+                    class Baz extends Bar {}
+
+                    /** @template-covariant T */
+                    class Pair
+                    {
+                        /** @var T|null */
+                        public $a;
+
+                        /** @var T|null */
+                        public $b;
+                    }
+
+                    /** @extends Pair<Foo> */
+                    class FooPair extends Pair
+                    {
+                        /** @var Bar|null */
+                        public $a;
+
+                        /** @var Baz|null */
+                        public $b;
+                    }',
+            ],
+            'allowTemplateCovariantManyTemplates' => [
+                '<?php
+                    class A {}
+                    class B extends A {}
+                    class C extends B {}
+
+                    /**
+                     * @template Ta
+                     * @template Tb
+                     * @template-covariant Tc
+                     * @template Td
+                     */
+                    class Foo {
+                        /** @var Ta|null */
+                        public $a;
+
+                        /** @var Tb|null */
+                        public $b;
+
+                        /** @var Tc|null */
+                        public $c;
+
+                        /** @var Td|null */
+                        public $d;
+                    }
+
+                    /**
+                     * @template Ta
+                     * @template Tb
+                     * @template-covariant Tc
+                     * @template Td
+                     * @extends Foo<Ta, Tb, Tc, Td>
+                     */
+                    class Bar extends Foo {}
+
+                    /**
+                     * @template Ta
+                     * @template Tb
+                     * @template-covariant Tc
+                     * @template Td
+                     * @extends Bar<A, B, A, C>
+                     */
+                    class Baz extends Bar {
+                        /** @var A|null */
+                        public $a;
+
+                        /** @var B|null */
+                        public $b;
+
+                        /** @var C|null */
+                        public $c;
+
+                        /** @var C|null */
+                        public $d;
                     }',
             ],
         ];
@@ -155,26 +267,80 @@ class PropertyTypeInvarianceTest extends TestCase
                     }',
                 'error_message' => 'NonInvariantPropertyType',
             ],
-            // TODO support property invariance checks with templates
-            // 'disallowInvalidTemplatedInvariance' => [
-            //     '<?php
-            //         /**
-            //          * @template T as string|null
-            //          */
-            //         abstract class A {
-            //             /** @var T */
-            //             public $foo;
-            //         }
+            'variantTemplatedProperties' => [
+                '<?php
+                    /**
+                     * @template T as string|null
+                     */
+                    abstract class A {
+                        /** @var T */
+                        public $foo;
+                    }
 
-            //         /**
-            //          * @extends A<string>
-            //          */
-            //         class AChild extends A {
-            //             /** @var int */
-            //             public $foo = 0;
-            //         }',
-            //     'error_message' => 'NonInvariantPropertyType',
-            // ],
+                    /**
+                     * @extends A<string>
+                     */
+                    class AChild extends A {
+                        /** @var int */
+                        public $foo = 0;
+                    }',
+                'error_message' => 'NonInvariantDocblockPropertyType',
+            ],
+            'variantTemplatedGrandchild' => [
+                '<?php
+                    abstract class Item {}
+                    class Foo extends Item {}
+                    class Bar extends Foo {}
+
+                    /** @template T of Item */
+                    abstract class ItemCollection
+                    {
+                        /** @var list<T> */
+                        protected $items = [];
+                    }
+
+                    /**
+                     * @template T of Foo
+                     * @extends ItemCollection<T>
+                     */
+                    class FooCollection extends ItemCollection
+                    {
+                        /** @var list<T> */
+                        protected $items = [];
+                    }
+
+                    /** @extends FooCollection<Bar> */
+                    class BarCollection extends FooCollection
+                    {
+                        /** @var list<Item> */ // Should be list<Bar>
+                        protected $items = [];
+                    }',
+                'error_message' => 'NonInvariantDocblockPropertyType',
+            ],
+            'variantPropertiesWithTemplateNotSpecified' => [
+                '<?php
+                    class Foo {}
+
+                    /** @template T */
+                    class Pair
+                    {
+                        /** @var T|null */
+                        protected $a;
+
+                        /** @var T|null */
+                        protected $b;
+                    }
+
+                    class FooPair extends Pair
+                    {
+                        /** @var Foo|null */ // Template defaults to mixed, this is invariant
+                        protected $a;
+
+                        /** @var Foo|null */
+                        protected $b;
+                    }',
+                'error_message' => 'NonInvariantDocblockPropertyType',
+            ],
         ];
     }
 }
