@@ -1761,22 +1761,6 @@ class ArrayFunctionCallTest extends TestCase
                 'error_levels' => [],
                 '7.4',
             ],
-            'allowUnpackWithArrayKey' => [
-                '<?php
-                    class Foo {
-                        protected function one(): array {
-                            return [];
-                        }
-
-                        protected function two(): array {
-                            return [];
-                        }
-
-                        public function three(): array {
-                            return [...$this->one(), ...$this->two()];
-                        }
-                    }'
-            ],
             'spliceTurnsintKeyedInputToList' => [
                 '<?php
                     /**

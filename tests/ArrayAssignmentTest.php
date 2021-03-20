@@ -1800,6 +1800,19 @@ class ArrayAssignmentTest extends TestCase
                 }',
                 'error_message' => 'DuplicateArrayKey'
             ],
+            'unpackArrayWithArrayKeyIntoArray' => [
+                '<?php
+
+                /**
+                 * @param array<array-key, mixed> $data
+                 * @return list<mixed>
+                 */
+                function unpackArray(array $data): array
+                {
+                    return [...$data];
+                }',
+                'error_message' => 'DuplicateArrayKey',
+            ],
             'ArrayCreateOffsetObject' => [
                 '<?php
                     $_a = [new stdClass => "a"];
