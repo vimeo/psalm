@@ -57,7 +57,7 @@ class ArrayAnalyzer
             self::analyzeArrayItem(
                 $statements_analyzer,
                 $context,
-                $array_creation_info
+                $array_creation_info,
                 $int_offset,
                 $item,
                 $codebase
