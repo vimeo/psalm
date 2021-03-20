@@ -58,7 +58,6 @@ class ArrayAnalyzer
                 $statements_analyzer,
                 $context,
                 $array_creation_info,
-                $int_offset,
                 $item,
                 $codebase
             );
@@ -223,7 +222,6 @@ class ArrayAnalyzer
         StatementsAnalyzer $statements_analyzer,
         Context $context,
         ArrayCreationInfo $array_creation_info,
-        int $int_offset,
         PhpParser\Node\Expr\ArrayItem $item,
         Codebase $codebase
     ) : void {
