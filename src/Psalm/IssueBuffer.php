@@ -254,8 +254,8 @@ class IssueBuffer
 
             $message = $e instanceof \Psalm\Issue\TaintedInput
                 ? $e->getJourneyMessage()
-                : ($e instanceof \Psalm\Issue\MixedAssignment
-                    ? $e->getMessage()
+                : ($e instanceof \Psalm\Issue\MixedIssue
+                    ? $e->getMixedOriginMessage()
                     : $e->message);
 
             throw new Exception\CodeException(

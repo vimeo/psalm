@@ -116,10 +116,10 @@ abstract class CodeIssue
             $this instanceof TaintedInput
                 ? $this->getTaintTrace()
                 : null,
-            $this instanceof MixedAssignment && $this->origin_location
+            $this instanceof MixedIssue && ($origin_location = $this->getOriginalLocation())
                 ? [
                     TaintedInput::nodeToDataFlowNodeData(
-                        $this->origin_location,
+                        $origin_location,
                         'The type of ' . $location->getSelectedText() . ' is sourced from here',
                         ''
                     )
