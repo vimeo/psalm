@@ -655,7 +655,7 @@ class ArgumentsAnalyzer
 
                         foreach ($array_key_types as $array_key) {
                             if ($array_key instanceof Type\Atomic\TLiteralInt) {
-                                if ($function_param_count > $argument_offset) {
+                                if ($function_param_count > $i) {
                                     $arg_function_params[$argument_offset][] = $function_params[$i];
                                     $i++;
                                 }
