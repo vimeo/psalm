@@ -655,10 +655,10 @@ class ArgumentsAnalyzer
                     $array_type = $arg_value_type->getAtomicTypes()['array'];
 
                     if ($array_type instanceof TKeyedArray) {
-                        $array_key_types = $array_type->getGenericArrayType()->getChildNodes()[0]->getChildNodes();
+                        $key_types = $array_type->getGenericArrayType()->getChildNodes()[0]->getChildNodes();
 
-                        foreach ($array_key_types as $array_key_type) {
-                            if (!$array_key_type instanceof Type\Atomic\TLiteralString
+                        foreach ($key_types as $key_type) {
+                            if (!$key_type instanceof Type\Atomic\TLiteralString
                                 || ($function_storage && !$function_storage->allow_named_arg_calls)) {
                                 continue;
                             }
@@ -666,23 +666,25 @@ class ArgumentsAnalyzer
                             $param_found = false;
 
                             foreach ($function_params as $candidate_param) {
-                                if ($candidate_param->name === $array_key_type->value) {
-                                    if (isset($matched_args[$candidate_param->name])
-                                        && !$candidate_param->is_variadic) {
-                                        if (IssueBuffer::accepts(
-                                            new InvalidNamedArgument(
-                                                'Parameter $' . $array_key_type->value . ' has already been used in '
-                                                . ($cased_method_id ?: $method_id),
-                                                new CodeLocation($statements_analyzer, $arg),
-                                                (string)$method_id
-                                            ),
-                                            $statements_analyzer->getSuppressedIssues()
-                                        )) {
-                                            // fall through
+                                if ($candidate_param->name === $key_type->value || $candidate_param->is_variadic) {
+                                    if ($candidate_param->name === $key_type->value) {
+                                        if (isset($matched_args[$candidate_param->name])) {
+                                            if (IssueBuffer::accepts(
+                                                new InvalidNamedArgument(
+                                                    'Parameter $' . $key_type->value . ' has already been used in '
+                                                    . ($cased_method_id ?: $method_id),
+                                                    new CodeLocation($statements_analyzer, $arg),
+                                                    (string)$method_id
+                                                ),
+                                                $statements_analyzer->getSuppressedIssues()
+                                            )) {
+                                                // fall through
+                                            }
                                         }
+
+                                        $matched_args[$candidate_param->name] = true;
                                     }
 
-                                    $matched_args[$candidate_param->name] = true;
                                     $param_found = true;
                                     break;
                                 }
@@ -691,7 +693,7 @@ class ArgumentsAnalyzer
                             if (!$param_found) {
                                 if (IssueBuffer::accepts(
                                     new InvalidNamedArgument(
-                                        'Parameter $' . $array_key_type->value . ' does not exist on function '
+                                        'Parameter $' . $key_type->value . ' does not exist on function '
                                         . ($cased_method_id ?: $method_id),
                                         new CodeLocation($statements_analyzer, $arg),
                                         (string)$method_id
