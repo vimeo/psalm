@@ -639,9 +639,81 @@ class ArgumentsAnalyzer
         $matched_args = [];
 
         foreach ($args as $argument_offset => $arg) {
-            if ($arg->unpack && $function_param_count > $argument_offset) {
-                for ($i = $argument_offset; $i < $function_param_count; $i++) {
-                    $arg_function_params[$argument_offset][] = $function_params[$i];
+            if ($arg->unpack) {
+                if (($arg_value_type = $statements_analyzer->node_data->getType($arg->value))
+                    && $arg_value_type->hasArray()) {
+                    /**
+                     * @psalm-suppress PossiblyUndefinedStringArrayOffset
+                     * @var TArray|TList|TKeyedArray
+                     */
+                    $array_type = $arg_value_type->getAtomicTypes()['array'];
+
+                    if ($array_type instanceof TKeyedArray) {
+                        $array_key_types = $array_type->getGenericArrayType()->getChildNodes()[0]->getChildNodes();
+
+                        $i = $argument_offset;
+
+                        foreach ($array_key_types as $array_key) {
+                            if ($array_key instanceof Type\Atomic\TLiteralInt) {
+                                if ($function_param_count > $argument_offset) {
+                                    $arg_function_params[$argument_offset][] = $function_params[$i];
+                                    $i++;
+                                }
+
+                                continue;
+                            }
+
+                            if (!$array_key instanceof Type\Atomic\TLiteralString
+                                || ($function_storage && !$function_storage->allow_named_arg_calls)) {
+                                continue;
+                            }
+
+                            $param_found = false;
+
+                            foreach ($function_params as $candidate_param) {
+                                if ($candidate_param->name === $array_key->value) {
+                                    if (isset($matched_args[$candidate_param->name])
+                                        && !$candidate_param->is_variadic) {
+                                        if (IssueBuffer::accepts(
+                                            new InvalidNamedArgument(
+                                                'Parameter $' . $array_key->value . ' has already been used in '
+                                                . ($cased_method_id ?: $method_id),
+                                                new CodeLocation($statements_analyzer, $arg),
+                                                (string)$method_id
+                                            ),
+                                            $statements_analyzer->getSuppressedIssues()
+                                        )) {
+                                            // fall through
+                                        }
+                                    }
+
+                                    $matched_args[$candidate_param->name] = true;
+
+                                    $arg_function_params[$argument_offset][] = $candidate_param;
+                                    $param_found = true;
+                                    break;
+                                }
+                            }
+
+                            if (!$param_found) {
+                                if (IssueBuffer::accepts(
+                                    new InvalidNamedArgument(
+                                        'Parameter $' . $array_key->value . ' does not exist on function '
+                                        . ($cased_method_id ?: $method_id),
+                                        new CodeLocation($statements_analyzer, $arg),
+                                        (string)$method_id
+                                    ),
+                                    $statements_analyzer->getSuppressedIssues()
+                                )) {
+                                    // fall through
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    for ($i = $argument_offset; $i < $function_param_count; $i++) {
+                        $arg_function_params[$argument_offset][] = $function_params[$i];
+                    }
                 }
             } elseif ($arg->name && (!$function_storage || $function_storage->allow_named_arg_calls)) {
                 foreach ($function_params as $candidate_param) {
