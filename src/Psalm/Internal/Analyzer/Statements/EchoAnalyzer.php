@@ -37,19 +37,17 @@ class EchoAnalyzer
 
             $expr_type = $statements_analyzer->node_data->getType($expr);
 
-            if ($statements_analyzer->data_flow_graph
-                && $expr_type
-            ) {
-                $expr_type = CastAnalyzer::castStringAttempt(
-                    $statements_analyzer,
-                    $context,
-                    $expr_type,
-                    $expr,
-                    false
-                );
-            }
-
             if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+                if ($expr_type) {
+                    $expr_type = CastAnalyzer::castStringAttempt(
+                        $statements_analyzer,
+                        $context,
+                        $expr_type,
+                        $expr,
+                        false
+                    );
+                }
+
                 $call_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
                 $echo_param_sink = TaintSink::getForMethodArgument(

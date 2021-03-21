@@ -932,6 +932,7 @@ class UnusedVariableTest extends TestCase
                         $i = 1;
                     };
                     $a();
+                    /** @psalm-suppress MixedArgument */
                     echo $i;',
             ],
             'regularVariableClosureUseInAddition' => [
@@ -1853,7 +1854,10 @@ class UnusedVariableTest extends TestCase
                             $hue = "goodbye";
                         }
 
-                        /** @psalm-suppress PossiblyUndefinedVariable */
+                        /**
+                         * @psalm-suppress PossiblyUndefinedVariable
+                         * @psalm-suppress MixedArgument
+                         */
                         echo $hue;
                     }'
             ],
@@ -1928,6 +1932,7 @@ class UnusedVariableTest extends TestCase
                         }
 
                         if (isset($j)) {
+                            /** @psalm-suppress MixedArgument */
                             echo $j;
                         }
                     }'
@@ -2012,6 +2017,7 @@ class UnusedVariableTest extends TestCase
                 '<?php
                     /**
                      * @psalm-suppress MixedAssignment
+                     * @psalm-suppress MixedArgument
                      * @param iterable<mixed, int> $keys
                      */
                     function foo(iterable $keys, int $colno) : void {
