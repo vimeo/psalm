@@ -25,6 +25,8 @@ use function array_shift;
 use function get_class;
 use function strtolower;
 use function array_merge;
+use function count;
+use function reset;
 
 /**
  * This is a bunch of complex logic to handle the potential for missing methods,

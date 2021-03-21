@@ -31,6 +31,9 @@ use Psalm\IssueBuffer;
 use Psalm\Type;
 use function explode;
 use function strtolower;
+use function array_merge;
+use function count;
+use function reset;
 
 /**
  * @internal

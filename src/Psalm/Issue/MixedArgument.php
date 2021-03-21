@@ -2,6 +2,7 @@
 namespace Psalm\Issue;
 
 use Psalm\CodeLocation;
+use function strtolower;
 
 class MixedArgument extends ArgumentIssue implements MixedIssue
 {

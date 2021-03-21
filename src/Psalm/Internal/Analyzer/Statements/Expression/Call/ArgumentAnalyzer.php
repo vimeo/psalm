@@ -46,6 +46,8 @@ use function strtolower;
 use function strpos;
 use function explode;
 use function count;
+use function array_merge;
+use function reset;
 
 /**
  * @internal
