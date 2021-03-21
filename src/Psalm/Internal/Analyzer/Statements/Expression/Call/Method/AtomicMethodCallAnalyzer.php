@@ -11,6 +11,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollect
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentsAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Context;
@@ -44,6 +45,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
         PhpParser\Node\Expr\MethodCall $stmt,
         Codebase $codebase,
         Context $context,
+        Type\Union $lhs_type,
         Type\Atomic $lhs_type_part,
         ?Type\Atomic $static_type,
         bool $is_intersection,
@@ -80,6 +82,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                 $statements_analyzer,
                 $codebase,
                 $stmt,
+                $lhs_type,
                 $lhs_type_part,
                 $lhs_var_id,
                 $context,
@@ -269,6 +272,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                     $stmt,
                     $codebase,
                     $context,
+                    $lhs_type,
                     $lhs_type_part,
                     $lhs_var_id,
                     $result,
@@ -451,6 +455,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
         PhpParser\Node\Expr\MethodCall $stmt,
         Codebase $codebase,
         Context $context,
+        Type\Union $lhs_type,
         Type\Atomic $lhs_type_part,
         ?string $lhs_var_id,
         AtomicMethodCallAnalysisResult $result,
@@ -470,6 +475,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                 $stmt,
                 $codebase,
                 $context,
+                $lhs_type,
                 $intersection_type,
                 $lhs_type_part,
                 true,
@@ -544,6 +550,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
         PhpParser\Node\Expr\MethodCall $stmt,
+        Type\Union $lhs_type,
         Type\Atomic $lhs_type_part,
         ?string $lhs_var_id,
         Context $context,
@@ -600,10 +607,30 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                             }
                         }
 
+                        $origin_locations = [];
+
+                        if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
+                            foreach ($lhs_type->parent_nodes as $parent_node) {
+                                $origin_locations = array_merge(
+                                    $origin_locations,
+                                    $statements_analyzer->data_flow_graph->getOriginLocations($parent_node)
+                                );
+                            }
+                        }
+
+                        $origin_location = count($origin_locations) === 1 ? reset($origin_locations) : null;
+
+                        $name_code_location = new CodeLocation($statements_analyzer, $stmt->name);
+
+                        if ($origin_location && $origin_location->getHash() === $name_code_location->getHash()) {
+                            $origin_location = null;
+                        }
+
                         if (IssueBuffer::accepts(
                             new MixedMethodCall(
                                 $message,
-                                new CodeLocation($statements_analyzer, $stmt->name)
+                                $name_code_location,
+                                $origin_location
                             ),
                             $statements_analyzer->getSuppressedIssues()
                         )) {

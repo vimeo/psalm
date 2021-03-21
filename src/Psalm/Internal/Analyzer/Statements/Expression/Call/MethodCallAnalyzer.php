@@ -185,6 +185,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 $stmt,
                 $codebase,
                 $context,
+                $class_type,
                 $lhs_type_part,
                 $lhs_type_part instanceof Type\Atomic\TNamedObject
                     || $lhs_type_part instanceof Type\Atomic\TTemplateParam

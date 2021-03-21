@@ -359,14 +359,16 @@ class AssignmentAnalyzer
                     ? 'Unable to determine the type that ' . $var_id . ' is being assigned to'
                     : 'Unable to determine the type of this assignment';
 
-                if ($origin_location && $origin_location->getLineNumber() === $assign_var->getLine()) {
+                $issue_location = new CodeLocation($statements_analyzer->getSource(), $assign_var);
+
+                if ($origin_location && $origin_location->getHash() === $issue_location->getHash()) {
                     $origin_location = null;
                 }
 
                 if (IssueBuffer::accepts(
                     new MixedAssignment(
                         $message,
-                        new CodeLocation($statements_analyzer->getSource(), $assign_var),
+                        $issue_location,
                         $origin_location
                     ),
                     $statements_analyzer->getSuppressedIssues()

@@ -14,6 +14,7 @@ use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Codebase\TaintFlowGraph;
+use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Internal\Type\TemplateBound;
@@ -611,13 +612,31 @@ class ArgumentAnalyzer
                 $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
             }
 
+            $origin_locations = [];
+
+            if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
+                foreach ($input_type->parent_nodes as $parent_node) {
+                    $origin_locations = array_merge(
+                        $origin_locations,
+                        $statements_analyzer->data_flow_graph->getOriginLocations($parent_node)
+                    );
+                }
+            }
+
+            $origin_location = count($origin_locations) === 1 ? reset($origin_locations) : null;
+
+            if ($origin_location && $origin_location->getHash() === $arg_location->getHash()) {
+                $origin_location = null;
+            }
+
             if (IssueBuffer::accepts(
                 new MixedArgument(
                     'Argument ' . ($argument_offset + 1) . $method_identifier
                         . ' cannot be ' . $input_type->getId() . ', expecting ' .
                         $param_type,
                     $arg_location,
-                    $cased_method_id
+                    $cased_method_id,
+                    $origin_location
                 ),
                 $statements_analyzer->getSuppressedIssues()
             )) {

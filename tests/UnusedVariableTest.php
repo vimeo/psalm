@@ -3176,7 +3176,7 @@ class UnusedVariableTest extends TestCase
                     function takesArray(array $arr) : void {
                         foreach ($arr as $a) {}
                     }',
-                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:42 - Unable to determine the type that $a is being assigned to, derived from expression at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:47'
+                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:42 - Unable to determine the type that $a is being assigned to. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:47'
             ],
             'warnAboutOriginalBadFunctionCall' => [
                 '<?php
@@ -3189,7 +3189,7 @@ class UnusedVariableTest extends TestCase
                     foreach ($arr as $a) {
                         echo $a;
                     }',
-                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:38 - Unable to determine the type that $a is being assigned to, derived from expression at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:44'
+                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:38 - Unable to determine the type that $a is being assigned to. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:44'
             ],
             'warnAboutOriginalBadStaticCall' => [
                 '<?php
@@ -3204,7 +3204,7 @@ class UnusedVariableTest extends TestCase
                     foreach ($arr as $a) {
                         echo $a;
                     }',
-                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:38 - Unable to determine the type that $a is being assigned to, derived from expression at src' . DIRECTORY_SEPARATOR . 'somefile.php:3:62'
+                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:38 - Unable to determine the type that $a is being assigned to. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:3:62'
             ],
             'warnAboutOriginalBadInstanceCall' => [
                 '<?php
@@ -3219,7 +3219,7 @@ class UnusedVariableTest extends TestCase
                     foreach ($arr as $a) {
                         echo $a;
                     }',
-                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:38 - Unable to determine the type that $a is being assigned to, derived from expression at src' . DIRECTORY_SEPARATOR . 'somefile.php:3:55'
+                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:38 - Unable to determine the type that $a is being assigned to. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:3:55'
             ],
             'warnAboutDocblockReturnType' => [
                 '<?php
@@ -3235,7 +3235,53 @@ class UnusedVariableTest extends TestCase
                             echo $a;
                         }
                     }',
-                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:47 - Unable to determine the type that $a is being assigned to, derived from expression at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:33'
+                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:47 - Unable to determine the type that $a is being assigned to. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:33'
+            ],
+            'warnAboutMixedArgument' => [
+                '<?php
+                    function makeArray() : array {
+                        return ["hello"];
+                    }
+
+                    $arr = makeArray();
+
+                    /** @psalm-suppress MixedAssignment */
+                    foreach ($arr as $a) {
+                        echo $a;
+                    }',
+                'error_message' => 'MixedArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:30 - Argument 1 of echo cannot be mixed, expecting string. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:44'
+            ],
+            'warnAboutMixedMethodCall' => [
+                '<?php
+                    function makeArray() : array {
+                        return ["hello"];
+                    }
+
+                    $arr = makeArray();
+
+                    /** @psalm-suppress MixedAssignment */
+                    foreach ($arr as $a) {
+                        $a->foo();
+                    }',
+                'error_message' => 'MixedMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:29 - Cannot determine the type of $a when calling method foo. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:44'
+            ],
+            'warnAboutMixedReturnStatement' => [
+                '<?php
+                    function makeArray() : array {
+                        return ["hello"];
+                    }
+
+                    function foo() : string {
+                        $arr = makeArray();
+
+                        /** @psalm-suppress MixedAssignment */
+                        foreach ($arr as $a) {
+                            return $a;
+                        }
+
+                        return "";
+                    }',
+                'error_message' => 'MixedReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:36 - Could not infer a return type. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:44'
             ],
         ];
     }
