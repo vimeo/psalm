@@ -268,6 +268,15 @@ class ArgTest extends TestCase
                 [],
                 '8.0'
             ],
+            'useUnpackedNamedVariadicArguments' => [
+                '<?php
+                    function takesArguments(int ...$args) : void {}
+
+                    takesArguments(...["age" => 5]);',
+                [],
+                [],
+                '8.0'
+            ],
             'variadicArgsOptional' => [
                 '<?php
                     bar(...["aaaaa"]);
@@ -377,6 +386,27 @@ class ArgTest extends TestCase
                         );
                     }',
                 'error_message' => 'InvalidNamedArgument'
+            ],
+            'useUnpackedInvalidNamedArgument' => [
+                '<?php
+                    class CustomerData {
+                        public function __construct(
+                            public string $name,
+                            public string $email,
+                            public int $age,
+                        ) {}
+                    }
+
+                    /**
+                     * @param array{aage: int, name: string, email: string} $input
+                     */
+                    function foo(array $input) : CustomerData {
+                        return new CustomerData(...$input);
+                    }',
+                'error_message' => 'InvalidNamedArgument',
+                [],
+                false,
+                '8.0'
             ],
             'noNamedArgsMethod' => [
                 '<?php
@@ -499,6 +529,18 @@ class ArgTest extends TestCase
                     }
 
                     test(1, param: 2);',
+                'error_message' => 'InvalidNamedArgument',
+                [],
+                false,
+                '8.0'
+            ],
+            'overwriteOrderedWithUnpackedNamedParam' => [
+                '<?php
+                    function test(int $param, int $param2): void {
+                        echo $param + $param2;
+                    }
+
+                    test(1, ...["param" => 2]);',
                 'error_message' => 'InvalidNamedArgument',
                 [],
                 false,
