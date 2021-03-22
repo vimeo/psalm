@@ -849,6 +849,15 @@ class Config
             $config->level = 2;
         }
 
+        // turn on unused variable detection in level 1
+        if (!isset($config_xml['findUnusedCode'])
+            && !isset($config_xml['findUnusedVariablesAndParams'])
+            && $config->level === 1
+            && $config->show_mixed_issues !== false
+        ) {
+            $config->find_unused_variables = true;
+        }
+
         if (isset($config_xml['errorBaseline'])) {
             $attribute_text = (string) $config_xml['errorBaseline'];
             $config->error_baseline = $attribute_text;
