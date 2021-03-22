@@ -987,9 +987,15 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $var_type = $param_type;
 
             if ($function_param->is_variadic) {
-                $var_type = new Type\Union([
-                    new Type\Atomic\TList($param_type),
-                ]);
+                if ($storage->allow_named_arg_calls) {
+                    $var_type = new Type\Union([
+                        new Type\Atomic\TArray([Type::getArrayKey(), $param_type]),
+                    ]);
+                } else {
+                    $var_type = new Type\Union([
+                        new Type\Atomic\TList($param_type),
+                    ]);
+                }
             }
 
             if ($statements_analyzer->data_flow_graph

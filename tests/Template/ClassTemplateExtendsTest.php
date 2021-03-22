@@ -996,7 +996,7 @@ class ClassTemplateExtendsTest extends TestCase
                     class User {}
 
                     /**
-                     * @template-extends ArrayIterator<int, User>
+                     * @template-extends ArrayIterator<array-key, User>
                      */
                     class Users extends ArrayIterator
                     {

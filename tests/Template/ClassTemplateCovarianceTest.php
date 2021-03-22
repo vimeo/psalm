@@ -330,6 +330,7 @@ class ClassTemplateCovarianceTest extends TestCase
                         private $arr = [];
 
                         /**
+                          * @no-named-arguments
                           * @param T ...$a
                           */
                         public function __construct(...$a) {

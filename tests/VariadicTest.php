@@ -98,7 +98,7 @@ class VariadicTest extends TestCase
                 '<?php
                     /**
                      * @param int ...$a_list
-                     * @return array<int, int>
+                     * @return array<array-key, int>
                      */
                     function f(int ...$a_list) {
                         return array_map(

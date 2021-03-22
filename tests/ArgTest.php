@@ -82,7 +82,7 @@ class ArgTest extends TestCase
                 '<?php
                     function Foo(string $a, string ...$b) : void {}
 
-                    /** @return array<int, string> */
+                    /** @return array<array-key, string> */
                     function Baz(string ...$c) {
                         Foo(...$c);
                         return $c;
@@ -201,10 +201,12 @@ class ArgTest extends TestCase
             ],
             'iterableSplat' => [
                 '<?php
+                    /** @param iterable<int, mixed> $args */
                     function foo(iterable $args): int {
                         return intval(...$args);
                     }
 
+                    /** @param ArrayIterator<int, mixed> $args */
                     function bar(ArrayIterator $args): int {
                         return intval(...$args);
                     }',
@@ -288,6 +290,20 @@ class ArgTest extends TestCase
                 [],
                 [],
                 '8.0'
+            ],
+            'variadicArgumentWithNoNamedArgumentsIsList' => [
+                '<?php
+                    class A {
+                        /**
+                         * @no-named-arguments
+                         * @psalm-return list<int>
+                         */
+                        public function foo(int ...$values): array
+                        {
+                            return $values;
+                        }
+                    }
+                ',
             ],
         ];
     }
@@ -430,7 +446,7 @@ class ArgTest extends TestCase
                             email: $input["email"],
                         );
                     }',
-                'error_message' => 'InvalidScalarArgument'
+                'error_message' => 'NamedArgumentNotAllowed',
             ],
             'noNamedArgsFunction' => [
                 '<?php
@@ -438,7 +454,7 @@ class ArgTest extends TestCase
                     function takesArguments(string $name, int $age) : void {}
 
                     takesArguments(age: 5, name: "hello");',
-                'error_message' => 'InvalidScalarArgument'
+                'error_message' => 'NamedArgumentNotAllowed',
             ],
             'arrayWithoutAllNamedParameters' => [
                 '<?php
@@ -545,6 +561,94 @@ class ArgTest extends TestCase
                 [],
                 false,
                 '8.0'
+            ],
+            'variadicArgumentIsNotList' => [
+                '<?php
+                    /** @psalm-return list<int> */
+                    function foo(int ...$values): array
+                    {
+                        return $values;
+                    }
+                ',
+                'error_message' => 'MixedReturnTypeCoercion',
+            ],
+            'preventUnpackingPossiblyIterable' => [
+                '<?php
+                    function foo(int $arg1, int $arg2): void {}
+
+                    /** @var iterable<int, int>|object */
+                    $test = [1, 2];
+                    foo(...$test);
+                ',
+                'error_message' => 'PossiblyInvalidArgument'
+            ],
+            'SKIPPED-preventUnpackingPossiblyArray' => [
+                '<?php
+                    function foo(int $arg1, int $arg2): void {}
+
+                    /** @var array<int, int>|object */
+                    $test = [1, 2];
+                    foo(...$test);
+                ',
+                'error_message' => 'PossiblyInvalidArgument'
+            ],
+            'noNamedArguments' => [
+                '<?php
+                    /**
+                     * @psalm-suppress UnusedParam
+                     * @no-named-arguments
+                     */
+                    function foo(int $arg1, int $arg2): void {}
+
+                    foo(arg2: 0, arg1: 1);
+                ',
+                'error_message' => 'NamedArgumentNotAllowed',
+                [],
+                false,
+                '8.0',
+            ],
+            'noNamedArgumentsUnpackIterable' => [
+                '<?php
+                    /**
+                     * @psalm-suppress UnusedParam
+                     * @no-named-arguments
+                     */
+                    function foo(int $arg1, int $arg2): void {}
+
+                    /** @var iterable<string, int> */
+                    $test = ["arg1" => 1, "arg2" => 2];
+                    foo(...$test);
+                ',
+                'error_message' => 'NamedArgumentNotAllowed',
+                [],
+                false,
+                '8.0',
+            ],
+            'variadicArgumentWithNoNamedArgumentsPreventsPassingArrayWithStringKey' => [
+                '<?php
+                    /**
+                     * @no-named-arguments
+                     * @psalm-return list<int>
+                     */
+                    function foo(int ...$values): array
+                    {
+                        return $values;
+                    }
+
+                    foo(...["a" => 0]);
+                ',
+                'error_message' => 'NamedArgumentNotAllowed',
+            ],
+            'unpackNonArrayKeyIterable' => [
+                '<?php
+                    /** @psalm-suppress UnusedParam */
+                    function foo(string ...$args): void {}
+
+                    /** @var Iterator<float, string> */
+                    $test = null;
+                    foo(...$test);
+                ',
+                'error_message' => 'InvalidArgument',
             ],
         ];
     }

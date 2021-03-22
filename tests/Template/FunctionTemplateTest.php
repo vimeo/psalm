@@ -954,7 +954,7 @@ class FunctionTemplateTest extends TestCase
                     }
 
                     /**
-                     * @return Generator<array<int>>
+                     * @return Generator<int, array<int>>
                      */
                     function genIters(): Generator {
                         yield [1,2,3];
