@@ -69,7 +69,7 @@ jobs:
           paths:
             - build/psalm.phar
   test-with-real-projects:
-    executor: php-80
+    executor: php-74
     steps:
       - checkout # used here just for the side effect of loading the github public ssh key so we can clone other stuff
       - attach_workspace:
