@@ -26,6 +26,7 @@ collections)
 psl)
 	git clone git@github.com:muglug/psl.git
 	cd psl
+	git checkout 1.6.x
 	composer install --ignore-platform-reqs
 	~/project/psalm --monochrome
 	;;
