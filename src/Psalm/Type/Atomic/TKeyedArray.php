@@ -57,6 +57,11 @@ class TKeyedArray extends \Psalm\Type\Atomic
      */
     public $is_list = false;
 
+    /**
+     * @var bool - if this array is required to be non-empty
+     */
+    public $non_empty = false;
+
     public const KEY = 'array';
 
     /**
@@ -94,7 +99,7 @@ class TKeyedArray extends \Psalm\Type\Atomic
         }
 
         /** @psalm-suppress MixedOperand */
-        return static::KEY . '{' . implode(', ', $property_strings) . '}';
+        return ($this->non_empty ? 'non-empty-array' : static::KEY) . '{' . implode(', ', $property_strings) . '}';
     }
 
     public function getId(bool $nested = false): string
@@ -120,7 +125,7 @@ class TKeyedArray extends \Psalm\Type\Atomic
         }
 
         /** @psalm-suppress MixedOperand */
-        return static::KEY . '{' .
+        return ($this->non_empty ? 'non-empty-array' : static::KEY) . '{' .
                 implode(', ', $property_strings) .
                 '}'
                 . ($this->previous_value_type
@@ -151,7 +156,7 @@ class TKeyedArray extends \Psalm\Type\Atomic
         }
 
         /** @psalm-suppress MixedOperand */
-        return static::KEY . '{' .
+        return ($this->non_empty ? 'non-empty-array' : static::KEY) . '{' .
                 implode(
                     ', ',
                     array_map(
@@ -251,7 +256,7 @@ class TKeyedArray extends \Psalm\Type\Atomic
         $key_types = [];
         $value_type = null;
 
-        $has_defined_keys = false;
+        $non_empty = $this->non_empty;
 
         foreach ($this->properties as $key => $property) {
             if (is_int($key)) {
@@ -269,7 +274,7 @@ class TKeyedArray extends \Psalm\Type\Atomic
             }
 
             if (!$property->possibly_undefined) {
-                $has_defined_keys = true;
+                $non_empty = true;
             }
         }
 
@@ -285,7 +290,7 @@ class TKeyedArray extends \Psalm\Type\Atomic
 
         $value_type->possibly_undefined = false;
 
-        if ($allow_non_empty && ($this->previous_value_type || $has_defined_keys)) {
+        if ($allow_non_empty && ($this->previous_value_type || $non_empty)) {
             $array_type = new TNonEmptyArray([$key_type, $value_type]);
         } else {
             $array_type = new TArray([$key_type, $value_type]);
@@ -405,5 +410,20 @@ class TKeyedArray extends \Psalm\Type\Atomic
         }
 
         return new TNonEmptyList($this->getGenericValueType());
+    }
+
+    public function isNonEmpty(): bool
+    {
+        if ($this->non_empty) {
+            return true;
+        }
+
+        foreach ($this->properties as $type) {
+            if (!$type->possibly_undefined) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

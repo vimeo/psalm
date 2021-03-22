@@ -27,6 +27,17 @@ class KeyedArrayComparator
     ) : bool {
         $all_types_contain = true;
 
+        if ($input_type_part instanceof TKeyedArray
+            && $container_type_part instanceof TKeyedArray
+            && $container_type_part->isNonEmpty()
+            && !$input_type_part->isNonEmpty()
+        ) {
+            if ($atomic_comparison_result) {
+                $atomic_comparison_result->type_coerced = true;
+            }
+            return false;
+        }
+
         foreach ($container_type_part->properties as $key => $container_property_type) {
             if (!isset($input_type_part->properties[$key])) {
                 if (!$container_property_type->possibly_undefined) {

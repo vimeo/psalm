@@ -1209,6 +1209,17 @@ class ArrayAssignmentTest extends TestCase
                         return $arr;
                     }',
             ],
+            'nonEmptyObjectLikeArray' => [
+                '<?php
+                    /**
+                     * @param non-empty-array{a?: string, b?: string} $arr
+                     * @return non-empty-list<string>
+                     */
+                    function foo(array $arr): array {
+                        return array_values($arr);
+                    }
+                ',
+            ],
             'unpackedArgIsList' => [
                 '<?php
                     final class Values
@@ -1744,6 +1755,23 @@ class ArrayAssignmentTest extends TestCase
                         return $arr;
                     }',
                 'error_message' => 'InvalidReturnStatement',
+            ],
+            'nonEmptyObjectLikeArrayCantBeEmpty' => [
+                '<?php
+                    /**
+                     * @param non-empty-array{a?: string, b?: string} $arr
+                     * @psalm-return list<string>
+                     */
+                    function foo($arr): array
+                    {
+                        return array_values($arr);
+                    }
+
+                    /** @var array{a?: string} */
+                    $a = [];
+                    foo($a);
+                ',
+                'error_message' => 'ArgumentTypeCoercion',
             ],
             'preventArrayAssignmentOnReturnValue' => [
                 '<?php

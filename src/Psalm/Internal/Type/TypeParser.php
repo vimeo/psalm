@@ -1200,7 +1200,7 @@ class TypeParser
             $properties[$property_key] = $property_type;
         }
 
-        if ($type !== 'array' && $type !== 'object' && $type !== 'callable-array') {
+        if ($type !== 'array' && $type !== 'object' && $type !== 'callable-array' && $type !== 'non-empty-array') {
             throw new TypeParseTreeException('Unexpected brace character');
         }
 
@@ -1221,6 +1221,10 @@ class TypeParser
         if ($is_tuple) {
             $object_like->sealed = true;
             $object_like->is_list = true;
+        }
+
+        if ($type === 'non-empty-array') {
+            $object_like->non_empty = true;
         }
 
         return $object_like;
