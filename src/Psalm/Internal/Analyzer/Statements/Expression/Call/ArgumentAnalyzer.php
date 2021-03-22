@@ -34,6 +34,7 @@ use Psalm\Issue\PossiblyFalseArgument;
 use Psalm\Issue\PossiblyInvalidArgument;
 use Psalm\Issue\PossiblyNullArgument;
 use Psalm\Issue\ArgumentTypeCoercion;
+use Psalm\Issue\NamedArgumentNotAllowed;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\FunctionLikeParameter;
@@ -41,7 +42,10 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TList;
+use Psalm\Type\Atomic\TNamedObject;
+
 use function strtolower;
 use function strpos;
 use function explode;
@@ -416,7 +420,7 @@ class ArgumentAnalyzer
                 if (IssueBuffer::accepts(
                     new MixedArgument(
                         'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id
-                            . ' cannot be ' . $arg_type->getId() . ', expecting array',
+                            . ' cannot unpack ' . $arg_type->getId() . ', expecting iterable',
                         new CodeLocation($statements_analyzer->getSource(), $arg->value),
                         $cased_method_id
                     ),
@@ -452,8 +456,13 @@ class ArgumentAnalyzer
                  * @var Type\Atomic\TArray|Type\Atomic\TList|Type\Atomic\TKeyedArray
                  */
                 $unpacked_atomic_array = $arg_type->getAtomicTypes()['array'];
+                $arg_key_allowed = true;
 
                 if ($unpacked_atomic_array instanceof Type\Atomic\TKeyedArray) {
+                    if (!$allow_named_args && !$unpacked_atomic_array->getGenericKeyType()->isInt()) {
+                        $arg_key_allowed = false;
+                    }
+
                     if ($function_param->is_variadic) {
                         $arg_type = $unpacked_atomic_array->getGenericValueType();
                     } elseif ($codebase->php_major_version >= 8
@@ -483,15 +492,87 @@ class ArgumentAnalyzer
                 } elseif ($unpacked_atomic_array instanceof Type\Atomic\TList) {
                     $arg_type = $unpacked_atomic_array->type_param;
                 } else {
+                    if (!$allow_named_args && !$unpacked_atomic_array->type_params[0]->isInt()) {
+                        $arg_key_allowed = false;
+                    }
                     $arg_type = $unpacked_atomic_array->type_params[1];
                 }
+
+                if (!$arg_key_allowed) {
+                    if (IssueBuffer::accepts(
+                        new NamedArgumentNotAllowed(
+                            'Method ' . $cased_method_id
+                                . ' called with named unpacked array ' . $unpacked_atomic_array->getId()
+                                . ' (array with string keys)',
+                            new CodeLocation($statements_analyzer->getSource(), $arg->value),
+                            $cased_method_id
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                }
             } else {
+                $non_iterable = false;
+                $invalid_key = false;
+                $invalid_string_key = false;
+                $possibly_matches = false;
                 foreach ($arg_type->getAtomicTypes() as $atomic_type) {
                     if (!$atomic_type->isIterable($codebase)) {
+                        $non_iterable = true;
+                    } else {
+                        $key_type = $codebase->getKeyValueParamsForTraversableObject($atomic_type)[0];
+                        if (!UnionTypeComparator::isContainedBy(
+                            $codebase,
+                            $key_type,
+                            Type::getArrayKey()
+                        )) {
+                            $invalid_key = true;
+
+                            continue;
+                        }
+                        if (($codebase->php_major_version < 8 || !$allow_named_args) && !$key_type->isInt()) {
+                            $invalid_string_key = true;
+
+                            continue;
+                        }
+                        $possibly_matches = true;
+                    }
+                }
+
+                $issue_type = $possibly_matches ? PossiblyInvalidArgument::class : InvalidArgument::class;
+                if ($non_iterable) {
+                    if (IssueBuffer::accepts(
+                        new $issue_type(
+                            'Tried to unpack non-iterable ' . $arg_type->getId(),
+                            new CodeLocation($statements_analyzer->getSource(), $arg->value),
+                            $cased_method_id
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                }
+                if ($invalid_key) {
+                    if (IssueBuffer::accepts(
+                        new $issue_type(
+                            'Method ' . $cased_method_id
+                                . ' called with unpacked iterable ' . $arg_type->getId()
+                                . ' with invalid key (must be '
+                                . ($codebase->php_major_version < 8 ? 'int' : 'int|string') . ')',
+                            new CodeLocation($statements_analyzer->getSource(), $arg->value),
+                            $cased_method_id
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                }
+                if ($invalid_string_key) {
+                    if ($codebase->php_major_version < 8) {
                         if (IssueBuffer::accepts(
-                            new InvalidArgument(
-                                'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id
-                                    . ' expects array, ' . $atomic_type->getId() . ' provided',
+                            new $issue_type(
+                                'String keys not supported in unpacked arguments',
                                 new CodeLocation($statements_analyzer->getSource(), $arg->value),
                                 $cased_method_id
                             ),
@@ -499,12 +580,37 @@ class ArgumentAnalyzer
                         )) {
                             // fall through
                         }
-
-                        continue;
+                    } else {
+                        if (IssueBuffer::accepts(
+                            new NamedArgumentNotAllowed(
+                                'Method ' . $cased_method_id
+                                    . ' called with named unpacked iterable ' . $arg_type->getId()
+                                    . ' (iterable with string keys)',
+                                new CodeLocation($statements_analyzer->getSource(), $arg->value),
+                                $cased_method_id
+                            ),
+                            $statements_analyzer->getSuppressedIssues()
+                        )) {
+                            // fall through
+                        }
                     }
                 }
 
+
                 return null;
+            }
+        } else {
+            if (!$allow_named_args && $arg->name !== null) {
+                if (IssueBuffer::accepts(
+                    new NamedArgumentNotAllowed(
+                        'Method ' . $cased_method_id. ' called with named argument ' . $arg->name->name,
+                        new CodeLocation($statements_analyzer->getSource(), $arg->value),
+                        $cased_method_id
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
             }
         }
 
