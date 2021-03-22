@@ -42,9 +42,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TCallable;
-use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TList;
-use Psalm\Type\Atomic\TNamedObject;
 
 use function strtolower;
 use function strpos;
@@ -595,7 +593,6 @@ class ArgumentAnalyzer
                         }
                     }
                 }
-
 
                 return null;
             }
