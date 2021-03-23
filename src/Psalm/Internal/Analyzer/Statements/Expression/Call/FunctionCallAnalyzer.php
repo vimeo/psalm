@@ -1003,7 +1003,20 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 && !$context->inside_conditional
                 && !$context->inside_unset
             ) {
-                if (!$context->inside_assignment && !$context->inside_call && !$context->inside_use) {
+                /**
+                 * If a function is pure, and has the return type of 'no-return',
+                 * it's okay to dismiss it's return value.
+                 */
+                if (
+                    !$context->inside_assignment &&
+                    !$context->inside_call &&
+                    !$context->inside_use &&
+                    !(
+                        $function_call_info->function_storage &&
+                        $function_call_info->function_storage->return_type &&
+                        (array_values($function_call_info->function_storage->return_type->getAtomicTypes())[0] ?? null) instanceof Type\Atomic\TNever
+                    )
+                ) {
                     if (IssueBuffer::accepts(
                         new UnusedFunctionCall(
                             'The call to ' . $function_call_info->function_id . ' is not used',
