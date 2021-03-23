@@ -19,7 +19,7 @@ class MethodParamsProviderEvent
      */
     private $method_name_lowercase;
     /**
-     * @var PhpParser\Node\Arg[]|null
+     * @var list<PhpParser\Node\Arg>|null
      */
     private $call_args;
     /**
@@ -65,7 +65,7 @@ class MethodParamsProviderEvent
     }
 
     /**
-     * @return PhpParser\Node\Arg[]|null
+     * @return list<PhpParser\Node\Arg>|null
      */
     public function getCallArgs(): ?array
     {

@@ -16,7 +16,7 @@ use Psalm\Type\Union;
 trait CallableTrait
 {
     /**
-     * @var array<int, FunctionLikeParameter>|null
+     * @var list<FunctionLikeParameter>|null
      */
     public $params = [];
 
@@ -33,7 +33,7 @@ trait CallableTrait
     /**
      * Constructs a new instance of a generic type
      *
-     * @param array<int, FunctionLikeParameter> $params
+     * @param list<FunctionLikeParameter> $params
      */
     public function __construct(
         string $value = 'callable',

@@ -478,7 +478,9 @@ class ArrayAnalyzer
                     || (
                         $unpacked_atomic_type instanceof Type\Atomic\TGenericObject
                         && $unpacked_atomic_type->hasTraversableInterface($codebase)
+                        && \count($unpacked_atomic_type->type_params) === 2
                 )) {
+                    /** @psalm-suppress PossiblyUndefinedArrayOffset provably true, but Psalm can’t see it */
                     if ($unpacked_atomic_type->type_params[1]->isEmpty()) {
                         continue;
                     }

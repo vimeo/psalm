@@ -15,11 +15,6 @@ use function substr;
 
 trait GenericTrait
 {
-    /**
-     * @var non-empty-list<Union>
-     */
-    public $type_params;
-
     public function __toString(): string
     {
         $s = '';

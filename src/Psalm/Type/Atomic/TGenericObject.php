@@ -14,6 +14,11 @@ class TGenericObject extends TNamedObject
 {
     use GenericTrait;
 
+    /**
+     * @var non-empty-list<\Psalm\Type\Union>
+     */
+    public $type_params;
+
     /** @var bool if the parameters have been remapped to another class */
     public $remapped_params = false;
 

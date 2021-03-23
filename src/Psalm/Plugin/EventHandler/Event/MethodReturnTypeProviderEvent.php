@@ -24,7 +24,7 @@ class MethodReturnTypeProviderEvent
      */
     private $method_name_lowercase;
     /**
-     * @var PhpParser\Node\Arg[]
+     * @var list<PhpParser\Node\Arg>
      */
     private $call_args;
     /**
@@ -99,7 +99,7 @@ class MethodReturnTypeProviderEvent
     }
 
     /**
-     * @return PhpParser\Node\Arg[]
+     * @return list<PhpParser\Node\Arg>
      */
     public function getCallArgs(): array
     {

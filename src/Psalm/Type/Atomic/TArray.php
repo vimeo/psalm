@@ -13,6 +13,11 @@ class TArray extends \Psalm\Type\Atomic
     use GenericTrait;
 
     /**
+     * @var array{\Psalm\Type\Union, \Psalm\Type\Union}
+     */
+    public $type_params;
+
+    /**
      * @var string
      */
     public $value = 'array';
