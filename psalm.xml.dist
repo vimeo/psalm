@@ -15,6 +15,7 @@
     resolveFromConfigFile="true"
     xsi:schemaLocation="https://getpsalm.org/schema/config config.xsd"
     limitMethodComplexity="true"
+    errorBaseline="psalm-baseline.xml"
 >
     <projectFiles>
         <directory name="src"/>
@@ -85,9 +86,10 @@
             </errorLevel>
         </MissingConstructor>
 
-        <PossiblyUndefinedIntArrayOffset errorLevel="suppress">
-            <errorLevel type="error">
-                <directory name="src/Psalm/Internal/Provider/ReturnTypeProvider"/>
+        <PossiblyUndefinedIntArrayOffset>
+            <errorLevel type="suppress">
+                <directory name="src/Psalm/Internal/ExecutionEnvironment" />
+                <directory name="tests"/>
             </errorLevel>
         </PossiblyUndefinedIntArrayOffset>
 

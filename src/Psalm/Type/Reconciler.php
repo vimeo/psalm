@@ -40,7 +40,7 @@ use function array_merge;
 
 class Reconciler
 {
-    /** @var array<string, array<int, string>> */
+    /** @var array<string, non-empty-list<string>> */
     private static $broken_paths = [];
 
     /**
@@ -311,10 +311,6 @@ class Reconciler
                 ) {
                     $key_parts = Reconciler::breakUpPathIntoParts($nk);
 
-                    if (!$key_parts) {
-                        throw new \UnexpectedValueException('There should be some key parts');
-                    }
-
                     $base_key = array_shift($key_parts);
 
                     if ($base_key[0] !== '$' && count($key_parts) > 2 && $key_parts[0] === '::$') {
@@ -407,7 +403,7 @@ class Reconciler
     }
 
     /**
-     * @return array<int, string>
+     * @return non-empty-list<string>
      */
     public static function breakUpPathIntoParts(string $path): array
     {

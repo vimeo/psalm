@@ -424,6 +424,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
         $codebase = $statements_analyzer->getCodebase();
 
         $first_arg_value = $stmt->args[0]->value ?? null;
+
         if (!$first_arg_value instanceof PhpParser\Node\Scalar\String_) {
             return null;
         }

@@ -1,0 +1,378 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<files psalm-version="dev-master@b4fab67f3b98be02c9f7e18cf9912c4d941f5a59">
+  <file src="examples/TemplateChecker.php">
+    <PossiblyUndefinedIntArrayOffset occurrences="2">
+      <code>$comment_block-&gt;tags['variablesfrom'][0]</code>
+      <code>$matches[1]</code>
+    </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="examples/TemplateScanner.php">
+    <PossiblyUndefinedIntArrayOffset occurrences="2">
+      <code>$comment_block-&gt;tags['variablesfrom'][0]</code>
+      <code>$matches[1]</code>
+    </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/CodeLocation.php">
+    <PossiblyUndefinedIntArrayOffset occurrences="1">
+      <code>$matches[$match_offset]</code>
+    </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Codebase.php">
+    <PossiblyUndefinedIntArrayOffset occurrences="2">
+      <code>$matches[0]</code>
+      <code>$symbol_parts[1]</code>
+    </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Config/FileFilter.php">
+    <PossiblyUndefinedIntArrayOffset occurrences="1">
+      <code>explode('::', $method_id)[1]</code>
+    </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/ErrorBaseline.php">
+    <PossiblyUndefinedIntArrayOffset occurrences="3">
+      <code>$matches[1]</code>
+      <code>$matches[2]</code>
+      <code>$matches[3]</code>
+    </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Internal/Analyzer/ClassAnalyzer.php">
+    <PossiblyUndefinedIntArrayOffset occurrences="3">
+      <code>$comments[0]</code>
+      <code>$stmt-&gt;props[0]</code>
+      <code>$uninitialized_variables[0]</code>
+    </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Internal/Analyzer/CommentAnalyzer.php">
+    <PossiblyUndefinedIntArrayOffset occurrences="1">
+      <code>$line_parts[1]</code>
+    </PossiblyUndefinedIntArrayOffset>
+    <RedundantCondition occurrences="1">
+      <code>$line_parts</code>
+    </RedundantCondition>
+  </file>
+  <file src="src/Psalm/Internal/Analyzer/ProjectAnalyzer.php">
+    <PossiblyUndefinedIntArrayOffset occurrences="4">
+      <code>$destination_parts[1]</code>
+      <code>$destination_parts[1]</code>
+      <code>$destination_parts[1]</code>
+      <code>$source_parts[1]</code>
+    </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Internal/Analyzer/ScopeAnalyzer.php">
+    <PossiblyUndefinedIntArrayOffset occurrences="1">
+      <code>$stmts[$i]</code>
+    </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Internal/Analyzer/Statements/Block/ForeachAnalyzer.php">
+    <PossiblyUndefinedIntArrayOffset occurrences="1">
+      <code>$iterator_atomic_type-&gt;type_params[1]</code>
+    </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Internal/Analyzer/Statements/Block/LoopAnalyzer.php">
+    <PossiblyUndefinedIntArrayOffset occurrences="1">
+      <code>$pre_conditions[0]</code>
+    </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Internal/Analyzer/Statements/Block/SwitchAnalyzer.php">
+    <PossiblyUndefinedIntArrayOffset occurrences="2">
+      <code>$case_action_map[$i]</code>
+      <code>$stmt-&gt;cases[$i]</code>
+    </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Internal/Analyzer/Statements/Block/SwitchCaseAnalyzer.php">
+    <PossiblyUndefinedIntArrayOffset occurrences="3">
+      <code>$new_case_equality_expr-&gt;args[1]</code>
+      <code>$switch_scope-&gt;leftover_statements[0]</code>
+      <code>$traverser-&gt;traverse([$switch_condition])[0]</code>
+    </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Internal/Analyzer/Statements/Expression/AssertionFinder.php">
+    <PossiblyUndefinedIntArrayOffset occurrences="23">
+      <code>$assertion-&gt;rule[0]</code>
+      <code>$assertion-&gt;rule[0]</code>
+      <code>$assertion-&gt;rule[0]</code>
+      <code>$assertion-&gt;rule[0]</code>
+      <code>$assertion-&gt;rule[0]</code>
+      <code>$assertion-&gt;rule[0]</code>
+      <code>$count_expr-&gt;args[0]</code>
+      <code>$count_expr-&gt;args[0]</code>
+      <code>$count_expr-&gt;args[0]</code>
+      <code>$count_expr-&gt;args[0]</code>
+      <code>$count_expr-&gt;args[0]</code>
+      <code>$counted_expr-&gt;args[0]</code>
+      <code>$expr-&gt;args[0]</code>
+      <code>$expr-&gt;args[0]</code>
+      <code>$expr-&gt;args[0]</code>
+      <code>$expr-&gt;args[0]</code>
+      <code>$expr-&gt;args[1]</code>
+      <code>$expr-&gt;args[1]</code>
+      <code>$get_debug_type_expr-&gt;args[0]</code>
+      <code>$get_debug_type_expr-&gt;args[0]</code>
+      <code>$getclass_expr-&gt;args[0]</code>
+      <code>$gettype_expr-&gt;args[0]</code>
+      <code>$gettype_expr-&gt;args[0]</code>
+    </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Internal/Analyzer/Statements/Expression/BinaryOp/NonDivArithmeticOpAnalyzer.php">
+    <PossiblyUndefinedIntArrayOffset occurrences="2">
+      <code>$invalid_left_messages[0]</code>
+      <code>$invalid_right_messages[0]</code>
+    </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/ArgumentAnalyzer.php">
+    <PossiblyUndefinedIntArrayOffset occurrences="3">
+      <code>$non_existent_method_ids[0]</code>
+      <code>$parts[1]</code>
+      <code>explode('::', $cased_method_id)[1]</code>
+    </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/ArgumentsAnalyzer.php">
+    <PossiblyUndefinedIntArrayOffset occurrences="4">
+      <code>$arg_function_params[$argument_offset][0]</code>
+      <code>$array_type-&gt;getGenericArrayType()-&gt;getChildNodes()[0]</code>
+      <code>$function_params[$i]</code>
+      <code>$function_params[$i]</code>
+    </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/ArrayFunctionArgumentsAnalyzer.php">
+    <PossiblyUndefinedIntArrayOffset occurrences="4">
+      <code>$args[0]</code>
+      <code>$args[0]</code>
+      <code>$args[1]</code>
+      <code>$callmap_callables[0]</code>
+    </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/FunctionCallAnalyzer.php">
+    <PossiblyUndefinedIntArrayOffset occurrences="2">
+      <code>$parts[1]</code>
+      <code>$stmt-&gt;args[0]</code>
+    </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/Method/ExistingAtomicMethodCallAnalyzer.php">
+    <PossiblyUndefinedIntArrayOffset occurrences="1">
+      <code>$method_storage-&gt;params[$i]</code>
+    </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/MethodCallAnalyzer.php">
+    <PossiblyUndefinedIntArrayOffset occurrences="7">
+      <code>$result-&gt;existent_method_ids[0]</code>
+      <code>$result-&gt;invalid_method_call_types[0]</code>
+      <code>$result-&gt;non_existent_class_method_ids[0]</code>
+      <code>$result-&gt;non_existent_class_method_ids[0]</code>
+      <code>$result-&gt;non_existent_interface_method_ids[0]</code>
+      <code>$result-&gt;non_existent_interface_method_ids[0]</code>
+      <code>$result-&gt;non_existent_magic_method_ids[0]</code>
+    </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Internal/Analyzer/Statements/Expression/CallAnalyzer.php">
+    <PossiblyUndefinedIntArrayOffset occurrences="3">
+      <code>$assertion-&gt;rule[0]</code>
+      <code>$callable_arg-&gt;items[0]</code>
+      <code>$callable_arg-&gt;items[1]</code>
+    </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Fetch/InstancePropertyFetchAnalyzer.php">
+    <PossiblyUndefinedIntArrayOffset occurrences="1">
+      <code>$invalid_fetch_types[0]</code>
+    </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Internal/Analyzer/Statements/Expression/YieldAnalyzer.php">
+    <PossiblyUndefinedIntArrayOffset occurrences="1">
+      <code>$atomic_return_type-&gt;type_params[2]</code>
+    </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Internal/Analyzer/Statements/UnusedAssignmentRemover.php">
+    <PossiblyUndefinedIntArrayOffset occurrences="4">
+      <code>$stmts[$i]</code>
+      <code>$token_list[$iter]</code>
+      <code>$token_list[0]</code>
+      <code>$token_list[1]</code>
+    </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Internal/Analyzer/StatementsAnalyzer.php">
+    <PossiblyUndefinedIntArrayOffset occurrences="1">
+      <code>$stmt-&gt;expr-&gt;args[0]</code>
+    </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Internal/Codebase/InternalCallMapHandler.php">
+    <PossiblyUndefinedIntArrayOffset occurrences="2">
+      <code>$callables[0]</code>
+      <code>$callables[0]</code>
+    </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Internal/Codebase/Methods.php">
+    <PossiblyUndefinedIntArrayOffset occurrences="1">
+      <code>$function_callables[0]</code>
+    </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Internal/Diff/AstDiffer.php">
+    <PossiblyUndefinedIntArrayOffset occurrences="1">
+      <code>$a[$x]</code>
+    </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Internal/Diff/ClassStatementsDiffer.php">
+    <PossiblyUndefinedIntArrayOffset occurrences="6">
+      <code>$a-&gt;props[0]</code>
+      <code>$a-&gt;stmts[0]</code>
+      <code>$a_stmt_comments[0]</code>
+      <code>$b-&gt;props[0]</code>
+      <code>$b-&gt;stmts[0]</code>
+      <code>$b_stmt_comments[0]</code>
+    </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Internal/Diff/FileDiffer.php">
+    <PossiblyUndefinedIntArrayOffset occurrences="1">
+      <code>$a[$x]</code>
+    </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Internal/FileManipulation/FunctionDocblockManipulator.php">
+    <PossiblyUndefinedIntArrayOffset occurrences="1">
+      <code>$chars[$i]</code>
+    </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Internal/FileManipulation/PropertyDocblockManipulator.php">
+    <PossiblyUndefinedIntArrayOffset occurrences="1">
+      <code>$stmt-&gt;props[0]</code>
+    </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Internal/Fork/Pool.php">
+    <PossiblyUndefinedIntArrayOffset occurrences="1">
+      <code>array_values($process_task_data_iterator)[$proc_id]</code>
+    </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Internal/LanguageServer/Message.php">
+    <PossiblyUndefinedIntArrayOffset occurrences="1">
+      <code>$pair[1]</code>
+    </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Internal/LanguageServer/ProtocolStreamReader.php">
+    <PossiblyUndefinedIntArrayOffset occurrences="1">
+      <code>$parts[1]</code>
+    </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Internal/LanguageServer/Server/TextDocument.php">
+    <PossiblyUndefinedIntArrayOffset occurrences="1">
+      <code>$contentChanges[0]</code>
+    </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Internal/MethodIdentifier.php">
+    <PossiblyUndefinedIntArrayOffset occurrences="1">
+      <code>$method_id_parts[1]</code>
+    </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Internal/PhpVisitor/PartialParserVisitor.php">
+    <PossiblyUndefinedIntArrayOffset occurrences="8">
+      <code>$cs[0]</code>
+      <code>$match[0]</code>
+      <code>$match[1]</code>
+      <code>$match[2]</code>
+      <code>$node-&gt;stmts[0]</code>
+      <code>$replacement_stmts[0]</code>
+      <code>$replacement_stmts[0]</code>
+      <code>$replacement_stmts[0]</code>
+    </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Internal/PhpVisitor/Reflector/ClassLikeDocblockParser.php">
+    <PossiblyUndefinedIntArrayOffset occurrences="4">
+      <code>$doc_line_parts[1]</code>
+      <code>$matches[0]</code>
+      <code>$method_tree-&gt;children[0]</code>
+      <code>$method_tree-&gt;children[1]</code>
+    </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Internal/PhpVisitor/Reflector/ClassLikeNodeScanner.php">
+    <PossiblyUndefinedIntArrayOffset occurrences="4">
+      <code>$imported_type_data[3]</code>
+      <code>$l[4]</code>
+      <code>$r[4]</code>
+      <code>$var_line_parts[0]</code>
+    </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Internal/PhpVisitor/Reflector/ExpressionScanner.php">
+    <PossiblyUndefinedIntArrayOffset occurrences="5">
+      <code>$node-&gt;args[0]</code>
+      <code>$node-&gt;args[0]</code>
+      <code>$node-&gt;args[1]</code>
+      <code>$node-&gt;args[1]</code>
+      <code>$node-&gt;args[1]</code>
+    </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Internal/PhpVisitor/Reflector/FunctionLikeDocblockParser.php">
+    <PossiblyUndefinedIntArrayOffset occurrences="2">
+      <code>$line_parts[1]</code>
+      <code>$since_parts[1]</code>
+    </PossiblyUndefinedIntArrayOffset>
+    <RedundantCondition occurrences="1">
+      <code>count($line_parts) &gt; 0</code>
+    </RedundantCondition>
+  </file>
+  <file src="src/Psalm/Internal/PhpVisitor/Reflector/FunctionLikeDocblockScanner.php">
+    <PossiblyUndefinedIntArrayOffset occurrences="1">
+      <code>$flow_parts[0]</code>
+    </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Internal/PhpVisitor/Reflector/FunctionLikeNodeScanner.php">
+    <PossiblyUndefinedIntArrayOffset occurrences="1">
+      <code>$stmt-&gt;stmts[0]</code>
+    </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Internal/PhpVisitor/SimpleNameResolver.php">
+    <PossiblyUndefinedIntArrayOffset occurrences="1">
+      <code>$cs[0]</code>
+    </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Internal/Type/TypeCombiner.php">
+    <PossiblyUndefinedIntArrayOffset occurrences="6">
+      <code>$combination-&gt;array_type_params[1]</code>
+      <code>$combination-&gt;array_type_params[1]</code>
+      <code>$combination-&gt;array_type_params[1]</code>
+      <code>$combination-&gt;array_type_params[1]</code>
+      <code>$combination-&gt;array_type_params[1]</code>
+      <code>$combination-&gt;array_type_params[1]</code>
+    </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Internal/Type/TypeParser.php">
+    <PossiblyUndefinedIntArrayOffset occurrences="11">
+      <code>$intersection_types[0]</code>
+      <code>$parse_tree-&gt;children[0]</code>
+      <code>$parse_tree-&gt;children[0]</code>
+      <code>$parse_tree-&gt;condition-&gt;children[0]</code>
+      <code>$potential_values[$j]</code>
+      <code>array_keys($offset_template_data)[0]</code>
+      <code>array_keys($template_type_map[$array_param_name])[0]</code>
+      <code>array_keys($template_type_map[$class_name])[0]</code>
+      <code>array_keys($template_type_map[$fq_classlike_name])[0]</code>
+      <code>array_keys($template_type_map[$param_name])[0]</code>
+      <code>array_keys($template_type_map[$template_param_name])[0]</code>
+    </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Storage/Assertion.php">
+    <PossiblyUndefinedIntArrayOffset occurrences="1">
+      <code>$rules[0]</code>
+    </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Type/Atomic.php">
+    <PossiblyUndefinedIntArrayOffset occurrences="1">
+      <code>array_keys($template_type_map[$value])[0]</code>
+    </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Type/Atomic/GenericTrait.php">
+    <PossiblyUndefinedIntArrayOffset occurrences="1">
+      <code>$this-&gt;type_params[1]</code>
+    </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Type/Reconciler.php">
+    <PossiblyUndefinedIntArrayOffset occurrences="3">
+      <code>$chars[$i]</code>
+      <code>$parts[$parts_offset]</code>
+      <code>$type[0]</code>
+    </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/command_functions.php">
+    <PossiblyUndefinedIntArrayOffset occurrences="3">
+      <code>$argv[$i]</code>
+      <code>$input_paths[$i]</code>
+      <code>$matches[1]</code>
+    </PossiblyUndefinedIntArrayOffset>
+  </file>
+</files>

@@ -952,13 +952,13 @@ class PropertyTypeTest extends TestCase
 
                     class Finally_ extends Node\Stmt
                     {
-                        /** @var Node[] Statements */
+                        /** @var list<Node\Stmt> Statements */
                         public $stmts;
 
                         /**
                          * Constructs a finally node.
                          *
-                         * @param array<int, Node\Stmt> $stmts      Statements
+                         * @param list<Node\Stmt> $stmts      Statements
                          * @param array  $attributes Additional attributes
                          */
                         public function __construct(array $stmts = array(), array $attributes = array()) {

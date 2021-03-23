@@ -257,7 +257,7 @@ class CommentAnalyzer
     /**
      * @throws DocblockParseException if an invalid string is found
      *
-     * @return list<string>
+     * @return non-empty-list<string>
      *
      * @psalm-pure
      */

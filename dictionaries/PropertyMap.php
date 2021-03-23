@@ -467,52 +467,52 @@ return [
         'params' => 'list<PhpParser\Node\Param>',
     ],
     'phpparser\\node\\name' => [
-        'parts' => 'non-empty-array<non-empty-string>',
+        'parts' => 'non-empty-list<non-empty-string>',
     ],
     'phpparser\\node\\stmt\\namespace_' => [
-        'stmts' => 'array<int, PhpParser\Node\Stmt>',
+        'stmts' => 'list<PhpParser\Node\Stmt>',
     ],
     'phpparser\\node\\stmt\\if_' => [
-        'stmts' => 'array<int, PhpParser\Node\Stmt>',
+        'stmts' => 'list<PhpParser\Node\Stmt>',
     ],
     'phpparser\\node\\stmt\\elseif_' => [
-        'stmts' => 'array<int, PhpParser\Node\Stmt>',
+        'stmts' => 'list<PhpParser\Node\Stmt>',
     ],
     'phpparser\\node\\stmt\\else_' => [
-        'stmts' => 'array<int, PhpParser\Node\Stmt>',
+        'stmts' => 'list<PhpParser\Node\Stmt>',
     ],
     'phpparser\\node\\stmt\\for_' => [
-        'stmts' => 'array<int, PhpParser\Node\Stmt>',
+        'stmts' => 'list<PhpParser\Node\Stmt>',
     ],
     'phpparser\\node\\stmt\\foreach_' => [
-        'stmts' => 'array<int, PhpParser\Node\Stmt>',
+        'stmts' => 'list<PhpParser\Node\Stmt>',
     ],
     'phpparser\\node\\stmt\\trycatch' => [
-        'stmts' => 'array<int, PhpParser\Node\Stmt>',
+        'stmts' => 'list<PhpParser\Node\Stmt>',
     ],
     'phpparser\\node\\stmt\\catch_' => [
-        'stmts' => 'array<int, PhpParser\Node\Stmt>',
+        'stmts' => 'list<PhpParser\Node\Stmt>',
     ],
     'phpparser\\node\\stmt\\finally_' => [
-        'stmts' => 'array<int, PhpParser\Node\Stmt>',
+        'stmts' => 'list<PhpParser\Node\Stmt>',
     ],
     'phpparser\\node\\stmt\\case_' => [
-        'stmts' => 'array<int, PhpParser\Node\Stmt>',
+        'stmts' => 'list<PhpParser\Node\Stmt>',
     ],
     'phpparser\\node\\stmt\\while_' => [
-        'stmts' => 'array<int, PhpParser\Node\Stmt>',
+        'stmts' => 'list<PhpParser\Node\Stmt>',
     ],
     'phpparser\\node\\stmt\\do_' => [
-        'stmts' => 'array<int, PhpParser\Node\Stmt>',
+        'stmts' => 'list<PhpParser\Node\Stmt>',
     ],
     'phpparser\\node\\stmt\\class_' => [
-        'stmts' => 'array<int, PhpParser\Node\Stmt>',
+        'stmts' => 'list<PhpParser\Node\Stmt>',
     ],
     'phpparser\\node\\stmt\\trait_' => [
-        'stmts' => 'array<int, PhpParser\Node\Stmt>',
+        'stmts' => 'list<PhpParser\Node\Stmt>',
     ],
     'phpparser\\node\\stmt\\interface_' => [
-        'stmts' => 'array<int, PhpParser\Node\Stmt>',
+        'stmts' => 'list<PhpParser\Node\Stmt>',
     ],
     'phpparser\\node\\matcharm' => [
         'conds' => 'null|non-empty-list<PhpParser\Node\Expr>',
