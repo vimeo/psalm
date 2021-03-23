@@ -11,6 +11,7 @@ use function implode;
 use function is_string;
 use function strpos;
 use function str_replace;
+use function count;
 
 /**
  * @internal
