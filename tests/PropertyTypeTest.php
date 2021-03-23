@@ -3646,6 +3646,24 @@ class PropertyTypeTest extends TestCase
                     }',
                 'error_message' => 'PossiblyNullPropertyFetch',
             ],
+            'noCrashWhenCallingMagicSet' => [
+                '<?php
+                    class A {
+                        public function __set(string $s, mixed $value) : void {}
+                    }
+
+                    (new A)->__set("foo");',
+                'error_message' => 'TooFewArguments',
+            ],
+            'noCrashWhenCallingMagicGet' => [
+                '<?php
+                    class A {
+                        public function __get(string $s) : mixed {}
+                    }
+
+                    (new A)->__get();',
+                'error_message' => 'TooFewArguments',
+            ],
         ];
     }
 }
