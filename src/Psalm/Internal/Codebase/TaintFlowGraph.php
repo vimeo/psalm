@@ -260,7 +260,7 @@ class TaintFlowGraph extends DataFlowGraph
                 continue;
             }
 
-            if (self::shouldIgnoreFetch($path_type, 'array', $generated_source->path_types)) {
+            if (self::shouldIgnoreFetch($path_type, 'arrayvalue', $generated_source->path_types)) {
                 continue;
             }
 

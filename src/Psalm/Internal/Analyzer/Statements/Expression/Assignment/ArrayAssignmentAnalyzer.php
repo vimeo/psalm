@@ -405,14 +405,14 @@ class ArrayAssignmentAnalyzer
                             $statements_analyzer->data_flow_graph->addPath(
                                 $child_parent_node,
                                 $parent_node,
-                                'array-assignment-\'' . $key_value->value . '\''
+                                'arrayvalue-assignment-\'' . $key_value->value . '\''
                             );
                         }
                     } else {
                         $statements_analyzer->data_flow_graph->addPath(
                             $child_parent_node,
                             $parent_node,
-                            'array-assignment'
+                            'arrayvalue-assignment'
                         );
                     }
                 }

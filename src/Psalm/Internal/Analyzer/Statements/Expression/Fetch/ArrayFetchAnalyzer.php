@@ -365,7 +365,7 @@ class ArrayFetchAnalyzer
             $var_location = new CodeLocation($statements_analyzer->getSource(), $var);
 
             $new_parent_node = DataFlowNode::getForAssignment(
-                $keyed_array_var_id ?: 'array-fetch',
+                $keyed_array_var_id ?: 'arrayvalue-fetch',
                 $var_location
             );
 
@@ -381,7 +381,7 @@ class ArrayFetchAnalyzer
                 $statements_analyzer->data_flow_graph->addPath(
                     $parent_node,
                     $new_parent_node,
-                    'array-fetch' . ($dim_value !== null ? '-\'' . $dim_value . '\'' : ''),
+                    'arrayvalue-fetch' . ($dim_value !== null ? '-\'' . $dim_value . '\'' : ''),
                     $added_taints,
                     $removed_taints
                 );
@@ -390,7 +390,7 @@ class ArrayFetchAnalyzer
                     $statements_analyzer->data_flow_graph->addPath(
                         $new_parent_node,
                         $parent_node,
-                        'array-assignment' . ($dim_value !== null ? '-\'' . $dim_value . '\'' : ''),
+                        'arrayvalue-assignment' . ($dim_value !== null ? '-\'' . $dim_value . '\'' : ''),
                         $added_taints,
                         $removed_taints
                     );

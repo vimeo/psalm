@@ -264,7 +264,7 @@ class ArrayAnalyzer
                     $data_flow_graph->addPath(
                         $parent_node,
                         $new_parent_node,
-                        'array-assignment'
+                        'arrayvalue-assignment'
                     );
                 }
 
@@ -379,7 +379,7 @@ class ArrayAnalyzer
                         $data_flow_graph->addPath(
                             $parent_node,
                             $new_parent_node,
-                            'array-assignment'
+                            'arrayvalue-assignment'
                                 . ($item_key_value !== null ? '-\'' . $item_key_value . '\'' : ''),
                             $added_taints,
                             $removed_taints
