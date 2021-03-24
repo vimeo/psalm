@@ -779,6 +779,120 @@ class UnusedCodeTest extends TestCase
                         return strrev($string);
                     }'
             ],
+            'unusedByReferenceFunctionCall' => [
+                '<?php
+                    /**
+                     * @pure
+                     */
+                    function bar(string &$str): string
+                    {
+                        $str .= "foo";
+
+                        return $str;
+                    }
+
+                    /**
+                     * @pure
+                     */
+                    function baz(): string
+                    {
+                        $f = "foo";
+                        bar($f);
+
+                        return $f;
+                    }'
+            ],
+            'unusedVoidByReferenceFunctionCall' => [
+                '<?php
+                    /**
+                     * @pure
+                     */
+                    function bar(string &$str): void
+                    {
+                        $str .= "foo";
+                    }
+
+                    /**
+                     * @pure
+                     */
+                    function baz(): string
+                    {
+                        $f = "foo";
+                        bar($f);
+
+                        return $f;
+                    }'
+            ],
+            'unusedNamedByReferenceFunctionCall' => [
+                '<?php
+                    /**
+                     * @pure
+                     */
+                    function bar(string $c = "", string &$str = ""): string
+                    {
+                        $c .= $str;
+                        $str .= $c;
+
+                        return $c;
+                    }
+
+                    /**
+                     * @pure
+                     */
+                    function baz(): string
+                    {
+                        $f = "foo";
+                        bar(str: $f);
+
+                        return $f;
+                    }'
+            ],
+            'unusedNamedByReferenceFunctionCallV2' => [
+                '<?php
+                    /**
+                     * @pure
+                     */
+                    function bar(string &$st, string &$str = ""): string
+                    {
+                        $st .= $str;
+
+                        return $st;
+                    }
+
+                    /**
+                     * @pure
+                     */
+                    function baz(): string
+                    {
+                        $f = "foo";
+                        bar(st: $f);
+
+                        return $f;
+                    }',
+            ],
+            'unusedNamedByReferenceFunctionCallV3' => [
+                '<?php
+                    /**
+                     * @pure
+                     */
+                    function bar(string &$st, ?string &$str = ""): string
+                    {
+                        $st .= (string) $str;
+
+                        return $st;
+                    }
+
+                    /**
+                     * @pure
+                     */
+                    function baz(): string
+                    {
+                        $f = "foo";
+                        bar(st: $f, str: $c);
+
+                        return $f;
+                    }',
+            ]
         ];
     }
 
@@ -1092,6 +1206,54 @@ class UnusedCodeTest extends TestCase
                         return false;
                     }',
                 'error_message' => 'UnevaluatedCode',
+            ],
+            'UnusedFunctionCallWithOptionalByReferenceParameter' => [
+                '<?php
+                    /**
+                     * @pure
+                     */
+                    function bar(string $c, string &$str = ""): string
+                    {
+                        $c .= $str;
+
+                        return $c;
+                    }
+
+                    /**
+                     * @pure
+                     */
+                    function baz(): string
+                    {
+                        $f = "foo";
+                        bar($f);
+
+                        return $f;
+                    }',
+                'error_message' => 'UnusedFunctionCall',
+            ],
+            'UnusedFunctionCallWithOptionalByReferenceParameterV2' => [
+                '<?php
+                    /**
+                     * @pure
+                     */
+                    function bar(string $st, string &$str = ""): string
+                    {
+                        $st .= $str;
+
+                        return $st;
+                    }
+
+                    /**
+                     * @pure
+                     */
+                    function baz(): string
+                    {
+                        $f = "foo";
+                        bar(st: $f);
+
+                        return $f;
+                    }',
+                'error_message' => 'UnusedFunctionCall',
             ],
         ];
     }
