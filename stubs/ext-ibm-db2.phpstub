@@ -1,0 +1,22 @@
+<?php
+
+const DB2_BINARY = 1;
+const DB2_CONVERT = 2;
+const DB2_PASSTHRU = 3;
+const DB2_FORWARD_ONLY = 0;
+const DB2_SCROLLABLE = 1;
+const DB2_PARAM_IN = 1;
+const DB2_PARAM_INOUT = 2;
+const DB2_PARAM_OUT = 4;
+const DB2_PARAM_FILE = 11;
+const DB2_AUTOCOMMIT_OFF = 0;
+const DB2_AUTOCOMMIT_ON = 1;
+const DB2_DEFERRED_PREPARE_OFF = 0;
+const DB2_DEFERRED_PREPARE_ON = 1;
+const DB2_CHAR = 1;
+const DB2_LONG = 4;
+const DB2_DOUBLE = 8;
+const DB2_XML = -370;
+const DB2_CASE_NATURAL = 0;
+const DB2_CASE_LOWER = 1;
+const DB2_CASE_UPPER = 2;

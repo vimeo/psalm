@@ -1734,6 +1734,16 @@ class Config
             $core_generic_files[] = $stringable_path;
         }
 
+        if (\extension_loaded('ibm_db2')) {
+            $ext_ibm_db2_path = dirname(__DIR__, 2) . '/stubs/ext-ibm-db2.phpstub';
+
+            if (!file_exists($ext_ibm_db2_path)) {
+                throw new \UnexpectedValueException('Cannot locate ibm_db2 stub');
+            }
+
+            $core_generic_files[] = $ext_ibm_db2_path;
+        }
+
         if (\extension_loaded('PDO')) {
             $ext_pdo_path = dirname(__DIR__, 2) . '/stubs/pdo.phpstub';
 
