@@ -966,7 +966,7 @@ class TypeParser
                     && !$intersection_type instanceof TObjectWithProperties
                 ) {
                     throw new TypeParseTreeException(
-                        'Intersection types must be all objects or all object-like arrays, '
+                        'Intersection types must be all objects, '
                         . get_class($intersection_type) . ' provided'
                     );
                 }
