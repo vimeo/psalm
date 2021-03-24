@@ -447,14 +447,6 @@ class ForeachAnalyzer
                     $value_type = Type::combineUnionTypes($value_type, $iterator_atomic_type->type_params[1]);
                 }
 
-                ArrayFetchAnalyzer::taintArrayFetch(
-                    $statements_analyzer,
-                    $expr,
-                    null,
-                    $value_type,
-                    Type::getMixed()
-                );
-
                 $key_type_part = $iterator_atomic_type->type_params[0];
 
                 if (!$key_type) {
@@ -462,6 +454,14 @@ class ForeachAnalyzer
                 } else {
                     $key_type = Type::combineUnionTypes($key_type, $key_type_part);
                 }
+
+                ArrayFetchAnalyzer::taintArrayFetch(
+                    $statements_analyzer,
+                    $expr,
+                    null,
+                    $value_type,
+                    $key_type
+                );
 
                 $has_valid_iterator = true;
                 continue;
@@ -568,6 +568,14 @@ class ForeachAnalyzer
                 } else {
                     $key_type = Type::combineUnionTypes($key_type, $intersection_key_type);
                 }
+
+                ArrayFetchAnalyzer::taintArrayFetch(
+                    $statements_analyzer,
+                    $expr,
+                    null,
+                    $value_type,
+                    $key_type
+                );
 
                 $has_valid_iterator = true;
 

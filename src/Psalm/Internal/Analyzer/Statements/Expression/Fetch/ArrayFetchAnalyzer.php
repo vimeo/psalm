@@ -369,6 +369,8 @@ class ArrayFetchAnalyzer
                 $var_location
             );
 
+            $array_key_node = null;
+
             $statements_analyzer->data_flow_graph->addNode($new_parent_node);
 
             $dim_value = $offset_type->isSingleStringLiteral()
@@ -376,6 +378,15 @@ class ArrayFetchAnalyzer
                 : ($offset_type->isSingleIntLiteral()
                     ? $offset_type->getSingleIntLiteral()->value
                     : null);
+
+            if ($keyed_array_var_id === null && $dim_value === null) {
+                $array_key_node = DataFlowNode::getForAssignment(
+                    'arraykey-fetch',
+                    $var_location
+                );
+
+                $statements_analyzer->data_flow_graph->addNode($array_key_node);
+            }
 
             foreach ($stmt_var_type->parent_nodes as $parent_node) {
                 $statements_analyzer->data_flow_graph->addPath(
@@ -395,9 +406,23 @@ class ArrayFetchAnalyzer
                         $removed_taints
                     );
                 }
+
+                if ($array_key_node) {
+                    $statements_analyzer->data_flow_graph->addPath(
+                        $parent_node,
+                        $array_key_node,
+                        'arraykey-fetch',
+                        $added_taints,
+                        $removed_taints
+                    );
+                }
             }
 
             $stmt_type->parent_nodes = [$new_parent_node->id => $new_parent_node];
+
+            if ($array_key_node) {
+                $offset_type->parent_nodes = [$array_key_node->id => $array_key_node];
+            }
         }
     }
 

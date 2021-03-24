@@ -3283,6 +3283,13 @@ class UnusedVariableTest extends TestCase
                     }',
                 'error_message' => 'MixedReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:36 - Could not infer a return type. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:44'
             ],
+            'warnAboutIterableKeySource' => [
+                '<?php
+                    function foo(iterable $arr) : void {
+                        foreach ($arr as $key => $_) {}
+                    }',
+                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:42 - Unable to determine the type that $key is being assigned to. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:43'
+            ],
         ];
     }
 }

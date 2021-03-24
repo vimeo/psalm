@@ -275,6 +275,7 @@ class ArrayAnalyzer
         }
 
         $item_key_value = null;
+        $item_key_type = null;
         $item_is_list_item = false;
 
         if ($item->key) {
@@ -381,6 +382,40 @@ class ArrayAnalyzer
                             $new_parent_node,
                             'arrayvalue-assignment'
                                 . ($item_key_value !== null ? '-\'' . $item_key_value . '\'' : ''),
+                            $added_taints,
+                            $removed_taints
+                        );
+                    }
+
+                    $array_creation_info->parent_taint_nodes += [$new_parent_node->id => $new_parent_node];
+                }
+
+                if ($item_key_type
+                    && $item_key_type->parent_nodes
+                    && $item_key_value === null
+                    && !($item_key_type->isSingle()
+                        && $item_key_type->hasLiteralValue()
+                        && $data_flow_graph instanceof \Psalm\Internal\Codebase\TaintFlowGraph)
+                ) {
+                    $var_location = new CodeLocation($statements_analyzer->getSource(), $item);
+
+                    $new_parent_node = \Psalm\Internal\DataFlow\DataFlowNode::getForAssignment(
+                        'array',
+                        $var_location
+                    );
+
+                    $data_flow_graph->addNode($new_parent_node);
+
+                    $event = new AddRemoveTaintsEvent($item, $context, $statements_analyzer, $codebase);
+
+                    $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
+                    $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
+
+                    foreach ($item_key_type->parent_nodes as $parent_node) {
+                        $data_flow_graph->addPath(
+                            $parent_node,
+                            $new_parent_node,
+                            'arraykey-assignment',
                             $added_taints,
                             $removed_taints
                         );

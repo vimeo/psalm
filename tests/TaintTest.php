@@ -2103,6 +2103,25 @@ class TaintTest extends TestCase
                     $res = Wdb::query("SELECT blah FROM tablea ORDER BY ". $order. " DESC");',
                 'error_message' => 'TaintedSql',
             ],
+            'taintArrayKey' => [
+                '<?php
+                    function doTheMagic(array $values) {
+                        foreach ($values as $key => $value) {
+                            echo $key . " " . $value;
+                        }
+                    }
+
+                    doTheMagic([(string)$_GET["bad"] => "foo"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintArrayKeyWithExplicitSink' => [
+                '<?php
+                    /** @psalm-taint-sink html $values */
+                    function doTheMagic(array $values) {}
+
+                    doTheMagic([(string)$_GET["bad"] => "foo"]);',
+                'error_message' => 'TaintedHtml',
+            ],
             /*
             // TODO: Stubs do not support this type of inference even with $this->message = $message.
             // Most uses of getMessage() would be with caught exceptions, so this is not representative of real code.
