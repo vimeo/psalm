@@ -206,10 +206,10 @@ class ConcatAnalyzer
             $right_comparison_result = new \Psalm\Internal\Type\Comparator\TypeComparisonResult();
 
             foreach ($left_type->getAtomicTypes() as $left_type_part) {
-                if ($left_type_part instanceof Type\Atomic\TTemplateParam) {
+                if ($left_type_part instanceof Type\Atomic\TTemplateParam && !$left_type_part->as->isString()) {
                     if (IssueBuffer::accepts(
                         new MixedOperand(
-                            'Left operand cannot be a template param',
+                            'Left operand cannot be a non-string template param',
                             new CodeLocation($statements_analyzer->getSource(), $left)
                         ),
                         $statements_analyzer->getSuppressedIssues()
@@ -299,10 +299,10 @@ class ConcatAnalyzer
             }
 
             foreach ($right_type->getAtomicTypes() as $right_type_part) {
-                if ($right_type_part instanceof Type\Atomic\TTemplateParam) {
+                if ($right_type_part instanceof Type\Atomic\TTemplateParam && !$right_type_part->as->isString()) {
                     if (IssueBuffer::accepts(
                         new MixedOperand(
-                            'Right operand cannot be a template param',
+                            'Right operand cannot be a non-string template param',
                             new CodeLocation($statements_analyzer->getSource(), $right)
                         ),
                         $statements_analyzer->getSuppressedIssues()
