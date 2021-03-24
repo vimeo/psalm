@@ -481,13 +481,14 @@ class ForeachAnalyzer
             ) {
                 $has_valid_iterator = true;
                 $value_type = Type::getMixed();
+                $key_type = Type::getMixed();
 
                 ArrayFetchAnalyzer::taintArrayFetch(
                     $statements_analyzer,
                     $expr,
                     null,
                     $value_type,
-                    Type::getMixed()
+                    $key_type
                 );
 
                 if (!$context->pure) {
