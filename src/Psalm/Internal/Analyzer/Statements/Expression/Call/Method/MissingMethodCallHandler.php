@@ -133,7 +133,7 @@ class MissingMethodCallHandler
 
                 return null;
             }
-        } else {
+        } elseif ($all_intersection_return_type == null) {
             ArgumentsAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt->args,

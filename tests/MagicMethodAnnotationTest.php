@@ -1011,4 +1011,53 @@ class MagicMethodAnnotationTest extends TestCase
 
         $this->analyzeFile('somefile.php', new Context());
     }
+
+    public function testIntersectionTypeWhenMagicMethodDoesNotExistButIsProvidedBySecondType(): void
+    {
+        $this->addFile(
+            'somefile.php',
+            '<?php
+              /** @method foo(): int */
+              class A {
+                public function __call(string $method, array $args) {}
+              }
+
+              class B {
+                public function otherMethod(): void {}
+              }
+
+              /** @var A & B $b */
+              $b = new B();
+              $b->otherMethod();
+              '
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testIntersectionTypeWhenMethodDoesNotExistOnEither(): void
+    {
+        $this->addFile(
+            'somefile.php',
+            '<?php
+              /** @method foo(): int */
+              class A {
+                public function __call(string $method, array $args) {}
+              }
+
+              class B {
+                public function otherMethod(): void {}
+              }
+
+              /** @var A & B $b */
+              $b = new B();
+              $b->nonExistantMethod();
+              '
+        );
+
+        $error_message = 'UndefinedMagicMethod';
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectExceptionMessage($error_message);
+        $this->analyzeFile('somefile.php', new Context());
+    }
 }
