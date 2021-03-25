@@ -63,4 +63,22 @@ class FunctionCallInfo
      * @var array
      */
     public $byref_uses = [];
+
+    /**
+     * @mutation-free
+     */
+    public function hasByReferenceParameters(): bool
+    {
+        if (null === $this->function_params) {
+            return false;
+        }
+
+        foreach ($this->function_params as $value) {
+            if ($value->by_ref) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }

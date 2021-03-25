@@ -1011,6 +1011,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 if (!$context->inside_assignment &&
                     !$context->inside_call &&
                     !$context->inside_use &&
+                    !self::callUsesByReferenceArguments($function_call_info, $stmt) &&
                     !(
                         $function_call_info->function_storage &&
                         $function_call_info->function_storage->return_type &&
@@ -1033,5 +1034,44 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 }
             }
         }
+    }
+
+    private static function callUsesByReferenceArguments(
+        FunctionCallInfo $function_call_info,
+        PhpParser\Node\Expr\FuncCall $stmt
+    ): bool {
+        // If the function doesn't have any by-reference parameters
+        // we shouldn't look any further.
+        if (!$function_call_info->hasByReferenceParameters() || null === $function_call_info->function_params) {
+            return false;
+        }
+
+        $parameters = $function_call_info->function_params;
+
+        // If no arguments were passed
+        if (0 === \count($stmt->args)) {
+            return false;
+        }
+
+        foreach ($stmt->args as $index => $argument) {
+            $parameter = null;
+            if (null !== $argument->name) {
+                $argument_name = $argument->name->toString();
+                foreach ($parameters as $param) {
+                    if ($param->name === $argument_name) {
+                        $parameter = $param;
+                        break;
+                    }
+                }
+            } else {
+                $parameter = $parameters[$index] ?? null;
+            }
+
+            if ($parameter && $parameter->by_ref) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
