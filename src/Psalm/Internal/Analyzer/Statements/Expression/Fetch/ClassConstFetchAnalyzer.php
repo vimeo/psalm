@@ -20,6 +20,8 @@ use Psalm\Issue\ParentNotFound;
 use Psalm\Issue\UndefinedConstant;
 use Psalm\IssueBuffer;
 use Psalm\Type;
+use Psalm\Type\Atomic\TNamedObject;
+use function array_values;
 use function strtolower;
 use function explode;
 
@@ -387,6 +389,25 @@ class ClassConstFetchAnalyzer
                             $lhs_atomic_type->value,
                             clone $lhs_atomic_type
                         );
+                    } elseif ($lhs_atomic_type instanceof Type\Atomic\TTemplateParam
+                        && $lhs_atomic_type->as->isSingle()) {
+                        $as_atomic_type = array_values($lhs_atomic_type->as->getAtomicTypes())[0];
+
+                        if ($as_atomic_type instanceof Type\Atomic\TObject) {
+                            $class_string_types[] = new Type\Atomic\TTemplateParamClass(
+                                $lhs_atomic_type->param_name,
+                                'object',
+                                null,
+                                $lhs_atomic_type->defining_class
+                            );
+                        } elseif ($as_atomic_type instanceof TNamedObject) {
+                            $class_string_types[] = new Type\Atomic\TTemplateParamClass(
+                                $lhs_atomic_type->param_name,
+                                $as_atomic_type->value,
+                                $as_atomic_type,
+                                $lhs_atomic_type->defining_class
+                            );
+                        }
                     } elseif ($lhs_atomic_type instanceof Type\Atomic\TObject
                         || $lhs_atomic_type instanceof Type\Atomic\TMixed
                     ) {
