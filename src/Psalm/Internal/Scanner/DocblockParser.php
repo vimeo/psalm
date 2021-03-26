@@ -228,10 +228,14 @@ class DocblockParser
             || isset($docblock->tags['psalm-var'])
             || isset($docblock->tags['phpstan-var'])
         ) {
-            $docblock->combined_tags['var']
-                = ($docblock->tags['var'] ?? [])
-                + ($docblock->tags['phpstan-var'] ?? [])
-                + ($docblock->tags['psalm-var'] ?? []);
+            if (!isset($docblock->tags['ignore-var'])
+                && !isset($docblock->tags['psalm-ignore-var'])
+            ) {
+                $docblock->combined_tags['var']
+                    = ($docblock->tags['var'] ?? [])
+                    + ($docblock->tags['phpstan-var'] ?? [])
+                    + ($docblock->tags['psalm-var'] ?? []);
+            }
         }
 
         if (isset($docblock->tags['param-out'])
