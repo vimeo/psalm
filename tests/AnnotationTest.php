@@ -350,6 +350,30 @@ class AnnotationTest extends TestCase
 
                     $a[0]->getMessage();',
             ],
+            'ignoreVarDocblock' => [
+                '<?php
+                    /**
+                     * @var array<Exception>
+                     * @ignore-var
+                     */
+                    $a = [];
+
+                    $a[0]->getMessage();',
+                'assertions' => [],
+                'error_level' => ['EmptyArrayAccess', 'MixedMethodCall'],
+            ],
+            'psalmIgnoreVarDocblock' => [
+                '<?php
+                    /**
+                     * @var array<Exception>
+                     * @psalm-ignore-var
+                     */
+                    $a = [];
+
+                    $a[0]->getMessage();',
+                'assertions' => [],
+                'error_level' => ['EmptyArrayAccess', 'MixedMethodCall'],
+            ],
             'mixedDocblockParamTypeDefinedInParent' => [
                 '<?php
                     class A {

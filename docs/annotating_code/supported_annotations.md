@@ -72,6 +72,30 @@ function addFoo(?string &$s) : void {
 
 When specifying types in a format not supported by phpDocumentor ([but supported by Psalm](#type-syntax)) you may wish to prepend `@psalm-` to the PHPDoc tag, so as to avoid confusing your IDE. If a `@psalm`-prefixed tag is given, Psalm will use it in place of its non-prefixed counterpart.
 
+### `@psalm-ignore-var`
+
+This annotation is used to ignore the `@var` annotation written in the same docblock. Some IDEs don't fully understand complex types like generics. To take advantage of such IDE's auto-completion, you may sometimes want to use explicit `@var` annotations even when psalm can infer the type just fine. This weakens the effectiveness of type checking in many cases since the explicit `@var` annotation overrides the types inferred by psalm. As psalm ignores the `@var` annotation which is co-located with `@psalm-ignore-var`, IDEs can use the type specified by the `@var` for auto-completion, while psalm can still use its own inferred type for type checking.
+
+```php
+<?php
+/** @return iterable<array-key,\DateTime> $f */
+function getTimes(int $n): iterable {
+    while ($n--) {
+        yield new \DateTime();
+    }
+};
+/**
+ * @var \Datetime[] $times
+ * @psalm-ignore-var
+ */
+$times = getTimes(3);
+// this trace shows "iterable<array-key, DateTime>" instead of "array<array-key, Datetime>"
+/** @psalm-trace $times */
+foreach ($times as $time) {
+    echo $time->format('Y-m-d H:i:s.u') . PHP_EOL;
+}
+```
+
 ### `@psalm-suppress SomeIssueName`
 
 This annotation is used to suppress issues. It can be used in function docblocks, class docblocks and also inline, applying to the following statement.
