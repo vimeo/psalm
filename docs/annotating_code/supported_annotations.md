@@ -74,7 +74,7 @@ When specifying types in a format not supported by phpDocumentor ([but supported
 
 ### `@psalm-ignore-var`
 
-This annotation is used to ignore the `@var` annotation written in the same docblock. Some IDEs don't fully understand complex types like generics. To take advantage of such IDE's auto-completion, you may sometimes want to use explicit `@var` annotations even when psalm can infer the type well enough. This weakens the effectiveness of type checking in many cases since the explicit `@var` annotation overrides the types inferred by psalm. As psalm ignores the `@var` annotation which is co-located with `@psalm-ignore-var`, IDEs can use the type specified by the `@var` for auto-completion, while psalm can still use its own inferred type for type checking.
+This annotation is used to ignore the `@var` annotation written in the same docblock. Some IDEs don't fully understand complex types like generics. To take advantage of such IDE's auto-completion, you may sometimes want to use explicit `@var` annotations even when psalm can infer the type just fine. This weakens the effectiveness of type checking in many cases since the explicit `@var` annotation overrides the types inferred by psalm. As psalm ignores the `@var` annotation which is co-located with `@psalm-ignore-var`, IDEs can use the type specified by the `@var` for auto-completion, while psalm can still use its own inferred type for type checking.
 
 ```php
 <?php
