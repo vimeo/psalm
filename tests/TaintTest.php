@@ -2122,6 +2122,17 @@ class TaintTest extends TestCase
                     doTheMagic([(string)$_GET["bad"] => "foo"]);',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintThroughReset' => [
+                '<?php
+                    function foo(array $arr) : void {
+                        if ($arr) {
+                            echo reset($arr);
+                        }
+                    }
+
+                    foo([$_GET["a"]]);',
+                'error_message' => 'TaintedHtml',
+            ],
             /*
             // TODO: Stubs do not support this type of inference even with $this->message = $message.
             // Most uses of getMessage() would be with caught exceptions, so this is not representative of real code.

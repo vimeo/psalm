@@ -3,6 +3,7 @@ namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use PhpParser;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Type;
 
 class ArrayPointerAdjustmentReturnTypeProvider implements \Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface
@@ -76,6 +77,14 @@ class ArrayPointerAdjustmentReturnTypeProvider implements \Psalm\Plugin\EventHan
                 $value_type->ignore_falsable_issues = true;
             }
         }
+
+        ArrayFetchAnalyzer::taintArrayFetch(
+            $statements_source,
+            $first_arg,
+            null,
+            $value_type,
+            Type::getMixed()
+        );
 
         return $value_type;
     }
