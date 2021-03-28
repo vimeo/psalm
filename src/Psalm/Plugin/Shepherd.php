@@ -68,6 +68,7 @@ class Shepherd implements \Psalm\Plugin\EventHandler\AfterAnalysisInterface
                 'git' => $source_control_data,
                 'issues' => $normalized_data,
                 'coverage' => $codebase->analyzer->getTotalTypeCoverage($codebase),
+                'level' => \Psalm\Config::getInstance()->level
             ];
 
             $payload = json_encode($data);
