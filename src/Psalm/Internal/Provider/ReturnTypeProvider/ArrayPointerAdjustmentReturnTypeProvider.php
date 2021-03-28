@@ -26,29 +26,43 @@ class ArrayPointerAdjustmentReturnTypeProvider implements \Psalm\Plugin\EventHan
 
         $first_arg = isset($call_args[0]->value) ? $call_args[0]->value : null;
 
-        $first_arg_array = $first_arg
-            && ($first_arg_type = $statements_source->node_data->getType($first_arg))
-            && $first_arg_type->hasType('array')
-            && ($array_atomic_type = $first_arg_type->getAtomicTypes()['array'])
-            && ($array_atomic_type instanceof Type\Atomic\TArray
-                || $array_atomic_type instanceof Type\Atomic\TKeyedArray
-                || $array_atomic_type instanceof Type\Atomic\TList)
-        ? $array_atomic_type
-        : null;
-
-        if (!$first_arg_array) {
+        if (!$first_arg) {
             return Type::getMixed();
         }
 
-        if ($first_arg_array instanceof Type\Atomic\TArray) {
-            $value_type = clone $first_arg_array->type_params[1];
-            $definitely_has_items = $first_arg_array instanceof Type\Atomic\TNonEmptyArray;
-        } elseif ($first_arg_array instanceof Type\Atomic\TList) {
-            $value_type = clone $first_arg_array->type_param;
-            $definitely_has_items = $first_arg_array instanceof Type\Atomic\TNonEmptyList;
-        } else {
-            $value_type = $first_arg_array->getGenericValueType();
-            $definitely_has_items = $first_arg_array->getGenericArrayType() instanceof Type\Atomic\TNonEmptyArray;
+        $first_arg_type = $statements_source->node_data->getType($first_arg);
+
+        if (!$first_arg_type) {
+            return Type::getMixed();
+        }
+
+        $atomic_types = $first_arg_type->getAtomicTypes();
+
+        $value_type = null;
+        $definitely_has_items = false;
+
+        while ($atomic_type = array_shift($atomic_types)) {
+            if ($atomic_type instanceof Type\Atomic\TTemplateParam) {
+                $atomic_types = \array_merge($atomic_types, $atomic_type->as->getAtomicTypes());
+                continue;
+            }
+
+            if ($atomic_type instanceof Type\Atomic\TArray) {
+                $value_type = clone $atomic_type->type_params[1];
+                $definitely_has_items = $atomic_type instanceof Type\Atomic\TNonEmptyArray;
+            } elseif ($atomic_type instanceof Type\Atomic\TList) {
+                $value_type = clone $atomic_type->type_param;
+                $definitely_has_items = $atomic_type instanceof Type\Atomic\TNonEmptyList;
+            } elseif ($atomic_type instanceof Type\Atomic\TKeyedArray) {
+                $value_type = $atomic_type->getGenericValueType();
+                $definitely_has_items = $atomic_type->getGenericArrayType() instanceof Type\Atomic\TNonEmptyArray;
+            } else {
+                return Type::getMixed();
+            }
+        }
+
+        if (!$value_type) {
+            throw new \UnexpectedValueException('This should never happen');
         }
 
         if ($value_type->isEmpty()) {

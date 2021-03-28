@@ -5,7 +5,7 @@ use const DIRECTORY_SEPARATOR;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits;
 
-class NestedClassTemplateTest extends TestCase
+class NestedTemplateTest extends TestCase
 {
     use Traits\InvalidCodeAnalysisTestTrait;
     use Traits\ValidCodeAnalysisTestTrait;
@@ -106,6 +106,18 @@ class NestedClassTemplateTest extends TestCase
                     }
 
                     $result = load(StringWrapper::class);'
+            ],
+            'unwrapNestedTemplateWithReset' => [
+                '<?php
+                    /**
+                     * @template TValue
+                     * @template TArray of non-empty-array<TValue>
+                     * @param TArray $arr
+                     * @return TValue
+                     */
+                    function toList(array $arr): array {
+                        return reset($arr);
+                    }'
             ],
         ];
     }
