@@ -934,12 +934,30 @@ class ArgumentAnalyzer
 
         if ($union_comparison_results->type_coerced && !$input_type->hasMixed()) {
             if ($union_comparison_results->type_coerced_from_mixed) {
+                $origin_locations = [];
+
+                if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
+                    foreach ($input_type->parent_nodes as $parent_node) {
+                        $origin_locations = array_merge(
+                            $origin_locations,
+                            $statements_analyzer->data_flow_graph->getOriginLocations($parent_node)
+                        );
+                    }
+                }
+
+                $origin_location = count($origin_locations) === 1 ? reset($origin_locations) : null;
+
+                if ($origin_location && $origin_location->getHash() === $arg_location->getHash()) {
+                    $origin_location = null;
+                }
+
                 if (IssueBuffer::accepts(
                     new MixedArgumentTypeCoercion(
                         'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type->getId() .
                             ', parent type ' . $input_type->getId() . ' provided',
                         $arg_location,
-                        $cased_method_id
+                        $cased_method_id,
+                        $origin_location
                     ),
                     $statements_analyzer->getSuppressedIssues()
                 )) {

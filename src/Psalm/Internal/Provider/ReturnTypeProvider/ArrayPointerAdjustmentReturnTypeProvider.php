@@ -41,7 +41,7 @@ class ArrayPointerAdjustmentReturnTypeProvider implements \Psalm\Plugin\EventHan
         $value_type = null;
         $definitely_has_items = false;
 
-        while ($atomic_type = array_shift($atomic_types)) {
+        while ($atomic_type = \array_shift($atomic_types)) {
             if ($atomic_type instanceof Type\Atomic\TTemplateParam) {
                 $atomic_types = \array_merge($atomic_types, $atomic_type->as->getAtomicTypes());
                 continue;
