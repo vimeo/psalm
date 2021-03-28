@@ -4,6 +4,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\BinaryOp;
 use PhpParser;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
+use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
@@ -21,6 +22,9 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use function strtolower;
 use function strlen;
+use function array_merge;
+use function count;
+use function reset;
 
 /**
  * @internal
@@ -58,20 +62,59 @@ class ConcatAnalyzer
                 }
 
                 if ($left_type->hasMixed()) {
+                    $arg_location = new CodeLocation($statements_analyzer->getSource(), $left);
+
+                    $origin_locations = [];
+
+                    if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
+                        foreach ($left_type->parent_nodes as $parent_node) {
+                            $origin_locations = array_merge(
+                                $origin_locations,
+                                $statements_analyzer->data_flow_graph->getOriginLocations($parent_node)
+                            );
+                        }
+                    }
+
+                    $origin_location = count($origin_locations) === 1 ? reset($origin_locations) : null;
+
+                    if ($origin_location && $origin_location->getHash() === $arg_location->getHash()) {
+                        $origin_location = null;
+                    }
+
                     if (IssueBuffer::accepts(
                         new MixedOperand(
                             'Left operand cannot be mixed',
-                            new CodeLocation($statements_analyzer->getSource(), $left)
+                            $arg_location,
+                            $origin_location
                         ),
                         $statements_analyzer->getSuppressedIssues()
                     )) {
                         // fall through
                     }
                 } else {
+                    $arg_location = new CodeLocation($statements_analyzer->getSource(), $right);
+                    $origin_locations = [];
+
+                    if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
+                        foreach ($right_type->parent_nodes as $parent_node) {
+                            $origin_locations = array_merge(
+                                $origin_locations,
+                                $statements_analyzer->data_flow_graph->getOriginLocations($parent_node)
+                            );
+                        }
+                    }
+
+                    $origin_location = count($origin_locations) === 1 ? reset($origin_locations) : null;
+
+                    if ($origin_location && $origin_location->getHash() === $arg_location->getHash()) {
+                        $origin_location = null;
+                    }
+
                     if (IssueBuffer::accepts(
                         new MixedOperand(
                             'Right operand cannot be mixed',
-                            new CodeLocation($statements_analyzer->getSource(), $right)
+                            $arg_location,
+                            $origin_location
                         ),
                         $statements_analyzer->getSuppressedIssues()
                     )) {
