@@ -188,6 +188,21 @@ class ReturnTypeAnalyzer
             return null;
         }
 
+        if ($return_type && $return_type->isVoid() && $function_like_storage && $function_like_storage->pure) {
+            if (IssueBuffer::accepts(
+                new InvalidReturnType(
+                    $cased_method_id
+                        . ' is expected to return a value, or never return but it has a return type of void.',
+                    $return_type_location
+                ),
+                $suppressed_issues
+            )) {
+                return false;
+            }
+
+            return null;
+        }
+
         if ($return_type
             && $return_type->isNever()
             && !$inferred_yield_types

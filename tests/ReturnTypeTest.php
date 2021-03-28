@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Tests;
 
 use const DIRECTORY_SEPARATOR;
@@ -909,6 +910,28 @@ class ReturnTypeTest extends TestCase
                 [],
                 '8.0'
             ],
+            'PureNonReturnExplicit' => [
+                '<?php
+
+                /**
+                 * @pure
+                 * 
+                 * @return no-return
+                 */
+                function bar(): void {
+                    exit(0);
+                }',
+            ],
+            'PureNonReturnImplicit' => [
+                '<?php
+
+                /**
+                 * @pure
+                 */
+                function bar(): void {
+                    exit(0);
+                }',
+            ],
         ];
     }
 
@@ -1329,6 +1352,17 @@ class ReturnTypeTest extends TestCase
                     }',
                 'error_message' => 'InvalidReturnType',
             ],
+            'VoidPureFunction' => [
+                '<?php
+
+                    /**
+                     * @pure
+                     */
+                    function bar(): void
+                    {
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ]
         ];
     }
 }
