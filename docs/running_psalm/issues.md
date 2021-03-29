@@ -5,6 +5,8 @@
  - [ArgumentTypeCoercion](issues/ArgumentTypeCoercion.md)
  - [AssignmentToVoid](issues/AssignmentToVoid.md)
  - [CircularReference](issues/CircularReference.md)
+ - [ComplexFunction](issues/ComplexFunction.md)
+ - [ComplexMethod](issues/ComplexMethod.md)
  - [ConflictingReferenceConstraint](issues/ConflictingReferenceConstraint.md)
  - [ConstructorSignatureMismatch](issues/ConstructorSignatureMismatch.md)
  - [ContinueOutsideLoop](issues/ContinueOutsideLoop.md)
