@@ -7,6 +7,7 @@ use Psalm\Aliases;
 use Psalm\DocComment;
 use Psalm\Exception\DocblockParseException;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnalyzer;
 use Psalm\Internal\FileManipulation\PropertyDocblockManipulator;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -837,20 +838,28 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 true
             );
 
-            $template_result = new \Psalm\Internal\Type\TemplateResult(
-                $class_template_params ?: [],
-                []
-            );
-
             if ($class_template_params) {
-                $fleshed_out_type = TemplateStandinTypeReplacer::replace(
-                    $fleshed_out_type,
-                    $template_result,
+                $this_object_type = self::getThisObjectType(
+                    $storage,
+                    $fq_class_name
+                );
+
+                if (!$this_object_type instanceof Type\Atomic\TGenericObject) {
+                    $type_params = [];
+
+                    foreach ($class_template_params as $type_map) {
+                        $type_params[] = clone \array_values($type_map)[0];
+                    }
+
+                    $this_object_type = new Type\Atomic\TGenericObject($this_object_type->value, $type_params);
+                }
+
+                $fleshed_out_type = AtomicPropertyFetchAnalyzer::localizePropertyType(
                     $codebase,
-                    null,
-                    null,
-                    null,
-                    $class_context->self
+                    $fleshed_out_type,
+                    $this_object_type,
+                    $storage,
+                    $property_class_storage
                 );
             }
 
@@ -1796,6 +1805,34 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         return $method_analyzer;
     }
 
+    private static function getThisObjectType(
+        ClassLikeStorage $class_storage,
+        string $original_fq_classlike_name
+    ): Type\Atomic\TNamedObject {
+        if ($class_storage->template_types) {
+            $template_params = [];
+
+            foreach ($class_storage->template_types as $param_name => $template_map) {
+                $key = array_keys($template_map)[0];
+
+                $template_params[] = new Type\Union([
+                    new Type\Atomic\TTemplateParam(
+                        $param_name,
+                        \reset($template_map),
+                        $key
+                    )
+                ]);
+            }
+
+            return new Type\Atomic\TGenericObject(
+                $original_fq_classlike_name,
+                $template_params
+            );
+        }
+
+        return new Type\Atomic\TNamedObject($original_fq_classlike_name);
+    }
+
     public static function analyzeClassMethodReturnType(
         PhpParser\Node\Stmt\ClassMethod $stmt,
         MethodAnalyzer $method_analyzer,
@@ -1834,28 +1871,10 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 $class_storage = $codebase->classlike_storage_provider->get($declaring_class_name);
             }
 
-            if ($class_storage->template_types) {
-                $template_params = [];
-
-                foreach ($class_storage->template_types as $param_name => $template_map) {
-                    $key = array_keys($template_map)[0];
-
-                    $template_params[] = new Type\Union([
-                        new Type\Atomic\TTemplateParam(
-                            $param_name,
-                            \reset($template_map),
-                            $key
-                        )
-                    ]);
-                }
-
-                $this_object_type = new Type\Atomic\TGenericObject(
-                    $original_fq_classlike_name,
-                    $template_params
-                );
-            } else {
-                $this_object_type = new Type\Atomic\TNamedObject($original_fq_classlike_name);
-            }
+            $this_object_type = self::getThisObjectType(
+                $class_storage,
+                $original_fq_classlike_name
+            );
 
             $class_template_params = ClassTemplateParamCollector::collect(
                 $codebase,

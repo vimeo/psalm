@@ -277,6 +277,7 @@ class MixinAnnotationTest extends TestCase
 
                     /**
                      * @psalm-suppress MissingConstructor
+                     * @psalm-suppress PropertyNotSetInConstructor
                      */
                     final class FooGrandChild extends FooChild {}
 
@@ -510,6 +511,7 @@ class MixinAnnotationTest extends TestCase
 
                     /**
                      * @psalm-suppress MissingConstructor
+                     * @psalm-suppress PropertyNotSetInConstructor
                      */
                     final class FooGrandChild extends FooChild {}
 

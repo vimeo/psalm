@@ -824,6 +824,10 @@ class TemplateStandinTypeReplacer
         bool $was_single,
         bool &$had_template
     ) : array {
+        if ($atomic_type->defining_class === $calling_class) {
+            return [$atomic_type];
+        }
+
         $atomic_types = [];
 
         if ($input_type && !$template_result->readonly) {
