@@ -389,13 +389,20 @@ class BinaryOperationTest extends TestCase
                         }
                     }'
             ],
-            'IntOverflow' => [
+            'IntOverflowMul' => [
                 '<?php
                     $a = (1024 * 1024 * 1024 * 1024 * 1024 * 1024 * 1024);',
                 'assertions' => [
                     '$a' => 'float'
                 ],
-            ]
+            ],
+            'IntOverflowPow' => [
+                '<?php
+                    $a = 2 ** 80;',
+                'assertions' => [
+                    '$a' => 'float'
+                ],
+            ],
         ];
     }
 
