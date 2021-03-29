@@ -13,6 +13,16 @@ $arr = [
 ];
 ```
 
+This can be caused by variadic arguments if `@no-named-arguments` is not specified:
+
+```php
+<?php
+function foo($bar, ...$baz): array
+{
+    return [$bar, ...$baz]; // $baz is array<array-key, mixed> since it can have named arguments
+}
+```
+
 ## How to fix
 
 Remove the offending duplicates:
