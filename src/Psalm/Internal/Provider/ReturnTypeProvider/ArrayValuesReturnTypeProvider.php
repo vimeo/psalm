@@ -23,42 +23,53 @@ class ArrayValuesReturnTypeProvider implements \Psalm\Plugin\EventHandler\Functi
             return Type::getMixed();
         }
 
-        $first_arg = $call_args[0]->value ?? null;
+        $first_arg = isset($call_args[0]->value) ? $call_args[0]->value : null;
 
-        $first_arg_array = $first_arg
-            && ($first_arg_type = $statements_source->node_data->getType($first_arg))
-            && $first_arg_type->hasType('array')
-            && ($array_atomic_type = $first_arg_type->getAtomicTypes()['array'])
-            && ($array_atomic_type instanceof Type\Atomic\TArray
-                || $array_atomic_type instanceof Type\Atomic\TKeyedArray
-                || $array_atomic_type instanceof Type\Atomic\TList)
-        ? $array_atomic_type
-        : null;
-
-        if (!$first_arg_array) {
+        if (!$first_arg) {
             return Type::getArray();
         }
 
-        if ($first_arg_array instanceof Type\Atomic\TKeyedArray) {
-            $first_arg_array = $first_arg_array->getGenericArrayType();
+        $first_arg_type = $statements_source->node_data->getType($first_arg);
+
+        if (!$first_arg_type) {
+            return Type::getArray();
         }
 
-        if ($first_arg_array instanceof Type\Atomic\TArray) {
-            if ($first_arg_array instanceof Type\Atomic\TNonEmptyArray) {
-                return new Type\Union([
-                    new Type\Atomic\TNonEmptyList(
-                        clone $first_arg_array->type_params[1]
-                    )
-                ]);
+        $atomic_types = $first_arg_type->getAtomicTypes();
+
+        $return_atomic_type = null;
+
+        while ($atomic_type = \array_shift($atomic_types)) {
+            if ($atomic_type instanceof Type\Atomic\TTemplateParam) {
+                $atomic_types = \array_merge($atomic_types, $atomic_type->as->getAtomicTypes());
+                continue;
             }
 
-            return new Type\Union([
-                new Type\Atomic\TList(
-                    clone $first_arg_array->type_params[1]
-                )
-            ]);
+            if ($atomic_type instanceof Type\Atomic\TKeyedArray) {
+                $atomic_type = $atomic_type->getGenericArrayType();
+            }
+
+            if ($atomic_type instanceof Type\Atomic\TArray) {
+                if ($atomic_type instanceof Type\Atomic\TNonEmptyArray) {
+                    $return_atomic_type = new Type\Atomic\TNonEmptyList(
+                        clone $atomic_type->type_params[1]
+                    );
+                } else {
+                    $return_atomic_type = new Type\Atomic\TList(
+                        clone $atomic_type->type_params[1]
+                    );
+                }
+            } elseif ($atomic_type instanceof Type\Atomic\TList) {
+                $return_atomic_type = $atomic_type;
+            } else {
+                return Type::getArray();
+            }
         }
 
-        return new Type\Union([clone $first_arg_array]);
+        if (!$return_atomic_type) {
+            throw new \UnexpectedValueException('This should never happen');
+        }
+
+        return new Type\Union([$return_atomic_type]);
     }
 }
