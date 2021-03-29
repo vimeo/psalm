@@ -479,6 +479,34 @@ class TypeCombinationTest extends TestCase
                     'Exception::class',
                 ],
             ],
+            'combineClassStringWithNumericString' => [
+                'class-string|numeric-string',
+                [
+                    'class-string',
+                    'numeric-string',
+                ],
+            ],
+            'combineRefinedClassStringWithNumericString' => [
+                'class-string<Exception>|numeric-string',
+                [
+                    'class-string<Exception>',
+                    'numeric-string',
+                ],
+            ],
+            'combineClassStringWithTraitString' => [
+                'class-string|trait-string',
+                [
+                    'class-string',
+                    'trait-string',
+                ],
+            ],
+            'combineRefinedClassStringWithTraitString' => [
+                'class-string<Exception>|trait-string',
+                [
+                    'class-string<Exception>',
+                    'trait-string',
+                ],
+            ],
             'combineCallableAndCallableString' => [
                 'callable',
                 [

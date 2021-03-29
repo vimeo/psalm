@@ -47,6 +47,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTraitString;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Union;
+
 use function array_filter;
 use function array_intersect_key;
 use function array_keys;
@@ -280,7 +281,10 @@ class TypeCombiner
                 }
             }
 
-            if (!isset($combination->value_types['string'])) {
+            $has_non_specific_string = isset($combination->value_types['string'])
+                && get_class($combination->value_types['string']) === Type\Atomic\TString::class;
+
+            if (!$has_non_specific_string) {
                 $object_type = self::combine(
                     array_values($combination->class_string_types),
                     $codebase
