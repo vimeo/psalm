@@ -59,16 +59,18 @@ class InstanceofAnalyzer
                     );
                 }
 
-                if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
-                    $statements_analyzer,
-                    $fq_class_name,
-                    new CodeLocation($statements_analyzer->getSource(), $stmt->class),
-                    $context->self,
-                    $context->calling_method_id,
-                    $statements_analyzer->getSuppressedIssues(),
-                    false
-                ) === false) {
-                    return false;
+                if (!isset($context->phantom_classes[strtolower($fq_class_name)])) {
+                    if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
+                        $statements_analyzer,
+                        $fq_class_name,
+                        new CodeLocation($statements_analyzer->getSource(), $stmt->class),
+                        $context->self,
+                        $context->calling_method_id,
+                        $statements_analyzer->getSuppressedIssues(),
+                        false
+                    ) === false) {
+                        return false;
+                    }
                 }
 
                 if ($codebase->alter_code) {

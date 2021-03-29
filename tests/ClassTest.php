@@ -567,6 +567,13 @@ class ClassTest extends TestCase
                         }
                     }',
             ],
+            'instanceofWithPhantomClass' => [
+                '<?php
+                    if (class_exists(NS\UnknonwClass::class)) {
+                        null instanceof NS\UnknonwClass;
+                    }
+                ',
+            ],
             'extendException' => [
                 '<?php
                     class ME extends Exception {
