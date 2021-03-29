@@ -37,6 +37,7 @@ use function fwrite;
 use function gc_collect_cycles;
 use function gc_disable;
 use function getcwd;
+use function getenv;
 use function getopt;
 use function implode;
 use function in_array;
@@ -209,9 +210,7 @@ final class Psalm
             exit;
         }
 
-        $output_format = isset($options['output-format']) && is_string($options['output-format'])
-            ? $options['output-format']
-            : \Psalm\Report::TYPE_CONSOLE;
+        $output_format = self::initOutputFormat($options);
 
         [$config, $init_source_dir] = self::initConfig(
             $current_dir,
@@ -268,15 +267,9 @@ final class Psalm
             }
         }
 
+        $show_info = self::initShowInfo($options);
 
-
-        $show_info = isset($options['show-info'])
-            ? $options['show-info'] === 'true' || $options['show-info'] === '1'
-            : false;
-
-        $is_diff = !isset($options['no-diff'])
-            && !isset($options['set-baseline'])
-            && !isset($options['update-baseline']);
+        $is_diff = self::initIsDiff($options);
 
         $find_unused_code = self::shouldFindUnusedCode($options, $config);
 
@@ -286,11 +279,16 @@ final class Psalm
             ? $options['find-references-to']
             : null;
 
-        if (isset($options['shepherd'])) {
-            if (is_string($options['shepherd'])) {
-                $config->shepherd_host = $options['shepherd'];
+        if (isset($options['shepherd']) || getenv('PSALM_SHEPHERD')) {
+            if (isset($options['shepherd'])) {
+                if (is_string($options['shepherd'])) {
+                    $config->shepherd_host = $options['shepherd'];
+                }
+            } elseif (getenv('PSALM_SHEPHERD')) {
+                if (false !== ($shepherd_host = getenv('PSALM_SHEPHERD_HOST'))) {
+                    $config->shepherd_host = $shepherd_host;
+                }
             }
-
             $shepherd_plugin = Path::canonicalize(__DIR__ . '/../../Plugin/Shepherd.php');
 
             if (!file_exists($shepherd_plugin)) {
@@ -388,6 +386,27 @@ final class Psalm
         } else {
             self::autoGenerateConfig($project_analyzer, $current_dir, $init_source_dir, $vendor_dir);
         }
+    }
+
+    private static function initOutputFormat(array $options): string
+    {
+        return isset($options['output-format']) && is_string($options['output-format'])
+            ? $options['output-format']
+            : \Psalm\Report::TYPE_CONSOLE;
+    }
+
+    private static function initShowInfo(array $options): bool
+    {
+        return isset($options['show-info'])
+            ? $options['show-info'] === 'true' || $options['show-info'] === '1'
+            : false;
+    }
+
+    private static function initIsDiff(array $options): bool
+    {
+        return !isset($options['no-diff'])
+            && !isset($options['set-baseline'])
+            && !isset($options['update-baseline']);
     }
 
     /**
