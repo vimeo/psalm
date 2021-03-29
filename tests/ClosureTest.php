@@ -926,6 +926,23 @@ class ClosureTest extends TestCase
                 false,
                 '7.4'
             ],
+            'forbidTemplateAnnotationOnClosure' => [
+                '<?php
+                    /** @template T */
+                    function (): void {};
+                ',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'forbidTemplateAnnotationOnShortClosure' => [
+                '<?php
+                    /** @template T */
+                    fn(): bool => false;
+                ',
+                'error_message' => 'InvalidDocblock',
+                [],
+                false,
+                '7.4'
+            ],
         ];
     }
 }
