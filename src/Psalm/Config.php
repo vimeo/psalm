@@ -2064,14 +2064,17 @@ class Config
 
             if (\is_string($php_version)) {
                 $version_parser = new VersionParser();
-                $min_php_version = $version_parser->parseConstraints($php_version)->getLowerBound()->getVersion();
+
+                $constraint = $version_parser->parseConstraints($php_version);
+
                 foreach (['5.4', '5.5', '5.6', '7.0', '7.1', '7.2', '7.3', '7.4', '8.0'] as $candidate) {
-                    if (Semver::satisfies($min_php_version, "~$candidate.0")) {
+                    if ($constraint->matches(new \Composer\Semver\Constraint\Constraint('<=', "$candidate.0.0-dev"))) {
                         return $candidate;
                     }
                 }
             }
         }
+
         return null;
     }
 
