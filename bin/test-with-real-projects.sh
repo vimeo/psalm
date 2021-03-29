@@ -28,7 +28,7 @@ psl)
 	cd psl
 	git checkout 1.6.x
 	composer install --ignore-platform-reqs
-	~/project/psalm --monochrome
+	~/project/psalm --monochrome --config=tools/psalm/psalm.xmls
 	;;
 
 laravel)
