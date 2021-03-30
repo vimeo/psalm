@@ -57,6 +57,16 @@ class Union implements TypeNode
     public $from_property = false;
 
     /**
+     * Whether the type originated from *static* property
+     *
+     * Unlike non-static properties, static properties have no prescribed place
+     * like __construct() to be initialized in
+     *
+     * @var bool
+     */
+    public $from_static_property = false;
+
+    /**
      * Whether the property that this type has been derived from has been initialized in a constructor
      *
      * @var bool

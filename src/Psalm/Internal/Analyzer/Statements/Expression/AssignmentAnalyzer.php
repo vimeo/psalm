@@ -251,6 +251,7 @@ class AssignmentAnalyzer
             if ($assign_value_type) {
                 $assign_value_type = clone $assign_value_type;
                 $assign_value_type->from_property = false;
+                $assign_value_type->from_static_property = false;
                 $assign_value_type->ignore_isset = false;
             } else {
                 $assign_value_type = Type::getMixed();
