@@ -804,6 +804,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 ) {
                     $property_type->initialized = false;
                     $property_type->from_property = true;
+                    $property_type->from_static_property = $property_storage->is_static;
                 }
             } else {
                 $property_type = Type::getMixed();
@@ -811,6 +812,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 if (!$property_storage->has_default && !$property_storage->is_promoted) {
                     $property_type->initialized = false;
                     $property_type->from_property = true;
+                    $property_type->from_static_property = $property_storage->is_static;
                 }
             }
 
