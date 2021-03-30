@@ -2082,7 +2082,7 @@ class Config
 
     public function addUniversalObjectCrate(string $class): void
     {
-        if (!class_exists($class, true)) {
+        if (!class_exists($class)) {
             throw new \UnexpectedValueException($class . ' is not a known class');
         }
         $this->universal_object_crates[] = $class;
