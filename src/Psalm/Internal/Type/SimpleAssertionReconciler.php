@@ -434,6 +434,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
             && (!$did_remove_type || empty($existing_var_type->getAtomicTypes()))
             && $key
             && $code_location
+            && !$existing_var_type->from_static_property
         ) {
             self::triggerIssueForImpossible(
                 $existing_var_type,
@@ -458,6 +459,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
         }
 
         $existing_var_type->from_property = false;
+        $existing_var_type->from_static_property = false;
         $existing_var_type->possibly_undefined = false;
         $existing_var_type->possibly_undefined_from_try = false;
         $existing_var_type->ignore_isset = false;
