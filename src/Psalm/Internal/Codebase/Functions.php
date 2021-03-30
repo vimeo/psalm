@@ -402,7 +402,8 @@ class Functions
 
             // stream/socket io
             'stream_context_set_option', 'socket_write', 'stream_set_blocking', 'socket_close',
-            'socket_set_option', 'stream_set_write_buffer',
+            'socket_set_option', 'stream_set_write_buffer', 'stream_socket_enable_crypto', 'stream_copy_to_stream',
+            'stream_wrapper_register',
 
             // meta calls
             'call_user_func', 'call_user_func_array', 'define', 'create_function',
@@ -457,7 +458,7 @@ class Functions
             'set_error_handler', 'user_error', 'trigger_error', 'restore_error_handler',
             'date_default_timezone_set', 'assert_options', 'setlocale',
             'set_exception_handler', 'set_time_limit', 'putenv', 'spl_autoload_register',
-            'microtime', 'array_rand',
+            'spl_autoload_unregister', 'microtime', 'array_rand',
 
             // logging
             'openlog', 'syslog', 'error_log', 'define_syslog_variables',
@@ -465,7 +466,7 @@ class Functions
             // session
             'session_id', 'session_decode', 'session_name', 'session_set_cookie_params',
             'session_set_save_handler', 'session_regenerate_id', 'mb_internal_encoding',
-            'session_start',
+            'session_start', 'session_cache_limiter',
 
             // ldap
             'ldap_set_option',
@@ -476,7 +477,7 @@ class Functions
             // mysqli
             'mysqli_select_db', 'mysqli_dump_debug_info', 'mysqli_kill', 'mysqli_multi_query',
             'mysqli_next_result', 'mysqli_options', 'mysqli_ping', 'mysqli_query', 'mysqli_report',
-            'mysqli_rollback', 'mysqli_savepoint', 'mysqli_set_charset', 'mysqli_ssl_set',
+            'mysqli_rollback', 'mysqli_savepoint', 'mysqli_set_charset', 'mysqli_ssl_set', 'mysqli_close',
 
             // script execution
             'ignore_user_abort',
