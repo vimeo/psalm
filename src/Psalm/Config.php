@@ -961,7 +961,10 @@ class Config
 
                 if (!$file_path) {
                     throw new Exception\ConfigException(
-                        'Cannot resolve stubfile path ' . rtrim($config->base_dir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $stub_file['name']
+                        'Cannot resolve stubfile path '
+                            . rtrim($config->base_dir, DIRECTORY_SEPARATOR)
+                            . DIRECTORY_SEPARATOR
+                            . $stub_file['name']
                     );
                 }
 
