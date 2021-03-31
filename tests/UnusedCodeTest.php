@@ -50,6 +50,8 @@ class UnusedCodeTest extends TestCase
             $code
         );
 
+        $this->project_analyzer->setPhpVersion('8.0');
+
         foreach ($error_levels as $error_level) {
             $this->project_analyzer->getCodebase()->config->setCustomErrorLevel($error_level, Config::REPORT_SUPPRESS);
         }
@@ -904,6 +906,29 @@ class UnusedCodeTest extends TestCase
                     }
 
                     throw getException();'
+            ],
+            'nullableMethodCallIsUsed' => [
+                '<?php
+                    final class Test {
+                        public function test(): void {
+                        }
+                    }
+
+                    final class TestFactory {
+                        /**
+                         * @psalm-pure
+                         */
+                        public function create(bool $returnNull): ?Test {
+                            if ($returnNull) {
+                                return null;
+                            }
+
+                            return new Test();
+                        }
+                    }
+
+                    $factory = new TestFactory();
+                    $factory->create(false)?->test();'
             ],
         ];
     }
