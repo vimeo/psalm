@@ -892,7 +892,19 @@ class UnusedCodeTest extends TestCase
 
                         return $f;
                     }',
-            ]
+            ],
+            'functionCallUsedInThrow' => [
+                '<?php
+                    /**
+                     * @psalm-pure
+                     */
+                    function getException(): \Exception
+                    {
+                        return new \Exception();
+                    }
+
+                    throw getException();'
+            ],
         ];
     }
 
