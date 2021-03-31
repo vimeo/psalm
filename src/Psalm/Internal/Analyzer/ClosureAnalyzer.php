@@ -51,10 +51,12 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
      */
     public function getClosureId(): string
     {
-        return strtolower($this->getFilePath())
-            . ':' . $this->function->getLine()
-            . ':' . (int)$this->function->getAttribute('startFilePos')
-            . ':-:closure';
+        return strtolower(
+            $this->getFilePath()
+                . ':' . $this->function->getLine()
+                . ':' . (int)$this->function->getAttribute('startFilePos')
+                . ':-:closure'
+        );
     }
 
     /**

@@ -166,10 +166,96 @@ class BinaryOperationTest extends TestCase
             ],
             'concatenationWithTwoInt' => [
                 '<?php
-                    /** @return numeric-string */
+                    /**
+                     * @param positive-int|0 $b
+                     * @return numeric-string
+                     */
                     function scope(int $a, int $b): string{
                         return $a . $b;
                     }',
+            ],
+            'concatenateUnion' => [
+                '<?php
+                    $arr = ["foobar" => false, "foobaz" => true, "barbaz" => true];
+                    $foo = random_int(0, 1) ? "foo" : "bar";
+                    $foo .= "baz";
+                    $val = $arr[$foo];
+                ',
+                'assertions' => ['$val' => 'true'],
+            ],
+            'concatenateLiteralIntAndString' => [
+                '<?php
+                    $arr = ["foobar" => false, "foo123" => true];
+                    $foo = "foo";
+                    $foo .= 123;
+                    $val = $arr[$foo];
+                ',
+                'assertions' => ['$val' => 'true'],
+            ],
+            'concatenateNonEmptyResultsInNonEmpty' => [
+                '<?php
+                    /** @param non-empty-lowercase-string $arg */
+                    function foobar($arg): string
+                    {
+                        return $arg;
+                    }
+
+                    /** @var "a"|"b" */
+                    $foo = "a";
+                    /** @var "c"|"d" */
+                    $bar = "c";
+                    $baz = $foo . $bar;
+                    foobar($baz);
+                ',
+            ],
+            'concatenateEmptyWithNonemptyCast' => [
+                '<?php
+                    class A
+                    {
+                        /** @psalm-return non-empty-lowercase-string */
+                        public function __toString(): string
+                        {
+                            return "foo";
+                        }
+                    }
+
+                    /** @param non-empty-lowercase-string $arg */
+                    function foo($arg): string
+                    {
+                        return $arg;
+                    }
+
+                    $bar = new A();
+                    foo("" . $bar);
+                ',
+            ],
+            'concatenateNegativeIntLeftSideIsNumeric' => [
+                '<?php
+                    /**
+                     * @param numeric-string $bar
+                     * @return int
+                     */
+                    function foo(string $bar): int
+                    {
+                        return (int) $bar;
+                    }
+
+                    foo(foo("-123") . 456);
+                ',
+            ],
+            'concatenateFloatWithInt' => [
+                '<?php
+                    /**
+                     * @param numeric-string $bar
+                     * @return numeric-string
+                     */
+                    function foo(string $bar): string
+                    {
+                        return $bar;
+                    }
+
+                    foo(-123.456 . 789);
+                ',
             ],
             'possiblyInvalidAdditionOnBothSides' => [
                 '<?php
@@ -430,6 +516,21 @@ class BinaryOperationTest extends TestCase
                 'error_message' => 'InvalidOperand',
                 'error_levels' => [],
                 'strict_mode' => true,
+            ],
+            'concatenateNegativeIntRightSideIsNotNumeric' => [
+                '<?php
+                    /**
+                     * @param numeric-string $bar
+                     * @return int
+                     */
+                    function foo(string $bar): int
+                    {
+                        return (int) $bar;
+                    }
+
+                    foo(foo("123") . foo("-456"));
+                ',
+                'error_message' => 'ArgumentTypeCoercion',
             ],
             'addArrayToNumber' => [
                 '<?php

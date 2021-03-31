@@ -8,6 +8,7 @@ use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\FalseOperand;
 use Psalm\Issue\ImplicitToStringCast;
 use Psalm\Issue\ImpureMethodCall;
@@ -19,8 +20,10 @@ use Psalm\Issue\PossiblyInvalidOperand;
 use Psalm\Issue\PossiblyNullOperand;
 use Psalm\IssueBuffer;
 use Psalm\Type;
+use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
-use function strtolower;
+use function assert;
 use function strlen;
 use function array_merge;
 use function count;
@@ -135,419 +138,273 @@ class ConcatAnalyzer
                 $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
             }
 
-            if ($left_type->isNull()) {
-                if (IssueBuffer::accepts(
-                    new NullOperand(
-                        'Cannot concatenate with a ' . $left_type,
-                        new CodeLocation($statements_analyzer->getSource(), $left)
-                    ),
-                    $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+            self::analyzeOperand($statements_analyzer, $left, $left_type, 'Left', $context);
+            self::analyzeOperand($statements_analyzer, $right, $right_type, 'Right', $context);
 
-                return;
-            }
+            // If one of the types is a single int or string literal, and the other
+            // type is all string or int literals, combine them into new literal(s).
+            $literal_concat = false;
+            if (($left_type->isSingleStringLiteral() || $left_type->isSingleIntLiteral())
+                && ($right_type->allStringLiterals() || $right_type->allIntLiterals())
+                || ($right_type->isSingleStringLiteral() || $right_type->isSingleIntLiteral())
+                && ($left_type->allStringLiterals() || $left_type->allIntLiterals())
+            ) {
+                $literal_concat = true;
+                $result_type_parts = [];
+                foreach ($left_type->getAtomicTypes() as $left_type_part) {
+                    assert($left_type_part instanceof TLiteralString || $left_type_part instanceof TLiteralInt);
+                    foreach ($right_type->getAtomicTypes() as $right_type_part) {
+                        assert($right_type_part instanceof TLiteralString || $right_type_part instanceof TLiteralInt);
+                        $literal = $left_type_part->value . $right_type_part->value;
+                        if (strlen($literal) >= $config->max_string_length) {
+                            // Literal too long, use non-literal type instead
+                            $literal_concat = false;
+                            break 2;
+                        }
 
-            if ($right_type->isNull()) {
-                if (IssueBuffer::accepts(
-                    new NullOperand(
-                        'Cannot concatenate with a ' . $right_type,
-                        new CodeLocation($statements_analyzer->getSource(), $right)
-                    ),
-                    $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
-
-                return;
-            }
-
-            if ($left_type->isFalse()) {
-                if (IssueBuffer::accepts(
-                    new FalseOperand(
-                        'Cannot concatenate with a ' . $left_type,
-                        new CodeLocation($statements_analyzer->getSource(), $left)
-                    ),
-                    $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
-
-                return;
-            }
-
-            if ($right_type->isFalse()) {
-                if (IssueBuffer::accepts(
-                    new FalseOperand(
-                        'Cannot concatenate with a ' . $right_type,
-                        new CodeLocation($statements_analyzer->getSource(), $right)
-                    ),
-                    $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
-
-                return;
-            }
-
-            if ($left_type->isNullable() && !$left_type->ignore_nullable_issues) {
-                if (IssueBuffer::accepts(
-                    new PossiblyNullOperand(
-                        'Cannot concatenate with a possibly null ' . $left_type,
-                        new CodeLocation($statements_analyzer->getSource(), $left)
-                    ),
-                    $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
-            }
-
-            if ($right_type->isNullable() && !$right_type->ignore_nullable_issues) {
-                if (IssueBuffer::accepts(
-                    new PossiblyNullOperand(
-                        'Cannot concatenate with a possibly null ' . $right_type,
-                        new CodeLocation($statements_analyzer->getSource(), $right)
-                    ),
-                    $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
-            }
-
-            if ($left_type->isFalsable() && !$left_type->ignore_falsable_issues) {
-                if (IssueBuffer::accepts(
-                    new PossiblyFalseOperand(
-                        'Cannot concatenate with a possibly false ' . $left_type,
-                        new CodeLocation($statements_analyzer->getSource(), $left)
-                    ),
-                    $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
-            }
-
-            if ($right_type->isFalsable() && !$right_type->ignore_falsable_issues) {
-                if (IssueBuffer::accepts(
-                    new PossiblyFalseOperand(
-                        'Cannot concatenate with a possibly false ' . $right_type,
-                        new CodeLocation($statements_analyzer->getSource(), $right)
-                    ),
-                    $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
-            }
-
-            $left_type_match = true;
-            $right_type_match = true;
-
-            $has_valid_left_operand = false;
-            $has_valid_right_operand = false;
-
-            $left_comparison_result = new \Psalm\Internal\Type\Comparator\TypeComparisonResult();
-            $right_comparison_result = new \Psalm\Internal\Type\Comparator\TypeComparisonResult();
-
-            foreach ($left_type->getAtomicTypes() as $left_type_part) {
-                if ($left_type_part instanceof Type\Atomic\TTemplateParam && !$left_type_part->as->isString()) {
-                    if (IssueBuffer::accepts(
-                        new MixedOperand(
-                            'Left operand cannot be a non-string template param',
-                            new CodeLocation($statements_analyzer->getSource(), $left)
-                        ),
-                        $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
+                        $result_type_parts[] = new Type\Atomic\TLiteralString($literal);
                     }
-
-                    return;
                 }
-
-                if ($left_type_part instanceof Type\Atomic\TNull || $left_type_part instanceof Type\Atomic\TFalse) {
-                    continue;
+                if ($literal_concat && !empty($result_type_parts)) {
+                    $result_type = new Type\Union($result_type_parts);
                 }
+            }
 
-                $left_type_part_match = AtomicTypeComparator::isContainedBy(
+            if (!$literal_concat) {
+                $left_numeric_type = Type::getNumericString();
+                $left_numeric_type->addType(new Type\Atomic\TInt());
+                $left_numeric_type->addType(new Type\Atomic\TFloat());
+                $left_is_numeric = UnionTypeComparator::isContainedBy(
                     $codebase,
-                    $left_type_part,
-                    new Type\Atomic\TString,
-                    false,
-                    false,
-                    $left_comparison_result
+                    $left_type,
+                    $left_numeric_type
+                );
+                $right_numeric_type = Type::getPositiveInt();
+                $right_numeric_type->addType(new Type\Atomic\TLiteralInt(0));
+                $right_is_numeric = UnionTypeComparator::isContainedBy(
+                    $codebase,
+                    $right_type,
+                    $right_numeric_type
                 );
 
-                $left_type_match = $left_type_match && $left_type_part_match;
-
-                $has_valid_left_operand = $has_valid_left_operand || $left_type_part_match;
-
-                if ($left_comparison_result->to_string_cast && $config->strict_binary_operands) {
-                    if (IssueBuffer::accepts(
-                        new ImplicitToStringCast(
-                            'Left side of concat op expects string, '
-                                . '\'' . $left_type . '\' provided with a __toString method',
-                            new CodeLocation($statements_analyzer->getSource(), $left)
-                        ),
-                        $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
-                }
-
-                foreach ($left_type->getAtomicTypes() as $atomic_type) {
-                    if ($atomic_type instanceof TNamedObject) {
-                        $to_string_method_id = new \Psalm\Internal\MethodIdentifier(
-                            $atomic_type->value,
-                            '__tostring'
-                        );
-
-                        if ($codebase->methods->methodExists(
-                            $to_string_method_id,
-                            $context->calling_method_id,
-                            $codebase->collect_locations
-                                ? new CodeLocation($statements_analyzer->getSource(), $left)
-                                : null,
-                            !$context->collect_initializations
-                                && !$context->collect_mutations
-                                ? $statements_analyzer
-                                : null,
-                            $statements_analyzer->getFilePath()
-                        )) {
-                            try {
-                                $storage = $codebase->methods->getStorage($to_string_method_id);
-                            } catch (\UnexpectedValueException $e) {
-                                continue;
-                            }
-
-                            if ($context->mutation_free && !$storage->mutation_free) {
-                                if (IssueBuffer::accepts(
-                                    new ImpureMethodCall(
-                                        'Cannot call a possibly-mutating method '
-                                            . $atomic_type->value . '::__toString from a pure context',
-                                        new CodeLocation($statements_analyzer, $left)
-                                    ),
-                                    $statements_analyzer->getSuppressedIssues()
-                                )) {
-                                    // fall through
-                                }
-                            } elseif ($statements_analyzer->getSource()
-                                    instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
-                                && $statements_analyzer->getSource()->track_mutations
-                            ) {
-                                $statements_analyzer->getSource()->inferred_has_mutation = true;
-                                $statements_analyzer->getSource()->inferred_impure = true;
-                            }
-                        }
-                    }
-                }
-            }
-
-            foreach ($right_type->getAtomicTypes() as $right_type_part) {
-                if ($right_type_part instanceof Type\Atomic\TTemplateParam && !$right_type_part->as->isString()) {
-                    if (IssueBuffer::accepts(
-                        new MixedOperand(
-                            'Right operand cannot be a non-string template param',
-                            new CodeLocation($statements_analyzer->getSource(), $right)
-                        ),
-                        $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
-
-                    return;
-                }
-
-                if ($right_type_part instanceof Type\Atomic\TNull || $right_type_part instanceof Type\Atomic\TFalse) {
-                    continue;
-                }
-
-                $right_type_part_match = AtomicTypeComparator::isContainedBy(
+                $left_is_lowercase = UnionTypeComparator::isContainedBy(
                     $codebase,
-                    $right_type_part,
-                    new Type\Atomic\TString,
-                    false,
-                    false,
-                    $right_comparison_result
+                    $left_type,
+                    Type::getLowercaseString()
+                );
+                $right_is_lowercase = UnionTypeComparator::isContainedBy(
+                    $codebase,
+                    $right_type,
+                    Type::getLowercaseString()
                 );
 
-                $right_type_match = $right_type_match && $right_type_part_match;
-
-                $has_valid_right_operand = $has_valid_right_operand || $right_type_part_match;
-
-                if ($right_comparison_result->to_string_cast && $config->strict_binary_operands) {
-                    if (IssueBuffer::accepts(
-                        new ImplicitToStringCast(
-                            'Right side of concat op expects string, '
-                                . '\'' . $right_type . '\' provided with a __toString method',
-                            new CodeLocation($statements_analyzer->getSource(), $right)
-                        ),
-                        $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
+                $left_is_non_empty = UnionTypeComparator::isContainedBy(
+                    $codebase,
+                    $left_type,
+                    Type::getNonEmptyString()
+                );
+                $right_is_non_empty = UnionTypeComparator::isContainedBy(
+                    $codebase,
+                    $right_type,
+                    Type::getNonEmptyString()
+                );
+                if ($left_is_numeric && $right_is_numeric) {
+                    $result_type = Type::getNumericString();
+                } elseif ($left_is_lowercase && $right_is_lowercase) {
+                    if ($left_is_non_empty || $right_is_non_empty) {
+                        $result_type = Type::getNonEmptyLowercaseString();
+                    } else {
+                        $result_type = Type::getLowercaseString();
                     }
+                } elseif ($left_is_non_empty || $right_is_non_empty) {
+                    $result_type = Type::getNonEmptyString();
+                } else {
+                    $result_type = Type::getString();
+                }
+            }
+        }
+    }
+
+    private static function analyzeOperand(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $operand,
+        Type\Union $operand_type,
+        string $side,
+        Context $context
+    ): void {
+        $codebase = $statements_analyzer->getCodebase();
+        $config = Config::getInstance();
+
+        if ($operand_type->isNull()) {
+            if (IssueBuffer::accepts(
+                new NullOperand(
+                    'Cannot concatenate with a ' . $operand_type,
+                    new CodeLocation($statements_analyzer->getSource(), $operand)
+                ),
+                $statements_analyzer->getSuppressedIssues()
+            )) {
+                // fall through
+            }
+
+            return;
+        }
+
+        if ($operand_type->isFalse()) {
+            if (IssueBuffer::accepts(
+                new FalseOperand(
+                    'Cannot concatenate with a ' . $operand_type,
+                    new CodeLocation($statements_analyzer->getSource(), $operand)
+                ),
+                $statements_analyzer->getSuppressedIssues()
+            )) {
+                // fall through
+            }
+
+            return;
+        }
+
+        if ($operand_type->isNullable() && !$operand_type->ignore_nullable_issues) {
+            if (IssueBuffer::accepts(
+                new PossiblyNullOperand(
+                    'Cannot concatenate with a possibly null ' . $operand_type,
+                    new CodeLocation($statements_analyzer->getSource(), $operand)
+                ),
+                $statements_analyzer->getSuppressedIssues()
+            )) {
+                // fall through
+            }
+        }
+
+        if ($operand_type->isFalsable() && !$operand_type->ignore_falsable_issues) {
+            if (IssueBuffer::accepts(
+                new PossiblyFalseOperand(
+                    'Cannot concatenate with a possibly false ' . $operand_type,
+                    new CodeLocation($statements_analyzer->getSource(), $operand)
+                ),
+                $statements_analyzer->getSuppressedIssues()
+            )) {
+                // fall through
+            }
+        }
+
+        $operand_type_match = true;
+        $has_valid_operand = false;
+        $comparison_result = new \Psalm\Internal\Type\Comparator\TypeComparisonResult();
+
+        foreach ($operand_type->getAtomicTypes() as $operand_type_part) {
+            if ($operand_type_part instanceof Type\Atomic\TTemplateParam && !$operand_type_part->as->isString()) {
+                if (IssueBuffer::accepts(
+                    new MixedOperand(
+                        "$side operand cannot be a non-string template param",
+                        new CodeLocation($statements_analyzer->getSource(), $operand)
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
                 }
 
-                foreach ($right_type->getAtomicTypes() as $atomic_type) {
-                    if ($atomic_type instanceof TNamedObject) {
-                        $to_string_method_id = new \Psalm\Internal\MethodIdentifier(
-                            $atomic_type->value,
-                            '__tostring'
-                        );
+                return;
+            }
 
-                        if ($codebase->methods->methodExists(
-                            $to_string_method_id,
-                            $context->calling_method_id,
-                            $codebase->collect_locations
-                                ? new CodeLocation($statements_analyzer->getSource(), $right)
-                                : null,
-                            !$context->collect_initializations
-                                && !$context->collect_mutations
-                                ? $statements_analyzer
-                                : null,
-                            $statements_analyzer->getFilePath()
-                        )) {
-                            try {
-                                $storage = $codebase->methods->getStorage($to_string_method_id);
-                            } catch (\UnexpectedValueException $e) {
-                                continue;
-                            }
+            if ($operand_type_part instanceof Type\Atomic\TNull || $operand_type_part instanceof Type\Atomic\TFalse) {
+                continue;
+            }
 
-                            if ($context->mutation_free && !$storage->mutation_free) {
-                                if (IssueBuffer::accepts(
-                                    new ImpureMethodCall(
-                                        'Cannot call a possibly-mutating method '
-                                            . $atomic_type->value . '::__toString from a pure context',
-                                        new CodeLocation($statements_analyzer, $right)
-                                    ),
-                                    $statements_analyzer->getSuppressedIssues()
-                                )) {
-                                    // fall through
-                                }
-                            } elseif ($statements_analyzer->getSource()
-                                    instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
-                                && $statements_analyzer->getSource()->track_mutations
-                            ) {
-                                $statements_analyzer->getSource()->inferred_has_mutation = true;
-                                $statements_analyzer->getSource()->inferred_impure = true;
-                            }
+            $operand_type_part_match = AtomicTypeComparator::isContainedBy(
+                $codebase,
+                $operand_type_part,
+                new Type\Atomic\TString,
+                false,
+                false,
+                $comparison_result
+            );
+
+            $operand_type_match = $operand_type_match && $operand_type_part_match;
+
+            $has_valid_operand = $has_valid_operand || $operand_type_part_match;
+
+            if ($comparison_result->to_string_cast && $config->strict_binary_operands) {
+                if (IssueBuffer::accepts(
+                    new ImplicitToStringCast(
+                        "$side side of concat op expects string, '$operand_type' provided with a __toString method",
+                        new CodeLocation($statements_analyzer->getSource(), $operand)
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            }
+
+            foreach ($operand_type->getAtomicTypes() as $atomic_type) {
+                if ($atomic_type instanceof TNamedObject) {
+                    $to_string_method_id = new \Psalm\Internal\MethodIdentifier(
+                        $atomic_type->value,
+                        '__tostring'
+                    );
+
+                    if ($codebase->methods->methodExists(
+                        $to_string_method_id,
+                        $context->calling_method_id,
+                        $codebase->collect_locations
+                            ? new CodeLocation($statements_analyzer->getSource(), $operand)
+                            : null,
+                        !$context->collect_initializations
+                            && !$context->collect_mutations
+                            ? $statements_analyzer
+                            : null,
+                        $statements_analyzer->getFilePath()
+                    )) {
+                        try {
+                            $storage = $codebase->methods->getStorage($to_string_method_id);
+                        } catch (\UnexpectedValueException $e) {
+                            continue;
                         }
-                    }
-                }
-            }
 
-            if (!$left_type_match
-                && (!$left_comparison_result->scalar_type_match_found || $config->strict_binary_operands)
-            ) {
-                if ($has_valid_left_operand) {
-                    if (IssueBuffer::accepts(
-                        new PossiblyInvalidOperand(
-                            'Cannot concatenate with a ' . $left_type,
-                            new CodeLocation($statements_analyzer->getSource(), $left)
-                        ),
-                        $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
-                } else {
-                    if (IssueBuffer::accepts(
-                        new InvalidOperand(
-                            'Cannot concatenate with a ' . $left_type,
-                            new CodeLocation($statements_analyzer->getSource(), $left)
-                        ),
-                        $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
-                }
-            }
-
-            if (!$right_type_match
-                && (!$right_comparison_result->scalar_type_match_found || $config->strict_binary_operands)
-            ) {
-                if ($has_valid_right_operand) {
-                    if (IssueBuffer::accepts(
-                        new PossiblyInvalidOperand(
-                            'Cannot concatenate with a ' . $right_type,
-                            new CodeLocation($statements_analyzer->getSource(), $right)
-                        ),
-                        $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
-                } else {
-                    if (IssueBuffer::accepts(
-                        new InvalidOperand(
-                            'Cannot concatenate with a ' . $right_type,
-                            new CodeLocation($statements_analyzer->getSource(), $right)
-                        ),
-                        $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
+                        if ($context->mutation_free && !$storage->mutation_free) {
+                            if (IssueBuffer::accepts(
+                                new ImpureMethodCall(
+                                    'Cannot call a possibly-mutating method '
+                                        . $atomic_type->value . '::__toString from a pure context',
+                                    new CodeLocation($statements_analyzer, $operand)
+                                ),
+                                $statements_analyzer->getSuppressedIssues()
+                            )) {
+                                // fall through
+                            }
+                        } elseif ($statements_analyzer->getSource()
+                                instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                            && $statements_analyzer->getSource()->track_mutations
+                        ) {
+                            $statements_analyzer->getSource()->inferred_has_mutation = true;
+                            $statements_analyzer->getSource()->inferred_impure = true;
+                        }
                     }
                 }
             }
         }
 
-        // When concatenating two known string literals (with only one possibility),
-        // put the concatenated string into $result_type
-        if ($left_type && $right_type && $left_type->isSingleStringLiteral() && $right_type->isSingleStringLiteral()) {
-            $literal = $left_type->getSingleStringLiteral()->value . $right_type->getSingleStringLiteral()->value;
-            if (strlen($literal) <= 1000) {
-                // Limit these to 1000 bytes to avoid extremely large union types from repeated concatenations, etc
-                $result_type = Type::getString($literal);
-            }
-        } elseif ($left_type && $right_type && $left_type->isSingleIntLiteral() && $right_type->isSingleIntLiteral()) {
-            $literal = $left_type->getSingleIntLiteral()->value . $right_type->getSingleIntLiteral()->value;
-            if (strlen($literal) <= 1000) {
-                // Limit these to 1000 bytes to avoid extremely large union types from repeated concatenations, etc
-                $result_type = Type::getString($literal);
-            }
-        } elseif ($left_type && $right_type &&
-            $left_type->isSingle() && $right_type->isSingle() &&
-            $left_type->isInt() && $right_type->isInt()
+        if (!$operand_type_match
+            && (!$comparison_result->scalar_type_match_found || $config->strict_binary_operands)
         ) {
-            $result_type = Type::getNumericString();
-        } else {
-            if ($left_type
-                && $right_type
-            ) {
-                $left_type_literal_value = $left_type->isSingleStringLiteral()
-                    ? $left_type->getSingleStringLiteral()->value
-                    : null;
-
-                $right_type_literal_value = $right_type->isSingleStringLiteral()
-                    ? $right_type->getSingleStringLiteral()->value
-                    : null;
-
-                if (($left_type->getId() === 'lowercase-string'
-                        || $left_type->getId() === 'non-empty-lowercase-string'
-                        || $left_type->isInt()
-                        || ($left_type_literal_value !== null
-                            && strtolower($left_type_literal_value) === $left_type_literal_value))
-                    && ($right_type->getId() === 'lowercase-string'
-                        || $right_type->getId() === 'non-empty-lowercase-string'
-                        || $right_type->isInt()
-                        || ($right_type_literal_value !== null
-                            && strtolower($right_type_literal_value) === $right_type_literal_value))
-                ) {
-                    if ($left_type->getId() === 'non-empty-lowercase-string'
-                        || $left_type->isInt()
-                        || ($left_type_literal_value !== null
-                            && strtolower($left_type_literal_value) === $left_type_literal_value)
-                        || $right_type->getId() === 'non-empty-lowercase-string'
-                        || $right_type->isInt()
-                        || ($right_type_literal_value !== null
-                            && strtolower($right_type_literal_value) === $right_type_literal_value)
-                    ) {
-                        $result_type = new Type\Union([new Type\Atomic\TNonEmptyLowercaseString()]);
-                    } else {
-                        $result_type = new Type\Union([new Type\Atomic\TLowercaseString()]);
-                    }
-                } elseif ($left_type->getId() === 'non-empty-string'
-                    || $right_type->getId() === 'non-empty-string'
-                    || $left_type_literal_value
-                    || $right_type_literal_value
-                ) {
-                    $result_type = new Type\Union([new Type\Atomic\TNonEmptyString()]);
+            if ($has_valid_operand) {
+                if (IssueBuffer::accepts(
+                    new PossiblyInvalidOperand(
+                        'Cannot concatenate with a ' . $operand_type,
+                        new CodeLocation($statements_analyzer->getSource(), $operand)
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            } else {
+                if (IssueBuffer::accepts(
+                    new InvalidOperand(
+                        'Cannot concatenate with a ' . $operand_type,
+                        new CodeLocation($statements_analyzer->getSource(), $operand)
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
                 }
             }
         }
