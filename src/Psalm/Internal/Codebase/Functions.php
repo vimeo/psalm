@@ -394,7 +394,7 @@ class Functions
             // file io
             'chdir', 'chgrp', 'chmod', 'chown', 'chroot', 'copy', 'file_get_contents', 'file_put_contents',
             'opendir', 'readdir', 'closedir', 'rewinddir', 'scandir',
-            'fopen', 'fread', 'fwrite', 'fclose', 'touch', 'fpassthru', 'fputs', 'fscanf', 'fseek',
+            'fopen', 'fread', 'fwrite', 'fclose', 'touch', 'fpassthru', 'fputs', 'fscanf', 'fseek', 'flock',
             'ftruncate', 'fprintf', 'symlink', 'mkdir', 'unlink', 'rename', 'rmdir', 'popen', 'pclose',
             'fgetcsv', 'fputcsv', 'umask', 'finfo_open', 'finfo_close', 'finfo_file', 'readline_add_history',
             'stream_set_timeout', 'fgets', 'fflush', 'move_uploaded_file', 'file_exists', 'realpath', 'glob',
