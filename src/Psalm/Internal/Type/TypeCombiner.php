@@ -1068,12 +1068,12 @@ class TypeCombiner
                                 || get_class($type) === TNonFalsyString::class)
                             && get_class($combination->value_types['string']) === TNonEmptyLowercaseString::class
                         ) {
-                            $combination->value_types['string'] = $type;
+                            $combination->value_types['string'] = new TNonEmptyString();
                         } elseif ((get_class($combination->value_types['string']) === TNonEmptyString::class
                                 || get_class($combination->value_types['string']) === TNonFalsyString::class)
                             && get_class($type) === TNonEmptyLowercaseString::class
                         ) {
-                            //no-change
+                            $combination->value_types['string'] = new TNonEmptyString();
                         } elseif (get_class($type) === TLowercaseString::class
                             && get_class($combination->value_types['string']) === TNonEmptyLowercaseString::class
                         ) {
