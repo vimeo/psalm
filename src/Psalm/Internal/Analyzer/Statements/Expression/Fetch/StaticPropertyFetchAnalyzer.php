@@ -292,7 +292,7 @@ class StaticPropertyFetchAnalyzer
 
                         $file_manipulations = [];
 
-                        if (strtolower($new_fq_class_name) !== strtolower($old_declaring_fq_class_name)) {
+                        if (strtolower($new_fq_class_name) !== $old_declaring_fq_class_name) {
                             $file_manipulations[] = new \Psalm\FileManipulation(
                                 (int) $stmt->class->getAttribute('startFilePos'),
                                 (int) $stmt->class->getAttribute('endFilePos') + 1,
