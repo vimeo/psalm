@@ -171,13 +171,13 @@ class ConcatAnalyzer
             }
 
             if (!$literal_concat) {
-                $left_numeric_type = Type::getNumericString();
-                $left_numeric_type->addType(new Type\Atomic\TInt());
-                $left_numeric_type->addType(new Type\Atomic\TFloat());
+                $numeric_type = Type::getNumericString();
+                $numeric_type->addType(new Type\Atomic\TInt());
+                $numeric_type->addType(new Type\Atomic\TFloat());
                 $left_is_numeric = UnionTypeComparator::isContainedBy(
                     $codebase,
                     $left_type,
-                    $left_numeric_type
+                    $numeric_type
                 );
                 $right_numeric_type = Type::getPositiveInt();
                 $right_numeric_type->addType(new Type\Atomic\TLiteralInt(0));
@@ -187,15 +187,17 @@ class ConcatAnalyzer
                     $right_numeric_type
                 );
 
+                $lowercase_type = clone $numeric_type;
+                $lowercase_type->addType(new Type\Atomic\TLowercaseString());
                 $left_is_lowercase = UnionTypeComparator::isContainedBy(
                     $codebase,
                     $left_type,
-                    Type::getLowercaseString()
+                    $lowercase_type
                 );
                 $right_is_lowercase = UnionTypeComparator::isContainedBy(
                     $codebase,
                     $right_type,
-                    Type::getLowercaseString()
+                    $lowercase_type
                 );
 
                 $left_is_non_empty = UnionTypeComparator::isContainedBy(
