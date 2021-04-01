@@ -144,10 +144,10 @@ class ConcatAnalyzer
             // If one of the types is a single int or string literal, and the other
             // type is all string or int literals, combine them into new literal(s).
             $literal_concat = false;
-            if (($left_type->isSingleStringLiteral() || $left_type->isSingleIntLiteral())
-                && ($right_type->allStringLiterals() || $right_type->allIntLiterals())
-                || ($right_type->isSingleStringLiteral() || $right_type->isSingleIntLiteral())
-                && ($left_type->allStringLiterals() || $left_type->allIntLiterals())
+            if ((($left_type->isSingleStringLiteral() || $left_type->isSingleIntLiteral())
+                    && ($right_type->allStringLiterals() || $right_type->allIntLiterals()))
+                || (($right_type->isSingleStringLiteral() || $right_type->isSingleIntLiteral())
+                    && ($left_type->allStringLiterals() || $left_type->allIntLiterals()))
             ) {
                 $literal_concat = true;
                 $result_type_parts = [];
