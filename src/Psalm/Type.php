@@ -28,8 +28,11 @@ use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TLowercaseString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNonEmptyLowercaseString;
+use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TNumericString;
@@ -174,12 +177,33 @@ abstract class Type
         return $union;
     }
 
+    public static function getLowercaseString(): Union
+    {
+        $type = new TLowercaseString();
+
+        return new Union([$type]);
+    }
+
     public static function getPositiveInt(bool $from_calculation = false): Union
     {
         $union = new Union([new Type\Atomic\TPositiveInt()]);
         $union->from_calculation = $from_calculation;
 
         return $union;
+    }
+
+    public static function getNonEmptyLowercaseString(): Union
+    {
+        $type = new TNonEmptyLowercaseString();
+
+        return new Union([$type]);
+    }
+
+    public static function getNonEmptyString(): Union
+    {
+        $type = new TNonEmptyString();
+
+        return new Union([$type]);
     }
 
     public static function getNumeric(): Union

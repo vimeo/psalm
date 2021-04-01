@@ -650,6 +650,24 @@ class ArgTest extends TestCase
                 ',
                 'error_message' => 'InvalidArgument',
             ],
+            'numericStringIsNotNonFalsy' => [
+                '<?php
+                    /** @param non-falsy-string $arg */
+                    function foo(string $arg): string
+                    {
+                        return $arg;
+                    }
+
+                    /** @return numeric-string */
+                    function bar(): string
+                    {
+                        return "0";
+                    }
+
+                    foo(bar());
+                ',
+                'error_message' => 'ArgumentTypeCoercion',
+            ],
         ];
     }
 }

@@ -1553,6 +1553,15 @@ class FunctionCallTest extends TestCase
                     '$a' => 'DateTimeImmutable|float',
                 ],
             ],
+            'strtolowerEmptiness' => [
+                '<?php
+                    /** @param non-empty-string $s */
+                    function foo(string $s) : void {
+                        $s = strtolower($s);
+
+                        foo($s);
+                    }',
+            ],
         ];
     }
 
@@ -2036,16 +2045,6 @@ class FunctionCallTest extends TestCase
                         return "";
                     }',
                 'error_message' => 'PossiblyUndefinedArrayOffset',
-            ],
-            'strtolowerEmptiness' => [
-                '<?php
-                    /** @param non-empty-string $s */
-                    function foo(string $s) : void {
-                        $s = strtolower($s);
-
-                        if ($s) {}
-                    }',
-                'error_message' => 'RedundantConditionGivenDocblockType',
             ],
             'strposNoSetFirstParam' => [
                 '<?php

@@ -259,14 +259,14 @@ class ScalarTypeComparator
             return true;
         }
 
-        if ($container_type_part instanceof TNonEmptyString
+        if (get_class($container_type_part) === TNonEmptyString::class
             && $input_type_part instanceof TNonFalsyString
         ) {
             return true;
         }
 
         if ($container_type_part instanceof TNonFalsyString
-            && get_class($input_type_part) === TNonEmptyString::class
+            && $input_type_part instanceof TNonEmptyString
         ) {
             if ($atomic_comparison_result) {
                 $atomic_comparison_result->type_coerced = true;
