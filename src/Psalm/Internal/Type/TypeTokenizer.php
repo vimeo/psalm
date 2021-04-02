@@ -48,8 +48,6 @@ class TypeTokenizer
         'pure-callable' => true,
         'pure-Closure' => true,
         'trait-string' => true,
-        'mysql-escaped-string' => true,
-        'html-escaped-string' => true,
         'lowercase-string' => true,
         'non-empty-lowercase-string' => true,
         'positive-int' => true,

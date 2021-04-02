@@ -245,9 +245,6 @@ abstract class Atomic implements TypeNode
             case 'numeric-string':
                 return new TNumericString();
 
-            case 'html-escaped-string':
-                return new THtmlEscapedString();
-
             case 'false-y':
                 return new TAssertionFalsy();
 
