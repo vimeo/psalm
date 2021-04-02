@@ -10,6 +10,7 @@ use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TEmptyMixed;
 use Psalm\Type\Atomic\TGenericObject;
@@ -231,6 +232,17 @@ class AtomicTypeComparator
                 $allow_interface_equality,
                 $atomic_comparison_result
             );
+        }
+
+        if ($container_type_part instanceof TObjectWithProperties
+            && $input_type_part instanceof TObject
+            && !$input_type_part instanceof TObjectWithProperties
+            && !$input_type_part instanceof TCallableObject
+        ) {
+            if ($atomic_comparison_result) {
+                $atomic_comparison_result->type_coerced = true;
+            }
+            return false;
         }
 
         if (($input_type_part instanceof TArray

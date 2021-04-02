@@ -668,6 +668,20 @@ class ArgTest extends TestCase
                 ',
                 'error_message' => 'ArgumentTypeCoercion',
             ],
+            'objectIsNotObjectWithProperties' => [
+                '<?php
+
+                    function makeObj(): object {
+                        return (object)["a" => 42];
+                    }
+
+                    /** @param object{hmm:float} $_o */
+                    function takesObject($_o): void {}
+
+                    takesObject(makeObj()); // expected: ArgumentTypeCoercion
+                ',
+                'error_message' => 'ArgumentTypeCoercion',
+            ],
         ];
     }
 }
