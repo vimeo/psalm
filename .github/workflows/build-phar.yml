@@ -9,7 +9,22 @@ on:
       - published
 
 jobs:
+  pre_job:
+    runs-on: ubuntu-latest
+    outputs:
+      should_skip: ${{ steps.skip_check.outputs.should_skip }}
+    steps:
+      - id: skip_check
+        uses: fkirc/skip-duplicate-actions@v3.4.0
+        with:
+          concurrent_skipping: always
+          cancel_others: true
+          # list files that may affect or are included into the built phar
+          paths: '["bin/**", "assets/**", "build/**", "dictionaries/**", "src/**", "stubs/**", "psalm", "psalm-language-server", "psalm-plugin", "psalm-refactor", "psalter", "box.json.dist", "composer.json", "config.xsd", "keys.asc.gpg", "scoper.inc.php"]'
+
   build-phar:
+    needs: pre_job
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Set up PHP
