@@ -309,7 +309,8 @@ class ParseTreeCreator
             $this->current_leaf = $this->current_leaf->parent;
         } while (!$this->current_leaf instanceof ParseTree\EncapsulationTree
             && !$this->current_leaf instanceof ParseTree\CallableTree
-            && !$this->current_leaf instanceof ParseTree\MethodTree);
+            && !$this->current_leaf instanceof ParseTree\MethodTree
+            && !$this->current_leaf instanceof ParseTree\ConstrainedTypeTree);
 
         if ($this->current_leaf instanceof ParseTree\EncapsulationTree
             || $this->current_leaf instanceof ParseTree\CallableTree
@@ -334,6 +335,7 @@ class ParseTreeCreator
             || $context_node instanceof ParseTree\KeyedArrayTree
             || $context_node instanceof ParseTree\CallableTree
             || $context_node instanceof ParseTree\MethodTree
+            || $context_node instanceof ParseTree\ConstrainedTypeTree
         ) {
             $context_node = $context_node->parent;
         }
@@ -343,6 +345,7 @@ class ParseTreeCreator
             && !$context_node instanceof ParseTree\KeyedArrayTree
             && !$context_node instanceof ParseTree\CallableTree
             && !$context_node instanceof ParseTree\MethodTree
+            && !$context_node instanceof ParseTree\ConstrainedTypeTree
         ) {
             $context_node = $context_node->parent;
         }
@@ -364,6 +367,16 @@ class ParseTreeCreator
         }
 
         $current_parent = $this->current_leaf->parent;
+
+        if ($current_parent instanceof ParseTree\TypeConstraintTree && $type_token[0] === '=') {
+            if (!$current_parent->value_tree instanceof ParseTree\Value) {
+                throw new TypeParseTreeException('Invalid constraint name');
+            }
+            $current_parent->name = $current_parent->value_tree->value;
+            $current_parent->value_tree = null;
+            $this->current_leaf = $current_parent;
+            return;
+        }
 
         if ($this->current_leaf instanceof ParseTree\MethodTree && $type_token[0] === '...') {
             $this->createMethodParam($type_token, $this->current_leaf);
@@ -725,6 +738,12 @@ class ParseTreeCreator
             return;
         }
 
+        if ($this->current_leaf instanceof ParseTree\ConstrainedTypeTree) {
+            $new_parent = new ParseTree\TypeConstraintTree($this->current_leaf);
+            $this->current_leaf->children[] = $new_parent;
+            $this->current_leaf = $new_parent;
+        }
+
         $next_token = $this->t + 1 < $this->type_token_count ? $this->type_tokens[$this->t + 1] : null;
 
         switch ($next_token[0] ?? null) {
@@ -754,6 +773,15 @@ class ParseTreeCreator
                         $type_token[0],
                         $new_parent
                     );
+                } elseif (in_array(
+                    $type_token[0],
+                    ['int'],
+                    true
+                )) {
+                    $new_leaf = new ParseTree\ConstrainedTypeTree(
+                        $type_token[0],
+                        $new_parent
+                    );
                 } elseif ($type_token[0] !== 'array'
                     && $type_token[0][0] !== '\\'
                     && $this->current_leaf instanceof ParseTree\Root
@@ -764,6 +792,7 @@ class ParseTreeCreator
                     );
                 } else {
                     throw new TypeParseTreeException(
+                        // TODO update message
                         'Paranthesis must be preceded by “Closure”, “callable”, "pure-callable" or a valid @method name'
                     );
                 }
@@ -822,7 +851,14 @@ class ParseTreeCreator
         }
 
         if ($new_leaf->parent) {
-            $new_leaf->parent->children[] = $new_leaf;
+            if ($new_leaf->parent instanceof ParseTree\TypeConstraintTree) {
+                if ($new_leaf->parent->value_tree !== null) {
+                    throw new TypeParseTreeException('Unexpected token ' . $type_token[0]);
+                }
+                $new_leaf->parent->value_tree = $new_leaf;
+            } else {
+                $new_leaf->parent->children[] = $new_leaf;
+            }
         }
 
         $this->current_leaf = $new_leaf;

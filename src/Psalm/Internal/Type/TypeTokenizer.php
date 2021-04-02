@@ -98,6 +98,8 @@ class TypeTokenizer
      */
     public static function tokenize(string $string_type, bool $ignore_space = true): array
     {
+        // TODO handle int(min max=5) correctly
+        // (should be [..., 'min', ' ', 'max', ...] or [..., 'min', 'max', ...], not [..., 'minmax', ...])
         $type_tokens = [['', 0]];
         $was_char = false;
         $quote_char = null;

@@ -668,6 +668,21 @@ class ArgTest extends TestCase
                 ',
                 'error_message' => 'ArgumentTypeCoercion',
             ],
+            'intConstraintCoercion' => [
+                '<?php
+                    /** @param int(min=2, max=4) $bar */
+                    function foo(int $bar): int
+                    {
+                        return [
+                            2 => 4,
+                            3 => 9,
+                            4 => 16,
+                        ][$bar];
+                    }
+                    foo(6);
+                ',
+                'error_message' => 'ArgumentTypeCoercion',
+            ],
         ];
     }
 }

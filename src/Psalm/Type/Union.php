@@ -270,6 +270,7 @@ class Union implements TypeNode
             }
         } elseif ($type instanceof TInt && $this->literal_int_types) {
             foreach ($this->literal_int_types as $key => $_) {
+                // TODO respect min/max
                 unset($this->literal_int_types[$key], $this->types[$key]);
             }
         } elseif ($type instanceof TFloat && $this->literal_float_types) {

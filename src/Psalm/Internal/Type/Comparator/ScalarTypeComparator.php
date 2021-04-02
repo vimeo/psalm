@@ -53,6 +53,20 @@ class ScalarTypeComparator
         bool $allow_float_int_equality = true,
         ?TypeComparisonResult $atomic_comparison_result = null
     ) : bool {
+        // I'm thinking about replacing TypeComparators with Atomic::isSupertypeOf and
+        // Atomic::isSubtypeOf, but that can be done separately from type constraints.
+        if ($container_type_part instanceof TInt
+            && $input_type_part instanceof TInt
+        ) {
+            return $container_type_part->isSupertypeOf(
+                $input_type_part,
+                $codebase,
+                $allow_interface_equality,
+                $allow_float_int_equality,
+                $atomic_comparison_result
+            );
+        }
+
         if ($container_type_part instanceof TNonEmptyString
             && get_class($input_type_part) === TString::class
         ) {

@@ -7,6 +7,7 @@ use function array_map;
 use function array_shift;
 use function array_unshift;
 use function array_values;
+use function assert;
 use function count;
 use function explode;
 use function get_class;
@@ -16,8 +17,10 @@ use function preg_replace;
 use Psalm\Codebase;
 use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Type\ParseTree\TypeConstraintTree;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\IConstrainableType;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
@@ -26,6 +29,7 @@ use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralFloat;
@@ -286,6 +290,15 @@ class TypeParser
                 $conditional_type,
                 $if_type,
                 $else_type
+            );
+        }
+
+        if ($parse_tree instanceof ParseTree\ConstrainedTypeTree) {
+            return self::getTypeFromConstrainedTypeTree(
+                $parse_tree,
+                $codebase,
+                $template_type_map,
+                $type_aliases
             );
         }
 
@@ -1224,5 +1237,53 @@ class TypeParser
         }
 
         return $object_like;
+    }
+
+    /**
+     * @param  array<string, array<string, Union>> $template_type_map
+     * @param  array<string, TypeAlias> $type_aliases
+     * @return Atomic&IConstrainableType
+     * @throws TypeParseTreeException
+     */
+    private static function getTypeFromConstrainedTypeTree(
+        ParseTree\ConstrainedTypeTree $parse_tree,
+        Codebase $codebase,
+        array $template_type_map,
+        array $type_aliases
+    ) {
+        switch ($parse_tree->type) {
+            case 'int':
+                $type = new TInt();
+                break;
+            default:
+                throw new TypeParseTreeException($parse_tree->type . ' is not a constrainable type');
+        }
+
+        foreach ($parse_tree->children as $constraint_tree) {
+            assert($constraint_tree instanceof TypeConstraintTree);
+            if ($constraint_tree->value_tree === null) {
+                throw new TypeParseTreeException('Empty constraint');
+            }
+            $constraint_type = self::getTypeFromTree(
+                $constraint_tree->value_tree,
+                $codebase,
+                null,
+                $template_type_map,
+                $type_aliases
+            );
+
+            // TODO support class constants?
+            if (!$constraint_type instanceof TLiteralFloat
+                && !$constraint_type instanceof TLiteralInt
+                && !$constraint_type instanceof TLiteralString
+            ) {
+                throw new TypeParseTreeException('Type constraints must be literals');
+            }
+            // TODO disallow duplicate constraints? (eg int(min=4, max=5, 7, min=6))
+            // Would still have to allow string(non-falsy, lowercase) where the value is actually the name
+            $type->setConstraint($constraint_tree->name, $constraint_type->value);
+        }
+
+        return $type;
     }
 }
