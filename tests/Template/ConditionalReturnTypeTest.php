@@ -793,7 +793,6 @@ class ConditionalReturnTypeTest extends TestCase
             'conditionalArrayValues' => [
                 '<?php
                     /**
-                     * @psalm-pure
                      * @template TValue
                      * @template TIterable of ?iterable<TValue>
                      * @param TIterable $iterable

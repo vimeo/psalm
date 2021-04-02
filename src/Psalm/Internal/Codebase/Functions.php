@@ -472,7 +472,7 @@ class Functions
             'ldap_set_option',
 
             // iterators
-            'rewind', 'iterator_apply',
+            'rewind', 'iterator_apply', 'iterator_to_array',
 
             // mysqli
             'mysqli_select_db', 'mysqli_dump_debug_info', 'mysqli_kill', 'mysqli_multi_query',
