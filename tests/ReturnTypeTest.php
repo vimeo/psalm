@@ -1329,6 +1329,19 @@ class ReturnTypeTest extends TestCase
                     }',
                 'error_message' => 'InvalidReturnType',
             ],
+            'objectWhereObjectWithPropertiesIsExpected' => [
+                '<?php
+                    function makeObj(): object {
+                        return (object)["a" => 42];
+                    }
+
+                    /** @return object{hmm:float} */
+                    function f(): object {
+                        return makeObj();
+                    }
+                ',
+                'error_message' => 'LessSpecificReturnStatement',
+            ],
         ];
     }
 }
