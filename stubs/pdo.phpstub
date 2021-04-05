@@ -1,6 +1,12 @@
 <?php
 
-class PdoStatement implements Traversable {
+/**
+ * @template TValue
+ *
+ * @template-implements Traversable<int, TValue>
+ */
+class PDOStatement implements Traversable
+{
     /**
      * @psalm-taint-sink callable $class
      *
