@@ -928,7 +928,11 @@ class UnusedCodeTest extends TestCase
                     }
 
                     $factory = new TestFactory();
-                    $factory->create(false)?->test();'
+                    $factory->create(false)?->test();
+
+                    $exception = new \Exception();
+
+                    throw ($exception->getPrevious() ?? $exception);'
             ],
         ];
     }
