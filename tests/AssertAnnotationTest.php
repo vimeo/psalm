@@ -1509,6 +1509,19 @@ class AssertAnnotationTest extends TestCase
                      */
                     function allIsInstanceOf($value, $class): void {}'
             ],
+            'implicitReflectionPropertyAssertion' => [
+                '<?php
+                    $class = new ReflectionClass(stdClass::class);
+                    $properties = $class->getProperties();
+                    foreach ($properties as $property) {
+                        if ($property->hasType()) {
+                            $property->getType()->allowsNull();
+                        }
+                    }',
+                    [],
+                    [],
+                    '7.4'
+            ],
         ];
     }
 
