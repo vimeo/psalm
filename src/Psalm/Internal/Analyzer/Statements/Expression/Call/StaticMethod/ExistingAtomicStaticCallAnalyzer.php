@@ -506,6 +506,8 @@ class ExistingAtomicStaticCallAnalyzer
                 }
             }
 
+            $context_final = false;
+
             if ($lhs_type_part instanceof Type\Atomic\TTemplateParam) {
                 $static_type = $lhs_type_part;
             } elseif ($lhs_type_part instanceof Type\Atomic\TTemplateParamClass) {
@@ -520,8 +522,10 @@ class ExistingAtomicStaticCallAnalyzer
                 && count($stmt->class->parts) === 1
                 && in_array(strtolower($stmt->class->parts[0]), ['self', 'static', 'parent'], true)
                 && $lhs_type_part instanceof Type\Atomic\TNamedObject
+                && $context->self
             ) {
                 $static_type = $context->self;
+                $context_final = $codebase->classlike_storage_provider->get($context->self)->final;
             } else {
                 $static_type = $fq_class_name;
             }
@@ -552,7 +556,8 @@ class ExistingAtomicStaticCallAnalyzer
                 false,
                 \is_string($static_type)
                 && ($static_type !== $context->self
-                    || $class_storage->final)
+                    || $class_storage->final
+                    || $context_final)
             );
 
             $secondary_return_type_location = null;
