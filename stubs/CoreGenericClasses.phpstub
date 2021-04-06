@@ -20,7 +20,8 @@ interface Traversable {
  */
 class Generator implements Traversable {
     /**
-     * @return TValue Can return any type.
+     * @psalm-ignore-nullable-return
+     * @return ?TValue Can return any type.
      */
     public function current() {}
 
@@ -51,12 +52,14 @@ class Generator implements Traversable {
 
     /**
      * @param TSend $value
-     * @return TValue Can return any type.
+     * @psalm-ignore-nullable-return
+     * @return ?TValue Can return any type.
      */
     public function send($value) {}
 
     /**
-     * @return TValue Can return any type.
+     * @psalm-ignore-nullable-return
+     * @return ?TValue Can return any type.
      */
     public function throw(Throwable $exception) {}
 }
