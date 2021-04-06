@@ -368,7 +368,11 @@ class OrAnalyzer
                         $codebase
                     );
                 } elseif (isset($left_context->vars_in_scope[$var_id])) {
-                    $if_context->vars_in_scope[$var_id] = $left_context->vars_in_scope[$var_id];
+                    $if_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                        $type,
+                        $left_context->vars_in_scope[$var_id],
+                        $codebase
+                    );
                 }
             }
 
