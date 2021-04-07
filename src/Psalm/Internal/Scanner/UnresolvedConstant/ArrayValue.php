@@ -9,10 +9,10 @@ use Psalm\Internal\Scanner\UnresolvedConstantComponent;
  */
 class ArrayValue extends UnresolvedConstantComponent
 {
-    /** @var array<int, KeyValuePair> */
+    /** @var array<int, KeyValuePair|ArraySpread> */
     public $entries;
 
-    /** @param list<KeyValuePair> $entries */
+    /** @param list<KeyValuePair|ArraySpread> $entries */
     public function __construct(array $entries)
     {
         $this->entries = $entries;

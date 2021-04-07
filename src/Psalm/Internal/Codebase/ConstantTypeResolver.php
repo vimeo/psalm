@@ -5,6 +5,7 @@ use Psalm\Internal\Scanner\UnresolvedConstant;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Type;
 use ReflectionProperty;
+use function ctype_digit;
 
 /**
  * @internal
@@ -46,11 +47,17 @@ class ConstantTypeResolver
             }
 
             if ($c instanceof UnresolvedConstant\UnresolvedConcatOp) {
-                if ($left instanceof Type\Atomic\TLiteralString && $right instanceof Type\Atomic\TLiteralString) {
+                if (($left instanceof Type\Atomic\TLiteralString
+                        || $left instanceof Type\Atomic\TLiteralFloat
+                        || $left instanceof Type\Atomic\TLiteralInt)
+                    && ($right instanceof Type\Atomic\TLiteralString
+                        || $right instanceof Type\Atomic\TLiteralFloat
+                        || $right instanceof Type\Atomic\TLiteralInt)
+                ) {
                     return new Type\Atomic\TLiteralString($left->value . $right->value);
                 }
 
-                return new Type\Atomic\TMixed;
+                return new Type\Atomic\TString();
             }
 
             if ($c instanceof UnresolvedConstant\UnresolvedAdditionOp
@@ -89,6 +96,10 @@ class ConstantTypeResolver
                     }
 
                     return self::getLiteralTypeFromScalarValue($left->value * $right->value);
+                }
+
+                if ($left instanceof Type\Atomic\TKeyedArray && $right instanceof Type\Atomic\TKeyedArray) {
+                    return new Type\Atomic\TKeyedArray($left->properties + $right->properties);
                 }
 
                 return new Type\Atomic\TMixed;
@@ -133,6 +144,7 @@ class ConstantTypeResolver
 
         if ($c instanceof UnresolvedConstant\ArrayValue) {
             $properties = [];
+            $auto_key = 0;
 
             if (!$c->entries) {
                 return new Type\Atomic\TArray([Type::getEmpty(), Type::getEmpty()]);
@@ -140,7 +152,29 @@ class ConstantTypeResolver
 
             $is_list = true;
 
-            foreach ($c->entries as $i => $entry) {
+            foreach ($c->entries as $entry) {
+                if ($entry instanceof UnresolvedConstant\ArraySpread) {
+                    $spread_array = self::resolve(
+                        $classlikes,
+                        $entry->array,
+                        $statements_analyzer,
+                        $visited_constant_ids + [$c_id => true]
+                    );
+
+                    if ($spread_array instanceof Type\Atomic\TArray && $spread_array->type_params[1]->isEmpty()) {
+                        continue;
+                    }
+
+                    if (!$spread_array instanceof Type\Atomic\TKeyedArray) {
+                        return new Type\Atomic\TArray([Type::getArrayKey(), Type::getMixed()]);
+                    }
+
+                    foreach ($spread_array->properties as $spread_array_type) {
+                        $properties[$auto_key++] = $spread_array_type;
+                    }
+                    continue;
+                }
+
                 if ($entry->key) {
                     $key_type = self::resolve(
                         $classlikes,
@@ -150,18 +184,23 @@ class ConstantTypeResolver
                     );
 
                     if (!$key_type instanceof Type\Atomic\TLiteralInt
-                        || $key_type->value !== $i
+                        || $key_type->value !== $auto_key
                     ) {
                         $is_list = false;
                     }
                 } else {
-                    $key_type = new Type\Atomic\TLiteralInt($i);
+                    $key_type = new Type\Atomic\TLiteralInt($auto_key);
                 }
 
                 if ($key_type instanceof Type\Atomic\TLiteralInt
                     || $key_type instanceof Type\Atomic\TLiteralString
                 ) {
                     $key_value = $key_type->value;
+                    if ($key_type instanceof Type\Atomic\TLiteralInt) {
+                        $auto_key = $key_type->value + 1;
+                    } elseif (ctype_digit($key_type->value)) {
+                        $auto_key = ((int) $key_type->value) + 1;
+                    }
                 } else {
                     return new Type\Atomic\TArray([Type::getArrayKey(), Type::getMixed()]);
                 }
@@ -176,12 +215,19 @@ class ConstantTypeResolver
                 $properties[$key_value] = $value_type;
             }
 
-            $objectlike = new Type\Atomic\TKeyedArray($properties);
+            if (empty($properties)) {
+                $resolved_type = new Type\Atomic\TArray([
+                    new Type\Union([new Type\Atomic\TEmpty()]),
+                    new Type\Union([new Type\Atomic\TEmpty()]),
+                ]);
+            } else {
+                $resolved_type = new Type\Atomic\TKeyedArray($properties);
 
-            $objectlike->is_list = $is_list;
-            $objectlike->sealed = true;
+                $resolved_type->is_list = $is_list;
+                $resolved_type->sealed = true;
+            }
 
-            return $objectlike;
+            return $resolved_type;
         }
 
         if ($c instanceof UnresolvedConstant\ClassConstant) {

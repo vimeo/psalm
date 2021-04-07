@@ -1495,14 +1495,12 @@ class ClassLikes
         }
 
         if ($constant_storage->unresolved_node) {
-            return new Type\Union([
-                ConstantTypeResolver::resolve(
-                    $this,
-                    $constant_storage->unresolved_node,
-                    $statements_analyzer,
-                    $visited_constant_ids
-                )
-            ]);
+            $constant_storage->type = new Type\Union([ConstantTypeResolver::resolve(
+                $this,
+                $constant_storage->unresolved_node,
+                $statements_analyzer,
+                $visited_constant_ids
+            )]);
         }
 
         return $constant_storage->type;
