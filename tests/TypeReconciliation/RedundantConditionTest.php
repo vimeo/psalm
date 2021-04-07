@@ -816,6 +816,17 @@ class RedundantConditionTest extends \Psalm\Tests\TestCase
                         assert(is_string($value));
                     }'
             ],
+            'NumericCanBeFalsy' => [
+                '<?php
+                    function test(string|int|float|bool $value): bool {
+                        if (is_numeric($value) || $value === true) {
+                            if ($value) {
+                                return true;
+                            }
+                        }
+                        return false;
+                    }'
+            ],
         ];
     }
 
