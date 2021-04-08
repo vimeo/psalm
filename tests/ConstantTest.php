@@ -228,6 +228,92 @@ class ConstantTest extends TestCase
                     '$b' => 'string',
                 ],
             ],
+            'lateConstantResolutionParentArrayPlus' => [
+                '<?php
+                    class A {
+                        public const ARR = ["a" => true];
+                    }
+
+                    class B extends A {
+                        public const ARR = parent::ARR + ["b" => true];
+                    }
+
+                    class C extends B {
+                        public const ARR = parent::ARR + ["c" => true];
+                    }
+
+                    /** @param array{a: true, b: true, c: true} $arg */
+                    function foo(array $arg): void {}
+                    foo(C::ARR);
+                ',
+            ],
+            'lateConstantResolutionParentArraySpread' => [
+                '<?php
+                    class A {
+                        public const ARR = ["a"];
+                    }
+
+                    class B extends A {
+                        public const ARR = [...parent::ARR, "b"];
+                    }
+
+                    class C extends B {
+                        public const ARR = [...parent::ARR, "c"];
+                    }
+
+                    /** @param array{"a", "b", "c"} $arg */
+                    function foo(array $arg): void {}
+                    foo(C::ARR);
+                ',
+            ],
+            'lateConstantResolutionParentStringConcat' => [
+                '<?php
+                    class A {
+                        public const STR = "a";
+                    }
+
+                    class B extends A {
+                        public const STR = parent::STR . "b";
+                    }
+
+                    class C extends B {
+                        public const STR = parent::STR . "c";
+                    }
+
+                    /** @param "abc" $foo */
+                    function foo(string $foo): void {}
+                    foo(C::STR);
+                ',
+            ],
+            'lateConstantResolutionSpreadEmptyArray' => [
+                '<?php
+                    class A {
+                        public const ARR = [];
+                    }
+
+                    class B extends A {
+                        public const ARR = [...parent::ARR];
+                    }
+
+                    class C extends B {
+                        public const ARR = [...parent::ARR];
+                    }
+
+                    /** @param array<empty, empty> $arg */
+                    function foo(array $arg): void {}
+                    foo(C::ARR);
+                ',
+            ],
+            'classConstConcatEol' => [
+                '<?php
+                    class Foo {
+                        public const BAR = "bar" . PHP_EOL;
+                    }
+
+                    $foo = Foo::BAR;
+                ',
+                'assertions' => ['$foo' => 'string'],
+            ],
             'allowConstCheckForDifferentPlatforms' => [
                 '<?php
                     if ("phpdbg" === \PHP_SAPI) {}',

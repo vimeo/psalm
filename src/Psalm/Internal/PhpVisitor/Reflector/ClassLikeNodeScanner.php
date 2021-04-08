@@ -46,6 +46,8 @@ use function preg_split;
 use const PREG_SPLIT_DELIM_CAPTURE;
 use const PREG_SPLIT_NO_EMPTY;
 use function array_shift;
+use function array_values;
+use function get_class;
 
 class ClassLikeNodeScanner
 {
@@ -1161,17 +1163,31 @@ class ClassLikeNodeScanner
                 $const
             );
 
+            if ($const_type
+                && $const->value instanceof \PhpParser\Node\Expr\BinaryOp\Concat
+                && $const_type->isSingle()
+                && get_class(array_values($const_type->getAtomicTypes())[0]) === Type\Atomic\TString::class
+            ) {
+                // Prefer unresolved type over inferred string from concat, so that it can later be resolved to literal.
+                $const_type = null;
+            }
+
             if ($const_type) {
                 $existing_constants[$const->name->name] = new \Psalm\Storage\ClassConstantStorage(
                     $const_type,
-                    ClassLikeAnalyzer::VISIBILITY_PUBLIC,
+                    $stmt->isProtected()
+                        ? ClassLikeAnalyzer::VISIBILITY_PROTECTED
+                        : ($stmt->isPrivate()
+                            ? ClassLikeAnalyzer::VISIBILITY_PRIVATE
+                            : ClassLikeAnalyzer::VISIBILITY_PUBLIC),
                     null
                 );
             } else {
                 $unresolved_const_expr = ExpressionResolver::getUnresolvedClassConstExpr(
                     $const->value,
                     $this->aliases,
-                    $fq_classlike_name
+                    $fq_classlike_name,
+                    $storage->parent_class
                 );
 
                 if ($unresolved_const_expr) {

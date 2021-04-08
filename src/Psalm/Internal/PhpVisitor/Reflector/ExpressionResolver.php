@@ -15,6 +15,7 @@ use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Scanner\UnresolvedConstant;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
+use function assert;
 use function strtolower;
 
 class ExpressionResolver
@@ -22,19 +23,22 @@ class ExpressionResolver
     public static function getUnresolvedClassConstExpr(
         PhpParser\Node\Expr $stmt,
         Aliases $aliases,
-        ?string $fq_classlike_name
+        ?string $fq_classlike_name,
+        ?string $parent_fq_class_name = null
     ) : ?UnresolvedConstantComponent {
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp) {
             $left = self::getUnresolvedClassConstExpr(
                 $stmt->left,
                 $aliases,
-                $fq_classlike_name
+                $fq_classlike_name,
+                $parent_fq_class_name
             );
 
             $right = self::getUnresolvedClassConstExpr(
                 $stmt->right,
                 $aliases,
-                $fq_classlike_name
+                $fq_classlike_name,
+                $parent_fq_class_name
             );
 
             if (!$left || !$right) {
@@ -78,7 +82,8 @@ class ExpressionResolver
             $cond = self::getUnresolvedClassConstExpr(
                 $stmt->cond,
                 $aliases,
-                $fq_classlike_name
+                $fq_classlike_name,
+                $parent_fq_class_name
             );
 
             $if = null;
@@ -87,7 +92,8 @@ class ExpressionResolver
                 $if = self::getUnresolvedClassConstExpr(
                     $stmt->if,
                     $aliases,
-                    $fq_classlike_name
+                    $fq_classlike_name,
+                    $parent_fq_class_name
                 );
 
                 if ($if === null) {
@@ -98,7 +104,8 @@ class ExpressionResolver
             $else = self::getUnresolvedClassConstExpr(
                 $stmt->else,
                 $aliases,
-                $fq_classlike_name
+                $fq_classlike_name,
+                $parent_fq_class_name
             );
 
             if ($cond && $else && $if !== false) {
@@ -131,13 +138,15 @@ class ExpressionResolver
             $left = self::getUnresolvedClassConstExpr(
                 $stmt->var,
                 $aliases,
-                $fq_classlike_name
+                $fq_classlike_name,
+                $parent_fq_class_name
             );
 
             $right = self::getUnresolvedClassConstExpr(
                 $stmt->dim,
                 $aliases,
-                $fq_classlike_name
+                $fq_classlike_name,
+                $parent_fq_class_name
             );
 
             if ($left && $right) {
@@ -150,15 +159,20 @@ class ExpressionResolver
                 && $stmt->name instanceof PhpParser\Node\Identifier
                 && $fq_classlike_name
                 && $stmt->class->parts !== ['static']
-                && $stmt->class->parts !== ['parent']
+                && ($stmt->class->parts !== ['parent'] || $parent_fq_class_name !== null)
             ) {
                 if ($stmt->class->parts === ['self']) {
                     $const_fq_class_name = $fq_classlike_name;
                 } else {
-                    $const_fq_class_name = ClassLikeAnalyzer::getFQCLNFromNameObject(
-                        $stmt->class,
-                        $aliases
-                    );
+                    if ($stmt->class->parts === ['parent']) {
+                        assert($parent_fq_class_name !== null);
+                        $const_fq_class_name = $parent_fq_class_name;
+                    } else {
+                        $const_fq_class_name = ClassLikeAnalyzer::getFQCLNFromNameObject(
+                            $stmt->class,
+                            $aliases
+                        );
+                    }
                 }
 
                 return new UnresolvedConstant\ClassConstant($const_fq_class_name, $stmt->name->name);
@@ -186,7 +200,8 @@ class ExpressionResolver
                     $item_key_type = self::getUnresolvedClassConstExpr(
                         $item->key,
                         $aliases,
-                        $fq_classlike_name
+                        $fq_classlike_name,
+                        $parent_fq_class_name
                     );
 
                     if (!$item_key_type) {
@@ -199,14 +214,19 @@ class ExpressionResolver
                 $item_value_type = self::getUnresolvedClassConstExpr(
                     $item->value,
                     $aliases,
-                    $fq_classlike_name
+                    $fq_classlike_name,
+                    $parent_fq_class_name
                 );
 
                 if (!$item_value_type) {
                     return null;
                 }
 
-                $items[] = new UnresolvedConstant\KeyValuePair($item_key_type, $item_value_type);
+                if ($item->unpack) {
+                    $items[] = new UnresolvedConstant\ArraySpread($item_value_type);
+                } else {
+                    $items[] = new UnresolvedConstant\KeyValuePair($item_key_type, $item_value_type);
+                }
             }
 
             return new UnresolvedConstant\ArrayValue($items);
