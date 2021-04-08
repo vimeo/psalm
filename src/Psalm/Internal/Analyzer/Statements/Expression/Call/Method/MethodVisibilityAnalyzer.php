@@ -8,6 +8,8 @@ use Psalm\Context;
 use Psalm\Issue\InaccessibleMethod;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
+use function array_pop;
+use function end;
 use function strtolower;
 
 class MethodVisibilityAnalyzer
@@ -105,6 +107,26 @@ class MethodVisibilityAnalyzer
             $visibility = $appearing_class_storage->trait_visibility_map[$appearing_method_name];
         }
 
+        // Get oldest ancestor declaring $method_id
+        $overridden_method_ids = $codebase_methods->getOverriddenMethodIds($method_id);
+        // Remove traits and interfaces
+        while (($oldest_declaring_method_id = end($overridden_method_ids))
+            && !$codebase_classlikes->hasFullyQualifiedClassName($oldest_declaring_method_id->fq_class_name)
+        ) {
+            array_pop($overridden_method_ids);
+        }
+        if (empty($overridden_method_ids)) {
+            // We prefer appearing method id over declaring method id because declaring method id could be a trait
+            $oldest_ancestor_declaring_method_id = $appearing_method_id;
+        } else {
+            // Oldest ancestor is at end of array
+            $oldest_ancestor_declaring_method_id = array_pop($overridden_method_ids);
+        }
+        $oldest_ancestor_declaring_method_class = null;
+        if ($oldest_ancestor_declaring_method_id) {
+            $oldest_ancestor_declaring_method_class = $oldest_ancestor_declaring_method_id->fq_class_name;
+        }
+
         switch ($visibility) {
             case ClassLikeAnalyzer::VISIBILITY_PUBLIC:
                 return null;
@@ -140,14 +162,14 @@ class MethodVisibilityAnalyzer
                     return null;
                 }
 
-                if ($appearing_method_class
-                    && $codebase_classlikes->classExtends($appearing_method_class, $context->self)
+                if ($oldest_ancestor_declaring_method_class !== null
+                    && $codebase_classlikes->classExtends($oldest_ancestor_declaring_method_class, $context->self)
                 ) {
                     return null;
                 }
 
-                if ($appearing_method_class
-                    && !$codebase_classlikes->classExtends($context->self, $appearing_method_class)
+                if ($oldest_ancestor_declaring_method_class !== null
+                    && !$codebase_classlikes->classExtends($context->self, $oldest_ancestor_declaring_method_class)
                 ) {
                     if (IssueBuffer::accepts(
                         new InaccessibleMethod(
