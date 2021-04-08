@@ -430,7 +430,7 @@ function abs($number) {}
  * @param TStep $step
  * @return (
  *     T is int
- *     ? (TStep is int ? non-empty-list<int> : non-empty-list<int|float>)
+ *     ? (TStep is int ? non-empty-list<int> : non-empty-list<float>)
  *     : (
  *         T is float
  *         ? non-empty-list<float>
