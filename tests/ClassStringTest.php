@@ -781,6 +781,21 @@ class ClassStringTest extends TestCase
                     }
                 ',
             ],
+            'dependentGetClassChecksAllClasses' => [
+                '<?php
+                    class Foo {}
+                    class Bar {}
+
+                    /** @var Foo|Bar */
+                    $a = new Foo();
+
+                    $aClass = get_class($a);
+                    if ($aClass === Foo::class) {
+                    }
+                    if ($aClass === Bar::class) {
+                    }
+                '
+            ],
         ];
     }
 

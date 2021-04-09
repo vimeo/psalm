@@ -2589,6 +2589,15 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                     '$c' => 'list<float|int>',
                 ],
             ],
+            'nonFalsyStringCanBeNonEmptyLowercaseString' => [
+                '<?php
+                    /** @var non-falsy-string */
+                    $foo = 1;
+                    /** @var non-empty-lowercase-string */
+                    $bar = "bar";
+                    if ($foo === $bar) {}
+                ',
+            ],
         ];
     }
 

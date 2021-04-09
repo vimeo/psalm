@@ -1,10 +1,15 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use Psalm\Codebase;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult;
+use Psalm\Type\Atomic;
+use function get_class;
+
 /**
  * Denotes an integer value where the exact numeric value is known.
  */
-class TLiteralInt extends TInt
+class TLiteralInt extends TInt implements TILiteral
 {
     /** @var int */
     public $value;
@@ -53,5 +58,33 @@ class TLiteralInt extends TInt
         bool $use_phpdoc_format
     ): string {
         return $use_phpdoc_format ? 'int' : (string) $this->value;
+    }
+
+    protected function isSubtypeOf(
+        Atomic $other,
+        Codebase $codebase,
+        bool $allow_interface_equality = false,
+        bool $allow_int_to_float_coercion = true,
+        ?TypeComparisonResult $type_comparison_result = null
+    ): bool {
+        if (get_class($other) === TLiteralInt::class) {
+            return $this->value === $other->value;
+        }
+
+        if (get_class($other) === TPositiveInt::class) {
+            return $this->value > 0;
+        }
+
+        if (get_class($other) === TDependentListKey::class) {
+            return $this->value >= 0;
+        }
+
+        return parent::isSubtypeOf(
+            $other,
+            $codebase,
+            $allow_interface_equality,
+            $allow_int_to_float_coercion,
+            $type_comparison_result
+        );
     }
 }

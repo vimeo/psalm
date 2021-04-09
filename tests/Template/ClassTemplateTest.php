@@ -4040,6 +4040,23 @@ class ClassTemplateTest extends TestCase
                     takesA($child);',
                 'error_message' => 'InvalidArgument',
             ],
+            'classStringTemplateInvariance' => [
+                '<?php
+                    /**
+                     * @template T of object
+                     */
+                    class A
+                    {
+                        /**
+                         * @return class-string<T>
+                         */
+                        public function m(): string {
+                            return self::class;
+                        }
+                    }
+                ',
+                'error_message' => 'InvalidReturnStatement',
+            ],
         ];
     }
 }

@@ -6,7 +6,6 @@ use Psalm\Codebase;
 use Psalm\Type;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TObjectWithProperties;
-use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TCallable;
@@ -120,7 +119,7 @@ class AtomicTypeComparator
             return false;
         }
 
-        if ($input_type_part instanceof Scalar && $container_type_part instanceof Scalar) {
+        if ($input_type_part instanceof TScalar && $container_type_part instanceof TScalar) {
             return ScalarTypeComparator::isContainedBy(
                 $codebase,
                 $input_type_part,
@@ -502,7 +501,7 @@ class AtomicTypeComparator
             }
         }
 
-        if ($container_type_part instanceof TString || $container_type_part instanceof TScalar) {
+        if ($container_type_part instanceof TString || get_class($container_type_part) === TScalar::class) {
             if ($input_type_part instanceof TNamedObject) {
                 // check whether the object has a __toString method
                 if ($codebase->classOrInterfaceExists($input_type_part->value)) {

@@ -1039,7 +1039,7 @@ class Union implements TypeNode
         if ($new_type) {
             foreach ($new_type->types as $key => $new_type_part) {
                 if (!isset($this->types[$key])
-                    || ($new_type_part instanceof Type\Atomic\Scalar
+                    || ($new_type_part instanceof Type\Atomic\TScalar
                         && get_class($new_type_part) === get_class($this->types[$key]))
                 ) {
                     $this->types[$key] = $new_type_part;

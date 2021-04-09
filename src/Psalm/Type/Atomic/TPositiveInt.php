@@ -6,6 +6,11 @@ namespace Psalm\Type\Atomic;
  */
 class TPositiveInt extends TInt
 {
+    protected const SUPERTYPES = parent::SUPERTYPES + [
+        self::class => true,
+        TDependentListKey::class => true,
+    ];
+
     public function getId(bool $nested = false): string
     {
         return 'positive-int';

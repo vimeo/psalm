@@ -469,7 +469,7 @@ class ForeachAnalyzer
 
             $always_non_empty_array = false;
 
-            if ($iterator_atomic_type instanceof Type\Atomic\Scalar ||
+            if ($iterator_atomic_type instanceof Type\Atomic\TScalar ||
                 $iterator_atomic_type instanceof Type\Atomic\TVoid
             ) {
                 $invalid_iterator_types[] = $iterator_atomic_type->getKey();

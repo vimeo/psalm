@@ -4,7 +4,7 @@ namespace Psalm\Type\Atomic;
 /**
  * Denotes a class constant whose value might not yet be known.
  */
-class TScalarClassConstant extends Scalar
+class TScalarClassConstant extends TScalar
 {
     /** @var string */
     public $fq_classlike_name;

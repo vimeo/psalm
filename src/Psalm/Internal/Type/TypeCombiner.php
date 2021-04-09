@@ -6,7 +6,6 @@ use Psalm\Codebase;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
@@ -850,7 +849,7 @@ class TypeCombiner
             return null;
         }
 
-        if ($type instanceof TScalar) {
+        if (get_class($type) === TScalar::class) {
             $combination->strings = null;
             $combination->ints = null;
             $combination->floats = null;
@@ -867,7 +866,7 @@ class TypeCombiner
             return null;
         }
 
-        if ($type instanceof Scalar && isset($combination->value_types['scalar'])) {
+        if ($type instanceof TScalar && isset($combination->value_types['scalar'])) {
             return null;
         }
 

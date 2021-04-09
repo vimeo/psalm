@@ -5,8 +5,12 @@ namespace Psalm\Type\Atomic;
  * Denotes the `empty` type, used to describe a type corresponding to no value whatsoever.
  * Empty arrays `[]` have the type `array<empty, empty>`.
  */
-class TEmpty extends Scalar
+class TEmpty extends TScalar
 {
+    protected const SUPERTYPES = parent::SUPERTYPES + [
+        self::class => true,
+    ];
+
     public function __toString(): string
     {
         return 'empty';
@@ -28,5 +32,10 @@ class TEmpty extends Scalar
         int $php_minor_version
     ): ?string {
         return null;
+    }
+
+    public function canBeFullyExpressedInPhp(int $php_major_version, int $php_minor_version): bool
+    {
+        return true;
     }
 }

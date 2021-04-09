@@ -6,6 +6,10 @@ namespace Psalm\Type\Atomic;
  */
 class TTraitString extends TString
 {
+    protected const SUPERTYPES = parent::SUPERTYPES + [
+        self::class => true,
+    ];
+
     public function getKey(bool $include_extra = true): string
     {
         return 'trait-string';

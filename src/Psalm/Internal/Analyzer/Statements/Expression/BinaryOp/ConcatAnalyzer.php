@@ -171,9 +171,7 @@ class ConcatAnalyzer
             }
 
             if (!$literal_concat) {
-                $numeric_type = Type::getNumericString();
-                $numeric_type->addType(new Type\Atomic\TInt());
-                $numeric_type->addType(new Type\Atomic\TFloat());
+                $numeric_type = Type::getNumeric();
                 $left_is_numeric = UnionTypeComparator::isContainedBy(
                     $codebase,
                     $left_type,

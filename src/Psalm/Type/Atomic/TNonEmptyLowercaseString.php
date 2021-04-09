@@ -6,6 +6,16 @@ namespace Psalm\Type\Atomic;
  */
 class TNonEmptyLowercaseString extends TNonEmptyString
 {
+    protected const SUPERTYPES = parent::SUPERTYPES + [
+        self::class => true,
+        TLowercaseString::class => true,
+    ];
+
+    protected const COERCIBLE_TO = parent::COERCIBLE_TO + [
+        TNonFalsyString::class => true,
+        TSingleLetter::class => true,
+    ];
+
     public function getKey(bool $include_extra = true): string
     {
         return 'string';

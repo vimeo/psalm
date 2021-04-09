@@ -293,7 +293,7 @@ class StubsGenerator
                 continue;
             }
 
-            if ($atomic_type instanceof Type\Atomic\Scalar
+            if ($atomic_type instanceof Type\Atomic\TScalar
                 || $atomic_type instanceof Type\Atomic\TObject
                 || $atomic_type instanceof Type\Atomic\TArray
                 || $atomic_type instanceof Type\Atomic\TIterable

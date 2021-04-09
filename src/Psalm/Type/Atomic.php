@@ -7,6 +7,7 @@ use function get_class;
 use function is_numeric;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeAlias;
 use Psalm\Type;
@@ -56,6 +57,33 @@ use function substr;
 
 abstract class Atomic implements TypeNode
 {
+    /**
+     * List of types that are always considered supertypes of this type.
+     *
+     * PHP 7.4 allows array spread syntax: `SUPERTYPES = [...parent::SUPERTYPES, Foo::class]`
+     * but until psalm requires 7.4 we have to settle for + operator, so the class needs to be the key.
+     *
+     * Most types should have `SUPERTYPES = parent::SUPERTYPES + [self::class => true]`, to indicate that anything
+     * of that type is always a subtype of that type. Exceptions to this are cases like TLiteralInt, where int(1)
+     * is not a subtype of int(2), but both are TLiteralInt.
+     *
+     * @var list<class-string<Atomic>, true>
+     */
+    protected const SUPERTYPES = [
+        TMixed::class => true,
+    ];
+
+    /**
+     * List of types that this type can be coerced to, but that aren't already a subtype or subtype of this type.
+     * Supertypes can always be coerced to subtypes, but siblings or other types can be added here as well, for
+     * instance TNonFalsyString and TNumericString are overlapping types, but neither contains the other, so
+     * TNonFalsyString should be coercible to TNumericString, and TNumericString should be coercible to
+     * TNonFalsyString (it only needs to be set on one side for both sides to be considered coercible to each other).
+     *
+     * @var list<class-string<Atomic>, true>
+     */
+    protected const COERCIBLE_TO = [];
+
     public const KEY = 'atomic';
 
     /**
@@ -600,5 +628,52 @@ abstract class Atomic implements TypeNode
     public function equals(Atomic $other_type): bool
     {
         return get_class($other_type) === get_class($this);
+    }
+
+    protected function isSubtypeOf(
+        Atomic $other,
+        Codebase $codebase,
+        bool $allow_interface_equality = false,
+        bool $allow_int_to_float_coercion = true,
+        ?TypeComparisonResult $type_comparison_result = null
+    ): bool {
+        if (isset(static::SUPERTYPES[get_class($other)])) {
+            return true;
+        }
+
+        if ($type_comparison_result !== null
+            && (
+                isset(static::COERCIBLE_TO[get_class($other)])
+                || isset($other::COERCIBLE_TO[get_class($this)])
+                || $other->isSubtypeOf(
+                    $this,
+                    $codebase,
+                    $allow_interface_equality,
+                    false
+                )
+            )
+        ) {
+            $type_comparison_result->type_coerced = true;
+        }
+
+        return false;
+    }
+
+    final public function isSupertypeOf(
+        Atomic $other,
+        Codebase $codebase,
+        bool $allow_interface_equality = false,
+        bool $allow_int_to_float_coercion = true,
+        ?TypeComparisonResult $type_comparison_result = null
+    ): bool {
+        // Subclasses should implement isSubtypeOf rather than isSupertypeOf, otherwise those classes'
+        // children won't be accurate when inheriting the parent's implementation of isSupertypeOf.
+        return $other->isSubtypeOf(
+            $this,
+            $codebase,
+            $allow_interface_equality,
+            $allow_int_to_float_coercion,
+            $type_comparison_result
+        );
     }
 }

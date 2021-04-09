@@ -6,6 +6,17 @@ namespace Psalm\Type\Atomic;
  */
 class TCallableString extends TString
 {
+    protected const SUPERTYPES = parent::SUPERTYPES + [
+        self::class => true,
+        TNonEmptyString::class => true,
+        TNonFalsyString::class => true,
+    ];
+
+    protected const COERCIBLE_TO = parent::COERCIBLE_TO + [
+        TLowercaseString::class => true,
+        TNonEmptyLowercaseString::class => true,
+        TSingleLetter::class => true,
+    ];
 
     public function getKey(bool $include_extra = true): string
     {

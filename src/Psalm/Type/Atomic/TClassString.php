@@ -3,9 +3,14 @@ namespace Psalm\Type\Atomic;
 
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Type\Atomic;
+use Psalm\Type\Union;
+use function assert;
+use function get_class;
 use function preg_quote;
 use function preg_replace;
 use function stripos;
@@ -15,19 +20,38 @@ use function strtolower;
 /**
  * Denotes the `class-string` type, used to describe a string representing a valid PHP class.
  * The parent type from which the classes descend may or may not be specified in the constructor.
+ *
+//  * @template TClass of class-string
  */
 class TClassString extends TString
 {
+    protected const SUPERTYPES = parent::SUPERTYPES + [
+        TNonEmptyString::class => true,
+        TNonFalsyString::class => true,
+    ];
+
+    protected const COERCIBLE_TO = parent::COERCIBLE_TO + [
+        TLowercaseString::class => true,
+        TNonEmptyLowercaseString::class => true,
+        TSingleLetter::class => true,
+    ];
+
     /**
+    //  * @var TClass
      * @var string
      */
     public $as;
 
     /**
+    //  * @var (TClass is "object" ? null : TNamedObject)
      * @var ?TNamedObject
      */
     public $as_type;
 
+    /**
+    //  * @param TClass $as
+    //  * @param (TClass is "object" ? null : TNamedObject) $as_type
+     */
     public function __construct(string $as = 'object', ?TNamedObject $as_type = null)
     {
         $this->as = $as;
@@ -161,5 +185,53 @@ class TClassString extends TString
         }
 
         return $class_string;
+    }
+
+    /**
+     * @return TObject|TNamedObject
+     */
+    public function getConstraintType(): Atomic
+    {
+        if ($this->as === 'object') {
+            return new TObject();
+        }
+
+        assert($this->as_type !== null);
+        return clone $this->as_type;
+    }
+
+    protected function isSubtypeOf(
+        Atomic $other,
+        Codebase $codebase,
+        bool $allow_interface_equality = false,
+        bool $allow_int_to_float_coercion = true,
+        ?TypeComparisonResult $type_comparison_result = null
+    ): bool {
+        if ((get_class($other) === TClassString::class || get_class($other) === TLiteralClassString::class)
+            && $this->getConstraintType()->isSubtypeOf(
+                $other->getConstraintType(),
+                $codebase,
+                $allow_interface_equality,
+                $allow_int_to_float_coercion
+            )
+        ) {
+            return true;
+        }
+
+        if ($other instanceof TDependentGetClass) {
+            return UnionTypeComparator::isContainedBy(
+                $codebase,
+                new Union([$this->getConstraintType()]),
+                $other->as_type
+            );
+        }
+
+        return parent::isSubtypeOf(
+            $other,
+            $codebase,
+            $allow_interface_equality,
+            $allow_int_to_float_coercion,
+            $type_comparison_result
+        );
     }
 }

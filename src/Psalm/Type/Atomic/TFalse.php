@@ -6,6 +6,10 @@ namespace Psalm\Type\Atomic;
  */
 class TFalse extends TBool
 {
+    protected const SUPERTYPES = parent::SUPERTYPES + [
+        self::class => true,
+    ];
+
     public function __toString(): string
     {
         return 'false';

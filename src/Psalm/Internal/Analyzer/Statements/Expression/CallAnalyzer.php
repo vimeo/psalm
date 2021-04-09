@@ -711,7 +711,7 @@ class CallAnalyzer
                                 $ored_type_assertions[] = $prefix . 'array';
                             } elseif ($replacement_atomic_type instanceof Type\Atomic\TNamedObject) {
                                 $ored_type_assertions[] = $prefix . $replacement_atomic_type->value;
-                            } elseif ($replacement_atomic_type instanceof Type\Atomic\Scalar) {
+                            } elseif ($replacement_atomic_type instanceof Type\Atomic\TScalar) {
                                 $ored_type_assertions[] = $prefix . $replacement_atomic_type->getAssertionString();
                             } elseif ($replacement_atomic_type instanceof Type\Atomic\TNull) {
                                 $ored_type_assertions[] = $prefix . 'null';

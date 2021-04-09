@@ -1,13 +1,17 @@
 <?php
 namespace Psalm\Type\Atomic;
 
-use function implode;
 use Psalm\Codebase;
+use Psalm\Internal\Type\Comparator\GenericTypeComparator;
+use Psalm\Internal\Type\Comparator\ObjectComparator;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Type;
 use Psalm\Type\Atomic;
-use function substr;
 use function array_map;
+use function get_class;
+use function implode;
+use function substr;
 
 /**
  * Denotes an object type where the type of the object is known e.g. `Exception`, `Throwable`, `Foo\Bar`
@@ -15,6 +19,10 @@ use function array_map;
 class TNamedObject extends Atomic
 {
     use HasIntersectionTrait;
+
+    protected const SUPERTYPES = parent::SUPERTYPES + [
+        TObject::class => true,
+    ];
 
     /**
      * @var string
@@ -137,5 +145,42 @@ class TNamedObject extends Atomic
     public function getChildNodes() : array
     {
         return $this->extra_types !== null ? $this->extra_types : [];
+    }
+
+    protected function isSubtypeOf(
+        Atomic $other,
+        Codebase $codebase,
+        bool $allow_interface_equality = false,
+        bool $allow_int_to_float_coercion = true,
+        ?TypeComparisonResult $type_comparison_result = null
+    ): bool {
+        if (get_class($other) === TGenericObject::class || get_class($other) === TIterable::class) {
+            return GenericTypeComparator::isContainedBy(
+                $codebase,
+                $this,
+                $other,
+                $allow_interface_equality,
+                $type_comparison_result
+            );
+        }
+
+        if (get_class($other) === TNamedObject::class) {
+            // TODO
+            return ObjectComparator::isShallowlyContainedBy(
+                $codebase,
+                $this,
+                $other,
+                $allow_interface_equality,
+                $type_comparison_result
+            );
+        }
+
+        return parent::isSubtypeOf(
+            $other,
+            $codebase,
+            $allow_interface_equality,
+            $allow_int_to_float_coercion,
+            $type_comparison_result
+        );
     }
 }

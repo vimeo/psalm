@@ -6,4 +6,7 @@ namespace Psalm\Type\Atomic;
  */
 class TSingleLetter extends TString
 {
+    protected const SUPERTYPES = parent::SUPERTYPES + [
+        self::class => true,
+    ];
 }

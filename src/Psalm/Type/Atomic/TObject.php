@@ -6,6 +6,10 @@ namespace Psalm\Type\Atomic;
  */
 class TObject extends \Psalm\Type\Atomic
 {
+    protected const SUPERTYPES = [
+        self::class => true,
+    ];
+
     public function __toString(): string
     {
         return 'object';

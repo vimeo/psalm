@@ -3,11 +3,12 @@
 namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
-use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TScalar;
+
 use function get_class;
 
 /**
@@ -21,8 +22,8 @@ class ClassStringComparator
      */
     public static function isContainedBy(
         Codebase $codebase,
-        Scalar $input_type_part,
-        Scalar $container_type_part,
+        TScalar $input_type_part,
+        TScalar $container_type_part,
         bool $allow_interface_equality,
         ?TypeComparisonResult $atomic_comparison_result = null
     ) : bool {

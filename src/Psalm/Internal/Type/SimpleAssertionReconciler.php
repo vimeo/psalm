@@ -14,7 +14,6 @@ use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
@@ -805,7 +804,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
             } elseif ($type instanceof TNumeric) {
                 $string_types[] = new TNumericString;
                 $did_remove_type = true;
-            } elseif ($type instanceof TScalar || $type instanceof TArrayKey) {
+            } elseif (get_class($type) === TScalar::class || $type instanceof TArrayKey) {
                 $string_types[] = new TString;
                 $did_remove_type = true;
             } elseif ($type instanceof TTemplateParam) {
@@ -900,7 +899,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
             } elseif ($type instanceof TNumeric) {
                 $int_types[] = new TInt;
                 $did_remove_type = true;
-            } elseif ($type instanceof TScalar || $type instanceof TArrayKey) {
+            } elseif (get_class($type) === TScalar::class || $type instanceof TArrayKey) {
                 $int_types[] = new TInt;
                 $did_remove_type = true;
             } elseif ($type instanceof TTemplateParam) {
@@ -980,7 +979,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
             if ($type instanceof TBool) {
                 $bool_types[] = $type;
                 $type->from_docblock = false;
-            } elseif ($type instanceof TScalar) {
+            } elseif (get_class($type) === TScalar::class) {
                 $bool_types[] = new TBool;
                 $did_remove_type = true;
             } elseif ($type instanceof TTemplateParam) {
@@ -1056,7 +1055,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
         foreach ($existing_var_atomic_types as $type) {
-            if ($type instanceof Scalar) {
+            if ($type instanceof TScalar) {
                 $scalar_types[] = $type;
             } elseif ($type instanceof TTemplateParam) {
                 if ($type->as->hasScalar() || $type->as->hasMixed()) {
@@ -1143,7 +1142,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                 $numeric_types[] = $type;
             } elseif ($type->isNumericType()) {
                 $numeric_types[] = $type;
-            } elseif ($type instanceof TScalar) {
+            } elseif (get_class($type) === TScalar::class) {
                 $did_remove_type = true;
                 $numeric_types[] = new TNumeric();
             } elseif ($type instanceof TArrayKey) {

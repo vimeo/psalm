@@ -15,7 +15,6 @@ use Psalm\Issue\UnrecognizedExpression;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
@@ -25,6 +24,8 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TString;
 use Psalm\Internal\Type\TypeCombiner;
+use Psalm\Type\Atomic\TScalar;
+
 use function get_class;
 use function count;
 use function array_merge;
@@ -279,7 +280,7 @@ class CastAnalyzer
                 $all_permissible = true;
 
                 foreach ($stmt_expr_type->getAtomicTypes() as $type) {
-                    if ($type instanceof Scalar) {
+                    if ($type instanceof TScalar) {
                         $permissible_atomic_types[] = new TKeyedArray([new Type\Union([$type])]);
                     } elseif ($type instanceof TNull) {
                         $permissible_atomic_types[] = new TArray([Type::getEmpty(), Type::getEmpty()]);
@@ -384,7 +385,7 @@ class CastAnalyzer
 
             if ($atomic_type instanceof TMixed
                 || $atomic_type instanceof Type\Atomic\TResource
-                || $atomic_type instanceof Type\Atomic\Scalar
+                || $atomic_type instanceof Type\Atomic\TScalar
             ) {
                 $castable_types[] = new TString();
 

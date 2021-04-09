@@ -29,6 +29,7 @@ use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
+use function get_class;
 use function str_replace;
 use function str_split;
 use function strpos;
@@ -1071,7 +1072,7 @@ class Reconciler
             if ($cat instanceof TTemplateParam) {
                 self::refineArrayKey($cat->as);
                 $key_type->bustCache();
-            } elseif ($cat instanceof TScalar || $cat instanceof TMixed) {
+            } elseif (get_class($cat) === TScalar::class || $cat instanceof TMixed) {
                 $key_type->removeType($key);
                 $key_type->addType(new Type\Atomic\TArrayKey());
             } elseif (!$cat instanceof TString && !$cat instanceof TInt) {

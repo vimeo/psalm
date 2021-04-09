@@ -6,6 +6,10 @@ namespace Psalm\Type\Atomic;
  */
 class TDependentListKey extends TInt implements DependentType
 {
+    protected const SUPERTYPES = parent::SUPERTYPES + [
+        self::class => true,
+    ];
+
     /**
      * Used to hold information as to what list variable this refers to
      *

@@ -6,6 +6,16 @@ namespace Psalm\Type\Atomic;
  */
 class TDependentGetType extends TString
 {
+    protected const SUPERTYPES = parent::SUPERTYPES + [
+        TNonEmptyString::class => true,
+        TNonFalsyString::class => true,
+    ];
+
+    protected const COERCIBLE_TO = parent::COERCIBLE_TO + [
+        TLowercaseString::class => true,
+        TNonEmptyLowercaseString::class => true,
+    ];
+
     /**
      * Used to hold information as to what this refers to
      *

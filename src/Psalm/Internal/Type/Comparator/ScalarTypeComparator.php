@@ -5,7 +5,6 @@ namespace Psalm\Internal\Type\Comparator;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Codebase;
 use Psalm\Type;
-use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
@@ -47,12 +46,21 @@ class ScalarTypeComparator
 {
     public static function isContainedBy(
         Codebase $codebase,
-        Scalar $input_type_part,
-        Scalar $container_type_part,
+        TScalar $input_type_part,
+        TScalar $container_type_part,
         bool $allow_interface_equality = false,
         bool $allow_float_int_equality = true,
         ?TypeComparisonResult $atomic_comparison_result = null
     ) : bool {
+        return $container_type_part->isSupertypeOf(
+            $input_type_part,
+            $codebase,
+            $allow_interface_equality,
+            $allow_float_int_equality,
+            $atomic_comparison_result
+        );
+
+
         if ($container_type_part instanceof TNonEmptyString
             && get_class($input_type_part) === TString::class
         ) {
@@ -212,7 +220,7 @@ class ScalarTypeComparator
         if ($input_type_part instanceof Type\Atomic\TTemplateKeyOf) {
             foreach ($input_type_part->as->getAtomicTypes() as $atomic_type) {
                 if ($atomic_type instanceof TArray) {
-                    /** @var Scalar $array_key_atomic */
+                    /** @var TScalar $array_key_atomic */
                     foreach ($atomic_type->type_params[0]->getAtomicTypes() as $array_key_atomic) {
                         if (!self::isContainedBy(
                             $codebase,
@@ -243,7 +251,7 @@ class ScalarTypeComparator
             return false;
         }
 
-        if ($container_type_part instanceof TScalar && $input_type_part instanceof Scalar) {
+        if (get_class($container_type_part) === TScalar::class && $input_type_part instanceof TScalar) {
             return true;
         }
 
@@ -506,7 +514,7 @@ class ScalarTypeComparator
             }
         }
 
-        if ($input_type_part instanceof Scalar) {
+        if ($input_type_part instanceof TScalar) {
             if (!$container_type_part instanceof TLiteralInt
                 && !$container_type_part instanceof TLiteralString
                 && !$container_type_part instanceof TLiteralFloat

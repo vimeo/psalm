@@ -10,6 +10,14 @@ class TypeComparisonResult
     /** @var ?bool */
     public $type_coerced = null;
 
+    /**
+     * Whether a type coercion is allowed for strict comparisons. For instance, coercing from TInt to TFloat is not
+     * allowed for a strict comparison, but coercing from TNumeric to TNonFalsyString is allowed.
+     *
+     * @var ?bool
+     */
+    public $type_coerced_strict = null;
+
     /** @var ?bool */
     public $type_coerced_from_mixed = null;
 

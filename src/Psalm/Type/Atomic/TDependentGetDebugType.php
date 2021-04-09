@@ -6,6 +6,17 @@ namespace Psalm\Type\Atomic;
  */
 class TDependentGetDebugType extends TString implements DependentType
 {
+    protected const SUPERTYPES = parent::SUPERTYPES + [
+        TNonEmptyString::class => true,
+        TNonFalsyString::class => true,
+    ];
+
+    protected const COERCIBLE_TO = parent::COERCIBLE_TO + [
+        TLowercaseString::class => true,
+        TNonEmptyLowercaseString::class => true,
+        TSingleLetter::class => true,
+    ];
+
     /**
      * Used to hold information as to what this refers to
      *

@@ -1,6 +1,11 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use Psalm\Codebase;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult;
+use Psalm\Type\Atomic;
+use function get_class;
+
 /**
  * Denotes a `class-string` corresponding to a template parameter previously specified in a `@template` tag.
  */
@@ -83,5 +88,25 @@ class TTemplateParamClass extends TClassString
     public function getChildNodes() : array
     {
         return $this->as_type ? [$this->as_type] : [];
+    }
+
+    protected function isSubtypeOf(
+        Atomic $other,
+        Codebase $codebase,
+        bool $allow_interface_equality = false,
+        bool $allow_int_to_float_coercion = true,
+        ?TypeComparisonResult $type_comparison_result = null
+    ): bool {
+        if (get_class($other) === TTemplateParamClass::class) {
+            return $this->param_name === $other->param_name && $this->defining_class === $other->defining_class;
+        }
+
+        return parent::isSubtypeOf(
+            $other,
+            $codebase,
+            $allow_interface_equality,
+            $allow_int_to_float_coercion,
+            $type_comparison_result
+        );
     }
 }

@@ -11,7 +11,6 @@ use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
@@ -278,7 +277,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             } elseif (!$type instanceof TBool
                 || ($is_equality && get_class($type) === TBool::class)
             ) {
-                if ($type instanceof TScalar) {
+                if (get_class($type) === TScalar::class) {
                     $did_remove_type = true;
                     $non_bool_types[] = new TString();
                     $non_bool_types[] = new TInt();
@@ -877,7 +876,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                     $did_remove_type = true;
                     $non_scalar_types[] = $type;
                 }
-            } elseif (!($type instanceof Scalar)) {
+            } elseif (!($type instanceof TScalar)) {
                 $non_scalar_types[] = $type;
             } else {
                 $did_remove_type = true;
@@ -1157,7 +1156,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             } elseif ($type instanceof TArrayKey) {
                 $did_remove_type = true;
                 $non_int_types[] = new TString();
-            } elseif ($type instanceof TScalar) {
+            } elseif (get_class($type) === TScalar::class) {
                 $did_remove_type = true;
                 $non_int_types[] = new TString();
                 $non_int_types[] = new TFloat();
@@ -1250,7 +1249,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                     $did_remove_type = true;
                     $non_float_types[] = $type;
                 }
-            } elseif ($type instanceof TScalar) {
+            } elseif (get_class($type) === TScalar::class) {
                 $did_remove_type = true;
                 $non_float_types[] = new TString();
                 $non_float_types[] = new TInt();
@@ -1354,7 +1353,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             } elseif ($type instanceof TNumeric) {
                 $non_string_types[] = $type;
                 $did_remove_type = true;
-            } elseif ($type instanceof TScalar) {
+            } elseif (get_class($type) === TScalar::class) {
                 $did_remove_type = true;
                 $non_string_types[] = new TFloat();
                 $non_string_types[] = new TInt();

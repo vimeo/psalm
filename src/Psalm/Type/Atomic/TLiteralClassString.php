@@ -1,6 +1,12 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use Psalm\Codebase;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Type\Atomic;
+use Psalm\Type\Union;
+use function get_class;
 use function preg_quote;
 use function preg_replace;
 use function stripos;
@@ -12,6 +18,12 @@ use function strtolower;
  */
 class TLiteralClassString extends TLiteralString
 {
+    protected const SUPERTYPES = parent::SUPERTYPES + [
+        self::class => true,
+        TNonEmptyString::class => true,
+        TNonFalsyString::class => true,
+    ];
+
     /**
      * @param string $value string
      */
@@ -96,5 +108,45 @@ class TLiteralClassString extends TLiteralString
         }
 
         return '\\' . $this->value . '::class';
+    }
+
+    public function getConstraintType(): TNamedObject
+    {
+        return new TNamedObject($this->value);
+    }
+
+    protected function isSubtypeOf(
+        Atomic $other,
+        Codebase $codebase,
+        bool $allow_interface_equality = false,
+        bool $allow_int_to_float_coercion = true,
+        ?TypeComparisonResult $type_comparison_result = null
+    ): bool {
+        if ((get_class($other) === TClassString::class || get_class($other) === TLiteralClassString::class)
+            && $this->getConstraintType()->isSubtypeOf(
+                $other->getConstraintType(),
+                $codebase,
+                $allow_interface_equality,
+                $allow_int_to_float_coercion
+            )
+        ) {
+            return true;
+        }
+
+        if ($other instanceof TDependentGetClass) {
+            return UnionTypeComparator::isContainedBy(
+                $codebase,
+                new Union([$this->getConstraintType()]),
+                $other->as_type
+            );
+        }
+
+        return parent::isSubtypeOf(
+            $other,
+            $codebase,
+            $allow_interface_equality,
+            $allow_int_to_float_coercion,
+            $type_comparison_result
+        );
     }
 }

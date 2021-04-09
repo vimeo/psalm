@@ -6,6 +6,11 @@ namespace Psalm\Type\Atomic;
  */
 class TNumericString extends TNonEmptyString
 {
+    protected const SUPERTYPES = parent::SUPERTYPES + [
+        self::class => true,
+        TNumeric::class => true,
+    ];
+
     public function getKey(bool $include_extra = true): string
     {
         return 'numeric-string';

@@ -10,7 +10,7 @@ use function strtolower;
 /**
  * Represents an offset of a class constant array.
  */
-class TKeyOfClassConstant extends Scalar
+class TKeyOfClassConstant extends TScalar
 {
     /** @var string */
     public $fq_classlike_name;
