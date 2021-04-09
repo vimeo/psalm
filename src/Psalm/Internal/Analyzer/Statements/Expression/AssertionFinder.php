@@ -3547,6 +3547,16 @@ class AssertionFinder
                     } else {
                         $first_var_name = null;
                     }
+                } else if ($expr->args[0]->value instanceof PhpParser\Node\Expr\Variable
+                    && $source instanceof StatementsAnalyzer
+                    && ($first_var_type = $source->node_data->getType($expr->args[0]->value))
+                ) {
+                    foreach ($first_var_type->getLiteralStrings() as $array_literal_type) {
+                        $if_types[$array_root . "['" . $array_literal_type->value . "']"] = [['array-key-exists']];
+                    }
+                    foreach ($first_var_type->getLiteralInts() as $array_literal_type) {
+                        $if_types[$array_root . "[" . $array_literal_type->value . "]"] = [['array-key-exists']];
+                    }
                 }
 
                 if ($first_var_name !== null
