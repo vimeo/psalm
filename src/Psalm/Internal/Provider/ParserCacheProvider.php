@@ -23,8 +23,10 @@ use Psalm\Config;
 use function scandir;
 use function serialize;
 use function touch;
+use function trigger_error;
 use function unlink;
 use function unserialize;
+use const E_USER_ERROR;
 use const SCANDIR_SORT_NONE;
 
 /**
@@ -239,9 +241,7 @@ class ParserCacheProvider
         if ($touch_only) {
             touch($cache_location);
         } else {
-            if (!is_dir($parser_cache_directory)) {
-                mkdir($parser_cache_directory, 0777, true);
-            }
+            $this->createCacheDirectory($parser_cache_directory);
 
             if ($this->use_igbinary) {
                 file_put_contents($cache_location, igbinary_serialize($stmts));
@@ -308,9 +308,7 @@ class ParserCacheProvider
 
         $cache_location = $parser_cache_directory . DIRECTORY_SEPARATOR . $file_cache_key;
 
-        if (!is_dir($parser_cache_directory)) {
-            mkdir($parser_cache_directory, 0777, true);
-        }
+        $this->createCacheDirectory($parser_cache_directory);
 
         file_put_contents($cache_location, $file_contents);
     }
@@ -401,5 +399,19 @@ class ParserCacheProvider
     private function getParserCacheKey(string $file_name): string
     {
         return md5($file_name) . ($this->use_igbinary ? '-igbinary' : '') . '-r';
+    }
+
+    private function createCacheDirectory(string $parser_cache_directory): void
+    {
+        if (!is_dir($parser_cache_directory)) {
+            try {
+                mkdir($parser_cache_directory, 0777, true);
+            } catch (\RuntimeException $e) {
+                // Race condition (#4483)
+                if (!is_dir($parser_cache_directory)) {
+                    trigger_error('Could not create parser cache directory: ' . $parser_cache_directory, E_USER_ERROR);
+                }
+            }
+        }
     }
 }
