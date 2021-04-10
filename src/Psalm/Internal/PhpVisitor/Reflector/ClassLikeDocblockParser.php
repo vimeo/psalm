@@ -164,6 +164,10 @@ class ClassLikeDocblockParser
             $info->consistent_constructor = true;
         }
 
+        if (isset($parsed_docblock->tags['psalm-consistent-templates'])) {
+            $info->consistent_templates = true;
+        }
+
         if (isset($parsed_docblock->tags['psalm-internal'])) {
             $psalm_internal = reset($parsed_docblock->tags['psalm-internal']);
             if ($psalm_internal) {

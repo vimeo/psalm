@@ -408,6 +408,11 @@ class ClassLikeStorage
     public $preserve_constructor_signature = false;
 
     /**
+     * @var bool
+     */
+    public $enforce_template_inheritance = false;
+
+    /**
      * @var null|string
      */
     public $extension_requirement;

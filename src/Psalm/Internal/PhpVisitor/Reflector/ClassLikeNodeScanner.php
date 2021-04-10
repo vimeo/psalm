@@ -562,6 +562,8 @@ class ClassLikeNodeScanner
                 }
             }
 
+            $storage->enforce_template_inheritance = $docblock_info->consistent_templates;
+
             foreach ($docblock_info->mixins as $key => $mixin) {
                 $mixin_type = TypeParser::parseTokens(
                     TypeTokenizer::getFullyQualifiedTokens(

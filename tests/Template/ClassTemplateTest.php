@@ -398,6 +398,7 @@ class ClassTemplateTest extends TestCase
                      * @template TKey as array-key
                      * @template TValue
                      * @psalm-consistent-constructor
+                     * @psalm-consistent-templates
                      */
                     class ArrayCollection {
                         /** @var array<TKey,TValue> */
@@ -1943,6 +1944,7 @@ class ClassTemplateTest extends TestCase
                     /**
                      * @template T
                      * @psalm-consistent-constructor
+                     * @psalm-consistent-templates
                      */
                     class Foo {
                         /** @var T */
@@ -2272,6 +2274,7 @@ class ClassTemplateTest extends TestCase
                     /**
                      * @template T
                      * @psalm-consistent-constructor
+                     * @psalm-consistent-templates
                      */
                     class ArrayCollection {
                         /** @var list<T> */
@@ -2297,7 +2300,13 @@ class ClassTemplateTest extends TestCase
                     /** @param ArrayCollection<int> $ints */
                     function takesInts(ArrayCollection $ints) :void {}
 
-                    takesInts((new ArrayCollection([ "a", "bc" ]))->map("strlen"));'
+                    takesInts((new ArrayCollection([ "a", "bc" ]))->map("strlen"));
+
+                    /**
+                     * @template T
+                     * @extends ArrayCollection<T>
+                     */
+                    class LazyArrayCollection extends ArrayCollection {}'
             ],
             'weakReferenceIsTyped' => [
                 '<?php
@@ -3146,6 +3155,7 @@ class ClassTemplateTest extends TestCase
                      * @psalm-template TKey of array-key
                      * @psalm-template T
                      * @psalm-consistent-constructor
+                     * @psalm-consistent-templates
                      */
                     class ArrayCollection
                     {
@@ -3283,6 +3293,7 @@ class ClassTemplateTest extends TestCase
                 '<?php
                     /**
                      * @template T
+                     * @psalm-consistent-templates
                      */
                     abstract class A {
                         /**

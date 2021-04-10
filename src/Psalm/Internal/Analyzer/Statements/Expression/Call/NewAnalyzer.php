@@ -20,6 +20,7 @@ use Psalm\Issue\InvalidStringClass;
 use Psalm\Issue\MixedMethodCall;
 use Psalm\Issue\TooManyArguments;
 use Psalm\Issue\UnsafeInstantiation;
+use Psalm\Issue\UnsafeGenericInstantiation;
 use Psalm\Issue\UndefinedClass;
 use Psalm\IssueBuffer;
 use Psalm\Type;
@@ -245,16 +246,42 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
     ): void {
         $storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
-        if ($from_static && !$storage->preserve_constructor_signature) {
-            if (IssueBuffer::accepts(
-                new UnsafeInstantiation(
-                    'Cannot safely instantiate class ' . $fq_class_name . ' with "new static" as'
-                    . ' its constructor might change in child classes',
-                    new CodeLocation($statements_analyzer->getSource(), $stmt)
-                ),
-                $statements_analyzer->getSuppressedIssues()
-            )) {
-                // fall through
+        if ($from_static) {
+            if (!$storage->preserve_constructor_signature) {
+                if (IssueBuffer::accepts(
+                    new UnsafeInstantiation(
+                        'Cannot safely instantiate class ' . $fq_class_name . ' with "new static" as'
+                        . ' its constructor might change in child classes',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt)
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            } elseif ($storage->template_types
+                && !$storage->enforce_template_inheritance
+            ) {
+                $source = $statements_analyzer->getSource();
+
+                if ($statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer) {
+                    $function_storage = $source->getFunctionLikeStorage($statements_analyzer);
+
+                    if ($function_storage->return_type
+                        && preg_match('/\bstatic\b/', $function_storage->return_type->getId())
+                    ) {
+                        if (IssueBuffer::accepts(
+                            new UnsafeGenericInstantiation(
+                                'Cannot safely instantiate generic class ' . $fq_class_name
+                                    . ' with "new static" as'
+                                    . ' its generic parameters may be constrained in child classes.',
+                                new CodeLocation($statements_analyzer->getSource(), $stmt)
+                            ),
+                            $statements_analyzer->getSuppressedIssues()
+                        )) {
+                            // fall through
+                        }
+                    }
+                }
             }
         }
 

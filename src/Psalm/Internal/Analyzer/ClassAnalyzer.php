@@ -544,8 +544,6 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     $fq_trait_name_lc = strtolower($fq_trait_name);
 
                     if (isset($storage->template_type_uses_count[$fq_trait_name_lc])) {
-                        $expected_param_count = $storage->template_type_uses_count[$fq_trait_name_lc];
-
                         $this->checkTemplateParams(
                             $codebase,
                             $storage,
@@ -554,7 +552,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                                 $this,
                                 $trait
                             ),
-                            $expected_param_count
+                            $storage->template_type_uses_count[$fq_trait_name_lc]
                         );
                     }
 
@@ -1972,33 +1970,63 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         ClassLikeStorage $storage,
         ClassLikeStorage $parent_storage,
         CodeLocation $code_location,
-        int $expected_param_count
+        int $given_param_count
     ): void {
-        $template_type_count = $parent_storage->template_types === null
+        $expected_param_count = $parent_storage->template_types === null
             ? 0
             : count($parent_storage->template_types);
 
-        if ($template_type_count > $expected_param_count) {
+        if ($expected_param_count > $given_param_count) {
             if (IssueBuffer::accepts(
                 new MissingTemplateParam(
-                    $storage->name . ' has missing template params, expecting '
-                        . $template_type_count,
+                    $storage->name . ' has missing template params when extending ' . $parent_storage->name
+                        . ' , expecting ' . $expected_param_count,
                     $code_location
                 ),
                 $storage->suppressed_issues + $this->getSuppressedIssues()
             )) {
                 // fall through
             }
-        } elseif ($template_type_count < $expected_param_count) {
+        } elseif ($expected_param_count < $given_param_count) {
             if (IssueBuffer::accepts(
                 new TooManyTemplateParams(
-                    $storage->name . ' has too many template params, expecting '
-                        . $template_type_count,
+                    $storage->name . ' has too many template params when extending ' . $parent_storage->name
+                        . ' , expecting ' . $expected_param_count,
                     $code_location
                 ),
                 $storage->suppressed_issues + $this->getSuppressedIssues()
             )) {
                 // fall through
+            }
+        }
+
+        $storage_param_count = ($storage->template_types ? count($storage->template_types) : 0);
+
+        if ($parent_storage->enforce_template_inheritance
+            && $expected_param_count !== $storage_param_count
+        ) {
+            if ($expected_param_count > $storage_param_count) {
+                if (IssueBuffer::accepts(
+                    new MissingTemplateParam(
+                        $storage->name . ' requires the same number of template params as ' . $parent_storage->name
+                            . ' but saw ' . $storage_param_count,
+                        $code_location
+                    ),
+                    $storage->suppressed_issues + $this->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            } else {
+                if (IssueBuffer::accepts(
+                    new TooManyTemplateParams(
+                        $storage->name . ' requires the same number of template params as ' . $parent_storage->name
+                            . ' but saw ' . $storage_param_count,
+                        $code_location
+                    ),
+                    $storage->suppressed_issues + $this->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
             }
         }
 
@@ -2008,76 +2036,114 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             $previous_extended = [];
 
             foreach ($parent_storage->template_types as $template_name => $type_map) {
-                foreach ($type_map as $declaring_class => $template_type) {
-                    if (isset($storage->template_extended_params[$parent_storage->name][$template_name])) {
-                        $extended_type = $storage->template_extended_params[$parent_storage->name][$template_name];
+                // declares the variables
+                foreach ($type_map as $declaring_class => $template_type) {}
 
-                        if (isset($parent_storage->template_covariants[$i])
-                            && !$parent_storage->template_covariants[$i]
-                        ) {
-                            foreach ($extended_type->getAtomicTypes() as $t) {
-                                if ($t instanceof Type\Atomic\TTemplateParam
-                                    && $storage->template_types
-                                    && $storage->template_covariants
-                                    && ($local_offset
-                                        = array_search($t->param_name, array_keys($storage->template_types)))
-                                        !== false
-                                    && !empty($storage->template_covariants[$local_offset])
-                                ) {
-                                    if (IssueBuffer::accepts(
-                                        new InvalidTemplateParam(
-                                            'Cannot extend an invariant template param ' . $template_name
-                                                . ' into a covariant context',
-                                            $code_location
-                                        ),
-                                        $storage->suppressed_issues + $this->getSuppressedIssues()
-                                    )) {
-                                        // fall through
-                                    }
-                                }
-                            }
-                        }
+                if (isset($storage->template_extended_params[$parent_storage->name][$template_name])) {
+                    $extended_type = $storage->template_extended_params[$parent_storage->name][$template_name];
 
-                        if (!$template_type->isMixed()) {
-                            $template_type_copy = clone $template_type;
-
-                            $template_result = new \Psalm\Internal\Type\TemplateResult(
-                                $previous_extended ?: [],
-                                []
-                            );
-
-                            $template_type_copy = TemplateStandinTypeReplacer::replace(
-                                $template_type_copy,
-                                $template_result,
-                                $codebase,
-                                null,
-                                $extended_type,
-                                null,
-                                null
-                            );
-
-                            if (!UnionTypeComparator::isContainedBy($codebase, $extended_type, $template_type_copy)) {
+                    if (isset($parent_storage->template_covariants[$i])
+                        && !$parent_storage->template_covariants[$i]
+                    ) {
+                        foreach ($extended_type->getAtomicTypes() as $t) {
+                            if ($t instanceof Type\Atomic\TTemplateParam
+                                && $storage->template_types
+                                && $storage->template_covariants
+                                && ($local_offset
+                                    = array_search($t->param_name, array_keys($storage->template_types)))
+                                    !== false
+                                && !empty($storage->template_covariants[$local_offset])
+                            ) {
                                 if (IssueBuffer::accepts(
                                     new InvalidTemplateParam(
-                                        'Extended template param ' . $template_name
-                                            . ' expects type ' . $template_type_copy->getId()
-                                            . ', type ' . $extended_type->getId() . ' given',
+                                        'Cannot extend an invariant template param ' . $template_name
+                                            . ' into a covariant context',
                                         $code_location
                                     ),
                                     $storage->suppressed_issues + $this->getSuppressedIssues()
                                 )) {
                                     // fall through
                                 }
-                            } else {
-                                $previous_extended[$template_name] = [
-                                    $declaring_class => $extended_type
-                                ];
+                            }
+                        }
+                    }
+
+                    if ($parent_storage->enforce_template_inheritance) {
+                        foreach ($extended_type->getAtomicTypes() as $t) {
+                            if (!$t instanceof Type\Atomic\TTemplateParam
+                                || !isset($storage->template_types[$t->param_name])
+                            ) {
+                                if (IssueBuffer::accepts(
+                                    new InvalidTemplateParam(
+                                        'Cannot extend a strictly-enforced parent template param '
+                                            . $template_name
+                                            . ' with a non-template type',
+                                        $code_location
+                                    ),
+                                    $storage->suppressed_issues + $this->getSuppressedIssues()
+                                )) {
+                                    // fall through
+                                }
+                            } elseif ($storage->template_types[$t->param_name][$storage->name]->getId()
+                                !== $template_type->getId()
+                            ) {
+                                if (IssueBuffer::accepts(
+                                    new InvalidTemplateParam(
+                                        'Cannot extend a strictly-enforced parent template param '
+                                            . $template_name
+                                            . ' with constraint ' . $template_type->getId()
+                                            . ' with a child template param ' . $t->param_name
+                                            . ' with different constraint '
+                                            . $storage->template_types[$t->param_name][$storage->name]->getId(),
+                                        $code_location
+                                    ),
+                                    $storage->suppressed_issues + $this->getSuppressedIssues()
+                                )) {
+                                    // fall through
+                                }
+                            }
+                        }
+                    }
+
+                    if (!$template_type->isMixed()) {
+                        $template_type_copy = clone $template_type;
+
+                        $template_result = new \Psalm\Internal\Type\TemplateResult(
+                            $previous_extended ?: [],
+                            []
+                        );
+
+                        $template_type_copy = TemplateStandinTypeReplacer::replace(
+                            $template_type_copy,
+                            $template_result,
+                            $codebase,
+                            null,
+                            $extended_type,
+                            null,
+                            null
+                        );
+
+                        if (!UnionTypeComparator::isContainedBy($codebase, $extended_type, $template_type_copy)) {
+                            if (IssueBuffer::accepts(
+                                new InvalidTemplateParam(
+                                    'Extended template param ' . $template_name
+                                        . ' expects type ' . $template_type_copy->getId()
+                                        . ', type ' . $extended_type->getId() . ' given',
+                                    $code_location
+                                ),
+                                $storage->suppressed_issues + $this->getSuppressedIssues()
+                            )) {
+                                // fall through
                             }
                         } else {
                             $previous_extended[$template_name] = [
                                 $declaring_class => $extended_type
                             ];
                         }
+                    } else {
+                        $previous_extended[$template_name] = [
+                            $declaring_class => $extended_type
+                        ];
                     }
                 }
 
@@ -2175,14 +2241,12 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             }
 
             if (isset($storage->template_type_implements_count[$fq_interface_name_lc])) {
-                $expected_param_count = $storage->template_type_implements_count[$fq_interface_name_lc];
-
                 $this->checkTemplateParams(
                     $codebase,
                     $storage,
                     $interface_storage,
                     $code_location,
-                    $expected_param_count
+                    $storage->template_type_implements_count[$fq_interface_name_lc]
                 );
             }
         }
@@ -2505,20 +2569,20 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 );
             }
 
-            $code_location = new CodeLocation(
-                $this,
-                $class->name ?: $class,
-                $class_context ? $class_context->include_location : null,
-                true
-            );
+            if ($storage->template_extended_count !== null || $parent_class_storage->enforce_template_inheritance) {
+                $code_location = new CodeLocation(
+                    $this,
+                    $class->name ?: $class,
+                    $class_context ? $class_context->include_location : null,
+                    true
+                );
 
-            if ($storage->template_extended_count !== null) {
                 $this->checkTemplateParams(
                     $codebase,
                     $storage,
                     $parent_class_storage,
                     $code_location,
-                    $storage->template_extended_count
+                    $storage->template_extended_count ?? 0
                 );
             }
         } catch (\InvalidArgumentException $e) {
