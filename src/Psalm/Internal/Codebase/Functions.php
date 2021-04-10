@@ -489,7 +489,7 @@ class Functions
             'bcscale',
             
             // json
-            'json_last_error',
+            'json_encode', 'json_decode', 'json_last_error',
         ];
 
         if (\in_array(strtolower($function_id), $impure_functions, true)) {
