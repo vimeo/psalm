@@ -263,7 +263,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
             ) {
                 $source = $statements_analyzer->getSource();
 
-                if ($statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer) {
+                if ($source instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer) {
                     $function_storage = $source->getFunctionLikeStorage($statements_analyzer);
 
                     if ($function_storage->return_type
