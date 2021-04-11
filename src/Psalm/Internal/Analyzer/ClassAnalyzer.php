@@ -2037,7 +2037,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
             foreach ($parent_storage->template_types as $template_name => $type_map) {
                 // declares the variables
-                foreach ($type_map as $declaring_class => $template_type) {}
+                foreach ($type_map as $declaring_class => $template_type) {
+                }
 
                 if (isset($storage->template_extended_params[$parent_storage->name][$template_name])) {
                     $extended_type = $storage->template_extended_params[$parent_storage->name][$template_name];
