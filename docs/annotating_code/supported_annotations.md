@@ -507,7 +507,7 @@ class User {
 
 ### `@psalm-require-extends`
 
-The @psalm-require-extends-annotation allows you to define a requirements that a trait imposes on the using class.
+The `@psalm-require-extends` annotation allows you to define a requirements that a trait imposes on the using class.
 
 ```php
 <?php
