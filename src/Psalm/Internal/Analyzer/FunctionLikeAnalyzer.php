@@ -42,6 +42,7 @@ use function array_search;
 use function array_keys;
 use function end;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Issue\MethodSignatureMismatch;
 use Psalm\Storage\FunctionStorage;
 
 /**
@@ -357,6 +358,19 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $end,
                 (string) $storage->signature_return_type
             );
+        }
+
+        if ($storage instanceof MethodStorage && $storage->location && !$storage->allow_named_arg_calls) {
+            foreach ($overridden_method_ids as $overridden_method_id) {
+                $overridden_storage = $codebase->methods->getStorage($overridden_method_id);
+                if ($overridden_storage->allow_named_arg_calls) {
+                    IssueBuffer::accepts(new MethodSignatureMismatch(
+                        'Method ' . (string) $method_id . ' should accept named arguments '
+                        . ' as ' . (string) $overridden_method_id . ' does',
+                        $storage->location
+                    ));
+                }
+            }
         }
 
         if (ReturnTypeAnalyzer::checkReturnType(
