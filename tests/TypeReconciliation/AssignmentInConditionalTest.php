@@ -486,6 +486,41 @@ class AssignmentInConditionalTest extends \Psalm\Tests\TestCase
                     }',
                 'error_message' => 'InvalidReturnStatement',
             ],
+            'assignmentInBranchOfAndReferencedAfterIf' => [
+                '<?php
+                    function bar(bool $result): bool {
+                        if ($result && ($result = rand(0, 1))) {
+                            return true;
+                        }
+
+                        return $result;
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'assignmentInBranchOfAndReferencedInElse' => [
+                '<?php
+                    function bar(bool $result): bool {
+                        if ($result && ($result = rand(0, 1))) {
+                            return true;
+                        } else {
+                            return $result;
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'assignmentInBranchOfAndReferencedInElseIf' => [
+                '<?php
+                    function bar(bool $result): bool {
+                        if ($result && ($result = rand(0, 1))) {
+                            return true;
+                        } elseif (rand(0, 1)) {
+                            return $result;
+                        } else {
+                            return true;
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
         ];
     }
 }

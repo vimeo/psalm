@@ -68,10 +68,9 @@ class IfElseAnalyzer
         $if_scope = new IfScope();
 
         // We need to clone the original context for later use if we're exiting in this if conditional
-        if (!$stmt->else && !$stmt->elseifs
-            && ($stmt->cond instanceof PhpParser\Node\Expr\BinaryOp
-                || ($stmt->cond instanceof PhpParser\Node\Expr\BooleanNot
-                    && $stmt->cond->expr instanceof PhpParser\Node\Expr\BinaryOp))
+        if ($stmt->cond instanceof PhpParser\Node\Expr\BinaryOp
+            || ($stmt->cond instanceof PhpParser\Node\Expr\BooleanNot
+                && $stmt->cond->expr instanceof PhpParser\Node\Expr\BinaryOp)
         ) {
             $final_actions = ScopeAnalyzer::getControlActions(
                 $stmt->stmts,
@@ -368,7 +367,7 @@ class IfElseAnalyzer
         }
 
         // check the else
-        $else_context = clone $post_if_context;
+        $else_context = clone ($if_scope->post_leaving_if_context ?? $post_if_context);
 
         // check the elseifs
         foreach ($stmt->elseifs as $elseif) {

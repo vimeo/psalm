@@ -147,12 +147,24 @@ class IfAnalyzer
             if (!$has_break_statement) {
                 $if_scope->reasonable_clauses = [];
 
+                // If we're assigning inside
+                if ($if_conditional_scope->assigned_in_conditional_var_ids
+                    && $if_scope->post_leaving_if_context
+                ) {
+                    self::addConditionallyAssignedVarsToContext(
+                        $statements_analyzer,
+                        $stmt->cond,
+                        $if_scope->post_leaving_if_context,
+                        $outer_context,
+                        $if_conditional_scope->assigned_in_conditional_var_ids
+                    );
+                }
+
                 if (!$stmt->else && !$stmt->elseifs) {
                     $mic_drop = self::handleMicDrop(
                         $statements_analyzer,
                         $stmt->cond,
                         $if_scope,
-                        $if_conditional_scope,
                         $outer_context,
                         $new_assigned_var_ids
                     );
@@ -246,23 +258,9 @@ class IfAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $cond,
         IfScope $if_scope,
-        IfConditionalScope $if_conditional_scope,
         Context $post_if_context,
         array $new_assigned_var_ids
     ) : bool {
-        // If we're assigning inside
-        if ($if_conditional_scope->assigned_in_conditional_var_ids
-            && $if_scope->post_leaving_if_context
-        ) {
-            self::addConditionallyAssignedVarsToContext(
-                $statements_analyzer,
-                $cond,
-                $if_scope->post_leaving_if_context,
-                $post_if_context,
-                $if_conditional_scope->assigned_in_conditional_var_ids
-            );
-        }
-
         if (!$if_scope->negated_types) {
             return false;
         }
