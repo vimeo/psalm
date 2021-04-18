@@ -247,7 +247,7 @@ class IfAnalyzer
         PhpParser\Node\Expr $cond,
         IfScope $if_scope,
         IfConditionalScope $if_conditional_scope,
-        Context $outer_context,
+        Context $post_if_context,
         array $new_assigned_var_ids
     ) : bool {
         // If we're assigning inside
@@ -258,7 +258,7 @@ class IfAnalyzer
                 $statements_analyzer,
                 $cond,
                 $if_scope->post_leaving_if_context,
-                $outer_context,
+                $post_if_context,
                 $if_conditional_scope->assigned_in_conditional_var_ids
             );
         }
@@ -269,27 +269,27 @@ class IfAnalyzer
 
         $newly_reconciled_var_ids = [];
 
-        $outer_context_vars_reconciled = Reconciler::reconcileKeyedTypes(
+        $post_if_context_vars_reconciled = Reconciler::reconcileKeyedTypes(
             $if_scope->negated_types,
             [],
-            $outer_context->vars_in_scope,
+            $post_if_context->vars_in_scope,
             $newly_reconciled_var_ids,
             [],
             $statements_analyzer,
             $statements_analyzer->getTemplateTypeMap() ?: [],
-            $outer_context->inside_loop,
+            $post_if_context->inside_loop,
             new CodeLocation(
                 $statements_analyzer->getSource(),
                 $cond instanceof PhpParser\Node\Expr\BooleanNot
                     ? $cond->expr
                     : $cond,
-                $outer_context->include_location,
+                $post_if_context->include_location,
                 false
             )
         );
 
         foreach ($newly_reconciled_var_ids as $changed_var_id => $_) {
-            $outer_context->removeVarFromConflictingClauses($changed_var_id);
+            $post_if_context->removeVarFromConflictingClauses($changed_var_id);
         }
 
         $newly_reconciled_var_ids += $new_assigned_var_ids;
@@ -305,13 +305,13 @@ class IfAnalyzer
             $first_appearance = $statements_analyzer->getFirstAppearance($var_id);
 
             if ($first_appearance
-                && isset($outer_context->vars_in_scope[$var_id])
-                && isset($outer_context_vars_reconciled[$var_id])
-                && $outer_context->vars_in_scope[$var_id]->hasMixed()
-                && !$outer_context_vars_reconciled[$var_id]->hasMixed()
+                && isset($post_if_context->vars_in_scope[$var_id])
+                && isset($post_if_context_vars_reconciled[$var_id])
+                && $post_if_context->vars_in_scope[$var_id]->hasMixed()
+                && !$post_if_context_vars_reconciled[$var_id]->hasMixed()
             ) {
-                if (!$outer_context->collect_initializations
-                    && !$outer_context->collect_mutations
+                if (!$post_if_context->collect_initializations
+                    && !$post_if_context->collect_mutations
                     && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                     && (!(($parent_source = $statements_analyzer->getSource())
                                 instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer)
@@ -329,7 +329,7 @@ class IfAnalyzer
             }
         }
 
-        $outer_context->vars_in_scope = $outer_context_vars_reconciled;
+        $post_if_context->vars_in_scope = $post_if_context_vars_reconciled;
 
         return true;
     }
@@ -341,7 +341,7 @@ class IfAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $cond,
         Context $post_leaving_if_context,
-        Context $outer_context,
+        Context $post_if_context,
         array $assigned_in_conditional_var_ids
     ) : void {
         // this filters out coercions to expeccted types in ArgumentAnalyzer
@@ -399,7 +399,7 @@ class IfAnalyzer
 
         foreach ($assigned_in_conditional_var_ids as $var_id => $_) {
             if (isset($post_leaving_if_context->vars_in_scope[$var_id])) {
-                $outer_context->vars_in_scope[$var_id] = clone $post_leaving_if_context->vars_in_scope[$var_id];
+                $post_if_context->vars_in_scope[$var_id] = clone $post_leaving_if_context->vars_in_scope[$var_id];
             }
         }
     }
