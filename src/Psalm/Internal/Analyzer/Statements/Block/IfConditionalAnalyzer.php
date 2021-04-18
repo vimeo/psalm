@@ -149,7 +149,7 @@ class IfConditionalAnalyzer
 
         // we need to clone the current context so our ongoing updates
         // to $outer_context don't mess with elseif/else blocks
-        $original_context = clone $outer_context;
+        $post_if_context = clone $outer_context;
 
         if ($internally_applied_if_cond_expr !== $cond
             || $externally_applied_if_cond_expr !== $cond
@@ -275,7 +275,7 @@ class IfConditionalAnalyzer
 
         return new \Psalm\Internal\Scope\IfConditionalScope(
             $if_context,
-            $original_context,
+            $post_if_context,
             $cond_referenced_var_ids,
             $assigned_in_conditional_var_ids,
             $entry_clauses

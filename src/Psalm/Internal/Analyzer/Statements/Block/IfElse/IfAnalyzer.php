@@ -252,12 +252,12 @@ class IfAnalyzer
     ) : bool {
         // If we're assigning inside
         if ($if_conditional_scope->assigned_in_conditional_var_ids
-            && $if_scope->mic_drop_context
+            && $if_scope->post_leaving_if_context
         ) {
             self::addConditionallyAssignedVarsToContext(
                 $statements_analyzer,
                 $cond,
-                $if_scope->mic_drop_context,
+                $if_scope->post_leaving_if_context,
                 $outer_context,
                 $if_conditional_scope->assigned_in_conditional_var_ids
             );
@@ -340,7 +340,7 @@ class IfAnalyzer
     public static function addConditionallyAssignedVarsToContext(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $cond,
-        Context $mic_drop_context,
+        Context $post_leaving_if_context,
         Context $outer_context,
         array $assigned_in_conditional_var_ids
     ) : void {
@@ -381,15 +381,15 @@ class IfAnalyzer
                 $expr->getAttributes()
             );
 
-            $mic_drop_context->inside_negation = !$mic_drop_context->inside_negation;
+            $post_leaving_if_context->inside_negation = !$post_leaving_if_context->inside_negation;
 
             ExpressionAnalyzer::analyze(
                 $statements_analyzer,
                 $fake_negated_expr,
-                $mic_drop_context
+                $post_leaving_if_context
             );
 
-            $mic_drop_context->inside_negation = !$mic_drop_context->inside_negation;
+            $post_leaving_if_context->inside_negation = !$post_leaving_if_context->inside_negation;
         }
 
         IssueBuffer::clearRecordingLevel();
@@ -398,8 +398,8 @@ class IfAnalyzer
         $statements_analyzer->node_data = $old_node_data;
 
         foreach ($assigned_in_conditional_var_ids as $var_id => $_) {
-            if (isset($mic_drop_context->vars_in_scope[$var_id])) {
-                $outer_context->vars_in_scope[$var_id] = clone $mic_drop_context->vars_in_scope[$var_id];
+            if (isset($post_leaving_if_context->vars_in_scope[$var_id])) {
+                $outer_context->vars_in_scope[$var_id] = clone $post_leaving_if_context->vars_in_scope[$var_id];
             }
         }
     }

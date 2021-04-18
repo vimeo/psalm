@@ -88,5 +88,5 @@ class IfScope
     /**
      * @var ?\Psalm\Context
      */
-    public $mic_drop_context;
+    public $post_leaving_if_context;
 }

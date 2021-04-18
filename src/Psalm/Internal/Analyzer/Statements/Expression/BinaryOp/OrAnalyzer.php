@@ -53,7 +53,7 @@ class OrAnalyzer
 
         $codebase = $statements_analyzer->getCodebase();
 
-        $mic_drop_context = null;
+        $post_leaving_if_context = null;
 
         if (!$stmt->left instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
             || !$stmt->left->left instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
@@ -77,7 +77,7 @@ class OrAnalyzer
                 $left_assigned_var_ids = $if_conditional_scope->assigned_in_conditional_var_ids;
 
                 if ($stmt->left instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr) {
-                    $mic_drop_context = clone $context;
+                    $post_leaving_if_context = clone $context;
                 }
             } catch (\Psalm\Exception\ScopeAnalysisException $e) {
                 return false;
@@ -88,7 +88,7 @@ class OrAnalyzer
 
             $pre_assigned_var_ids = $context->assigned_var_ids;
 
-            $mic_drop_context = clone $context;
+            $post_leaving_if_context = clone $context;
 
             $left_context = clone $context;
             $left_context->parent_context = $context;
@@ -193,12 +193,12 @@ class OrAnalyzer
 
         if ($stmt->left instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
             && $left_assigned_var_ids
-            && $mic_drop_context
+            && $post_leaving_if_context
         ) {
             IfAnalyzer::addConditionallyAssignedVarsToContext(
                 $statements_analyzer,
                 $stmt->left,
-                $mic_drop_context,
+                $post_leaving_if_context,
                 $right_context,
                 $left_assigned_var_ids
             );

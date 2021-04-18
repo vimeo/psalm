@@ -84,7 +84,7 @@ class IfElseAnalyzer
                 || (count($final_actions) && !in_array(ScopeAnalyzer::ACTION_NONE, $final_actions, true));
 
             if ($has_leaving_statements) {
-                $if_scope->mic_drop_context = clone $context;
+                $if_scope->post_leaving_if_context = clone $context;
             }
         }
 
@@ -100,7 +100,7 @@ class IfElseAnalyzer
 
             $if_context = $if_conditional_scope->if_context;
 
-            $original_context = $if_conditional_scope->original_context;
+            $post_if_context = $if_conditional_scope->post_if_context;
             $cond_referenced_var_ids = $if_conditional_scope->cond_referenced_var_ids;
             $assigned_in_conditional_var_ids = $if_conditional_scope->assigned_in_conditional_var_ids;
         } catch (\Psalm\Exception\ScopeAnalysisException $e) {
@@ -319,7 +319,7 @@ class IfElseAnalyzer
             $context->referenced_var_ids
         );
 
-        $temp_else_context = clone $original_context;
+        $temp_else_context = clone $post_if_context;
 
         $changed_var_ids = [];
 
@@ -368,7 +368,7 @@ class IfElseAnalyzer
         }
 
         // check the else
-        $else_context = clone $original_context;
+        $else_context = clone $post_if_context;
 
         // check the elseifs
         foreach ($stmt->elseifs as $elseif) {
