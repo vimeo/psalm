@@ -1538,12 +1538,17 @@ class ClassLikeNodeScanner
     ): array {
         $parsed_docblock = DocComment::parsePreservingLength($comment);
 
-        if (!isset($parsed_docblock->tags['psalm-type'])) {
+        if (!isset($parsed_docblock->tags['psalm-type']) && !isset($parsed_docblock->tags['phpstan-type'])) {
             return [];
         }
 
+        $type_alias_comment_lines = array_merge(
+            $parsed_docblock->tags['phpstan-type'] ?? [],
+            $parsed_docblock->tags['psalm-type'] ?? []
+        );
+
         return self::getTypeAliasesFromCommentLines(
-            $parsed_docblock->tags['psalm-type'],
+            $type_alias_comment_lines,
             $aliases,
             $type_aliases,
             $self_fqcln
