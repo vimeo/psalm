@@ -23,6 +23,7 @@ use function preg_match;
 use function count;
 use function reset;
 use function preg_split;
+use function array_merge;
 use function array_shift;
 use function implode;
 use function substr;

@@ -3,6 +3,7 @@ namespace Psalm\Internal\PhpVisitor\Reflector;
 
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Scanner\ClassLikeDocblockComment;
+use function array_merge;
 use function array_pop;
 use function count;
 use function explode;
