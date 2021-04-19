@@ -48,7 +48,7 @@ You can also [define your own taint sources](custom_taint_sources.md).
 
 ## Taint Sinks
 
-Psalm currently defines a number of different for builtin functions and methods, including `echo`, `include`, `header`.
+Psalm currently defines a number of different sinks for builtin functions and methods, including `echo`, `include`, `header`.
 
 You can also [define your own taint sinks](custom_taint_sinks.md).
 
