@@ -23,6 +23,7 @@ use function preg_match;
 use function count;
 use function reset;
 use function preg_split;
+use function array_merge;
 use function array_shift;
 use function implode;
 use function substr;
@@ -239,15 +240,18 @@ class ClassLikeDocblockParser
             }
         }
 
-        if (isset($parsed_docblock->tags['psalm-import-type'])) {
-            foreach ($parsed_docblock->tags['psalm-import-type'] as $offset => $imported_type_entry) {
-                $info->imported_types[] = [
-                    'line_number' => $comment->getStartLine() + substr_count($comment->getText(), "\n", 0, $offset),
-                    'start_offset' => $comment->getStartFilePos() + $offset,
-                    'end_offset' => $comment->getStartFilePos() + $offset + strlen($imported_type_entry),
-                    'parts' => CommentAnalyzer::splitDocLine($imported_type_entry) ?: []
-                ];
-            }
+        $imported_types = array_merge(
+            $parsed_docblock->tags['phpstan-import-type'] ?? [],
+            $parsed_docblock->tags['psalm-import-type'] ?? []
+        );
+
+        foreach ($imported_types as $offset => $imported_type_entry) {
+            $info->imported_types[] = [
+                'line_number' => $comment->getStartLine() + substr_count($comment->getText(), "\n", 0, $offset),
+                'start_offset' => $comment->getStartFilePos() + $offset,
+                'end_offset' => $comment->getStartFilePos() + $offset + strlen($imported_type_entry),
+                'parts' => CommentAnalyzer::splitDocLine($imported_type_entry) ?: []
+            ];
         }
 
         if (isset($parsed_docblock->combined_tags['method'])) {

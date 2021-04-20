@@ -3,6 +3,7 @@ namespace Psalm\Internal\PhpVisitor\Reflector;
 
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Scanner\ClassLikeDocblockComment;
+use function array_merge;
 use function array_pop;
 use function count;
 use function explode;
@@ -1538,12 +1539,17 @@ class ClassLikeNodeScanner
     ): array {
         $parsed_docblock = DocComment::parsePreservingLength($comment);
 
-        if (!isset($parsed_docblock->tags['psalm-type'])) {
+        if (!isset($parsed_docblock->tags['psalm-type']) && !isset($parsed_docblock->tags['phpstan-type'])) {
             return [];
         }
 
+        $type_alias_comment_lines = array_merge(
+            $parsed_docblock->tags['phpstan-type'] ?? [],
+            $parsed_docblock->tags['psalm-type'] ?? []
+        );
+
         return self::getTypeAliasesFromCommentLines(
-            $parsed_docblock->tags['psalm-type'],
+            $type_alias_comment_lines,
             $aliases,
             $type_aliases,
             $self_fqcln
