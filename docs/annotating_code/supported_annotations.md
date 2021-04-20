@@ -538,6 +538,19 @@ class NormalClass {
 
 Behaves the same way as `@psalm-require-extends`, but for interfaces.
 
+### `@no-named-arguments`
+
+This will prevent access to the function or method tagged with named parameters (by emitting a `NamedArgumentNotAllowed` issue).
+
+Incidentally, it will change the inferred type for the following code:
+```php
+<?php
+    function a(int ...$a){
+        var_dump($a);
+    }
+```
+The type of `$a` is `array<array-key, int>` without `@no-named-arguments` but becomes `list<int>` with it, because it exclude the case where the offset would be a string with the name of the parameter
+
 ## Type Syntax
 
 Psalm supports PHPDoc’s [type syntax](https://docs.phpdoc.org/latest/guide/guides/types.html), and also the [proposed PHPDoc PSR type syntax](https://github.com/php-fig/fig-standards/blob/master/proposed/phpdoc.md#appendix-a-types).
