@@ -314,6 +314,16 @@ When `true`, Psalm will run [Taint Analysis](../security_analysis/index.md) on y
 
 When `false`, Psalm will not consider issue at lower level than `errorLevel` as `info` (they will be suppressed instead). This can be a big improvement in analysis time for big projects. However, this config will prevent Psalm to count or suggest fixes for suppressed issue
 
+#### allowNamedArgumentCalls
+
+```xml
+<psalm 
+  allowNamedArgumentCalls="[bool]"
+>
+```
+
+When `false`, Psalm will not report `ParamNameMismatch` issues in your code anymore. This does not replace the use of individual `@no-named-arguments` to prevent external access to a library's method or to reduce the type to a `list` when using variadics
+
 ### Running Psalm
 
 #### autoloader
