@@ -67,7 +67,7 @@ function isValidB(A $a) : bool {
  * @psalm-assert-if-false B $a
  */
 function isInvalidB(A $a) : bool {
-    return $a instanceof B || !$a->isValid();
+    return !$a instanceof B || !$a->isValid();
 }
 
 function takesA(A $a) : void {
