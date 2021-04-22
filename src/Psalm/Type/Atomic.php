@@ -134,9 +134,18 @@ abstract class Atomic implements TypeNode
 
                 break;
 
+            case 'never':
+                if ($php_version === null
+                    || ($php_version[0] > 8)
+                    || ($php_version[0] === 8 && $php_version[1] >= 1)
+                ) {
+                    return new TNever();
+                }
+
+                break;
+
             case 'never-return':
             case 'never-returns':
-            case 'never':
             case 'no-return':
                 return new TNever();
 

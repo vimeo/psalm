@@ -31,6 +31,7 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TLowercaseString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNonEmptyLowercaseString;
@@ -340,7 +341,7 @@ class TypeCombiner
                 continue;
             }
 
-            if ($type instanceof TEmpty
+            if (($type instanceof TEmpty || $type instanceof TNever)
                 && (count($combination->value_types) > 1 || count($new_types))
             ) {
                 continue;

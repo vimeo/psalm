@@ -9,12 +9,12 @@ class TNever extends \Psalm\Type\Atomic
 {
     public function __toString(): string
     {
-        return 'never-return';
+        return 'never';
     }
 
     public function getKey(bool $include_extra = true): string
     {
-        return 'never-return';
+        return 'never';
     }
 
     /**

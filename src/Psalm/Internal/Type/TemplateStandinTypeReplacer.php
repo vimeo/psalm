@@ -91,7 +91,15 @@ class TemplateStandinTypeReplacer
                 throw new \UnexpectedValueException('Cannot remove all keys');
             }
 
-            $new_union_type = new Union($atomic_types);
+            if (count($atomic_types) > 1) {
+                $new_union_type = \Psalm\Internal\Type\TypeCombiner::combine(
+                    $atomic_types,
+                    $codebase
+                );
+            } else {
+                $new_union_type = new Union($atomic_types);
+            }
+
             $new_union_type->ignore_nullable_issues = $union_type->ignore_nullable_issues;
             $new_union_type->ignore_falsable_issues = $union_type->ignore_falsable_issues;
             $new_union_type->possibly_undefined = $union_type->possibly_undefined;

@@ -960,7 +960,7 @@ class Union implements TypeNode
 
     public function isNever(): bool
     {
-        return isset($this->types['never-return']);
+        return isset($this->types['never']);
     }
 
     public function isGenerator(): bool

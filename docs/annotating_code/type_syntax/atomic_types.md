@@ -51,12 +51,22 @@ Atomic types are the basic building block of all type information used in Psalm.
 - `value-of<Foo\Bar::ARRAY_CONST>`
 - `T[K]`
 
+## Top types, bottom types and empty
+
+### `mixed`
+
+This is the _top type_ in PHP's type system, and represents a lack of type information. Psalm warns about `mixed` types when the `totallyTyped` flag is turned on, or when you're on level 1.
+
+### `never`
+
+This is the _bottom type_ in PHP's type system, and usually represents a return type for a function that can never actually return, such as `die()`, `exit()`, or a function that always throws an exception. It may also be written in docblocks as `no-return` or `never-return`.
+
+### `empty`
+
+A type that's equivalent to a "coming soon" sign. Psalm uses this type when it’s awaiting more information — a good example is the type of the empty array `[]`, which Psalm types as `array<empty, empty>`. Psalm treats `empty` in a somewhat similar fashion to `never` when combining types together — `empty|int` becomes `int`, just as `never|string` becomes `string`.
+
 ## Other
 
 - `iterable` - represents the [iterable pseudo-type](https://php.net/manual/en/language.types.iterable.php). Like arrays, iterables can have type parameters e.g. `iterable<string, Foo>`.
 - `void` - can be used in a return type when a function does not return a value.
-- `empty` - a type that represents a lack of type - not just a lack of type information (that's where [mixed](#mixed) is useful) but where there can be no type. A good example is the type of the empty array `[]`. Psalm types this as `array<empty, empty>`.
-- `mixed` represents a lack of type information. Psalm warns about mixed when the `totallyTyped` flag is turned on.
 - `resource` represents a [PHP resource](https://www.php.net/manual/en/language.types.resource.php).
-- `no-return` is the 'return type' for a function that can never actually return, such as `die()`, `exit()`, or a function that
-  always throws an exception. It may also be written as `never-return` or `never-returns`, and is also known as the _bottom type_.
