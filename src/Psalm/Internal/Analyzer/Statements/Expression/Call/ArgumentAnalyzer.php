@@ -611,6 +611,15 @@ class ArgumentAnalyzer
             }
         }
 
+        // bypass verifying argument types when collecting initialisations,
+        // because the argument locations are not reliable (file names normally differ)
+        // See https://github.com/vimeo/psalm/issues/5662
+        if ($arg instanceof \Psalm\Node\VirtualArg
+            && $context->collect_initializations
+        ) {
+            return null;
+        }
+
         if (self::verifyType(
             $statements_analyzer,
             $arg_type,
