@@ -1,7 +1,7 @@
 <?php
 namespace Psalm\Tests;
 
-class EnumTest extends TestCase
+class ConstValuesTest extends TestCase
 {
     use Traits\InvalidCodeAnalysisTestTrait;
     use Traits\ValidCodeAnalysisTestTrait;
