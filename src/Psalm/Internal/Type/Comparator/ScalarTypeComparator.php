@@ -266,6 +266,12 @@ class ScalarTypeComparator
         }
 
         if ($container_type_part instanceof TNonFalsyString
+            && $input_type_part instanceof TNonFalsyString
+        ) {
+            return true;
+        }
+
+        if ($container_type_part instanceof TNonFalsyString
             && $input_type_part instanceof TNonEmptyString
         ) {
             if ($atomic_comparison_result) {
