@@ -2377,6 +2377,16 @@ class UnusedVariableTest extends TestCase
                         return $sortA;
                     }'
             ],
+            'varDocblockVariableIsUsedByRef' => [
+                '<?php
+                    function foo(array $arr) : string {
+                        /** @var string $val */
+                        foreach ($arr as &$val) {
+                            $val = urlencode($val);
+                        }
+                        return implode("/", $arr);
+                    }'
+            ],
         ];
     }
 
