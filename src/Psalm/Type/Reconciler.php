@@ -894,8 +894,9 @@ class Reconciler
                 if ($existing_var_type->from_static_property) {
                     if (IssueBuffer::accepts(
                         new RedundantPropertyInitializationCheck(
-                            'Static property type ' . $key . ' with type '
-                                . $old_var_type_string . ' has unexpected isset check — should it be nullable?',
+                            'Static property ' . $key . ' with type '
+                                . $old_var_type_string
+                                . ' has unexpected isset check — should it be nullable?',
                             $code_location
                         ),
                         $suppressed_issues
@@ -905,7 +906,7 @@ class Reconciler
                 } else {
                     if (IssueBuffer::accepts(
                         new RedundantPropertyInitializationCheck(
-                            'Property type ' . $key . ' with type '
+                            'Property ' . $key . ' with type '
                                 . $old_var_type_string . ' should already be set in the constructor',
                             $code_location
                         ),

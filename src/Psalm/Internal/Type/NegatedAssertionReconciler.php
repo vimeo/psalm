@@ -93,8 +93,9 @@ class NegatedAssertionReconciler extends Reconciler
                                 if ($existing_var_type->from_static_property) {
                                     if (IssueBuffer::accepts(
                                         new RedundantPropertyInitializationCheck(
-                                            'Static property type ' . $key . ' with type '
-                                                . $existing_var_type . ' has unexpected isset check — should it be nullable?',
+                                            'Static property ' . $key . ' with type '
+                                                . $existing_var_type
+                                                . ' has unexpected isset check — should it be nullable?',
                                             $code_location
                                         ),
                                         $suppressed_issues
@@ -104,7 +105,7 @@ class NegatedAssertionReconciler extends Reconciler
                                 } elseif ($existing_var_type->from_property) {
                                     if (IssueBuffer::accepts(
                                         new RedundantPropertyInitializationCheck(
-                                            'Property type ' . $key . ' with type '
+                                            'Property ' . $key . ' with type '
                                                 . $existing_var_type . ' should already be set in the constructor',
                                             $code_location
                                         ),
