@@ -62,7 +62,7 @@ class TypeComparatorTest extends TestCase
             'pure-Closure' => true,
         ];
 
-        $basic_types = array_diff_key(
+        $basic_types = \array_diff_key(
             \Psalm\Internal\Type\TypeTokenizer::PSALM_RESERVED_WORDS,
             $basic_generic_types,
             [
@@ -71,11 +71,11 @@ class TypeComparatorTest extends TestCase
                 'non-empty-countable' => true, // bit weird, maybe a bug?
             ]
         );
-        return array_map(
+        return \array_map(
             function ($type) {
                 return [$type];
             },
-            array_keys($basic_types)
+            \array_keys($basic_types)
         );
     }
 }
