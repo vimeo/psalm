@@ -170,6 +170,7 @@ class MethodVisibilityAnalyzer
 
                 if ($oldest_ancestor_declaring_method_class !== null
                     && !$codebase_classlikes->classExtends($context->self, $oldest_ancestor_declaring_method_class)
+                    && !$codebase_classlikes->classExtends($declaring_method_class, $context->self)
                 ) {
                     if (IssueBuffer::accepts(
                         new InaccessibleMethod(
