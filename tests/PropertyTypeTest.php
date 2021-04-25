@@ -2397,6 +2397,7 @@ class PropertyTypeTest extends TestCase
                     }
 
                     function takesFoo(?Foo $foo, string $b) : void {
+                        /** @psalm-suppress MixedArgument */
                         echo $foo->{$b} ?? null;
                     }'
             ],
@@ -2422,6 +2423,7 @@ class PropertyTypeTest extends TestCase
                     }
 
                     function accessOnVar(?Foo $bar, string $b) : void {
+                        /** @psalm-suppress MixedArgument */
                         echo $bar->{$b} ?? null;
                     }',
             ],
