@@ -891,15 +891,28 @@ class Reconciler
 
         if ($redundant) {
             if ($existing_var_type->from_property && $assertion === 'isset') {
-                if (IssueBuffer::accepts(
-                    new RedundantPropertyInitializationCheck(
-                        'Property type ' . $key . ' with type '
-                            . $old_var_type_string . ' should already be set in the constructor',
-                        $code_location
-                    ),
-                    $suppressed_issues
-                )) {
-                    // fall through
+                if ($existing_var_type->from_static_property) {
+                    if (IssueBuffer::accepts(
+                        new RedundantPropertyInitializationCheck(
+                            'Static property type ' . $key . ' with type '
+                                . $old_var_type_string . ' has unexpected isset check — should it be nullable?',
+                            $code_location
+                        ),
+                        $suppressed_issues
+                    )) {
+                        // fall through
+                    }
+                } else {
+                    if (IssueBuffer::accepts(
+                        new RedundantPropertyInitializationCheck(
+                            'Property type ' . $key . ' with type '
+                                . $old_var_type_string . ' should already be set in the constructor',
+                            $code_location
+                        ),
+                        $suppressed_issues
+                    )) {
+                        // fall through
+                    }
                 }
             } elseif ($from_docblock) {
                 if (IssueBuffer::accepts(

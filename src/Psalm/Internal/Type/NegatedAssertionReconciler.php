@@ -82,7 +82,6 @@ class NegatedAssertionReconciler extends Reconciler
                     && $key
                     && strpos($key, '[') === false
                     && $key !== '$_SESSION'
-                    && !$existing_var_type->from_static_property
                 ) {
                     foreach ($existing_var_type->getAtomicTypes() as $atomic) {
                         if (!$existing_var_type->hasMixed()
@@ -91,7 +90,18 @@ class NegatedAssertionReconciler extends Reconciler
                             $failed_reconciliation = 2;
 
                             if ($code_location) {
-                                if ($existing_var_type->from_property) {
+                                if ($existing_var_type->from_static_property) {
+                                    if (IssueBuffer::accepts(
+                                        new RedundantPropertyInitializationCheck(
+                                            'Static property type ' . $key . ' with type '
+                                                . $existing_var_type . ' has unexpected isset check — should it be nullable?',
+                                            $code_location
+                                        ),
+                                        $suppressed_issues
+                                    )) {
+                                        // fall through
+                                    }
+                                } elseif ($existing_var_type->from_property) {
                                     if (IssueBuffer::accepts(
                                         new RedundantPropertyInitializationCheck(
                                             'Property type ' . $key . ' with type '
