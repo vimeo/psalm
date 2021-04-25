@@ -1259,7 +1259,7 @@ class ProjectAnalyzer
 
     public function setPhpVersion(string $version): void
     {
-        if (!preg_match('/^(5\.[456]|7\.[01234]|8\.[0])(\..*)?$/', $version)) {
+        if (!preg_match('/^(5\.[456]|7\.[01234]|8\.[01])(\..*)?$/', $version)) {
             throw new \UnexpectedValueException('Expecting a version number in the format x.y');
         }
 

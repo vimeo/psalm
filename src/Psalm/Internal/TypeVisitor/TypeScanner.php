@@ -4,7 +4,7 @@ namespace Psalm\Internal\TypeVisitor;
 use Psalm\Internal\Codebase\Scanner;
 use Psalm\Storage\FileStorage;
 use Psalm\Type\Atomic\TLiteralClassString;
-use Psalm\Type\Atomic\TScalarClassConstant;
+use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\TypeNode;
 use Psalm\Type\NodeVisitor;
@@ -52,7 +52,7 @@ class TypeScanner extends NodeVisitor
             }
         }
 
-        if ($type instanceof TScalarClassConstant) {
+        if ($type instanceof TClassConstant) {
             $this->scanner->queueClassLikeForScanning(
                 $type->fq_classlike_name,
                 false,

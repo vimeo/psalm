@@ -548,7 +548,7 @@ class FunctionLikeDocblockScanner
 
         foreach ($namespaced_type->getAtomicTypes() as $namespaced_type_part) {
             if ($namespaced_type_part instanceof Type\Atomic\TAssertionFalsy
-                || $namespaced_type_part instanceof Type\Atomic\TScalarClassConstant
+                || $namespaced_type_part instanceof Type\Atomic\TClassConstant
                 || ($namespaced_type_part instanceof Type\Atomic\TList
                     && $namespaced_type_part->type_param->isMixed())
                 || ($namespaced_type_part instanceof Type\Atomic\TArray

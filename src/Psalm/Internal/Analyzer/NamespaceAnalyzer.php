@@ -99,7 +99,7 @@ class NamespaceAnalyzer extends SourceAnalyzer
 
         $fq_class_name = Type::getFQCLNFromString($stmt->name->name, $this->getAliases());
 
-        if ($stmt instanceof PhpParser\Node\Stmt\Class_) {
+        if ($stmt instanceof PhpParser\Node\Stmt\Class_ || $stmt instanceof PhpParser\Node\Stmt\Enum_) {
             $this->source->addNamespacedClassAnalyzer(
                 $fq_class_name,
                 new ClassAnalyzer($stmt, $this, $fq_class_name)

@@ -4,7 +4,7 @@ namespace Psalm\Type\Atomic;
 /**
  * Denotes a class constant whose value might not yet be known.
  */
-class TScalarClassConstant extends Scalar
+class TClassConstant extends \Psalm\Type\Atomic
 {
     /** @var string */
     public $fq_classlike_name;
@@ -20,7 +20,7 @@ class TScalarClassConstant extends Scalar
 
     public function getKey(bool $include_extra = true): string
     {
-        return 'scalar-class-constant(' . $this->fq_classlike_name . '::' . $this->const_name . ')';
+        return 'class-constant(' . $this->fq_classlike_name . '::' . $this->const_name . ')';
     }
 
     public function __toString(): string
@@ -35,7 +35,7 @@ class TScalarClassConstant extends Scalar
 
     public function getAssertionString(bool $exact = false): string
     {
-        return 'scalar-class-constant(' . $this->fq_classlike_name . '::' . $this->const_name . ')';
+        return 'class-constant(' . $this->fq_classlike_name . '::' . $this->const_name . ')';
     }
 
     /**

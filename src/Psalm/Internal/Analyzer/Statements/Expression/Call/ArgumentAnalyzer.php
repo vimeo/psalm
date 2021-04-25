@@ -1277,7 +1277,7 @@ class ArgumentAnalyzer
                                     '__call'
                                 );
 
-                                if (!$codebase->classOrInterfaceExists($callable_fq_class_name)) {
+                                if (!$codebase->classOrInterfaceOrEnumExists($callable_fq_class_name)) {
                                     return;
                                 }
 

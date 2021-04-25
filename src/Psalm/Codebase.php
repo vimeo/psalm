@@ -645,6 +645,23 @@ class Codebase
         );
     }
 
+    /**
+     * Check whether a class/interface exists
+     */
+    public function classOrInterfaceOrEnumExists(
+        string $fq_class_name,
+        ?CodeLocation $code_location = null,
+        ?string $calling_fq_class_name = null,
+        ?string $calling_method_id = null
+    ): bool {
+        return $this->classlikes->classOrInterfaceOrEnumExists(
+            $fq_class_name,
+            $code_location,
+            $calling_fq_class_name,
+            $calling_method_id
+        );
+    }
+
     public function classExtendsOrImplements(string $fq_class_name, string $possible_parent): bool
     {
         return $this->classlikes->classExtends($fq_class_name, $possible_parent)
@@ -1749,7 +1766,7 @@ class Codebase
                     null,
                     (string) $atomic_type->value
                 );
-            } elseif ($atomic_type instanceof Type\Atomic\TScalarClassConstant) {
+            } elseif ($atomic_type instanceof Type\Atomic\TClassConstant) {
                 $const = $atomic_type->fq_classlike_name . '::' . $atomic_type->const_name;
                 $completion_items[] = new \LanguageServerProtocol\CompletionItem(
                     $const,

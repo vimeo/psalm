@@ -29,26 +29,28 @@ use function substr;
 
 /**
  * @psalm-type  ThreadData = array{
- *     0: array<string, string>,
- *     1: array<string, string>,
- *     2: array<string, string>,
- *     3: array<string, bool>,
- *     4: array<string, bool>,
- *     5: array<string, string>,
- *     6: array<string, bool>,
- *     7: array<string, bool>,
- *     8: array<string, bool>
+ *     array<string, string>,
+ *     array<string, string>,
+ *     array<string, string>,
+ *     array<string, bool>,
+ *     array<string, bool>,
+ *     array<string, string>,
+ *     array<string, bool>,
+ *     array<string, bool>,
+ *     array<string, bool>
  * }
  *
  * @psalm-type  PoolData = array{
  *     classlikes_data:array{
- *         0:array<lowercase-string, bool>,
- *         1:array<lowercase-string, bool>,
- *         2:array<lowercase-string, bool>,
- *         3:array<string, bool>,
- *         4:array<lowercase-string, bool>,
- *         5:array<string, bool>,
- *         6:array<string, bool>
+ *         array<lowercase-string, bool>,
+ *         array<lowercase-string, bool>,
+ *         array<lowercase-string, bool>,
+ *         array<string, bool>,
+ *         array<lowercase-string, bool>,
+ *         array<string, bool>,
+ *         array<lowercase-string, bool>,
+ *         array<string, bool>,
+ *         array<string, bool>
  *     },
  *     scanner_data: ThreadData,
  *     issues:array<string, list<IssueData>>,

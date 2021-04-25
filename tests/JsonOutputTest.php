@@ -89,7 +89,7 @@ class JsonOutputTest extends TestCase
                     function fooFoo(Badger\Bodger $a): Badger\Bodger {
                         return $a;
                     }',
-                'message' => 'Class or interface Badger\\Bodger does not exist',
+                'message' => 'Class, interface or enum named Badger\\Bodger does not exist',
                 'line' => 2,
                 'error' => 'Badger\\Bodger',
             ],

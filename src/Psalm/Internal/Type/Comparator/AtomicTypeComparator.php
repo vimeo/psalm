@@ -13,6 +13,7 @@ use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TEmptyMixed;
+use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -261,6 +262,24 @@ class AtomicTypeComparator
                 $allow_interface_equality,
                 $atomic_comparison_result
             );
+        }
+
+        if (get_class($container_type_part) === TNamedObject::class
+            && $input_type_part instanceof TEnumCase
+            && $input_type_part->value === $container_type_part->value
+        ) {
+            return true;
+        }
+
+        if (get_class($input_type_part) === TNamedObject::class
+            && $container_type_part instanceof TEnumCase
+            && $input_type_part->value === $container_type_part->value
+        ) {
+            if ($atomic_comparison_result) {
+                $atomic_comparison_result->type_coerced = true;
+            }
+
+            return false;
         }
 
         if (($input_type_part instanceof TNamedObject
@@ -614,7 +633,7 @@ class AtomicTypeComparator
 
         if ($container_type_part instanceof TNamedObject
             && $input_type_part instanceof TNamedObject
-            && $codebase->classOrInterfaceExists($input_type_part->value)
+            && $codebase->classOrInterfaceOrEnumExists($input_type_part->value)
             && (
                 (
                     $codebase->classExists($container_type_part->value)

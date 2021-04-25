@@ -43,6 +43,8 @@ use function array_keys;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
+use function is_string;
+use function is_int;
 
 /**
  * @internal
@@ -132,7 +134,9 @@ class AtomicPropertyFetchAnalyzer
 
         $codebase = $statements_analyzer->getCodebase();
 
-        if (!$codebase->classExists($lhs_type_part->value)) {
+        if (!$codebase->classExists($lhs_type_part->value)
+            && !$codebase->classlikes->enumExists($lhs_type_part->value)
+        ) {
             $interface_exists = false;
 
             self::handleNonExistentClass(
@@ -155,7 +159,54 @@ class AtomicPropertyFetchAnalyzer
         }
 
         $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+
+        $config = $statements_analyzer->getProjectAnalyzer()->getConfig();
+
         $property_id = $fq_class_name . '::$' . $prop_name;
+
+        if ($lhs_type_part instanceof Type\Atomic\TEnumCase) {
+            if ($prop_name !== 'value'
+                || $class_storage->enum_type === null
+                || !$class_storage->enum_cases
+            ) {
+                self::handleNonExistentProperty(
+                    $statements_analyzer,
+                    $codebase,
+                    $stmt,
+                    $context,
+                    $config,
+                    $class_storage,
+                    $prop_name,
+                    $lhs_type_part,
+                    $fq_class_name,
+                    $property_id,
+                    $in_assignment,
+                    $stmt_var_id,
+                    $has_magic_getter,
+                    $var_id
+                );
+            } else {
+                $case_values = [];
+
+                foreach ($class_storage->enum_cases as $enum_case) {
+                    if (is_string($enum_case->value)) {
+                        $case_values[] = new Type\Atomic\TLiteralString($enum_case->value);
+                    } elseif (is_int($enum_case->value)) {
+                        $case_values[] = new Type\Atomic\TLiteralInt($enum_case->value);
+                    } else {
+                        // this should never happen
+                        $case_values[] = new Type\Atomic\TMixed();
+                    }
+                }
+
+                $statements_analyzer->node_data->setType(
+                    $stmt,
+                    new Type\Union($case_values)
+                );
+            }
+
+            return;
+        }
 
         $naive_property_exists = $codebase->properties->propertyExists(
             $property_id,
@@ -243,8 +294,6 @@ class AtomicPropertyFetchAnalyzer
                 $property_id
             );
         }
-
-        $config = $statements_analyzer->getProjectAnalyzer()->getConfig();
 
         if (!$naive_property_exists
             && $fq_class_name !== $context->self
@@ -938,7 +987,7 @@ class AtomicPropertyFetchAnalyzer
             if ($lhs_type_part->from_docblock) {
                 if (IssueBuffer::accepts(
                     new UndefinedDocblockClass(
-                        'Cannot set properties of undefined docblock class ' . $lhs_type_part->value,
+                        'Cannot get properties of undefined docblock class ' . $lhs_type_part->value,
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                         $lhs_type_part->value
                     ),
@@ -949,7 +998,7 @@ class AtomicPropertyFetchAnalyzer
             } else {
                 if (IssueBuffer::accepts(
                     new UndefinedClass(
-                        'Cannot set properties of undefined class ' . $lhs_type_part->value,
+                        'Cannot get properties of undefined class ' . $lhs_type_part->value,
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                         $lhs_type_part->value
                     ),

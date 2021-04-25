@@ -29,6 +29,7 @@ use function substr;
 use Psalm\Issue\InvalidDocblock;
 use function array_intersect_key;
 use function array_merge;
+use function explode;
 
 class AssertionReconciler extends \Psalm\Type\Reconciler
 {
@@ -1206,6 +1207,51 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                         );
                     }
                 }
+            }
+        } elseif ($scalar_type === 'enum') {
+            list($fq_enum_name, $case_name) = explode('::', $value);
+
+            if ($existing_var_type->hasMixed()) {
+                if ($is_loose_equality) {
+                    return $existing_var_type;
+                }
+
+                return new Type\Union([new Type\Atomic\TEnumCase($fq_enum_name, $case_name)]);
+            }
+
+            $can_be_equal = false;
+            $did_remove_type = false;
+
+            foreach ($existing_var_atomic_types as $atomic_key => $atomic_type) {
+                if (get_class($atomic_type) === Type\Atomic\TNamedObject::class
+                    && $atomic_type->value === $fq_enum_name
+                ) {
+                    $can_be_equal = true;
+                    $did_remove_type = true;
+                    $existing_var_type->removeType($atomic_key);
+                    $existing_var_type->addType(new Type\Atomic\TEnumCase($fq_enum_name, $case_name));
+                } elseif ($atomic_key !== $assertion) {
+                    $existing_var_type->removeType($atomic_key);
+                    $did_remove_type = true;
+                } else {
+                    $can_be_equal = true;
+                }
+            }
+
+            if ($var_id
+                && $code_location
+                && (!$can_be_equal || (!$did_remove_type && count($existing_var_atomic_types) === 1))
+            ) {
+                self::triggerIssueForImpossible(
+                    $existing_var_type,
+                    $old_var_type_string,
+                    $var_id,
+                    $assertion,
+                    $can_be_equal,
+                    $negated,
+                    $code_location,
+                    $suppressed_issues
+                );
             }
         }
 

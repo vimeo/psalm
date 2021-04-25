@@ -149,7 +149,7 @@ class StaticCallAnalyzer extends CallAnalyzer
                             ? $context->calling_method_id
                             : null,
                         $statements_analyzer->getSuppressedIssues(),
-                        new ClassLikeNameOptions(false, false, false)
+                        new ClassLikeNameOptions(false, false, false, false)
                     );
                 }
 
