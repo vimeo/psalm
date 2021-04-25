@@ -204,6 +204,19 @@ class InstancePropertyFetchAnalyzer
                 }
             }
 
+            $statements_analyzer->node_data->setType($stmt, Type::getMixed());
+
+            if ($codebase->store_node_types
+                && !$context->collect_initializations
+                && !$context->collect_mutations
+            ) {
+                $codebase->analyzer->addNodeType(
+                    $statements_analyzer->getFilePath(),
+                    $stmt->name,
+                    $stmt_var_type->getId()
+                );
+            }
+
             return true;
         }
 
