@@ -227,7 +227,7 @@ class Pool
         $bytes_to_write = strlen($serialized_message);
         $bytes_written = 0;
 
-        while ($bytes_written < $bytes_to_write) {
+        while ($bytes_written < $bytes_to_write && !feof($write_stream)) {
             // attempt to write the remaining unsent part
             $bytes_written += @fwrite($write_stream, substr($serialized_message, $bytes_written));
 
@@ -354,6 +354,10 @@ class Pool
                                 ($this->task_done_closure)($message->data);
                             }
                         } elseif ($message instanceof ForkProcessErrorMessage) {
+                            // Kill all children
+                            foreach ($this->child_pid_list as $child_pid) {
+                                posix_kill($child_pid, \SIGKILL);
+                            }
                             throw new \Exception($message->message);
                         } else {
                             error_log('Child should return ForkMessage - response type=' . gettype($message));
