@@ -78,4 +78,34 @@ class TypeComparatorTest extends TestCase
             \array_keys($basic_types)
         );
     }
+
+    /**
+     * @dataProvider getAllowedChildTypes
+     */
+    public function testTypeAcceptsType(string $parent_type_string, string $child_type_string): void
+    {
+        $parent_type = \Psalm\Type::parseString($parent_type_string);
+        $child_type = \Psalm\Type::parseString($child_type_string);
+
+        $this->assertTrue(
+            \Psalm\Internal\Type\Comparator\UnionTypeComparator::isContainedBy(
+                $this->project_analyzer->getCodebase(),
+                $child_type,
+                $parent_type
+            )
+        );
+    }
+
+    /**
+     * @return array<array{string, string}>
+     */
+    public function getAllowedChildTypes(): array
+    {
+        return [
+            'iterableAcceptsArray' => [
+                'iterable',
+                'array'
+            ],
+        ];
+    }
 }
