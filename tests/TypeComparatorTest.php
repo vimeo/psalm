@@ -104,7 +104,23 @@ class TypeComparatorTest extends TestCase
         return [
             'iterableAcceptsArray' => [
                 'iterable',
-                'array'
+                'array',
+            ],
+            'listAcceptsEmptyArray' => [
+                'list',
+                'array<empty, empty>',
+            ],
+            'arrayAcceptsEmptyArray' => [
+                'array',
+                'array<empty, empty>',
+            ],
+            'arrayOptionalKeyed1AcceptsEmptyArray' => [
+                'array{foo?: string}',
+                'array<empty, empty>',
+            ],
+            'arrayOptionalKeyed2AcceptsEmptyArray' => [
+                'array{foo?: string}&array<string, mixed>',
+                'array<empty, empty>',
             ],
         ];
     }
