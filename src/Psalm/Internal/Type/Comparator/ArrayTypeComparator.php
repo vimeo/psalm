@@ -33,6 +33,18 @@ class ArrayTypeComparator
     ) : bool {
         $all_types_contain = true;
 
+        $is_empty_array = $input_type_part->equals(new Type\Atomic\TArray([
+            new Type\Union([new Type\Atomic\TEmpty()]),
+            new Type\Union([new Type\Atomic\TEmpty()])
+        ]));
+        if ($is_empty_array
+            && ($container_type_part instanceof Type\Atomic\TArray
+                || $container_type_part instanceof Type\Atomic\TKeyedArray)
+            && !$container_type_part instanceof Type\Atomic\TNonEmptyArray
+        ) {
+            return true;
+        }
+
         if ($container_type_part instanceof TKeyedArray
             && $input_type_part instanceof TArray
         ) {
