@@ -227,7 +227,7 @@ class Pool
         $bytes_to_write = strlen($serialized_message);
         $bytes_written = 0;
 
-        while ($bytes_written < $bytes_to_write) {
+        while ($bytes_written < $bytes_to_write && !feof($write_stream)) {
             // attempt to write the remaining unsent part
             $bytes_written += @fwrite($write_stream, substr($serialized_message, $bytes_written));
 
@@ -354,6 +354,14 @@ class Pool
                                 ($this->task_done_closure)($message->data);
                             }
                         } elseif ($message instanceof ForkProcessErrorMessage) {
+                            // Kill all children
+                            foreach ($this->child_pid_list as $child_pid) {
+                                /**
+                                 * @psalm-suppress UndefinedConstant - does not exist on windows
+                                 * @psalm-suppress MixedArgument
+                                 */
+                                posix_kill($child_pid, \SIGTERM);
+                            }
                             throw new \Exception($message->message);
                         } else {
                             error_log('Child should return ForkMessage - response type=' . gettype($message));
@@ -385,38 +393,46 @@ class Pool
      */
     public function wait(): array
     {
-        // Read all the streams from child processes into an array.
-        $content = $this->readResultsFromChildren();
+        $ignore_return_code = false;
+        try {
+            // Read all the streams from child processes into an array.
+            $content = $this->readResultsFromChildren();
+        } catch (\Throwable $e) {
+            // If children were killed because one of them threw an exception we don't care about return codes.
+            $ignore_return_code = true;
+            // PHP guarantees finally is run even after throwing
+            throw $e;
+        } finally {
+            // Wait for all children to return
+            foreach ($this->child_pid_list as $child_pid) {
+                $process_lookup = posix_kill($child_pid, 0);
 
-        // Wait for all children to return
-        foreach ($this->child_pid_list as $child_pid) {
-            $process_lookup = posix_kill($child_pid, 0);
+                $status = 0;
 
-            $status = 0;
+                if ($process_lookup) {
+                    /**
+                     * @psalm-suppress UndefinedConstant - does not exist on windows
+                     * @psalm-suppress MixedArgument
+                     */
+                    posix_kill($child_pid, SIGALRM);
 
-            if ($process_lookup) {
-                /**
-                 * @psalm-suppress UndefinedConstant - does not exist on windows
-                 * @psalm-suppress MixedArgument
-                 */
-                posix_kill($child_pid, SIGALRM);
-
-                if (pcntl_waitpid($child_pid, $status) < 0) {
-                    error_log(posix_strerror(posix_get_last_error()));
+                    if (pcntl_waitpid($child_pid, $status) < 0) {
+                        error_log(posix_strerror(posix_get_last_error()));
+                    }
                 }
-            }
 
-            // Check to see if the child died a graceful death
-            if (pcntl_wifsignaled($status)) {
-                $return_code = pcntl_wexitstatus($status);
-                $term_sig = pcntl_wtermsig($status);
+                // Check to see if the child died a graceful death
+                if (!$ignore_return_code && pcntl_wifsignaled($status)) {
+                    $return_code = pcntl_wexitstatus($status);
+                    $term_sig = pcntl_wtermsig($status);
 
-                /**
-                 * @psalm-suppress UndefinedConstant - does not exist on windows
-                 */
-                if ($term_sig !== SIGALRM) {
-                    $this->did_have_error = true;
-                    error_log("Child terminated with return code $return_code and signal $term_sig");
+                    /**
+                     * @psalm-suppress UndefinedConstant - does not exist on windows
+                     */
+                    if ($term_sig !== SIGALRM) {
+                        $this->did_have_error = true;
+                        error_log("Child terminated with return code $return_code and signal $term_sig");
+                    }
                 }
             }
         }
