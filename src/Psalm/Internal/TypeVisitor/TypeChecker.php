@@ -3,6 +3,7 @@ namespace Psalm\Internal\TypeVisitor;
 
 use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Storage\MethodStorage;
@@ -167,10 +168,7 @@ class TypeChecker extends NodeVisitor
                 $this->source->getFQCLN(),
                 $this->calling_method_id,
                 $this->suppressed_issues,
-                $this->inferred,
-                false,
-                true,
-                $atomic->from_docblock
+                new ClassLikeNameOptions($this->inferred, false, true, $atomic->from_docblock)
             ) === false
         ) {
             $this->has_errors = true;
@@ -308,10 +306,7 @@ class TypeChecker extends NodeVisitor
             null,
             null,
             $this->suppressed_issues,
-            $this->inferred,
-            false,
-            true,
-            $atomic->from_docblock
+            new ClassLikeNameOptions($this->inferred, false, true, $atomic->from_docblock)
         ) === false
         ) {
             $this->has_errors = true;

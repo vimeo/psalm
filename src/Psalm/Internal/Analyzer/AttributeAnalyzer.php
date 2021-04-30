@@ -34,11 +34,13 @@ class AttributeAnalyzer
             null,
             null,
             $suppressed_issues,
-            false,
-            false,
-            false,
-            false,
-            true
+            new ClassLikeNameOptions(
+                false,
+                false,
+                false,
+                false,
+                true
+            )
         ) === false) {
             return;
         }

@@ -4,6 +4,7 @@ namespace Psalm\Internal\Analyzer\Statements;
 use PhpParser;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\ClosureAnalyzer;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
@@ -440,7 +441,8 @@ class ReturnAnalyzer
                                         new CodeLocation($source, $stmt->expr),
                                         $context->self,
                                         $context->calling_method_id,
-                                        $statements_analyzer->getSuppressedIssues()
+                                        $statements_analyzer->getSuppressedIssues(),
+                                        new ClassLikeNameOptions(true)
                                     ) === false
                                     ) {
                                         return false;
@@ -460,7 +462,8 @@ class ReturnAnalyzer
                                                         new CodeLocation($source, $item->value),
                                                         $context->self,
                                                         $context->calling_method_id,
-                                                        $statements_analyzer->getSuppressedIssues()
+                                                        $statements_analyzer->getSuppressedIssues(),
+                                                        new ClassLikeNameOptions(true)
                                                     ) === false
                                                     ) {
                                                         return false;

@@ -4,6 +4,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 use PhpParser;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
@@ -1164,7 +1165,8 @@ class ArgumentAnalyzer
                     $arg_location,
                     $context->self,
                     $context->calling_method_id,
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
+                    new ClassLikeNameOptions(true)
                 ) === false
                 ) {
                     return;
@@ -1182,7 +1184,8 @@ class ArgumentAnalyzer
                                     $arg_location,
                                     $context->self,
                                     $context->calling_method_id,
-                                    $statements_analyzer->getSuppressedIssues()
+                                    $statements_analyzer->getSuppressedIssues(),
+                                    new ClassLikeNameOptions(true)
                                 ) === false
                                 ) {
                                     return;
@@ -1258,7 +1261,8 @@ class ArgumentAnalyzer
                                     $arg_location,
                                     $context->self,
                                     $context->calling_method_id,
-                                    $statements_analyzer->getSuppressedIssues()
+                                    $statements_analyzer->getSuppressedIssues(),
+                                    new ClassLikeNameOptions(true)
                                 ) === false
                                 ) {
                                     return;

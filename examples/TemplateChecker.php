@@ -6,6 +6,7 @@ use Psalm;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\CodeLocation;
@@ -86,7 +87,7 @@ class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
             null,
             null,
             [],
-            true
+            new ClassLikeNameOptions(true)
         ) === false
         ) {
             return false;

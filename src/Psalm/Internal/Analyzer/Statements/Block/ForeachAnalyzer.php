@@ -4,6 +4,7 @@ namespace Psalm\Internal\Analyzer\Statements\Block;
 use PhpParser;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -609,7 +610,8 @@ class ForeachAnalyzer
                         new CodeLocation($statements_analyzer->getSource(), $expr),
                         $context->self,
                         $context->calling_method_id,
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
+                        new ClassLikeNameOptions(true)
                     ) === false) {
                         return false;
                     }

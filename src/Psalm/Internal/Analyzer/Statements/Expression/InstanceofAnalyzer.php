@@ -66,8 +66,7 @@ class InstanceofAnalyzer
                         new CodeLocation($statements_analyzer->getSource(), $stmt->class),
                         $context->self,
                         $context->calling_method_id,
-                        $statements_analyzer->getSuppressedIssues(),
-                        false
+                        $statements_analyzer->getSuppressedIssues()
                     ) === false) {
                         return false;
                     }

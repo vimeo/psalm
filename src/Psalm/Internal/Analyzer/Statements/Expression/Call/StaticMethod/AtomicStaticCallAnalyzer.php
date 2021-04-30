@@ -3,6 +3,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Call\StaticMethod;
 
 use PhpParser;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -65,9 +66,11 @@ class AtomicStaticCallAnalyzer
                     ? $context->calling_method_id
                     : null,
                 $statements_analyzer->getSuppressedIssues(),
-                $stmt->class instanceof PhpParser\Node\Name
-                    && count($stmt->class->parts) === 1
-                    && in_array(strtolower($stmt->class->parts[0]), ['self', 'static'], true)
+                new ClassLikeNameOptions(
+                    $stmt->class instanceof PhpParser\Node\Name
+                        && count($stmt->class->parts) === 1
+                        && in_array(strtolower($stmt->class->parts[0]), ['self', 'static'], true)
+                )
             )) {
                 return;
             }
@@ -84,8 +87,7 @@ class AtomicStaticCallAnalyzer
                 new CodeLocation($statements_analyzer, $stmt->class),
                 $context->self,
                 $context->calling_method_id,
-                $statements_analyzer->getSuppressedIssues(),
-                false
+                $statements_analyzer->getSuppressedIssues()
             )) {
                 return;
             }
@@ -118,8 +120,7 @@ class AtomicStaticCallAnalyzer
                 new CodeLocation($statements_analyzer, $stmt->class),
                 $context->self,
                 $context->calling_method_id,
-                $statements_analyzer->getSuppressedIssues(),
-                false
+                $statements_analyzer->getSuppressedIssues()
             )) {
                 return;
             }

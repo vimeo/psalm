@@ -248,10 +248,12 @@ class FileAnalyzer extends SourceAnalyzer
                         null,
                         null,
                         $this->suppressed_issues,
-                        true,
-                        false,
-                        true,
-                        true
+                        new ClassLikeNameOptions(
+                            true,
+                            false,
+                            true,
+                            true
+                        )
                     ) === false) {
                         continue;
                     }

@@ -3,6 +3,7 @@ namespace Psalm\Internal\Analyzer\Statements\Block;
 
 use PhpParser;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -223,7 +224,7 @@ class TryAnalyzer
                         $context->self,
                         $context->calling_method_id,
                         $statements_analyzer->getSuppressedIssues(),
-                        false
+                        new ClassLikeNameOptions(true)
                     ) === false) {
                         // fall through
                     }

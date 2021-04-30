@@ -196,7 +196,6 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
 
     /**
      * @param  array<string>    $suppressed_issues
-     * @param  bool             $inferred - whether or not the type was inferred
      */
     public static function checkFullyQualifiedClassLikeName(
         StatementsSource $statements_source,
@@ -205,12 +204,12 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         ?string $calling_fq_class_name,
         ?string $calling_method_id,
         array $suppressed_issues,
-        bool $inferred = true,
-        bool $allow_trait = false,
-        bool $allow_interface = true,
-        bool $from_docblock = false,
-        bool $from_attribute = false
+        ?ClassLikeNameOptions $options = null
     ): ?bool {
+        if ($options === null) {
+            $options = new ClassLikeNameOptions();
+        }
+
         $codebase = $statements_source->getCodebase();
         if ($fq_class_name === '') {
             if (IssueBuffer::accepts(
@@ -257,20 +256,20 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
 
         $class_exists = $codebase->classlikes->classExists(
             $fq_class_name,
-            !$inferred ? $code_location : null,
+            !$options->inferred ? $code_location : null,
             $calling_fq_class_name,
             $calling_method_id
         );
         $interface_exists = $codebase->classlikes->interfaceExists(
             $fq_class_name,
-            !$inferred ? $code_location : null,
+            !$options->inferred ? $code_location : null,
             $calling_fq_class_name,
             $calling_method_id
         );
 
-        if (!$class_exists && !($interface_exists && $allow_interface)) {
-            if (!$allow_trait || !$codebase->classlikes->traitExists($fq_class_name, $code_location)) {
-                if ($from_docblock) {
+        if (!$class_exists && !($interface_exists && $options->allow_interface)) {
+            if (!$options->allow_trait || !$codebase->classlikes->traitExists($fq_class_name, $code_location)) {
+                if ($options->from_docblock) {
                     if (IssueBuffer::accepts(
                         new UndefinedDocblockClass(
                             'Docblock-defined class or interface ' . $fq_class_name . ' does not exist',
@@ -281,7 +280,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                     )) {
                         return false;
                     }
-                } elseif ($from_attribute) {
+                } elseif ($options->from_attribute) {
                     if (IssueBuffer::accepts(
                         new UndefinedAttributeClass(
                             'Attribute class ' . $fq_class_name . ' does not exist',
@@ -316,7 +315,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         try {
             $class_storage = $codebase->classlike_storage_provider->get($aliased_name);
         } catch (\InvalidArgumentException $e) {
-            if (!$inferred) {
+            if (!$options->inferred) {
                 throw $e;
             }
 
@@ -343,7 +342,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
             }
         }
 
-        if (!$inferred) {
+        if (!$options->inferred) {
             if (($class_exists && !$codebase->classHasCorrectCasing($fq_class_name)) ||
                 ($interface_exists && !$codebase->interfaceHasCorrectCasing($fq_class_name))
             ) {
@@ -362,7 +361,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
             }
         }
 
-        if (!$inferred) {
+        if (!$options->inferred) {
             $event = new AfterClassLikeExistenceCheckEvent(
                 $fq_class_name,
                 $code_location,

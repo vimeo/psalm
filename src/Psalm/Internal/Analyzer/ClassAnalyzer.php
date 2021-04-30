@@ -2191,7 +2191,9 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 null,
                 null,
                 $this->getSuppressedIssues(),
-                false
+                new ClassLikeNameOptions(
+                    false
+                )
             ) === false) {
                 return false;
             }
@@ -2449,7 +2451,9 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             null,
             null,
             $storage->suppressed_issues + $this->getSuppressedIssues(),
-            false
+            new ClassLikeNameOptions(
+                false
+            )
         ) === false) {
             return;
         }

@@ -3,6 +3,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Call\Method;
 
 use PhpParser;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -144,10 +145,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                 $context->self,
                 $context->calling_method_id,
                 $statements_analyzer->getSuppressedIssues(),
-                true,
-                false,
-                true,
-                $lhs_type_part->from_docblock
+                new ClassLikeNameOptions(true, false, true, $lhs_type_part->from_docblock)
             );
         }
 

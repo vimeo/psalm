@@ -163,8 +163,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                     new CodeLocation($statements_analyzer->getSource(), $stmt->class),
                     $context->self,
                     $context->calling_method_id,
-                    $statements_analyzer->getSuppressedIssues(),
-                    false
+                    $statements_analyzer->getSuppressedIssues()
                 ) === false) {
                     ArgumentsAnalyzer::analyze(
                         $statements_analyzer,

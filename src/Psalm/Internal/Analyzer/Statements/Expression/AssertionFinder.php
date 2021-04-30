@@ -4,6 +4,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression;
 use PhpParser;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\CodeLocation;
@@ -2457,8 +2458,7 @@ class AssertionFinder
                 new CodeLocation($source, $whichclass_expr),
                 null,
                 null,
-                $source->getSuppressedIssues(),
-                false
+                $source->getSuppressedIssues()
             ) === false
         ) {
             // fall through
@@ -3148,7 +3148,7 @@ class AssertionFinder
                     null,
                     null,
                     $source->getSuppressedIssues(),
-                    true
+                    new ClassLikeNameOptions(true)
                 ) === false
                 ) {
                     return [];

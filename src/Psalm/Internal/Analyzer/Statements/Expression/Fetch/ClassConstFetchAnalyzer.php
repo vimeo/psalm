@@ -3,6 +3,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Fetch;
 
 use PhpParser;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -89,8 +90,7 @@ class ClassConstFetchAnalyzer
                             $context->self,
                             $context->calling_method_id,
                             $statements_analyzer->getSuppressedIssues(),
-                            false,
-                            true
+                            new ClassLikeNameOptions(false, true)
                         ) === false) {
                             return true;
                         }

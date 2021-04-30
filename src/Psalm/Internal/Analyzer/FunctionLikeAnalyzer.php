@@ -624,10 +624,12 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     $context->self,
                     $context->calling_method_id,
                     $statements_analyzer->getSuppressedIssues(),
-                    false,
-                    false,
-                    true,
-                    true
+                    new ClassLikeNameOptions(
+                        false,
+                        false,
+                        true,
+                        true
+                    )
                 )) {
                     $input_type = new Type\Union([new TNamedObject($expected_exception)]);
                     $container_type = new Type\Union([new TNamedObject('Exception'), new TNamedObject('Throwable')]);

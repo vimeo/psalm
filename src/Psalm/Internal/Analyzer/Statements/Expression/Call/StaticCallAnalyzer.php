@@ -3,6 +3,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use PhpParser;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -148,9 +149,7 @@ class StaticCallAnalyzer extends CallAnalyzer
                             ? $context->calling_method_id
                             : null,
                         $statements_analyzer->getSuppressedIssues(),
-                        false,
-                        false,
-                        false
+                        new ClassLikeNameOptions(false, false, false)
                     );
                 }
 
