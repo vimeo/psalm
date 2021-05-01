@@ -99,6 +99,21 @@ class PropertyExistenceProvider
         ?Context $context = null,
         ?CodeLocation $code_location = null
     ): ?bool {
+        foreach (self::$legacy_handlers[strtolower($fq_classlike_name)] ?? [] as $property_handler) {
+            $property_exists = $property_handler(
+                $fq_classlike_name,
+                $property_name,
+                $read_mode,
+                $source,
+                $context,
+                $code_location
+            );
+
+            if ($property_exists !== null) {
+                return $property_exists;
+            }
+        }
+
         foreach (self::$handlers[strtolower($fq_classlike_name)] ?? [] as $property_handler) {
             $event = new PropertyExistenceProviderEvent(
                 $fq_classlike_name,
@@ -109,21 +124,6 @@ class PropertyExistenceProvider
                 $code_location
             );
             $property_exists = $property_handler($event);
-
-            if ($property_exists !== null) {
-                return $property_exists;
-            }
-        }
-
-        foreach (self::$legacy_handlers[strtolower($fq_classlike_name)] ?? [] as $property_handler) {
-            $property_exists = $property_handler(
-                $fq_classlike_name,
-                $property_name,
-                $read_mode,
-                $source,
-                $context,
-                $code_location
-            );
 
             if ($property_exists !== null) {
                 return $property_exists;

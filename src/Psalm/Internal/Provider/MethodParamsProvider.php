@@ -106,6 +106,21 @@ class MethodParamsProvider
         ?Context $context = null,
         ?CodeLocation $code_location = null
     ): ?array {
+        foreach (self::$legacy_handlers[strtolower($fq_classlike_name)] ?? [] as $class_handler) {
+            $result = $class_handler(
+                $fq_classlike_name,
+                $method_name_lowercase,
+                $call_args,
+                $statements_source,
+                $context,
+                $code_location
+            );
+
+            if ($result !== null) {
+                return $result;
+            }
+        }
+
         foreach (self::$handlers[strtolower($fq_classlike_name)] ?? [] as $class_handler) {
             $event = new MethodParamsProviderEvent(
                 $fq_classlike_name,
@@ -116,21 +131,6 @@ class MethodParamsProvider
                 $code_location
             );
             $result = $class_handler($event);
-
-            if ($result !== null) {
-                return $result;
-            }
-        }
-
-        foreach (self::$legacy_handlers[strtolower($fq_classlike_name)] ?? [] as $class_handler) {
-            $result = $class_handler(
-                $fq_classlike_name,
-                $method_name_lowercase,
-                $call_args,
-                $statements_source,
-                $context,
-                $code_location
-            );
 
             if ($result !== null) {
                 return $result;

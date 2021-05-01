@@ -96,6 +96,20 @@ class MethodVisibilityProvider
         Context $context,
         ?CodeLocation $code_location = null
     ): ?bool {
+        foreach (self::$legacy_handlers[strtolower($fq_classlike_name)] ?? [] as $method_handler) {
+            $method_visible = $method_handler(
+                $source,
+                $fq_classlike_name,
+                $method_name,
+                $context,
+                $code_location
+            );
+
+            if ($method_visible !== null) {
+                return $method_visible;
+            }
+        }
+
         foreach (self::$handlers[strtolower($fq_classlike_name)] ?? [] as $method_handler) {
             $event = new MethodVisibilityProviderEvent(
                 $source,
@@ -105,20 +119,6 @@ class MethodVisibilityProvider
                 $code_location
             );
             $method_visible = $method_handler($event);
-
-            if ($method_visible !== null) {
-                return $method_visible;
-            }
-        }
-
-        foreach (self::$legacy_handlers[strtolower($fq_classlike_name)] ?? [] as $method_handler) {
-            $method_visible = $method_handler(
-                $source,
-                $fq_classlike_name,
-                $method_name,
-                $context,
-                $code_location
-            );
 
             if ($method_visible !== null) {
                 return $method_visible;

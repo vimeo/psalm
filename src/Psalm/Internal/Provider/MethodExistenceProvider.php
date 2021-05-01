@@ -91,6 +91,19 @@ class MethodExistenceProvider
         ?StatementsSource $source = null,
         ?CodeLocation $code_location = null
     ): ?bool {
+        foreach (self::$legacy_handlers[strtolower($fq_classlike_name)] ?? [] as $method_handler) {
+            $method_exists = $method_handler(
+                $fq_classlike_name,
+                $method_name_lowercase,
+                $source,
+                $code_location
+            );
+
+            if ($method_exists !== null) {
+                return $method_exists;
+            }
+        }
+
         foreach (self::$handlers[strtolower($fq_classlike_name)] ?? [] as $method_handler) {
             $event = new MethodExistenceProviderEvent(
                 $fq_classlike_name,
@@ -99,19 +112,6 @@ class MethodExistenceProvider
                 $code_location
             );
             $method_exists = $method_handler($event);
-
-            if ($method_exists !== null) {
-                return $method_exists;
-            }
-        }
-
-        foreach (self::$legacy_handlers[strtolower($fq_classlike_name)] ?? [] as $method_handler) {
-            $method_exists = $method_handler(
-                $fq_classlike_name,
-                $method_name_lowercase,
-                $source,
-                $code_location
-            );
 
             if ($method_exists !== null) {
                 return $method_exists;

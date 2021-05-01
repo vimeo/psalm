@@ -120,6 +120,24 @@ class MethodReturnTypeProvider
         ?string $called_fq_classlike_name = null,
         ?string $called_method_name = null
     ): ?Type\Union {
+        foreach (self::$legacy_handlers[strtolower($fq_classlike_name)] ?? [] as $class_handler) {
+            $result = $class_handler(
+                $statements_source,
+                $fq_classlike_name,
+                strtolower($method_name),
+                $call_args,
+                $context,
+                $code_location,
+                $template_type_parameters,
+                $called_fq_classlike_name,
+                $called_method_name ? strtolower($called_method_name) : null
+            );
+
+            if ($result) {
+                return $result;
+            }
+        }
+
         foreach (self::$handlers[strtolower($fq_classlike_name)] ?? [] as $class_handler) {
             $event = new MethodReturnTypeProviderEvent(
                 $statements_source,
@@ -133,24 +151,6 @@ class MethodReturnTypeProvider
                 $called_method_name ? strtolower($called_method_name) : null
             );
             $result = $class_handler($event);
-
-            if ($result) {
-                return $result;
-            }
-        }
-
-        foreach (self::$legacy_handlers[strtolower($fq_classlike_name)] ?? [] as $class_handler) {
-            $result = $class_handler(
-                $statements_source,
-                $fq_classlike_name,
-                strtolower($method_name),
-                $call_args,
-                $context,
-                $code_location,
-                $template_type_parameters,
-                $called_fq_classlike_name,
-                $called_method_name ? strtolower($called_method_name) : null
-            );
 
             if ($result) {
                 return $result;

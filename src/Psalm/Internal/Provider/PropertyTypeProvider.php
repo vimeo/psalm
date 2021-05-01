@@ -100,6 +100,20 @@ class PropertyTypeProvider
             $source->addSuppressedIssues(['NonInvariantDocblockPropertyType']);
         }
 
+        foreach (self::$legacy_handlers[strtolower($fq_classlike_name)] ?? [] as $property_handler) {
+            $property_type = $property_handler(
+                $fq_classlike_name,
+                $property_name,
+                $read_mode,
+                $source,
+                $context
+            );
+
+            if ($property_type !== null) {
+                return $property_type;
+            }
+        }
+
         foreach (self::$handlers[strtolower($fq_classlike_name)] ?? [] as $property_handler) {
             $event = new PropertyTypeProviderEvent(
                 $fq_classlike_name,
@@ -109,20 +123,6 @@ class PropertyTypeProvider
                 $context
             );
             $property_type = $property_handler($event);
-
-            if ($property_type !== null) {
-                return $property_type;
-            }
-        }
-
-        foreach (self::$legacy_handlers[strtolower($fq_classlike_name)] ?? [] as $property_handler) {
-            $property_type = $property_handler(
-                $fq_classlike_name,
-                $property_name,
-                $read_mode,
-                $source,
-                $context
-            );
 
             if ($property_type !== null) {
                 return $property_type;
