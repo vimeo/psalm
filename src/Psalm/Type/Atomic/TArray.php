@@ -55,7 +55,7 @@ class TArray extends \Psalm\Type\Atomic
         return $this->type_params[0]->isArrayKey() && $this->type_params[1]->isMixed();
     }
 
-    public function equals(Atomic $other_type): bool
+    public function equals(Atomic $other_type, bool $ensure_source_equality): bool
     {
         if (get_class($other_type) !== static::class) {
             return false;
@@ -73,7 +73,7 @@ class TArray extends \Psalm\Type\Atomic
         }
 
         foreach ($this->type_params as $i => $type_param) {
-            if (!$type_param->equals($other_type->type_params[$i])) {
+            if (!$type_param->equals($other_type->type_params[$i], $ensure_source_equality)) {
                 return false;
             }
         }

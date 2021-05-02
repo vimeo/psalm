@@ -177,13 +177,13 @@ class TList extends \Psalm\Type\Atomic
         );
     }
 
-    public function equals(Atomic $other_type): bool
+    public function equals(Atomic $other_type, bool $ensure_source_equality): bool
     {
         if (get_class($other_type) !== static::class) {
             return false;
         }
 
-        if (!$this->type_param->equals($other_type->type_param)) {
+        if (!$this->type_param->equals($other_type->type_param, $ensure_source_equality)) {
             return false;
         }
 

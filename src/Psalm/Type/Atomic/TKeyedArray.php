@@ -366,7 +366,7 @@ class TKeyedArray extends \Psalm\Type\Atomic
         return $this->properties;
     }
 
-    public function equals(Atomic $other_type): bool
+    public function equals(Atomic $other_type, bool $ensure_source_equality): bool
     {
         if (get_class($other_type) !== static::class) {
             return false;
@@ -385,7 +385,7 @@ class TKeyedArray extends \Psalm\Type\Atomic
                 return false;
             }
 
-            if (!$property_type->equals($other_type->properties[$property_name])) {
+            if (!$property_type->equals($other_type->properties[$property_name], $ensure_source_equality)) {
                 return false;
             }
         }

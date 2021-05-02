@@ -1360,7 +1360,7 @@ class Union implements TypeNode
         }
     }
 
-    public function equals(Union $other_type): bool
+    public function equals(Union $other_type, bool $ensure_source_equality = true): bool
     {
         if ($other_type === $this) {
             return true;
@@ -1390,7 +1390,7 @@ class Union implements TypeNode
             return false;
         }
 
-        if ($this->from_docblock !== $other_type->from_docblock) {
+        if ($ensure_source_equality && $this->from_docblock !== $other_type->from_docblock) {
             return false;
         }
 
@@ -1413,7 +1413,7 @@ class Union implements TypeNode
                 return false;
             }
 
-            if (!$atomic_type->equals($other_atomic_types[$key])) {
+            if (!$atomic_type->equals($other_atomic_types[$key], $ensure_source_equality)) {
                 return false;
             }
         }

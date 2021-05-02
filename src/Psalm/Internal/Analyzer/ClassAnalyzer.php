@@ -772,7 +772,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     );
 
                     if ($property_storage->location
-                        && !$property_type->equals($guide_property_type)
+                        && !$property_type->equals($guide_property_type, false)
                         && $guide_class_storage->user_defined
                     ) {
                         if (IssueBuffer::accepts(

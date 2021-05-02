@@ -99,7 +99,7 @@ class TIterable extends Atomic
         return $this->type_params[0]->isMixed() && $this->type_params[1]->isMixed();
     }
 
-    public function equals(Atomic $other_type): bool
+    public function equals(Atomic $other_type, bool $ensure_source_equality): bool
     {
         if (!$other_type instanceof self) {
             return false;
@@ -110,7 +110,7 @@ class TIterable extends Atomic
         }
 
         foreach ($this->type_params as $i => $type_param) {
-            if (!$type_param->equals($other_type->type_params[$i])) {
+            if (!$type_param->equals($other_type->type_params[$i], $ensure_source_equality)) {
                 return false;
             }
         }

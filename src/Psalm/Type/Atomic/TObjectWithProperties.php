@@ -189,7 +189,7 @@ class TObjectWithProperties extends TObject
         }
     }
 
-    public function equals(Atomic $other_type): bool
+    public function equals(Atomic $other_type, bool $ensure_source_equality): bool
     {
         if (!$other_type instanceof self) {
             return false;
@@ -208,7 +208,7 @@ class TObjectWithProperties extends TObject
                 return false;
             }
 
-            if (!$property_type->equals($other_type->properties[$property_name])) {
+            if (!$property_type->equals($other_type->properties[$property_name], $ensure_source_equality)) {
                 return false;
             }
         }

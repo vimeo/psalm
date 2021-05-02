@@ -209,13 +209,13 @@ class TClassStringMap extends \Psalm\Type\Atomic
         return [$this->value_param];
     }
 
-    public function equals(Atomic $other_type): bool
+    public function equals(Atomic $other_type, bool $ensure_source_equality): bool
     {
         if (get_class($other_type) !== static::class) {
             return false;
         }
 
-        if (!$this->value_param->equals($other_type->value_param)) {
+        if (!$this->value_param->equals($other_type->value_param, $ensure_source_equality)) {
             return false;
         }
 

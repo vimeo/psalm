@@ -71,7 +71,7 @@ class TGenericObject extends TNamedObject
         return parent::toNamespacedString($namespace, $aliased_classes, $this_class, false);
     }
 
-    public function equals(Atomic $other_type): bool
+    public function equals(Atomic $other_type, bool $ensure_source_equality): bool
     {
         if (!$other_type instanceof self) {
             return false;
@@ -82,7 +82,7 @@ class TGenericObject extends TNamedObject
         }
 
         foreach ($this->type_params as $i => $type_param) {
-            if (!$type_param->equals($other_type->type_params[$i])) {
+            if (!$type_param->equals($other_type->type_params[$i], $ensure_source_equality)) {
                 return false;
             }
         }
