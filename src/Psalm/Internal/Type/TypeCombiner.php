@@ -863,7 +863,14 @@ class TypeCombiner
                 $combination->value_types['false'],
                 $combination->value_types['float']
             );
-            $combination->value_types[$type_key] = $type;
+
+            if (!isset($combination->value_types[$type_key])
+                || $combination->value_types[$type_key]->getId() === $type->getId()
+            ) {
+                $combination->value_types[$type_key] = $type;
+            } else {
+                $combination->value_types[$type_key] = new TScalar();
+            }
 
             return null;
         }

@@ -23,6 +23,7 @@ use Psalm\Type\Atomic\TCallableKeyedArray;
 use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TEmpty;
+use Psalm\Type\Atomic\TEmptyScalar;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\THtmlEscapedString;
@@ -36,6 +37,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyList;
+use Psalm\Type\Atomic\TNonEmptyScalar;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TNumericString;
@@ -262,6 +264,12 @@ abstract class Atomic implements TypeNode
 
             case '$this':
                 return new TNamedObject('static');
+
+            case 'non-empty-scalar':
+                return new TNonEmptyScalar;
+
+            case 'empty-scalar':
+                return new TEmptyScalar;
         }
 
         if (strpos($value, '-') && substr($value, 0, 4) !== 'OCI-') {
