@@ -1680,6 +1680,16 @@ class Config
             $core_generic_files[] = $stringable_path;
         }
 
+        if (\PHP_VERSION_ID < 80100 && $codebase->php_major_version >= 8 && $codebase->php_minor_version >= 1) {
+            $stringable_path = dirname(__DIR__, 2) . '/stubs/Php81.phpstub';
+
+            if (!file_exists($stringable_path)) {
+                throw new \UnexpectedValueException('Cannot locate PHP 8.1 classes');
+            }
+
+            $core_generic_files[] = $stringable_path;
+        }
+
         $stub_files = array_merge($core_generic_files, $this->preloaded_stub_files);
 
         if (!$stub_files) {
@@ -1731,6 +1741,16 @@ class Config
 
             if (!file_exists($stringable_path)) {
                 throw new \UnexpectedValueException('Cannot locate PHP 8.0 classes');
+            }
+
+            $core_generic_files[] = $stringable_path;
+        }
+
+        if (\PHP_VERSION_ID >= 80100 && $codebase->php_major_version >= 8 && $codebase->php_minor_version >= 1) {
+            $stringable_path = dirname(__DIR__, 2) . '/stubs/Php81.phpstub';
+
+            if (!file_exists($stringable_path)) {
+                throw new \UnexpectedValueException('Cannot locate PHP 8.1 classes');
             }
 
             $core_generic_files[] = $stringable_path;

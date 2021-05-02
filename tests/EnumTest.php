@@ -65,6 +65,25 @@ class EnumTest extends TestCase
                 [],
                 '8.1'
             ],
+            'enumCases' => [
+                '<?php
+                    enum Suit {
+                        case Hearts;
+                        case Diamonds;
+                        case Clubs;
+                        case Spades;
+                    }
+
+                    foreach (Suit::cases() as $case) {
+                        echo match($case) {
+                            Suit::Hearts, Suit::Diamonds => "Red",
+                            Suit::Clubs, Suit::Spades => "Black",
+                        };
+                    }',
+                [],
+                [],
+                '8.1'
+            ],
         ];
     }
 
@@ -156,6 +175,26 @@ class EnumTest extends TestCase
                                 Suit::Clubs => "Black",
                             };
                         }
+                    }',
+                'error_message' => 'UnhandledMatchCondition',
+                [],
+                false,
+                '8.1'
+            ],
+            'insufficientMatchesForCases' => [
+                '<?php
+                    enum Suit {
+                        case Hearts;
+                        case Diamonds;
+                        case Clubs;
+                        case Spades;
+                    }
+
+                    foreach (Suit::cases() as $case) {
+                        echo match($case) {
+                            Suit::Hearts, Suit::Diamonds => "Red",
+                            Suit::Clubs => "Black",
+                        };
                     }',
                 'error_message' => 'UnhandledMatchCondition',
                 [],

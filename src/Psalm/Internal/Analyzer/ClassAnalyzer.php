@@ -2342,6 +2342,10 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         );
                     }
 
+                    if ($storage->is_enum && $interface_method_name_lc === 'cases') {
+                        continue;
+                    }
+
                     if (!$implementer_method_storage) {
                         IssueBuffer::accepts(
                             new UnimplementedInterfaceMethod(

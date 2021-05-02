@@ -274,6 +274,18 @@ class ClassLikeNodeScanner
                 $storage->enum_type = $node->scalarType->name === 'string' ? 'string' : 'int';
             }
 
+            $this->codebase->scanner->queueClassLikeForScanning('UnitEnum');
+            $storage->class_implements['unitenum'] = 'UnitEnum';
+            $storage->direct_class_interfaces['unitenum'] = 'UnitEnum';
+            $this->file_storage->required_interfaces['unitenum'] = 'UnitEnum';
+            $storage->final = true;
+
+            $storage->declaring_method_ids['cases'] = new \Psalm\Internal\MethodIdentifier(
+                'UnitEnum',
+                'cases'
+            );
+            $storage->appearing_method_ids['cases'] = $storage->declaring_method_ids['cases'];
+
             $this->codebase->classlikes->addFullyQualifiedEnumName($fq_classlike_name, $this->file_path);
         } else {
             throw new \UnexpectedValueException('Unknown classlike type');
