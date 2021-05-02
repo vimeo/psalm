@@ -160,9 +160,20 @@ class Reconciler
                 $orred_type = null;
 
                 foreach ($new_type_part_parts as $new_type_part_part) {
-                    if ($new_type_part_part[0] === '>') {
-                        /** @var array<string, array<int, array<int, string>>> */
-                        $data = \json_decode(substr($new_type_part_part, 1), true);
+                    if ($new_type_part_part[0] === '>'
+                        || ($new_type_part_part[0] === '!'
+                            && $new_type_part_part[1] === '>')
+                    ) {
+                        if ($new_type_part_part[0] === '!') {
+                            $nested_negated = !$negated;
+
+                            /** @var array<string, array<int, array<int, string>>> */
+                            $data = \json_decode(substr($new_type_part_part, 2), true);
+                        } else {
+                            $nested_negated = $negated;
+                            /** @var array<string, array<int, array<int, string>>> */
+                            $data = \json_decode(substr($new_type_part_part, 1), true);
+                        }
 
                         $existing_types = self::reconcileKeyedTypes(
                             $data,
@@ -174,10 +185,10 @@ class Reconciler
                             $template_type_map,
                             $inside_loop,
                             $code_location,
-                            $negated
+                            $nested_negated
                         );
 
-                        $new_type_part_part = '!falsy';
+                        $new_type_part_part = ($nested_negated ? '' : '!') . 'falsy';
                     }
 
                     $result_type_candidate = AssertionReconciler::reconcile(

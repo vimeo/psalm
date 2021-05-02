@@ -449,6 +449,13 @@ class AssignmentInConditionalTest extends \Psalm\Tests\TestCase
                 [],
                 '8.0'
             ],
+            'assignmentForComparison' => [
+                '<?php
+                    function foo(int $b): void {
+                        if ($a = $b > 1) {}
+                        if ($a) {}
+                    }'
+            ],
         ];
     }
 
