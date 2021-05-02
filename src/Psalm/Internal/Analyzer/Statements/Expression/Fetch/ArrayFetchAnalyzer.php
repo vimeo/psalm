@@ -1091,10 +1091,8 @@ class ArrayFetchAnalyzer
 
         if ($in_assignment
             && $type instanceof TArray
-            && (($type->type_params[0]->isEmpty() && $type->type_params[1]->isEmpty())
-                || ($type->type_params[1]->hasMixed()
-                    && count($key_values) === 1
-                    && \is_string($key_values[0])))
+            && $type->type_params[0]->isEmpty()
+            && $type->type_params[1]->isEmpty()
         ) {
             $from_empty_array = $type->type_params[0]->isEmpty() && $type->type_params[1]->isEmpty();
 

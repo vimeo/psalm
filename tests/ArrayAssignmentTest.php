@@ -1046,20 +1046,6 @@ class ArrayAssignmentTest extends TestCase
                     $c = new C();
                     $c[] = "hello";',
             ],
-            'addToMixedArray' => [
-                '<?php
-                    /**
-                     * @param array{key: string} $a
-                     */
-                    function foo(array $a): void {
-                        echo $a["key"];
-                    }
-
-                    function bar(array $arr) : void {
-                        $arr["key"] = "qqq";
-                        foo($arr);
-                    }'
-            ],
             'checkEmptinessAfterConditionalArrayAdjustment' => [
                 '<?php
                     class A {
@@ -1566,6 +1552,21 @@ class ArrayAssignmentTest extends TestCase
                 {
                     [$key => 123];
                 }',
+            ],
+            'assignStringIndexed' => [
+                '<?php
+                    /**
+                     * @param array<string, mixed> $array
+                     * @return non-empty-array<string, mixed>
+                     */
+                    function getArray(array $array): array {
+                        if (rand(0, 1)) {
+                            $array["a"] = 2;
+                        } else {
+                            $array["b"] = 1;
+                        }
+                        return $array;
+                    }'
             ],
         ];
     }
