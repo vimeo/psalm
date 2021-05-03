@@ -23,6 +23,7 @@
     </rule>
 
     <rule ref="SlevomatCodingStandard.Namespaces.UnusedUses">
+        <exclude-pattern>src/Psalm/Internal/Codebase/Scanner.php</exclude-pattern>
         <properties>
             <property name="searchAnnotations" type="boolean" value="true"/>
         </properties>
