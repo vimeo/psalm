@@ -1207,7 +1207,7 @@ class MethodCallTest extends TestCase
                             $bar::baz();
                         }
                     }',
-                'error_message' => 'UndefinedClass',
+                'error_message' => 'MissingConstructor',
             ],
             'checkMixedMethodCallStaticMethodCallArg' => [
                 '<?php

@@ -277,6 +277,18 @@ class IssueSuppressionTest extends TestCase
                         strlen(123, 456, 789);
                     }',
             ],
+            'possiblyNullSuppressedAtClassLevel' => [
+                '<?php
+                    /** @psalm-suppress PossiblyNullReference */
+                    class C {
+                        private ?DateTime $mightBeNull = null;
+
+                        public function m(): string {
+                            return $this->mightBeNull->format("");
+                        }
+                    }
+                '
+            ],
         ];
     }
 
