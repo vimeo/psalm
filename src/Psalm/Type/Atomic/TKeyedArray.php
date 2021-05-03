@@ -296,7 +296,7 @@ class TKeyedArray extends \Psalm\Type\Atomic
 
     public function isNonEmpty(): bool
     {
-        foreach ($this->properties as $key => $property) {
+        foreach ($this->properties as $property) {
             if (!$property->possibly_undefined) {
                 return true;
             }
