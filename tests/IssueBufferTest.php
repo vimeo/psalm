@@ -7,7 +7,6 @@ use Psalm\Config;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Codebase\Analyzer;
 use Psalm\Internal\EventDispatcher;
-use Psalm\Internal\ExecutionEnvironment\BuildInfoCollector;
 use Psalm\IssueBuffer;
 use Psalm\Report\ReportOptions;
 

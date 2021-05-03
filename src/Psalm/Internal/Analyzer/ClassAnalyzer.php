@@ -52,7 +52,6 @@ use Psalm\Node\Stmt\VirtualClassMethod;
 use Psalm\Node\Stmt\VirtualExpression;
 use Psalm\Node\VirtualArg;
 use Psalm\Node\VirtualIdentifier;
-use Psalm\Node\VirtualParam;
 use Psalm\Plugin\EventHandler\Event\AfterClassLikeAnalysisEvent;
 use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;

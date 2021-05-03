@@ -14,6 +14,19 @@
         <exclude name="SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly.ReferenceViaFullyQualifiedName"/>
     </rule>
 
+    <rule ref="Generic.Files.LineLength">
+        <exclude-pattern>tests</exclude-pattern>
+        <exclude-pattern>src/Psalm/Internal/Type/TemplateStandinTypeReplacer.php</exclude-pattern>
+    </rule>
+    <rule ref="PSR2.Namespaces.UseDeclaration">
+        <exclude-pattern>*</exclude-pattern>
+    </rule>
+
+    <rule ref="SlevomatCodingStandard.Namespaces.UnusedUses">
+        <properties>
+            <property name="searchAnnotations" type="boolean" value="true"/>
+        </properties>
+    </rule>
     <file>bin/</file>
     <file>src/</file>
     <file>tests/</file>
@@ -23,12 +36,4 @@
     <!-- These are just examples and stub classes/files, so it doesn't really matter if they're PSR-2 compliant. -->
     <exclude-pattern>src/Psalm/Internal/Stubs/</exclude-pattern>
     <exclude-pattern>tests/fixtures/</exclude-pattern>
-    <rule ref="Generic.Files.LineLength">
-        <exclude-pattern>tests</exclude-pattern>
-        <exclude-pattern>src/Psalm/Internal/Type/TemplateStandinTypeReplacer.php</exclude-pattern>
-    </rule>
-
-    <rule ref="PSR2.Namespaces.UseDeclaration">
-        <exclude-pattern>*</exclude-pattern>
-    </rule>
 </ruleset>

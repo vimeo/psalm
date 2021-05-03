@@ -1,11 +1,7 @@
 <?php
 namespace Psalm\Tests;
 
-use PHPUnit\Framework\TestCase as BaseTestCase;
 use Psalm\Aliases;
-use Psalm\DocComment;
-use Psalm\Internal\RuntimeCaches;
-use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\Internal\PhpVisitor\Reflector\ClassLikeDocblockParser;
 use PhpParser\Node\Stmt\Class_;
 

@@ -5,7 +5,6 @@ namespace Psalm\Tests;
 use DOMDocument;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
-use Psalm\Internal\ExecutionEnvironment\BuildInfoCollector;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\IssueBuffer;
 use Psalm\Report;

@@ -19,7 +19,6 @@ use Psalm\Plugin\EventHandler\Event\AfterClassLikeExistenceCheckEvent;
 use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
-use Psalm\Type\Atomic\TLiteralString;
 use function strtolower;
 use function preg_replace;
 use function in_array;

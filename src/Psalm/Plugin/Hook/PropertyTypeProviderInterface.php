@@ -1,7 +1,6 @@
 <?php
 namespace Psalm\Plugin\Hook;
 
-use PhpParser;
 use Psalm\Context;
 use Psalm\StatementsSource;
 use Psalm\Type;

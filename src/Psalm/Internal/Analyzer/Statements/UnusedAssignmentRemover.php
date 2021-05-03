@@ -328,7 +328,7 @@ class UnusedAssignmentRemover
         int $search_level = 1
     ): array {
         if ($current_node instanceof PhpParser\Node\Expr\Assign
-            || $current_node instanceof PhpPArser\Node\Expr\AssignOp
+            || $current_node instanceof PhpParser\Node\Expr\AssignOp
             || $current_node instanceof PhpParser\Node\Expr\AssignRef
         ) {
             $var = $current_node->var;

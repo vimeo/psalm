@@ -4,7 +4,6 @@ namespace Psalm\Internal\Provider\ReturnTypeProvider;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use function array_merge;
 use function array_values;
-use PhpParser;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Type;
 

@@ -11,7 +11,6 @@ use const PHP_URL_PORT;
 use const PHP_URL_QUERY;
 use const PHP_URL_SCHEME;
 use const PHP_URL_USER;
-use PhpParser;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Type;
 

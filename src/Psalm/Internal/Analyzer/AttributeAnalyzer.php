@@ -1,7 +1,6 @@
 <?php
 namespace Psalm\Internal\Analyzer;
 
-use PhpParser;
 use Psalm\Node\Expr\VirtualNew;
 use Psalm\Node\Name\VirtualFullyQualified;
 use Psalm\Node\Stmt\VirtualExpression;

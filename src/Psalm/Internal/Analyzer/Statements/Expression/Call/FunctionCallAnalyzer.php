@@ -50,7 +50,6 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\FunctionLikeParameter;
 use function explode;
-use function array_values;
 
 /**
  * @internal

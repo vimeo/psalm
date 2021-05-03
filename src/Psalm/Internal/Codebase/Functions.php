@@ -18,10 +18,8 @@ use function strtolower;
 use function substr;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Internal\MethodIdentifier;
-use function strlen;
 use function rtrim;
 use function is_bool;
-use function array_values;
 
 /**
  * @internal

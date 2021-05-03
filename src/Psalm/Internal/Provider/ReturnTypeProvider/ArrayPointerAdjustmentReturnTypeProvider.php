@@ -1,7 +1,6 @@
 <?php
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
-use PhpParser;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Type;

@@ -2,7 +2,6 @@
 namespace Psalm\Internal\Analyzer;
 
 use PhpParser;
-use PhpParser\Node\Expr\ArrowFunction;
 use Psalm\Context;
 use function strtolower;
 use function is_string;

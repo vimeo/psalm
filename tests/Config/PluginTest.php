@@ -23,7 +23,6 @@ use function getcwd;
 use function microtime;
 use Psalm\Config;
 use Psalm\Context;
-use Psalm\Internal\ExecutionEnvironment\BuildInfoCollector;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Plugin\EventHandler\AfterCodebasePopulatedInterface;
