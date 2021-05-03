@@ -1,8 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-use Psalm\CodeLocation;
-
 class MixedAssignment extends CodeIssue implements MixedIssue
 {
     public const ERROR_LEVEL = 1;

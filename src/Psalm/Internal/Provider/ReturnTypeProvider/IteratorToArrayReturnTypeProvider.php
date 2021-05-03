@@ -2,7 +2,6 @@
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
-use Psalm\Type\Atomic\TTemplateParam;
 use function array_shift;
 use function assert;
 use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;

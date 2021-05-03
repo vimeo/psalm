@@ -5,7 +5,6 @@ namespace Psalm;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Composer;
 use Psalm\Internal\ErrorHandler;
-use Psalm\Internal\ExecutionEnvironment\BuildInfoCollector;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Progress\DebugProgress;
 use Psalm\Progress\DefaultProgress;

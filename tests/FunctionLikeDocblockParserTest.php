@@ -2,9 +2,7 @@
 namespace Psalm\Tests;
 
 use PHPUnit\Framework\TestCase as BaseTestCase;
-use Psalm\DocComment;
 use Psalm\Internal\RuntimeCaches;
-use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\Internal\PhpVisitor\Reflector\FunctionLikeDocblockParser;
 
 class FunctionLikeDocblockParserTest extends BaseTestCase

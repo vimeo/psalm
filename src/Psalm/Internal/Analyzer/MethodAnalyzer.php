@@ -2,7 +2,6 @@
 namespace Psalm\Internal\Analyzer;
 
 use PhpParser;
-use PhpParser\Node\Expr\ArrowFunction;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Context;

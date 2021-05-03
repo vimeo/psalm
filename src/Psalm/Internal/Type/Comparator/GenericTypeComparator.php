@@ -16,7 +16,7 @@ use function array_fill;
 class GenericTypeComparator
 {
     /**
-     * @param TGenericObject|Titerable $container_type_part
+     * @param TGenericObject|TIterable $container_type_part
      */
     public static function isContainedBy(
         Codebase $codebase,

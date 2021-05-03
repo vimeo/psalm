@@ -3,7 +3,6 @@ namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use Psalm\Plugin\EventHandler\Event\MethodReturnTypeProviderEvent;
 use function count;
-use PhpParser;
 use Psalm\Type;
 
 class SimpleXmlElementAsXml implements \Psalm\Plugin\EventHandler\MethodReturnTypeProviderInterface

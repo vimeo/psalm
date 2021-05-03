@@ -3,7 +3,6 @@ namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use function count;
-use PhpParser;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Type;
 

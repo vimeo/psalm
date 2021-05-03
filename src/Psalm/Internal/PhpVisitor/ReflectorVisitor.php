@@ -3,7 +3,6 @@ namespace Psalm\Internal\PhpVisitor;
 
 use Psalm\Plugin\EventHandler\Event\AfterClassLikeVisitEvent;
 use function array_pop;
-use function count;
 use function end;
 use function implode;
 use function in_array;

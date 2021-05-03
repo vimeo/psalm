@@ -11,7 +11,6 @@ use Psalm\Internal\Provider\PropertyExistenceProvider;
 use Psalm\Internal\Provider\PropertyTypeProvider;
 use Psalm\Internal\Provider\PropertyVisibilityProvider;
 use Psalm\StatementsSource;
-use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
 use function strtolower;
 

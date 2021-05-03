@@ -1,13 +1,7 @@
 <?php
 namespace Psalm\Tests;
 
-use function function_exists;
-use function print_r;
-use function mb_substr;
-use function stripos;
-
 use Psalm\Internal\RuntimeCaches;
-use Psalm\Type;
 
 class TypeComparatorTest extends TestCase
 {

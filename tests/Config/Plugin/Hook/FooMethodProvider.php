@@ -1,7 +1,6 @@
 <?php
 namespace Psalm\Test\Config\Plugin\Hook;
 
-use PhpParser;
 use Psalm\Plugin\EventHandler\MethodExistenceProviderInterface;
 use Psalm\Plugin\EventHandler\MethodParamsProviderInterface;
 use Psalm\Plugin\EventHandler\MethodReturnTypeProviderInterface;

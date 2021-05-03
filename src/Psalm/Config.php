@@ -3,7 +3,6 @@
 namespace Psalm;
 
 use Composer\Autoload\ClassLoader;
-use Composer\Semver\Semver;
 use Composer\Semver\VersionParser;
 use DOMDocument;
 use LogicException;
@@ -1107,7 +1106,7 @@ class Config
         $this->plugin_classes[] = ['class' => $class_name, 'config' => $plugin_config];
     }
 
-    /** @return array<array{class:string, config:?SimpleXmlElement}> */
+    /** @return array<array{class:string, config:?SimpleXMLElement}> */
     public function getPluginClasses(): array
     {
         return $this->plugin_classes;

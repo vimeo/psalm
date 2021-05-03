@@ -8,7 +8,6 @@ use function substr;
 use function strlen;
 use function array_reverse;
 use function array_sum;
-use function array_walk;
 use function array_merge;
 use function array_keys;
 
