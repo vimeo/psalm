@@ -251,14 +251,6 @@ class ClassLikeNodeScanner
                 $storage->parent_classes[$parent_fqcln_lc] = $parent_fqcln;
                 $this->file_storage->required_classes[strtolower($parent_fqcln)] = $parent_fqcln;
             }
-
-            foreach ($node->implements as $interface) {
-                $interface_fqcln = ClassLikeAnalyzer::getFQCLNFromNameObject($interface, $this->aliases);
-                $this->codebase->scanner->queueClassLikeForScanning($interface_fqcln);
-                $storage->class_implements[strtolower($interface_fqcln)] = $interface_fqcln;
-                $storage->direct_class_interfaces[strtolower($interface_fqcln)] = $interface_fqcln;
-                $this->file_storage->required_interfaces[strtolower($interface_fqcln)] = $interface_fqcln;
-            }
         } elseif ($node instanceof PhpParser\Node\Stmt\Interface_) {
             $storage->is_interface = true;
             $this->codebase->classlikes->addFullyQualifiedInterfaceName($fq_classlike_name, $this->file_path);
@@ -275,6 +267,38 @@ class ClassLikeNodeScanner
             $storage->is_trait = true;
             $this->file_storage->has_trait = true;
             $this->codebase->classlikes->addFullyQualifiedTraitName($fq_classlike_name, $this->file_path);
+        } elseif ($node instanceof PhpParser\Node\Stmt\Enum_) {
+            $storage->is_enum = true;
+
+            if ($node->scalarType) {
+                $storage->enum_type = $node->scalarType->name === 'string' ? 'string' : 'int';
+            }
+
+            $this->codebase->scanner->queueClassLikeForScanning('UnitEnum');
+            $storage->class_implements['unitenum'] = 'UnitEnum';
+            $storage->direct_class_interfaces['unitenum'] = 'UnitEnum';
+            $this->file_storage->required_interfaces['unitenum'] = 'UnitEnum';
+            $storage->final = true;
+
+            $storage->declaring_method_ids['cases'] = new \Psalm\Internal\MethodIdentifier(
+                'UnitEnum',
+                'cases'
+            );
+            $storage->appearing_method_ids['cases'] = $storage->declaring_method_ids['cases'];
+
+            $this->codebase->classlikes->addFullyQualifiedEnumName($fq_classlike_name, $this->file_path);
+        } else {
+            throw new \UnexpectedValueException('Unknown classlike type');
+        }
+
+        if ($node instanceof PhpParser\Node\Stmt\Class_ || $node instanceof PhpParser\Node\Stmt\Enum_) {
+            foreach ($node->implements as $interface) {
+                $interface_fqcln = ClassLikeAnalyzer::getFQCLNFromNameObject($interface, $this->aliases);
+                $this->codebase->scanner->queueClassLikeForScanning($interface_fqcln);
+                $storage->class_implements[strtolower($interface_fqcln)] = $interface_fqcln;
+                $storage->direct_class_interfaces[strtolower($interface_fqcln)] = $interface_fqcln;
+                $this->file_storage->required_interfaces[strtolower($interface_fqcln)] = $interface_fqcln;
+            }
         }
 
         $docblock_info = null;
@@ -628,6 +652,10 @@ class ClassLikeNodeScanner
         foreach ($node->stmts as $node_stmt) {
             if ($node_stmt instanceof PhpParser\Node\Stmt\ClassConst) {
                 $this->visitClassConstDeclaration($node_stmt, $storage, $fq_classlike_name);
+            } elseif ($node_stmt instanceof PhpParser\Node\Stmt\EnumCase
+                && $node instanceof PhpParser\Node\Stmt\Enum_
+            ) {
+                $this->visitEnumDeclaration($node_stmt, $storage);
             }
         }
 
@@ -1218,6 +1246,43 @@ class ClassLikeNodeScanner
                     );
                 }
             }
+        }
+    }
+
+    private function visitEnumDeclaration(
+        PhpParser\Node\Stmt\EnumCase $stmt,
+        ClassLikeStorage $storage
+    ): void {
+        $comment = $stmt->getDocComment();
+        $deprecated = false;
+        $config = $this->config;
+
+        if ($comment && $comment->getText() && ($config->use_docblock_types || $config->use_docblock_property_types)) {
+            $comments = DocComment::parsePreservingLength($comment);
+
+            if (isset($comments->tags['deprecated'])) {
+                $deprecated = true;
+            }
+        }
+
+        $enum_value = null;
+
+        if ($stmt->expr instanceof PhpParser\Node\Scalar\String_
+            || $stmt->expr instanceof PhpParser\Node\Scalar\LNumber
+        ) {
+            $enum_value = $stmt->expr->value;
+        }
+
+        $storage->enum_cases[$stmt->name->name] = $constant_storage = new \Psalm\Storage\EnumCaseStorage(
+            $enum_value,
+            new CodeLocation(
+                $this->file_scanner,
+                $stmt->name
+            )
+        );
+
+        if ($deprecated) {
+            $constant_storage->deprecated = true;
         }
     }
 

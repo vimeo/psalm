@@ -627,6 +627,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         false,
                         false,
                         true,
+                        true,
                         true
                     )
                 )) {

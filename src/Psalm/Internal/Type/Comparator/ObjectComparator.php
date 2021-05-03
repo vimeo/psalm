@@ -254,7 +254,8 @@ class ObjectComparator
                         continue 2;
                     }
 
-                    if ($codebase->classExists($intersection_input_type_lower)
+                    if (($codebase->classExists($intersection_input_type_lower)
+                            || $codebase->classlikes->enumExists($intersection_input_type_lower))
                         && $codebase->classOrInterfaceExists($intersection_container_type_lower)
                         && $codebase->classExtendsOrImplements(
                             $intersection_input_type_lower,

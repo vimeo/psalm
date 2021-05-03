@@ -23,7 +23,6 @@ use function substr;
 use function count;
 use function strtolower;
 use function in_array;
-use function array_merge;
 use function strpos;
 use function is_int;
 
@@ -938,12 +937,12 @@ class AssertionFinder
 
                 foreach ($assertion->rule as $i => $and_rules) {
                     foreach ($and_rules as $j => $rule) {
-                        if (strpos($rule, 'scalar-class-constant(') === 0) {
+                        if (strpos($rule, 'class-constant(') === 0) {
                             $codebase = $source->getCodebase();
 
                             $assertion->rule[$i][$j] = \Psalm\Internal\Type\TypeExpander::expandUnion(
                                 $codebase,
-                                Type::parseString(substr($rule, 22, -1)),
+                                Type::parseString(substr($rule, 15, -1)),
                                 null,
                                 null,
                                 null
@@ -1003,12 +1002,12 @@ class AssertionFinder
 
                 foreach ($assertion->rule as $i => $and_rules) {
                     foreach ($and_rules as $j => $rule) {
-                        if (strpos($rule, 'scalar-class-constant(') === 0) {
+                        if (strpos($rule, 'class-constant(') === 0) {
                             $codebase = $source->getCodebase();
 
                             $assertion->rule[$i][$j] = \Psalm\Internal\Type\TypeExpander::expandUnion(
                                 $codebase,
-                                Type::parseString(substr($rule, 22, -1)),
+                                Type::parseString(substr($rule, 15, -1)),
                                 null,
                                 null,
                                 null
@@ -3411,10 +3410,14 @@ class AssertionFinder
                         $value_type = $atomic_type->type_params[1];
                     }
 
-                    $array_literal_types = array_merge(
-                        $value_type->getLiteralStrings(),
-                        $value_type->getLiteralInts(),
-                        $value_type->getLiteralFloats()
+                    $array_literal_types = \array_filter(
+                        $value_type->getAtomicTypes(),
+                        function ($type) {
+                            return $type instanceof Type\Atomic\TLiteralInt
+                                || $type instanceof Type\Atomic\TLiteralString
+                                || $type instanceof Type\Atomic\TLiteralFloat
+                                || $type instanceof Type\Atomic\TEnumCase;
+                        }
                     );
 
                     if ($array_literal_types

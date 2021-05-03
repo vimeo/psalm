@@ -807,7 +807,7 @@ class TypeCombiner
                 return null;
             }
 
-            if (!$codebase->classlikes->classOrInterfaceExists($type_key)) {
+            if (!$codebase->classlikes->classOrInterfaceOrEnumExists($type_key)) {
                 // write this to the main list
                 $combination->value_types[$type_key] = $type;
 

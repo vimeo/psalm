@@ -204,6 +204,11 @@ class ClassLikeStorage
     /**
      * @var bool
      */
+    public $is_enum = false;
+
+    /**
+     * @var bool
+     */
     public $external_mutation_free = false;
 
     /**
@@ -426,6 +431,16 @@ class ClassLikeStorage
      * @var list<AttributeStorage>
      */
     public $attributes = [];
+
+    /**
+     * @var array<string, EnumCaseStorage>
+     */
+    public $enum_cases = [];
+
+    /**
+     * @var 'int'|'string'|null
+     */
+    public $enum_type;
 
     /**
      * @var ?string

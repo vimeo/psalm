@@ -45,7 +45,7 @@ use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TPositiveInt;
 use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TScalar;
-use Psalm\Type\Atomic\TScalarClassConstant;
+use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTraitString;
@@ -479,7 +479,7 @@ abstract class Atomic implements TypeNode
             }
         }
 
-        if ($this instanceof TScalarClassConstant) {
+        if ($this instanceof TClassConstant) {
             if (strtolower($this->fq_classlike_name) === $old) {
                 $this->fq_classlike_name = $new;
             }

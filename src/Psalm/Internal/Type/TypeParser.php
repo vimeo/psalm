@@ -314,7 +314,7 @@ class TypeParser
                 return new Atomic\TLiteralClassString($fq_classlike_name);
             }
 
-            return new Atomic\TScalarClassConstant($fq_classlike_name, $const_name);
+            return new Atomic\TClassConstant($fq_classlike_name, $const_name);
         }
 
         if (preg_match('/^\-?(0|[1-9][0-9]*)(\.[0-9]{1,})$/', $parse_tree->value)) {
@@ -649,7 +649,7 @@ class TypeParser
                 throw new TypeParseTreeException('Union types are not allowed in key-of type');
             }
 
-            if (!$param_union_types[0] instanceof Atomic\TScalarClassConstant) {
+            if (!$param_union_types[0] instanceof Atomic\TClassConstant) {
                 throw new TypeParseTreeException(
                     'Untemplated key-of param ' . $param_name . ' should be a class constant'
                 );
@@ -670,7 +670,7 @@ class TypeParser
                 throw new TypeParseTreeException('Union types are not allowed in value-of type');
             }
 
-            if (!$param_union_types[0] instanceof Atomic\TScalarClassConstant) {
+            if (!$param_union_types[0] instanceof Atomic\TClassConstant) {
                 throw new TypeParseTreeException(
                     'Untemplated value-of param ' . $param_name . ' should be a class constant'
                 );
@@ -716,7 +716,7 @@ class TypeParser
                 }
 
                 if (!$atomic_type instanceof TLiteralInt
-                    && !($atomic_type instanceof Atomic\TScalarClassConstant
+                    && !($atomic_type instanceof Atomic\TClassConstant
                         && strpos($atomic_type->const_name, '*') === false)
                 ) {
                     throw new TypeParseTreeException(
@@ -749,14 +749,14 @@ class TypeParser
 
             $param_type = $param_union_types[0];
 
-            if (!$param_type instanceof Atomic\TScalarClassConstant
+            if (!$param_type instanceof Atomic\TClassConstant
                 && !$param_type instanceof Atomic\TValueOfClassConstant
                 && !$param_type instanceof Atomic\TKeyOfClassConstant
             ) {
                 throw new TypeParseTreeException(
                     'Invalid reference passed to int-mask-of'
                 );
-            } elseif ($param_type instanceof Atomic\TScalarClassConstant
+            } elseif ($param_type instanceof Atomic\TClassConstant
                 && strpos($param_type->const_name, '*') === false
             ) {
                 throw new TypeParseTreeException(

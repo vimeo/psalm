@@ -8,11 +8,11 @@ namespace Psalm\Type\Atomic;
  */
 class TIntMaskOf extends TInt
 {
-    /** @var TScalarClassConstant|TKeyOfClassConstant|TValueOfClassConstant */
+    /** @var TClassConstant|TKeyOfClassConstant|TValueOfClassConstant */
     public $value;
 
     /**
-     * @param TScalarClassConstant|TKeyOfClassConstant|TValueOfClassConstant $value
+     * @param TClassConstant|TKeyOfClassConstant|TValueOfClassConstant $value
      */
     public function __construct(\Psalm\Type\Atomic $value)
     {

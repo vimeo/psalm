@@ -116,6 +116,10 @@ class Methods
             return false;
         }
 
+        if ($class_storage->is_enum && $method_name === 'cases') {
+            return true;
+        }
+
         $source_file_path = $source ? $source->getFilePath() : $source_file_path;
 
         $calling_class_name = $source ? $source->getFQCLN() : null;
@@ -667,6 +671,24 @@ class Methods
         $appearing_method_name = $appearing_method_id->method_name;
 
         $appearing_fq_class_storage = $this->classlike_storage_provider->get($appearing_fq_class_name);
+
+        if ($appearing_fq_class_name === 'UnitEnum'
+            && $original_method_name === 'cases'
+            && $original_class_storage->is_enum
+            && $original_class_storage->enum_cases
+        ) {
+            $types = [];
+
+            foreach ($original_class_storage->enum_cases as $case_name => $_) {
+                $types[] = new Type\Union([new Type\Atomic\TEnumCase($original_fq_class_name, $case_name)]);
+            }
+
+            $list = new Type\Atomic\TKeyedArray($types);
+            $list->is_list = true;
+            $list->sealed = true;
+
+            return new Type\Union([$list]);
+        }
 
         if (!$appearing_fq_class_storage->user_defined
             && !$appearing_fq_class_storage->stubbed
