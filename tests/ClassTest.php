@@ -494,23 +494,19 @@ class ClassTest extends TestCase
                 '<?php
                     namespace {
                         class Numeric {}
-                        class Never {}
                     }
 
                     namespace Foo {
                         class Resource {}
                         class Numeric {}
-                        class Never {}
                     }
 
                     namespace Bar {
                         use \Foo\Resource;
                         use \Foo\Numeric;
-                        use \Foo\Never;
 
                         new \Foo\Resource();
                         new \Foo\Numeric();
-                        new \Foo\Never();
 
                         new Resource();
                         new Numeric();
@@ -518,10 +514,9 @@ class ClassTest extends TestCase
                         /**
                          * @param  Resource $r
                          * @param  Numeric  $n
-                         * @param  Never $nev
                          * @return void
                          */
-                        function foo(Resource $r, Numeric $n, Never $nev) : void {}
+                        function foo(Resource $r, Numeric $n) : void {}
                     }'
             ],
             'inheritInterfaceFromParent' => [
