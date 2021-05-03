@@ -937,12 +937,12 @@ class AssertionFinder
 
                 foreach ($assertion->rule as $i => $and_rules) {
                     foreach ($and_rules as $j => $rule) {
-                        if (strpos($rule, 'scalar-class-constant(') === 0) {
+                        if (strpos($rule, 'class-constant(') === 0) {
                             $codebase = $source->getCodebase();
 
                             $assertion->rule[$i][$j] = \Psalm\Internal\Type\TypeExpander::expandUnion(
                                 $codebase,
-                                Type::parseString(substr($rule, 22, -1)),
+                                Type::parseString(substr($rule, 15, -1)),
                                 null,
                                 null,
                                 null
@@ -1002,12 +1002,12 @@ class AssertionFinder
 
                 foreach ($assertion->rule as $i => $and_rules) {
                     foreach ($and_rules as $j => $rule) {
-                        if (strpos($rule, 'scalar-class-constant(') === 0) {
+                        if (strpos($rule, 'class-constant(') === 0) {
                             $codebase = $source->getCodebase();
 
                             $assertion->rule[$i][$j] = \Psalm\Internal\Type\TypeExpander::expandUnion(
                                 $codebase,
-                                Type::parseString(substr($rule, 22, -1)),
+                                Type::parseString(substr($rule, 15, -1)),
                                 null,
                                 null,
                                 null
