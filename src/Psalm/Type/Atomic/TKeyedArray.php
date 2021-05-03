@@ -294,6 +294,17 @@ class TKeyedArray extends \Psalm\Type\Atomic
         return $array_type;
     }
 
+    public function isNonEmpty(): bool
+    {
+        foreach ($this->properties as $key => $property) {
+            if (!$property->possibly_undefined) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public function __clone()
     {
         foreach ($this->properties as &$property) {

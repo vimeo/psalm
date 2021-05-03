@@ -33,11 +33,20 @@ class ArrayTypeComparator
     ) : bool {
         $all_types_contain = true;
 
-        $is_empty_array = $input_type_part->getId() === 'array<empty, empty>';
+        $is_empty_array = $input_type_part->equals(
+            new Type\Atomic\TArray([
+                new Type\Union([new Type\Atomic\TEmpty()]),
+                new Type\Union([new Type\Atomic\TEmpty()])
+            ]),
+            false
+        );
+
         if ($is_empty_array
-            && ($container_type_part instanceof Type\Atomic\TArray
-                || $container_type_part instanceof Type\Atomic\TKeyedArray)
-            && !$container_type_part instanceof Type\Atomic\TNonEmptyArray
+            && (($container_type_part instanceof Type\Atomic\TArray
+                    && !$container_type_part instanceof Type\Atomic\TNonEmptyArray)
+                || ($container_type_part instanceof Type\Atomic\TKeyedArray
+                    && !$container_type_part->isNonEmpty())
+            )
         ) {
             return true;
         }
