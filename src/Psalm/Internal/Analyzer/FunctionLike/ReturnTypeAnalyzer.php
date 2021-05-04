@@ -158,6 +158,20 @@ class ReturnTypeAnalyzer
             }
         }
 
+        $function_always_exits = ScopeAnalyzer::getControlActions(
+            $function_stmts,
+            $type_provider,
+            $codebase->config->exit_functions,
+            [],
+            false
+        ) === [ScopeAnalyzer::ACTION_END];
+
+        $function_returns_implicitely = ScopeAnalyzer::getControlActions(
+            $function_stmts,
+            $type_provider,
+            $codebase->config->exit_functions
+        ) !== [ScopeAnalyzer::ACTION_END];
+
         /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
         if ($return_type
             && (!$return_type->from_docblock
@@ -169,11 +183,7 @@ class ReturnTypeAnalyzer
             && !$return_type->isVoid()
             && !$inferred_yield_types
             && (!$function_like_storage || !$function_like_storage->has_yield)
-            && ScopeAnalyzer::getControlActions(
-                $function_stmts,
-                $type_provider,
-                $codebase->config->exit_functions
-            ) !== [ScopeAnalyzer::ACTION_END]
+            && $function_returns_implicitely
         ) {
             if (IssueBuffer::accepts(
                 new InvalidReturnType(
@@ -189,18 +199,11 @@ class ReturnTypeAnalyzer
             return null;
         }
 
-        $function_does_return = ScopeAnalyzer::getControlActions(
-            $function_stmts,
-            $type_provider,
-            $codebase->config->exit_functions,
-            [],
-            false
-        ) !== [ScopeAnalyzer::ACTION_END];
 
         if ($return_type
             && $return_type->isNever()
             && !$inferred_yield_types
-            && $function_does_return
+            && !$function_always_exits
         ) {
             if (IssueBuffer::accepts(
                 new InvalidReturnType(
@@ -220,7 +223,7 @@ class ReturnTypeAnalyzer
             ? \Psalm\Type::combineUnionTypeArray($inferred_return_type_parts, $codebase)
             : Type::getVoid();
 
-        if (!$function_does_return) {
+        if ($function_always_exits) {
             $inferred_return_type = new Type\Union([new Type\Atomic\TNever]);
         }
 

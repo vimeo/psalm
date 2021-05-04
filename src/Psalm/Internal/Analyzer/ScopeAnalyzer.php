@@ -1,15 +1,18 @@
 <?php
+
 namespace Psalm\Internal\Analyzer;
 
 use PhpParser;
-use function count;
-use function in_array;
-use function end;
-use function strtolower;
-use function array_merge;
-use function array_intersect;
-use function array_unique;
+
 use function array_filter;
+use function array_intersect;
+use function array_merge;
+use function array_unique;
+use function array_values;
+use function count;
+use function end;
+use function in_array;
+use function strtolower;
 
 /**
  * @internal
@@ -89,10 +92,10 @@ class ScopeAnalyzer
                 ($stmt instanceof PhpParser\Node\Stmt\Expression && $stmt->expr instanceof PhpParser\Node\Expr\Exit_)
             ) {
                 if (!$return_is_exit && $stmt instanceof PhpParser\Node\Stmt\Return_) {
-                    return array_merge($control_actions, [self::ACTION_RETURN]);
+                    return array_values(array_unique(array_merge($control_actions, [self::ACTION_RETURN])));
                 }
 
-                return [self::ACTION_END];
+                return array_values(array_unique(array_merge($control_actions, [self::ACTION_END])));
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\Expression) {
@@ -154,7 +157,7 @@ class ScopeAnalyzer
                     return array_merge($control_actions, [self::ACTION_LEAVE_SWITCH]);
                 }
 
-                return \array_values(array_unique(array_merge($control_actions, [self::ACTION_CONTINUE])));
+                return array_values(array_unique(array_merge($control_actions, [self::ACTION_CONTINUE])));
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\Break_) {
@@ -165,7 +168,7 @@ class ScopeAnalyzer
                     return [self::ACTION_LEAVE_SWITCH];
                 }
 
-                return \array_values(array_unique(array_merge($control_actions, [self::ACTION_BREAK])));
+                return array_values(array_unique(array_merge($control_actions, [self::ACTION_BREAK])));
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\If_) {
@@ -273,7 +276,7 @@ class ScopeAnalyzer
                 }
 
                 if ($has_default_terminator || isset($stmt->allMatched)) {
-                    return \array_values(array_unique(array_merge($control_actions, [self::ACTION_END])));
+                    return array_values(array_unique(array_merge($control_actions, [self::ACTION_END])));
                 }
             }
 
@@ -330,10 +333,10 @@ class ScopeAnalyzer
                     }
 
                     if ($all_same && $try_statement_actions !== [self::ACTION_NONE]) {
-                        return \array_values(array_unique(array_merge($control_actions, $try_statement_actions)));
+                        return array_values(array_unique(array_merge($control_actions, $try_statement_actions)));
                     }
                 } elseif (!in_array(self::ACTION_NONE, $try_statement_actions, true)) {
-                    return \array_values(array_unique(array_merge($control_actions, $try_statement_actions)));
+                    return array_values(array_unique(array_merge($control_actions, $try_statement_actions)));
                 }
 
                 if ($stmt->finally) {
@@ -373,7 +376,7 @@ class ScopeAnalyzer
                 }
 
                 $control_actions = array_filter(
-                    \array_merge($control_actions, $try_statement_actions),
+                    array_merge($control_actions, $try_statement_actions),
                     function ($action) {
                         return $action !== self::ACTION_NONE;
                     }
@@ -383,7 +386,7 @@ class ScopeAnalyzer
 
         $control_actions[] = self::ACTION_NONE;
 
-        return \array_values(array_unique($control_actions));
+        return array_values(array_unique($control_actions));
     }
 
     /**
