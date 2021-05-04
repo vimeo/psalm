@@ -356,8 +356,9 @@ class FunctionLikeDocblockParser
             $info->inheritdoc = true;
         }
 
+        $templates = [];
         if (isset($parsed_docblock->combined_tags['template'])) {
-            foreach ($parsed_docblock->combined_tags['template'] as $template_line) {
+            foreach ($parsed_docblock->combined_tags['template'] as $offset => $template_line) {
                 $template_type = preg_split('/[\s]+/', preg_replace('@^[ \t]*\*@m', '', $template_line));
 
                 $template_name = array_shift($template_type);
@@ -366,18 +367,34 @@ class FunctionLikeDocblockParser
                     throw new IncorrectDocblockException('Empty @template tag');
                 }
 
+                $source_prefix = 'none';
+                if (isset($parsed_docblock->tags['psalm-template'][$offset])) {
+                    $source_prefix = 'psalm';
+                } elseif (isset($parsed_docblock->tags['phpstan-template'][$offset])) {
+                    $source_prefix = 'phpstan';
+                }
+
                 if (count($template_type) > 1
                     && in_array(strtolower($template_type[0]), ['as', 'super', 'of'], true)
                 ) {
                     $template_modifier = strtolower(array_shift($template_type));
-                    $info->templates[] = [
+                    $templates[$template_name][$source_prefix] = [
                         $template_name,
                         $template_modifier,
                         implode(' ', $template_type),
                         false
                     ];
                 } else {
-                    $info->templates[] = [$template_name, null, null, false];
+                    $templates[$template_name][$source_prefix] = [$template_name, null, null, false];
+                }
+            }
+        }
+
+        foreach ($templates as $template_entries) {
+            foreach (['psalm', 'phpstan', 'none'] as $source_prefix) {
+                if (isset($template_entries[$source_prefix])) {
+                    $info->templates[] = $template_entries[$source_prefix];
+                    break;
                 }
             }
         }
