@@ -173,12 +173,18 @@ class ScopeAnalyzer
                     $stmt->stmts,
                     $nodes,
                     $exit_functions,
-                    $break_types
+                    $break_types,
+                    $return_is_exit
                 );
 
                 $else_statement_actions = $stmt->else
-                    ? self::getControlActions($stmt->else->stmts, $nodes, $exit_functions, $break_types)
-                    : [];
+                    ? self::getControlActions(
+                        $stmt->else->stmts,
+                        $nodes,
+                        $exit_functions,
+                        $break_types,
+                        $return_is_exit
+                    ) : [];
 
                 $all_same = count($if_statement_actions) === 1
                     && $if_statement_actions == $else_statement_actions
@@ -192,7 +198,8 @@ class ScopeAnalyzer
                             $elseif->stmts,
                             $nodes,
                             $exit_functions,
-                            $break_types
+                            $break_types,
+                            $return_is_exit
                         );
 
                         $all_same = $all_same && $elseif_control_actions == $if_statement_actions;
@@ -229,7 +236,13 @@ class ScopeAnalyzer
                 for ($d = count($stmt->cases) - 1; $d >= 0; --$d) {
                     $case = $stmt->cases[$d];
 
-                    $case_actions = self::getControlActions($case->stmts, $nodes, $exit_functions, ['switch']);
+                    $case_actions = self::getControlActions(
+                        $case->stmts,
+                        $nodes,
+                        $exit_functions,
+                        ['switch'],
+                        $return_is_exit
+                    );
 
                     if (array_intersect([
                         self::ACTION_LEAVE_SWITCH,
@@ -273,7 +286,8 @@ class ScopeAnalyzer
                     $stmt->stmts,
                     $nodes,
                     $exit_functions,
-                    array_merge($break_types, ['loop'])
+                    array_merge($break_types, ['loop']),
+                    $return_is_exit
                 );
 
                 $control_actions = array_filter(
@@ -292,7 +306,8 @@ class ScopeAnalyzer
                     $stmt->stmts,
                     $nodes,
                     $exit_functions,
-                    $break_types
+                    $break_types,
+                    $return_is_exit
                 );
 
                 if ($stmt->catches) {
@@ -303,7 +318,8 @@ class ScopeAnalyzer
                             $catch->stmts,
                             $nodes,
                             $exit_functions,
-                            $break_types
+                            $break_types,
+                            $return_is_exit
                         );
 
                         $all_same = $all_same && $try_statement_actions == $catch_actions;
@@ -326,7 +342,8 @@ class ScopeAnalyzer
                             $stmt->finally->stmts,
                             $nodes,
                             $exit_functions,
-                            $break_types
+                            $break_types,
+                            $return_is_exit
                         );
 
                         if (!in_array(self::ACTION_NONE, $finally_statement_actions, true)) {
