@@ -2,6 +2,7 @@
 namespace Psalm\Tests;
 
 use PHPUnit\Framework\TestCase as BaseTestCase;
+use Psalm\Exception\IncorrectDocblockException;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Internal\PhpVisitor\Reflector\FunctionLikeDocblockParser;
 
@@ -53,5 +54,17 @@ class FunctionLikeDocblockParserTest extends BaseTestCase
 
         $this->assertTrue(isset($function_docblock->params[1]['description']));
         $this->assertSame('The blah tags that has a very long multiline description.', $function_docblock->params[1]['description']);
+    }
+
+    public function testMisplacedVariableOnNextLine(): void
+    {
+        $doc = '/**
+ * @param
+ *          $p
+ */';
+        $php_parser_doc = new \PhpParser\Comment\Doc($doc);
+        $this->expectException(IncorrectDocblockException::class);
+        $this->expectExceptionMessage('Misplaced variable');
+        FunctionLikeDocblockParser::parse($php_parser_doc);
     }
 }
