@@ -1634,16 +1634,9 @@ class ClassTemplateTest extends TestCase
                         public function __get(string $property) {
                             return isset($this->data[$property]) ? $this->data[$property] : null;
                         }
-
-                        /**
-                         * @param scalar|array|object|null $value
-                         */
-                        public function __set(string $property, $value) {
-                            $this->data[$property] = $value;
-                        }
                     }',
             ],
-            'keyOfClassTemplateAcceptingIndexedAccess' => [
+            'SKIPPED-keyOfClassTemplateAcceptingIndexedAccess' => [
                 '<?php
                     /**
                      * @template TData as array
@@ -2385,40 +2378,6 @@ class ClassTemplateTest extends TestCase
                         public function f(): Base {
                             $t = $this->t;
                             return $t::factory();
-                        }
-                    }'
-            ],
-            'nullableTemplateAs' => [
-                '<?php
-                    /**
-                     * @template T of null|array
-                     */
-                    class Foo
-                    {
-                        private ?\ArrayObject $arrayObject;
-
-                        public function __construct(?\ArrayObject $arrayObject)
-                        {
-                            $this->arrayObject = $arrayObject;
-                        }
-
-                        /**
-                         * @psalm-assert-if-true Foo<array> $this
-                         * @psalm-assert-if-true ArrayObject $this->arrayObject
-                         */
-                        public function hasArray(): bool
-                        {
-                            return $this->arrayObject instanceof \ArrayObject;
-                        }
-
-                        /** @return T */
-                        public function toMaybeArray()
-                        {
-                            if ($this->hasArray()) {
-                                return $this->arrayObject->getArrayCopy();
-                            }
-
-                            return null;
                         }
                     }'
             ],

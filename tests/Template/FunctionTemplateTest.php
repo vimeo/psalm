@@ -2115,6 +2115,17 @@ class FunctionTemplateTest extends TestCase
                     }',
                 'error_message' => 'InvalidReturnStatement'
             ],
+            'preventArrayOverwriting' => [
+                '<?php
+                    /**
+                     * @template T
+                     * @return T
+                     */
+                    function foo(array $b) : array {
+                        return $b;
+                    }',
+                'error_message' => 'InvalidReturnStatement'
+            ],
         ];
     }
 }

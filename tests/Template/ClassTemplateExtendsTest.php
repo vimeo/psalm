@@ -1720,7 +1720,7 @@ class ClassTemplateExtendsTest extends TestCase
 
                     ord((new Child())->example("str"));',
             ],
-            'keyOfClassTemplateExtended' => [
+            'SKIPPED-keyOfClassTemplateExtended' => [
                 '<?php
                     /**
                      * @template TData as array
