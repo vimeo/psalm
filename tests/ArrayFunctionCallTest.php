@@ -28,6 +28,32 @@ class ArrayFunctionCallTest extends TestCase
                     '$e' => 'array<string, int|null>',
                 ],
             ],
+            'arrayFilterExplicit' => [
+                '<?php
+                    $d = array_filter(["a" => 0, "b" => 1, "c" => null]);
+                ',
+                'assertions' => [
+                    '$d===' => 'array{b: 1}',
+                ],
+            ],
+            'arrayFilterExplicitBuiltin' => [
+                '<?php
+                    $d = array_filter(["a" => 0, "b" => 1, "c" => null], "boolval");
+                ',
+                'assertions' => [
+                    '$d===' => 'array{b: 1}',
+                ],
+            ],
+            'arrayFilterNonExplicitNonBuiltinPure' => [
+                '<?php
+                    /** @psalm-pure */
+                    function a(?int $a): bool { return !!$a; } 
+                    $d = array_filter(["a" => 0, "b" => 1, "c" => null], "a");
+                ',
+                'assertions' => [
+                    '$d' => 'array{a?: int, b?: int, c?: int}',
+                ],
+            ],
             'arrayFilterAdvanced' => [
                 '<?php
                     $f = array_filter(["a" => 5, "b" => 12, "c" => null], function(?int $val, string $key): bool {
@@ -129,7 +155,9 @@ class ArrayFunctionCallTest extends TestCase
             ],
             'arrayKeysNonEmpty' => [
                 '<?php
-                    $a = array_keys(["a" => 1, "b" => 2]);',
+                    /** @var non-empty-array<string, int> */
+                    $b = ["a" => 1, "b" => 2];
+                    $a = array_keys($b);',
                 'assertions' => [
                     '$a' => 'non-empty-list<string>',
                 ],
@@ -144,18 +172,57 @@ class ArrayFunctionCallTest extends TestCase
                 ],
                 'error_levels' => ['MixedArgument'],
             ],
+            'arrayKeysLiteral' => [
+                '<?php
+                    $a = array_keys(["a" => 1, "b" => 2]);',
+                'assertions' => [
+                    '$a===' => 'array{0: "a", 1: "b"}',
+                ],
+            ],
+            'arrayKeysEmptyLiteral' => [
+                '<?php
+                    $a = array_keys([]);',
+                'assertions' => [
+                    '$a' => 'array<empty, empty>',
+                ],
+            ],
             'arrayValues' => [
+                '<?php
+                    /** @var non-empty-array<string, int> */
+                    $a = ["a" => 1, "b" => 2];
+                    /** @var non-empty-array<string, string> */
+                    $b = ["a" => "hello", "b" => "jello"];
+                    $c = array_values($a);
+                    $d = array_values($b);',
+                'assertions' => [
+                    '$c' => 'non-empty-list<int>',
+                    '$d' => 'non-empty-list<string>',
+                ],
+            ],
+            'arrayValuesLiteral' => [
                 '<?php
                     $b = array_values(["a" => 1, "b" => 2]);
                     $c = array_values(["a" => "hello", "b" => "jello"]);',
                 'assertions' => [
-                    '$b' => 'non-empty-list<int>',
-                    '$c' => 'non-empty-list<string>',
+                    '$b===' => 'array{0: 1, 1: 2}',
+                    '$c===' => 'array{0: "hello", 1: "jello"}',
+                ],
+            ],
+            'arrayValuesEmptyLiteral' => [
+                '<?php
+                    $a = array_values([]);
+                ',
+                'assertions' => [
+                    '$a' => 'array<empty, empty>',
                 ],
             ],
             'arrayCombine' => [
                 '<?php
-                    $c = array_combine(["a", "b", "c"], [1, 2, 3]);',
+                    /** 
+                     * @var non-empty-list<string> $a
+                     * @var non-empty-list<int> $b
+                     */
+                    $c = array_combine($a, $b);',
                 'assertions' => [
                     '$c' => 'false|non-empty-array<string, int>',
                 ],
@@ -164,16 +231,32 @@ class ArrayFunctionCallTest extends TestCase
             ],
             'arrayCombinePHP8' => [
                 '<?php
-                    $c = array_combine(["a", "b"], [1, 2, 3]);',
+                    /** 
+                    * @var non-empty-list<string> $a
+                    * @var non-empty-list<int> $b
+                    */
+                    $c = array_combine($a, $b);',
                 'assertions' => [
                     '$c' => 'non-empty-array<string, int>',
                 ],
                 'error_levels' => [],
                 '8.0',
             ],
+            'arrayCombineLiteral' => [
+                '<?php
+                    $c = array_combine(["a", "b", "c"], [1, 2, 3]);',
+                'assertions' => [
+                    '$c===' => 'array{a: 1, b: 2, c: 3}',
+                ],
+            ],
             'arrayCombineNotMatching' => [
                 '<?php
-                    $c = array_combine(["a", "b"], [1, 2, 3]);',
+                    /** 
+                     * @var non-empty-list<string> $a
+                     * @var non-empty-list<int> $b
+                     */
+                    $c = array_combine($a, $b);
+                ',
                 'assertions' => [
                     '$c' => 'false|non-empty-array<string, int>',
                 ],
@@ -193,9 +276,20 @@ class ArrayFunctionCallTest extends TestCase
             ],
             'arrayMergeIntArrays' => [
                 '<?php
-                    $d = array_merge(["a", "b", "c"], [1, 2, 3]);',
+                    /** 
+                    * @var array{0: string, 1: string, 2: string} $a 
+                    * @var array{0: int, 1: int, 2: int} $b
+                    */
+                    $d = array_merge($a, $b);',
                 'assertions' => [
                     '$d' => 'array{0: string, 1: string, 2: string, 3: int, 4: int, 5: int}',
+                ],
+            ],
+            'arrayMergeIntArrayLiterals' => [
+                '<?php
+                    $d = array_merge(["a", "b", "c"], [1, 2, 3]);',
+                'assertions' => [
+                    '$d===' => 'array{0: "a", 1: "b", 2: "c", 3: 1, 4: 2, 5: 3}',
                 ],
             ],
             'arrayMergePossiblyUndefined' => [
@@ -230,30 +324,68 @@ class ArrayFunctionCallTest extends TestCase
             ],
             'arrayReverseDontPreserveKey' => [
                 '<?php
-                    $d = array_reverse(["a", "b", 1, "d" => 4]);',
+                    /** @var non-empty-array<int|string, int|string> */
+                    $a = ["a", "b", 1, "d" => 4];
+                    $d = array_reverse($a);',
                 'assertions' => [
                     '$d' => 'non-empty-array<int|string, int|string>',
+                ],
+            ],
+            'arrayReverseDontPreserveKeyLiteral' => [
+                '<?php
+                    $d = array_reverse(["a", "b", 1, "d" => 4]);',
+                'assertions' => [
+                    '$d===' => 'array{0: 1, 1: "b", 2: "a", d: 4}',
                 ],
             ],
             'arrayReverseDontPreserveKeyExplicitArg' => [
                 '<?php
-                    $d = array_reverse(["a", "b", 1, "d" => 4], false);',
+                    /** @var non-empty-array<int|string, int|string> */
+                    $a = ["a", "b", 1, "d" => 4];
+                    $d = array_reverse($a, false);',
                 'assertions' => [
                     '$d' => 'non-empty-array<int|string, int|string>',
                 ],
             ],
+            'arrayReverseDontPreserveKeyExplicitArgLiteral' => [
+                '<?php
+                    $d = array_reverse(["a", "b", 1, "d" => 4], false);',
+                'assertions' => [
+                    '$d===' => 'array{0: 1, 1: "b", 2: "a", d: 4}',
+                ],
+            ],
             'arrayReversePreserveKey' => [
                 '<?php
-                    $d = array_reverse(["a", "b", 1], true);',
+                    /** @var non-empty-array<int, int|string> */
+                    $a = ["a", "b", 1];
+                    $d = array_reverse($a, true);',
                 'assertions' => [
                     '$d' => 'non-empty-array<int, int|string>',
                 ],
             ],
+            'arrayReversePreserveKeyLiteral' => [
+                '<?php
+                    $d = array_reverse(["a", "b", 1], true);',
+                'assertions' => [
+                    '$d===' => 'array{0: "a", 1: "b", 2: 1}',
+                ],
+            ],
             'arrayDiff' => [
+                '<?php
+                    /** @var array<string, int> */
+                    $a = ["a" => 5, "b" => 12];
+                    /** @var list<int> */
+                    $b = [5];
+                    $d = array_diff($a, $b);',
+                'assertions' => [
+                    '$d' => 'array<string, int>',
+                ],
+            ],
+            'arrayDiffLiteral' => [
                 '<?php
                     $d = array_diff(["a" => 5, "b" => 12], [5]);',
                 'assertions' => [
-                    '$d' => 'array<string, int>',
+                    '$d===' => 'array{b: 12}',
                 ],
             ],
             'arrayDiffIsVariadic' => [
@@ -266,6 +398,22 @@ class ArrayFunctionCallTest extends TestCase
                     array_diff_key([], [], [], [], []);',
                 'assertions' => [],
             ],
+            'arrayDiffIsVariadicLiteral' => [
+                '<?php
+                    $a = array_diff(["a" => 0, "b" => 1], [], [], [], ["a" => 0, "c" => 2]);
+                ',
+                'assertions' => [
+                    '$a===' => 'array{b: 1}'
+                ],
+            ],
+            'arrayDiffKeyIsVariadicLiteral' => [
+                '<?php
+                    $a = array_diff(["a" => 0, "b" => 1], [], [], [], ["a" => 0, "c" => 2]);
+                ',
+                'assertions' => [
+                    '$a===' => 'array{b: 1}'
+                ],
+            ],
             'arrayDiffAssoc' => [
                 '<?php
                     /**
@@ -276,6 +424,13 @@ class ArrayFunctionCallTest extends TestCase
                     $r = array_diff_assoc($a, $b, $c);',
                 'assertions' => [
                     '$r' => 'array<string, int>',
+                ],
+            ],
+            'arrayDiffAssocLiteral' => [
+                '<?php
+                    $r = array_diff_assoc(["a" => 0, "b" => 1], [], [], [], ["a" => 1, "c" => 2]);',
+                'assertions' => [
+                    '$r===' => 'array{a: 0, b: 1}',
                 ],
             ],
             'arrayPopMixed' => [
@@ -458,6 +613,14 @@ class ArrayFunctionCallTest extends TestCase
                         echo $rightCount[0];
                     }',
             ],
+            'arrayCountLiteral' => [
+                '<?php
+                    $count = count([1, 2, 3]);
+                ',
+                'assertions' => [
+                    '$count===' => '3',
+                ],
+            ],
             'arrayNotEmptyArrayAfterCountLessThanTwo' => [
                 '<?php
                     /** @var list<int> */
@@ -615,7 +778,7 @@ class ArrayFunctionCallTest extends TestCase
 
                   foo($a3);',
                 'assertions' => [
-                    '$a3' => 'array{hi: int, bye: int}',
+                    '$a3' => 'array{bye: int, hi: int}',
                 ],
             ],
             'arrayRand' => [
@@ -681,14 +844,28 @@ class ArrayFunctionCallTest extends TestCase
             ],
             'arrayFilterWithAssert' => [
                 '<?php
-                    $a = array_filter(
-                        [1, "hello", 6, "goodbye"],
+                    /** @var list<string|int> $a */
+                    $b = array_filter(
+                        $a,
                         function ($s): bool {
                             return is_string($s);
                         }
                     );',
                 'assertions' => [
-                    '$a' => 'array<int, string>',
+                    '$b' => 'array<int, string>',
+                ],
+                'error_levels' => [
+                    'MissingClosureParamType',
+                ],
+            ],
+            'arrayFilterWithAssertLiteral' => [
+                '<?php
+                    $a = array_filter(
+                        [1, "hello", 6, "goodbye"],
+                        "is_string"
+                    );',
+                'assertions' => [
+                    '$a===' => 'array{1: "hello", 3: "goodbye"}',
                 ],
                 'error_levels' => [
                     'MissingClosureParamType',
@@ -715,6 +892,14 @@ class ArrayFunctionCallTest extends TestCase
                     '$foo' => 'array<string, pure-Closure():"baz">',
                 ],
             ],
+            'arrayFilterUseKeyLiteral' => [
+                '<?php
+                    $a = array_filter(["a", "b", "c"], "boolval", ARRAY_FILTER_USE_KEY);
+                ',
+                'assertions' => [
+                    '$a===' => 'array{1: "b", 2: "c"}',
+                ],
+            ],
             'ignoreFalsableCurrent' => [
                 '<?php
                     /** @param string[] $arr */
@@ -739,30 +924,62 @@ class ArrayFunctionCallTest extends TestCase
             ],
             'arraySumEmpty' => [
                 '<?php
+                    /** @var array<empty, empty> $a */
+                    $foo = array_sum($a) + 1;',
+                'assertions' => [
+                    '$foo===' => '1',
+                ],
+            ],
+            'arraySumEmptyLiteral' => [
+                '<?php
                     $foo = array_sum([]) + 1;',
                 'assertions' => [
-                    '$foo' => 'int',
+                    '$foo===' => '1',
+                ],
+            ],
+            'arraySumOnlyIntLiteral' => [
+                '<?php
+                    $foo = array_sum([5,18]);',
+                'assertions' => [
+                    '$foo===' => '23',
                 ],
             ],
             'arraySumOnlyInt' => [
                 '<?php
-                    $foo = array_sum([5,18]);',
+                    /** @var list<int> $a */
+                    $foo = array_sum($a);',
                 'assertions' => [
                     '$foo' => 'int',
                 ],
             ],
-            'arraySumOnlyFloat' => [
+            'arraySumOnlyFloatLiteral' => [
                 '<?php
                     $foo = array_sum([5.1,18.2]);',
+                'assertions' => [
+                    '$foo===' => 'float(23.3)',
+                ],
+            ],
+            'arraySumOnlyFloat' => [
+                '<?php
+                    /** @var list<float> $a */
+                    $foo = array_sum($a);',
                 'assertions' => [
                     '$foo' => 'float',
                 ],
             ],
             'arraySumNumeric' => [
                 '<?php
-                    $foo = array_sum(["5","18"]);',
+                    /** @var list<numeric> $a */
+                    $foo = array_sum($a);',
                 'assertions' => [
                     '$foo' => 'float|int',
+                ],
+            ],
+            'arraySumNumericLiteral' => [
+                '<?php
+                    $foo = array_sum(["5", "18"]);',
+                'assertions' => [
+                    '$foo===' => '23',
                 ],
             ],
             'arraySumMix' => [
@@ -771,6 +988,21 @@ class ArrayFunctionCallTest extends TestCase
                 'assertions' => [
                     '$foo' => 'float',
                 ],
+            ],
+            'arraySumMixLiteral' => [
+                '<?php
+                    $foo = array_sum(["5.1", "18.2"]);',
+                'assertions' => [
+                    '$foo===' => 'float(23.3)',
+                ],
+            ],
+            'arrayMapLiteral' => [
+                '<?php
+                    $r = array_map("boolval", [0, 1, 2, 3]);
+                ',
+                'assertions' => [
+                    '$r===' => 'array{0: false, 1: true, 2: true, 3: true}'
+                ]
             ],
             'arrayMapWithArrayAndCallable' => [
                 '<?php
@@ -912,14 +1144,32 @@ class ArrayFunctionCallTest extends TestCase
             'implodeMultiDimensionalArray' => [
                 '<?php
                     $urls = array_map("implode", [["a", "b"]]);',
+                'assertions' => [
+                    '$urls===' => 'array{0: "ab"}'
+                ]
             ],
             'implodeNonEmptyArrayAndString' => [
                 '<?php
-                    /** @var non-empty-array<non-empty-string> */
+                    /** @var non-empty-list<non-empty-string> $l */
                     $l = ["a", "b"];
                     $a = implode(":", $l);',
                 [
-                    '$a===' => 'non-empty-string',
+                    '$a' => 'non-empty-string',
+                ]
+            ],
+            'implodeNonEmptyArrayAndStringLiteral' => [
+                '<?php
+                    $l = ["a", "b"];
+                    $a = implode(":", $l);',
+                [
+                    '$a===' => '"a:b"',
+                ]
+            ],
+            'explodeLiteral' => [
+                '<?php
+                    $a = explode(":", "a:b");',
+                [
+                    '$a===' => 'array{0: "a", 1: "b"}',
                 ]
             ],
             'key' => [
@@ -965,7 +1215,7 @@ class ArrayFunctionCallTest extends TestCase
             ],
             'arrayKeyFirstNonEmpty' => [
                 '<?php
-                    $a = ["one" => 1, "two" => 3];
+                    /** @var non-empty-array<string, int> $a */
                     $b = array_key_first($a);
                     $c = $a[$b];',
                 'assertions' => [
@@ -974,6 +1224,26 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayKeyFirstEmpty' => [
+                '<?php
+                    /** @var array<empty, empty> $a */
+                    $b = array_key_first($a);',
+                'assertions' => [
+                    '$b' => 'null'
+                ],
+            ],
+            'arrayKeyFirstNonEmptyLiteral' => [
+                '<?php
+                    $a = ["one" => 1, "two" => 3];
+                    $b = array_key_first($a);
+                    $c = $a[$b];',
+                'assertions' => [
+                    '$b===' => '"one"',
+                    '$c===' => '1',
+                ],
+                'error_levels' => [],
+                '7.3'
+            ],
+            'arrayKeyFirstEmptyLiteral' => [
                 '<?php
                     $a = [];
                     $b = array_key_first($a);',
@@ -998,7 +1268,7 @@ class ArrayFunctionCallTest extends TestCase
             ],
             'arrayKeyLastNonEmpty' => [
                 '<?php
-                    $a = ["one" => 1, "two" => 3];
+                    /** @var non-empty-array<string, int> $a */
                     $b = array_key_last($a);
                     $c = $a[$b];',
                 'assertions' => [
@@ -1007,6 +1277,24 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayKeyLastEmpty' => [
+                '<?php
+                    /** @var array<empty, empty> $a */
+                    $b = array_key_last($a);',
+                'assertions' => [
+                    '$b' => 'null'
+                ],
+            ],
+            'arrayKeyLastNonEmptyLiteral' => [
+                '<?php
+                    $a = ["one" => 1, "two" => 3];
+                    $b = array_key_last($a);
+                    $c = $a[$b];',
+                'assertions' => [
+                    '$b===' => '"two"',
+                    '$c===' => '3',
+                ],
+            ],
+            'arrayKeyLastEmptyLiteral' => [
                 '<?php
                     $a = [];
                     $b = array_key_last($a);',
@@ -1115,10 +1403,18 @@ class ArrayFunctionCallTest extends TestCase
                     $a = ["one" => 1, "two" => 3];
                     $b = end($a);',
                 'assertions' => [
-                    '$b' => 'int'
+                    '$b===' => '3'
                 ],
             ],
             'arrayEndEmptyArray' => [
+                '<?php
+                    /** @var array<empty, empty> $a */
+                    $b = end($a);',
+                'assertions' => [
+                    '$b' => 'false'
+                ],
+            ],
+            'arrayEndEmptyArrayLiteral' => [
                 '<?php
                     $a = [];
                     $b = end($a);',
@@ -1194,22 +1490,30 @@ class ArrayFunctionCallTest extends TestCase
                     $m = array_column($m_prepare, "y");
                 ',
                 'assertions' => [
-                    '$a' => 'non-empty-list<int>',
-                    '$b' => 'non-empty-list<int>',
-                    '$c' => 'non-empty-array<string, int>',
-                    '$d' => 'list<mixed>',
+                    '$a===' => 'array{0: 1, 1: 2, 2: 3}',
+                    '$b===' => 'array{0: 1, 1: 2, 2: 3}',
+                    '$c===' => 'array{a: 1, b: 2}',
+                    '$d===' => 'array<empty, empty>',
                     '$e' => 'list<mixed>',
                     '$f' => 'array<array-key, mixed>',
                     '$g' => 'list<mixed>',
                     '$h' => 'list<mixed>',
                     '$i' => 'list<string>',
                     '$j' => 'list<mixed>',
-                    '$k' => 'non-empty-list<string>',
+                    '$k===' => 'array{0: "test"}',
                     '$l' => 'list<int>',
                     '$m' => 'list<int>',
                 ],
             ],
             'splatArrayIntersect' => [
+                '<?php
+                    /** @var list<list<int>> $foo */
+                    $bar = array_intersect(... $foo);',
+                'assertions' => [
+                    '$bar' => 'array<int, int>',
+                ],
+            ],
+            'splatArrayIntersectLiteral' => [
                 '<?php
                     $foo = [
                         [1, 2, 3],
@@ -1218,18 +1522,22 @@ class ArrayFunctionCallTest extends TestCase
 
                     $bar = array_intersect(... $foo);',
                 'assertions' => [
-                    '$bar' => 'array<int, int>',
+                    '$bar===' => 'array{0: 1, 1: 2}',
                 ],
             ],
             'arrayIntersectIsVariadic' => [
                 '<?php
-                    array_intersect([], [], [], [], []);',
-                'assertions' => [],
+                    $a = array_intersect(["a"], ["b"], ["c"], ["d"], ["d"]);',
+                'assertions' => [
+                    '$a' => 'array<empty, empty>'
+                ],
             ],
             'arrayIntersectKeyIsVariadic' => [
                 '<?php
-                    array_intersect_key([], [], [], [], []);',
-                'assertions' => [],
+                    $a = array_intersect_key(["a"], ["b"], ["c"], ["d"], ["d"]);',
+                'assertions' => [
+                    '$a===' => 'array{0: "a"}'
+                ],
             ],
             'arrayIntersectKeyNoReturnType' => [
                 '<?php
@@ -1374,7 +1682,7 @@ class ArrayFunctionCallTest extends TestCase
             ],
             'arraySlicePreserveKeys' => [
                 '<?php
-                    $a = ["a" => 1, "b" => 2, "c" => 3];
+                    /** @var array<string, int> $a */
                     $b = array_slice($a, 1, 2, true);
                     $c = array_slice($a, 1, 2, false);
                     $d = array_slice($a, 1, 2);',
@@ -1384,8 +1692,21 @@ class ArrayFunctionCallTest extends TestCase
                     '$d' => 'array<string, int>',
                 ],
             ],
+            'arraySlicePreserveKeysLiteral' => [
+                '<?php
+                    $a = ["a" => 1, "b" => 2, "c" => 3];
+                    $b = array_slice($a, 1, 2, true);
+                    $c = array_slice($a, 1, 2, false);
+                    $d = array_slice($a, 1, 2);',
+                'assertions' => [
+                    '$b===' => 'array{b: 2, c: 3}',
+                    '$c===' => 'array{b: 2, c: 3}',
+                    '$d===' => 'array{b: 2, c: 3}',
+                ],
+            ],
             'arraySliceDontPreserveIntKeys' => [
                 '<?php
+                    /** @var array<string, int> $a */
                     $a = [1 => "a", 4 => "b", 3 => "c"];
                     $b = array_slice($a, 1, 2, true);
                     $c = array_slice($a, 1, 2, false);
@@ -1394,6 +1715,18 @@ class ArrayFunctionCallTest extends TestCase
                     '$b' => 'array<int, string>',
                     '$c' => 'list<string>',
                     '$d' => 'list<string>',
+                ],
+            ],
+            'arraySliceDontPreserveIntKeysLiteral' => [
+                '<?php
+                    $a = [1 => "a", 4 => "b", 3 => "c"];
+                    $b = array_slice($a, 1, 2, true);
+                    $c = array_slice($a, 1, 2, false);
+                    $d = array_slice($a, 1, 2);',
+                'assertions' => [
+                    '$b===' => 'array{3: "c", 4: "b"}',
+                    '$c===' => 'array{0: "b", 1: "c"}',
+                    '$d===' => 'array{0: "b", 1: "c"}',
                 ],
             ],
             'arrayReversePreserveNonEmptiness' => [
@@ -1438,8 +1771,10 @@ class ArrayFunctionCallTest extends TestCase
             ],
             'arrayPad' => [
                 '<?php
-                    $a = array_pad(["foo" => 1, "bar" => 2], 10, 123);
-                    $b = array_pad(["a", "b", "c"], 10, "x");
+                    /** @var array<string, int> $array */
+                    $a = array_pad($array, 10, 123);
+                    /** @var list<string> $list */
+                    $b = array_pad($list, 10, "x");
                     /** @var list<int> $list */
                     $c = array_pad($list, 10, 0);
                     /** @var array<string, string> $array */
@@ -1449,6 +1784,16 @@ class ArrayFunctionCallTest extends TestCase
                     '$b' => 'non-empty-list<string>',
                     '$c' => 'non-empty-list<int>',
                     '$d' => 'non-empty-array<int|string, string>',
+                ],
+            ],
+            'arrayPadLiteral' => [
+                '<?php
+                    $a = array_pad(["foo" => 1, "bar" => 2], 3, 10);
+                    $b = array_pad(["a", "b", "c"], 3, "x");
+                ',
+                'assertions' => [
+                    '$a===' => 'array{0: 10, bar: 2, foo: 1}',
+                    '$b===' => 'array{0: "a", 1: "b", 2: "c"}',
                 ],
             ],
             'arrayPadDynamicSize' => [
@@ -1476,6 +1821,14 @@ class ArrayFunctionCallTest extends TestCase
                     '$result' => 'array<array-key, mixed|null>',
                 ],
             ],
+            'arrayPadZeroSizeLiteral' => [
+                '<?php
+                    $arr = ["a", "b", "c"];
+                    $result = array_pad($arr, 0, null);',
+                'assertions' => [
+                    '$result===' => 'array{0: "a", 1: "b", 2: "c"}',
+                ],
+            ],
             'arrayPadTypeCombination' => [
                 '<?php
                     $a = array_pad(["foo" => 1, "bar" => "two"], 5, false);
@@ -1485,8 +1838,8 @@ class ArrayFunctionCallTest extends TestCase
                     /** @var array<string, string> $array */
                     $d = array_pad($array, 5, null);',
                 'assertions' => [
-                    '$a' => 'non-empty-array<int|string, false|int|string>',
-                    '$b' => 'non-empty-list<float|int|null|string>',
+                    '$a===' => 'array{0: false, 1: false, 2: false, bar: "two", foo: 1}',
+                    '$b===' => 'array{0: "a", 1: 2, 2: float(3.14), 3: null, 4: null}',
                     '$c' => 'non-empty-list<bool|int|string>',
                     '$d' => 'non-empty-array<int|string, null|string>',
                 ],
@@ -1534,6 +1887,23 @@ class ArrayFunctionCallTest extends TestCase
                     '$c' => 'list<non-empty-list<float>>',
                 ],
             ],
+            'arrayChunkLiteral' => [
+                '<?php
+                    /** @var array{a: 0, b: 1, c: 2, d: 3} $arr */
+                    $a = array_chunk($arr, 2);
+
+                    $list = ["a", "b", "c", "d"];
+                    $b = array_chunk($list, 2);
+
+                    $arr = ["a" => 1.1, "b" => 2.2, "c" => 3.3, "d" => 4.4];
+                    $c = array_chunk($arr, 2);
+                    ',
+                'assertions' => [
+                    '$a===' => 'array{0: array{0: 0, 1: 1}, 1: array{0: 2, 1: 3}}',
+                    '$b===' => 'array{0: array{0: "a", 1: "b"}, 1: array{0: "c", 1: "d"}}',
+                    '$c===' => 'array{0: array{0: float(1.1), 1: float(2.2)}, 1: array{0: float(3.3), 1: float(4.4)}}',
+                ],
+            ],
             'arrayChunkPreservedKeys' => [
                 '<?php
                     /** @var array{a: int, b: int, c: int, d: int} $arr */
@@ -1546,6 +1916,23 @@ class ArrayFunctionCallTest extends TestCase
                     '$a' => 'list<non-empty-array<string, int>>',
                     '$b' => 'list<non-empty-array<int, string>>',
                     '$c' => 'list<non-empty-array<string, float>>',
+                ],
+            ],
+            'arrayChunkPreservedKeysLiteral' => [
+                '<?php
+                    /** @var array{a: 0, b: 1, c: 2, d: 3} $arr */
+                    $a = array_chunk($arr, 2, true);
+
+                    $list = ["a", "b", "c", "d"];
+                    $b = array_chunk($list, 2, true);
+
+                    $arr = ["a" => 1.1, "b" => 2.2, "c" => 3.3, "d" => 4.4];
+                    $c = array_chunk($arr, 2, true);
+                ',
+                'assertions' => [
+                    '$a===' => 'array{0: array{a: 0, b: 1}, 1: array{c: 2, d: 3}}',
+                    '$b===' => 'array{0: array{0: "a", 1: "b"}, 1: array{2: "c", 3: "d"}}',
+                    '$c===' => 'array{0: array{a: float(1.1), b: float(2.2)}, 1: array{c: float(3.3), d: float(4.4)}}',
                 ],
             ],
             'arrayChunkPreservedKeysExplicitFalse' => [
@@ -1607,10 +1994,18 @@ class ArrayFunctionCallTest extends TestCase
             ],
             'arrayFillKeys' => [
                 '<?php
-                    $keys = [1, 2, 3];
+                    /** @var list<int> $keys */
                     $result = array_fill_keys($keys, true);',
                 'assertions' => [
                     '$result' => 'array<int, true>',
+                ],
+            ],
+            'arrayFillKeysLiteral' => [
+                '<?php
+                    $keys = [1, 2, 3];
+                    $result = array_fill_keys($keys, true);',
+                'assertions' => [
+                    '$result===' => 'array{1: true, 2: true, 3: true}',
                 ],
             ],
             'shuffle' => [

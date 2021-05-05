@@ -23,6 +23,7 @@ use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIterable;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
@@ -52,6 +53,9 @@ use function strlen;
 use function strpos;
 use function strtolower;
 use function substr;
+use function gettype;
+use function is_array;
+use function array_map;
 
 abstract class Type
 {
@@ -164,6 +168,34 @@ abstract class Type
         return '\\' . $value;
     }
 
+    /**
+     * @var array<callable-string, (callable(mixed): Union)>
+     */
+    private const ASSERTION_MAP = [
+        'is_integer' => [self::class, 'getLiteralInt'],
+        'is_float' => [self::class, 'getFloat'],
+        'is_bool' => [self::class, 'getBool'],
+        'is_null' => [self::class, 'getNull'],
+        'is_string' => [self::class, 'getString'],
+        'is_array' => [self::class, 'getArray'],
+    ];
+
+    /**
+     * Convert literal to atomic type
+     *
+     * @param array<array-key, float|int|string|null|array>|float|int|string|null $literal
+     * @return Union
+     */
+    public static function fromLiteral($literal): Union
+    {
+        foreach (self::ASSERTION_MAP as $func => $method) {
+            if ($func($literal)) {
+                return $method($literal);
+            }
+        }
+        throw new \RuntimeException('Could not convert literal of type '.gettype($literal));
+    }
+
     public static function getInt(bool $from_calculation = false, ?int $value = null): Union
     {
         if ($value !== null) {
@@ -175,6 +207,11 @@ abstract class Type
         $union->from_calculation = $from_calculation;
 
         return $union;
+    }
+
+    public static function getLiteralInt(int $value): Union
+    {
+        return new Union([new TLiteralInt($value)]);
     }
 
     public static function getLowercaseString(): Union
@@ -301,9 +338,15 @@ abstract class Type
         return new Union([$type]);
     }
 
-    public static function getBool(): Union
+    public static function getBool(?bool $value = null): Union
     {
-        $type = new TBool;
+        if ($value === true) {
+            $type = new TTrue;
+        } elseif ($value === false) {
+            $type = new TFalse;
+        } else {
+            $type = new TBool;
+        }
 
         return new Union([$type]);
     }
@@ -340,14 +383,35 @@ abstract class Type
         return new Union([$type]);
     }
 
-    public static function getArray(): Union
+    public static function getArray(?array $value = null): Union
     {
-        $type = new TArray(
-            [
-                new Type\Union([new TArrayKey]),
-                new Type\Union([new TMixed]),
-            ]
-        );
+        if (is_array($value)) {
+            if (empty($value)) {
+                $type = new TArray(
+                    [
+                        new Type\Union([new TEmpty]),
+                        new Type\Union([new TEmpty]),
+                    ]
+                );
+            } else {
+                $type = new TKeyedArray(\array_map([self::class, 'fromLiteral'], $value));
+                $next = -1;
+                $type->is_list = true;
+                foreach ($type->properties as $key => $_) {
+                    if ($key !== ++$next) {
+                        $type->is_list = false;
+                        break;
+                    }
+                }
+            }
+        } else {
+            $type = new TArray(
+                [
+                    new Type\Union([new TArrayKey]),
+                    new Type\Union([new TMixed]),
+                ]
+            );
+        }
 
         return new Union([$type]);
     }
