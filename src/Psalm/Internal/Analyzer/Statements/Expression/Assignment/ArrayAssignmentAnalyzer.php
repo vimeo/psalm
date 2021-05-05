@@ -274,7 +274,24 @@ class ArrayAssignmentAnalyzer
         $has_matching_objectlike_property = false;
         $has_matching_string = false;
 
+        $child_stmt_type = clone $child_stmt_type;
+
         foreach ($child_stmt_type->getAtomicTypes() as $type) {
+            if ($type instanceof Type\Atomic\TTemplateParam) {
+                $type->as = self::updateTypeWithKeyValues(
+                    $codebase,
+                    $type->as,
+                    $current_type,
+                    $key_values
+                );
+
+                $has_matching_objectlike_property = true;
+
+                $child_stmt_type->substitute(new Type\Union([$type]), $type->as);
+
+                continue;
+            }
+
             foreach ($key_values as $key_value) {
                 if ($type instanceof TKeyedArray) {
                     if (isset($type->properties[$key_value->value])) {
