@@ -574,7 +574,7 @@ class FunctionReturnTypeProvider
         bool &$has_leftover,
         array $current = [],
         int $index = 0,
-        int $paramsIndex = 0,
+        int $paramsIndex = 0
     ): \Generator {
         if ($index === count($args)) {
             yield $current;
