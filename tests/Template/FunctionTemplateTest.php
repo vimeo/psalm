@@ -2090,6 +2090,31 @@ class FunctionTemplateTest extends TestCase
                     createProxy(A::class, \'Ns\foo\')->bar();',
                 'error_message' => 'InvalidArgument'
             ],
+            'preventBadArraySubtyping' => [
+                '<?php
+                    /**
+                     * @template T as array{a: int}
+                     * @return T
+                     */
+                    function foo() : array {
+                        $b = ["a" => 123];
+                        return $b;
+                    }',
+                'error_message' => 'InvalidReturnStatement'
+            ],
+            'modifyTemplatedShape' => [
+                '<?php
+                    /**
+                     * @template T as array{a: int}
+                     * @param T $s
+                     * @return T
+                     */
+                    function foo(array $s) : array {
+                        $s["a"] = 123;
+                        return $s;
+                    }',
+                'error_message' => 'InvalidReturnStatement'
+            ],
         ];
     }
 }
