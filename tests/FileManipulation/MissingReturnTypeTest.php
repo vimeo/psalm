@@ -1059,6 +1059,25 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                 false,
                 true,
             ],
+            'never' => [
+                '<?php
+                    function f() {
+                        exit(1);
+                    }
+                ',
+                '<?php
+                    /**
+                     * @return never
+                     */
+                    function f() {
+                        exit(1);
+                    }
+                ',
+                '5.6',
+                ['MissingReturnType'],
+                false,
+                true,
+            ],
         ];
     }
 }
