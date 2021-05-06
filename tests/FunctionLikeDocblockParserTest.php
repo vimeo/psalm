@@ -67,4 +67,16 @@ class FunctionLikeDocblockParserTest extends BaseTestCase
         $this->expectExceptionMessage('Misplaced variable');
         FunctionLikeDocblockParser::parse($php_parser_doc);
     }
+
+    public function testPreferPsalmPrefixedAnnotationsOverPhpstanOnes(): void
+    {
+        $doc = '/**
+ * @psalm-template T of string
+ * @phpstan-template T of int
+ */
+';
+        $php_parser_doc = new \PhpParser\Comment\Doc($doc);
+        $function_docblock = FunctionLikeDocblockParser::parse($php_parser_doc);
+        $this->assertSame([['T', 'of', 'string', false]], $function_docblock->templates);
+    }
 }
