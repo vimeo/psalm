@@ -1163,7 +1163,7 @@ function uniqid(string $prefix = "", bool $more_entropy = false) : string {}
 /**
  * @psalm-pure
  *
- * @return array
+ * @return array|false
  *
  * @psalm-flow ($data) -> return
  */
