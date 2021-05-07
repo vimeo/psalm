@@ -449,7 +449,7 @@ class MethodSignatureTest extends TestCase
                         public function test(?string $s) : string {
                             return "value";
                         }
-                        public function testIterable(?iterable $i) : array {
+                        public function testIterable(?iterable $a) : array {
                             return [];
                         }
                     }',
@@ -587,7 +587,7 @@ class MethodSignatureTest extends TestCase
                     }
 
                     class C implements I {
-                        public function foo(I $i) : I {
+                        public function foo(I $f) : I {
                             return new C();
                         }
                     }',
@@ -946,6 +946,22 @@ class MethodSignatureTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'oneParam' => [
+                '<?php
+                    interface I {
+                        /**
+                         * @param array $i
+                         */
+                        public function foo(array $i) : void;
+                    }
+
+                    class C implements I {
+                        public function foo(array $c) : void {
+                            return;
+                        }
+                    }',
+                'error_message' => 'Argument 1 of C::foo has wrong name $c, expecting $i as defined by I::foo',
+            ],
             'moreArguments' => [
                 '<?php
                     class A {
@@ -1150,7 +1166,7 @@ class MethodSignatureTest extends TestCase
                     class C {
                         use T;
 
-                        public function foo(B $b) : void {}
+                        public function foo(B $a) : void {}
                     }',
                 'error_message' => 'TraitMethodSignatureMismatch',
             ],
@@ -1320,7 +1336,10 @@ class MethodSignatureTest extends TestCase
                     }
 
                     class C implements I {
-                        /** @param array<int,float> $f */
+                        /**
+                         * @param array<int,float> $f
+                         * @psalm-suppress ParamNameMismatch
+                         */
                         public function f($f): void {}
                     }',
                 'error_message' => 'MethodSignatureMismatch',

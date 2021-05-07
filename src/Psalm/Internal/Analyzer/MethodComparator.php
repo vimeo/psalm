@@ -26,7 +26,6 @@ use Psalm\Type;
 use function strtolower;
 use function in_array;
 use Psalm\Issue\MissingImmutableAnnotation;
-use function count;
 use function substr;
 
 class MethodComparator
