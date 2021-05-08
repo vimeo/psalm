@@ -3238,6 +3238,7 @@ class ClassTemplateExtendsTest extends TestCase
                      * @implements I<int>
                      */
                     class XWithChangedArgumentName implements I {
+                        /** @psalm-suppress ParamNameMismatch */
                         public function i($changedArgumentName): void {
                             echo sprintf("%d", $changedArgumentName);
                         }
