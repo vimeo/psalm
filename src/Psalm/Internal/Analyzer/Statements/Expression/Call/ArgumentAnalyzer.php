@@ -1380,15 +1380,17 @@ class ArgumentAnalyzer
             }
 
             if ($input_type->getId() === $param_type->getId()) {
-                if (!$was_cloned) {
-                    $was_cloned = true;
-                    $input_type = clone $input_type;
-                }
+                if ($input_type->from_docblock) {
+                    if (!$was_cloned) {
+                        $was_cloned = true;
+                        $input_type = clone $input_type;
+                    }
 
-                $input_type->from_docblock = false;
+                    $input_type->from_docblock = false;
 
-                foreach ($input_type->getAtomicTypes() as $atomic_type) {
-                    $atomic_type->from_docblock = false;
+                    foreach ($input_type->getAtomicTypes() as $atomic_type) {
+                        $atomic_type->from_docblock = false;
+                    }
                 }
             } elseif ($input_type->hasMixed() && $signature_param_type) {
                 $was_cloned = true;
