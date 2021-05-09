@@ -1350,7 +1350,7 @@ class ArrayFunctionCallTest extends TestCase
                     $d = [1, 2, 3];
                     $e = array_splice($d, -1, 1);',
                 'assertions' => [
-                    '$e' => 'array<array-key, mixed>'
+                    '$e' => 'list<int>'
                 ],
             ],
             'arraySpliceOtherType' => [

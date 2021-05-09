@@ -52,6 +52,7 @@ class FunctionReturnTypeProvider
         $this->registerClass(ReturnTypeProvider\ArrayRandReturnTypeProvider::class);
         $this->registerClass(ReturnTypeProvider\ArrayReduceReturnTypeProvider::class);
         $this->registerClass(ReturnTypeProvider\ArraySliceReturnTypeProvider::class);
+        $this->registerClass(ReturnTypeProvider\ArraySpliceReturnTypeProvider::class);
         $this->registerClass(ReturnTypeProvider\ArrayReverseReturnTypeProvider::class);
         $this->registerClass(ReturnTypeProvider\ArrayUniqueReturnTypeProvider::class);
         $this->registerClass(ReturnTypeProvider\ArrayValuesReturnTypeProvider::class);
