@@ -51,7 +51,7 @@ class ArrayFunctionCallTest extends TestCase
                     $d = array_filter(["a" => 0, "b" => 1, "c" => null], "a");
                 ',
                 'assertions' => [
-                    '$d' => 'array{a?: int, b?: int, c?: int}',
+                    '$d' => 'array<string, int|null>',
                 ],
             ],
             'arrayFilterAdvanced' => [
@@ -1151,10 +1151,9 @@ class ArrayFunctionCallTest extends TestCase
             'implodeNonEmptyArrayAndString' => [
                 '<?php
                     /** @var non-empty-list<non-empty-string> $l */
-                    $l = ["a", "b"];
                     $a = implode(":", $l);',
                 [
-                    '$a' => 'non-empty-string',
+                    '$a===' => 'non-empty-string',
                 ]
             ],
             'implodeNonEmptyArrayAndStringLiteral' => [
@@ -1706,8 +1705,7 @@ class ArrayFunctionCallTest extends TestCase
             ],
             'arraySliceDontPreserveIntKeys' => [
                 '<?php
-                    /** @var array<string, int> $a */
-                    $a = [1 => "a", 4 => "b", 3 => "c"];
+                    /** @var array<int, string> $a */
                     $b = array_slice($a, 1, 2, true);
                     $c = array_slice($a, 1, 2, false);
                     $d = array_slice($a, 1, 2);',
