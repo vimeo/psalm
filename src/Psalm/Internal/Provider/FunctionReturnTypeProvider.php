@@ -482,6 +482,10 @@ class FunctionReturnTypeProvider
                                 continue;
                             }
                             $had_array = true;
+                            /**
+                             * @psalm-suppress MixedAssignment
+                             * @psalm-suppress MixedArgument
+                             */
                             foreach ($elem as $sub) {
                                 $type_args []= Type::fromLiteral($sub);
                             }
@@ -660,7 +664,7 @@ class FunctionReturnTypeProvider
      *
      * @param Union $type
      * @param boolean $has_leftover
-     * 
+     *
      * @psalm-suppress InvalidReturnType
      * @psalm-suppress InvalidReturnStatement
      *
@@ -709,20 +713,10 @@ class FunctionReturnTypeProvider
                     $values []= $array;
                 }
             } elseif ($atomic_key_type instanceof TList) {
-                $skip = false;
-                $array = [];
                 foreach ($atomic_key_type->type_param->getAtomicTypes() as $sub) {
-                    $res = self::extractLiterals(new Union([$sub]), $skip);
-                    if (count($res) !== 1) {
-                        $skip = true;
-                        break;
+                    foreach (self::extractLiterals(new Union([$sub]), $has_leftover) as $subsub) {
+                        $values[] = [$subsub];
                     }
-                    $array[] = $res[0];
-                }
-                if ($skip) {
-                    $has_leftover = true;
-                } else {
-                    $values []= $array;
                 }
             } elseif ($atomic_key_type instanceof TArray && $atomic_key_type->type_params[1]->isEmpty()) {
                 $values []= [];
