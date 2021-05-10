@@ -21,6 +21,7 @@ use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Union;
@@ -698,6 +699,7 @@ class FunctionReturnTypeProvider
                 foreach ($atomic_key_type->properties as $key => $sub) {
                     if ($sub->possibly_undefined) {
                         $possibly_undefined = true;
+                        $has_leftover = true;
                         continue;
                     }
                     $res = self::extractLiterals($sub, $skip);
@@ -718,6 +720,10 @@ class FunctionReturnTypeProvider
                         $values[] = [$subsub];
                     }
                 }
+                if (!$atomic_key_type instanceof TNonEmptyList) {
+                    $values []= [];
+                }
+                $has_leftover = true;
             } elseif ($atomic_key_type instanceof TArray && $atomic_key_type->type_params[1]->isEmpty()) {
                 $values []= [];
             } else {
