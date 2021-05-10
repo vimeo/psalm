@@ -551,14 +551,35 @@ class FunctionCallTest extends TestCase
                         return rand(0, 1) ? "==" : "=";
                     }
 
-                    $a = version_compare("5.0.0", "7.0.0");
-                    $b = version_compare("5.0.0", "7.0.0", "==");
-                    $c = version_compare("5.0.0", "7.0.0", getString());
+                    /** 
+                     * @var string $f
+                     * @var string $s
+                     */
+                    $a = version_compare($f, $s);
+                    $b = version_compare($f, $s, "==");
+                    $c = version_compare($f, $s, getString());
                 ',
                 'assertions' => [
                     '$a' => 'int',
                     '$b' => 'bool',
                     '$c' => 'bool',
+                ],
+            ],
+            'versionCompareLiteral' => [
+                '<?php
+                    /** @return "="|"==" */
+                    function getString() : string {
+                        return rand(0, 1) ? "==" : "=";
+                    }
+
+                    $a = version_compare("5.0.0", "7.0.0");
+                    $b = version_compare("5.0.0", "7.0.0", "==");
+                    $c = version_compare("5.0.0", "7.0.0", getString());
+                ',
+                'assertions' => [
+                    '$a===' => '-1',
+                    '$b===' => 'false',
+                    '$c===' => 'false',
                 ],
             ],
             'getTimeOfDay' => [
@@ -618,8 +639,8 @@ class FunctionCallTest extends TestCase
                     $porta = parse_url("", PHP_URL_PORT);
                     $porte = parse_url("localhost:443", PHP_URL_PORT);',
                 'assertions' => [
-                    '$porta' => 'false|int|null',
-                    '$porte' => 'false|int|null',
+                    '$porta' => 'null',
+                    '$porte===' => '443',
                 ],
                 'error_levels' => ['MixedReturnStatement', 'MixedInferredReturnType'],
             ],
@@ -645,7 +666,7 @@ class FunctionCallTest extends TestCase
             ],
             'parseUrlTypes' => [
                 '<?php
-                    $url = "foo";
+                    /** @var string $url */;
                     $components = parse_url($url);
                     $scheme = parse_url($url, PHP_URL_SCHEME);
                     $host = parse_url($url, PHP_URL_HOST);
@@ -665,6 +686,30 @@ class FunctionCallTest extends TestCase
                     '$path' => 'false|null|string',
                     '$query' => 'false|null|string',
                     '$fragment' => 'false|null|string',
+                ],
+            ],
+            'parseUrlTypesLiteral' => [
+                '<?php
+                    $url = "http://owo:pwd@google.com:123/a/b/c?v=1#h=2";
+                    $components = parse_url($url);
+                    $scheme = parse_url($url, PHP_URL_SCHEME);
+                    $host = parse_url($url, PHP_URL_HOST);
+                    $port = parse_url($url, PHP_URL_PORT);
+                    $user = parse_url($url, PHP_URL_USER);
+                    $pass = parse_url($url, PHP_URL_PASS);
+                    $path = parse_url($url, PHP_URL_PATH);
+                    $query = parse_url($url, PHP_URL_QUERY);
+                    $fragment = parse_url($url, PHP_URL_FRAGMENT);',
+                'assertions' => [
+                    '$components===' => 'array{fragment: "h=2", host: "google.com", pass: "pwd", path: "/a/b/c", port: 123, query: "v=1", scheme: "http", user: "owo"}',
+                    '$scheme===' => '"http"',
+                    '$host===' => '"google.com"',
+                    '$port===' => '123',
+                    '$user===' => '"owo"',
+                    '$pass===' => '"pwd"',
+                    '$path===' => '"/a/b/c"',
+                    '$query===' => '"v=1"',
+                    '$fragment===' => '"h=2"',
                 ],
             ],
             'triggerUserError' => [

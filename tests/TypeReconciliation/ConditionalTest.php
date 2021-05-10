@@ -2639,7 +2639,7 @@ class ConditionalTest extends \Psalm\Tests\TestCase
             ],
             'typeTransformation' => [
                 '<?php
-                    $a = "5";
+                    /** @var string $a */;
 
                     if (is_numeric($a)) {
                         if (is_int($a)) {

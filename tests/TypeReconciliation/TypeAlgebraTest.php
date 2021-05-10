@@ -353,7 +353,11 @@ class TypeAlgebraTest extends \Psalm\Tests\TestCase
                 '<?php
                     function foo(string $a): void {
                         if (!$a) {
-                            list($a) = explode(":", "a:b");
+                            /**
+                             * @var string $b
+                             * @var string $c
+                             */
+                            list($a) = explode($b, $c);
 
                             if ($a) { }
                         }

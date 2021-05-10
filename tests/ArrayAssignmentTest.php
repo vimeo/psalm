@@ -833,9 +833,9 @@ class ArrayAssignmentTest extends TestCase
                     $a_values = array_values($a);
                     $a_keys = array_keys($a);',
                 'assertions' => [
-                    '$a' => 'array{"hello", 5}',
-                    '$a_values' => 'array{0: "hello", 1: 5}',
-                    '$a_keys' => 'array{0: 0, 1: 1}',
+                    '$a===' => 'array{"hello", 5}',
+                    '$a_values===' => 'array{0: "hello", 1: 5}',
+                    '$a_keys===' => 'array{0: 0, 1: 1}',
                 ],
             ],
             'changeIntOffsetKeyValuesWithDirectAssignment' => [
@@ -858,11 +858,25 @@ class ArrayAssignmentTest extends TestCase
             ],
             'mergeIntOffsetValues' => [
                 '<?php
-                    $d = array_merge(["hello", 5], []);
-                    $e = array_merge(["hello", 5], ["hello again"]);',
+                    /**
+                     * @var array{string, int} $a
+                     * @var array<empty, empty> $b
+                     * @var array{string} $c
+                     */
+                    $d = array_merge($a, $b);
+                    $e = array_merge($a, $c);',
                 'assertions' => [
                     '$d' => 'array{0: string, 1: int}',
                     '$e' => 'array{0: string, 1: int, 2: string}',
+                ],
+            ],
+            'mergeIntOffsetValuesLiteral' => [
+                '<?php
+                    $d = array_merge(["hello", 5], []);
+                    $e = array_merge(["hello", 5], ["hello again"]);',
+                'assertions' => [
+                    '$d===' => 'array{0: "hello", 1: 5}',
+                    '$e===' => 'array{0: "hello", 1: 5, 2: "hello again"}',
                 ],
             ],
             'addIntOffsetToEmptyArray' => [

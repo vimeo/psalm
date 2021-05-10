@@ -14,7 +14,6 @@ use function min;
 use const PHP_EOL;
 use Psalm\Codebase;
 use Psalm\Config;
-use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\ErrorHandler;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
