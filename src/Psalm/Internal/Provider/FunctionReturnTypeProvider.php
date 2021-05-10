@@ -506,6 +506,12 @@ class FunctionReturnTypeProvider
                     $has_leftover
                 ) as $args) {
                     try {
+                        /**
+                         * @psalm-suppress PossiblyInvalidArgument
+                         * @psalm-suppress PossiblyUndefinedIntArrayOffset
+                         * @psalm-suppress PossiblyInvalidOperand
+                         * @psalm-suppress PossiblyInvalidCast
+                         */
                         if (($function_id === 'array_combine' && count($args[0]) !== count($args[1])) ||
                             ($function_id === 'str_repeat' && (strlen($args[0]) * $args[1]) >= $maxStrLen) ||
                             ($function_id === 'str_pad' && $args[1] >= $maxStrLen) ||
@@ -515,7 +521,8 @@ class FunctionReturnTypeProvider
                             $has_leftover = true;
                             continue;
                         }
-                        $newTypes = Type::fromLiteral($res = $function_id(...$args));
+                        /** @psalm-suppress MixedArgument */
+                        $newTypes = Type::fromLiteral($function_id(...$args));
                         $types = $types ? Type::combineUnionTypes($types, $newTypes) : $newTypes;
                     } catch (\Throwable $e) {
                     }
@@ -653,6 +660,10 @@ class FunctionReturnTypeProvider
      *
      * @param Union $type
      * @param boolean $has_leftover
+     * 
+     * @psalm-suppress InvalidReturnType
+     * @psalm-suppress InvalidReturnStatement
+     *
      * @return list<array|float|int|string>
      */
     public static function extractLiterals(
