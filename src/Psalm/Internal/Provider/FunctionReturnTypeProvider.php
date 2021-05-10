@@ -16,12 +16,10 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
-use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Union;
@@ -32,6 +30,8 @@ use function is_subclass_of;
 use function function_exists;
 use function is_array;
 use function strlen;
+use function array_keys;
+use function array_values;
 
 class FunctionReturnTypeProvider
 {
@@ -627,16 +627,16 @@ class FunctionReturnTypeProvider
      * @param ?Union $type
      * @param ?Union $required_type
      * @param boolean $has_leftover
-     * @return list<array|float|int|string>
+     * @return \Generator<int, array<int|string, array|float|int|string>, null, void>
      */
     public static function getAllowedLiteralParamValues(
         ?Union $type,
         ?Union $required_type,
         Codebase $codebase,
         bool &$has_leftover
-    ): array {
+    ): \Generator {
         if (!$type) {
-            return [];
+            return;
         }
         if (!$required_type || $required_type->hasMixed()) {
             $has_leftover = false;
@@ -644,7 +644,7 @@ class FunctionReturnTypeProvider
         } else {
             $acceptedKeys = [];
             if (!UnionTypeComparator::canBeContainedBy($codebase, $type, $required_type, false, false, $acceptedKeys)) {
-                return [];
+                return;
             }
             $accepted = clone $type;
             $allKeys = \array_keys($type->getAtomicTypes());
@@ -655,8 +655,7 @@ class FunctionReturnTypeProvider
                 }
             }
         }
-        $res = self::extractLiterals($accepted, $has_leftover);
-        return $res;
+        yield from self::extractLiterals($accepted, $has_leftover);
     }
 
 
@@ -669,67 +668,91 @@ class FunctionReturnTypeProvider
      * @psalm-suppress InvalidReturnType
      * @psalm-suppress InvalidReturnStatement
      *
-     * @return list<array|float|int|string>
+     * @return \Generator<int, array<int|string, array|float|int|string>, null, void>
      */
     public static function extractLiterals(
         Union $type,
         bool &$has_leftover
-    ): array {
-        $values = [];
+    ): \Generator {
         if ($type->possibly_undefined) {
             $has_leftover = true;
         }
         foreach ($type->getAtomicTypes() as $atomic_key_type) {
-            if ($atomic_key_type instanceof TLiteralString) {
-                $values []= $atomic_key_type->value;
-            } elseif ($atomic_key_type instanceof TLiteralClassString) {
-                $values []= $atomic_key_type->value;
-            } elseif ($atomic_key_type instanceof TLiteralInt) {
-                $values []= $atomic_key_type->value;
-            } elseif ($atomic_key_type instanceof TLiteralFloat) {
-                $values []= $atomic_key_type->value;
+            if ($atomic_key_type instanceof TLiteralString ||
+                $atomic_key_type instanceof TLiteralClassString ||
+                $atomic_key_type instanceof TLiteralInt ||
+                $atomic_key_type instanceof TLiteralFloat
+            ) {
+                yield $atomic_key_type->value;
             } elseif ($atomic_key_type instanceof TTrue || $atomic_key_type instanceof TFalse) {
-                $values []= $atomic_key_type instanceof TTrue;
+                yield ($atomic_key_type instanceof TTrue);
             } elseif ($atomic_key_type instanceof TNull) {
-                $values []= null;
+                yield null;
             } elseif ($atomic_key_type instanceof TKeyedArray) {
-                $skip = false;
-                $possibly_undefined = false;
-                $array = [];
-                foreach ($atomic_key_type->properties as $key => $sub) {
-                    if ($sub->possibly_undefined) {
-                        $possibly_undefined = true;
-                        $has_leftover = true;
-                        continue;
-                    }
-                    $res = self::extractLiterals($sub, $skip);
-                    if (count($res) !== 1) {
-                        $skip = true;
-                        break;
-                    }
-                    $array[$key] = $res[0];
-                }
-                if ($skip) {
-                    $has_leftover = true;
-                } elseif ($array || !$possibly_undefined) {
-                    $values []= $array;
-                }
-            } elseif ($atomic_key_type instanceof TList) {
-                foreach ($atomic_key_type->type_param->getAtomicTypes() as $sub) {
-                    foreach (self::extractLiterals(new Union([$sub]), $has_leftover) as $subsub) {
-                        $values[] = [$subsub];
-                    }
-                }
-                if (!$atomic_key_type instanceof TNonEmptyList) {
-                    $values []= [];
-                }
-                $has_leftover = true;
+                yield from self::permutateArray(
+                    array_keys($atomic_key_type->properties),
+                    array_values($atomic_key_type->properties),
+                    $has_leftover
+                );
             } elseif ($atomic_key_type instanceof TArray && $atomic_key_type->type_params[1]->isEmpty()) {
-                $values []= [];
+                yield [];
             } else {
                 $has_leftover = true;
             }
         }
-        return $values;
+    }
+
+
+    /**
+     * Permutate array
+     *
+     * @param non-empty-list<string|int> $keys
+     * @param non-empty-list<Union> $values
+     * @param bool $has_leftover
+     * @param array<int|string, array|float|int|string> $current
+     * @param integer $index
+     * @return \Generator<int, array<int|string, array|float|int|string>, null, void>
+     */
+    public static function permutateArray(
+        array $keys,
+        array $values,
+        bool &$has_leftover,
+        array $current = [],
+        int $index = 0
+    ): \Generator {
+        if ($index === count($keys)) {
+            yield $current;
+            return;
+        }
+
+        $cur_leftover = false;
+        foreach (self::extractLiterals(
+            $values[$index],
+            $cur_leftover
+        ) as $value) {
+            $current[$keys[$index]] = $value;
+            yield from self::permutateArray(
+                $keys,
+                $values,
+                $has_leftover,
+                $current,
+                $index+1
+            );
+        }
+        if ($values[$index]->possibly_undefined) {
+            if (isset($current[$keys[$index]])) {
+                unset($current[$keys[$index]]);
+            }
+            yield from self::permutateArray(
+                $keys,
+                $values,
+                $has_leftover,
+                $current,
+                $index+1
+            );
+        }
+        if ($cur_leftover) {
+            $has_leftover = true;
+        }
     }
 }
