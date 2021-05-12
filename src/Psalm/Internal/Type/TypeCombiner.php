@@ -332,6 +332,7 @@ class TypeCombiner
         }
 
         $has_empty = (int) isset($combination->value_types['empty']);
+        $has_never = false;
 
         foreach ($combination->value_types as $type) {
             if ($type instanceof TMixed
@@ -344,17 +345,20 @@ class TypeCombiner
             if (($type instanceof TEmpty || $type instanceof TNever)
                 && (count($combination->value_types) > 1 || count($new_types))
             ) {
+                $has_never = true;
                 continue;
             }
 
             $new_types[] = $type;
         }
 
-        if (!$new_types) {
+        if (!$new_types && !$has_never) {
             throw new \UnexpectedValueException('There should be types here');
+        } elseif (!$new_types && $has_never) {
+            $union_type = Type::getNever();
+        } else {
+            $union_type = new Union($new_types);
         }
-
-        $union_type = new Union($new_types);
 
         if ($from_docblock) {
             $union_type->from_docblock = true;

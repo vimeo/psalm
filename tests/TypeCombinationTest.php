@@ -55,6 +55,15 @@ class TypeCombinationTest extends TestCase
                         return $type_name === "array";
                     }',
             ],
+            'NeverTwice' => [
+                '<?php
+                    /** @return no-return */
+                    function other() {
+                        throw new Exception();
+                    }
+
+                    rand(0,1) ? die() : other();',
+            ],
         ];
     }
 
