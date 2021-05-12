@@ -20,6 +20,8 @@ class ReturnTypeCollector
      * @param  list<Type\Union>         $yield_types
      *
      * @return list<Type\Union>    a list of return types
+     *
+     * @psalm-suppress ComplexMethod to be refactored
      */
     public static function getReturnTypes(
         Codebase $codebase,
@@ -38,6 +40,18 @@ class ReturnTypeCollector
                     $return_types[] = $stmt_type;
 
                     $yield_types = array_merge($yield_types, self::getYieldTypeFromExpression($stmt->expr, $nodes));
+                } elseif ($stmt->expr instanceof PhpParser\Node\Scalar\String_) {
+                    $return_types[] = Type::getString();
+                } elseif ($stmt->expr instanceof PhpParser\Node\Scalar\LNumber) {
+                    $return_types[] = Type::getString();
+                } elseif ($stmt->expr instanceof PhpParser\Node\Expr\ConstFetch) {
+                    if ((string)$stmt->expr->name === 'true') {
+                        $return_types[] = Type::getTrue();
+                    } elseif ((string)$stmt->expr->name === 'false') {
+                        $return_types[] = Type::getFalse();
+                    } elseif ((string)$stmt->expr->name === 'null') {
+                        $return_types[] = Type::getNull();
+                    }
                 } else {
                     $return_types[] = Type::getMixed();
                 }
