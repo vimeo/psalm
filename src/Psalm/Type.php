@@ -2,6 +2,7 @@
 namespace Psalm;
 
 use Psalm\Plugin\EventHandler\Event\StringInterpreterEvent;
+use Psalm\Type\Atomic\TNever;
 use function array_merge;
 use function array_pop;
 use function array_shift;
@@ -297,6 +298,13 @@ abstract class Type
     public static function getEmpty(): Union
     {
         $type = new TEmpty();
+
+        return new Union([$type]);
+    }
+
+    public static function getNever(): Union
+    {
+        $type = new TNever();
 
         return new Union([$type]);
     }
