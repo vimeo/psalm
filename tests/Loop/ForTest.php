@@ -134,6 +134,27 @@ class ForTest extends \Psalm\Tests\TestCase
                         for ($i = 20; $arr[$i] === 5 && $i > 0; $i--) {}
                     }'
             ],
+            'noCrashOnLongThing' => [
+                '<?php
+                    /**
+                     * @param list<array{a: array{int, int}}> $data
+                     */
+                    function makeData(array $data) : array {
+                        while (rand(0, 1)) {
+                            while (rand(0, 1)) {
+                                while (rand(0, 1)) {
+                                    if (rand(0, 1)) {
+                                        continue;
+                                    }
+
+                                    $data[0]["a"] = array_merge($data[0]["a"], $data[0]["a"]);
+                                }
+                            }
+                        }
+
+                        return $data;
+                    }'
+            ],
         ];
     }
 
