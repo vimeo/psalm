@@ -88,7 +88,7 @@ class TemplateStandinTypeReplacer
             }
 
             if (!$atomic_types) {
-                throw new \UnexpectedValueException('Cannot remove all keys');
+                return $union_type;
             }
 
             if (count($atomic_types) > 1) {
