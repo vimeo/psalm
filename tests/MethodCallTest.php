@@ -969,6 +969,21 @@ class MethodCallTest extends TestCase
                         }
                     }'
             ],
+            'noCrashWhenCallingParent' => [
+                '<?php
+                    namespace FooBar;
+
+                    class Datetime extends \DateTime
+                    {
+                        public static function createFromInterface(\DatetimeInterface $datetime): \DateTime
+                        {
+                            return parent::createFromInterface($datetime);
+                        }
+                    }',
+                [],
+                ['MixedReturnStatement', 'MixedInferredReturnType'],
+                '8.0'
+            ]
         ];
     }
 

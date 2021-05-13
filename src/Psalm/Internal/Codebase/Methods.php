@@ -1101,6 +1101,10 @@ class Methods
         $declaring_method_id = $this->getDeclaringMethodId($method_id);
 
         if (!$declaring_method_id) {
+            if (\Psalm\Internal\Codebase\InternalCallMapHandler::inCallMap((string) $method_id)) {
+                return null;
+            }
+
             throw new \UnexpectedValueException('$storage should not be null for ' . $method_id);
         }
 

@@ -69,6 +69,10 @@ class MethodVisibilityAnalyzer
                 return null;
             }
 
+            if (\Psalm\Internal\Codebase\InternalCallMapHandler::inCallMap((string) $method_id)) {
+                return null;
+            }
+
             throw new \UnexpectedValueException('$declaring_method_id not expected to be null here');
         }
 

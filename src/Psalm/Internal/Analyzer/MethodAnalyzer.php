@@ -87,6 +87,10 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
         $method_id = $codebase_methods->getDeclaringMethodId($method_id);
 
         if (!$method_id) {
+            if (\Psalm\Internal\Codebase\InternalCallMapHandler::inCallMap((string) $original_method_id)) {
+                return true;
+            }
+
             throw new \LogicException('Declaring method for ' . $original_method_id . ' should not be null');
         }
 
