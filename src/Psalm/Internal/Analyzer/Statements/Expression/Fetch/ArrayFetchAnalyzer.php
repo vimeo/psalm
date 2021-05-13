@@ -787,7 +787,7 @@ class ArrayFetchAnalyzer
                 $used_offset = 'using a ' . $offset_type->getId() . ' offset';
 
                 if ($key_values) {
-                    $used_offset = 'using offset value of ' . implode('|', $key_values);
+                    $used_offset = "using offset value of '" . implode('|', $key_values) . "'";
                 }
 
                 if ($has_valid_expected_offset && $has_valid_absolute_offset && $context->inside_isset) {
