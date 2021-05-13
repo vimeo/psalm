@@ -39,14 +39,7 @@ class BreakAnalyzer
                 $loop_scope->possibly_redefined_loop_parent_vars = $redefined_vars;
             } else {
                 foreach ($redefined_vars as $var => $type) {
-                    if ($type->hasMixed()) {
-                        if (isset($loop_scope->possibly_redefined_loop_parent_vars[$var])) {
-                            $type->parent_nodes
-                                += $loop_scope->possibly_redefined_loop_parent_vars[$var]->parent_nodes;
-                        }
-
-                        $loop_scope->possibly_redefined_loop_parent_vars[$var] = $type;
-                    } elseif (isset($loop_scope->possibly_redefined_loop_parent_vars[$var])) {
+                    if (isset($loop_scope->possibly_redefined_loop_parent_vars[$var])) {
                         $loop_scope->possibly_redefined_loop_parent_vars[$var] = Type::combineUnionTypes(
                             $type,
                             $loop_scope->possibly_redefined_loop_parent_vars[$var]
