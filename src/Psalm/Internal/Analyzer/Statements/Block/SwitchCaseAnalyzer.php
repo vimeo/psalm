@@ -203,7 +203,11 @@ class SwitchCaseAnalyzer
                 }
             }
 
-            if (($switch_condition_type = $statements_analyzer->node_data->getType($switch_condition))
+            if ($switch_condition instanceof PhpParser\Node\Expr\ConstFetch
+                && $switch_condition->name->parts === ['true']
+            ) {
+                $case_equality_expr = $case->cond;
+            } elseif (($switch_condition_type = $statements_analyzer->node_data->getType($switch_condition))
                 && ($case_cond_type = $statements_analyzer->node_data->getType($case->cond))
                 && (($switch_condition_type->isString() && $case_cond_type->isString())
                     || ($switch_condition_type->isInt() && $case_cond_type->isInt())
