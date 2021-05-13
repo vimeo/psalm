@@ -1033,7 +1033,19 @@ class ConstantTest extends TestCase
                     '$dir===' => 'non-empty-string',
                     '$file===' => 'non-empty-string',
                 ]
-            ]
+            ],
+            'noCrashWithStaticInDocblock' => [
+                '<?php
+                    class Test {
+                        const CONST1 = 1;
+
+                        public function test(): void
+                        {
+                            /** @var static::CONST1 */
+                            $a = static::CONST1;
+                        }
+                    }'
+            ],
         ];
     }
 

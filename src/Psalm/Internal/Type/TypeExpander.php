@@ -188,6 +188,10 @@ class TypeExpander
                 $return_type->fq_classlike_name = $self_class;
             }
 
+            if ($return_type->fq_classlike_name === 'static' && $self_class) {
+                $return_type->fq_classlike_name = is_string($static_class_type) ? $static_class_type : $self_class;
+            }
+
             if ($evaluate_class_constants && $codebase->classOrInterfaceOrEnumExists($return_type->fq_classlike_name)) {
                 if (strtolower($return_type->const_name) === 'class') {
                     return new Type\Atomic\TLiteralClassString($return_type->fq_classlike_name);
