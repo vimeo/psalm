@@ -81,7 +81,7 @@ class ArrayMergeReturnTypeProvider implements \Psalm\Plugin\EventHandler\Functio
                         if ($unpacked_type_part instanceof Type\Atomic\TKeyedArray) {
                             $max_keyed_array_size = \max(
                                 $max_keyed_array_size,
-                                count($unpacked_type_part->properties)
+                                \count($unpacked_type_part->properties)
                             );
 
                             foreach ($unpacked_type_part->properties as $key => $type) {
@@ -192,7 +192,7 @@ class ArrayMergeReturnTypeProvider implements \Psalm\Plugin\EventHandler\Functio
             $inner_value_type = TypeCombiner::combine($inner_value_types, $codebase, true);
         }
 
-        $generic_property_count = count($generic_properties);
+        $generic_property_count = \count($generic_properties);
 
         if ($generic_properties
             && $generic_property_count < 64
