@@ -1077,6 +1077,22 @@ class TypeAlgebraTest extends \Psalm\Tests\TestCase
                         return "";
                     }'
             ],
+            'notNullAfterSuccessfulNullsafeMethodCall' => [
+                '<?php
+                    interface X {
+                        public function a(): bool;
+                        public function b(): string;
+                    }
+
+                    function foo(?X $x): void {
+                        if ($x?->a()) {
+                            echo $x->b();
+                        }
+                    }',
+                [],
+                [],
+                '8.1',
+            ],
         ];
     }
 
@@ -1320,6 +1336,23 @@ class TypeAlgebraTest extends \Psalm\Tests\TestCase
                         }
                     }',
                 'error_message' => 'PossiblyNullReference',
+            ],
+            'stillNullAfterNullsafeMethodCall' => [
+                '<?php
+                    interface X {
+                        public function a(): bool;
+                        public function b(): string;
+                    }
+
+                    function foo(?X $x): void {
+                        if (!($x?->a())) {
+                            echo $x->b();
+                        }
+                    }',
+                'error_message' => 'NullReference',
+                [],
+                false,
+                '8.1',
             ],
         ];
     }
