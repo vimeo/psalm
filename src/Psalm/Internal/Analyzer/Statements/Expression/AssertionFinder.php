@@ -3805,7 +3805,12 @@ class AssertionFinder
                 && $expr_type->isSingleIntLiteral()
                 && ($expr_type->getSingleIntLiteral()->value === 0)
             ) {
-                $if_types[$var_name] = [['=isset']];
+                if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\SmallerOrEqual &&
+                    $typed_value_position === self::ASSIGNMENT_TO_RIGHT) {
+                    $if_types[$var_name] = [['=null', '=isset']];
+                } else {
+                    $if_types[$var_name] = [['=isset']];
+                }
             }
 
             return $if_types ? [$if_types] : [];

@@ -1059,6 +1059,21 @@ class TypeAlgebraTest extends \Psalm\Tests\TestCase
                         return !$value ? "foo" : "bar";
                     }'
             ],
+            'SmallerOrEqualIncludesNull' => [
+                '<?php
+
+                function test1(int $arg): void {
+                    echo $arg;
+                }
+
+                function test2(?int $arg): void {
+                    if ($arg <= 0) {
+                        return;
+                    }
+
+                    test1($arg);
+                }'
+            ],
             'dependentTypeUsedAfterCall' => [
                 '<?php
                     function a(string $_b): void {}
