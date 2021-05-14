@@ -485,9 +485,13 @@ class Functions
 
             // bcmath
             'bcscale',
-            
+
             // json
             'json_last_error',
+
+            // opcache
+            'opcache_compile_file', 'opcache_get_configuration', 'opcache_get_status',
+            'opcache_invalidate', 'opcache_is_script_cached', 'opcache_reset',
         ];
 
         if (\in_array(strtolower($function_id), $impure_functions, true)) {
