@@ -87,6 +87,31 @@ class Algebra
      */
     public static function simplifyCNF(array $clauses): array
     {
+        $clause_count = count($clauses);
+
+        if ($clause_count > 50) {
+            $all_has_unknown = true;
+
+            foreach ($clauses as $clause) {
+                $clause_has_unknown = false;
+                foreach ($clause->possibilities as $key => $_) {
+                    if ($key[0] === '*') {
+                        $clause_has_unknown = true;
+                        break;
+                    }
+                }
+
+                if (!$clause_has_unknown) {
+                    $all_has_unknown = false;
+                    break;
+                }
+            }
+
+            if ($all_has_unknown) {
+                return $clauses;
+            }
+        }
+
         $cloned_clauses = [];
 
         // avoid strict duplicates
