@@ -138,6 +138,25 @@ class AssertionFinder
             );
         }
 
+        //A nullsafe method call basically adds an assertion !null for the checked variable
+        if ($conditional instanceof PhpParser\Node\Expr\NullsafeMethodCall) {
+            $if_types = [];
+
+            $var_name = ExpressionIdentifier::getArrayVarId(
+                $conditional->var,
+                $this_class_name,
+                $source
+            );
+
+            if ($var_name) {
+                $if_types[$var_name] = [['!null']];
+            }
+
+            //we may throw a RedundantNullsafeMethodCall here in the future if $var_name is never null
+
+            return $if_types ? [$if_types] : [];
+        }
+
         if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater
             || $conditional instanceof PhpParser\Node\Expr\BinaryOp\GreaterOrEqual
         ) {
