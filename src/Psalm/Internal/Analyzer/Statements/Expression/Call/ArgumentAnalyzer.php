@@ -451,7 +451,7 @@ class ArgumentAnalyzer
             if ($arg_type->hasArray()) {
                 /**
                  * @psalm-suppress PossiblyUndefinedStringArrayOffset
-                 * @var Type\Atomic\TArray|Type\Atomic\TList|Type\Atomic\TKeyedArray
+                 * @var Type\Atomic\TArray|Type\Atomic\TList|Type\Atomic\TKeyedArray|Type\Atomic\TClassStringMap
                  */
                 $unpacked_atomic_array = $arg_type->getAtomicTypes()['array'];
                 $arg_key_allowed = true;
@@ -489,6 +489,8 @@ class ArgumentAnalyzer
                     }
                 } elseif ($unpacked_atomic_array instanceof Type\Atomic\TList) {
                     $arg_type = $unpacked_atomic_array->type_param;
+                } elseif ($unpacked_atomic_array instanceof Type\Atomic\TClassStringMap) {
+                    $arg_type = Type::getMixed();
                 } else {
                     if (!$allow_named_args && !$unpacked_atomic_array->type_params[0]->isInt()) {
                         $arg_key_allowed = false;
@@ -645,7 +647,8 @@ class ArgumentAnalyzer
     }
 
     /**
-     * @param Type\Atomic\TKeyedArray|Type\Atomic\TArray|Type\Atomic\TList $unpacked_atomic_array
+     * @param Type\Atomic\TKeyedArray|Type\Atomic\TArray|Type\Atomic\TList|Type\Atomic\TClassStringMap
+     *        $unpacked_atomic_array
      * @return  null|false
      */
     public static function verifyType(
@@ -1321,7 +1324,8 @@ class ArgumentAnalyzer
     }
 
     /**
-     * @param Type\Atomic\TKeyedArray|Type\Atomic\TArray|Type\Atomic\TList $unpacked_atomic_array
+     * @param Type\Atomic\TKeyedArray|Type\Atomic\TArray|Type\Atomic\TList|Type\Atomic\TClassStringMap
+     *        $unpacked_atomic_array
      */
     private static function coerceValueAfterGatekeeperArgument(
         StatementsAnalyzer $statements_analyzer,
