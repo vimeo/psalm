@@ -320,7 +320,7 @@ class FunctionCallReturnTypeFetcher
                                 }
 
                                 if ($atomic_types['array'] instanceof Type\Atomic\TKeyedArray
-                                    && $atomic_types['array']->sealed
+                                    && $atomic_types['array']->isNonEmpty()
                                 ) {
                                     return new Type\Union([
                                         new Type\Atomic\TLiteralInt(count($atomic_types['array']->properties))
