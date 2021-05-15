@@ -437,6 +437,40 @@ class AssertionFinder
                 )) {
                     // fall through
                 }
+            } else {
+                // both side of the Identical can be asserted to the intersection of both
+                $intersection_type = Type::intersectUnionTypes($var_type, $other_type, $codebase);
+
+                if ($intersection_type !== null && $intersection_type->isSingle()) {
+                    $assertion = $intersection_type->getAssertionString();
+
+                    $if_types = [];
+
+                    $var_name_left = ExpressionIdentifier::getArrayVarId(
+                        $conditional->left,
+                        $this_class_name,
+                        $source
+                    );
+
+                    if ($var_name_left &&
+                        (!$var_type->isSingle() || $var_type->getAssertionString() !== $assertion)) {
+                        $if_types[$var_name_left] = [['~'.$assertion]];
+                    }
+
+                    $var_name_right = ExpressionIdentifier::getArrayVarId(
+                        $conditional->right,
+                        $this_class_name,
+                        $source
+                    );
+
+                    if ($var_name_right &&
+                        (!$other_type->isSingle() || $other_type->getAssertionString() !== $assertion)) {
+                        $if_types[$var_name_right] = [['~'.$assertion]];
+                    }
+
+                    return $if_types ? [$if_types] : [];
+                }
+
             }
         }
 
