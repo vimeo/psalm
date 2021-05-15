@@ -288,7 +288,8 @@ class ArgumentAnalyzer
                 $statements_analyzer,
                 $arg_value_type,
                 $argument_offset,
-                $context->self ?: 'fn-' . $context->calling_function_id
+                $context->self,
+                $context->calling_function_id ?: $context->calling_method_id
             );
 
             $arg_type = TemplateStandinTypeReplacer::replace(
@@ -298,7 +299,8 @@ class ArgumentAnalyzer
                 $statements_analyzer,
                 $arg_value_type,
                 $argument_offset,
-                $context->self ?: 'fn-' . $context->calling_function_id
+                $context->self,
+                $context->calling_function_id ?: $context->calling_method_id
             );
         }
 

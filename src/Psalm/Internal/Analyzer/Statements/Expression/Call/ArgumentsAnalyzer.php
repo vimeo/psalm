@@ -263,7 +263,8 @@ class ArgumentsAnalyzer
             $statements_analyzer,
             $existing_type,
             $argument_offset,
-            'fn-' . ($context->calling_method_id ?: $context->calling_function_id)
+            $context->self,
+            $context->calling_method_id ?: $context->calling_function_id
         );
 
         if ($replace_template_result->upper_bounds) {
@@ -346,7 +347,7 @@ class ArgumentsAnalyzer
             null,
             null,
             null,
-            'fn-' . ($context->calling_method_id ?: $context->calling_function_id)
+            $context->calling_method_id ?: $context->calling_function_id
         );
 
         TemplateInferredTypeReplacer::replace(
@@ -981,7 +982,8 @@ class ArgumentsAnalyzer
                         $statements_analyzer,
                         $statements_analyzer->node_data->getType($arg->value),
                         $argument_offset,
-                        'fn-' . ($context->calling_method_id ?: $context->calling_function_id)
+                        $context->self,
+                        $context->calling_method_id ?: $context->calling_function_id
                     );
 
                     if ($template_result->upper_bounds) {
@@ -1005,7 +1007,8 @@ class ArgumentsAnalyzer
                         $statements_analyzer,
                         $statements_analyzer->node_data->getType($arg->value),
                         $argument_offset,
-                        'fn-' . ($context->calling_method_id ?: $context->calling_function_id)
+                        $context->self,
+                        $context->calling_method_id ?: $context->calling_function_id
                     );
 
                     if ($template_result->upper_bounds) {
