@@ -266,6 +266,10 @@ class UnionTypeComparator
         ?Type\Union $input_type,
         Type\Union $container_type
     ): bool {
+        if ($container_type->isMixed()) {
+            return true;
+        }
+
         if (!$input_type) {
             return false;
         }
