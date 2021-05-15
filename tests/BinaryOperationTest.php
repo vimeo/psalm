@@ -243,6 +243,18 @@ class BinaryOperationTest extends TestCase
                     foo(foo("-123") . 456);
                 ',
             ],
+            'castToIntPreserveNarrowerIntType' => [
+                '<?php
+                    /**
+                     * @param positive-int $i
+                     * @return positive-int
+                     */
+                    function takesAnInt(int $i) {
+                        /** @psalm-suppress RedundantCast */
+                        return (int)$i;
+                    }
+                ',
+            ],
             'concatenateFloatWithInt' => [
                 '<?php
                     /**
