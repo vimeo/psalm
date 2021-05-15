@@ -3807,7 +3807,7 @@ class AssertionFinder
             ) {
                 if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\SmallerOrEqual &&
                     $typed_value_position === self::ASSIGNMENT_TO_RIGHT) {
-                    $if_types[$var_name] = [['=null', '=isset']];
+                    $if_types[$var_name] = [['falsy', '=isset']];
                 } else {
                     $if_types[$var_name] = [['=isset']];
                 }
