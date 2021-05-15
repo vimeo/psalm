@@ -44,10 +44,12 @@ class CastAnalyzer
             }
 
             $as_int = true;
+            $valid_int_type = null;
             $maybe_type = $statements_analyzer->node_data->getType($stmt->expr);
 
             if ($maybe_type) {
                 if ($maybe_type->isInt()) {
+                    $valid_int_type = $maybe_type;
                     if (!$maybe_type->from_calculation) {
                         if ($maybe_type->from_docblock) {
                             $issue = new RedundantCastGivenDocblockType(
@@ -87,7 +89,7 @@ class CastAnalyzer
             }
 
             if ($as_int) {
-                $type = Type::getInt();
+                $type = $valid_int_type ?? Type::getInt();
 
                 if ($statements_analyzer->data_flow_graph
                     && $statements_analyzer->data_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph
