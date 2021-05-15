@@ -909,6 +909,10 @@ class ArrayFunctionCallTest extends TestCase
                         return "a";
                     }',
             ],
+            'arrayFillZeroLength' => [
+                '<?php
+                    count(array_fill(0, 0, 0)) === 0;',
+            ],
             'implodeMultiDimensionalArray' => [
                 '<?php
                     $urls = array_map("implode", [["a", "b"]]);',
@@ -1952,6 +1956,11 @@ class ArrayFunctionCallTest extends TestCase
 
                     array_filter(["hello"], "foo");',
                 'error_message' => 'InvalidScalarArgument',
+            ],
+            'arrayFillPositiveConstantLength' => [
+                '<?php
+                    count(array_fill(0, 1, 0)) === 0;',
+                'error_message' => 'TypeDoesNotContainType'
             ],
             'arrayFilterTooFewArgs' => [
                 '<?php
