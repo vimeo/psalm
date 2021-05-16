@@ -384,7 +384,7 @@ class NonDivArithmeticOpAnalyzer
             $has_string_increment = true;
 
             if (!$result_type) {
-                $result_type = Type::getString();
+                $result_type = Type::getNonEmptyString();
             } else {
                 $result_type = Type::combineUnionTypes(Type::getString(), $result_type);
             }
