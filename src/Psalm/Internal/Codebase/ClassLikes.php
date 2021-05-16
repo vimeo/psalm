@@ -30,6 +30,7 @@ use Psalm\Issue\UnusedConstructor;
 use Psalm\Issue\UnusedMethod;
 use Psalm\Issue\UnusedProperty;
 use Psalm\IssueBuffer;
+use Psalm\Node\VirtualNode;
 use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
 use Psalm\Storage\ClassLikeStorage;
@@ -1198,6 +1199,9 @@ class ClassLikes
         bool $force_change = false,
         bool $was_self = false
     ) : bool {
+        if ($class_name_node instanceof VirtualNode) {
+            return false;
+        }
         $calling_fq_class_name = $source->getFQCLN();
 
         // if we're inside a moved class static method
