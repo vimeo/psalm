@@ -70,6 +70,8 @@ class ScopeAnalyzer
      * @param bool $return_is_exit Exit and Throw statements are treated differently from return if this is false
      *
      * @return list<self::ACTION_*>
+     *
+     * @psalm-suppress ComplexMethod nothing much we can do
      */
     public static function getControlActions(
         array $stmts,
@@ -109,7 +111,7 @@ class ScopeAnalyzer
                         ['E_ERROR', 'E_PARSE', 'E_CORE_ERROR', 'E_COMPILE_ERROR', 'E_USER_ERROR']
                     )
                 ) {
-                    return [self::ACTION_END];
+                    return array_values(array_unique(array_merge($control_actions, [self::ACTION_END])));
                 }
 
                 // This allows calls to functions that always exit to act as exit statements themselves
@@ -117,7 +119,7 @@ class ScopeAnalyzer
                     && ($stmt_expr_type = $nodes->getType($stmt->expr))
                     && $stmt_expr_type->isNever()
                 ) {
-                    return [self::ACTION_END];
+                    return array_values(array_unique(array_merge($control_actions, [self::ACTION_END])));
                 }
 
                 if ($exit_functions) {
@@ -129,7 +131,7 @@ class ScopeAnalyzer
                             $resolved_name = $stmt->expr->name->getAttribute('resolvedName');
 
                             if ($resolved_name && isset($exit_functions[strtolower($resolved_name)])) {
-                                return [self::ACTION_END];
+                                return array_values(array_unique(array_merge($control_actions, [self::ACTION_END])));
                             }
                         } elseif ($stmt->expr->class instanceof PhpParser\Node\Name
                             && $stmt->expr->name instanceof PhpParser\Node\Identifier
@@ -140,7 +142,7 @@ class ScopeAnalyzer
                             if ($resolved_class_name
                                 && isset($exit_functions[strtolower($resolved_class_name . '::' . $stmt->expr->name)])
                             ) {
-                                return [self::ACTION_END];
+                                return array_values(array_unique(array_merge($control_actions, [self::ACTION_END])));
                             }
                         }
                     }
