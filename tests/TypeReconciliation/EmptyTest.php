@@ -389,6 +389,30 @@ class EmptyTest extends \Psalm\Tests\TestCase
                         echo $arr["a"];
                     }'
             ],
+            'reconcileEmptyTwiceWithoutReturn' => [
+                '<?php
+                    function foo(array $arr): void {
+                        if (!empty($arr["a"])) {
+                        } else {
+                            if (empty($arr["dontcare"])) {}
+                        }
+
+                        if (empty($arr["a"])) {}
+                    }'
+            ],
+            'reconcileEmptyTwiceWithReturn' => [
+                '<?php
+                    function foo(array $arr): void {
+                        if (!empty($arr["a"])) {
+                        } else {
+                            if (empty($arr["dontcare"])) {
+                                return;
+                            }
+                        }
+
+                        if (empty($arr["a"])) {}
+                    }'
+            ],
         ];
     }
 

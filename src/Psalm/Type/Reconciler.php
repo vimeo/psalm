@@ -96,7 +96,8 @@ class Reconciler
             $has_falsyish = false;
             $has_empty = false;
             $has_count_check = false;
-            $is_equality = ($old_new_types[$key] ?? null) === $new_type_parts;
+            $is_real = ($old_new_types[$key] ?? null) === $new_type_parts;
+            $is_equality = $is_real;
 
             foreach ($new_type_parts as $new_type_part_parts) {
                 foreach ($new_type_part_parts as $new_type_part_part) {
@@ -271,6 +272,7 @@ class Reconciler
 
                         if (!isset($new_types[$new_key])
                             && preg_match('/' . preg_quote($key, '/') . '[\]\[\-]/', $new_key)
+                            && $is_real
                         ) {
                             unset($existing_types[$new_key]);
                         }
