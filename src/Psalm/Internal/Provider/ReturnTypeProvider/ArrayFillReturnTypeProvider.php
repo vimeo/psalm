@@ -68,7 +68,8 @@ class ArrayFillReturnTypeProvider implements \Psalm\Plugin\EventHandler\Function
         ]);
     }
 
-    private static function isPositiveNumericType (Type\Union $arg): bool {
+    private static function isPositiveNumericType(Type\Union $arg): bool
+    {
         if ($arg->isSingle() && $arg->hasPositiveInt()) {
             return true;
         }
