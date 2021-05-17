@@ -47,7 +47,8 @@ class TryAnalyzer
             $catch_actions[$i] = ScopeAnalyzer::getControlActions(
                 $catch->stmts,
                 $statements_analyzer->node_data,
-                $codebase->config->exit_functions
+                $codebase->config->exit_functions,
+                []
             );
             $all_catches_leave = $all_catches_leave && !in_array(ScopeAnalyzer::ACTION_NONE, $catch_actions[$i], true);
         }
@@ -106,7 +107,7 @@ class TryAnalyzer
             $stmt->stmts,
             $statements_analyzer->node_data,
             $codebase->config->exit_functions,
-            $context->break_types
+            []
         );
 
         /** @var array<string, int> */
@@ -368,7 +369,7 @@ class TryAnalyzer
                 $catch->stmts,
                 $statements_analyzer->node_data,
                 $codebase->config->exit_functions,
-                $context->break_types
+                []
             );
 
             foreach ($issues_to_suppress as $issue_to_suppress) {

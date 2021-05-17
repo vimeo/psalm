@@ -152,7 +152,7 @@ class ElseAnalyzer
                 $else->stmts,
                 $statements_analyzer->node_data,
                 $codebase->config->exit_functions,
-                $outer_context->break_types
+                []
             )
             : [ScopeAnalyzer::ACTION_NONE];
         // has a return/throw at end

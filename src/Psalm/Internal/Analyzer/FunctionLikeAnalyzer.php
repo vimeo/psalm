@@ -499,7 +499,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $this->function->getStmts() ?: [],
             null,
             $codebase->config->exit_functions,
-            $context->break_types
+            []
         );
 
         if ($final_actions !== [ScopeAnalyzer::ACTION_END]) {

@@ -308,7 +308,7 @@ class ElseIfAnalyzer
             $elseif->stmts,
             $statements_analyzer->node_data,
             $codebase->config->exit_functions,
-            $outer_context->break_types
+            []
         );
         // has a return/throw at end
         $has_ending_statements = $final_actions === [ScopeAnalyzer::ACTION_END];

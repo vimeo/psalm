@@ -90,7 +90,7 @@ class LoopAnalyzer
             $stmts,
             $statements_analyzer->node_data,
             Config::getInstance()->exit_functions,
-            $loop_scope->loop_context->break_types
+            []
         );
 
         $does_always_break = $final_actions === [ScopeAnalyzer::ACTION_BREAK];

@@ -76,7 +76,7 @@ class IfElseAnalyzer
                 $stmt->stmts,
                 null,
                 $codebase->config->exit_functions,
-                $context->break_types
+                []
             );
 
             $has_leaving_statements = $final_actions === [ScopeAnalyzer::ACTION_END]

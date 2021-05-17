@@ -75,7 +75,7 @@ class ScopeAnalyzer
         array $stmts,
         ?\Psalm\Internal\Provider\NodeDataProvider $nodes,
         array $exit_functions,
-        array $break_types = [],
+        array $break_types,
         bool $return_is_exit = true
     ): array {
         if (empty($stmts)) {
@@ -151,10 +151,13 @@ class ScopeAnalyzer
 
             if ($stmt instanceof PhpParser\Node\Stmt\Continue_) {
                 if ($break_types
-                    && end($break_types) === 'switch'
                     && (!$stmt->num || !$stmt->num instanceof PhpParser\Node\Scalar\LNumber || $stmt->num->value < 2)
                 ) {
-                    return array_merge($control_actions, [self::ACTION_LEAVE_SWITCH]);
+                    if (end($break_types) === 'switch') {
+                        return array_merge($control_actions, [self::ACTION_LEAVE_SWITCH]);
+                    }
+
+                    return $control_actions;
                 }
 
                 return array_values(array_unique(array_merge($control_actions, [self::ACTION_CONTINUE])));
@@ -162,10 +165,13 @@ class ScopeAnalyzer
 
             if ($stmt instanceof PhpParser\Node\Stmt\Break_) {
                 if ($break_types
-                    && end($break_types) === 'switch'
                     && (!$stmt->num || !$stmt->num instanceof PhpParser\Node\Scalar\LNumber || $stmt->num->value < 2)
                 ) {
-                    return [self::ACTION_LEAVE_SWITCH];
+                    if (end($break_types) === 'switch') {
+                        return array_merge($control_actions, [self::ACTION_LEAVE_SWITCH]);
+                    }
+
+                    return $control_actions;
                 }
 
                 return array_values(array_unique(array_merge($control_actions, [self::ACTION_BREAK])));
@@ -243,7 +249,7 @@ class ScopeAnalyzer
                         $case->stmts,
                         $nodes,
                         $exit_functions,
-                        ['switch'],
+                        array_merge($break_types, ['switch']),
                         $return_is_exit
                     );
 
@@ -285,7 +291,7 @@ class ScopeAnalyzer
                 || $stmt instanceof PhpParser\Node\Stmt\Foreach_
                 || $stmt instanceof PhpParser\Node\Stmt\For_
             ) {
-                $do_actions = self::getControlActions(
+                $loop_actions = self::getControlActions(
                     $stmt->stmts,
                     $nodes,
                     $exit_functions,
@@ -294,12 +300,9 @@ class ScopeAnalyzer
                 );
 
                 $control_actions = array_filter(
-                    array_merge($control_actions, $do_actions),
-                    function ($action) use ($break_types) {
-                        return $action !== self::ACTION_NONE
-                            && ($break_types
-                                || ($action !== self::ACTION_CONTINUE
-                                    && $action !== self::ACTION_BREAK));
+                    array_merge($control_actions, $loop_actions),
+                    function ($action) {
+                        return $action !== self::ACTION_NONE;
                     }
                 );
             }

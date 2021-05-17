@@ -141,7 +141,8 @@ class ReturnTypeAnalyzer
             && ScopeAnalyzer::getControlActions(
                 $function_stmts,
                 $type_provider,
-                $codebase->config->exit_functions
+                $codebase->config->exit_functions,
+                []
             ) !== [ScopeAnalyzer::ACTION_END]
             && !$inferred_yield_types
             && count($inferred_return_type_parts)
@@ -166,10 +167,12 @@ class ReturnTypeAnalyzer
             false
         ) === [ScopeAnalyzer::ACTION_END];
 
-        $function_returns_implicitely = ScopeAnalyzer::getControlActions(
+        $function_returns_implicitly = ScopeAnalyzer::getControlActions(
             $function_stmts,
             $type_provider,
-            $codebase->config->exit_functions
+            $codebase->config->exit_functions,
+            [],
+            true
         ) !== [ScopeAnalyzer::ACTION_END];
 
         /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
@@ -183,7 +186,7 @@ class ReturnTypeAnalyzer
             && !$return_type->isVoid()
             && !$inferred_yield_types
             && (!$function_like_storage || !$function_like_storage->has_yield)
-            && $function_returns_implicitely
+            && $function_returns_implicitly
         ) {
             if (IssueBuffer::accepts(
                 new InvalidReturnType(
