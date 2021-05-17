@@ -192,6 +192,13 @@ class ScopeAnalyzer
                     $return_is_exit
                 );
 
+                $all_leave = !array_filter(
+                    $if_statement_actions,
+                    function ($action) {
+                        return $action === self::ACTION_NONE;
+                    }
+                );
+
                 $else_statement_actions = $stmt->else
                     ? self::getControlActions(
                         $stmt->else->stmts,
@@ -201,9 +208,14 @@ class ScopeAnalyzer
                         $return_is_exit
                     ) : [];
 
-                $all_same = count($if_statement_actions) === 1
-                    && $if_statement_actions == $else_statement_actions
-                    && $if_statement_actions !== [self::ACTION_NONE];
+                $all_leave = $all_leave
+                    && $else_statement_actions
+                    && !array_filter(
+                        $else_statement_actions,
+                        function ($action) {
+                            return $action === self::ACTION_NONE;
+                        }
+                    );
 
                 $all_elseif_actions = [];
 
@@ -217,16 +229,29 @@ class ScopeAnalyzer
                             $return_is_exit
                         );
 
-                        $all_same = $all_same && $elseif_control_actions == $if_statement_actions;
+                        $all_leave = $all_leave
+                            && !array_filter(
+                                $elseif_control_actions,
+                                function ($action) {
+                                    return $action === self::ACTION_NONE;
+                                }
+                            );
 
-                        if (!$all_same) {
-                            $all_elseif_actions = array_merge($elseif_control_actions, $all_elseif_actions);
-                        }
+                        $all_elseif_actions = array_merge($elseif_control_actions, $all_elseif_actions);
                     }
                 }
 
-                if ($all_same) {
-                    return $if_statement_actions;
+                if ($all_leave) {
+                    return array_values(
+                        array_unique(
+                            array_merge(
+                                $control_actions,
+                                $if_statement_actions,
+                                $else_statement_actions,
+                                $all_elseif_actions
+                            )
+                        )
+                    );
                 }
 
                 $control_actions = array_filter(
@@ -272,7 +297,10 @@ class ScopeAnalyzer
                         $has_non_breaking_default = true;
                     }
 
-                    $case_does_end = $case_actions == [self::ACTION_END];
+                    $case_does_end = !array_diff(
+                        $control_actions,
+                        [ScopeAnalyzer::ACTION_END, ScopeAnalyzer::ACTION_RETURN]
+                    );
 
                     if ($case_does_end) {
                         $has_ended = true;
@@ -322,8 +350,17 @@ class ScopeAnalyzer
                     $return_is_exit
                 );
 
+                $try_leaves = !array_filter(
+                    $try_statement_actions,
+                    function ($action) {
+                        return $action === self::ACTION_NONE;
+                    }
+                );
+
+                $all_catch_actions = [];
+
                 if ($stmt->catches) {
-                    $all_same = count($try_statement_actions) === 1;
+                    $all_leave = $try_leaves;
 
                     foreach ($stmt->catches as $catch) {
                         $catch_actions = self::getControlActions(
@@ -334,17 +371,33 @@ class ScopeAnalyzer
                             $return_is_exit
                         );
 
-                        $all_same = $all_same && $try_statement_actions == $catch_actions;
+                        $all_leave = $all_leave
+                            && !array_filter(
+                                $catch_actions,
+                                function ($action) {
+                                    return $action === self::ACTION_NONE;
+                                }
+                            );
 
-                        if (!$all_same) {
+                        if (!$all_leave) {
                             $control_actions = array_merge($control_actions, $catch_actions);
+                        } else {
+                            $all_catch_actions = array_merge($all_catch_actions, $catch_actions);
                         }
                     }
 
-                    if ($all_same && $try_statement_actions !== [self::ACTION_NONE]) {
-                        return array_values(array_unique(array_merge($control_actions, $try_statement_actions)));
+                    if ($all_leave && $try_statement_actions !== [self::ACTION_NONE]) {
+                        return array_values(
+                            array_unique(
+                                array_merge(
+                                    $control_actions,
+                                    $try_statement_actions,
+                                    $all_catch_actions
+                                )
+                            )
+                        );
                     }
-                } elseif (!in_array(self::ACTION_NONE, $try_statement_actions, true)) {
+                } elseif ($try_leaves) {
                     return array_values(array_unique(array_merge($control_actions, $try_statement_actions)));
                 }
 

@@ -159,21 +159,17 @@ class ReturnTypeAnalyzer
             }
         }
 
-        $function_always_exits = ScopeAnalyzer::getControlActions(
+        $control_actions = ScopeAnalyzer::getControlActions(
             $function_stmts,
             $type_provider,
             $codebase->config->exit_functions,
             [],
             false
-        ) === [ScopeAnalyzer::ACTION_END];
+        );
 
-        $function_returns_implicitly = ScopeAnalyzer::getControlActions(
-            $function_stmts,
-            $type_provider,
-            $codebase->config->exit_functions,
-            [],
-            true
-        ) !== [ScopeAnalyzer::ACTION_END];
+        $function_always_exits = $control_actions === [ScopeAnalyzer::ACTION_END];
+
+        $function_returns_implicitly = !!array_diff($control_actions, [ScopeAnalyzer::ACTION_END, ScopeAnalyzer::ACTION_RETURN]);
 
         /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
         if ($return_type
