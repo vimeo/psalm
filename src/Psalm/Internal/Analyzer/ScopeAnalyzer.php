@@ -150,28 +150,32 @@ class ScopeAnalyzer
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\Continue_) {
-                if ($break_types
-                    && (!$stmt->num || !$stmt->num instanceof PhpParser\Node\Scalar\LNumber || $stmt->num->value < 2)
-                ) {
-                    if (end($break_types) === 'switch') {
+                $count = !$stmt->num
+                    ? 1
+                    : ($stmt->num instanceof PhpParser\Node\Scalar\LNumber ? $stmt->num->value : null);
+
+                if ($break_types && $count !== null && count($break_types) >= $count) {
+                    if ($break_types[count($break_types) - $count] === 'switch') {
                         return array_merge($control_actions, [self::ACTION_LEAVE_SWITCH]);
                     }
 
-                    return $control_actions;
+                    return array_values($control_actions);
                 }
 
                 return array_values(array_unique(array_merge($control_actions, [self::ACTION_CONTINUE])));
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\Break_) {
-                if ($break_types
-                    && (!$stmt->num || !$stmt->num instanceof PhpParser\Node\Scalar\LNumber || $stmt->num->value < 2)
-                ) {
-                    if (end($break_types) === 'switch') {
+                $count = !$stmt->num
+                    ? 1
+                    : ($stmt->num instanceof PhpParser\Node\Scalar\LNumber ? $stmt->num->value : null);
+
+                if ($break_types && $count !== null && count($break_types) >= $count) {
+                    if ($break_types[count($break_types) - $count] === 'switch') {
                         return array_merge($control_actions, [self::ACTION_LEAVE_SWITCH]);
                     }
 
-                    return $control_actions;
+                    return array_values($control_actions);
                 }
 
                 return array_values(array_unique(array_merge($control_actions, [self::ACTION_BREAK])));
