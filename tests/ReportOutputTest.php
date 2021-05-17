@@ -100,7 +100,7 @@ echo "Successfully executed the command: " . $prefixedData;';
                         'driver' => [
                             'name' => 'Psalm',
                             'informationUri' => 'https://psalm.dev',
-                            'version' => '2.0.0',
+                            'version' => '4.0.0',
                             'rules' => [
                                 [
                                     'id' => '246',
