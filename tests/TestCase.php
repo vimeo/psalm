@@ -32,7 +32,7 @@ class TestCase extends BaseTestCase
         ini_set('memory_limit', '-1');
 
         if (!defined('PSALM_VERSION')) {
-            define('PSALM_VERSION', '2.0.0');
+            define('PSALM_VERSION', '4.0.0');
         }
 
         if (!defined('PHP_PARSER_VERSION')) {
