@@ -42,6 +42,7 @@ use function strtolower;
 use function substr;
 use function count;
 use function in_array;
+use function array_diff;
 
 /**
  * @internal
@@ -169,7 +170,10 @@ class ReturnTypeAnalyzer
 
         $function_always_exits = $control_actions === [ScopeAnalyzer::ACTION_END];
 
-        $function_returns_implicitly = !!array_diff($control_actions, [ScopeAnalyzer::ACTION_END, ScopeAnalyzer::ACTION_RETURN]);
+        $function_returns_implicitly = !!array_diff(
+            $control_actions,
+            [ScopeAnalyzer::ACTION_END, ScopeAnalyzer::ACTION_RETURN]
+        );
 
         /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
         if ($return_type

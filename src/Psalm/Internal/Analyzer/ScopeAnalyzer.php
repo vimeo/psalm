@@ -13,6 +13,7 @@ use function count;
 use function end;
 use function in_array;
 use function strtolower;
+use function array_diff;
 
 /**
  * @internal
