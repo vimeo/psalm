@@ -42,7 +42,7 @@ class IncDecExpressionAnalyzer
         $stmt_var_type = $statements_analyzer->node_data->getType($stmt->var);
 
         if ($stmt instanceof PostInc || $stmt instanceof PostDec) {
-            $statements_analyzer->node_data->setType($stmt, $stmt_var_type ?: Type::getMixed());
+            $statements_analyzer->node_data->setType($stmt, $stmt_var_type ?? Type::getMixed());
         }
 
         if (($stmt_var_type = $statements_analyzer->node_data->getType($stmt->var))
@@ -64,9 +64,8 @@ class IncDecExpressionAnalyzer
                 $context
             );
 
-            $stmt_type = clone $stmt_var_type;
-
-            $statements_analyzer->node_data->setType($stmt, $stmt_type);
+            $result_type = $return_type ?? Type::getMixed();
+            $statements_analyzer->node_data->setType($stmt, $result_type);
 
             BinaryOpAnalyzer::addDataFlow(
                 $statements_analyzer,
@@ -81,7 +80,7 @@ class IncDecExpressionAnalyzer
             $codebase = $statements_analyzer->getCodebase();
 
             if ($var_id && isset($context->vars_in_scope[$var_id])) {
-                $context->vars_in_scope[$var_id] = $stmt_type;
+                $context->vars_in_scope[$var_id] = $result_type;
 
                 if ($codebase->find_unused_variables && $stmt->var instanceof PhpParser\Node\Expr\Variable) {
                     $context->assigned_var_ids[$var_id] = (int) $stmt->var->getAttribute('startFilePos');

@@ -384,6 +384,18 @@ class BinaryOperationTest extends TestCase
                     '$a' => 'string',
                 ],
             ],
+            'stringIncrementWithCheck' => [
+                '<?php
+                    /** @psalm-suppress StringIncrement */
+                    for($a = "a"; $a != "z"; $a++){
+                        if($a === "b"){
+                            echo "b reached";
+                        }
+                    }',
+                'assertions' => [
+                    '$a===' => 'non-empty-string',
+                ],
+            ],
             'nullCoalescingAssignment' => [
                 '<?php
                     function foo(?string $s): string {
