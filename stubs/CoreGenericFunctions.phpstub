@@ -704,6 +704,17 @@ function htmlspecialchars_decode(string $string, ?int $quote_style = null) : str
 
 /**
  * @psalm-pure
+ * 
+ * @psalm-return (
+ *     $string is non-empty-string
+ *     ? positive-int
+ *     : int
+ * )
+ */
+function strlen(string $string) : int {}
+
+/**
+ * @psalm-pure
  *
  * @param string|array<string|int|float> $search
  * @param string|array<string|int|float> $replace
