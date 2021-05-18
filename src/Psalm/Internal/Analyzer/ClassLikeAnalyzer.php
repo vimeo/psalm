@@ -596,10 +596,6 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                 return $emit_issues ? null : true;
 
             case self::VISIBILITY_PROTECTED:
-                if ($appearing_property_class === $context->self) {
-                    return null;
-                }
-
                 if (!$context->self) {
                     if ($emit_issues && IssueBuffer::accepts(
                         new InaccessibleProperty(

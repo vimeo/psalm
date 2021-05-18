@@ -1,6 +1,7 @@
 <?php
 namespace Psalm;
 
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Plugin\EventHandler\Event\StringInterpreterEvent;
 use Psalm\Type\Atomic\TNever;
 use function array_merge;
@@ -646,6 +647,19 @@ abstract class Type
                             $intersection_performed = true;
                         }
                     }
+                }
+            }
+
+            //if a type is contained by the other, the intersection is the narrowest type
+            if (!$intersection_performed) {
+                $type_1_in_2 = UnionTypeComparator::isContainedBy($codebase, $type_1, $type_2);
+                $type_2_in_1 = UnionTypeComparator::isContainedBy($codebase, $type_2, $type_1);
+                if ($type_1_in_2) {
+                    $intersection_performed = true;
+                    $combined_type = $type_1;
+                } elseif ($type_2_in_1) {
+                    $intersection_performed = true;
+                    $combined_type = $type_2;
                 }
             }
 
