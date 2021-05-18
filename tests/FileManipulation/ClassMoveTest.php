@@ -708,6 +708,41 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
                     'Bar\Bat' => 'Bar\Baz\Bahh',
                 ],
             ],
+            'moveClassBewareOfPropertyNotSetInConstructorCheck' => [
+                '<?php
+                    namespace Foo {
+                        class Base
+                        {
+                            protected $property1;
+
+                            public function __construct()
+                            {
+                                $this->property1 = "";
+                            }
+                        }
+                    }
+                    namespace Foo {
+                        class Hello extends Base {}
+                    }',
+                '<?php
+                    namespace Foo {
+                        class Base
+                        {
+                            protected $property1;
+
+                            public function __construct()
+                            {
+                                $this->property1 = "";
+                            }
+                        }
+                    }
+                    namespace Foo\Bar {
+                        class Hello extends \Foo\Base {}
+                    }',
+                [
+                    'Foo\Hello' => 'Foo\Bar\Hello',
+                ],
+            ],
         ];
     }
 }
