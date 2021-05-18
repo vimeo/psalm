@@ -273,6 +273,8 @@ class ScopeAnalyzer
                 $has_non_breaking_default = false;
                 $has_default_terminator = false;
 
+                $all_case_actions = [];
+
                 // iterate backwards in a case statement
                 for ($d = count($stmt->cases) - 1; $d >= 0; --$d) {
                     $case = $stmt->cases[$d];
@@ -307,6 +309,11 @@ class ScopeAnalyzer
                         $has_ended = true;
                     }
 
+                    $all_case_actions = array_merge(
+                        $all_case_actions,
+                        $case_actions
+                    );
+
                     if (!$case_does_end && !$has_ended) {
                         continue 2;
                     }
@@ -317,7 +324,14 @@ class ScopeAnalyzer
                 }
 
                 if ($has_default_terminator || isset($stmt->allMatched)) {
-                    return array_values(array_unique(array_merge($control_actions, [self::ACTION_END])));
+                    $all_case_actions = array_filter(
+                        $all_case_actions,
+                        function ($action) {
+                            return $action !== self::ACTION_NONE;
+                        }
+                    );
+
+                    return array_values(array_unique(array_merge($control_actions, $all_case_actions)));
                 }
             }
 
