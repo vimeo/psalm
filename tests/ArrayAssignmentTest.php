@@ -1568,6 +1568,16 @@ class ArrayAssignmentTest extends TestCase
                         return $array;
                     }'
             ],
+            'castPossiblyArray'  => [
+                '<?php
+                    /**
+                     * @psalm-param string|list<string> $a
+                     * @return list<string>
+                     */
+                    function addHeaders($a): array {
+                        return (array)$a;
+                    }',
+            ],
         ];
     }
 
