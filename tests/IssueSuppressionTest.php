@@ -183,7 +183,7 @@ class IssueSuppressionTest extends TestCase
             'somefile.php',
             '<?php
                 /** @psalm-suppress UncaughtThrowInGlobalScope */
-                strlen("a");'
+                echo "hello";'
         );
 
         $context = new Context();
