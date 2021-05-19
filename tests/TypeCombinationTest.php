@@ -64,6 +64,19 @@ class TypeCombinationTest extends TestCase
 
                     rand(0,1) ? die() : other();',
             ],
+            'TKeyedArrayWithTList'  => [
+                '<?php
+                    /**
+                     * @psalm-param string|list<string> $a
+                     * @return list<string>
+                     */
+                    function addHeaders($a): array {
+                        return (array)$a;
+                    }',
+            ],
+
+
+
         ];
     }
 

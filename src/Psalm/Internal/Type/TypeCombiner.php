@@ -760,7 +760,7 @@ class TypeCombiner
                 $possibly_undefined_type->possibly_undefined = true;
             }
 
-            if (!$type->is_list) {
+            if (!($type->is_list || $type->properties == array_values($type->properties))) {
                 $combination->all_arrays_lists = false;
             } elseif ($combination->all_arrays_lists !== false) {
                 $combination->all_arrays_lists = true;

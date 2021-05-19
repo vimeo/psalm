@@ -470,7 +470,6 @@ class AssertionFinder
 
                     return $if_types ? [$if_types] : [];
                 }
-
             }
         }
 

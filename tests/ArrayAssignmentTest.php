@@ -797,7 +797,7 @@ class ArrayAssignmentTest extends TestCase
                     $a = null;
                     $a[0][] = 1;',
                 'assertions' => [
-                    '$a' => 'array{0: non-empty-list<int>}',
+                    '$a' => 'array{non-empty-list<int>}',
                 ],
                 'error_levels' => ['PossiblyNullArrayAssignment'],
             ],
