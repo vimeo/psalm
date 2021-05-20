@@ -116,6 +116,10 @@ class TypeComparatorTest extends TestCase
                 'array{foo?: string}&array<string, mixed>',
                 'array<empty, empty>',
             ],
+            'Lowercase-stringAndCallable-string' => [
+                'lowercase-string',
+                'callable-string',
+            ],
         ];
     }
 }
