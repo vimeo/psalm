@@ -2262,7 +2262,7 @@ class ClassTemplateTest extends TestCase
                         return iterableToArray($t);
                     }',
             ],
-            'SUPPRESS-templateStaticWithParam' => [
+            'SKIPPED-templateStaticWithParam' => [
                 '<?php
                     /**
                      * @template T
