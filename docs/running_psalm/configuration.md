@@ -159,7 +159,7 @@ When `true`, strings can be used as classes, meaning `$some_string::someMethod()
   memoizeMethodCallResults="[bool]"
 >
 ```
-When `true`, the results of method calls without arguments passed arguments are remembered between repeated calls of that method on a given object. Defaults to `false`.
+When `true`, the results of method calls without arguments passed are remembered between repeated calls of that method on a given object. Defaults to `false`.
 
 #### hoistConstants
 
