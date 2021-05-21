@@ -46,12 +46,14 @@ use function implode;
  *      nonmethod_references_to_classes: array<string, array<string,bool>>,
  *      method_references_to_classes: array<string, array<string,bool>>,
  *      file_references_to_class_members: array<string, array<string,bool>>,
+ *      file_references_to_class_properties: array<string, array<string,bool>>,
  *      file_references_to_missing_class_members: array<string, array<string,bool>>,
  *      mixed_counts: array<string, array{0: int, 1: int}>,
  *      mixed_member_names: array<string, array<string, bool>>,
  *      function_timings: array<string, float>,
  *      file_manipulations: array<string, FileManipulation[]>,
  *      method_references_to_class_members: array<string, array<string,bool>>,
+ *      method_references_to_class_properties: array<string, array<string,bool>>,
  *      method_references_to_missing_class_members: array<string, array<string,bool>>,
  *      method_param_uses: array<string, array<int, array<string, bool>>>,
  *      analyzed_methods: array<string, array<string, int>>,
@@ -417,7 +419,9 @@ class Analyzer
 
                     $file_reference_provider->setNonMethodReferencesToClasses([]);
                     $file_reference_provider->setCallingMethodReferencesToClassMembers([]);
+                    $file_reference_provider->setCallingMethodReferencesToClassProperties([]);
                     $file_reference_provider->setFileReferencesToClassMembers([]);
+                    $file_reference_provider->setFileReferencesToClassProperties([]);
                     $file_reference_provider->setCallingMethodReferencesToMissingClassMembers([]);
                     $file_reference_provider->setFileReferencesToMissingClassMembers([]);
                     $file_reference_provider->setReferencesToMixedMemberNames([]);
@@ -441,6 +445,8 @@ class Analyzer
                         'method_references_to_classes' => $file_reference_provider->getAllMethodReferencesToClasses(),
                         'file_references_to_class_members' => $file_reference_provider->getAllFileReferencesToClassMembers(),
                         'method_references_to_class_members' => $file_reference_provider->getAllMethodReferencesToClassMembers(),
+                        'file_references_to_class_properties' => $file_reference_provider->getAllFileReferencesToClassProperties(),
+                        'method_references_to_class_properties' => $file_reference_provider->getAllMethodReferencesToClassProperties(),
                         'file_references_to_missing_class_members' => $file_reference_provider->getAllFileReferencesToMissingClassMembers(),
                         'method_references_to_missing_class_members' => $file_reference_provider->getAllMethodReferencesToMissingClassMembers(),
                         'method_param_uses' => $file_reference_provider->getAllMethodParamUses(),
@@ -497,8 +503,14 @@ class Analyzer
                 $codebase->file_reference_provider->addFileReferencesToClassMembers(
                     $pool_data['file_references_to_class_members']
                 );
+                $codebase->file_reference_provider->addFileReferencesToClassProperties(
+                    $pool_data['file_references_to_class_properties']
+                );
                 $codebase->file_reference_provider->addMethodReferencesToClassMembers(
                     $pool_data['method_references_to_class_members']
+                );
+                $codebase->file_reference_provider->addMethodReferencesToClassProperties(
+                    $pool_data['method_references_to_class_properties']
                 );
                 $codebase->file_reference_provider->addFileReferencesToMissingClassMembers(
                     $pool_data['file_references_to_missing_class_members']
@@ -612,8 +624,10 @@ class Analyzer
         $diff_map = $statements_provider->getDiffMap();
         $deletion_ranges = $statements_provider->getDeletionRanges();
 
-        $method_references_to_class_members
-            = $file_reference_provider->getAllMethodReferencesToClassMembers();
+        $method_references_to_class_members = $file_reference_provider->getAllMethodReferencesToClassMembers();
+
+        $method_references_to_class_properties = $file_reference_provider->getAllMethodReferencesToClassProperties();
+
         $method_references_to_missing_class_members =
             $file_reference_provider->getAllMethodReferencesToMissingClassMembers();
 
@@ -625,8 +639,10 @@ class Analyzer
 
         $method_param_uses = $file_reference_provider->getAllMethodParamUses();
 
-        $file_references_to_class_members
-            = $file_reference_provider->getAllFileReferencesToClassMembers();
+        $file_references_to_class_members = $file_reference_provider->getAllFileReferencesToClassMembers();
+
+        $file_references_to_class_properties = $file_reference_provider->getAllFileReferencesToClassProperties();
+
         $file_references_to_missing_class_members
             = $file_reference_provider->getAllFileReferencesToMissingClassMembers();
 
@@ -707,7 +723,9 @@ class Analyzer
 
                 unset(
                     $method_references_to_class_members[$member_id],
+                    $method_references_to_class_properties[$member_id],
                     $file_references_to_class_members[$member_id],
+                    $file_references_to_class_properties[$member_id],
                     $method_references_to_missing_class_members[$member_id],
                     $file_references_to_missing_class_members[$member_id],
                     $references_to_mixed_member_names[$member_id],
@@ -728,6 +746,10 @@ class Analyzer
         foreach ($newly_invalidated_methods as $method_id => $_) {
             foreach ($method_references_to_class_members as $i => $_) {
                 unset($method_references_to_class_members[$i][$method_id]);
+            }
+
+            foreach ($method_references_to_class_properties as $i => $_) {
+                unset($method_references_to_class_properties[$i][$method_id]);
             }
 
             foreach ($method_references_to_classes as $i => $_) {
@@ -783,6 +805,10 @@ class Analyzer
                 unset($file_references_to_class_members[$i][$file_path]);
             }
 
+            foreach ($file_references_to_class_properties as $i => $_) {
+                unset($file_references_to_class_properties[$i][$file_path]);
+            }
+
             foreach ($nonmethod_references_to_classes as $i => $_) {
                 unset($nonmethod_references_to_classes[$i][$file_path]);
             }
@@ -810,12 +836,20 @@ class Analyzer
             $method_references_to_class_members
         );
 
+        $method_references_to_class_properties = array_filter(
+            $method_references_to_class_properties
+        );
+
         $method_references_to_missing_class_members = array_filter(
             $method_references_to_missing_class_members
         );
 
         $file_references_to_class_members = array_filter(
             $file_references_to_class_members
+        );
+
+        $file_references_to_class_properties = array_filter(
+            $file_references_to_class_properties
         );
 
         $file_references_to_missing_class_members = array_filter(
@@ -842,8 +876,16 @@ class Analyzer
             $method_references_to_class_members
         );
 
+        $file_reference_provider->setCallingMethodReferencesToClassProperties(
+            $method_references_to_class_properties
+        );
+
         $file_reference_provider->setFileReferencesToClassMembers(
             $file_references_to_class_members
+        );
+
+        $file_reference_provider->setFileReferencesToClassProperties(
+            $file_references_to_class_properties
         );
 
         $file_reference_provider->setCallingMethodReferencesToMissingClassMembers(

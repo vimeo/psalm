@@ -133,11 +133,25 @@ class Properties
                     $context->calling_method_id,
                     strtolower($declaring_property_class) . '::$' . $property_name
                 );
+
+                if ($read_mode) {
+                    $this->file_reference_provider->addMethodReferenceToClassProperty(
+                        $context->calling_method_id,
+                        strtolower($declaring_property_class) . '::$' . $property_name
+                    );
+                }
             } elseif ($source) {
                 $this->file_reference_provider->addFileReferenceToClassMember(
                     $source->getFilePath(),
                     strtolower($declaring_property_class) . '::$' . $property_name
                 );
+
+                if ($read_mode) {
+                    $this->file_reference_provider->addFileReferenceToClassProperty(
+                        $source->getFilePath(),
+                        strtolower($declaring_property_class) . '::$' . $property_name
+                    );
+                }
             }
 
             if ($this->collect_locations && $code_location) {

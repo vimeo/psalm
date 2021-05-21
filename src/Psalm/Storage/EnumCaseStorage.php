@@ -1,8 +1,6 @@
 <?php
 namespace Psalm\Storage;
 
-use Psalm\CodeLocation;
-
 class EnumCaseStorage
 {
     /**

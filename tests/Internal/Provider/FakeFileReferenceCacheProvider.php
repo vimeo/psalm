@@ -23,7 +23,13 @@ class FakeFileReferenceCacheProvider extends \Psalm\Internal\Provider\FileRefere
     private $cached_method_member_references;
 
     /** @var ?array */
+    private $cached_method_property_references;
+
+    /** @var ?array */
     private $cached_file_member_references;
+
+    /** @var ?array */
+    private $cached_file_property_references;
 
     /** @var ?array */
     private $cached_method_missing_member_references;
@@ -77,7 +83,7 @@ class FakeFileReferenceCacheProvider extends \Psalm\Internal\Provider\FileRefere
 
     public function getCachedNonMethodClassReferences(): ?array
     {
-        return $this->cached_method_class_references;
+        return $this->cached_nonmethod_class_references;
     }
 
     public function getCachedFileMemberReferences(): ?array
@@ -85,9 +91,19 @@ class FakeFileReferenceCacheProvider extends \Psalm\Internal\Provider\FileRefere
         return $this->cached_file_member_references;
     }
 
+    public function getCachedFilePropertyReferences(): ?array
+    {
+        return $this->cached_file_property_references;
+    }
+
     public function getCachedMethodMemberReferences(): ?array
     {
         return $this->cached_method_member_references;
+    }
+
+    public function getCachedMethodPropertyReferences(): ?array
+    {
+        return $this->cached_method_property_references;
     }
 
     public function getCachedFileMissingMemberReferences(): ?array
@@ -107,7 +123,7 @@ class FakeFileReferenceCacheProvider extends \Psalm\Internal\Provider\FileRefere
 
     public function getCachedMethodParamUses(): ?array
     {
-        return $this->cached_method_missing_member_references;
+        return $this->cached_method_param_uses;
     }
 
     public function getCachedIssues(): ?array
@@ -140,6 +156,11 @@ class FakeFileReferenceCacheProvider extends \Psalm\Internal\Provider\FileRefere
         $this->cached_method_member_references = $member_references;
     }
 
+    public function setCachedMethodPropertyReferences(array $property_references): void
+    {
+        $this->cached_method_property_references = $property_references;
+    }
+
     public function setCachedMethodMissingMemberReferences(array $member_references): void
     {
         $this->cached_method_missing_member_references = $member_references;
@@ -148,6 +169,11 @@ class FakeFileReferenceCacheProvider extends \Psalm\Internal\Provider\FileRefere
     public function setCachedFileMemberReferences(array $member_references): void
     {
         $this->cached_file_member_references = $member_references;
+    }
+
+    public function setCachedFilePropertyReferences(array $property_references): void
+    {
+        $this->cached_file_property_references = $property_references;
     }
 
     public function setCachedFileMissingMemberReferences(array $member_references): void

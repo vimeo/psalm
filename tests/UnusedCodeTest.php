@@ -374,18 +374,22 @@ class UnusedCodeTest extends TestCase
                 '<?php
 
                 class C {
-                    /** @var int */
-                    protected $foo = 1;
+                    protected int $foo = 1;
                     public function bar() : void {
                         $this->foo = 5;
+                    }
+
+                    public function getFoo(): void {
+                        echo $this->foo;
                     }
                 }
 
                 class D extends C {
-                    protected $foo = 2;
+                    protected int $foo = 2;
                 }
 
-                (new D)->bar();',
+                (new D)->bar();
+                (new D)->getFoo();',
             ],
             'usedClassAfterExtensionLoaded' => [
                 '<?php
@@ -934,6 +938,49 @@ class UnusedCodeTest extends TestCase
 
                     throw ($exception->getPrevious() ?? $exception);'
             ],
+            'publicPropertyReadInFile' => [
+                '<?php
+                    class A {
+                        public string $a;
+
+                        public function __construct() {
+                            $this->a = "hello";
+                        }
+                    }
+
+                    $foo = new A();
+                    echo $foo->a;',
+            ],
+            'publicPropertyReadInMethod' => [
+                '<?php
+                    class A {
+                        public string $a = "hello";
+                    }
+
+                    class B {
+                        public function foo(A $a): void {
+                            if ($a->a === "goodbye") {}
+                        }
+                    }
+
+                    (new B)->foo(new A());',
+            ],
+            'privatePropertyReadInMethod' => [
+                '<?php
+                    class A {
+                        private string $a;
+
+                        public function __construct() {
+                            $this->a = "hello";
+                        }
+
+                        public function emitA(): void {
+                            echo $this->a;
+                        }
+                    }
+
+                    (new A())->emitA();',
+            ],
         ];
     }
 
@@ -1295,6 +1342,22 @@ class UnusedCodeTest extends TestCase
                         return $f;
                     }',
                 'error_message' => 'UnusedFunctionCall',
+            ],
+            'propertyWrittenButNotRead' => [
+                '<?php
+                    class A {
+                        public string $a = "hello";
+                        public string $b = "world";
+
+                        public function __construct() {
+                            $this->a = "hello";
+                            $this->b = "world";
+                        }
+                    }
+
+                    $foo = new A();
+                    echo $foo->a;',
+                'error_message' => 'PossiblyUnusedProperty',
             ],
         ];
     }

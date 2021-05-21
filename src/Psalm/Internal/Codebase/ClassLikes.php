@@ -2044,7 +2044,7 @@ class ClassLikes
 
             $property_constructor_referenced = false;
             if ($property_referenced && $property_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE) {
-                $all_method_references = $this->file_reference_provider->getAllMethodReferencesToClassMembers();
+                $all_method_references = $this->file_reference_provider->getAllMethodReferencesToClassProperties();
 
                 if (isset($all_method_references[$referenced_property_name])
                     && count($all_method_references[$referenced_property_name]) === 1) {

@@ -2,7 +2,6 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call\Method;
 
 use Psalm\Internal\MethodIdentifier;
-use Psalm\Internal\Provider\NodeDataProvider;
 use PhpParser;
 
 class AtomicCallContext
