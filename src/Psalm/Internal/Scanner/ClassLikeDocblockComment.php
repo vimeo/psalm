@@ -35,12 +35,6 @@ class ClassLikeDocblockComment
     public $psalm_internal = null;
 
     /**
-     * @var null|string
-     * @deprecated
-     */
-    public $mixin = null;
-
-    /**
      * @var string[]
      */
     public $mixins = [];

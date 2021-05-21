@@ -168,7 +168,6 @@ class MissingMethodCallHandler
             $stmt->args
         );
 
-        $old_node_data = $statements_analyzer->node_data;
         $statements_analyzer->node_data = clone $statements_analyzer->node_data;
 
         return new AtomicCallContext(
@@ -189,8 +188,7 @@ class MissingMethodCallHandler
                     false,
                     $stmt->getAttributes()
                 ),
-            ],
-            $old_node_data
+            ]
         );
     }
 

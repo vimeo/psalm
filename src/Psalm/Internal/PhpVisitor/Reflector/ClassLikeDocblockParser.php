@@ -216,12 +216,6 @@ class ClassLikeDocblockParser
                     throw new DocblockParseException('@mixin annotation used without specifying class');
                 }
             }
-
-            // backwards compatibility
-            if ($info->mixins) {
-                /** @psalm-suppress DeprecatedProperty */
-                $info->mixin = reset($info->mixins);
-            }
         }
 
         if (isset($parsed_docblock->tags['psalm-seal-properties'])) {

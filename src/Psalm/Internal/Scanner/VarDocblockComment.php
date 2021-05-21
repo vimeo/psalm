@@ -14,11 +14,6 @@ class VarDocblockComment
     public $type;
 
     /**
-     * @var ?string
-     */
-    public $original_type;
-
-    /**
      * @var string|null
      */
     public $var_id = null;

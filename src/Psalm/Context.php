@@ -40,13 +40,6 @@ class Context
     public $inside_conditional = false;
 
     /**
-     * Whether or not we're inside a __construct function
-     *
-     * @var bool
-     */
-    public $inside_constructor = false;
-
-    /**
      * Whether or not we're inside an isset call
      *
      * Inside issets Psalm is more lenient about certain things

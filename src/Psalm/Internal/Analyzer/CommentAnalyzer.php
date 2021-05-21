@@ -170,7 +170,6 @@ class CommentAnalyzer
 
                 $var_comment = new VarDocblockComment();
                 $var_comment->type = $defined_type;
-                $var_comment->original_type = $original_type;
                 $var_comment->var_id = $var_id;
                 $var_comment->line_number = $var_line_number;
                 $var_comment->type_start = $type_start;

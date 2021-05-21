@@ -42,12 +42,6 @@ class ClassLikeStorage
     public $internal = '';
 
     /**
-     * @var null|Type\Atomic\TTemplateParam|Type\Atomic\TNamedObject
-     * @deprecated
-     */
-    public $mixin = null;
-
-    /**
      * @var Type\Atomic\TTemplateParam[]
      */
     public $templatedMixins = [];

@@ -45,7 +45,7 @@ abstract class TaintedInput extends CodeIssue
 
         foreach ($this->journey as ['location' => $location, 'label' => $label, 'entry_path_type' => $path_type]) {
             if ($location) {
-                $nodes[] = self::nodeToDataFlowNodeData($location, $label, $path_type);
+                $nodes[] = self::nodeToDataFlowNodeData($location, $label);
             } else {
                 $nodes[] = ['label' => $label, 'entry_path_type' => $path_type];
             }
@@ -56,26 +56,20 @@ abstract class TaintedInput extends CodeIssue
 
     public static function nodeToDataFlowNodeData(
         CodeLocation $location,
-        string $label,
-        string $entry_path_type
+        string $label
     ) : DataFlowNodeData {
         $selection_bounds = $location->getSelectionBounds();
         $snippet_bounds = $location->getSnippetBounds();
 
         return new DataFlowNodeData(
             $label,
-            $entry_path_type,
-            null,
             $location->getLineNumber(),
             $location->getEndLineNumber(),
             $location->file_name,
-            $location->file_path,
             $location->getSnippet(),
-            $location->getSelectedText(),
             $selection_bounds[0],
             $selection_bounds[1],
             $snippet_bounds[0],
-            $snippet_bounds[1],
             $location->getColumn(),
             $location->getEndColumn()
         );

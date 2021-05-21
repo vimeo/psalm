@@ -265,7 +265,6 @@ class ClassLikeNodeScanner
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\Trait_) {
             $storage->is_trait = true;
-            $this->file_storage->has_trait = true;
             $this->codebase->classlikes->addFullyQualifiedTraitName($fq_classlike_name, $this->file_path);
         } elseif ($node instanceof PhpParser\Node\Stmt\Enum_) {
             $storage->is_enum = true;
@@ -625,13 +624,6 @@ class ClassLikeNodeScanner
 
                 if ($key === 0) {
                     $storage->mixin_declaring_fqcln = $storage->name;
-
-                    // backwards compatibility
-                    if ($mixin_type instanceof Type\Atomic\TNamedObject
-                        || $mixin_type instanceof Type\Atomic\TTemplateParam) {
-                        /** @psalm-suppress DeprecatedProperty **/
-                        $storage->mixin = $mixin_type;
-                    }
                 }
             }
 
@@ -1253,18 +1245,6 @@ class ClassLikeNodeScanner
         PhpParser\Node\Stmt\EnumCase $stmt,
         ClassLikeStorage $storage
     ): void {
-        $comment = $stmt->getDocComment();
-        $deprecated = false;
-        $config = $this->config;
-
-        if ($comment && $comment->getText() && ($config->use_docblock_types || $config->use_docblock_property_types)) {
-            $comments = DocComment::parsePreservingLength($comment);
-
-            if (isset($comments->tags['deprecated'])) {
-                $deprecated = true;
-            }
-        }
-
         $enum_value = null;
 
         if ($stmt->expr instanceof PhpParser\Node\Scalar\String_
@@ -1273,17 +1253,9 @@ class ClassLikeNodeScanner
             $enum_value = $stmt->expr->value;
         }
 
-        $storage->enum_cases[$stmt->name->name] = $constant_storage = new \Psalm\Storage\EnumCaseStorage(
-            $enum_value,
-            new CodeLocation(
-                $this->file_scanner,
-                $stmt->name
-            )
+        $storage->enum_cases[$stmt->name->name] = new \Psalm\Storage\EnumCaseStorage(
+            $enum_value
         );
-
-        if ($deprecated) {
-            $constant_storage->deprecated = true;
-        }
     }
 
     private function visitPropertyDeclaration(

@@ -75,9 +75,6 @@ class CodeLocation
     public $docblock_start;
 
     /** @var int|null */
-    public $docblock_end;
-
-    /** @var int|null */
     private $docblock_start_line_number;
 
     /** @var int|null */
@@ -123,7 +120,6 @@ class CodeLocation
         $doc_comment = $stmt->getDocComment();
 
         $this->docblock_start = $doc_comment ? $doc_comment->getStartFilePos() : null;
-        $this->docblock_end = $doc_comment ? $this->file_start : null;
         $this->docblock_start_line_number = $doc_comment ? $doc_comment->getStartLine() : null;
 
         $this->preview_start = $this->docblock_start ?: $this->file_start;

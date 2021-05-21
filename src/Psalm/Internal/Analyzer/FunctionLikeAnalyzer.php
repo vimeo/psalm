@@ -1840,10 +1840,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
             $overridden_method_ids = $codebase->methods->getOverriddenMethodIds($method_id);
 
-            if ($this->function->name->name === '__construct') {
-                $context->inside_constructor = true;
-            }
-
             $codeLocation = new CodeLocation(
                 $this,
                 $this->function,

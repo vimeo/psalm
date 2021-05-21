@@ -376,7 +376,6 @@ class TypeCombiner
         int $literal_limit
     ): ?Union {
         if ($type instanceof TMixed) {
-            $combination->has_mixed = true;
             if ($type->from_loop_isset) {
                 if ($combination->mixed_from_loop_isset === null) {
                     $combination->mixed_from_loop_isset = true;

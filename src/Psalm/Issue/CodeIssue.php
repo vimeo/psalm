@@ -120,8 +120,7 @@ abstract class CodeIssue
                 ? [
                     TaintedInput::nodeToDataFlowNodeData(
                         $origin_location,
-                        'The type of ' . $location->getSelectedText() . ' is sourced from here',
-                        ''
+                        'The type of ' . $location->getSelectedText() . ' is sourced from here'
                     )
                 ]
                 : null,

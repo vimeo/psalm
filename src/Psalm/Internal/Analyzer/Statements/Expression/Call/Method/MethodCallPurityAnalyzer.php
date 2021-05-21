@@ -100,7 +100,6 @@ class MethodCallPurityAnalyzer
                 }
 
                 $result->can_memoize = true;
-                $result->immutable_call = $method_storage->immutable;
             }
 
             if ($codebase->find_unused_variables
