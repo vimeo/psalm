@@ -13,6 +13,7 @@ use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
+use Psalm\Type\Atomic\TLowercaseString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TDependentGetClass;
@@ -66,6 +67,16 @@ class ScalarTypeComparator
         if (($input_type_part instanceof Type\Atomic\TLowercaseString
                 || $input_type_part instanceof Type\Atomic\TNonEmptyLowercaseString)
             && get_class($container_type_part) === TString::class
+        ) {
+            return true;
+        }
+
+        if ($input_type_part instanceof TCallableString
+            && (get_class($container_type_part) === TString::class
+                || get_class($container_type_part) === TSingleLetter::class
+                || get_class($container_type_part) === TNonEmptyString::class
+                || get_class($container_type_part) === TNonFalsyString::class
+                || get_class($container_type_part) === TLowercaseString::class)
         ) {
             return true;
         }
@@ -409,15 +420,6 @@ class ScalarTypeComparator
 
         if (($input_type_part instanceof TClassString
             || $input_type_part instanceof TLiteralClassString)
-            && (get_class($container_type_part) === TString::class
-                || get_class($container_type_part) === TSingleLetter::class
-                || get_class($container_type_part) === TNonEmptyString::class
-                || get_class($container_type_part) === TNonFalsyString::class)
-        ) {
-            return true;
-        }
-
-        if ($input_type_part instanceof TCallableString
             && (get_class($container_type_part) === TString::class
                 || get_class($container_type_part) === TSingleLetter::class
                 || get_class($container_type_part) === TNonEmptyString::class
