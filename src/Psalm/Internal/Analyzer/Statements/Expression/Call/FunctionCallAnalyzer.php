@@ -793,16 +793,8 @@ class FunctionCallAnalyzer extends CallAnalyzer
 
         $suppressed_issues = $statements_analyzer->getSuppressedIssues();
 
-        if (!in_array('PossiblyNullReference', $suppressed_issues, true)) {
-            $statements_analyzer->addSuppressedIssues(['PossiblyNullReference']);
-        }
-
         if (!in_array('InternalMethod', $suppressed_issues, true)) {
             $statements_analyzer->addSuppressedIssues(['InternalMethod']);
-        }
-
-        if (!in_array('PossiblyInvalidMethodCall', $suppressed_issues, true)) {
-            $statements_analyzer->addSuppressedIssues(['PossiblyInvalidMethodCall']);
         }
 
         $statements_analyzer->node_data->setType($function_name, new Type\Union([$atomic_type]));
@@ -814,16 +806,8 @@ class FunctionCallAnalyzer extends CallAnalyzer
             false
         );
 
-        if (!in_array('PossiblyNullReference', $suppressed_issues, true)) {
-            $statements_analyzer->removeSuppressedIssues(['PossiblyNullReference']);
-        }
-
         if (!in_array('InternalMethod', $suppressed_issues, true)) {
             $statements_analyzer->removeSuppressedIssues(['InternalMethod']);
-        }
-
-        if (!in_array('PossiblyInvalidMethodCall', $suppressed_issues, true)) {
-            $statements_analyzer->removeSuppressedIssues(['PossiblyInvalidMethodCall']);
         }
 
         $fake_method_call_type = $statements_analyzer->node_data->getType($fake_method_call);
