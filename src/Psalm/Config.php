@@ -1786,6 +1786,16 @@ class Config
             $core_generic_files[] = $ext_ds_path;
         }
 
+        if (\extension_loaded('mongodb')) {
+            $ext_mongodb_path = dirname(__DIR__, 2) . '/stubs/mongodb.phpstub';
+
+            if (!file_exists($ext_mongodb_path)) {
+                throw new \UnexpectedValueException('Cannot locate mongodb classes');
+            }
+
+            $core_generic_files[] = $ext_mongodb_path;
+        }
+
         $stub_files = array_merge($core_generic_files, $this->stub_files);
 
         if ($this->load_xdebug_stub) {
