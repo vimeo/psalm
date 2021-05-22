@@ -7917,7 +7917,7 @@ return [
 'mongodb\driver\session::getTransactionOptions' => ['array|null'],
 'mongodb\driver\session::getTransactionState' => ['string'],
 'mongodb\driver\session::startTransaction' => ['void', 'options'=>'array|object'],
-'MongoDB\Driver\WriteConcern::__construct' => ['void', 'wstring'=>'string', 'wtimeout='=>'int', 'journal='=>'bool', 'fsync='=>'bool'],
+'MongoDB\Driver\WriteConcern::__construct' => ['void', 'wstring'=>'string|int', 'wtimeout='=>'int', 'journal='=>'bool'],
 'MongoDB\Driver\WriteConcern::bsonSerialize' => ['object'],
 'MongoDB\Driver\WriteConcern::getJournal' => ['?bool'],
 'MongoDB\Driver\WriteConcern::getJurnal' => ['?bool'],
