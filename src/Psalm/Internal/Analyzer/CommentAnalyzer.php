@@ -280,7 +280,7 @@ class CommentAnalyzer
             $last_char = $i > 0 ? $return_block[$i - 1] : null;
 
             if ($quote_char) {
-                if ($char === $quote_char && $i > 1 && !$escaped) {
+                if ($char === $quote_char && !$escaped) {
                     $quote_char = null;
 
                     $type .= $char;
