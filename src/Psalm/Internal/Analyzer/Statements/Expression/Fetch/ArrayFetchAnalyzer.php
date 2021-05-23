@@ -866,6 +866,11 @@ class ArrayFetchAnalyzer
                     $found_match = true;
                     break;
                 }
+
+                if ($offset_type_part instanceof Type\Atomic\TPositiveInt) {
+                    $found_match = true;
+                    break;
+                }
             }
 
             if (!$found_match) {

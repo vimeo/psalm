@@ -335,6 +335,25 @@ class ArrayAccessTest extends TestCase
         $this->analyzeFile('somefile.php', new \Psalm\Context());
     }
 
+    public function testDontWorryWhenUnionedWithPositiveInt(): void
+    {
+        \Psalm\Config::getInstance()->ensure_array_int_offsets_exist = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /**
+                 * @param list<string> $a
+                 * @param 0|positive-int $b
+                 */
+                function foo(array $a, int $b): void {
+                    echo $a[$b];
+                }'
+        );
+
+        $this->analyzeFile('somefile.php', new \Psalm\Context());
+    }
+
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
