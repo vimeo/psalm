@@ -87,7 +87,9 @@ class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
             if ($node instanceof PhpParser\Node\Expr\MethodCall) {
                 $var_id = ExpressionIdentifier::getRootVarId($node->var, $this->this_class_name);
 
-                $this->assignment_map[$var_id]['isset'] = true;
+                if ($var_id) {
+                    $this->assignment_map[$var_id]['isset'] = true;
+                }
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\Unset_) {
             foreach ($node->vars as $arg) {
