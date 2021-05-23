@@ -1912,7 +1912,7 @@ class ArrayFunctionCallTest extends TestCase
                      * @param list<string> $a
                      * @param int $b
                      */
-                    function a($a, $b)
+                    function a($a, $b): void
                     {
                         if ($b >= 0) {
                             echo $a[$b];
