@@ -366,12 +366,14 @@ class ElseIfAnalyzer
                 $implied_outer_context = clone $elseif_context;
                 $implied_outer_context->vars_in_scope = $leaving_vars_reconciled;
 
+                $updated_vars = [];
+
                 $outer_context->update(
                     $elseif_context,
                     $implied_outer_context,
                     false,
                     array_keys($negated_elseif_types),
-                    $if_scope->updated_vars
+                    $updated_vars
                 );
             }
         }

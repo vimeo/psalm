@@ -154,12 +154,15 @@ class MethodCallPurityAnalyzer
                 if ($this_property_didnt_exist) {
                     $context->vars_in_scope[$mutation_var_id] = Type::getMixed();
                 } else {
-                    $context->vars_in_scope[$mutation_var_id] = AssignmentAnalyzer::getExpandedPropertyType(
+                    $new_type = AssignmentAnalyzer::getExpandedPropertyType(
                         $codebase,
                         $class_storage->name,
                         $name,
                         $class_storage
                     ) ?: Type::getMixed();
+
+                    $context->vars_in_scope[$mutation_var_id] = $new_type;
+                    $context->possibly_assigned_var_ids[$mutation_var_id] = true;
                 }
             }
         }
