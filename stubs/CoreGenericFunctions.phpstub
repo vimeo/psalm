@@ -690,7 +690,7 @@ function html_entity_decode(string $string, ?int $quote_style = null, ?string $c
  *     : string
  * )
  */
-function htmlspecialchars(string $string, int $flags = ENT_COMPAT | ENT_HTML401, string $encoding = 'UTF-8', bool $double_encode = true) : string {}
+function htmlspecialchars(string $string, int $flags = ENT_COMPAT | ENT_HTML401, ?string $encoding = 'UTF-8', bool $double_encode = true) : string {}
 
 /**
  * @psalm-pure

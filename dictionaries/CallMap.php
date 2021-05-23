@@ -4395,7 +4395,7 @@ return [
 'HRTime\StopWatch::stop' => ['void'],
 'html_entity_decode' => ['string', 'string'=>'string', 'flags='=>'int', 'encoding='=>'string'],
 'htmlentities' => ['string', 'string'=>'string', 'flags='=>'int', 'encoding='=>'string', 'double_encode='=>'bool'],
-'htmlspecialchars' => ['string', 'string'=>'string', 'flags='=>'int', 'encoding='=>'string', 'double_encode='=>'bool'],
+'htmlspecialchars' => ['string', 'string'=>'string', 'flags='=>'int', 'encoding='=>'string|null', 'double_encode='=>'bool'],
 'htmlspecialchars_decode' => ['string', 'string'=>'string', 'flags='=>'int'],
 'http\Client::__construct' => ['void', 'driver='=>'string', 'persistent_handle_id='=>'string'],
 'http\Client::addCookies' => ['http\Client', 'cookies='=>'?array'],
