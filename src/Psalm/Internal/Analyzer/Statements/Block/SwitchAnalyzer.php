@@ -87,6 +87,8 @@ class SwitchAnalyzer
                 } elseif (in_array(ScopeAnalyzer::ACTION_LEAVE_SWITCH, $case_actions, true)) {
                     $last_case_exit_type = 'break';
                 }
+            } elseif (count($case_actions) !== 1) {
+                $last_case_exit_type = 'hybrid';
             }
 
             $case_exit_types[$i] = $last_case_exit_type;
