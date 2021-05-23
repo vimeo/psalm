@@ -1580,6 +1580,54 @@ class AssertionFinder
     /**
      * @return  false|int
      */
+    protected static function hasZeroCheck(
+        PhpParser\Node\Expr\BinaryOp $conditional,
+        ?int &$zero_count
+    ) {
+        $operator_greater_than_or_equal =
+            $conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
+            || $conditional instanceof PhpParser\Node\Expr\BinaryOp\Equal
+            || $conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater
+            || $conditional instanceof PhpParser\Node\Expr\BinaryOp\GreaterOrEqual;
+
+        if ($conditional->right instanceof PhpParser\Node\Scalar\LNumber
+            && $operator_greater_than_or_equal
+            && $conditional->right->value >= (
+            $conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater
+                ? -1
+                : 0
+            )
+        ) {
+            $zero_count = $conditional->right->value +
+                ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater ? 1 : 0);
+
+            return self::ASSIGNMENT_TO_RIGHT;
+        }
+
+        $operator_less_than_or_equal =
+            $conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
+            || $conditional instanceof PhpParser\Node\Expr\BinaryOp\Equal
+            || $conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller
+            || $conditional instanceof PhpParser\Node\Expr\BinaryOp\SmallerOrEqual;
+
+        if ($conditional->left instanceof PhpParser\Node\Scalar\LNumber
+            && $operator_less_than_or_equal
+            && $conditional->left->value >= (
+            $conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller ? -1 : 0
+            )
+        ) {
+            $zero_count = $conditional->left->value +
+                ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller ? 1 : 0);
+
+            return self::ASSIGNMENT_TO_LEFT;
+        }
+
+        return false;
+    }
+
+    /**
+     * @return  false|int
+     */
     protected static function hasReconcilableNonEmptyCountEqualityCheck(
         PhpParser\Node\Expr\BinaryOp $conditional
     ) {
@@ -3643,6 +3691,8 @@ class AssertionFinder
         $count_equality_position = self::hasNonEmptyCountEqualityCheck($conditional, $min_count);
         $min_comparison = null;
         $positive_number_position = self::hasPositiveNumberCheck($conditional, $min_comparison);
+        $zero_comparison = null;
+        $zero_position = self::hasZeroCheck($conditional, $zero_comparison);
         $max_count = null;
         $count_inequality_position = self::hasLessThanCountEqualityCheck($conditional, $max_count);
 
@@ -3751,6 +3801,63 @@ class AssertionFinder
 
             if ($var_name) {
                 $if_types[$var_name] = [[($min_comparison === 1 ? '' : '=') . 'positive-numeric']];
+            }
+
+            return $if_types ? [$if_types] : [];
+        }
+
+        if ($zero_position) {
+            if ($zero_position === self::ASSIGNMENT_TO_RIGHT) {
+                $var_name = ExpressionIdentifier::getArrayVarId(
+                    $conditional->left,
+                    $this_class_name,
+                    $source
+                );
+                $value_node = $conditional->left;
+            } else {
+                $var_name = ExpressionIdentifier::getArrayVarId(
+                    $conditional->right,
+                    $this_class_name,
+                    $source
+                );
+                $value_node = $conditional->right;
+            }
+
+
+            if ($codebase
+                && $source instanceof StatementsAnalyzer
+                && ($var_type = $source->node_data->getType($value_node))
+                && $var_type->isSingle()
+                && $var_type->hasBool()
+                && $zero_comparison > 1
+            ) {
+                if ($var_type->from_docblock) {
+                    if (IssueBuffer::accepts(
+                        new DocblockTypeContradiction(
+                            $var_type . ' cannot be greater than ' . $zero_comparison,
+                            new CodeLocation($source, $conditional),
+                            null
+                        ),
+                        $source->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                } else {
+                    if (IssueBuffer::accepts(
+                        new TypeDoesNotContainType(
+                            $var_type . ' cannot be greater than ' . $zero_comparison,
+                            new CodeLocation($source, $conditional),
+                            null
+                        ),
+                        $source->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                }
+            }
+
+            if ($var_name) {
+                $if_types[$var_name] = [[($zero_comparison === 1 ? '' : '=') . 'positive-numeric', '=int(0)']];
             }
 
             return $if_types ? [$if_types] : [];
