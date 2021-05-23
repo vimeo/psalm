@@ -639,6 +639,36 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                 false,
                 true,
             ],
+            'switchReturn' => [
+                '<?php
+                    /**
+                     * @param string $a
+                     */
+                    function get_form_fields(string $a) {
+                        switch($a){
+                            default:
+                                return [];
+                        }
+                    }',
+                '<?php
+                    /**
+                     * @param string $a
+                     *
+                     * @return array
+                     *
+                     * @psalm-return array<empty, empty>
+                     */
+                    function get_form_fields(string $a): array {
+                        switch($a){
+                            default:
+                                return [];
+                        }
+                    }',
+                '7.3',
+                ['MissingReturnType'],
+                false,
+                true,
+            ],
         ];
     }
 }

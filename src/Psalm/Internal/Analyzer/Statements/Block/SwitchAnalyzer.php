@@ -87,6 +87,8 @@ class SwitchAnalyzer
                 } elseif (in_array(ScopeAnalyzer::ACTION_LEAVE_SWITCH, $case_actions, true)) {
                     $last_case_exit_type = 'break';
                 }
+            } elseif (count($case_actions) !== 1) {
+                $last_case_exit_type = 'hybrid';
             }
 
             $case_exit_types[$i] = $last_case_exit_type;
@@ -98,11 +100,16 @@ class SwitchAnalyzer
 
         $statements_analyzer->node_data->cache_assertions = false;
 
+        $all_options_returned = true;
+
         for ($i = 0, $l = count($stmt->cases); $i < $l; $i++) {
             $case = $stmt->cases[$i];
 
             /** @var string */
             $case_exit_type = $case_exit_types[$i];
+            if ($case_exit_type !== 'return_throw') {
+                $all_options_returned = false;
+            }
 
             $case_actions = $case_action_map[$i];
 
@@ -214,6 +221,9 @@ class SwitchAnalyzer
             $context->vars_possibly_in_scope,
             $switch_scope->new_vars_possibly_in_scope
         );
+
+        //a switch can't return in all options without a default
+        $context->has_returned = $all_options_returned && $has_default;
 
         return null;
     }
