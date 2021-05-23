@@ -117,7 +117,7 @@ class TemplateInferredTypeReplacer
                             $is_mixed = true;
                         }
 
-                        $new_types[$template_type_part->getKey()] = $template_type_part;
+                        $new_types[] = $template_type_part;
                     }
                 }
             } elseif ($atomic_type instanceof Atomic\TTemplateParamClass) {
@@ -153,7 +153,7 @@ class TemplateInferredTypeReplacer
 
                 if ($class_template_type) {
                     $keys_to_unset[] = $key;
-                    $new_types[$class_template_type->getKey()] = $class_template_type;
+                    $new_types[] = $class_template_type;
                 }
             } elseif ($atomic_type instanceof Atomic\TTemplateIndexedAccess) {
                 $keys_to_unset[] = $key;
@@ -194,10 +194,10 @@ class TemplateInferredTypeReplacer
                             $is_mixed = true;
                         }
 
-                        $new_types[$template_type_part->getKey()] = $template_type_part;
+                        $new_types[] = $template_type_part;
                     }
                 } else {
-                    $new_types[$key] = new Atomic\TMixed();
+                    $new_types[] = new Atomic\TMixed();
                 }
             } elseif ($atomic_type instanceof Atomic\TConditional
                 && $codebase
@@ -347,7 +347,7 @@ class TemplateInferredTypeReplacer
                 $keys_to_unset[] = $key;
 
                 foreach ($class_template_type->getAtomicTypes() as $class_template_atomic_type) {
-                    $new_types[$class_template_atomic_type->getKey()] = $class_template_atomic_type;
+                    $new_types[] = $class_template_atomic_type;
                 }
             }
         }
@@ -359,7 +359,12 @@ class TemplateInferredTypeReplacer
                 throw new \UnexpectedValueException('This array should be full');
             }
 
-            $union->replaceTypes($new_types);
+            $union->replaceTypes(
+                TypeCombiner::combine(
+                    $new_types,
+                    $codebase
+                )->getAtomicTypes()
+            );
 
             return;
         }
