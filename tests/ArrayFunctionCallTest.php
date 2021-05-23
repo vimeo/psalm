@@ -1906,6 +1906,19 @@ class ArrayFunctionCallTest extends TestCase
                         );
                     }'
             ],
+            'allowAccessToListFrom0OrPositiveIntOffset' => [
+                '<?php
+                    /**
+                     * @param list<string> $a
+                     * @param int $b
+                     */
+                    function a($a, $b)
+                    {
+                        if ($b >= 0) {
+                            echo $a[$b];
+                        }
+                    }'
+            ],
         ];
     }
 

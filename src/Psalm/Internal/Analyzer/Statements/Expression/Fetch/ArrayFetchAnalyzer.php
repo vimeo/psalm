@@ -55,6 +55,7 @@ use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TSingleLetter;
 use Psalm\Type\Atomic\TString;
+use Psalm\Type\Union;
 use function array_values;
 use function array_keys;
 use function count;
@@ -852,19 +853,23 @@ class ArrayFetchAnalyzer
             $found_match = false;
 
             foreach ($offset_type->getAtomicTypes() as $offset_type_part) {
-                if ($array_var_id
-                    && $offset_type_part instanceof TLiteralInt
-                    && isset(
-                        $context->vars_in_scope[
-                            $array_var_id . '[' . $offset_type_part->value . ']'
-                        ]
-                    )
-                    && !$context->vars_in_scope[
-                            $array_var_id . '[' . $offset_type_part->value . ']'
-                        ]->possibly_undefined
-                ) {
-                    $found_match = true;
-                    break;
+                if ($offset_type_part instanceof TLiteralInt) {
+                    if ($array_var_id
+                        && isset(
+                            $context->vars_in_scope[$array_var_id . '[' . $offset_type_part->value . ']']
+                        )
+                        && !$context->vars_in_scope[$array_var_id . '[' . $offset_type_part->value . ']']->possibly_undefined
+                    ) {
+                        $found_match = true;
+                        break;
+                    } elseif ($expected_offset_type->hasLiteralInt()) {
+                        foreach ($expected_offset_type->getLiteralInts() as $literal_int) {
+                            if ($literal_int->value === $offset_type_part->value) {
+                                $found_match = true;
+                                break 2;
+                            }
+                        }
+                    }
                 }
             }
 
@@ -1725,7 +1730,7 @@ class ArrayFetchAnalyzer
                     && $key_values[0] > 0
                     && $key_values[0] > ($type->count - 1))
             ) {
-                $expected_offset_type = Type::getInt();
+                $expected_offset_type = new Union([new TLiteralInt(0), new Type\Atomic\TPositiveInt()]);
 
                 if ($codebase->config->ensure_array_int_offsets_exist) {
                     self::checkLiteralIntArrayOffset(
