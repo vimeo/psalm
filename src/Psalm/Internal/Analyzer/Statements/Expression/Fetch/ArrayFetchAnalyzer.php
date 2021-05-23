@@ -11,6 +11,7 @@ use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Issue\EmptyArrayAccess;
 use Psalm\Issue\InvalidArrayAccess;
 use Psalm\Issue\InvalidArrayAssignment;
@@ -806,6 +807,45 @@ class ArrayFetchAnalyzer
                         }
                     }
                 } else {
+                    $good_types = [];
+                    $bad_types = [];
+                    foreach ($offset_type->getAtomicTypes() as $atomic_key_type) {
+                        if (!$atomic_key_type instanceof Type\Atomic\TString
+                            && !$atomic_key_type instanceof Type\Atomic\TInt
+                            && !$atomic_key_type instanceof Type\Atomic\TArrayKey
+                            && !$atomic_key_type instanceof Type\Atomic\TMixed
+                            && !$atomic_key_type instanceof Type\Atomic\TTemplateParam
+                            && !(
+                                $atomic_key_type instanceof Type\Atomic\TObjectWithProperties
+                                && isset($atomic_key_type->methods['__toString'])
+                            )
+                        ) {
+                            $bad_types[] = $atomic_key_type;
+
+                            if ($atomic_key_type instanceof Type\Atomic\TFalse) {
+                                $good_types[] = new Type\Atomic\TLiteralInt(0);
+                            } elseif ($atomic_key_type instanceof Type\Atomic\TTrue) {
+                                $good_types[] = new Type\Atomic\TLiteralInt(1);
+                            } elseif ($atomic_key_type instanceof Type\Atomic\TBool) {
+                                $good_types[] = new Type\Atomic\TLiteralInt(0);
+                                $good_types[] = new Type\Atomic\TLiteralInt(1);
+                            } elseif ($atomic_key_type instanceof Type\Atomic\TLiteralFloat) {
+                                $good_types[] = new Type\Atomic\TLiteralInt((int)$atomic_key_type->value);
+                            } elseif ($atomic_key_type instanceof Type\Atomic\TFloat) {
+                                $good_types[] = new Type\Atomic\TInt;
+                            } else {
+                                $good_types[] = new Type\Atomic\TArrayKey;
+                            }
+                        }
+                    }
+
+                    if ($bad_types && $good_types) {
+                        $offset_type->substitute(
+                            TypeCombiner::combine($bad_types, $codebase),
+                            TypeCombiner::combine($good_types, $codebase)
+                        );
+                    }
+
                     if (IssueBuffer::accepts(
                         new InvalidArrayOffset(
                             'Cannot access value on variable ' . $array_var_id . ' ' . $used_offset

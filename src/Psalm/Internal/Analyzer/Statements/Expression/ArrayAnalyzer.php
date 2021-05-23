@@ -186,6 +186,8 @@ class ArrayAnalyzer
                     } elseif ($atomic_key_type instanceof Type\Atomic\TBool) {
                         $good_types[] = new Type\Atomic\TLiteralInt(0);
                         $good_types[] = new Type\Atomic\TLiteralInt(1);
+                    } elseif ($atomic_key_type instanceof Type\Atomic\TLiteralFloat) {
+                        $good_types[] = new Type\Atomic\TLiteralInt((int) $atomic_key_type->value);
                     } elseif ($atomic_key_type instanceof Type\Atomic\TFloat) {
                         $good_types[] = new Type\Atomic\TInt;
                     } else {
