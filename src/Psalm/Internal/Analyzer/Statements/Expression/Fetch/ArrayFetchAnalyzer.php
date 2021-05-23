@@ -427,6 +427,10 @@ class ArrayFetchAnalyzer
         }
     }
 
+    /**
+     * @psalm-suppress ComplexMethod to be refactored.
+     * Good type/bad type behaviour could be mutualised with ArrayAnalyzer
+     */
     public static function getArrayAccessTypeGivenOffset(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
