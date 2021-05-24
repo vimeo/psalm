@@ -196,7 +196,7 @@ class TaintTest extends TestCase
             ],
             'specializedCoreFunctionCall' => [
                 '<?php
-                    $a = (string) $_GET["user_id"];
+                    $a = (string) ($data["user_id"] ?? "");
 
                     echo print_r([], true);
 
@@ -1504,6 +1504,26 @@ class TaintTest extends TestCase
                 '<?php
                     print($_GET["name"]);',
                 'error_message' => 'TaintedHtml - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:27 - Detected tainted HTML in path: $_GET -> $_GET[\'name\'] (src/somefile.php:2:27) -> call to print (src/somefile.php:2:27) -> print#1',
+            ],
+            'printf' => [
+                '<?php
+                    printf($_GET["name"]);',
+                'error_message' => 'TaintedHtml - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:28 - Detected tainted HTML in path: $_GET -> $_GET[\'name\'] (src/somefile.php:2:28) -> call to printf (src/somefile.php:2:28) -> printf#1',
+            ],
+            'print_r' => [
+                '<?php
+                    print_r($_GET["name"]);',
+                'error_message' => 'TaintedHtml - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:29 - Detected tainted HTML in path: $_GET -> $_GET[\'name\'] (src/somefile.php:2:29) -> call to print_r (src/somefile.php:2:29) -> print_r#1',
+            ],
+            'var_dump' => [
+                '<?php
+                    var_dump($_GET["name"]);',
+                'error_message' => 'TaintedHtml - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:30 - Detected tainted HTML in path: $_GET -> $_GET[\'name\'] (src/somefile.php:2:30) -> call to var_dump (src/somefile.php:2:30) -> var_dump#1',
+            ],
+            'var_export' => [
+                '<?php
+                    var_export($_GET["name"]);',
+                'error_message' => 'TaintedHtml - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:32 - Detected tainted HTML in path: $_GET -> $_GET[\'name\'] (src/somefile.php:2:32) -> call to var_export (src/somefile.php:2:32) -> var_export#1',
             ],
             'unpackArgs' => [
                 '<?php

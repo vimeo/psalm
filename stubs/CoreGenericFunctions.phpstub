@@ -350,8 +350,21 @@ function sodium_memzero(string &$reference): void
  *
  * @psalm-taint-specialize
  * @psalm-flow ($var) -> return
+ * @psalm-taint-sink html $var
  */
 function var_export($var, bool $return = false) {}
+
+/**
+ * @param mixed $value
+ * @param list<mixed> $values
+ * @return string
+ *
+ * @psalm-taint-specialize
+ * @psalm-flow ($value, $values) -> return
+ * @psalm-taint-sink html $value
+ * @psalm-taint-sink html $values
+ */
+function var_dump($value, ...$values) {}
 
 /**
  * @param mixed $var
@@ -360,6 +373,7 @@ function var_export($var, bool $return = false) {}
  *
  * @psalm-taint-specialize
  * @psalm-flow ($var) -> return
+ * @psalm-taint-sink html $var
  */
 function print_r($var, bool $return = false) {}
 
@@ -949,7 +963,10 @@ function wordwrap(string $str, int $width = 75, string $break = "\n", bool $cut 
  *
  * @param string|int|float $values
  *
+ * @psalm-taint-specialize
  * @psalm-flow ($format, $values) -> return
+ * @psalm-taint-sink html $format
+ * @psalm-taint-sink html $values
  */
 function printf(string $format, ...$values) : string {}
 
