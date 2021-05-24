@@ -200,7 +200,7 @@ class CallableTypeComparator
             }
         }
 
-        $input_callable = self::getCallableFromAtomic($codebase, $input_type_part, $container_type_part);
+        $input_callable = self::getCallableFromAtomic($codebase, $input_type_part, $container_type_part, null, true);
 
         if ($input_callable) {
             if (self::isContainedBy(
@@ -224,7 +224,8 @@ class CallableTypeComparator
         Codebase $codebase,
         Type\Atomic $input_type_part,
         ?TCallable $container_type_part = null,
-        ?StatementsAnalyzer $statements_analyzer = null
+        ?StatementsAnalyzer $statements_analyzer = null,
+        bool $expand_callable = false
     ): ?Atomic {
         if ($input_type_part instanceof TCallable || $input_type_part instanceof TClosure) {
             return $input_type_part;
@@ -237,15 +238,31 @@ class CallableTypeComparator
                     strtolower($input_type_part->value)
                 );
 
-                $params = [];
+                if ($expand_callable) {
+                    $params = [];
 
-                foreach ($function_storage->params as $param) {
-                    $param = clone $param;
+                    foreach ($function_storage->params as $param) {
+                        $param = clone $param;
 
-                    if ($param->type) {
-                        $param->type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                        if ($param->type) {
+                            $param->type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                                $codebase,
+                                $param->type,
+                                null,
+                                null,
+                                null,
+                                true,
+                                true
+                            );
+                        }
+                    }
+
+                    $return_type = null;
+
+                    if ($function_storage->return_type) {
+                        $return_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
                             $codebase,
-                            $param->type,
+                            $function_storage->return_type,
                             null,
                             null,
                             null,
@@ -253,20 +270,9 @@ class CallableTypeComparator
                             true
                         );
                     }
-                }
-
-                $return_type = null;
-
-                if ($function_storage->return_type) {
-                    $return_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
-                        $codebase,
-                        $function_storage->return_type,
-                        null,
-                        null,
-                        null,
-                        true,
-                        true
-                    );
+                } else {
+                    $return_type = $function_storage->return_type;
+                    $params = $function_storage->params;
                 }
 
                 return new TCallable(
