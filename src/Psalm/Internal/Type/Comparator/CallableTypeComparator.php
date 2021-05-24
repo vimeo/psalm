@@ -237,10 +237,42 @@ class CallableTypeComparator
                     strtolower($input_type_part->value)
                 );
 
+                $params = [];
+
+                foreach ($function_storage->params as $param) {
+                    $param = clone $param;
+
+                    if ($param->type) {
+                        $param->type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                            $codebase,
+                            $param->type,
+                            null,
+                            null,
+                            null,
+                            true,
+                            true
+                        );
+                    }
+                }
+
+                $return_type = null;
+
+                if ($function_storage->return_type) {
+                    $return_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                        $codebase,
+                        $function_storage->return_type,
+                        null,
+                        null,
+                        null,
+                        true,
+                        true
+                    );
+                }
+
                 return new TCallable(
                     'callable',
-                    $function_storage->params,
-                    $function_storage->return_type,
+                    $params,
+                    $return_type,
                     $function_storage->pure
                 );
             } catch (\UnexpectedValueException $e) {
