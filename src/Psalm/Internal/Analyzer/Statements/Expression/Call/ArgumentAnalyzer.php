@@ -832,17 +832,22 @@ class ArgumentAnalyzer
             $param_type->possibly_undefined = true;
         }
 
-        if ($param_type->hasCallableType()
-            && $param_type->isSingle()
-            && $input_type->isSingleStringLiteral()
-            && !\Psalm\Internal\Codebase\InternalCallMapHandler::inCallMap($input_type->getSingleStringLiteral()->value)
-        ) {
+        if ($param_type->hasCallableType() && $param_type->isSingle()) {
+            // we do this replacement early because later we don't have access to the
+            // $statements_analyzer, which is necessary to understand string function names
             foreach ($input_type->getAtomicTypes() as $key => $atomic_type) {
+                if (!$atomic_type instanceof Type\Atomic\TLiteralString
+                    || \Psalm\Internal\Codebase\InternalCallMapHandler::inCallMap($atomic_type->value)
+                ) {
+                    continue;
+                }
+
                 $candidate_callable = CallableTypeComparator::getCallableFromAtomic(
                     $codebase,
                     $atomic_type,
                     null,
-                    $statements_analyzer
+                    $statements_analyzer,
+                    true
                 );
 
                 if ($candidate_callable) {

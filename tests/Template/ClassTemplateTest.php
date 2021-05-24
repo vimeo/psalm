@@ -2293,7 +2293,20 @@ class ClassTemplateTest extends TestCase
                     /** @param ArrayCollection<int> $ints */
                     function takesInts(ArrayCollection $ints) :void {}
 
+                    /** @param ArrayCollection<int|string> $ints */
+                    function takesIntsOrStrings(ArrayCollection $ints) :void {}
+
                     takesInts((new ArrayCollection([ "a", "bc" ]))->map("strlen"));
+
+                    /** @return ($s is "string" ? string : int) */
+                    function foo(string $s) {
+                        if ($s === "string") {
+                            return "hello";
+                        }
+                        return 5;
+                    }
+
+                    takesIntsOrStrings((new ArrayCollection([ "a", "bc" ]))->map("foo"));
 
                     /**
                      * @template T

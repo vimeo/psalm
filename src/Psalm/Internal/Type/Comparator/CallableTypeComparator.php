@@ -252,9 +252,14 @@ class CallableTypeComparator
                                 null,
                                 null,
                                 true,
+                                true,
+                                false,
+                                false,
                                 true
                             );
                         }
+
+                        $params[] = $param;
                     }
 
                     $return_type = null;
@@ -267,6 +272,9 @@ class CallableTypeComparator
                             null,
                             null,
                             true,
+                            true,
+                            false,
+                            false,
                             true
                         );
                     }
