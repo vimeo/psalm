@@ -56,10 +56,12 @@ use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TSingleLetter;
 use Psalm\Type\Atomic\TString;
+use Psalm\Type\Union;
 use function array_values;
 use function array_keys;
 use function count;
 use function array_pop;
+use function current;
 use function implode;
 use function strlen;
 use function strtolower;
@@ -895,6 +897,7 @@ class ArrayFetchAnalyzer
         if ($offset_type->hasLiteralInt()) {
             $found_match = false;
 
+            $literal_ints = $expected_offset_type->getLiteralInts();
             foreach ($offset_type->getAtomicTypes() as $offset_type_part) {
                 if ($array_var_id
                     && $offset_type_part instanceof TLiteralInt
@@ -912,6 +915,15 @@ class ArrayFetchAnalyzer
                 }
 
                 if ($offset_type_part instanceof Type\Atomic\TPositiveInt) {
+                    $found_match = true;
+                    break;
+                }
+
+                if ($offset_type_part instanceof Type\Atomic\TLiteralInt &&
+                    $offset_type_part->value === 0 &&
+                    count($literal_ints) === 1 &&
+                    current($literal_ints)->value === 0
+                ) {
                     $found_match = true;
                     break;
                 }
@@ -1774,7 +1786,7 @@ class ArrayFetchAnalyzer
                     && $key_values[0] > 0
                     && $key_values[0] > ($type->count - 1))
             ) {
-                $expected_offset_type = Type::getInt();
+                $expected_offset_type = new Union([new TLiteralInt(0), new Type\Atomic\TPositiveInt()]);
 
                 if ($codebase->config->ensure_array_int_offsets_exist) {
                     self::checkLiteralIntArrayOffset(

@@ -36,10 +36,9 @@
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Analyzer/ClassAnalyzer.php">
-    <PossiblyUndefinedIntArrayOffset occurrences="3">
+    <PossiblyUndefinedIntArrayOffset occurrences="2">
       <code>$comments[0]</code>
       <code>$stmt-&gt;props[0]</code>
-      <code>$uninitialized_variables[0]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Analyzer/CommentAnalyzer.php">
@@ -76,30 +75,15 @@
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/AssertionFinder.php">
-    <PossiblyUndefinedIntArrayOffset occurrences="23">
+    <PossiblyUndefinedIntArrayOffset occurrences="8">
       <code>$assertion-&gt;rule[0]</code>
       <code>$assertion-&gt;rule[0]</code>
       <code>$assertion-&gt;rule[0]</code>
       <code>$assertion-&gt;rule[0]</code>
       <code>$assertion-&gt;rule[0]</code>
       <code>$assertion-&gt;rule[0]</code>
-      <code>$count_expr-&gt;args[0]</code>
-      <code>$count_expr-&gt;args[0]</code>
-      <code>$count_expr-&gt;args[0]</code>
-      <code>$count_expr-&gt;args[0]</code>
-      <code>$count_expr-&gt;args[0]</code>
-      <code>$counted_expr-&gt;args[0]</code>
-      <code>$expr-&gt;args[0]</code>
-      <code>$expr-&gt;args[0]</code>
-      <code>$expr-&gt;args[0]</code>
-      <code>$expr-&gt;args[0]</code>
       <code>$expr-&gt;args[1]</code>
       <code>$expr-&gt;args[1]</code>
-      <code>$get_debug_type_expr-&gt;args[0]</code>
-      <code>$get_debug_type_expr-&gt;args[0]</code>
-      <code>$getclass_expr-&gt;args[0]</code>
-      <code>$gettype_expr-&gt;args[0]</code>
-      <code>$gettype_expr-&gt;args[0]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/BinaryOp/NonDivArithmeticOpAnalyzer.php">
@@ -109,24 +93,19 @@
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/ArgumentAnalyzer.php">
-    <PossiblyUndefinedIntArrayOffset occurrences="3">
-      <code>$non_existent_method_ids[0]</code>
+    <PossiblyUndefinedIntArrayOffset occurrences="2">
       <code>$parts[1]</code>
       <code>explode('::', $cased_method_id)[1]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/ArgumentsAnalyzer.php">
-    <PossiblyUndefinedIntArrayOffset occurrences="2">
-      <code>$arg_function_params[$argument_offset][0]</code>
+    <PossiblyUndefinedIntArrayOffset occurrences="1">
       <code>$array_type-&gt;getGenericArrayType()-&gt;getChildNodes()[0]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/ArrayFunctionArgumentsAnalyzer.php">
-    <PossiblyUndefinedIntArrayOffset occurrences="4">
-      <code>$args[0]</code>
-      <code>$args[0]</code>
+    <PossiblyUndefinedIntArrayOffset occurrences="1">
       <code>$args[1]</code>
-      <code>$callmap_callables[0]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/FunctionCallAnalyzer.php">
@@ -164,9 +143,8 @@
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/UnusedAssignmentRemover.php">
-    <PossiblyUndefinedIntArrayOffset occurrences="3">
+    <PossiblyUndefinedIntArrayOffset occurrences="2">
       <code>$token_list[$iter]</code>
-      <code>$token_list[0]</code>
       <code>$token_list[1]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
@@ -179,11 +157,6 @@
     <PossiblyUndefinedIntArrayOffset occurrences="2">
       <code>$callables[0]</code>
       <code>$callables[0]</code>
-    </PossiblyUndefinedIntArrayOffset>
-  </file>
-  <file src="src/Psalm/Internal/Codebase/Methods.php">
-    <PossiblyUndefinedIntArrayOffset occurrences="1">
-      <code>$function_callables[0]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Diff/ClassStatementsDiffer.php">
@@ -234,25 +207,21 @@
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/PhpVisitor/Reflector/ClassLikeDocblockParser.php">
-    <PossiblyUndefinedIntArrayOffset occurrences="4">
+    <PossiblyUndefinedIntArrayOffset occurrences="3">
       <code>$doc_line_parts[1]</code>
       <code>$matches[0]</code>
-      <code>$method_tree-&gt;children[0]</code>
       <code>$method_tree-&gt;children[1]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/PhpVisitor/Reflector/ClassLikeNodeScanner.php">
-    <PossiblyUndefinedIntArrayOffset occurrences="4">
+    <PossiblyUndefinedIntArrayOffset occurrences="3">
       <code>$imported_type_data[3]</code>
       <code>$l[4]</code>
       <code>$r[4]</code>
-      <code>$var_line_parts[0]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/PhpVisitor/Reflector/ExpressionScanner.php">
-    <PossiblyUndefinedIntArrayOffset occurrences="5">
-      <code>$node-&gt;args[0]</code>
-      <code>$node-&gt;args[0]</code>
+    <PossiblyUndefinedIntArrayOffset occurrences="3">
       <code>$node-&gt;args[1]</code>
       <code>$node-&gt;args[1]</code>
       <code>$node-&gt;args[1]</code>
@@ -292,28 +261,9 @@
       <code>$combination-&gt;array_type_params[1]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
-  <file src="src/Psalm/Internal/Type/TypeParser.php">
-    <PossiblyUndefinedIntArrayOffset occurrences="10">
-      <code>$intersection_types[0]</code>
-      <code>$parse_tree-&gt;children[0]</code>
-      <code>$parse_tree-&gt;children[0]</code>
-      <code>$parse_tree-&gt;condition-&gt;children[0]</code>
-      <code>array_keys($offset_template_data)[0]</code>
-      <code>array_keys($template_type_map[$array_param_name])[0]</code>
-      <code>array_keys($template_type_map[$class_name])[0]</code>
-      <code>array_keys($template_type_map[$fq_classlike_name])[0]</code>
-      <code>array_keys($template_type_map[$param_name])[0]</code>
-      <code>array_keys($template_type_map[$template_param_name])[0]</code>
-    </PossiblyUndefinedIntArrayOffset>
-  </file>
   <file src="src/Psalm/Storage/Assertion.php">
     <PossiblyUndefinedIntArrayOffset occurrences="1">
       <code>$rules[0]</code>
-    </PossiblyUndefinedIntArrayOffset>
-  </file>
-  <file src="src/Psalm/Type/Atomic.php">
-    <PossiblyUndefinedIntArrayOffset occurrences="1">
-      <code>array_keys($template_type_map[$value])[0]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Type/Atomic/GenericTrait.php">
