@@ -29,7 +29,7 @@ Psalm recognises a number of taint types by default, defined in the [Psalm\Type\
 - `shell` - used for strings that could contain shell commands
 - `callable` - used for callable strings that could be user-controlled
 - `unserialize` - used for strings that could contain a serialized string
-- `include` - used for strings that could contain a path beeing included
+- `include` - used for strings that could contain a path being included
 - `eval` - used for strings that could contain code
 - `ssrf` - used for strings that could contain text passed to Curl or similar
 - `file` - used for strings that could contain a path
