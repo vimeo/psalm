@@ -27,6 +27,9 @@ class TestCase extends BaseTestCase
     /** @var Provider\FakeFileProvider */
     protected $file_provider;
 
+    /** @var Config */
+    protected $testConfig;
+
     public static function setUpBeforeClass() : void
     {
         ini_set('memory_limit', '-1');
@@ -56,7 +59,7 @@ class TestCase extends BaseTestCase
 
         $this->file_provider = new \Psalm\Tests\Internal\Provider\FakeFileProvider();
 
-        $config = $this->makeConfig();
+        $this->testConfig = $this->makeConfig();
 
         $providers = new Providers(
             $this->file_provider,
@@ -64,7 +67,7 @@ class TestCase extends BaseTestCase
         );
 
         $this->project_analyzer = new ProjectAnalyzer(
-            $config,
+            $this->testConfig,
             $providers
         );
 
@@ -73,6 +76,7 @@ class TestCase extends BaseTestCase
 
     public function tearDown() : void
     {
+        unset($this->project_analyzer, $this->file_provider, $this->testConfig);
         RuntimeCaches::clearAll();
     }
 

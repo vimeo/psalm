@@ -2,14 +2,14 @@
 namespace Psalm\Tests;
 
 use Psalm\Context;
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\IssueBuffer;
 use const DIRECTORY_SEPARATOR;
 
 class TaintTest extends TestCase
 {
     /**
      * @dataProvider providerValidCodeParse
-     *
-     *
      */
     public function testValidCode(string $code): void
     {
@@ -36,8 +36,6 @@ class TaintTest extends TestCase
 
     /**
      * @dataProvider providerInvalidCodeParse
-     *
-     *
      */
     public function testInvalidCode(string $code, string $error_message): void
     {
@@ -2163,6 +2161,86 @@ class TaintTest extends TestCase
                 'error_message' => 'TaintedHtml',
             ],
             */
+        ];
+    }
+
+    /**
+     * @param string $code
+     * @param list<string> $expectedIssuesTypes
+     * @test
+     * @dataProvider multipleTaintIssuesAreDetectedDataProvider
+     */
+    public function multipleTaintIssuesAreDetected(string $code, array $expectedIssuesTypes): void
+    {
+        if (\strpos($this->getTestName(), 'SKIPPED-') !== false) {
+            $this->markTestSkipped();
+        }
+        if (\strtoupper(\substr(\PHP_OS, 0, 3)) === 'WIN') {
+            $this->markTestSkipped('Skip taint tests in Windows for now');
+        }
+
+        // disables issue exceptions - we need all, not just the first
+        $this->testConfig->throw_exception = false;
+        $filePath = self::$src_dir_path . 'somefile.php';
+        $this->addFile($filePath, $code);
+        $this->project_analyzer->trackTaintedInputs();
+
+        $this->analyzeFile($filePath, new Context(), false);
+
+        $actualIssueTypes = \array_map(
+            function (IssueData $issue): string {
+                return $issue->type;
+            },
+            IssueBuffer::getIssuesDataForFile($filePath)
+        );
+        self::assertSame($expectedIssuesTypes, $actualIssueTypes);
+    }
+
+    /**
+     * @return array<string, array{0: string, expectedIssueTypes: list<string>}>
+     */
+    public function multipleTaintIssuesAreDetectedDataProvider(): array
+    {
+        return [
+            'taintSinkFlow' => [
+                '<?php
+                    /**
+                     * @param string $value
+                     * @return string
+                     *
+                     * @psalm-flow ($value) -> return
+                     * @psalm-taint-sink html $value
+                     */
+                    function process(string $value): string {}
+                    $data = process((string)($_GET["inject"] ?? ""));
+                    exec($data);
+                ',
+                'expectedIssueTypes' => ['TaintedHtml', 'TaintedShell'],
+            ],
+            'taintSinkCascade' => [
+                '<?php
+                    function triggerHtml(string $value): string
+                    {
+                        echo $value;
+                        return $value;
+                    }
+                    function triggerShell(string $value): string
+                    {
+                        exec($value);
+                        return $value;
+                    }
+                    function triggerFile(string $value): string
+                    {
+                        file_get_contents($value);
+                        return $value;
+                    }
+                    $value = (string)($_GET["inject"] ?? "");
+                    $value = triggerHtml($value);
+                    $value = triggerShell($value);
+                    $value = triggerFile($value);
+                ',
+                'expectedIssueTypes' => ['TaintedHtml', 'TaintedShell', 'TaintedFile'],
+            ]
         ];
     }
 }
