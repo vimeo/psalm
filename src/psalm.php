@@ -718,8 +718,15 @@ require_once __DIR__ . '/' . 'Psalm/IssueBuffer.php';
                 "\n}\n");
         }
 
+        $issue_baseline = [];
+
         if (isset($options['set-baseline']) && is_string($options['set-baseline'])) {
             fwrite(STDERR, 'Writing error baseline to file...' . PHP_EOL);
+
+            $issue_baseline = ErrorBaseline::read(
+                new \Psalm\Internal\Provider\FileProvider,
+                $options['set-baseline']
+            );
 
             ErrorBaseline::create(
                 new \Psalm\Internal\Provider\FileProvider,
@@ -738,8 +745,6 @@ require_once __DIR__ . '/' . 'Psalm/IssueBuffer.php';
 
             fwrite(STDERR, PHP_EOL);
         }
-
-        $issue_baseline = [];
 
         if (isset($options['update-baseline'])) {
             $baselineFile = Config::getInstance()->error_baseline;
@@ -786,7 +791,7 @@ require_once __DIR__ . '/' . 'Psalm/IssueBuffer.php';
             $baseline_file_path = Config::getInstance()->error_baseline;
         }
 
-        if ($baseline_file_path && !isset($options['ignore-baseline'])) {
+        if (!$issue_baseline && $baseline_file_path && !isset($options['ignore-baseline'])) {
             try {
                 $issue_baseline = ErrorBaseline::read(
                     new \Psalm\Internal\Provider\FileProvider,
