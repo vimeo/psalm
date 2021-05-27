@@ -442,9 +442,9 @@ class Union implements TypeNode
             } elseif ($type instanceof TLiteralString) {
                 $literal_strings[] = $type_string;
             } else {
-                if(get_class($type) === TString::class){
+                if (get_class($type) === TString::class) {
                     $has_non_literal_string = true;
-                } elseif(get_class($type) === TInt::class){
+                } elseif (get_class($type) === TInt::class) {
                     $has_non_literal_int = true;
                 }
                 $other_types[] = $type_string;
