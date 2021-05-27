@@ -43,6 +43,7 @@ use function substr;
 use function count;
 use function in_array;
 use function array_diff;
+use function explode;
 
 /**
  * @internal
@@ -906,8 +907,13 @@ class ReturnTypeAnalyzer
             $is_final = $function->isFinal() || $class_storage->final;
         }
 
+        $php_versions = explode('.', (string)$project_analyzer->getConfig()->getPhpVersion());
+        $php_major_version = $php_versions[0] ?? '0';
+        $php_minor_version = $php_versions[1] ?? '0';
+
         $allow_native_type = !$docblock_only
-            && $codebase->php_major_version >= 7
+            && (int)$php_major_version >= 7
+            && ((int)$php_minor_version >= 8 || $inferred_return_type->isSingle())
             && (
                 $codebase->allow_backwards_incompatible_changes
                 || $is_final
