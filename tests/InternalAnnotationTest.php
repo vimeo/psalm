@@ -957,6 +957,21 @@ class InternalAnnotationTest extends TestCase
                     ',
                 'error_message' => 'psalm-internal annotation used without specifying namespace',
             ],
+            'internalConstructor' => [
+                '<?php
+                    namespace A {
+                        class C {
+                            /** @internal */
+                            public function __construct() {}
+                        }
+                    }
+                    namespace B {
+                        use A\C;
+                        new C;
+                    }
+                ',
+                'error_message' => 'InternalMethod',
+            ],
         ];
     }
 }
