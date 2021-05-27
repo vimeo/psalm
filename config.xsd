@@ -343,6 +343,7 @@
             <xs:element name="PossiblyInvalidArrayOffset" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyInvalidCast" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyInvalidClone" type="IssueHandlerType" minOccurs="0" />
+	    <xs:element name="PossiblyInvalidDocblockTag" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyInvalidFunctionCall" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyInvalidIterator" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyInvalidMethodCall" type="IssueHandlerType" minOccurs="0" />
