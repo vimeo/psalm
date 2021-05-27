@@ -17,6 +17,8 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                 '<?php
                     $a = /**
                      * @return string
+                     *
+                     * @psalm-return \'hello\'
                      */
                     function() {
                         return "hello";
@@ -47,6 +49,8 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                 '<?php
                     /**
                      * @return string
+                     *
+                     * @psalm-return \'hello\'
                      */
                     function foo() {
                         return "hello";
@@ -66,6 +70,8 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                 '<?php
                     /**
                      * @return string
+                     *
+                     * @psalm-return \'hello\'
                      */
                     function foo(): string {
                         return "hello";
@@ -95,6 +101,8 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                 '<?php
                     /**
                      * @return false|string
+                     *
+                     * @psalm-return \'hello\'|false
                      */
                     function foo() {
                         return rand(0, 1) ? "hello" : false;
@@ -111,6 +119,8 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                 '<?php
                     /**
                      * @return null|string
+                     *
+                     * @psalm-return \'hello\'|null
                      */
                     function foo() {
                         return rand(0, 1) ? "hello" : null;
@@ -194,6 +204,8 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                      *          - `google`
                      *
                      * @return string
+                     *
+                     * @psalm-return \'hello\'
                      */
                     function foo(): string {
                       return "hello";
@@ -338,6 +350,8 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                     class A {
                         /**
                          * @return string some notes
+                         *
+                         * @psalm-return \'hello\'
                          */
                         function foo() : string {
                             return "hello";
@@ -502,7 +516,7 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                         /**
                          * @return string[]
                          *
-                         * @psalm-return array{0: string}
+                         * @psalm-return array{0: \'hello\'}
                          */
                         public function foo(): ?array {
                             return ["hello"];
@@ -528,7 +542,7 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                         /**
                          * @return string[]
                          *
-                         * @psalm-return array{0: string}
+                         * @psalm-return array{0: \'hello\'}
                          */
                         public function foo(): array {
                             return ["hello"];

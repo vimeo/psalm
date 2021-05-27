@@ -50,6 +50,8 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                 '<?php
                     /**
                      * @return string
+                     *
+                     * @psalm-return \'hello\'
                      */
                     function foo() {
                         return "hello";
@@ -79,6 +81,8 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                 '<?php
                     /**
                      * @return null|string
+                     *
+                     * @psalm-return \'hello\'|null
                      */
                     function foo() {
                         return rand(0, 1) ? "hello" : null;
@@ -95,6 +99,8 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                 '<?php
                     /**
                      * @return null|string
+                     *
+                     * @psalm-return \'hello\'|null
                      */
                     function foo() {
                         return rand(0, 1) ? "hello" : null;
@@ -153,7 +159,7 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                     /**
                      * @return string[]
                      *
-                     * @psalm-return array{0: string}
+                     * @psalm-return array{0: \'hello\'}
                      */
                     function foo() {
                         return ["hello"];
@@ -171,7 +177,7 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                     /**
                      * @return string[]
                      *
-                     * @psalm-return array{0: string}
+                     * @psalm-return array{0: \'hello\'}
                      */
                     function foo(): array {
                         return ["hello"];
@@ -189,7 +195,7 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                     /**
                      * @return string[]
                      *
-                     * @psalm-return array{a: string, b?: string}
+                     * @psalm-return array{a: \'goodbye\'|\'hello\', b?: \'hello again\'}
                      */
                     function foo(): array {
                         return rand(0, 1) ? ["a" => "hello"] : ["a" => "goodbye", "b" => "hello again"];
@@ -214,7 +220,7 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                     /**
                      * @return int[]
                      *
-                     * @psalm-return array{a?: int, b?: int}
+                     * @psalm-return array{a?: 1, b?: 2}
                      */
                     function foo(): array {
                         if (rand(0, 1)) {
@@ -251,7 +257,7 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                     /**
                      * @return ((int|int[])[]|int)[]
                      *
-                     * @psalm-return array{a: int, b: int, c: array{a: int, b: int, c: array{a: int, b: int, c: int}}}
+                     * @psalm-return array{a: 1, b: 2, c: array{a: 1, b: 2, c: array{a: 1, b: 2, c: 3}}}
                      */
                     function foo(): array {
                         return [
@@ -289,7 +295,7 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                     /**
                      * @return string[]
                      *
-                     * @psalm-return array{a: string, b?: string}
+                     * @psalm-return array{a: \'goodbye\'|\'hello\', b?: \'hello again\'}
                      */
                     function foo(): array {
                         if (rand(0, 1)) {
@@ -532,6 +538,8 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                 '<?php
                     /**
                      * @return null|string
+                     *
+                     * @psalm-return \'hello\'|null
                      */
                     function foo() {
                       if (rand(0, 1)) {
@@ -543,6 +551,8 @@ class MissingReturnTypeTest extends FileManipulationTestCase
 
                     /**
                      * @return null|string
+                     *
+                     * @psalm-return \'hello\'|null
                      */
                     function bar() {
                       if (rand(0, 1)) {

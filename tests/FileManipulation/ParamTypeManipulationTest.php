@@ -70,6 +70,9 @@ class ParamTypeManipulationTest extends FileManipulationTestCase
                     (new C)->fooFoo("hello");',
                 '<?php
                     class C {
+                        /**
+                         * @param string $a
+                         */
                         public function fooFoo(string $a): void {}
                     }
 
@@ -184,6 +187,9 @@ class ParamTypeManipulationTest extends FileManipulationTestCase
                     (new D)->fooFoo("hello");',
                 '<?php
                     class C {
+                        /**
+                         * @param string $a
+                         */
                         public function fooFoo(string $a): void {}
                     }
 
@@ -223,6 +229,9 @@ class ParamTypeManipulationTest extends FileManipulationTestCase
                     (new C)->foo($a);',
                 '<?php
                     class C {
+                        /**
+                         * @param string $bar
+                         */
                         public function foo(string &$bar) : void {
                             $bar .= " me";
                         }
