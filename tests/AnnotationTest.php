@@ -1752,6 +1752,20 @@ class AnnotationTest extends TestCase
                     }',
                 'error_message' => 'ImplementedReturnTypeMismatch'
             ],
+            'unexpectedImportType' => [
+                '<?php
+                    /** @psalm-import-type asd */
+                    function f(): void {}
+                ',
+                'error_message' => 'PossiblyInvalidDocblockTag',
+            ],
+            'unexpectedVarOnFunction' => [
+                '<?php
+                    /** @var int $p */
+                    function f($p): void {}
+                ',
+                'error_message' => 'PossiblyInvalidDocblockTag',
+            ],
         ];
     }
 }

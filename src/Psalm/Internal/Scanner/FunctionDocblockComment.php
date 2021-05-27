@@ -216,4 +216,7 @@ class FunctionDocblockComment
      * @var ?string
      */
     public $description;
+
+    /** @var array<string, array{lines:list<int>, suggested_replacement?:string}> */
+    public $unexpected_tags = [];
 }
