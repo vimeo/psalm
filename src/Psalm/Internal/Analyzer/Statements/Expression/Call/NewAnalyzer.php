@@ -16,6 +16,7 @@ use Psalm\Issue\DeprecatedClass;
 use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\InterfaceInstantiation;
 use Psalm\Issue\InternalClass;
+use Psalm\Issue\InternalMethod;
 use Psalm\Issue\InvalidStringClass;
 use Psalm\Issue\MixedMethodCall;
 use Psalm\Issue\TooManyArguments;
@@ -378,6 +379,25 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
 
             if ($declaring_method_id) {
                 $method_storage = $codebase->methods->getStorage($declaring_method_id);
+
+                $namespace = $statements_analyzer->getNamespace() ?: '';
+                if (!NamespaceAnalyzer::isWithin(
+                    $namespace,
+                    $method_storage->internal
+                )) {
+                    if (IssueBuffer::accepts(
+                        new InternalMethod(
+                            'Constructor ' . $codebase->methods->getCasedMethodId($declaring_method_id)
+                            . ' is internal to ' . $method_storage->internal
+                            . ' but called from ' . ($namespace ?: 'root namespace'),
+                            new CodeLocation($statements_analyzer, $stmt),
+                            (string) $method_id
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                }
 
                 if (!$method_storage->external_mutation_free && !$context->inside_throw) {
                     if ($context->pure) {
