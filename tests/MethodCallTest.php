@@ -983,7 +983,27 @@ class MethodCallTest extends TestCase
                 [],
                 ['MixedReturnStatement', 'MixedInferredReturnType'],
                 '8.0'
-            ]
+            ],
+            'NullsafeShortCircuit' => [
+                '<?php
+                    interface Bar {
+                        public function doBaz(): void;
+                    }
+
+                    interface Foo {
+                        public function getBar(): Bar;
+                    }
+
+                    function fooOrNull(): ?Foo {
+                        return null;
+                    }
+
+                    fooOrNull()?->getBar()->doBaz();
+                    ',
+                [],
+                [],
+                '8.0'
+            ],
         ];
     }
 
