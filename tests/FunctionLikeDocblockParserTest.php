@@ -79,4 +79,22 @@ class FunctionLikeDocblockParserTest extends BaseTestCase
         $function_docblock = FunctionLikeDocblockParser::parse($php_parser_doc);
         $this->assertSame([['T', 'of', 'string', false]], $function_docblock->templates);
     }
+
+    public function testReturnsUnexpectedTags(): void
+    {
+        $doc = '/**
+ * @psalm-import-type abcd
+ * @var int $p
+ */
+';
+        $php_parser_doc = new \PhpParser\Comment\Doc($doc, 0);
+        $function_docblock = FunctionLikeDocblockParser::parse($php_parser_doc);
+        $this->assertEquals(
+            [
+                'psalm-import-type' => ['lines' => [1]],
+                'var' => ['lines' => [2], 'suggested_replacement' => 'param'],
+            ],
+            $function_docblock->unexpected_tags
+        );
+    }
 }

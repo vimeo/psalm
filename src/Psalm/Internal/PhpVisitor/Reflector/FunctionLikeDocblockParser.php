@@ -40,6 +40,7 @@ class FunctionLikeDocblockParser
         $info = new FunctionDocblockComment();
 
         self::checkDuplicatedTags($parsed_docblock);
+        self::checkUnexpectedTags($parsed_docblock, $info, $comment);
 
         if (isset($parsed_docblock->combined_tags['return'])) {
             self::extractReturnType(
@@ -587,5 +588,29 @@ class FunctionLikeDocblockParser
         }
 
         return $names;
+    }
+
+    private static function checkUnexpectedTags(
+        ParsedDocblock $parsed_docblock,
+        FunctionDocblockComment $info,
+        PhpParser\Comment\Doc $comment
+    ): void {
+        if (isset($parsed_docblock->tags['psalm-import-type'])) {
+            foreach ($parsed_docblock->tags['psalm-import-type'] as $offset => $_) {
+                $info->unexpected_tags['psalm-import-type']['lines'][] = self::docblockLineNumber($comment, $offset);
+            }
+        }
+
+        if (isset($parsed_docblock->combined_tags['var'])) {
+            $info->unexpected_tags['var'] = ['lines' => [], 'suggested_replacement' => 'param'];
+            foreach ($parsed_docblock->combined_tags['var'] as $offset => $_) {
+                $info->unexpected_tags['var']['lines'][] = self::docblockLineNumber($comment, $offset);
+            }
+        }
+    }
+
+    private static function docblockLineNumber(PhpParser\Comment\Doc $comment, int $offset): int
+    {
+        return $comment->getStartLine() + substr_count($comment->getText(), "\n", 0, $offset);
     }
 }
