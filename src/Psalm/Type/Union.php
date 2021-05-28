@@ -2,6 +2,7 @@
 namespace Psalm\Type;
 
 use function array_filter;
+use function array_merge;
 use function array_values;
 use function count;
 use function get_class;
@@ -426,29 +427,44 @@ class Union implements TypeNode
         ?string $this_class,
         bool $use_phpdoc_format
     ): string {
-        $types = [];
+        $other_types = [];
 
-        $multi_ints = count($this->literal_int_types) > 1
-            || $this->hasPositiveInt();
-        $multi_strings = count($this->literal_string_types) > 1;
-        $multi_floats = count($this->literal_float_types) > 1;
+        $literal_ints = [];
+        $literal_strings = [];
+
+        $has_non_literal_int = false;
+        $has_non_literal_string = false;
 
         foreach ($this->types as $type) {
-            if ($type instanceof TLiteralInt && !$multi_ints) {
-                $type_string = 'int';
-            } elseif ($type instanceof TLiteralFloat && !$multi_floats) {
-                $type_string = 'float';
-            } elseif ($type instanceof TLiteralString && !$multi_strings) {
-                $type_string = 'string';
+            $type_string = $type->toNamespacedString($namespace, $aliased_classes, $this_class, $use_phpdoc_format);
+            if ($type instanceof TLiteralInt) {
+                $literal_ints[] = $type_string;
+            } elseif ($type instanceof TLiteralString) {
+                $literal_strings[] = $type_string;
             } else {
-                $type_string = $type->toNamespacedString($namespace, $aliased_classes, $this_class, $use_phpdoc_format);
+                if (get_class($type) === TString::class) {
+                    $has_non_literal_string = true;
+                } elseif (get_class($type) === TInt::class) {
+                    $has_non_literal_int = true;
+                }
+                $other_types[] = $type_string;
             }
-
-            $types[] = $type_string;
         }
 
-        sort($types);
-        return implode('|', \array_unique($types));
+        if (count($literal_ints) <= 3 && !$has_non_literal_int) {
+            $other_types = array_merge($other_types, $literal_ints);
+        } else {
+            $other_types[] = 'int';
+        }
+
+        if (count($literal_strings) <= 3 && !$has_non_literal_string) {
+            $other_types = array_merge($other_types, $literal_strings);
+        } else {
+            $other_types[] = 'string';
+        }
+
+        sort($other_types);
+        return implode('|', \array_unique($other_types));
     }
 
     /**

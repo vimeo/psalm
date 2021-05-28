@@ -26,6 +26,8 @@ class MissingPropertyTypeTest extends FileManipulationTestCase
                     class A {
                         /**
                          * @var int|string
+                         *
+                         * @psalm-var \'hello\'|4
                          */
                         public $v;
 
@@ -56,6 +58,8 @@ class MissingPropertyTypeTest extends FileManipulationTestCase
                     class A {
                         /**
                          * @var int|null
+                         *
+                         * @psalm-var 4|null
                          */
                         public $v;
 
@@ -84,6 +88,8 @@ class MissingPropertyTypeTest extends FileManipulationTestCase
                     class A {
                         /**
                          * @var int|null
+                         *
+                         * @psalm-var 4|null
                          */
                         public $v;
 
@@ -139,6 +145,8 @@ class MissingPropertyTypeTest extends FileManipulationTestCase
                     class A {
                         /**
                          * @var int|string
+                         *
+                         * @psalm-var \'hello\'|4
                          */
                         public $v;
 

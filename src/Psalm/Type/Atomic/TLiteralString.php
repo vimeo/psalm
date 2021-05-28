@@ -66,6 +66,6 @@ class TLiteralString extends TString
         ?string $this_class,
         bool $use_phpdoc_format
     ): string {
-        return 'string';
+        return $use_phpdoc_format ? 'string' : "'" . $this->value . "'";
     }
 }
