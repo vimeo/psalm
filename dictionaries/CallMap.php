@@ -11287,7 +11287,7 @@ return [
 'ReflectionClass::__toString' => ['string'],
 'ReflectionClass::export' => ['?string', 'argument'=>'string|object', 'return='=>'bool'],
 'ReflectionClass::getConstant' => ['mixed', 'name'=>'string'],
-'ReflectionClass::getConstants' => ['array<string,mixed>'],
+'ReflectionClass::getConstants' => ['array<string,mixed>', 'filter=' => '?int'],
 'ReflectionClass::getConstructor' => ['?ReflectionMethod'],
 'ReflectionClass::getDefaultProperties' => ['array'],
 'ReflectionClass::getDocComment' => ['string|false'],
