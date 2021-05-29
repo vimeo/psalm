@@ -4,6 +4,7 @@ namespace Psalm\Internal\Cli;
 
 use Psalm\Config;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\CliUtils;
 use Psalm\Internal\Composer;
 use Psalm\Internal\ErrorHandler;
 use Psalm\Internal\IncludeCollector;
@@ -41,7 +42,6 @@ use function Psalm\get_path_to_config;
 use function Psalm\getMemoryLimitInBytes;
 use function Psalm\getPathsToCheck;
 use function Psalm\initialiseConfig;
-use function Psalm\requireAutoloaders;
 use function realpath;
 use function strpos;
 use function strtolower;
@@ -57,6 +57,7 @@ use const STDERR;
 
 require_once __DIR__ . '/../ErrorHandler.php';
 require_once __DIR__ . '/../../../command_functions.php';
+require_once __DIR__ . '/../CliUtils.php';
 require_once __DIR__ . '/../Composer.php';
 require_once __DIR__ . '/../IncludeCollector.php';
 require_once __DIR__ . '/../../IssueBuffer.php';
@@ -237,7 +238,7 @@ HELP;
         $include_collector = new IncludeCollector();
         $first_autoloader = $include_collector->runAndCollect(
             function () use ($current_dir, $options, $vendor_dir): ?\Composer\Autoload\ClassLoader {
-                return requireAutoloaders($current_dir, isset($options['r']), $vendor_dir);
+                return CliUtils::requireAutoloaders($current_dir, isset($options['r']), $vendor_dir);
             }
         );
 

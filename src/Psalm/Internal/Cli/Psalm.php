@@ -6,6 +6,7 @@ use Psalm\Config;
 use Psalm\ErrorBaseline;
 use Psalm\Exception\ConfigException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\CliUtils;
 use Psalm\Internal\Composer;
 use Psalm\Internal\ErrorHandler;
 use Psalm\Internal\IncludeCollector;
@@ -49,7 +50,6 @@ use function preg_replace;
 use function Psalm\get_path_to_config;
 use function Psalm\getPsalmHelpText;
 use function Psalm\initialiseConfig;
-use function Psalm\requireAutoloaders;
 use function Psalm\update_config_file;
 use function realpath;
 use function setlocale;
@@ -67,6 +67,7 @@ use const STDERR;
 
 require_once __DIR__ . '/../ErrorHandler.php';
 require_once __DIR__ . '/../../../command_functions.php' ;
+require_once __DIR__ . '/../CliUtils.php';
 require_once __DIR__ . '/../Composer.php';
 require_once __DIR__ . '/../IncludeCollector.php';
 require_once __DIR__ . '/../../IssueBuffer.php';
@@ -300,7 +301,7 @@ final class Psalm
         $include_collector = new IncludeCollector();
         $first_autoloader = $include_collector->runAndCollect(
             function () use ($current_dir, $options, $vendor_dir): ?\Composer\Autoload\ClassLoader {
-                return requireAutoloaders($current_dir, isset($options['r']), $vendor_dir);
+                return CliUtils::requireAutoloaders($current_dir, isset($options['r']), $vendor_dir);
             }
         );
 

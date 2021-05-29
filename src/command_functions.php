@@ -37,102 +37,12 @@ use function ini_get;
 use function preg_match;
 use function strtoupper;
 
+require_once __DIR__ . '/Psalm/Internal/CliUtils.php';
+
+/** @deprecated going to be removed in Psalm 5 */
 function requireAutoloaders(string $current_dir, bool $has_explicit_root, string $vendor_dir): ?ClassLoader
 {
-    $autoload_roots = [$current_dir];
-
-    $psalm_dir = dirname(__DIR__);
-
-    /** @psalm-suppress UndefinedConstant */
-    $in_phar = Phar::running() || strpos(__NAMESPACE__, 'HumbugBox');
-
-    if ($in_phar) {
-        require_once(__DIR__ . '/../vendor/autoload.php');
-
-        // hack required for JsonMapper
-        require_once __DIR__ . '/../vendor/netresearch/jsonmapper/src/JsonMapper.php';
-        require_once __DIR__ . '/../vendor/netresearch/jsonmapper/src/JsonMapper/Exception.php';
-    }
-
-    if (realpath($psalm_dir) !== realpath($current_dir) && !$in_phar) {
-        $autoload_roots[] = $psalm_dir;
-    }
-
-    $autoload_files = [];
-
-    foreach ($autoload_roots as $autoload_root) {
-        $has_autoloader = false;
-
-        $nested_autoload_file = dirname($autoload_root, 2). DIRECTORY_SEPARATOR . 'autoload.php';
-
-        // note: don't realpath $nested_autoload_file, or phar version will fail
-        if (file_exists($nested_autoload_file)) {
-            if (!in_array($nested_autoload_file, $autoload_files, false)) {
-                $autoload_files[] = $nested_autoload_file;
-            }
-            $has_autoloader = true;
-        }
-
-        $vendor_autoload_file =
-            $autoload_root . DIRECTORY_SEPARATOR . $vendor_dir . DIRECTORY_SEPARATOR . 'autoload.php';
-
-        // note: don't realpath $vendor_autoload_file, or phar version will fail
-        if (file_exists($vendor_autoload_file)) {
-            if (!in_array($vendor_autoload_file, $autoload_files, false)) {
-                $autoload_files[] = $vendor_autoload_file;
-            }
-            $has_autoloader = true;
-        }
-
-        $composer_json_file = Composer::getJsonFilePath($autoload_root);
-        if (!$has_autoloader && file_exists($composer_json_file)) {
-            $error_message = 'Could not find any composer autoloaders in ' . $autoload_root;
-
-            if (!$has_explicit_root) {
-                $error_message .= PHP_EOL . 'Add a --root=[your/project/directory] flag '
-                    . 'to specify a particular project to run Psalm on.';
-            }
-
-            fwrite(STDERR, $error_message . PHP_EOL);
-            exit(1);
-        }
-    }
-
-    $first_autoloader = null;
-
-    foreach ($autoload_files as $file) {
-        /**
-         * @psalm-suppress UnresolvableInclude
-         *
-         * @var mixed
-         */
-        $autoloader = require_once $file;
-
-        if (!$first_autoloader
-            && $autoloader instanceof ClassLoader
-        ) {
-            $first_autoloader = $autoloader;
-        }
-    }
-
-    if ($first_autoloader === null && !$in_phar) {
-        if (!$autoload_files) {
-            fwrite(STDERR, 'Failed to find a valid Composer autoloader' . "\n");
-        } else {
-            fwrite(STDERR, 'Failed to find a valid Composer autoloader in ' . implode(', ', $autoload_files) . "\n");
-        }
-
-        fwrite(
-            STDERR,
-            'Please make sure you’ve run `composer install` in the current directory before using Psalm.' . "\n"
-        );
-        exit(1);
-    }
-
-    define('PSALM_VERSION', \PackageVersions\Versions::getVersion('vimeo/psalm'));
-    define('PHP_PARSER_VERSION', \PackageVersions\Versions::getVersion('nikic/php-parser'));
-
-    return $first_autoloader;
+    return \Psalm\Internal\CliUtils::requireAutoloaders($current_dir, $has_explicit_root, $vendor_dir);
 }
 
 /**

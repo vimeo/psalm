@@ -3,6 +3,7 @@
 namespace Psalm\Internal\Cli;
 
 use PackageVersions\Versions;
+use Psalm\Internal\CliUtils;
 use Psalm\Internal\PluginManager\Command\DisableCommand;
 use Psalm\Internal\PluginManager\Command\EnableCommand;
 use Psalm\Internal\PluginManager\Command\ShowCommand;
@@ -12,11 +13,11 @@ use Symfony\Component\Console\Input\InputOption;
 
 use function dirname;
 use function getcwd;
-use function Psalm\requireAutoloaders;
 
 use const DIRECTORY_SEPARATOR;
 
 require_once __DIR__ . '/../../../command_functions.php';
+require_once __DIR__ . '/../CliUtils.php';
 require_once __DIR__ . '/../Composer.php';
 
 final class Plugin
@@ -25,7 +26,7 @@ final class Plugin
     {
         $current_dir = (string)getcwd() . DIRECTORY_SEPARATOR;
         $vendor_dir = \Psalm\getVendorDir($current_dir);
-        requireAutoloaders($current_dir, false, $vendor_dir);
+        CliUtils::requireAutoloaders($current_dir, false, $vendor_dir);
 
         $app = new Application('psalm-plugin', Versions::getVersion('vimeo/psalm'));
 
