@@ -1,2 +1,4 @@
 #!/usr/bin/env php
-<?php require_once __DIR__ . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'psalter.php';
+<?php
+require_once __DIR__ . '/src/Psalm/Internal/Cli/Psalter.php';
+\Psalm\Internal\Cli\Psalter::run($argv);
