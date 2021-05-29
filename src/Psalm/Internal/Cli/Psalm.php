@@ -75,8 +75,6 @@ final class Psalm
 {
     /**
      * @param array<int,string> $argv
-     *
-     * Note: the $argv parameter should not be renamed as it's used in the files this function includes via require_once
      */
     public static function run(array $argv): void
     {
@@ -158,17 +156,20 @@ final class Psalm
         $options = getopt(implode('', $valid_short_options), $valid_long_options);
 
         if (isset($options['alter'])) {
-            require_once __DIR__ . '/../../../psalter.php';
+            require_once __DIR__ . '/Psalter.php';
+            Psalter::run($argv);
             exit;
         }
 
         if (isset($options['language-server'])) {
-            require_once __DIR__ . '/../../../psalm-language-server.php';
+            require_once __DIR__ . '/LanguageServer.php';
+            LanguageServer::run($argv);
             exit;
         }
 
         if (isset($options['refactor'])) {
-            require_once __DIR__ . '/../../../psalm-refactor.php';
+            require_once __DIR__ . '/Refactor.php';
+            Refactor::run($argv);
             exit;
         }
 
