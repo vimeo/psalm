@@ -32,8 +32,6 @@ use function microtime;
 use function preg_replace;
 use function preg_split;
 use function Psalm\get_path_to_config;
-use function Psalm\getArguments;
-use function Psalm\initialiseConfig;
 use function realpath;
 use function strpos;
 use function substr;
@@ -265,7 +263,7 @@ HELP;
             die('No --move or --rename arguments supplied' . PHP_EOL);
         }
 
-        $config = initialiseConfig($path_to_config, $current_dir, \Psalm\Report::TYPE_CONSOLE, $first_autoloader);
+        $config = CliUtils::initializeConfig($path_to_config, $current_dir, \Psalm\Report::TYPE_CONSOLE, $first_autoloader);
         $config->setIncludeCollector($include_collector);
 
         if ($config->resolve_from_config_file) {

@@ -4,6 +4,7 @@ namespace Psalm\Internal;
 
 use Composer\Autoload\ClassLoader;
 use Phar;
+use Psalm\Config;
 use Psalm\Internal\Composer;
 
 use function count;
@@ -468,5 +469,52 @@ Miscellaneous:
         Run Psalm Language Server
 
 HELP;
+    }
+
+    public static function initializeConfig(
+        ?string $path_to_config,
+        string $current_dir,
+        string $output_format,
+        ?ClassLoader $first_autoloader,
+        bool $create_if_non_existent = false
+    ): Config {
+        try {
+            if ($path_to_config) {
+                $config = Config::loadFromXMLFile($path_to_config, $current_dir);
+            } else {
+                try {
+                    $config = Config::getConfigForPath($current_dir, $current_dir);
+                } catch (\Psalm\Exception\ConfigNotFoundException $e) {
+                    if (!$create_if_non_existent) {
+                        if (in_array($output_format, [\Psalm\Report::TYPE_CONSOLE, \Psalm\Report::TYPE_PHP_STORM])) {
+                            fwrite(
+                                STDERR,
+                                'Could not locate a config XML file in path ' . $current_dir
+                                    . '. Have you run \'psalm --init\' ?' . PHP_EOL
+                            );
+                            exit(1);
+                        }
+
+                        throw $e;
+                    }
+
+                    $config = \Psalm\Config\Creator::createBareConfig(
+                        $current_dir,
+                        null,
+                        self::getVendorDir($current_dir)
+                    );
+                }
+            }
+        } catch (\Psalm\Exception\ConfigException $e) {
+            fwrite(
+                STDERR,
+                $e->getMessage() . PHP_EOL
+            );
+            exit(1);
+        }
+
+        $config->setComposerClassLoader($first_autoloader);
+
+        return $config;
     }
 }

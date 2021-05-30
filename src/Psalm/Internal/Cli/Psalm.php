@@ -48,8 +48,6 @@ use function microtime;
 use function preg_match;
 use function preg_replace;
 use function Psalm\get_path_to_config;
-use function Psalm\getPsalmHelpText;
-use function Psalm\initialiseConfig;
 use function Psalm\update_config_file;
 use function realpath;
 use function setlocale;
@@ -387,7 +385,7 @@ final class Psalm
                 exit('Config file created successfully. Please re-run psalm.' . PHP_EOL);
             }
         } else {
-            $config = initialiseConfig(
+            $config = CliUtils::initializeConfig(
                 $path_to_config,
                 $current_dir,
                 $output_format,

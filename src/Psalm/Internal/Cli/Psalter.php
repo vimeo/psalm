@@ -40,7 +40,6 @@ use function preg_replace;
 use function preg_split;
 use function Psalm\get_path_to_config;
 use function Psalm\getMemoryLimitInBytes;
-use function Psalm\initialiseConfig;
 use function realpath;
 use function strpos;
 use function strtolower;
@@ -249,7 +248,7 @@ HELP;
 
         $path_to_config = get_path_to_config($options);
 
-        $config = initialiseConfig($path_to_config, $current_dir, \Psalm\Report::TYPE_CONSOLE, $first_autoloader);
+        $config = CliUtils::initializeConfig($path_to_config, $current_dir, \Psalm\Report::TYPE_CONSOLE, $first_autoloader);
         $config->setIncludeCollector($include_collector);
 
         if ($config->resolve_from_config_file) {

@@ -241,7 +241,7 @@ HELP;
 
         $find_unused_code = isset($options['find-dead-code']) ? 'auto' : null;
 
-        $config = \Psalm\initialiseConfig(
+        $config = CliUtils::initializeConfig(
             $path_to_config,
             $current_dir,
             \Psalm\Report::TYPE_CONSOLE,
