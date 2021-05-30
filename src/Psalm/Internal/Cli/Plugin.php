@@ -25,7 +25,7 @@ final class Plugin
     public static function run(): void
     {
         $current_dir = (string)getcwd() . DIRECTORY_SEPARATOR;
-        $vendor_dir = \Psalm\getVendorDir($current_dir);
+        $vendor_dir = CliUtils::getVendorDir($current_dir);
         CliUtils::requireAutoloaders($current_dir, false, $vendor_dir);
 
         $app = new Application('psalm-plugin', Versions::getVersion('vimeo/psalm'));

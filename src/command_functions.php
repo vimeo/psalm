@@ -4,6 +4,7 @@ namespace Psalm;
 
 use Composer\Autoload\ClassLoader;
 use Phar;
+use Psalm\Internal\CliUtils;
 use Psalm\Internal\Composer;
 use function dirname;
 use function strpos;
@@ -42,40 +43,13 @@ require_once __DIR__ . '/Psalm/Internal/CliUtils.php';
 /** @deprecated going to be removed in Psalm 5 */
 function requireAutoloaders(string $current_dir, bool $has_explicit_root, string $vendor_dir): ?ClassLoader
 {
-    return \Psalm\Internal\CliUtils::requireAutoloaders($current_dir, $has_explicit_root, $vendor_dir);
+    return CliUtils::requireAutoloaders($current_dir, $has_explicit_root, $vendor_dir);
 }
 
-/**
- * @psalm-suppress MixedArrayAccess
- * @psalm-suppress MixedAssignment
- * @psalm-suppress PossiblyUndefinedStringArrayOffset
- */
+/** @deprecated going to be removed in Psalm 5 */
 function getVendorDir(string $current_dir): string
 {
-    $composer_json_path = Composer::getJsonFilePath($current_dir);
-
-    if (!file_exists($composer_json_path)) {
-        return 'vendor';
-    }
-
-    if (!$composer_json = json_decode(file_get_contents($composer_json_path), true)) {
-        fwrite(
-            STDERR,
-            'Invalid composer.json at ' . $composer_json_path . "\n"
-        );
-        exit(1);
-    }
-
-    if (is_array($composer_json)
-        && isset($composer_json['config'])
-        && is_array($composer_json['config'])
-        && isset($composer_json['config']['vendor-dir'])
-        && is_string($composer_json['config']['vendor-dir'])
-    ) {
-        return $composer_json['config']['vendor-dir'];
-    }
-
-    return 'vendor';
+    return CliUtils::getVendorDir($current_dir);
 }
 
 /**

@@ -166,7 +166,7 @@ HELP;
             $current_dir = $root_path . DIRECTORY_SEPARATOR;
         }
 
-        $vendor_dir = \Psalm\getVendorDir($current_dir);
+        $vendor_dir = CliUtils::getVendorDir($current_dir);
 
         // capture environment before registering autoloader (it may destroy it)
         IssueBuffer::captureServer($_SERVER);

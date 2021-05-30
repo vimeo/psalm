@@ -144,4 +144,36 @@ final class CliUtils
 
         return $first_autoloader;
     }
+    /**
+     * @psalm-suppress MixedArrayAccess
+     * @psalm-suppress MixedAssignment
+     * @psalm-suppress PossiblyUndefinedStringArrayOffset
+     */
+    public static function getVendorDir(string $current_dir): string
+    {
+        $composer_json_path = Composer::getJsonFilePath($current_dir);
+
+        if (!file_exists($composer_json_path)) {
+            return 'vendor';
+        }
+
+        if (!$composer_json = json_decode(file_get_contents($composer_json_path), true)) {
+            fwrite(
+                STDERR,
+                'Invalid composer.json at ' . $composer_json_path . "\n"
+            );
+            exit(1);
+        }
+
+        if (is_array($composer_json)
+            && isset($composer_json['config'])
+            && is_array($composer_json['config'])
+            && isset($composer_json['config']['vendor-dir'])
+            && is_string($composer_json['config']['vendor-dir'])
+        ) {
+            return $composer_json['config']['vendor-dir'];
+        }
+
+        return 'vendor';
+    }
 }

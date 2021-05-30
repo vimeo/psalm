@@ -211,7 +211,7 @@ HELP;
             $current_dir = $root_path . DIRECTORY_SEPARATOR;
         }
 
-        $vendor_dir = \Psalm\getVendorDir($current_dir);
+        $vendor_dir = CliUtils::getVendorDir($current_dir);
 
         $include_collector = new IncludeCollector();
 

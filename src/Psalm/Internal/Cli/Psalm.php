@@ -293,7 +293,7 @@ final class Psalm
 
         $path_to_config = get_path_to_config($options);
 
-        $vendor_dir = \Psalm\getVendorDir($current_dir);
+        $vendor_dir = CliUtils::getVendorDir($current_dir);
 
         // capture environment before registering autoloader (it may destroy it)
         IssueBuffer::captureServer($_SERVER);
@@ -361,7 +361,7 @@ final class Psalm
                 $init_source_dir = $args[0];
             }
 
-            $vendor_dir = \Psalm\getVendorDir($current_dir);
+            $vendor_dir = CliUtils::getVendorDir($current_dir);
 
             if ($init_level === null) {
                 echo "Calculating best config level based on project files\n";
