@@ -8,6 +8,7 @@ use Psalm\Internal\CliUtils;
 use Psalm\Internal\Composer;
 use Psalm\Internal\ErrorHandler;
 use Psalm\Internal\IncludeCollector;
+use Psalm\Internal\Provider\Providers;
 use Psalm\IssueBuffer;
 use Psalm\Progress\DebugProgress;
 use Psalm\Progress\DefaultProgress;
@@ -15,6 +16,7 @@ use Psalm\Progress\DefaultProgress;
 use function array_filter;
 use function array_key_exists;
 use function array_map;
+use function array_merge;
 use function array_shift;
 use function array_slice;
 use function chdir;
@@ -62,6 +64,17 @@ require_once __DIR__ . '/../../IssueBuffer.php';
 
 final class Psalter
 {
+    private const SHORT_OPTIONS =  ['f:', 'm', 'h', 'r:', 'c:'];
+
+    private const LONG_OPTIONS = [
+        'help', 'debug', 'debug-by-line', 'debug-emitted-issues', 'config:', 'file:', 'root:',
+        'plugin:', 'issues:', 'list-supported-issues', 'php-version:', 'dry-run', 'safe-types',
+        'find-unused-code', 'threads:', 'codeowner:',
+        'allow-backwards-incompatible-changes:',
+        'add-newline-between-docblock-annotations:',
+        'no-cache'
+    ];
+
     /** @param array<int,string> $argv */
     public static function run(array $argv): void
     {
@@ -70,67 +83,16 @@ final class Psalter
 
         ErrorHandler::install();
 
-        $memLimit = CliUtils::getMemoryLimitInBytes();
-        // Magic number is 4096M in bytes
-        if ($memLimit > 0 && $memLimit < 8 * 1024 * 1024 * 1024) {
-            ini_set('memory_limit', (string) (8 * 1024 * 1024 * 1024));
-        }
+        self::setMemoryLimit();
 
         $args = array_slice($argv, 1);
 
-        $valid_short_options = ['f:', 'm', 'h', 'r:', 'c:'];
-        $valid_long_options = [
-            'help', 'debug', 'debug-by-line', 'debug-emitted-issues', 'config:', 'file:', 'root:',
-            'plugin:', 'issues:', 'list-supported-issues', 'php-version:', 'dry-run', 'safe-types',
-            'find-unused-code', 'threads:', 'codeowner:',
-            'allow-backwards-incompatible-changes:',
-            'add-newline-between-docblock-annotations:',
-            'no-cache'
-        ];
-
         // get options from command line
-        $options = getopt(implode('', $valid_short_options), $valid_long_options);
+        $options = getopt(implode('', self::SHORT_OPTIONS), self::LONG_OPTIONS);
 
-        array_map(
-            /**
-             * @param string $arg
-             */
-            function ($arg) use ($valid_long_options): void {
-                if (substr($arg, 0, 2) === '--' && $arg !== '--') {
-                    $arg_name = preg_replace('/=.*$/', '', substr($arg, 2));
+        self::validateCliArguments($args);
 
-                    if ($arg_name === 'alter') {
-                        // valid option for psalm, ignored by psalter
-                        return;
-                    }
-
-                    if (!in_array($arg_name, $valid_long_options)
-                        && !in_array($arg_name . ':', $valid_long_options)
-                        && !in_array($arg_name . '::', $valid_long_options)
-                    ) {
-                        fwrite(
-                            STDERR,
-                            'Unrecognised argument "--' . $arg_name . '"' . PHP_EOL
-                            . 'Type --help to see a list of supported arguments'. PHP_EOL
-                        );
-                        exit(1);
-                    }
-                }
-            },
-            $args
-        );
-
-        if (array_key_exists('help', $options)) {
-            $options['h'] = false;
-        }
-
-        if (array_key_exists('monochrome', $options)) {
-            $options['m'] = false;
-        }
-
-        if (isset($options['config'])) {
-            $options['c'] = $options['config'];
-        }
+        self::syncShortOptions($options);
 
         if (isset($options['c']) && is_array($options['c'])) {
             die('Too many config files provided' . PHP_EOL);
@@ -210,10 +172,6 @@ HELP;
                 . PHP_EOL
             );
             exit(1);
-        }
-
-        if (isset($options['root'])) {
-            $options['r'] = $options['root'];
         }
 
         $current_dir = (string)getcwd() . DIRECTORY_SEPARATOR;
@@ -339,88 +297,14 @@ HELP;
         }
 
         if (isset($options['codeowner'])) {
-            if (file_exists('CODEOWNERS')) {
-                $codeowners_file_path = realpath('CODEOWNERS');
-            } elseif (file_exists('.github/CODEOWNERS')) {
-                $codeowners_file_path = realpath('.github/CODEOWNERS');
-            } elseif (file_exists('docs/CODEOWNERS')) {
-                $codeowners_file_path = realpath('docs/CODEOWNERS');
-            } else {
-                die('Cannot use --codeowner without a CODEOWNERS file' . PHP_EOL);
-            }
-
-            $codeowners_file = file_get_contents($codeowners_file_path);
-
-            $codeowner_lines = array_map(
-                function (string $line) : array {
-                    $line_parts = preg_split('/\s+/', $line);
-
-                    $file_selector = substr(array_shift($line_parts), 1);
-                    return [$file_selector, $line_parts];
-                },
-                array_filter(
-                    explode("\n", $codeowners_file),
-                    function (string $line) : bool {
-                        $line = trim($line);
-
-                        // currently we don’t match wildcard files or files that could appear anywhere
-                        // in the repo
-                        return $line && $line[0] === '/' && strpos($line, '*') === false;
-                    }
-                )
-            );
-
-            $codeowner_files = [];
-
-            foreach ($codeowner_lines as [$path, $owners]) {
-                if (!file_exists($path)) {
-                    continue;
-                }
-
-                foreach ($owners as $i => $owner) {
-                    $owners[$i] = strtolower($owner);
-                }
-
-                if (!is_dir($path)) {
-                    if (pathinfo($path, PATHINFO_EXTENSION) === 'php') {
-                        $codeowner_files[$path] = $owners;
-                    }
-                } else {
-                    foreach ($providers->file_provider->getFilesInDir($path, ['php']) as $php_file_path) {
-                        $codeowner_files[$php_file_path] = $owners;
-                    }
-                }
-            }
-
-            if (!$codeowner_files) {
-                die('Could not find any available entries in CODEOWNERS' . PHP_EOL);
-            }
+            $codeowner_files = self::loadCodeowners($providers);
 
             $desired_codeowners = is_array($options['codeowner']) ? $options['codeowner'] : [$options['codeowner']];
 
-            /** @psalm-suppress MixedAssignment */
-            foreach ($desired_codeowners as $desired_codeowner) {
-                if (!is_string($desired_codeowner)) {
-                    die('Invalid --codeowner ' . (string)$desired_codeowner . PHP_EOL);
-                }
-
-                if ($desired_codeowner[0] !== '@') {
-                    die('--codeowner option must start with @' . PHP_EOL);
-                }
-
-                $matched_file = false;
-
-                foreach ($codeowner_files as $file_path => $owners) {
-                    if (in_array(strtolower($desired_codeowner), $owners)) {
-                        $paths_to_check[] = $file_path;
-                        $matched_file = true;
-                    }
-                }
-
-                if (!$matched_file) {
-                    die('User/group ' . $desired_codeowner . ' does not own any PHP files' . PHP_EOL);
-                }
-            }
+            $files_for_codeowners = self::loadCodeownersFiles($desired_codeowners, $codeowner_files);
+            $paths_to_check = is_array($paths_to_check) ?
+                array_merge($paths_to_check, $files_for_codeowners) :
+                $files_for_codeowners;
         }
 
         if (isset($options['allow-backwards-incompatible-changes'])) {
@@ -532,5 +416,167 @@ HELP;
         }
 
         IssueBuffer::finish($project_analyzer, false, $start_time);
+    }
+
+    private static function setMemoryLimit(): void
+    {
+        $memLimit = CliUtils::getMemoryLimitInBytes();
+        // Magic number is 4096M in bytes
+        if ($memLimit > 0 && $memLimit < 8 * 1024 * 1024 * 1024) {
+            ini_set('memory_limit', (string) (8 * 1024 * 1024 * 1024));
+        }
+    }
+
+    /** @param array<int,string> $args */
+    private static function validateCliArguments($args): void
+    {
+        array_map(
+            /**
+             * @param string $arg
+             */
+            function ($arg): void {
+                if (substr($arg, 0, 2) === '--' && $arg !== '--') {
+                    $arg_name = preg_replace('/=.*$/', '', substr($arg, 2));
+
+                    if ($arg_name === 'alter') {
+                        // valid option for psalm, ignored by psalter
+                        return;
+                    }
+
+                    if (!in_array($arg_name, self::LONG_OPTIONS)
+                        && !in_array($arg_name . ':', self::LONG_OPTIONS)
+                        && !in_array($arg_name . '::', self::LONG_OPTIONS)
+                    ) {
+                        fwrite(
+                            STDERR,
+                            'Unrecognised argument "--' . $arg_name . '"' . PHP_EOL
+                            . 'Type --help to see a list of supported arguments'. PHP_EOL
+                        );
+                        exit(1);
+                    }
+                }
+            },
+            $args
+        );
+    }
+
+    /**
+     * @param array<string, false|list<mixed>|string> $options
+     * @param-out array<string, false|list<mixed>|string> $options
+     */
+    private static function syncShortOptions(array &$options): void
+    {
+        if (array_key_exists('help', $options)) {
+            $options['h'] = false;
+        }
+
+        if (array_key_exists('monochrome', $options)) {
+            $options['m'] = false;
+        }
+
+        if (isset($options['config'])) {
+            $options['c'] = $options['config'];
+        }
+
+        if (isset($options['root'])) {
+            $options['r'] = $options['root'];
+        }
+    }
+
+    /** @return array<string, array<int, string>> */
+    private static function loadCodeowners(Providers $providers): array
+    {
+        if (file_exists('CODEOWNERS')) {
+            $codeowners_file_path = realpath('CODEOWNERS');
+        } elseif (file_exists('.github/CODEOWNERS')) {
+            $codeowners_file_path = realpath('.github/CODEOWNERS');
+        } elseif (file_exists('docs/CODEOWNERS')) {
+            $codeowners_file_path = realpath('docs/CODEOWNERS');
+        } else {
+            die('Cannot use --codeowner without a CODEOWNERS file' . PHP_EOL);
+        }
+
+        $codeowners_file = file_get_contents($codeowners_file_path);
+
+        $codeowner_lines = array_map(
+            function (string $line) : array {
+                $line_parts = preg_split('/\s+/', $line);
+
+                $file_selector = substr(array_shift($line_parts), 1);
+                return [$file_selector, $line_parts];
+            },
+            array_filter(
+                explode("\n", $codeowners_file),
+                function (string $line) : bool {
+                    $line = trim($line);
+
+                    // currently we don’t match wildcard files or files that could appear anywhere
+                    // in the repo
+                    return $line && $line[0] === '/' && strpos($line, '*') === false;
+                }
+            )
+        );
+
+        $codeowner_files = [];
+
+        foreach ($codeowner_lines as [$path, $owners]) {
+            if (!file_exists($path)) {
+                continue;
+            }
+
+            foreach ($owners as $i => $owner) {
+                $owners[$i] = strtolower($owner);
+            }
+
+            if (!is_dir($path)) {
+                if (pathinfo($path, PATHINFO_EXTENSION) === 'php') {
+                    $codeowner_files[$path] = $owners;
+                }
+            } else {
+                foreach ($providers->file_provider->getFilesInDir($path, ['php']) as $php_file_path) {
+                    $codeowner_files[$php_file_path] = $owners;
+                }
+            }
+        }
+
+        if (!$codeowner_files) {
+            die('Could not find any available entries in CODEOWNERS' . PHP_EOL);
+        }
+
+        return $codeowner_files;
+    }
+
+    /**
+     * @param array<string, array<int, string>> $codeowner_files
+     * @return list<string>
+     */
+    private static function loadCodeownersFiles(array $desired_codeowners, array $codeowner_files): array
+    {
+        $paths_to_check = [];
+        /** @psalm-suppress MixedAssignment */
+        foreach ($desired_codeowners as $desired_codeowner) {
+            if (!is_string($desired_codeowner)) {
+                die('Invalid --codeowner ' . (string)$desired_codeowner . PHP_EOL);
+            }
+
+            if ($desired_codeowner[0] !== '@') {
+                die('--codeowner option must start with @' . PHP_EOL);
+            }
+
+            $matched_file = false;
+
+            foreach ($codeowner_files as $file_path => $owners) {
+                if (in_array(strtolower($desired_codeowner), $owners)) {
+                    $paths_to_check[] = $file_path;
+                    $matched_file = true;
+                }
+            }
+
+            if (!$matched_file) {
+                die('User/group ' . $desired_codeowner . ' does not own any PHP files' . PHP_EOL);
+            }
+        }
+
+        return $paths_to_check;
     }
 }
