@@ -48,7 +48,6 @@ use function microtime;
 use function preg_match;
 use function preg_replace;
 use function Psalm\get_path_to_config;
-use function Psalm\update_config_file;
 use function realpath;
 use function setlocale;
 use function strpos;
@@ -749,7 +748,7 @@ final class Psalm
 
             fwrite(STDERR, "Baseline saved to {$options['set-baseline']}.");
 
-            update_config_file(
+            CliUtils::updateConfigFile(
                 $config,
                 $path_to_config ?? $current_dir,
                 $options['set-baseline']

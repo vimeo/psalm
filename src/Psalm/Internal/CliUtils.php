@@ -517,4 +517,58 @@ HELP;
 
         return $config;
     }
+
+    public static function updateConfigFile(Config $config, string $config_file_path, string $baseline_path): void
+    {
+        if ($config->error_baseline === $baseline_path) {
+            return;
+        }
+
+        $config_file = $config_file_path;
+
+        if (is_dir($config_file_path)) {
+            $config_file = Config::locateConfigFile($config_file_path);
+        }
+
+        if (!$config_file) {
+            fwrite(STDERR, "Don't forget to set errorBaseline=\"{$baseline_path}\" to your config.");
+
+            return;
+        }
+
+        $config_file_contents = file_get_contents($config_file);
+
+        if ($config->error_baseline) {
+            $amended_config_file_contents = preg_replace(
+                '/errorBaseline=".*?"/',
+                "errorBaseline=\"{$baseline_path}\"",
+                $config_file_contents
+            );
+        } else {
+            $end_psalm_open_tag = strpos($config_file_contents, '>', (int)strpos($config_file_contents, '<psalm'));
+
+            if (!$end_psalm_open_tag) {
+                fwrite(STDERR, " Don't forget to set errorBaseline=\"{$baseline_path}\" in your config.");
+                return;
+            }
+
+            if ($config_file_contents[$end_psalm_open_tag - 1] === "\n") {
+                $amended_config_file_contents = substr_replace(
+                    $config_file_contents,
+                    "    errorBaseline=\"{$baseline_path}\"\n>",
+                    $end_psalm_open_tag,
+                    1
+                );
+            } else {
+                $amended_config_file_contents = substr_replace(
+                    $config_file_contents,
+                    " errorBaseline=\"{$baseline_path}\">",
+                    $end_psalm_open_tag,
+                    1
+                );
+            }
+        }
+
+        file_put_contents($config_file, $amended_config_file_contents);
+    }
 }

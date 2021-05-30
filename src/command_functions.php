@@ -98,58 +98,10 @@ function initialiseConfig(
     );
 }
 
+/** @deprecated going to be removed in Psalm 5 */
 function update_config_file(Config $config, string $config_file_path, string $baseline_path) : void
 {
-    if ($config->error_baseline === $baseline_path) {
-        return;
-    }
-
-    $configFile = $config_file_path;
-
-    if (is_dir($config_file_path)) {
-        $configFile = Config::locateConfigFile($config_file_path);
-    }
-
-    if (!$configFile) {
-        fwrite(STDERR, "Don't forget to set errorBaseline=\"{$baseline_path}\" to your config.");
-
-        return;
-    }
-
-    $configFileContents = file_get_contents($configFile);
-
-    if ($config->error_baseline) {
-        $amendedConfigFileContents = preg_replace(
-            '/errorBaseline=".*?"/',
-            "errorBaseline=\"{$baseline_path}\"",
-            $configFileContents
-        );
-    } else {
-        $endPsalmOpenTag = strpos($configFileContents, '>', (int)strpos($configFileContents, '<psalm'));
-
-        if (!$endPsalmOpenTag) {
-            fwrite(STDERR, " Don't forget to set errorBaseline=\"{$baseline_path}\" in your config.");
-            return;
-        }
-
-        if ($configFileContents[$endPsalmOpenTag - 1] === "\n") {
-            $amendedConfigFileContents = substr_replace(
-                $configFileContents,
-                "    errorBaseline=\"{$baseline_path}\"\n>",
-                $endPsalmOpenTag,
-                1
-            );
-        } else {
-            $amendedConfigFileContents = substr_replace(
-                $configFileContents,
-                " errorBaseline=\"{$baseline_path}\">",
-                $endPsalmOpenTag,
-                1
-            );
-        }
-    }
-
-    file_put_contents($configFile, $amendedConfigFileContents);
+    CliUtils::updateConfigFile($config, $config_file_path, $baseline_path);
 }
 
 function get_path_to_config(array $options): ?string
