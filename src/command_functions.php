@@ -104,15 +104,10 @@ function update_config_file(Config $config, string $config_file_path, string $ba
     CliUtils::updateConfigFile($config, $config_file_path, $baseline_path);
 }
 
+/** @deprecated going to be removed in Psalm 5 */
 function get_path_to_config(array $options): ?string
 {
-    $path_to_config = isset($options['c']) && is_string($options['c']) ? realpath($options['c']) : null;
-
-    if ($path_to_config === false) {
-        fwrite(STDERR, 'Could not resolve path to config ' . (string) ($options['c'] ?? '') . PHP_EOL);
-        exit(1);
-    }
-    return $path_to_config;
+    return CliUtils::getPathToConfig($options);
 }
 
 /**

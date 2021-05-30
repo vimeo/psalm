@@ -31,7 +31,6 @@ use function max;
 use function microtime;
 use function preg_replace;
 use function preg_split;
-use function Psalm\get_path_to_config;
 use function realpath;
 use function strpos;
 use function substr;
@@ -179,7 +178,7 @@ HELP;
         // If Xdebug is enabled, restart without it
         (new \Composer\XdebugHandler\XdebugHandler('PSALTER'))->check();
 
-        $path_to_config = get_path_to_config($options);
+        $path_to_config = CliUtils::getPathToConfig($options);
 
         $args = CliUtils::getArguments();
 

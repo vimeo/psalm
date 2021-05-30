@@ -38,7 +38,6 @@ use function microtime;
 use function pathinfo;
 use function preg_replace;
 use function preg_split;
-use function Psalm\get_path_to_config;
 use function Psalm\getMemoryLimitInBytes;
 use function realpath;
 use function strpos;
@@ -246,7 +245,7 @@ HELP;
 
         $paths_to_check = CliUtils::getPathsToCheck(isset($options['f']) ? $options['f'] : null);
 
-        $path_to_config = get_path_to_config($options);
+        $path_to_config = CliUtils::getPathToConfig($options);
 
         $config = CliUtils::initializeConfig($path_to_config, $current_dir, \Psalm\Report::TYPE_CONSOLE, $first_autoloader);
         $config->setIncludeCollector($include_collector);

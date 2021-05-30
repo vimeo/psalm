@@ -230,7 +230,7 @@ HELP;
 
         setlocale(LC_CTYPE, 'C');
 
-        $path_to_config = \Psalm\get_path_to_config($options);
+        $path_to_config = CliUtils::getPathToConfig($options);
 
         if (isset($options['tcp'])) {
             if (!is_string($options['tcp'])) {

@@ -47,7 +47,6 @@ use function max;
 use function microtime;
 use function preg_match;
 use function preg_replace;
-use function Psalm\get_path_to_config;
 use function realpath;
 use function setlocale;
 use function strpos;
@@ -288,7 +287,7 @@ final class Psalm
             $current_dir = $root_path . DIRECTORY_SEPARATOR;
         }
 
-        $path_to_config = get_path_to_config($options);
+        $path_to_config = CliUtils::getPathToConfig($options);
 
         $vendor_dir = CliUtils::getVendorDir($current_dir);
 
