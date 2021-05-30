@@ -1,11 +1,7 @@
 {
     "output" : "build/psalm.phar",
     "files": [
-        "src/psalm.php",
-        "src/psalter.php",
-        "src/psalm-language-server.php",
-        "src/psalm_plugin.php",
-        "src/psalm-refactor.php"
+        "psalm"
     ],
     "files-bin": ["config.xsd"],
     "directories-bin" : [

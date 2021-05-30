@@ -59,7 +59,7 @@ return [
             return $contents;
         },
         function ($filePath, $prefix, $contents) {
-            if ($filePath === 'src/psalm.php') {
+            if ($filePath === 'src/Psalm/Internal/Cli/Psalm.php') {
                 return str_replace(
                     '\\' . $prefix . '\\PSALM_VERSION',
                     'PSALM_VERSION',
