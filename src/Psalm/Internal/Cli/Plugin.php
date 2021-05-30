@@ -18,7 +18,6 @@ use const DIRECTORY_SEPARATOR;
 
 // phpcs:disable PSR1.Files.SideEffects
 
-require_once __DIR__ . '/../../../command_functions.php';
 require_once __DIR__ . '/../CliUtils.php';
 require_once __DIR__ . '/../Composer.php';
 

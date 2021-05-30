@@ -1,7 +1,6 @@
 {
     "output" : "build/psalm.phar",
     "files": [
-        "src/command_functions.php",
         "src/psalm.php",
         "src/psalter.php",
         "src/psalm-language-server.php",
