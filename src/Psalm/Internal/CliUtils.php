@@ -7,6 +7,7 @@ use Phar;
 use Psalm\Config;
 use Psalm\Internal\Composer;
 
+use function assert;
 use function count;
 use function define;
 use function dirname;
@@ -581,5 +582,35 @@ HELP;
             exit(1);
         }
         return $path_to_config;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    public static function getMemoryLimitInBytes(): int
+    {
+        $limit = ini_get('memory_limit');
+        // for unlimited = -1
+        if ($limit < 0) {
+            return -1;
+        }
+
+        if (preg_match('/^(\d+)(\D?)$/', $limit, $matches)) {
+            assert(isset($matches[1]));
+            $limit = (int)$matches[1];
+            switch (strtoupper($matches[2] ?? '')) {
+                case 'G':
+                    $limit *= 1024 * 1024 * 1024;
+                    break;
+                case 'M':
+                    $limit *= 1024 * 1024;
+                    break;
+                case 'K':
+                    $limit *= 1024;
+                    break;
+            }
+        }
+
+        return (int)$limit;
     }
 }

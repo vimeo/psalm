@@ -38,7 +38,6 @@ use function microtime;
 use function pathinfo;
 use function preg_replace;
 use function preg_split;
-use function Psalm\getMemoryLimitInBytes;
 use function realpath;
 use function strpos;
 use function strtolower;
@@ -69,7 +68,7 @@ final class Psalter
 
         ErrorHandler::install();
 
-        $memLimit = getMemoryLimitInBytes();
+        $memLimit = CliUtils::getMemoryLimitInBytes();
         // Magic number is 4096M in bytes
         if ($memLimit > 0 && $memLimit < 8 * 1024 * 1024 * 1024) {
             ini_set('memory_limit', (string) (8 * 1024 * 1024 * 1024));
