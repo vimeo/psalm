@@ -255,7 +255,7 @@ final class Psalm
 
 
         if (array_key_exists('h', $options)) {
-            echo getPsalmHelpText();
+            echo CliUtils::getPsalmHelpText();
             /*
             --shepherd[=host]
                 Send data to Shepherd, Psalm's GitHub integration tool.
