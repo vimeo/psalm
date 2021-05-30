@@ -40,7 +40,6 @@ use function preg_replace;
 use function preg_split;
 use function Psalm\get_path_to_config;
 use function Psalm\getMemoryLimitInBytes;
-use function Psalm\getPathsToCheck;
 use function Psalm\initialiseConfig;
 use function realpath;
 use function strpos;
@@ -246,7 +245,7 @@ HELP;
         // If Xdebug is enabled, restart without it
         (new \Composer\XdebugHandler\XdebugHandler('PSALTER'))->check();
 
-        $paths_to_check = getPathsToCheck(isset($options['f']) ? $options['f'] : null);
+        $paths_to_check = CliUtils::getPathsToCheck(isset($options['f']) ? $options['f'] : null);
 
         $path_to_config = get_path_to_config($options);
 

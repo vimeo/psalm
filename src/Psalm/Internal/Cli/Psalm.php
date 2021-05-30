@@ -500,7 +500,7 @@ final class Psalm
             }
         }
 
-        $paths_to_check = \Psalm\getPathsToCheck(isset($options['f']) ? $options['f'] : null);
+        $paths_to_check = CliUtils::getPathsToCheck(isset($options['f']) ? $options['f'] : null);
 
         if ($config->resolve_from_config_file) {
             $current_dir = $config->base_dir;
