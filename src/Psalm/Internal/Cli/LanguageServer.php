@@ -35,6 +35,8 @@ use const LC_CTYPE;
 use const PHP_EOL;
 use const STDERR;
 
+// phpcs:disable PSR1.Files.SideEffects
+
 require_once __DIR__ . '/../ErrorHandler.php';
 require_once __DIR__ . '/../../../command_functions.php';
 require_once __DIR__ . '/../CliUtils.php';

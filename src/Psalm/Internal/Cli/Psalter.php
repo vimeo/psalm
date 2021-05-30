@@ -51,6 +51,8 @@ use const PATHINFO_EXTENSION;
 use const PHP_EOL;
 use const STDERR;
 
+// phpcs:disable PSR1.Files.SideEffects
+
 require_once __DIR__ . '/../ErrorHandler.php';
 require_once __DIR__ . '/../../../command_functions.php';
 require_once __DIR__ . '/../CliUtils.php';
@@ -246,7 +248,12 @@ HELP;
 
         $path_to_config = CliUtils::getPathToConfig($options);
 
-        $config = CliUtils::initializeConfig($path_to_config, $current_dir, \Psalm\Report::TYPE_CONSOLE, $first_autoloader);
+        $config = CliUtils::initializeConfig(
+            $path_to_config,
+            $current_dir,
+            \Psalm\Report::TYPE_CONSOLE,
+            $first_autoloader
+        );
         $config->setIncludeCollector($include_collector);
 
         if ($config->resolve_from_config_file) {

@@ -3,41 +3,9 @@
 namespace Psalm;
 
 use Composer\Autoload\ClassLoader;
-use Phar;
 use Psalm\Internal\CliUtils;
-use Psalm\Internal\Composer;
-use function dirname;
-use function strpos;
-use function realpath;
-use const DIRECTORY_SEPARATOR;
-use function file_exists;
-use function in_array;
-use const PHP_EOL;
-use function fwrite;
-use const STDERR;
-use function implode;
-use function define;
-use function json_decode;
-use function file_get_contents;
-use function is_array;
-use function is_string;
-use function count;
-use function strlen;
-use function substr;
-use function stream_get_meta_data;
-use const STDIN;
-use function stream_set_blocking;
-use function fgets;
-use function preg_split;
-use function trim;
-use function is_dir;
-use function preg_replace;
-use function substr_replace;
-use function file_put_contents;
-use function ini_get;
-use function preg_match;
-use function strtoupper;
 
+// phpcs:disable PSR1.Files.SideEffects
 require_once __DIR__ . '/Psalm/Internal/CliUtils.php';
 
 /** @deprecated going to be removed in Psalm 5 */
