@@ -54,39 +54,11 @@ function getVendorDir(string $current_dir): string
 
 /**
  * @return list<string>
+ * @deprecated going to be removed in Psalm 5
  */
 function getArguments() : array
 {
-    global $argv;
-
-    if (!$argv) {
-        return [];
-    }
-
-    $filtered_input_paths = [];
-
-    for ($i = 0, $iMax = count($argv); $i < $iMax; ++$i) {
-        $input_path = $argv[$i];
-
-        if (realpath($input_path) !== false) {
-            continue;
-        }
-
-        if ($input_path[0] === '-' && strlen($input_path) === 2) {
-            if ($input_path[1] === 'c' || $input_path[1] === 'f') {
-                ++$i;
-            }
-            continue;
-        }
-
-        if ($input_path[0] === '-' && $input_path[2] === '=') {
-            continue;
-        }
-
-        $filtered_input_paths[] = $input_path;
-    }
-
-    return $filtered_input_paths;
+    return CliUtils::getArguments();
 }
 
 /**

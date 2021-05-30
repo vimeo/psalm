@@ -183,7 +183,7 @@ HELP;
 
         $path_to_config = get_path_to_config($options);
 
-        $args = getArguments();
+        $args = CliUtils::getArguments();
 
         $operation = null;
         $last_arg = null;
