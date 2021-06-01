@@ -1264,7 +1264,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                             new PropertyNotSetInConstructor(
                                 'Property ' . $class_storage->name . '::$' . $property_name
                                     . ' is not defined in constructor of '
-                                    . $this->fq_class_name . ' and in any ' . $expected_visibility
+                                    . $this->fq_class_name . ' or in any ' . $expected_visibility
                                     . 'methods called in the constructor',
                                 $error_location,
                                 $property_id
