@@ -7775,7 +7775,7 @@ return [
 'MongoDB\BSON\timestampinterface::getIncrement' => ['int'],
 'MongoDB\BSON\timestampinterface::getTimestamp' => ['int'],
 'MongoDB\BSON\toJSON' => ['string', 'bson'=>'string'],
-'MongoDB\BSON\toPHP' => ['object', 'bson'=>'string', 'typeMap'=>'array'],
+'MongoDB\BSON\toPHP' => ['object', 'bson'=>'string', 'typeMap='=>'array'],
 'MongoDB\BSON\undefined::__construct' => ['void'],
 'MongoDB\BSON\undefined::__toString' => ['string'],
 'MongoDB\BSON\undefined::jsonSerialize' => ['mixed'],
