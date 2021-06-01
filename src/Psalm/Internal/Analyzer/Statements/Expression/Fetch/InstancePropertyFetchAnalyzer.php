@@ -4,6 +4,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Fetch;
 use PhpParser;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\CodeLocation;
@@ -177,7 +178,10 @@ class InstancePropertyFetchAnalyzer
 
         if ($stmt_var_type->isNullable() && !$stmt_var_type->ignore_nullable_issues) {
             // we can only be sure that the variable is possibly null if we know the var_id
-            if (!$context->inside_isset && $stmt->name instanceof PhpParser\Node\Identifier) {
+            if (!$context->inside_isset
+                && $stmt->name instanceof PhpParser\Node\Identifier
+                && !MethodCallAnalyzer::hasNullsafe($stmt->var)
+            ) {
                 if (IssueBuffer::accepts(
                     new PossiblyNullPropertyFetch(
                         'Cannot get property on possibly null variable ' . $stmt_var_id . ' of type ' . $stmt_var_type,

@@ -2514,6 +2514,22 @@ class PropertyTypeTest extends TestCase
                         protected function __construct(public array $arr){}
                     }'
             ],
+            'nullsafeShortCircuit' => [
+                '<?php
+                    class Foo {
+                        private ?self $nullableSelf = null;
+
+                        public function __construct(private self $self) {}
+
+                        public function doBar(): ?self
+                        {
+                            return $this->nullableSelf?->self->self;
+                        }
+                    }',
+                [],
+                [],
+                '8.0'
+            ],
         ];
     }
 

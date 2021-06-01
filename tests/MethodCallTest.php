@@ -983,7 +983,23 @@ class MethodCallTest extends TestCase
                 [],
                 ['MixedReturnStatement', 'MixedInferredReturnType'],
                 '8.0'
-            ]
+            ],
+            'nullsafeShortCircuit' => [
+                '<?php
+                    interface Bar {
+                        public function doBaz(): void;
+                    }
+                    interface Foo {
+                        public function getBar(): Bar;
+                    }
+                    function fooOrNull(): ?Foo {
+                        return null;
+                    }
+                    fooOrNull()?->getBar()->doBaz();',
+                [],
+                [],
+                '8.0'
+            ],
         ];
     }
 
@@ -1498,7 +1514,25 @@ class MethodCallTest extends TestCase
                        ($takesId)($application->getLocation()->getId());
                     }',
                 'error_message' => 'PossiblyNullReference',
-            ]
+            ],
+            'nullsafeShortCircuitInVariable' => [
+                '<?php
+                    interface Bar {
+                        public function doBaz(): void;
+                    }
+                    interface Foo {
+                        public function getBar(): Bar;
+                    }
+                    function fooOrNull(): ?Foo {
+                        return null;
+                    }
+                    $a = fooOrNull()?->getBar();
+                    $a->doBaz();',
+                'error_message' => 'PossiblyNullReference',
+                [],
+                false,
+                '8.0'
+            ],
         ];
     }
 }

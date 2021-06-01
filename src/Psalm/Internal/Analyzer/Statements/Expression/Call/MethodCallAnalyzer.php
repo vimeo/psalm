@@ -138,6 +138,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             && $class_type->isNullable()
             && !$class_type->ignore_nullable_issues
             && !($stmt->name->name === 'offsetGet' && $context->inside_isset)
+            && !self::hasNullsafe($stmt->var)
         ) {
             if (IssueBuffer::accepts(
                 new PossiblyNullReference(
@@ -447,5 +448,17 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
         }
 
         return true;
+    }
+
+    public static function hasNullsafe(PhpParser\Node\Expr $expr) : bool
+    {
+        if ($expr instanceof PhpParser\Node\Expr\MethodCall
+            || $expr instanceof PhpParser\Node\Expr\PropertyFetch
+        ) {
+            return self::hasNullsafe($expr->var);
+        }
+
+        return $expr instanceof PhpParser\Node\Expr\NullsafeMethodCall
+            || $expr instanceof PhpParser\Node\Expr\NullsafePropertyFetch;
     }
 }

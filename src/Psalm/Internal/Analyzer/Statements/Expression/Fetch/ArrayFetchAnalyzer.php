@@ -3,6 +3,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Fetch;
 
 use PhpParser;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -600,7 +601,7 @@ class ArrayFetchAnalyzer
                         $array_access_type = new Type\Union([new TEmpty]);
                     }
                 } else {
-                    if (!$context->inside_isset) {
+                    if (!$context->inside_isset && !MethodCallAnalyzer::hasNullsafe($stmt->var)) {
                         if (IssueBuffer::accepts(
                             new PossiblyNullArrayAccess(
                                 'Cannot access array value on possibly null variable ' . $array_var_id .
@@ -1855,7 +1856,7 @@ class ArrayFetchAnalyzer
                 $statements_analyzer->addSuppressedIssues(['MixedMethodCall']);
             }
 
-            \Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer::analyze(
+            MethodCallAnalyzer::analyze(
                 $statements_analyzer,
                 $fake_method_call,
                 $context
@@ -1912,7 +1913,7 @@ class ArrayFetchAnalyzer
                     ]
                 );
 
-                \Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer::analyze(
+                MethodCallAnalyzer::analyze(
                     $statements_analyzer,
                     $fake_set_method_call,
                     $context
@@ -1936,7 +1937,7 @@ class ArrayFetchAnalyzer
                     ]
                 );
 
-                \Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer::analyze(
+                MethodCallAnalyzer::analyze(
                     $statements_analyzer,
                     $fake_get_method_call,
                     $context
