@@ -7250,7 +7250,7 @@ return [
 'mb_check_encoding' => ['bool', 'value='=>'string', 'encoding='=>'string'],
 'mb_chr' => ['string|false', 'codepoint'=>'int', 'encoding='=>'string'],
 'mb_convert_case' => ['string|false', 'string'=>'string', 'mode'=>'int', 'encoding='=>'string'],
-'mb_convert_encoding' => ['string', 'string'=>'string', 'to_encoding'=>'string', 'from_encoding='=>'mixed'],
+'mb_convert_encoding' => ['string|false', 'string'=>'string', 'to_encoding'=>'string', 'from_encoding='=>'mixed'],
 'mb_convert_encoding\'1' => ['array<int, string>', 'string'=>'array<int, string>', 'to_encoding'=>'string', 'from_encoding='=>'mixed'],
 'mb_convert_kana' => ['string|false', 'string'=>'string', 'mode='=>'string', 'encoding='=>'string'],
 'mb_convert_variables' => ['string|false', 'to_encoding'=>'string', 'from_encoding'=>'array|string', '&rw_var'=>'string|array|object', '&...rw_vars='=>'string|array|object'],
