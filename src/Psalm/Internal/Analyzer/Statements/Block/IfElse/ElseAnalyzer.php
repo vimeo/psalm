@@ -73,7 +73,7 @@ class ElseAnalyzer
                 $changed_var_ids,
                 [],
                 $statements_analyzer,
-                [],
+                $statements_analyzer->getTemplateTypeMap() ?: [],
                 $else_context->inside_loop,
                 $else
                     ? new CodeLocation($statements_analyzer->getSource(), $else, $outer_context->include_location)
