@@ -13,7 +13,6 @@ use Psalm\Issue\RedundantPropertyInitializationCheck;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\IssueBuffer;
 use Psalm\Type;
-use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TNamedObject;
