@@ -546,10 +546,6 @@ class Reconciler
 
         $base_key = array_shift($key_parts);
 
-        if ($base_key === 'C::A' && isset($existing_keys[$base_key]) && $existing_keys[$base_key]->isMixed()) {
-            throw new \Exception("Error Processing Request", 1);
-        }
-
         if ($base_key[0] !== '$' && count($key_parts) > 2 && $key_parts[0] === '::$') {
             $base_key .= array_shift($key_parts);
             $base_key .= array_shift($key_parts);
