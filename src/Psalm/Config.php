@@ -1195,6 +1195,16 @@ class Config
                 throw new ConfigException('Failed to load plugin ' . $path, 0, $e);
             }
         }
+        // populate additional aspects after plugins have been initialized
+        foreach ($socket->getAdditionalFileExtensions() as $fileExtension) {
+            $this->file_extensions[] = $fileExtension;
+        }
+        foreach ($socket->getAdditionalFileTypeScanners() as $extension => $className) {
+            $this->filetype_scanners[$extension] = $className;
+        }
+        foreach ($socket->getAdditionalFileTypeAnalyzers() as $extension => $className) {
+            $this->filetype_analyzers[$extension] = $className;
+        }
     }
 
     private static function requirePath(string $path): void
