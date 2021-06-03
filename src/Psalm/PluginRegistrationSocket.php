@@ -127,14 +127,16 @@ class PluginRegistrationSocket implements RegistrationInterface
         if (!class_exists($className) || !is_a($className, FileScanner::class, true)) {
             throw new \LogicException(
                 sprintf(
-                    'Class %s be of type %s',
+                    'Class %s must be of type %s',
                     $className,
                     FileScanner::class
                 ),
                 1622727271
             );
         }
-        if (!empty($this->config->getFiletypeScanners()[$fileExtension])) {
+        if (!empty($this->config->getFiletypeScanners()[$fileExtension])
+            || !empty($this->additionalFileTypeScanners[$fileExtension])
+        ) {
             throw new \LogicException(
                 sprintf('Cannot redeclare scanner for file-type %s', $fileExtension),
                 1622727272
@@ -161,14 +163,16 @@ class PluginRegistrationSocket implements RegistrationInterface
         if (!class_exists($className) || !is_a($className, FileAnalyzer::class, true)) {
             throw new \LogicException(
                 sprintf(
-                    'Class %s be of type %s',
+                    'Class %s must be of type %s',
                     $className,
                     FileAnalyzer::class
                 ),
                 1622727281
             );
         }
-        if (!empty($this->config->getFiletypeAnalyzers()[$fileExtension])) {
+        if (!empty($this->config->getFiletypeAnalyzers()[$fileExtension])
+            || !empty($this->additionalFileTypeAnalyzers[$fileExtension])
+        ) {
             throw new \LogicException(
                 sprintf('Cannot redeclare analyzer for file-type %s', $fileExtension),
                 1622727282
