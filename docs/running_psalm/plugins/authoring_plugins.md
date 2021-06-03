@@ -34,6 +34,14 @@ Skeleton/template project includes the code to register all `.phpstub` files fro
 
 To register a stub file manually use `Psalm\Plugin\RegistrationInterface::addStubFile()`.
 
+## Registering custom scanners and analyzers
+
+In addition to XML configuration node `<fileExtensions>` plugins can register their own custom scanner
+and analyzer implementations for particular file extensions, e.g.
+
+* `Psalm\PluginRegistrationSocket::addFileTypeScanner('html', CustomFileScanner::class)`
+* `Psalm\PluginRegistrationSocket::addFileTypeAnalyzer('html', CustomFileAnalyzer::class)`
+
 ## Publishing your plugin on Packagist
 
 Follow instructions on packagist.org under 'Publishing Packages' section.
@@ -138,4 +146,6 @@ You can also use more complex rules in the `<issueHandler />` element, as you ca
 
 ## Upgrading file-based plugin to composer-based version
 
-Create new plugin project using skeleton, then pass the class name of you file-based plugin to `registerHooksFromClass()` method of the `Psalm\Plugin\RegistrationInterface` instance that was passed into your plugin entry point's `__invoke()` method. See the [conversion example](https://github.com/vimeo/psalm/tree/master/examples/plugins/composer-based/echo-checker/).
+Create new plugin project using skeleton, then pass the class name of you file-based plugin to `registerHooksFromClass()`
+method of the `Psalm\Plugin\RegistrationInterface` instance that was passed into your plugin entry point's `__invoke()`
+method. See the [conversion example](https://github.com/vimeo/psalm/tree/master/examples/plugins/composer-based/echo-checker/).
