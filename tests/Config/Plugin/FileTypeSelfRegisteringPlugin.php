@@ -3,7 +3,6 @@ namespace Psalm\Tests\Config\Plugin;
 
 use Psalm\Plugin;
 use Psalm\Plugin\PluginEntryPointInterface;
-use Psalm\PluginRegistrationSocket;
 use SimpleXMLElement;
 
 class FileTypeSelfRegisteringPlugin implements PluginEntryPointInterface
