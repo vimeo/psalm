@@ -26,10 +26,6 @@ class FileTypeSelfRegisteringPlugin implements PluginEntryPointInterface
 
     public function __invoke(Plugin\RegistrationInterface $registration, ?SimpleXMLElement $config = null): void
     {
-        if (!$registration instanceof PluginRegistrationSocket) {
-            throw new \LogicException('Expected ' . PluginRegistrationSocket::class);
-        }
-
         if (self::$flags & self::FLAG_SCANNER_INVALID) {
             /** @psalm-suppress InvalidArgument */
             $registration->addFileTypeScanner(self::$names['extension'], \stdClass::class);

@@ -24,16 +24,13 @@ namespace Psalm\Example;
 
 use Psalm\Plugin\PluginEntryPointInterface;
 use Psalm\Plugin\RegistrationInterface;
-use Psalm\PluginRegistrationSocket;
 
 class CustomPlugin implements PluginEntryPointInterface
 {
     public function __invoke(RegistrationInterface $registration, ?\SimpleXMLElement $config = null): void
     {
-        if ($registration instanceof PluginRegistrationSocket) {
-            $registration->addFileTypeScanner('phpt', TemplateScanner::class);
-            $registration->addFileTypeAnalyzer('phpt', TemplateAnalyzer::class);
-        }    
+        $registration->addFileTypeScanner('phpt', TemplateScanner::class);
+        $registration->addFileTypeAnalyzer('phpt', TemplateAnalyzer::class);
     }
 }
 ```
