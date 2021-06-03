@@ -13,7 +13,6 @@ use Psalm\Issue\RedundantPropertyInitializationCheck;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\IssueBuffer;
 use Psalm\Type;
-use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TNamedObject;
@@ -25,6 +24,7 @@ use function strtolower;
 use function substr;
 use function explode;
 use function get_class;
+use function array_values;
 
 class NegatedAssertionReconciler extends Reconciler
 {
@@ -238,7 +238,13 @@ class NegatedAssertionReconciler extends Reconciler
                         continue;
                     }
 
-                    $new_type_part = Atomic::create($assertion, null, $template_type_map);
+                    $assertion_type = Type::parseString($assertion, null, $template_type_map);
+
+                    if (!$assertion_type->isSingle()) {
+                        continue;
+                    }
+
+                    $new_type_part = array_values($assertion_type->getAtomicTypes())[0];
 
                     if (!$new_type_part instanceof TNamedObject) {
                         continue;
