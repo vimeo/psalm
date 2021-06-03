@@ -17,12 +17,12 @@ class FileTypeSelfRegisteringPlugin implements PluginEntryPointInterface
     /**
      * @var array<string, string>
      */
-    static public $names = [];
+    public static $names = [];
 
     /**
      * @var int
      */
-    static public $flags = 0;
+    public static $flags = 0;
 
     public function __invoke(Plugin\RegistrationInterface $registration, ?SimpleXMLElement $config = null): void
     {

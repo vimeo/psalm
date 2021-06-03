@@ -8,6 +8,8 @@ use Psalm\Tests\Config\Plugin\FileTypeSelfRegisteringPlugin;
 use function array_map;
 use function define;
 use function defined;
+use function get_class;
+use function sprintf;
 use function uniqid;
 use const DIRECTORY_SEPARATOR;
 use function dirname;
@@ -1342,7 +1344,6 @@ class ConfigTest extends \Psalm\Tests\TestCase
      */
     public function pluginRegistersScannerAndAnalyzerDataProvider(): array
     {
-        include_once __DIR__ . '/Plugin/FileTypeSelfRegisteringPlugin.php';
         return [
             'regular' => [0, null], // flags, expected exception code
             'invalid scanner class' => [FileTypeSelfRegisteringPlugin::FLAG_SCANNER_INVALID, 1622727271],
@@ -1358,7 +1359,6 @@ class ConfigTest extends \Psalm\Tests\TestCase
      */
     public function pluginRegistersScannerAndAnalyzer(int $flags, ?int $expectedExceptionCode): void
     {
-        include_once __DIR__ . '/Plugin/FileTypeSelfRegisteringPlugin.php';
         $extension = uniqid('test');
         $names = [
             'scanner' => uniqid('PsalmTestFileTypeScanner'),
@@ -1380,7 +1380,8 @@ class ConfigTest extends \Psalm\Tests\TestCase
         $projectAnalyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2),
-                sprintf('<?xml version="1.0"?>
+                sprintf(
+                    '<?xml version="1.0"?>
                     <psalm><plugins><pluginClass class="%s"/></plugins></psalm>',
                     FileTypeSelfRegisteringPlugin::class
                 )
