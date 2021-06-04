@@ -2,8 +2,6 @@
 namespace Psalm\Tests;
 
 use const DIRECTORY_SEPARATOR;
-use Psalm\Config;
-use Psalm\Context;
 
 class ReadonlyPropertyTest extends TestCase
 {
@@ -185,6 +183,23 @@ class ReadonlyPropertyTest extends TestCase
                     $a = new A();
                     $a->bar = "goodbye";',
                 'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:18:21',
+            ],
+            'readonlyPropertyAssignOperator' => [
+                '<?php
+                    class Test {
+                        /** @readonly */
+                        public int $prop;
+
+                        public function __construct(int $prop) {
+                            // Legal initialization.
+                            $this->prop = $prop;
+                        }
+                    }
+
+                    $test = new Test(5);
+
+                    $test->prop += 1;',
+                'error_message' => 'InaccessibleProperty'
             ],
         ];
     }

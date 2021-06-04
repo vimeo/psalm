@@ -822,6 +822,7 @@ class ArrayAssignmentTest extends TestCase
                          * @psalm-suppress InvalidArrayOffset
                          * @psalm-suppress MixedOperand
                          * @psalm-suppress PossiblyUndefinedArrayOffset
+                         * @psalm-suppress MixedAssignment
                          */
                         $a["b"]["d"] += $a["b"][$i];
                     }',

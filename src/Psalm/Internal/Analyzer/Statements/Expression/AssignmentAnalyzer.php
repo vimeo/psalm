@@ -39,7 +39,20 @@ use Psalm\Issue\PossiblyUndefinedArrayOffset;
 use Psalm\Issue\ReferenceConstraintViolation;
 use Psalm\Issue\UnnecessaryVarAnnotation;
 use Psalm\IssueBuffer;
+use Psalm\Node\Expr\VirtualAssign;
+use Psalm\Node\Expr\BinaryOp\VirtualBitwiseAnd;
+use Psalm\Node\Expr\BinaryOp\VirtualBitwiseOr;
+use Psalm\Node\Expr\BinaryOp\VirtualBitwiseXor;
 use Psalm\Node\Expr\BinaryOp\VirtualCoalesce;
+use Psalm\Node\Expr\BinaryOp\VirtualConcat;
+use Psalm\Node\Expr\BinaryOp\VirtualDiv;
+use Psalm\Node\Expr\BinaryOp\VirtualMinus;
+use Psalm\Node\Expr\BinaryOp\VirtualMod;
+use Psalm\Node\Expr\BinaryOp\VirtualMul;
+use Psalm\Node\Expr\BinaryOp\VirtualPlus;
+use Psalm\Node\Expr\BinaryOp\VirtualPow;
+use Psalm\Node\Expr\BinaryOp\VirtualShiftLeft;
+use Psalm\Node\Expr\BinaryOp\VirtualShiftRight;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type;
 use function is_string;
@@ -770,344 +783,56 @@ class AssignmentAnalyzer
         PhpParser\Node\Expr\AssignOp $stmt,
         Context $context
     ): bool {
-        $array_var_id = ExpressionIdentifier::getArrayVarId(
+        if ($stmt instanceof PhpParser\Node\Expr\AssignOp\BitwiseAnd) {
+            $operation = new VirtualBitwiseAnd($stmt->var, $stmt->expr, $stmt->getAttributes());
+        } elseif ($stmt instanceof PhpParser\Node\Expr\AssignOp\BitwiseOr) {
+            $operation = new VirtualBitwiseOr($stmt->var, $stmt->expr, $stmt->getAttributes());
+        } elseif ($stmt instanceof PhpParser\Node\Expr\AssignOp\BitwiseXor) {
+            $operation = new VirtualBitwiseXor($stmt->var, $stmt->expr, $stmt->getAttributes());
+        } elseif ($stmt instanceof PhpParser\Node\Expr\AssignOp\Coalesce) {
+            $operation = new VirtualCoalesce($stmt->var, $stmt->expr, $stmt->getAttributes());
+        } elseif ($stmt instanceof PhpParser\Node\Expr\AssignOp\Concat) {
+            $operation = new VirtualConcat($stmt->var, $stmt->expr, $stmt->getAttributes());
+        } elseif ($stmt instanceof PhpParser\Node\Expr\AssignOp\Div) {
+            $operation = new VirtualDiv($stmt->var, $stmt->expr, $stmt->getAttributes());
+        } elseif ($stmt instanceof PhpParser\Node\Expr\AssignOp\Minus) {
+            $operation = new VirtualMinus($stmt->var, $stmt->expr, $stmt->getAttributes());
+        } elseif ($stmt instanceof PhpParser\Node\Expr\AssignOp\Mod) {
+            $operation = new VirtualMod($stmt->var, $stmt->expr, $stmt->getAttributes());
+        } elseif ($stmt instanceof PhpParser\Node\Expr\AssignOp\Mul) {
+            $operation = new VirtualMul($stmt->var, $stmt->expr, $stmt->getAttributes());
+        } elseif ($stmt instanceof PhpParser\Node\Expr\AssignOp\Plus) {
+            $operation = new VirtualPlus($stmt->var, $stmt->expr, $stmt->getAttributes());
+        } elseif ($stmt instanceof PhpParser\Node\Expr\AssignOp\Pow) {
+            $operation = new VirtualPow($stmt->var, $stmt->expr, $stmt->getAttributes());
+        } elseif ($stmt instanceof PhpParser\Node\Expr\AssignOp\ShiftLeft) {
+            $operation = new VirtualShiftLeft($stmt->var, $stmt->expr, $stmt->getAttributes());
+        } elseif ($stmt instanceof PhpParser\Node\Expr\AssignOp\ShiftRight) {
+            $operation = new VirtualShiftRight($stmt->var, $stmt->expr, $stmt->getAttributes());
+        } else {
+            throw new \UnexpectedValueException('Unknown assign op');
+        }
+
+        $fake_assignment = new VirtualAssign(
             $stmt->var,
-            $statements_analyzer->getFQCLN(),
-            $statements_analyzer
+            $operation,
+            $stmt->getAttributes()
         );
 
-        if ($stmt instanceof PhpParser\Node\Expr\AssignOp\Coalesce) {
-            $old_data_provider = $statements_analyzer->node_data;
+        $old_node_data = $statements_analyzer->node_data;
 
-            $statements_analyzer->node_data = clone $statements_analyzer->node_data;
+        $statements_analyzer->node_data = clone $statements_analyzer->node_data;
 
-            $fake_coalesce_expr = new VirtualCoalesce(
-                $stmt->var,
-                $stmt->expr,
-                $stmt->getAttributes()
-            );
-
-            $fake_coalesce_type = AssignmentAnalyzer::analyze(
-                $statements_analyzer,
-                $stmt->var,
-                $fake_coalesce_expr,
-                null,
-                $context,
-                $stmt->getDocComment()
-            );
-
-            $statements_analyzer->node_data = $old_data_provider;
-
-            if ($fake_coalesce_type) {
-                $statements_analyzer->node_data->setType($stmt, $fake_coalesce_type);
-            }
-
-            return true;
-        }
-
-        $was_in_assignment = $context->inside_assignment;
-
-        $context->inside_assignment = true;
-
-        $root_expr = $stmt->var;
-
-        while ($root_expr instanceof PhpParser\Node\Expr\ArrayDimFetch) {
-            $root_expr = $root_expr->var;
-        }
-
-        if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->var, $context) === false) {
+        if (ExpressionAnalyzer::analyze($statements_analyzer, $fake_assignment, $context) === false) {
             return false;
         }
 
-        $was_inside_use = $context->inside_use;
+        $old_node_data->setType(
+            $stmt,
+            $statements_analyzer->node_data->getType($operation) ?: Type::getMixed()
+        );
 
-        // if we don't know where this data is going, treat as a dead-end usage
-        if (!$root_expr instanceof PhpParser\Node\Expr\Variable
-            || (\is_string($root_expr->name)
-                && \in_array('$' . $root_expr->name, VariableFetchAnalyzer::SUPER_GLOBALS, true))
-        ) {
-            $context->inside_use = true;
-        }
-
-        if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
-            return false;
-        }
-
-        $context->inside_use = $was_inside_use;
-
-        if ($array_var_id
-            && $stmt->var instanceof PhpParser\Node\Expr\PropertyFetch
-            && ($stmt_var_var_type = $statements_analyzer->node_data->getType($stmt->var->var))
-            && !$stmt_var_var_type->reference_free
-        ) {
-            if ($context->mutation_free) {
-                if (IssueBuffer::accepts(
-                    new ImpurePropertyAssignment(
-                        'Cannot assign to a property from a mutation-free context',
-                        new CodeLocation($statements_analyzer, $stmt->var)
-                    ),
-                    $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
-            } elseif ($statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
-                && $statements_analyzer->getSource()->track_mutations
-            ) {
-                $statements_analyzer->getSource()->inferred_has_mutation = true;
-                $statements_analyzer->getSource()->inferred_impure = true;
-            }
-        } elseif (!$context->collect_mutations
-            && !$context->collect_initializations
-            && $stmt->var instanceof PhpParser\Node\Expr\PropertyFetch
-        ) {
-            $lhs_var_id = ExpressionIdentifier::getArrayVarId(
-                $stmt->var->var,
-                $statements_analyzer->getFQCLN(),
-                $statements_analyzer
-            );
-
-            if ($context->mutation_free) {
-                if (isset($context->vars_in_scope[$lhs_var_id])
-                    && !$context->vars_in_scope[$lhs_var_id]->allow_mutations
-                ) {
-                    if (IssueBuffer::accepts(
-                        new ImpurePropertyAssignment(
-                            'Cannot assign to a property from a mutation-free context',
-                            new CodeLocation($statements_analyzer, $stmt)
-                        ),
-                        $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
-                }
-            } elseif ($statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
-                && $statements_analyzer->getSource()->track_mutations
-            ) {
-                $statements_analyzer->getSource()->inferred_has_mutation = true;
-                $statements_analyzer->getSource()->inferred_impure = true;
-            }
-        }
-
-        $codebase = $statements_analyzer->getCodebase();
-
-        if ($array_var_id) {
-            $context->assigned_var_ids[$array_var_id] = (int) $stmt->var->getAttribute('startFilePos');
-            $context->possibly_assigned_var_ids[$array_var_id] = true;
-
-            if ($codebase->find_unused_variables && $stmt->var instanceof PhpParser\Node\Expr\Variable) {
-                $location = new CodeLocation($statements_analyzer, $stmt->var);
-                $statements_analyzer->registerVariableAssignment(
-                    $array_var_id,
-                    $location
-                );
-            }
-        }
-
-        $stmt_var_type = $statements_analyzer->node_data->getType($stmt->var);
-        $stmt_var_type = $stmt_var_type ? clone $stmt_var_type: null;
-
-        $stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr);
-        $result_type = null;
-
-        if ($stmt instanceof PhpParser\Node\Expr\AssignOp\Plus
-            || $stmt instanceof PhpParser\Node\Expr\AssignOp\Minus
-            || $stmt instanceof PhpParser\Node\Expr\AssignOp\Mod
-            || $stmt instanceof PhpParser\Node\Expr\AssignOp\Mul
-            || $stmt instanceof PhpParser\Node\Expr\AssignOp\Pow
-        ) {
-            BinaryOp\NonDivArithmeticOpAnalyzer::analyze(
-                $statements_analyzer,
-                $statements_analyzer->node_data,
-                $stmt->var,
-                $stmt->expr,
-                $stmt,
-                $result_type,
-                $context
-            );
-
-            if ($stmt->var instanceof PhpParser\Node\Expr\ArrayDimFetch) {
-                $result_type = $result_type ?: Type::getMixed($context->inside_loop);
-
-                ArrayAssignmentAnalyzer::analyze(
-                    $statements_analyzer,
-                    $stmt->var,
-                    $context,
-                    $stmt->expr,
-                    $result_type
-                );
-            } else {
-                $result_type = $result_type
-                    ? clone $result_type
-                    : new Type\Union([new Type\Atomic\TInt(), new Type\Atomic\TFloat()]);
-            }
-
-            if ($array_var_id) {
-                $context->vars_in_scope[$array_var_id] = $result_type;
-            }
-
-            $statements_analyzer->node_data->setType($stmt, $result_type);
-
-            BinaryOpAnalyzer::addDataFlow(
-                $statements_analyzer,
-                $stmt,
-                $stmt->var,
-                $stmt->expr,
-                'nondivop'
-            );
-        } elseif ($stmt instanceof PhpParser\Node\Expr\AssignOp\Div) {
-            if ($stmt_var_type
-                && $stmt_expr_type
-                && $stmt_var_type->hasDefinitelyNumericType()
-                && $stmt_expr_type->hasDefinitelyNumericType()
-                && $array_var_id
-            ) {
-                $context->vars_in_scope[$array_var_id] = Type::combineUnionTypes(Type::getFloat(), Type::getInt());
-                $statements_analyzer->node_data->setType($stmt, clone $context->vars_in_scope[$array_var_id]);
-            } else {
-                $statements_analyzer->node_data->setType($stmt, Type::getMixed());
-            }
-
-            BinaryOpAnalyzer::addDataFlow(
-                $statements_analyzer,
-                $stmt,
-                $stmt->var,
-                $stmt->expr,
-                'div'
-            );
-        } elseif ($stmt instanceof PhpParser\Node\Expr\AssignOp\Concat) {
-            BinaryOp\ConcatAnalyzer::analyze(
-                $statements_analyzer,
-                $stmt->var,
-                $stmt->expr,
-                $context,
-                $result_type
-            );
-
-            if ($result_type && $array_var_id) {
-                $context->vars_in_scope[$array_var_id] = $result_type;
-                $statements_analyzer->node_data->setType($stmt, clone $context->vars_in_scope[$array_var_id]);
-
-                BinaryOpAnalyzer::addDataFlow(
-                    $statements_analyzer,
-                    $stmt,
-                    $stmt->var,
-                    $stmt->expr,
-                    'concatop'
-                );
-            }
-        } elseif ($stmt instanceof PhpParser\Node\Expr\AssignOp\BitwiseOr
-            || $stmt instanceof PhpParser\Node\Expr\AssignOp\BitwiseXor
-            || $stmt instanceof PhpParser\Node\Expr\AssignOp\BitwiseAnd
-            || $stmt instanceof PhpParser\Node\Expr\AssignOp\ShiftLeft
-            || $stmt instanceof PhpParser\Node\Expr\AssignOp\ShiftRight
-        ) {
-            BinaryOp\NonDivArithmeticOpAnalyzer::analyze(
-                $statements_analyzer,
-                $statements_analyzer->node_data,
-                $stmt->var,
-                $stmt->expr,
-                $stmt,
-                $result_type,
-                $context
-            );
-
-            if ($result_type && $array_var_id) {
-                $context->vars_in_scope[$array_var_id] = clone $result_type;
-                $statements_analyzer->node_data->setType($stmt, $context->vars_in_scope[$array_var_id]);
-            }
-
-            BinaryOpAnalyzer::addDataFlow(
-                $statements_analyzer,
-                $stmt,
-                $stmt->var,
-                $stmt->expr,
-                'bitwiseop'
-            );
-        }
-
-        if (($data_flow_graph = $statements_analyzer->data_flow_graph)
-            && $array_var_id
-            && isset($context->vars_in_scope[$array_var_id])
-            && ($stmt_type = $statements_analyzer->node_data->getType($stmt))
-        ) {
-            if ($stmt_type->parent_nodes) {
-                if ($data_flow_graph instanceof TaintFlowGraph
-                    && \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
-                ) {
-                    $stmt_type->parent_nodes = [];
-                } else {
-                    $var_location = new CodeLocation($statements_analyzer->getSource(), $stmt->var);
-
-                    $new_parent_node = DataFlowNode::getForAssignment($array_var_id, $var_location);
-
-                    $data_flow_graph->addNode($new_parent_node);
-
-                    foreach ($stmt_type->parent_nodes as $parent_node) {
-                        $data_flow_graph->addPath($parent_node, $new_parent_node, '=');
-
-                        if ($stmt_var_type && $stmt_var_type->by_ref) {
-                            $data_flow_graph->addPath(
-                                $parent_node,
-                                new DataFlowNode('variable-use', 'variable use', null),
-                                'variable-use'
-                            );
-                        }
-                    }
-
-                    $context->vars_in_scope[$array_var_id]->parent_nodes = [
-                        $new_parent_node->id => $new_parent_node
-                    ];
-                }
-            }
-        }
-
-        if ($array_var_id && isset($context->vars_in_scope[$array_var_id])) {
-            if ($result_type && $context->vars_in_scope[$array_var_id]->by_ref) {
-                $result_type->by_ref = true;
-            }
-
-            // removes dependent vars from $context
-            $context->removeDescendents(
-                $array_var_id,
-                $context->vars_in_scope[$array_var_id],
-                $result_type,
-                $statements_analyzer
-            );
-        } else {
-            $root_var_id = ExpressionIdentifier::getRootVarId(
-                $stmt->var,
-                $statements_analyzer->getFQCLN(),
-                $statements_analyzer
-            );
-
-            if ($root_var_id && isset($context->vars_in_scope[$root_var_id])) {
-                $context->removeVarFromConflictingClauses(
-                    $root_var_id,
-                    $context->vars_in_scope[$root_var_id],
-                    $statements_analyzer
-                );
-            }
-        }
-
-        if (!($stmt instanceof PhpParser\Node\Expr\AssignOp\Plus
-                || $stmt instanceof PhpParser\Node\Expr\AssignOp\Minus
-                || $stmt instanceof PhpParser\Node\Expr\AssignOp\Mod
-                || $stmt instanceof PhpParser\Node\Expr\AssignOp\Mul
-                || $stmt instanceof PhpParser\Node\Expr\AssignOp\Pow)
-            && $stmt->var instanceof PhpParser\Node\Expr\ArrayDimFetch
-        ) {
-            ArrayAssignmentAnalyzer::analyze(
-                $statements_analyzer,
-                $stmt->var,
-                $context,
-                null,
-                $result_type ?: Type::getEmpty()
-            );
-        }
-
-        if (!$was_in_assignment) {
-            $context->inside_assignment = false;
-        }
+        $statements_analyzer->node_data = $old_node_data;
 
         return true;
     }

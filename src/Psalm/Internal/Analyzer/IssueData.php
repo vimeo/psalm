@@ -11,13 +11,11 @@ class IssueData
 
     /**
      * @var int
-     * @readonly
      */
     public $line_from;
 
     /**
      * @var int
-     * @readonly
      */
     public $line_to;
 
@@ -59,25 +57,21 @@ class IssueData
 
     /**
      * @var int
-     * @readonly
      */
     public $from;
 
     /**
      * @var int
-     * @readonly
      */
     public $to;
 
     /**
      * @var int
-     * @readonly
      */
     public $snippet_from;
 
     /**
      * @var int
-     * @readonly
      */
     public $snippet_to;
 

@@ -787,9 +787,6 @@ class UnusedCodeTest extends TestCase
             ],
             'unusedByReferenceFunctionCall' => [
                 '<?php
-                    /**
-                     * @pure
-                     */
                     function bar(string &$str): string
                     {
                         $str .= "foo";
@@ -797,9 +794,6 @@ class UnusedCodeTest extends TestCase
                         return $str;
                     }
 
-                    /**
-                     * @pure
-                     */
                     function baz(): string
                     {
                         $f = "foo";
@@ -810,17 +804,11 @@ class UnusedCodeTest extends TestCase
             ],
             'unusedVoidByReferenceFunctionCall' => [
                 '<?php
-                    /**
-                     * @pure
-                     */
                     function bar(string &$str): void
                     {
                         $str .= "foo";
                     }
 
-                    /**
-                     * @pure
-                     */
                     function baz(): string
                     {
                         $f = "foo";
@@ -831,9 +819,6 @@ class UnusedCodeTest extends TestCase
             ],
             'unusedNamedByReferenceFunctionCall' => [
                 '<?php
-                    /**
-                     * @pure
-                     */
                     function bar(string $c = "", string &$str = ""): string
                     {
                         $c .= $str;
@@ -842,9 +827,6 @@ class UnusedCodeTest extends TestCase
                         return $c;
                     }
 
-                    /**
-                     * @pure
-                     */
                     function baz(): string
                     {
                         $f = "foo";
@@ -855,9 +837,6 @@ class UnusedCodeTest extends TestCase
             ],
             'unusedNamedByReferenceFunctionCallV2' => [
                 '<?php
-                    /**
-                     * @pure
-                     */
                     function bar(string &$st, string &$str = ""): string
                     {
                         $st .= $str;
@@ -865,9 +844,6 @@ class UnusedCodeTest extends TestCase
                         return $st;
                     }
 
-                    /**
-                     * @pure
-                     */
                     function baz(): string
                     {
                         $f = "foo";
@@ -878,9 +854,6 @@ class UnusedCodeTest extends TestCase
             ],
             'unusedNamedByReferenceFunctionCallV3' => [
                 '<?php
-                    /**
-                     * @pure
-                     */
                     function bar(string &$st, ?string &$str = ""): string
                     {
                         $st .= (string) $str;
@@ -888,9 +861,6 @@ class UnusedCodeTest extends TestCase
                         return $st;
                     }
 
-                    /**
-                     * @pure
-                     */
                     function baz(): string
                     {
                         $f = "foo";
