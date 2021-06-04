@@ -1,9 +1,16 @@
 <?php
 namespace Psalm\Tests\Config;
 
+use Psalm\Exception\ConfigException;
+use Psalm\Internal\Analyzer\FileAnalyzer;
+use Psalm\Internal\Scanner\FileScanner;
+use Psalm\Tests\Config\Plugin\FileTypeSelfRegisteringPlugin;
 use function array_map;
 use function define;
 use function defined;
+use function get_class;
+use function sprintf;
+use function uniqid;
 use const DIRECTORY_SEPARATOR;
 use function dirname;
 use function error_get_last;
@@ -577,7 +584,7 @@ class ConfigTest extends \Psalm\Tests\TestCase
     public function testImpossibleIssue(): void
     {
         $this->expectExceptionMessage('This element is not expected');
-        $this->expectException(\Psalm\Exception\ConfigException::class);
+        $this->expectException(ConfigException::class);
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(
                 dirname(__DIR__, 2),
@@ -1330,5 +1337,76 @@ class ConfigTest extends \Psalm\Tests\TestCase
         );
 
         $this->assertContains('datetime', $this->project_analyzer->getConfig()->getUniversalObjectCrates());
+    }
+
+    /**
+     * @return array<string, array{0: int, 1: int|null}>
+     */
+    public function pluginRegistersScannerAndAnalyzerDataProvider(): array
+    {
+        return [
+            'regular' => [0, null], // flags, expected exception code
+            'invalid scanner class' => [FileTypeSelfRegisteringPlugin::FLAG_SCANNER_INVALID, 1622727271],
+            'invalid analyzer class' => [FileTypeSelfRegisteringPlugin::FLAG_ANALYZER_INVALID, 1622727281],
+            'override scanner' => [FileTypeSelfRegisteringPlugin::FLAG_SCANNER_TWICE, 1622727272],
+            'override analyzer' => [FileTypeSelfRegisteringPlugin::FLAG_ANALYZER_TWICE, 1622727282],
+        ];
+    }
+
+    /**
+     * @test
+     * @dataProvider pluginRegistersScannerAndAnalyzerDataProvider
+     */
+    public function pluginRegistersScannerAndAnalyzer(int $flags, ?int $expectedExceptionCode): void
+    {
+        $extension = uniqid('test');
+        $names = [
+            'scanner' => uniqid('PsalmTestFileTypeScanner'),
+            'analyzer' => uniqid('PsalmTestFileTypeAnaylzer'),
+            'extension' => $extension,
+        ];
+        $scannerMock = $this->getMockBuilder(FileScanner::class)
+            ->setMockClassName($names['scanner'])
+            ->disableOriginalConstructor()
+            ->getMock();
+        $analyzerMock = $this->getMockBuilder(FileAnalyzer::class)
+            ->setMockClassName($names['analyzer'])
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        FileTypeSelfRegisteringPlugin::$names = $names;
+        FileTypeSelfRegisteringPlugin::$flags = $flags;
+
+        $projectAnalyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2),
+                sprintf(
+                    '<?xml version="1.0"?>
+                    <psalm><plugins><pluginClass class="%s"/></plugins></psalm>',
+                    FileTypeSelfRegisteringPlugin::class
+                )
+            )
+        );
+
+
+        try {
+            $config = $projectAnalyzer->getConfig();
+            $config->initializePlugins($projectAnalyzer);
+        } catch (ConfigException $exception) {
+            $actualExceptionCode = $exception->getPrevious()
+                ? $exception->getPrevious()->getCode()
+                : null;
+            self::assertSame(
+                $expectedExceptionCode,
+                $actualExceptionCode,
+                'Exception code did not match.'
+            );
+            return;
+        }
+
+        self::assertContains($extension, $config->getFileExtensions());
+        self::assertSame(get_class($scannerMock), $config->getFiletypeScanners()[$extension] ?? null);
+        self::assertSame(get_class($analyzerMock), $config->getFiletypeAnalyzers()[$extension] ?? null);
+        self::assertNull($expectedExceptionCode, 'Expected exception code was not thrown');
     }
 }
