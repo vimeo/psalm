@@ -135,7 +135,7 @@ class AndAnalyzer
                 $changed_var_ids,
                 $left_referenced_var_ids,
                 $statements_analyzer,
-                [],
+                $statements_analyzer->getTemplateTypeMap() ?: [],
                 $context->inside_loop,
                 new CodeLocation($statements_analyzer->getSource(), $stmt->left),
                 $context->inside_negation
