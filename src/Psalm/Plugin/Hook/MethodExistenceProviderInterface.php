@@ -4,6 +4,7 @@ namespace Psalm\Plugin\Hook;
 use Psalm\CodeLocation;
 use Psalm\StatementsSource;
 
+/** @deprecated going to be removed in Psalm 5 */
 interface MethodExistenceProviderInterface
 {
     /**

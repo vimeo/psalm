@@ -6,6 +6,7 @@ use Psalm\CodeLocation;
 use Psalm\FileManipulation;
 use Psalm\StatementsSource;
 
+/** @deprecated going to be removed in Psalm 5 */
 interface AfterClassLikeExistenceCheckInterface
 {
     /**

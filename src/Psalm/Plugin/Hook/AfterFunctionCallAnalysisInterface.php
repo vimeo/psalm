@@ -8,6 +8,7 @@ use Psalm\FileManipulation;
 use Psalm\StatementsSource;
 use Psalm\Type\Union;
 
+/** @deprecated going to be removed in Psalm 5 */
 interface AfterFunctionCallAnalysisInterface
 {
     /**

@@ -6,6 +6,7 @@ use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\StatementsSource;
 
+/** @deprecated going to be removed in Psalm 5 */
 interface AfterEveryFunctionCallAnalysisInterface
 {
     public static function afterEveryFunctionCallAnalysis(

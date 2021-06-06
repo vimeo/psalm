@@ -5,6 +5,7 @@ use Psalm\Context;
 use Psalm\StatementsSource;
 use Psalm\Type;
 
+/** @deprecated going to be removed in Psalm 5 */
 interface PropertyTypeProviderInterface
 {
     /**
