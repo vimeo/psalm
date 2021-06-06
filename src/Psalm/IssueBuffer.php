@@ -5,6 +5,7 @@ use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\ExecutionEnvironment\BuildInfoCollector;
 use Psalm\Issue\CodeIssue;
+use Psalm\Issue\ConfigIssue;
 use Psalm\Issue\UnusedPsalmSuppress;
 use Psalm\Plugin\EventHandler\Event\AfterAnalysisEvent;
 use Psalm\Report\CheckstyleReport;
@@ -140,7 +141,7 @@ class IssueBuffer
         $issue_type = array_pop($fqcn_parts);
         $file_path = $e->getFilePath();
 
-        if (!$config->reportIssueInFile($issue_type, $file_path)) {
+        if (!$e instanceof ConfigIssue && !$config->reportIssueInFile($issue_type, $file_path)) {
             return true;
         }
 
@@ -459,8 +460,15 @@ class IssueBuffer
 
         $codebase = $project_analyzer->getCodebase();
 
+        foreach ($codebase->config->config_issues as $issue) {
+            if (self::accepts($issue)) {
+                // fall through
+            }
+        }
+
         $error_count = 0;
         $info_count = 0;
+
 
         $issues_data = [];
 

@@ -6,6 +6,7 @@ use Composer\Autoload\ClassLoader;
 use Composer\Semver\VersionParser;
 use DOMDocument;
 use LogicException;
+use OutOfBoundsException;
 use Psalm\Config\IssueHandler;
 use Psalm\Config\ProjectFileFilter;
 use Psalm\Config\TaintAnalysisFileFilter;
@@ -21,6 +22,7 @@ use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Issue\ArgumentIssue;
 use Psalm\Issue\ClassIssue;
 use Psalm\Issue\CodeIssue;
+use Psalm\Issue\ConfigIssue;
 use Psalm\Issue\FunctionIssue;
 use Psalm\Issue\MethodIssue;
 use Psalm\Issue\PropertyIssue;
@@ -33,6 +35,8 @@ use XdgBaseDir\Xdg;
 
 use function array_merge;
 use function array_pop;
+use function assert;
+use function basename;
 use function chdir;
 use function class_exists;
 use function count;
@@ -66,6 +70,7 @@ use function rmdir;
 use function scandir;
 use function sha1;
 use function simplexml_import_dom;
+use function strlen;
 use function strpos;
 use function strrpos;
 use function strtolower;
@@ -539,6 +544,9 @@ class Config
      */
     public $eventDispatcher;
 
+    /** @var list<ConfigIssue> */
+    public $config_issues = [];
+
     protected function __construct()
     {
         self::$instance = $this;
@@ -609,7 +617,7 @@ class Config
         }
 
         try {
-            $config = self::loadFromXML($base_dir, $file_contents, $current_dir);
+            $config = self::loadFromXML($base_dir, $file_contents, $current_dir, $file_path);
             $config->hash = sha1($file_contents . \PSALM_VERSION);
         } catch (ConfigException $e) {
             throw new ConfigException(
@@ -626,15 +634,19 @@ class Config
      *
      * @throws ConfigException
      */
-    public static function loadFromXML(string $base_dir, string $file_contents, ?string $current_dir = null): Config
-    {
+    public static function loadFromXML(
+        string $base_dir,
+        string $file_contents,
+        ?string $current_dir = null,
+        ?string $file_path = null
+    ): Config {
         if ($current_dir === null) {
             $current_dir = $base_dir;
         }
 
         self::validateXmlConfig($base_dir, $file_contents);
 
-        return self::fromXmlAndPaths($base_dir, $file_contents, $current_dir);
+        return self::fromXmlAndPaths($base_dir, $file_contents, $current_dir, $file_path);
     }
 
     private static function loadDomDocument(string $base_dir, string $file_contents): DOMDocument
@@ -700,6 +712,71 @@ class Config
         }
     }
 
+    /**
+     * @param positive-int $line_number 1-based line number
+     * @return int 0-based byte offset
+     * @throws OutOfBoundsException
+     */
+    private static function lineNumberToByteOffset(string $string, int $line_number): int
+    {
+        if ($line_number === 1) {
+            return 0;
+        }
+
+        $offset = 0;
+
+        for ($i = 0; $i < $line_number - 1; $i++) {
+            $newline_offset = strpos($string, "\n", $offset);
+            if (false === $newline_offset) {
+                throw new OutOfBoundsException(
+                    'Line ' . $line_number . ' is not found in a string with ' . ($i + 1) . ' lines'
+                );
+            }
+            $offset = $newline_offset + 1;
+        }
+
+        if ($offset > strlen($string)) {
+            throw new OutOfBoundsException('Line ' . $line_number . ' is not found');
+        }
+
+        return $offset;
+    }
+
+    private static function processConfigDeprecations(
+        self $config,
+        DOMDocument $dom_document,
+        string $file_contents,
+        string $config_path
+    ): void {
+        // Attributes to be removed in Psalm 5
+        $deprecated_attributes = [
+            'allowCoercionFromStringToClassConst'
+        ];
+
+        $config->config_issues = [];
+        $attributes = $dom_document->getElementsByTagName('psalm')->item(0)->attributes;
+        foreach ($attributes as $attribute) {
+            if (in_array($attribute->name, $deprecated_attributes, true)) {
+                $line = (int) $attribute->getLineNo();
+                assert($line > 0); // getLineNo() always returns non-zero for nodes loaded from file
+                $offset = self::lineNumberToByteOffset($file_contents, $line);
+                $attribute_start = strrpos($file_contents, $attribute->name, $offset - strlen($file_contents)) ?: 0;
+                $attribute_end = $attribute_start + strlen($attribute->name) - 1;
+
+                $config->config_issues[] = new ConfigIssue(
+                    'Attribute "' . $attribute->name . '" is deprecated '
+                    . 'and is going to be removed in the next major version',
+                    new CodeLocation\Raw(
+                        $file_contents,
+                        $config_path,
+                        basename($config_path),
+                        $attribute_start,
+                        $attribute_end
+                    )
+                );
+            }
+        }
+    }
 
     /**
      * @psalm-suppress MixedMethodCall
@@ -710,11 +787,24 @@ class Config
      *
      * @throws ConfigException
      */
-    private static function fromXmlAndPaths(string $base_dir, string $file_contents, string $current_dir): self
-    {
+    private static function fromXmlAndPaths(
+        string $base_dir,
+        string $file_contents,
+        string $current_dir,
+        ?string $config_path
+    ): self {
         $config = new static();
 
         $dom_document = self::loadDomDocument($base_dir, $file_contents);
+
+        if (null !== $config_path) {
+            self::processConfigDeprecations(
+                $config,
+                $dom_document,
+                $file_contents,
+                $config_path
+            );
+        }
 
         $config_xml = simplexml_import_dom($dom_document);
 
