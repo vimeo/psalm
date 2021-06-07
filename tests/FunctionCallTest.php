@@ -1057,9 +1057,9 @@ class FunctionCallTest extends TestCase
                 '<?php
                     sscanf("10:05:03", "%d:%d:%d", $hours, $minutes, $seconds);',
                 'assertions' => [
-                    '$hours' => 'float|int|string',
-                    '$minutes' => 'float|int|string',
-                    '$seconds' => 'float|int|string',
+                    '$hours' => 'float|int|null|string',
+                    '$minutes' => 'float|int|null|string',
+                    '$seconds' => 'float|int|null|string',
                 ],
             ],
             'noImplicitAssignmentToStringFromMixedWithDocblockTypes' => [
@@ -1417,7 +1417,7 @@ class FunctionCallTest extends TestCase
                 '<?php
                     $data = sscanf("42 psalm road", "%s %s");',
                 [
-                    '$data' => 'list<float|int|string>',
+                    '$data' => 'list<float|int|null|string>|null',
                 ]
             ],
             'sscanfReturnTypeWithMoreThanTwoParameters' => [
@@ -1425,7 +1425,9 @@ class FunctionCallTest extends TestCase
                     $n = sscanf("42 psalm road", "%s %s", $p1, $p2);',
                 [
                     '$n' => 'int',
-                ]
+                    '$p1' => 'float|int|null|string',
+                    '$p2' => 'float|int|null|string',
+                ],
             ],
             'writeArgsAllowed' => [
                 '<?php
