@@ -7,6 +7,7 @@ use Psalm\FileManipulation;
 use Psalm\StatementsSource;
 use Psalm\Storage\FunctionLikeStorage;
 
+/** @deprecated going to be removed in Psalm 5 */
 interface AfterFunctionLikeAnalysisInterface
 {
     /**

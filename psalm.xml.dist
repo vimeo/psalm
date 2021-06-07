@@ -55,8 +55,15 @@
         <DeprecatedClass>
             <errorLevel type="suppress">
                 <referencedClass name="PackageVersions\Versions"/>
+                <referencedClass name="Psalm\Plugin\Hook\*" />
             </errorLevel>
         </DeprecatedClass>
+
+        <DeprecatedInterface>
+            <errorLevel type="suppress">
+                <referencedClass name="Psalm\Plugin\Hook\*" />
+            </errorLevel>
+        </DeprecatedInterface>
 
         <UnusedParam>
             <errorLevel type="suppress">

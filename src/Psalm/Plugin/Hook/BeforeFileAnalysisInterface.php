@@ -6,6 +6,7 @@ use Psalm\Context;
 use Psalm\StatementsSource;
 use Psalm\Storage\FileStorage;
 
+/** @deprecated going to be removed in Psalm 5 */
 interface BeforeFileAnalysisInterface
 {
     /**

@@ -7,6 +7,7 @@ use Psalm\FileManipulation;
 use Psalm\FileSource;
 use Psalm\Storage\ClassLikeStorage;
 
+/** @deprecated going to be removed in Psalm 5 */
 interface AfterClassLikeVisitInterface
 {
     /**
