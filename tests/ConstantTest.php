@@ -1280,6 +1280,22 @@ class ConstantTest extends TestCase
                     }',
                 'error_message' => "offset value of '1|0"
             ],
+            'constantWithMissingClass' => [
+                '<?php
+                    class Subject
+                    {
+                        public const DATA = [
+                            MissingClass::TAG_DATA,
+                        ];
+
+                        public function execute(): void
+                        {
+                            /** @psalm-suppress InvalidArrayOffset */
+                            if (self::DATA["a"]);
+                        }
+                    }',
+                'error_message' => 'UndefinedClass',
+            ],
         ];
     }
 }
