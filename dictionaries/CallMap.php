@@ -12044,7 +12044,7 @@ return [
 'SessionHandler::write' => ['bool', 'id'=>'string', 'data'=>'string'],
 'SessionHandlerInterface::close' => ['bool'],
 'SessionHandlerInterface::destroy' => ['bool', 'id'=>'string'],
-'SessionHandlerInterface::gc' => ['int|bool', 'max_lifetime'=>'int'],
+'SessionHandlerInterface::gc' => ['int|false', 'max_lifetime'=>'int'],
 'SessionHandlerInterface::open' => ['bool', 'path'=>'string', 'name'=>'string'],
 'SessionHandlerInterface::read' => ['string|false', 'id'=>'string'],
 'SessionHandlerInterface::write' => ['bool', 'id'=>'string', 'data'=>'string'],
