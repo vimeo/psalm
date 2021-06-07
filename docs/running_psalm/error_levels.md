@@ -24,6 +24,7 @@ Level 5 and above allows a more non-verifiable code, and higher levels are even 
  - [AbstractMethodCall](issues/AbstractMethodCall.md)
  - [ComplexFunction](issues/ComplexFunction.md)
  - [ComplexMethod](issues/ComplexMethod.md)
+ - [ConfigIssue](issues/ConfigIssue.md)
  - [DuplicateArrayKey](issues/DuplicateArrayKey.md)
  - [DuplicateClass](issues/DuplicateClass.md)
  - [DuplicateFunction](issues/DuplicateFunction.md)

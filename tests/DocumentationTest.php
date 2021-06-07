@@ -53,7 +53,7 @@ class DocumentationTest extends TestCase
         '@psalm-self-out', // I'm fairly sure it's intentionally undocumented, but can't find the reference
         '@psalm-variadic',
     ];
-    
+
     /**
      * These should be documented
      */
@@ -179,6 +179,7 @@ class DocumentationTest extends TestCase
         $code_blocks['TaintedCustom'] = true;
         $code_blocks['ComplexFunction'] = true;
         $code_blocks['ComplexMethod'] = true;
+        $code_blocks['ConfigIssue'] = true;
 
         $documented_issues = array_keys($code_blocks);
         sort($documented_issues);
