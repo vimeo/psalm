@@ -757,7 +757,7 @@ class Config
         $attributes = $dom_document->getElementsByTagName('psalm')->item(0)->attributes;
         foreach ($attributes as $attribute) {
             if (in_array($attribute->name, $deprecated_attributes, true)) {
-                $line = (int) $attribute->getLineNo();
+                $line = $attribute->getLineNo();
                 assert($line > 0); // getLineNo() always returns non-zero for nodes loaded from file
                 $offset = self::lineNumberToByteOffset($file_contents, $line);
                 $attribute_start = strrpos($file_contents, $attribute->name, $offset - strlen($file_contents)) ?: 0;
