@@ -1626,6 +1626,11 @@ class ClassLikes
         array $visited_constant_ids = []
     ) : ?Type\Union {
         $class_name = strtolower($class_name);
+
+        if (!$this->classlike_storage_provider->has($class_name)) {
+            return null;
+        }
+
         $storage = $this->classlike_storage_provider->get($class_name);
 
         if (!isset($storage->constants[$constant_name])) {
