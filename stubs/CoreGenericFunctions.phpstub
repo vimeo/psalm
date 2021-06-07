@@ -477,9 +477,9 @@ function date(string $format, int $timestamp = 0) {}
  * @psalm-pure
  *
  * @param mixed $vars
- * @param-out string|int|float $vars
+ * @param-out string|int|float|null $vars
  * @psalm-flow ($str, $format) -> return
- * @return (func_num_args() is 2 ? list<float|int|string> : int)
+ * @return (func_num_args() is 2 ? (null|list<float|int|string|null>) : int)
  */
 function sscanf(string $str, string $format, &...$vars) {}
 
@@ -718,7 +718,7 @@ function htmlspecialchars_decode(string $string, ?int $quote_style = null) : str
 
 /**
  * @psalm-pure
- * 
+ *
  * @psalm-return (
  *     $string is non-empty-string
  *     ? positive-int

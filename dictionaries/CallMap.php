@@ -13663,7 +13663,7 @@ return [
 'sqlsrv_server_info' => ['array', 'conn'=>'resource'],
 'sqrt' => ['float', 'num'=>'float'],
 'srand' => ['void', 'seed='=>'int', 'mode='=>'int'],
-'sscanf' => ['list<mixed>|int', 'string'=>'string', 'format'=>'string', '&...w_vars='=>'string|int|float'],
+'sscanf' => ['list<float|int|string|null>|int|null', 'string'=>'string', 'format'=>'string', '&...w_vars='=>'string|int|float|null'],
 'ssdeep_fuzzy_compare' => ['int', 'signature1'=>'string', 'signature2'=>'string'],
 'ssdeep_fuzzy_hash' => ['string', 'to_hash'=>'string'],
 'ssdeep_fuzzy_hash_filename' => ['string', 'file_name'=>'string'],
