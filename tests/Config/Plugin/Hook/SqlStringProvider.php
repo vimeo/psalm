@@ -1,9 +1,10 @@
 <?php
 namespace Psalm\Test\Config\Plugin\Hook;
 
-use Psalm\Plugin\EventHandler\StringInterpreterInterface;
 use Psalm\Plugin\EventHandler\Event\StringInterpreterEvent;
+use Psalm\Plugin\EventHandler\StringInterpreterInterface;
 use Psalm\Type\Atomic\TLiteralString;
+
 use function stripos;
 
 class SqlStringProvider implements StringInterpreterInterface

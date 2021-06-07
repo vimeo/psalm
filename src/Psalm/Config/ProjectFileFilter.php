@@ -2,6 +2,7 @@
 namespace Psalm\Config;
 
 use SimpleXMLElement;
+
 use function stripos;
 use function strpos;
 

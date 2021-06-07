@@ -2,13 +2,14 @@
 namespace Psalm\Internal\Analyzer\Statements\Block;
 
 use PhpParser;
+use Psalm\Context;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Context;
 use Psalm\Internal\Scope\LoopScope;
 use Psalm\Type;
-use function in_array;
+
 use function array_merge;
+use function in_array;
 
 /**
  * @internal

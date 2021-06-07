@@ -2,22 +2,23 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
-use Psalm\Internal\Algebra\FormulaGenerator;
-use Psalm\Internal\Analyzer\AlgebraAnalyzer;
-use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
-use Psalm\Internal\Analyzer\Statements\Block\IfConditionalAnalyzer;
-use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\Type;
 use Psalm\Internal\Algebra;
-use Psalm\Type\Reconciler;
+use Psalm\Internal\Algebra\FormulaGenerator;
+use Psalm\Internal\Analyzer\AlgebraAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Block\IfConditionalAnalyzer;
+use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\AssertionReconciler;
-use function array_merge;
-use function array_map;
+use Psalm\Type;
+use Psalm\Type\Reconciler;
+
 use function array_filter;
-use function array_values;
 use function array_keys;
+use function array_map;
+use function array_merge;
+use function array_values;
 use function preg_match;
 use function preg_quote;
 

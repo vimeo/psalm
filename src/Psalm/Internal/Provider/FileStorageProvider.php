@@ -1,8 +1,9 @@
 <?php
 namespace Psalm\Internal\Provider;
 
-use function array_merge;
 use Psalm\Storage\FileStorage;
+
+use function array_merge;
 use function strtolower;
 
 /**

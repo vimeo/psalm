@@ -4,8 +4,6 @@ namespace Psalm\Internal\LanguageServer\Server;
 
 use Amp\Promise;
 use Amp\Success;
-use function count;
-use function error_log;
 use LanguageServerProtocol\CompletionList;
 use LanguageServerProtocol\Hover;
 use LanguageServerProtocol\Location;
@@ -18,6 +16,9 @@ use LanguageServerProtocol\TextDocumentItem;
 use LanguageServerProtocol\VersionedTextDocumentIdentifier;
 use Psalm\Codebase;
 use Psalm\Internal\LanguageServer\LanguageServer;
+
+use function count;
+use function error_log;
 use function substr_count;
 
 /**

@@ -3,8 +3,8 @@ namespace Psalm\Tests\CommandFunctions;
 
 use Psalm\Internal\CliUtils;
 
-use function ini_set;
 use function ini_get;
+use function ini_set;
 
 /**
  * testcase for src/command_functions.php

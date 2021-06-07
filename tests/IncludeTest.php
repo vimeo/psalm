@@ -1,11 +1,13 @@
 <?php
 namespace Psalm\Tests;
 
-use const DIRECTORY_SEPARATOR;
+use Psalm\Internal\Analyzer\FileAnalyzer;
+
 use function getcwd;
 use function preg_quote;
-use Psalm\Internal\Analyzer\FileAnalyzer;
 use function strpos;
+
+use const DIRECTORY_SEPARATOR;
 
 class IncludeTest extends TestCase
 {

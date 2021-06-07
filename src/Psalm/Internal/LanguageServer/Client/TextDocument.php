@@ -2,13 +2,14 @@
 declare(strict_types = 1);
 namespace Psalm\Internal\LanguageServer\Client;
 
-use function Amp\call;
 use Amp\Promise;
 use JsonMapper;
 use LanguageServerProtocol\Diagnostic;
 use LanguageServerProtocol\TextDocumentIdentifier;
 use LanguageServerProtocol\TextDocumentItem;
 use Psalm\Internal\LanguageServer\ClientHandler;
+
+use function Amp\call;
 
 /**
  * Provides method handlers for all textDocument/* methods

@@ -1,8 +1,8 @@
 <?php
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call\Method;
 
-use Psalm\Internal\MethodIdentifier;
 use PhpParser;
+use Psalm\Internal\MethodIdentifier;
 
 class AtomicCallContext
 {

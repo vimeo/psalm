@@ -5,11 +5,12 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Plugin\EventHandler\Event\MethodParamsProviderEvent;
-use Psalm\Plugin\Hook\MethodParamsProviderInterface as LegacyMethodParamsProviderInterface;
 use Psalm\Plugin\EventHandler\MethodParamsProviderInterface;
+use Psalm\Plugin\Hook\MethodParamsProviderInterface as LegacyMethodParamsProviderInterface;
 use Psalm\StatementsSource;
-use function strtolower;
+
 use function is_subclass_of;
+use function strtolower;
 
 class MethodParamsProvider
 {

@@ -1,15 +1,16 @@
 <?php
 namespace Psalm\Tests;
 
-use Psalm\Plugin\EventHandler\Event\AfterClassLikeVisitEvent;
-use function array_values;
-use function get_class;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Plugin\EventHandler\AfterClassLikeVisitInterface;
+use Psalm\Plugin\EventHandler\Event\AfterClassLikeVisitEvent;
 use Psalm\PluginRegistrationSocket;
 use Psalm\Tests\Internal\Provider\ClassLikeStorageInstanceCacheProvider;
 use Psalm\Type;
+
+use function array_values;
+use function get_class;
 
 class CodebaseTest extends TestCase
 {

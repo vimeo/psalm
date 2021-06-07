@@ -2,6 +2,7 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression\Assignment;
 
 use PhpParser;
+use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
@@ -9,23 +10,23 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
-use Psalm\Context;
-use Psalm\IssueBuffer;
 use Psalm\Issue\InvalidArrayAssignment;
+use Psalm\IssueBuffer;
 use Psalm\Type;
-use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyList;
+
+use function array_pop;
 use function array_reverse;
 use function array_shift;
-use function count;
 use function array_unshift;
-use function preg_match;
-use function is_string;
+use function count;
 use function implode;
-use function array_pop;
+use function is_string;
+use function preg_match;
 
 /**
  * @internal

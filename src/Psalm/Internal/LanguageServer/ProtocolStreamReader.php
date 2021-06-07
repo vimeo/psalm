@@ -3,10 +3,11 @@ declare(strict_types = 1);
 namespace Psalm\Internal\LanguageServer;
 
 use AdvancedJsonRpc\Message as MessageBody;
-use function Amp\asyncCall;
-use Amp\Promise;
 use Amp\ByteStream\ResourceInputStream;
+use Amp\Promise;
 use Exception;
+
+use function Amp\asyncCall;
 use function explode;
 use function strlen;
 use function substr;

@@ -1,26 +1,28 @@
 <?php
 namespace Psalm;
 
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\Internal\Provider\FileProvider;
+use RuntimeException;
+
 use function array_filter;
 use function array_intersect;
 use function array_map;
 use function array_merge;
 use function array_reduce;
+use function array_values;
 use function get_loaded_extensions;
 use function implode;
 use function ksort;
-use const LIBXML_NOBLANKS;
 use function min;
-use const PHP_VERSION;
 use function phpversion;
 use function preg_replace_callback;
-use Psalm\Internal\Analyzer\IssueData;
-use Psalm\Internal\Provider\FileProvider;
-use RuntimeException;
 use function str_replace;
 use function strpos;
 use function usort;
-use function array_values;
+
+use const LIBXML_NOBLANKS;
+use const PHP_VERSION;
 
 class ErrorBaseline
 {

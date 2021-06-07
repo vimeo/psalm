@@ -2,18 +2,19 @@
 
 namespace Psalm\Internal\Type\Comparator;
 
-use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Codebase;
+use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Type;
-use Psalm\Type\Atomic\TObjectWithProperties;
-use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
+use Psalm\Type\Atomic\TObjectWithProperties;
+use Psalm\Type\Atomic\TTemplateParam;
+
 use function array_merge;
-use function strtolower;
 use function in_array;
+use function strtolower;
 
 /**
  * @internal

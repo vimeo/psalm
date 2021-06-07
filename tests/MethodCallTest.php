@@ -2,6 +2,7 @@
 namespace Psalm\Tests;
 
 use function class_exists;
+
 use const DIRECTORY_SEPARATOR;
 
 class MethodCallTest extends TestCase

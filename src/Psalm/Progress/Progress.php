@@ -1,9 +1,10 @@
 <?php
 namespace Psalm\Progress;
 
-use const E_ERROR;
 use function error_reporting;
 use function fwrite;
+
+use const E_ERROR;
 use const PHP_OS;
 use const STDERR;
 

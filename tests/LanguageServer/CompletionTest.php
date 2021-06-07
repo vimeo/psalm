@@ -8,6 +8,7 @@ use Psalm\Internal\Provider\Providers;
 use Psalm\Tests\Internal\Provider;
 use Psalm\Tests\TestConfig;
 use Psalm\Type;
+
 use function count;
 
 class CompletionTest extends \Psalm\Tests\TestCase

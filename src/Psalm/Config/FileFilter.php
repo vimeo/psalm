@@ -1,26 +1,28 @@
 <?php
 namespace Psalm\Config;
 
+use Psalm\Exception\ConfigException;
+use SimpleXMLElement;
+
 use function array_filter;
 use function array_map;
-use const DIRECTORY_SEPARATOR;
-use const E_WARNING;
 use function explode;
 use function glob;
 use function in_array;
 use function is_dir;
 use function preg_match;
 use function preg_replace;
-use Psalm\Exception\ConfigException;
 use function readlink;
 use function realpath;
 use function restore_error_handler;
 use function set_error_handler;
-use SimpleXMLElement;
 use function str_replace;
 use function stripos;
 use function strpos;
 use function strtolower;
+
+use const DIRECTORY_SEPARATOR;
+use const E_WARNING;
 use const GLOB_NOSORT;
 use const GLOB_ONLYDIR;
 

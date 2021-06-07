@@ -1,10 +1,11 @@
 <?php
 namespace Psalm\Tests;
 
-use function count;
 use Psalm\Context;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\Internal\Provider;
+
+use function count;
 use function strpos;
 
 class FileReferenceTest extends TestCase

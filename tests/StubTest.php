@@ -1,18 +1,20 @@
 <?php
 namespace Psalm\Tests;
 
-use function define;
-use function defined;
-use function dirname;
-use function getcwd;
-use function implode;
-use function explode;
-use const DIRECTORY_SEPARATOR;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\Internal\Provider;
+
+use function define;
+use function defined;
+use function dirname;
+use function explode;
+use function getcwd;
+use function implode;
+
+use const DIRECTORY_SEPARATOR;
 
 class StubTest extends TestCase
 {

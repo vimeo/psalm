@@ -1,14 +1,8 @@
 <?php
 namespace Psalm\Type;
 
-use function array_filter;
-use function array_merge;
-use function array_values;
-use function count;
-use function get_class;
-use function implode;
-use Psalm\Codebase;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\StatementsSource;
 use Psalm\Storage\FileStorage;
@@ -21,11 +15,18 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
+
+use function array_filter;
+use function array_merge;
+use function array_unique;
+use function array_values;
+use function count;
+use function get_class;
+use function implode;
 use function reset;
 use function sort;
 use function strpos;
 use function strval;
-use function array_unique;
 
 class Union implements TypeNode
 {

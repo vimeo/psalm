@@ -33,8 +33,11 @@ use SimpleXMLElement;
 use Webmozart\PathUtil\Path;
 use XdgBaseDir\Xdg;
 
+use function array_map;
 use function array_merge;
+use function array_pad;
 use function array_pop;
+use function array_shift;
 use function assert;
 use function basename;
 use function chdir;
@@ -46,10 +49,11 @@ use function file_exists;
 use function file_get_contents;
 use function filetype;
 use function get_class;
-use function getcwd;
 use function get_defined_constants;
 use function get_defined_functions;
+use function getcwd;
 use function glob;
+use function implode;
 use function in_array;
 use function intval;
 use function is_a;
@@ -67,9 +71,11 @@ use function preg_replace;
 use function realpath;
 use function reset;
 use function rmdir;
+use function rtrim;
 use function scandir;
 use function sha1;
 use function simplexml_import_dom;
+use function str_replace;
 use function strlen;
 use function strpos;
 use function strrpos;
@@ -90,12 +96,6 @@ use const LIBXML_ERR_FATAL;
 use const LIBXML_NONET;
 use const PHP_EOL;
 use const SCANDIR_SORT_NONE;
-use function array_map;
-use function rtrim;
-use function str_replace;
-use function array_shift;
-use function array_pad;
-use function implode;
 
 /**
  * @psalm-suppress PropertyNotSetInConstructor
@@ -757,7 +757,7 @@ class Config
         $attributes = $dom_document->getElementsByTagName('psalm')->item(0)->attributes;
         foreach ($attributes as $attribute) {
             if (in_array($attribute->name, $deprecated_attributes, true)) {
-                $line = (int) $attribute->getLineNo();
+                $line = $attribute->getLineNo();
                 assert($line > 0); // getLineNo() always returns non-zero for nodes loaded from file
                 $offset = self::lineNumberToByteOffset($file_contents, $line);
                 $attribute_start = strrpos($file_contents, $attribute->name, $offset - strlen($file_contents)) ?: 0;

@@ -3,11 +3,12 @@ namespace Psalm\Internal\TypeVisitor;
 
 use Psalm\Internal\Codebase\Scanner;
 use Psalm\Storage\FileStorage;
-use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TClassConstant;
+use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TNamedObject;
-use Psalm\Type\TypeNode;
 use Psalm\Type\NodeVisitor;
+use Psalm\Type\TypeNode;
+
 use function strtolower;
 
 class TypeScanner extends NodeVisitor

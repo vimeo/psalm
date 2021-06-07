@@ -1,17 +1,6 @@
 <?php
 namespace Psalm\Internal\Codebase;
 
-use function array_filter;
-use function array_merge;
-use function array_pop;
-use function ceil;
-use function count;
-use const DIRECTORY_SEPARATOR;
-use function error_reporting;
-use function explode;
-use function file_exists;
-use function min;
-use const PHP_EOL;
 use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\IssueData;
@@ -23,9 +12,21 @@ use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Progress\Progress;
 use ReflectionClass;
 
+use function array_filter;
+use function array_merge;
+use function array_pop;
+use function ceil;
+use function count;
+use function error_reporting;
+use function explode;
+use function file_exists;
+use function min;
 use function realpath;
 use function strtolower;
 use function substr;
+
+use const DIRECTORY_SEPARATOR;
+use const PHP_EOL;
 
 /**
  * @psalm-type  ThreadData = array{

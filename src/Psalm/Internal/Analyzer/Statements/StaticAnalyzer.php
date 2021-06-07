@@ -11,6 +11,7 @@ use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\IssueBuffer;
 use Psalm\Type;
+
 use function is_string;
 
 class StaticAnalyzer

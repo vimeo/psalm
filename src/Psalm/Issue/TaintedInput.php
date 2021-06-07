@@ -1,8 +1,8 @@
 <?php
 namespace Psalm\Issue;
 
-use Psalm\Internal\Analyzer\DataFlowNodeData;
 use Psalm\CodeLocation;
+use Psalm\Internal\Analyzer\DataFlowNodeData;
 
 abstract class TaintedInput extends CodeIssue
 {

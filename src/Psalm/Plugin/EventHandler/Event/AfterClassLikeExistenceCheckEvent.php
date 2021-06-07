@@ -3,8 +3,8 @@
 
 namespace Psalm\Plugin\EventHandler\Event;
 
-use Psalm\Codebase;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\FileManipulation;
 use Psalm\StatementsSource;
 

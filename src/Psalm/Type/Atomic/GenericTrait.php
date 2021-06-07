@@ -1,16 +1,17 @@
 <?php
 namespace Psalm\Type\Atomic;
 
-use function array_map;
-use function implode;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
-use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
+
+use function array_map;
+use function implode;
 use function substr;
 
 trait GenericTrait

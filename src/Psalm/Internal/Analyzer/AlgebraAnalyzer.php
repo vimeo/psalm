@@ -2,15 +2,16 @@
 namespace Psalm\Internal\Analyzer;
 
 use PhpParser;
-use Psalm\Internal\Clause;
 use Psalm\CodeLocation;
+use Psalm\Internal\Algebra;
+use Psalm\Internal\Clause;
 use Psalm\Issue\ParadoxicalCondition;
 use Psalm\Issue\RedundantCondition;
 use Psalm\IssueBuffer;
-use Psalm\Internal\Algebra;
+
 use function array_intersect_key;
-use function count;
 use function array_unique;
+use function count;
 
 /**
  * @internal

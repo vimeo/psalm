@@ -1,12 +1,12 @@
 <?php
 namespace Psalm\Test\Config\Plugin\Hook;
 
-use Psalm\Plugin\EventHandler\PropertyExistenceProviderInterface;
-use Psalm\Plugin\EventHandler\PropertyTypeProviderInterface;
-use Psalm\Plugin\EventHandler\PropertyVisibilityProviderInterface;
 use Psalm\Plugin\EventHandler\Event\PropertyExistenceProviderEvent;
 use Psalm\Plugin\EventHandler\Event\PropertyTypeProviderEvent;
 use Psalm\Plugin\EventHandler\Event\PropertyVisibilityProviderEvent;
+use Psalm\Plugin\EventHandler\PropertyExistenceProviderInterface;
+use Psalm\Plugin\EventHandler\PropertyTypeProviderInterface;
+use Psalm\Plugin\EventHandler\PropertyVisibilityProviderInterface;
 use Psalm\Type;
 
 class FooPropertyProvider implements

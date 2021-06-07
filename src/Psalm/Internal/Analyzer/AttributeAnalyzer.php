@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Internal\Analyzer;
 
+use Psalm\Internal\Scanner\UnresolvedConstantComponent;
+use Psalm\Issue\InvalidAttribute;
 use Psalm\Node\Expr\VirtualNew;
 use Psalm\Node\Name\VirtualFullyQualified;
 use Psalm\Node\Stmt\VirtualExpression;
@@ -8,9 +10,8 @@ use Psalm\Node\VirtualArg;
 use Psalm\Node\VirtualIdentifier;
 use Psalm\Storage\AttributeStorage;
 use Psalm\Storage\ClassLikeStorage;
-use Psalm\Internal\Scanner\UnresolvedConstantComponent;
-use Psalm\Issue\InvalidAttribute;
 use Psalm\Type\Union;
+
 use function reset;
 
 class AttributeAnalyzer

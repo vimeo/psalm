@@ -2,8 +2,8 @@
 namespace Psalm\Storage;
 
 use Psalm\CodeLocation;
-use Psalm\Type;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
+use Psalm\Type;
 
 class FunctionLikeParameter
 {

@@ -2,15 +2,16 @@
 namespace Psalm\Internal\PhpVisitor\Reflector;
 
 use PhpParser;
-use Psalm\Codebase;
-use Psalm\CodeLocation;
 use Psalm\Aliases;
+use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Storage\AttributeStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Type;
+
 use function strtolower;
 
 class AttributeResolver

@@ -3,28 +3,28 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use PhpParser;
 use PhpParser\BuilderFactory;
-use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
-use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\Internal\FileManipulation\FileManipulationBuffer;
-use Psalm\Internal\DataFlow\TaintSource;
-use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
-use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\DataFlow\TaintSource;
+use Psalm\Internal\FileManipulation\FileManipulationBuffer;
+use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
+use Psalm\Internal\Type\TemplateResult;
+use Psalm\Internal\Type\TypeExpander;
+use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Plugin\EventHandler\Event\AfterFunctionCallAnalysisEvent;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TCallable;
-use function count;
-use function strtolower;
-use function strpos;
-use Psalm\Internal\Type\TemplateBound;
-use Psalm\Internal\Type\TemplateResult;
-use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 
+use function count;
 use function explode;
+use function strpos;
+use function strtolower;
 
 /**
  * @internal

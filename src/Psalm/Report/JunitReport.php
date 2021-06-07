@@ -4,13 +4,15 @@ namespace Psalm\Report;
 use DOMDocument;
 use DOMElement;
 use Psalm\Config;
-use Psalm\Report;
 use Psalm\Internal\Analyzer\IssueData;
-use const ENT_XML1;
-use const ENT_QUOTES;
+use Psalm\Report;
+
 use function count;
 use function htmlspecialchars;
 use function trim;
+
+use const ENT_QUOTES;
+use const ENT_XML1;
 
 /**
  * based on https://github.com/m50/psalm-json-to-junit

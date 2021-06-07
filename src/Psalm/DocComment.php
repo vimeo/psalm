@@ -1,6 +1,9 @@
 <?php
 namespace Psalm;
 
+use Psalm\Exception\DocblockParseException;
+use Psalm\Internal\Scanner\ParsedDocblock;
+
 use function array_filter;
 use function explode;
 use function implode;
@@ -9,16 +12,15 @@ use function min;
 use function preg_match;
 use function preg_match_all;
 use function preg_replace;
-use const PREG_SET_ORDER;
-use Psalm\Internal\Scanner\ParsedDocblock;
-use Psalm\Exception\DocblockParseException;
 use function rtrim;
 use function str_repeat;
 use function str_replace;
 use function strlen;
+use function strspn;
 use function substr;
 use function trim;
-use function strspn;
+
+use const PREG_SET_ORDER;
 
 class DocComment
 {

@@ -2,21 +2,22 @@
 namespace Psalm\Internal\Analyzer\Statements\Block;
 
 use PhpParser;
+use Psalm\Context;
+use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
-use Psalm\Context;
 use Psalm\Internal\Scope\LoopScope;
 use Psalm\Type;
-use Psalm\Internal\Algebra;
-use function in_array;
-use function array_values;
+
 use function array_filter;
 use function array_keys;
+use function array_merge;
+use function array_values;
+use function in_array;
 use function preg_match;
 use function preg_quote;
-use function array_merge;
 
 /**
  * @internal

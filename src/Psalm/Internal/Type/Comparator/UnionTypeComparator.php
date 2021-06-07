@@ -6,10 +6,11 @@ use Psalm\Codebase;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TFalse;
-use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
+use Psalm\Type\Atomic\TTemplateParam;
+
 use function array_merge;
 
 /**

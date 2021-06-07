@@ -2,19 +2,20 @@
 namespace Psalm\Internal\Analyzer\Statements\Block;
 
 use PhpParser;
+use Psalm\CodeLocation;
 use Psalm\Codebase;
+use Psalm\Context;
+use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\AlgebraAnalyzer;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\CodeLocation;
-use Psalm\Context;
+use Psalm\Internal\Scope\CaseScope;
+use Psalm\Internal\Scope\SwitchScope;
 use Psalm\Issue\ContinueOutsideLoop;
 use Psalm\Issue\ParadoxicalCondition;
 use Psalm\IssueBuffer;
-use Psalm\Internal\Scope\CaseScope;
-use Psalm\Internal\Scope\SwitchScope;
 use Psalm\Node\Expr\BinaryOp\VirtualBooleanOr;
 use Psalm\Node\Expr\BinaryOp\VirtualEqual;
 use Psalm\Node\Expr\BinaryOp\VirtualIdentical;
@@ -30,15 +31,15 @@ use Psalm\Node\Stmt\VirtualIf;
 use Psalm\Node\VirtualArg;
 use Psalm\Node\VirtualName;
 use Psalm\Type;
-use Psalm\Internal\Algebra;
 use Psalm\Type\Reconciler;
+
+use function array_diff_key;
+use function array_intersect_key;
+use function array_merge;
 use function count;
 use function in_array;
-use function array_merge;
 use function is_string;
 use function substr;
-use function array_intersect_key;
-use function array_diff_key;
 
 /**
  * @internal

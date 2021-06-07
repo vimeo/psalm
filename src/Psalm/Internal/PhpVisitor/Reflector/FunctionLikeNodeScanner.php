@@ -1,15 +1,10 @@
 <?php
 namespace Psalm\Internal\PhpVisitor\Reflector;
 
-use function array_pop;
-use function count;
-use function explode;
-use function implode;
-use function is_string;
 use PhpParser;
 use Psalm\Aliases;
-use Psalm\Codebase;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\IncorrectDocblockException;
@@ -33,9 +28,15 @@ use Psalm\Storage\FunctionStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
+
+use function array_pop;
+use function count;
+use function explode;
+use function implode;
+use function is_string;
+use function strlen;
 use function strpos;
 use function strtolower;
-use function strlen;
 
 class FunctionLikeNodeScanner
 {

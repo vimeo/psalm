@@ -1,10 +1,12 @@
 <?php
 namespace Psalm\Tests;
 
-use const DIRECTORY_SEPARATOR;
-use function getcwd;
 use Psalm\Config;
 use Psalm\Internal\IncludeCollector;
+
+use function getcwd;
+
+use const DIRECTORY_SEPARATOR;
 
 class TestConfig extends Config
 {

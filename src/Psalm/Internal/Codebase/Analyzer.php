@@ -1,20 +1,12 @@
 <?php
 namespace Psalm\Internal\Codebase;
 
-use function array_filter;
-use function array_intersect_key;
-use function array_merge;
-use function count;
-use function explode;
 use InvalidArgumentException;
-use function number_format;
-use function pathinfo;
 use PhpParser;
-use function preg_replace;
 use Psalm\Config;
 use Psalm\FileManipulation;
-use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\FileAnalyzer;
+use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\FileManipulation\ClassDocblockManipulator;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
@@ -24,12 +16,22 @@ use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\IssueBuffer;
 use Psalm\Progress\Progress;
+
+use function array_filter;
+use function array_intersect_key;
+use function array_merge;
+use function array_values;
+use function count;
+use function explode;
+use function implode;
+use function number_format;
+use function pathinfo;
+use function preg_replace;
 use function strpos;
 use function substr;
 use function usort;
-use function array_values;
+
 use const PATHINFO_EXTENSION;
-use function implode;
 
 /**
  * @psalm-type  TaggedCodeType = array<int, array{0: int, 1: non-empty-string}>

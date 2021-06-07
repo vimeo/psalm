@@ -5,6 +5,7 @@ use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Tests\Internal\Provider;
+
 use function dirname;
 use function getcwd;
 

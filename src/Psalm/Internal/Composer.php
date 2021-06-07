@@ -7,6 +7,7 @@ use function getenv;
 use function pathinfo;
 use function substr;
 use function trim;
+
 use const PATHINFO_EXTENSION;
 
 /**

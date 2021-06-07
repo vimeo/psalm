@@ -2,8 +2,8 @@
 namespace Psalm\Internal\Analyzer;
 
 use PhpParser;
-use Psalm\Codebase;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Issue\InvalidStaticInvocation;
 use Psalm\Issue\MethodSignatureMustOmitReturnType;
@@ -13,8 +13,8 @@ use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Storage\MethodStorage;
 
-use function strtolower;
 use function in_array;
+use function strtolower;
 
 /**
  * @internal

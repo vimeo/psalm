@@ -8,24 +8,25 @@ use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\IncorrectDocblockException;
 use Psalm\Exception\TypeParseTreeException;
 use Psalm\FileSource;
-use Psalm\Internal\Scanner\VarDocblockComment;
 use Psalm\Internal\Scanner\ParsedDocblock;
-use Psalm\Type;
+use Psalm\Internal\Scanner\VarDocblockComment;
 use Psalm\Internal\Type\TypeAlias;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
-use function trim;
-use function substr_count;
-use function strlen;
-use function preg_replace;
-use function str_replace;
-use function preg_match;
-use function count;
-use function reset;
-use function preg_split;
-use function substr;
+use Psalm\Type;
+
 use function array_merge;
+use function count;
+use function preg_match;
+use function preg_replace;
+use function preg_split;
+use function reset;
 use function rtrim;
+use function str_replace;
+use function strlen;
+use function substr;
+use function substr_count;
+use function trim;
 
 /**
  * @internal

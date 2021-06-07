@@ -1,10 +1,6 @@
 <?php
 namespace Psalm\Internal\PhpVisitor\Reflector;
 
-use function class_exists;
-use function function_exists;
-use function implode;
-use function interface_exists;
 use PhpParser;
 use PhpParser\ConstExprEvaluationException;
 use PhpParser\ConstExprEvaluator;
@@ -15,7 +11,12 @@ use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Scanner\UnresolvedConstant;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
+
 use function assert;
+use function class_exists;
+use function function_exists;
+use function implode;
+use function interface_exists;
 use function strtolower;
 
 class ExpressionResolver

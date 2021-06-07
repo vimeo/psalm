@@ -1,10 +1,11 @@
 <?php
 namespace Psalm\Tests;
 
+use PhpParser;
+
 use function array_map;
 use function count;
 use function get_class;
-use PhpParser;
 use function strpos;
 use function var_export;
 

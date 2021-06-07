@@ -2,11 +2,12 @@
 namespace Psalm\Internal\Provider;
 
 use Psalm\Plugin\EventHandler\Event\FunctionExistenceProviderEvent;
-use Psalm\Plugin\Hook\FunctionExistenceProviderInterface as LegacyFunctionExistenceProviderInterface;
 use Psalm\Plugin\EventHandler\FunctionExistenceProviderInterface;
+use Psalm\Plugin\Hook\FunctionExistenceProviderInterface as LegacyFunctionExistenceProviderInterface;
 use Psalm\StatementsSource;
-use function strtolower;
+
 use function is_subclass_of;
+use function strtolower;
 
 class FunctionExistenceProvider
 {

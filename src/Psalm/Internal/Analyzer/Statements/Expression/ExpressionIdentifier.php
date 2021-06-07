@@ -2,14 +2,15 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
+use Psalm\FileSource;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\FileSource;
-use function is_string;
-use function in_array;
-use function strtolower;
+
 use function count;
 use function implode;
+use function in_array;
+use function is_string;
+use function strtolower;
 
 class ExpressionIdentifier
 {

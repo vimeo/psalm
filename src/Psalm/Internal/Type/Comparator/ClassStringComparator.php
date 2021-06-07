@@ -5,9 +5,10 @@ namespace Psalm\Internal\Type\Comparator;
 use Psalm\Codebase;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TClassString;
-use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TTemplateParamClass;
+
 use function get_class;
 
 /**

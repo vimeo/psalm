@@ -2,7 +2,6 @@
 
 namespace Psalm\Internal\Scanner;
 
-use const PREG_OFFSET_CAPTURE;
 use function explode;
 use function implode;
 use function min;
@@ -15,6 +14,8 @@ use function strpos;
 use function strspn;
 use function substr;
 use function trim;
+
+use const PREG_OFFSET_CAPTURE;
 
 class DocblockParser
 {

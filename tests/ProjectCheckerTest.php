@@ -1,23 +1,25 @@
 <?php
 namespace Psalm\Tests;
 
+use Psalm\Config;
+use Psalm\Internal\IncludeCollector;
+use Psalm\Internal\RuntimeCaches;
+use Psalm\Plugin\EventHandler\AfterCodebasePopulatedInterface;
 use Psalm\Plugin\EventHandler\Event\AfterCodebasePopulatedEvent;
+use Psalm\Tests\Internal\Provider;
+use Psalm\Tests\Progress\EchoProgress;
+
 use function define;
 use function defined;
-use const DIRECTORY_SEPARATOR;
 use function get_class;
 use function getcwd;
 use function microtime;
 use function ob_end_clean;
 use function ob_get_clean;
 use function ob_start;
-use Psalm\Config;
-use Psalm\Internal\IncludeCollector;
-use Psalm\Internal\RuntimeCaches;
-use Psalm\Plugin\EventHandler\AfterCodebasePopulatedInterface;
-use Psalm\Tests\Internal\Provider;
-use Psalm\Tests\Progress\EchoProgress;
 use function realpath;
+
+use const DIRECTORY_SEPARATOR;
 
 class ProjectCheckerTest extends TestCase
 {

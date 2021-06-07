@@ -7,8 +7,9 @@ use Psalm\Plugin\EventHandler\Event\PropertyVisibilityProviderEvent;
 use Psalm\Plugin\EventHandler\PropertyVisibilityProviderInterface;
 use Psalm\Plugin\Hook\PropertyVisibilityProviderInterface as LegacyPropertyVisibilityProviderInterface;
 use Psalm\StatementsSource;
-use function strtolower;
+
 use function is_subclass_of;
+use function strtolower;
 
 class PropertyVisibilityProvider
 {

@@ -2,6 +2,7 @@
 namespace Psalm\Internal\PluginManager;
 
 use RuntimeException;
+
 use function array_diff_key;
 use function array_flip;
 use function array_key_exists;

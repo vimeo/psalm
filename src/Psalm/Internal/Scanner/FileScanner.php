@@ -5,10 +5,10 @@ use PhpParser;
 use PhpParser\NodeTraverser;
 use Psalm\Codebase;
 use Psalm\FileSource;
+use Psalm\Internal\PhpVisitor\ReflectorVisitor;
 use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
 use Psalm\Storage\FileStorage;
-use Psalm\Internal\PhpVisitor\ReflectorVisitor;
 
 /**
  * @internal

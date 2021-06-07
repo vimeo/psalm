@@ -1,37 +1,39 @@
 <?php
 namespace Psalm\Tests\Config;
 
+use PHPUnit\Framework\MockObject\MockObject;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Stmt\ClassLike;
-use PHPUnit\Framework\MockObject\MockObject;
 use Psalm\Codebase;
+use Psalm\Config;
+use Psalm\Context;
 use Psalm\FileSource;
+use Psalm\Internal\IncludeCollector;
+use Psalm\Internal\RuntimeCaches;
+use Psalm\Plugin\EventHandler\AfterCodebasePopulatedInterface;
 use Psalm\Plugin\EventHandler\AfterEveryFunctionCallAnalysisInterface;
 use Psalm\Plugin\EventHandler\Event\AfterCodebasePopulatedEvent;
 use Psalm\Plugin\EventHandler\Event\AfterEveryFunctionCallAnalysisEvent;
 use Psalm\Plugin\Hook\AfterClassLikeVisitInterface;
 use Psalm\Plugin\Hook\AfterMethodCallAnalysisInterface;
+use Psalm\PluginRegistrationSocket;
 use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
+use Psalm\Tests\Internal\Provider;
+use Psalm\Tests\TestConfig;
 use Psalm\Type\Union;
+
 use function define;
 use function defined;
-use const DIRECTORY_SEPARATOR;
 use function dirname;
 use function get_class;
 use function getcwd;
 use function microtime;
-use Psalm\Config;
-use Psalm\Context;
-use Psalm\Internal\IncludeCollector;
-use Psalm\Internal\RuntimeCaches;
-use Psalm\Plugin\EventHandler\AfterCodebasePopulatedInterface;
-use Psalm\PluginRegistrationSocket;
-use Psalm\Tests\Internal\Provider;
-use Psalm\Tests\TestConfig;
-use function sprintf;
-use function ob_start;
 use function ob_end_clean;
+use function ob_start;
+use function sprintf;
+
+use const DIRECTORY_SEPARATOR;
 
 class PluginTest extends \Psalm\Tests\TestCase
 {

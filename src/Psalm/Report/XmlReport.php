@@ -2,8 +2,9 @@
 namespace Psalm\Report;
 
 use LSS\Array2XML;
-use Psalm\Report;
 use Psalm\Internal\Analyzer\IssueData;
+use Psalm\Report;
+
 use function array_map;
 
 class XmlReport extends Report

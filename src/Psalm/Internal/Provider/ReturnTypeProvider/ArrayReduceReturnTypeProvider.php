@@ -1,18 +1,19 @@
 <?php
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
-use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
-use function count;
-use function explode;
-use function in_array;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
-use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\InvalidArgument;
 use Psalm\IssueBuffer;
+use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Type;
+
+use function count;
+use function explode;
+use function in_array;
 use function strpos;
 use function strtolower;
 

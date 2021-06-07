@@ -1,16 +1,10 @@
 <?php
 namespace Psalm\Internal\PhpVisitor;
 
-use Psalm\Plugin\EventHandler\Event\AfterClassLikeVisitEvent;
-use function array_pop;
-use function end;
-use function implode;
-use function in_array;
-use function is_string;
 use PhpParser;
 use Psalm\Aliases;
-use Psalm\Codebase;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\TypeParseTreeException;
 use Psalm\FileSource;
@@ -22,9 +16,16 @@ use Psalm\Internal\Scanner\PhpStormMetaScanner;
 use Psalm\Internal\Type\TypeAlias;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Issue\InvalidDocblock;
+use Psalm\Plugin\EventHandler\Event\AfterClassLikeVisitEvent;
 use Psalm\Storage\FileStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
+
+use function array_pop;
+use function end;
+use function implode;
+use function in_array;
+use function is_string;
 use function strpos;
 use function strtolower;
 

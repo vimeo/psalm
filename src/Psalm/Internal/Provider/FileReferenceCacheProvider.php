@@ -1,15 +1,17 @@
 <?php
 namespace Psalm\Internal\Provider;
 
-use const DIRECTORY_SEPARATOR;
+use Psalm\Config;
+
 use function file_exists;
 use function file_get_contents;
 use function file_put_contents;
 use function is_array;
 use function is_readable;
-use Psalm\Config;
 use function serialize;
 use function unserialize;
+
+use const DIRECTORY_SEPARATOR;
 
 /**
  * @psalm-import-type  FileMapType from \Psalm\Internal\Codebase\Analyzer

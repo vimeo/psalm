@@ -1,7 +1,6 @@
 <?php
 namespace Psalm\Internal\Codebase;
 
-use function array_merge;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
@@ -10,6 +9,8 @@ use Psalm\Storage\FunctionStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
+
+use function array_merge;
 use function strtolower;
 
 /**

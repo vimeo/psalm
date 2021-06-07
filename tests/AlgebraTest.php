@@ -3,10 +3,10 @@ namespace Psalm\Tests;
 
 use PhpParser;
 use Psalm\Context;
+use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Algebra;
 use Psalm\Internal\Clause;
 use Psalm\Internal\Provider\StatementsProvider;
 

@@ -1,8 +1,9 @@
 <?php
 namespace Psalm\Tests\Loop;
 
-use const DIRECTORY_SEPARATOR;
 use Psalm\Tests\Traits;
+
+use const DIRECTORY_SEPARATOR;
 
 class ForTest extends \Psalm\Tests\TestCase
 {

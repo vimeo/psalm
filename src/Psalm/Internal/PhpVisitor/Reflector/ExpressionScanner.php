@@ -1,14 +1,7 @@
 <?php
 namespace Psalm\Internal\PhpVisitor\Reflector;
 
-use function assert;
-use const DIRECTORY_SEPARATOR;
-use function dirname;
-use function explode;
-use function implode;
-use function in_array;
 use PhpParser;
-use function preg_match;
 use Psalm\Aliases;
 use Psalm\Codebase;
 use Psalm\Config;
@@ -23,9 +16,18 @@ use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Storage\FileStorage;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type;
+
+use function assert;
+use function dirname;
+use function explode;
+use function implode;
+use function in_array;
+use function preg_match;
 use function strpos;
 use function strtolower;
 use function substr;
+
+use const DIRECTORY_SEPARATOR;
 
 class ExpressionScanner
 {

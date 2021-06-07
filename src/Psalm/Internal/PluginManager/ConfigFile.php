@@ -2,10 +2,11 @@
 namespace Psalm\Internal\PluginManager;
 
 use DOMDocument;
-use function file_get_contents;
-use function file_put_contents;
 use Psalm\Config;
 use RuntimeException;
+
+use function file_get_contents;
+use function file_put_contents;
 use function strpos;
 use function substr;
 

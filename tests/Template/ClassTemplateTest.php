@@ -1,9 +1,10 @@
 <?php
 namespace Psalm\Tests\Template;
 
-use const DIRECTORY_SEPARATOR;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits;
+
+use const DIRECTORY_SEPARATOR;
 
 class ClassTemplateTest extends TestCase
 {

@@ -1,18 +1,19 @@
 <?php
 namespace Psalm\Internal\FileManipulation;
 
-use function array_shift;
-use function count;
-use function ltrim;
 use PhpParser\Node\Stmt\Property;
 use Psalm\DocComment;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+
+use function array_shift;
+use function count;
+use function in_array;
+use function ltrim;
 use function str_replace;
 use function strlen;
 use function strrpos;
 use function substr;
-use function in_array;
 
 /**
  * @internal

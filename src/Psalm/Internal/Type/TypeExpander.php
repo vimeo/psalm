@@ -3,16 +3,17 @@ namespace Psalm\Internal\Type;
 
 use Psalm\Codebase;
 use Psalm\Type;
-use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TNamedObject;
-use function strpos;
-use function is_string;
-use function strtolower;
-use function count;
-use function is_array;
+use Psalm\Type\Atomic\TTemplateParam;
+
 use function array_merge;
 use function array_values;
+use function count;
+use function is_array;
+use function is_string;
 use function reset;
+use function strpos;
+use function strtolower;
 
 /**
  * @internal

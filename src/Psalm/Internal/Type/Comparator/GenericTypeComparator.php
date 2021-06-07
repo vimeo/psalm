@@ -7,8 +7,9 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TNamedObject;
-use function count;
+
 use function array_fill;
+use function count;
 
 /**
  * @internal

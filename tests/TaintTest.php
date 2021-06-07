@@ -4,6 +4,7 @@ namespace Psalm\Tests;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\IssueBuffer;
+
 use const DIRECTORY_SEPARATOR;
 
 class TaintTest extends TestCase

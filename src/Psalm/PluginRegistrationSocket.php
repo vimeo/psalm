@@ -3,9 +3,10 @@ namespace Psalm;
 
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Scanner\FileScanner;
-use Psalm\Plugin\Hook;
 use Psalm\Plugin\EventHandler;
+use Psalm\Plugin\Hook;
 use Psalm\Plugin\RegistrationInterface;
+
 use function class_exists;
 use function in_array;
 use function is_a;

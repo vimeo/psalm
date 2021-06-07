@@ -1,9 +1,10 @@
 <?php
 namespace Psalm\Internal\Diff;
 
+use PhpParser;
+
 use function count;
 use function get_class;
-use PhpParser;
 use function strpos;
 use function strtolower;
 use function substr;

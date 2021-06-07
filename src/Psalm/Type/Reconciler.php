@@ -1,16 +1,8 @@
 <?php
 namespace Psalm\Type;
 
-use Psalm\Type\Atomic\TInt;
-use Psalm\Type\Atomic\TScalar;
-use function array_pop;
-use function array_shift;
-use function count;
-use function explode;
-use function implode;
-use function ksort;
-use Psalm\Codebase;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Issue\DocblockTypeContradiction;
@@ -23,20 +15,29 @@ use Psalm\Issue\TypeDoesNotContainType;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TEmpty;
+use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
+use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
+
+use function array_merge;
+use function array_pop;
+use function array_shift;
+use function count;
+use function explode;
+use function implode;
+use function ksort;
+use function preg_match;
+use function preg_quote;
 use function str_replace;
 use function str_split;
 use function strpos;
 use function strtolower;
 use function substr;
-use function preg_match;
-use function preg_quote;
-use function array_merge;
 
 class Reconciler
 {

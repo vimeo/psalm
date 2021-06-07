@@ -3,9 +3,10 @@ namespace Psalm\Issue;
 
 use Psalm\CodeLocation;
 use Psalm\Config;
+
+use function array_pop;
 use function explode;
 use function get_called_class;
-use function array_pop;
 
 abstract class CodeIssue
 {

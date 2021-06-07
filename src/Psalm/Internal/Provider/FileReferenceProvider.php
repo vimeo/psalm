@@ -1,15 +1,16 @@
 <?php
 namespace Psalm\Internal\Provider;
 
+use Psalm\CodeLocation;
+use Psalm\Codebase;
+use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\IssueData;
+
 use function array_filter;
 use function array_keys;
 use function array_merge;
 use function array_unique;
 use function file_exists;
-use Psalm\Codebase;
-use Psalm\CodeLocation;
-use Psalm\Internal\Analyzer\IssueData;
-use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 
 /**
  * @psalm-import-type FileMapType from \Psalm\Internal\Codebase\Analyzer

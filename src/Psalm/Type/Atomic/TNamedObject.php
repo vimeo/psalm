@@ -1,13 +1,14 @@
 <?php
 namespace Psalm\Type\Atomic;
 
-use function implode;
 use Psalm\Codebase;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Type;
 use Psalm\Type\Atomic;
-use function substr;
+
 use function array_map;
+use function implode;
+use function substr;
 
 /**
  * Denotes an object type where the type of the object is known e.g. `Exception`, `Throwable`, `Foo\Bar`

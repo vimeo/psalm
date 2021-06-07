@@ -7,8 +7,9 @@ use Psalm\Plugin\EventHandler\PropertyTypeProviderInterface;
 use Psalm\Plugin\Hook\PropertyTypeProviderInterface as LegacyPropertyTypeProviderInterface;
 use Psalm\StatementsSource;
 use Psalm\Type;
-use function strtolower;
+
 use function is_subclass_of;
+use function strtolower;
 
 class PropertyTypeProvider
 {

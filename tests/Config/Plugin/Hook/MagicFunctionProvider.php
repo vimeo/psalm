@@ -1,12 +1,12 @@
 <?php
 namespace Psalm\Test\Config\Plugin\Hook;
 
-use Psalm\Plugin\EventHandler\FunctionExistenceProviderInterface;
-use Psalm\Plugin\EventHandler\FunctionParamsProviderInterface;
-use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Plugin\EventHandler\Event\FunctionExistenceProviderEvent;
 use Psalm\Plugin\EventHandler\Event\FunctionParamsProviderEvent;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
+use Psalm\Plugin\EventHandler\FunctionExistenceProviderInterface;
+use Psalm\Plugin\EventHandler\FunctionParamsProviderInterface;
+use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
 
 class MagicFunctionProvider implements

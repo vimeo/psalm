@@ -2,15 +2,15 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use PhpParser;
+use Psalm\CodeLocation;
+use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Codebase\TaintFlowGraph;
-use Psalm\CodeLocation;
-use Psalm\Context;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Issue\AbstractInstantiation;
 use Psalm\Issue\DeprecatedClass;
 use Psalm\Issue\ImpureMethodCall;
@@ -20,19 +20,20 @@ use Psalm\Issue\InternalMethod;
 use Psalm\Issue\InvalidStringClass;
 use Psalm\Issue\MixedMethodCall;
 use Psalm\Issue\TooManyArguments;
-use Psalm\Issue\UnsafeInstantiation;
-use Psalm\Issue\UnsafeGenericInstantiation;
 use Psalm\Issue\UndefinedClass;
+use Psalm\Issue\UnsafeGenericInstantiation;
+use Psalm\Issue\UnsafeInstantiation;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
-use function in_array;
-use function strtolower;
-use function implode;
-use function array_values;
+
 use function array_map;
+use function array_values;
+use function implode;
+use function in_array;
 use function preg_match;
 use function reset;
+use function strtolower;
 
 /**
  * @internal

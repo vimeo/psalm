@@ -3,9 +3,9 @@
 namespace Psalm\Report;
 
 use Psalm\Config;
+use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Json\Json;
 use Psalm\Report;
-use Psalm\Internal\Analyzer\IssueData;
 
 use function array_values;
 use function md5;

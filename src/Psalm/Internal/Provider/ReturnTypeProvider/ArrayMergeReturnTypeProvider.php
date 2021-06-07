@@ -1,11 +1,12 @@
 <?php
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
+use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
+use Psalm\Type;
+
 use function array_merge;
 use function array_values;
-use Psalm\Internal\Type\TypeCombiner;
-use Psalm\Type;
 
 class ArrayMergeReturnTypeProvider implements \Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface
 {
