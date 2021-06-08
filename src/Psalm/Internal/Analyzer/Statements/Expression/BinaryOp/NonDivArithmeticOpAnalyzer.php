@@ -2,11 +2,12 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression\BinaryOp;
 
 use PhpParser;
-use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
-use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Issue\FalseOperand;
 use Psalm\Issue\InvalidOperand;
 use Psalm\Issue\MixedOperand;
@@ -18,25 +19,26 @@ use Psalm\Issue\StringIncrement;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Type;
-use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
+use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralInt;
-use Psalm\Type\Atomic\TTemplateParam;
-use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
-use Psalm\Type\Atomic\TPositiveInt;
 use Psalm\Type\Atomic\TNumeric;
-use Psalm\Internal\Type\TypeCombiner;
+use Psalm\Type\Atomic\TPositiveInt;
+use Psalm\Type\Atomic\TTemplateParam;
+
 use function array_diff_key;
 use function array_values;
+use function is_int;
 use function preg_match;
 use function strtolower;
-use function is_int;
+
 use const PHP_INT_MAX;
 
 /**

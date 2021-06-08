@@ -2,8 +2,9 @@
 declare(strict_types=1);
 namespace Psalm\Internal\Diff;
 
-use function array_reverse;
 use PhpParser;
+
+use function array_reverse;
 
 /**
  * Borrows from https://github.com/nikic/PHP-Parser/blob/master/lib/PhpParser/Internal/Differ.php

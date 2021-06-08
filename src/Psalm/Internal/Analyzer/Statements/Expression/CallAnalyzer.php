@@ -2,6 +2,8 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
+use Psalm\CodeLocation;
+use Psalm\Context;
 use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
@@ -9,12 +11,10 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateResult;
-use Psalm\CodeLocation;
-use Psalm\Context;
+use Psalm\Issue\ArgumentTypeCoercion;
 use Psalm\Issue\InvalidArgument;
 use Psalm\Issue\InvalidScalarArgument;
 use Psalm\Issue\MixedArgumentTypeCoercion;
-use Psalm\Issue\ArgumentTypeCoercion;
 use Psalm\Issue\UndefinedFunction;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\BinaryOp\VirtualIdentical;
@@ -23,17 +23,18 @@ use Psalm\Node\VirtualName;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
-use function strtolower;
-use function strpos;
+
+use function array_map;
+use function array_merge;
 use function count;
 use function in_array;
+use function is_int;
 use function preg_match;
 use function preg_replace;
 use function str_replace;
-use function is_int;
+use function strpos;
+use function strtolower;
 use function substr;
-use function array_merge;
-use function array_map;
 
 /**
  * @internal

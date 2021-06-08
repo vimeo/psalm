@@ -1,8 +1,9 @@
 <?php
 namespace Psalm\Internal\PhpVisitor;
 
-use function count;
 use PhpParser;
+
+use function count;
 use function preg_replace;
 use function reset;
 use function strlen;

@@ -5,11 +5,12 @@ use PhpParser;
 use PhpParser\Node\Stmt\Namespace_;
 use Psalm\Context;
 use Psalm\Type;
+
 use function implode;
+use function preg_replace;
+use function strpos;
 use function strtolower;
 use function trim;
-use function strpos;
-use function preg_replace;
 
 /**
  * @internal

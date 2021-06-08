@@ -1,11 +1,13 @@
 <?php
 namespace Psalm\Internal\Provider;
 
-use const DIRECTORY_SEPARATOR;
+use Psalm\Config;
+
 use function file_exists;
 use function file_get_contents;
 use function file_put_contents;
-use Psalm\Config;
+
+use const DIRECTORY_SEPARATOR;
 
 /**
  * Used to determine which files reference other files, necessary for using the --diff

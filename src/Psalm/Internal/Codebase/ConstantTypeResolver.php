@@ -1,10 +1,11 @@
 <?php
 namespace Psalm\Internal\Codebase;
 
-use Psalm\Internal\Scanner\UnresolvedConstant;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
+use Psalm\Internal\Scanner\UnresolvedConstant;
 use Psalm\Type;
 use ReflectionProperty;
+
 use function ctype_digit;
 
 /**

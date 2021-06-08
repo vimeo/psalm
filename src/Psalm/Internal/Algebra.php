@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Internal;
 
+use Psalm\Exception\ComplicatedExpressionException;
+
 use function array_filter;
 use function array_keys;
 use function array_map;
@@ -10,7 +12,6 @@ use function array_unique;
 use function array_values;
 use function count;
 use function in_array;
-use Psalm\Exception\ComplicatedExpressionException;
 use function substr;
 
 class Algebra

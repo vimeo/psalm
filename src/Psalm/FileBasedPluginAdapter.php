@@ -3,8 +3,9 @@ namespace Psalm;
 
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Scanner\FileScanner;
-use function reset;
 use SimpleXMLElement;
+
+use function reset;
 
 class FileBasedPluginAdapter implements Plugin\PluginEntryPointInterface
 {

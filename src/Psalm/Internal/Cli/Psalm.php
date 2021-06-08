@@ -53,8 +53,8 @@ use function preg_match;
 use function preg_replace;
 use function realpath;
 use function setlocale;
-use function strpos;
 use function str_repeat;
+use function strpos;
 use function substr;
 use function version_compare;
 

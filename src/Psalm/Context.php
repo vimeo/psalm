@@ -1,22 +1,23 @@
 <?php
 namespace Psalm;
 
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Clause;
+use Psalm\Internal\Type\AssertionReconciler;
+use Psalm\Storage\FunctionLikeStorage;
+use Psalm\Type\Union;
+
 use function array_keys;
+use function array_search;
 use function count;
 use function in_array;
+use function is_int;
 use function json_encode;
 use function preg_match;
 use function preg_quote;
 use function preg_replace;
-use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Clause;
-use Psalm\Storage\FunctionLikeStorage;
-use Psalm\Internal\Type\AssertionReconciler;
-use Psalm\Type\Union;
 use function strpos;
 use function strtolower;
-use function array_search;
-use function is_int;
 
 class Context
 {

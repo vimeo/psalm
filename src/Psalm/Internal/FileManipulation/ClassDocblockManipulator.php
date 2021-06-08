@@ -1,11 +1,12 @@
 <?php
 namespace Psalm\Internal\FileManipulation;
 
-use function ltrim;
 use PhpParser\Node\Stmt\Class_;
 use Psalm\DocComment;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+
+use function ltrim;
 use function str_replace;
 use function strlen;
 use function strrpos;

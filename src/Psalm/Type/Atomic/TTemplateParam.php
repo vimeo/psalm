@@ -1,11 +1,12 @@
 <?php
 namespace Psalm\Type\Atomic;
 
-use function implode;
 use Psalm\Codebase;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Type\Union;
+
 use function array_map;
+use function implode;
 
 /**
  * denotes a template parameter that has been previously specified in a `@template` tag.

@@ -1,10 +1,6 @@
 <?php
 namespace Psalm\Internal\Codebase;
 
-use function array_shift;
-use function assert;
-use function count;
-use function file_exists;
 use PhpParser;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
@@ -12,7 +8,12 @@ use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
 use Psalm\Type\Atomic\TCallable;
+
+use function array_shift;
+use function assert;
+use function count;
 use function dirname;
+use function file_exists;
 use function strtolower;
 use function substr;
 use function version_compare;

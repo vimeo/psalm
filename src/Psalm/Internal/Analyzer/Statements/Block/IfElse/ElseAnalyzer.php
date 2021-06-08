@@ -2,19 +2,20 @@
 namespace Psalm\Internal\Analyzer\Statements\Block\IfElse;
 
 use PhpParser;
-use Psalm\Internal\Analyzer\ScopeAnalyzer;
-use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Internal\Algebra;
+use Psalm\Internal\Analyzer\ScopeAnalyzer;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Scope\IfScope;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\ConflictingReferenceConstraint;
 use Psalm\IssueBuffer;
-use Psalm\Internal\Scope\IfScope;
-use Psalm\Internal\Algebra;
 use Psalm\Type\Reconciler;
-use function array_merge;
+
 use function array_diff_key;
 use function array_keys;
+use function array_merge;
 use function count;
 use function in_array;
 

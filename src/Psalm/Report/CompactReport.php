@@ -1,15 +1,16 @@
 <?php
 namespace Psalm\Report;
 
-use function count;
-use function implode;
 use Psalm\Config;
 use Psalm\Report;
+use Symfony\Component\Console\Helper\Table;
+use Symfony\Component\Console\Output\BufferedOutput;
+
+use function count;
+use function implode;
 use function str_split;
 use function strlen;
 use function strtoupper;
-use Symfony\Component\Console\Helper\Table;
-use Symfony\Component\Console\Output\BufferedOutput;
 
 class CompactReport extends Report
 {

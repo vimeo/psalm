@@ -2,6 +2,7 @@
 namespace Psalm\Tests\Internal\Provider;
 
 use Psalm\Storage\FileStorage;
+
 use function strtolower;
 
 class FileStorageInstanceCacheProvider extends \Psalm\Internal\Provider\FileStorageCacheProvider

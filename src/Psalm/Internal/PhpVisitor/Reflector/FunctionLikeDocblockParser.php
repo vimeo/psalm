@@ -8,23 +8,24 @@ use Psalm\Exception\IncorrectDocblockException;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Scanner\FunctionDocblockComment;
 use Psalm\Internal\Scanner\ParsedDocblock;
-use function array_unique;
-use function trim;
-use function substr_count;
-use function strlen;
-use function preg_replace;
-use function str_replace;
-use function preg_match;
-use function count;
-use function reset;
-use function preg_split;
+
 use function array_shift;
+use function array_unique;
+use function count;
+use function explode;
 use function implode;
-use function substr;
+use function in_array;
+use function preg_match;
+use function preg_replace;
+use function preg_split;
+use function reset;
+use function str_replace;
+use function strlen;
 use function strpos;
 use function strtolower;
-use function in_array;
-use function explode;
+use function substr;
+use function substr_count;
+use function trim;
 
 class FunctionLikeDocblockParser
 {

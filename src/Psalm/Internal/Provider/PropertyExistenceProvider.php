@@ -7,8 +7,9 @@ use Psalm\Plugin\EventHandler\Event\PropertyExistenceProviderEvent;
 use Psalm\Plugin\EventHandler\PropertyExistenceProviderInterface;
 use Psalm\Plugin\Hook\PropertyExistenceProviderInterface as LegacyPropertyExistenceProviderInterface;
 use Psalm\StatementsSource;
-use function strtolower;
+
 use function is_subclass_of;
+use function strtolower;
 
 class PropertyExistenceProvider
 {

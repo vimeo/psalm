@@ -4,19 +4,20 @@ namespace Psalm\Internal\Analyzer;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Issue\DuplicateParam;
 use Psalm\Issue\PossiblyUndefinedVariable;
 use Psalm\Issue\UndefinedVariable;
 use Psalm\IssueBuffer;
-use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
-use function strpos;
-use function is_string;
-use function in_array;
-use function strtolower;
+
 use function array_map;
+use function in_array;
+use function is_string;
 use function preg_match;
+use function strpos;
+use function strtolower;
 
 /**
  * @internal

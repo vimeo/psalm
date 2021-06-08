@@ -3,12 +3,12 @@ namespace Psalm\Internal\Analyzer;
 
 use Psalm\Codebase;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
-use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Type;
 
-use function array_merge;
 use function array_keys;
+use function array_merge;
 use function array_unique;
 
 /**

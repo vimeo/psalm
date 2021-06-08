@@ -1,11 +1,12 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use Psalm\Type\Atomic;
+
+use function array_merge;
 use function count;
 use function implode;
-use Psalm\Type\Atomic;
 use function substr;
-use function array_merge;
 
 /**
  * denotes the `iterable` type(which can also result from an `is_iterable` check).

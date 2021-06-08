@@ -1,11 +1,9 @@
 <?php
 namespace Psalm\Internal\Codebase;
 
-use function array_shift;
-use function explode;
-use function implode;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Internal\Provider\FunctionExistenceProvider;
 use Psalm\Internal\Provider\FunctionParamsProvider;
@@ -13,13 +11,16 @@ use Psalm\Internal\Provider\FunctionReturnTypeProvider;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\StatementsSource;
 use Psalm\Storage\FunctionStorage;
+use Psalm\Type\Atomic\TNamedObject;
+
+use function array_shift;
+use function explode;
+use function implode;
+use function is_bool;
+use function rtrim;
 use function strpos;
 use function strtolower;
 use function substr;
-use Psalm\Type\Atomic\TNamedObject;
-use Psalm\Internal\MethodIdentifier;
-use function rtrim;
-use function is_bool;
 
 /**
  * @internal

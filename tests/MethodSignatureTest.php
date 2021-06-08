@@ -1,9 +1,11 @@
 <?php
 namespace Psalm\Tests;
 
-use function class_exists;
-use const DIRECTORY_SEPARATOR;
 use Psalm\Context;
+
+use function class_exists;
+
+use const DIRECTORY_SEPARATOR;
 
 class MethodSignatureTest extends TestCase
 {

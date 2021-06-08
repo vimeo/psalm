@@ -2,23 +2,24 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
+use Psalm\CodeLocation;
 use Psalm\Codebase;
+use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\CodeLocation;
-use Psalm\Context;
+use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Issue\DuplicateArrayKey;
 use Psalm\Issue\InvalidArrayOffset;
 use Psalm\Issue\MixedArrayOffset;
 use Psalm\IssueBuffer;
-use Psalm\Type;
-use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
+use Psalm\Type;
 
-use function preg_match;
 use function array_merge;
 use function array_values;
 use function count;
+use function preg_match;
+
 use const PHP_INT_MAX;
 
 /**

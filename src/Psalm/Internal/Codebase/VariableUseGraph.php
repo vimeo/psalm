@@ -2,11 +2,12 @@
 
 namespace Psalm\Internal\Codebase;
 
+use Psalm\CodeLocation;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\DataFlow\Path;
+
 use function array_merge;
 use function count;
-use Psalm\CodeLocation;
 
 class VariableUseGraph extends DataFlowGraph
 {

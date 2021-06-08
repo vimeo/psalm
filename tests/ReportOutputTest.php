@@ -11,12 +11,12 @@ use Psalm\Report;
 use Psalm\Report\JsonReport;
 use Psalm\Tests\Internal\Provider;
 
+use function array_values;
 use function file_get_contents;
 use function json_decode;
 use function ob_end_clean;
 use function ob_start;
 use function preg_replace;
-use function array_values;
 use function unlink;
 
 class ReportOutputTest extends TestCase

@@ -1,9 +1,10 @@
 <?php
 namespace Psalm\Report;
 
-use Psalm\Internal\Json\Json;
 use Psalm\Config;
+use Psalm\Internal\Json\Json;
 use Psalm\Report;
+
 use function file_exists;
 use function file_get_contents;
 

@@ -2,23 +2,24 @@
 namespace Psalm\Internal\Analyzer\Statements\Block;
 
 use PhpParser;
+use Psalm\CodeLocation;
+use Psalm\Config;
+use Psalm\Context;
+use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
-use Psalm\CodeLocation;
-use Psalm\Config;
-use Psalm\Context;
-use Psalm\IssueBuffer;
 use Psalm\Internal\Scope\LoopScope;
+use Psalm\IssueBuffer;
 use Psalm\Type;
-use Psalm\Internal\Algebra;
 use Psalm\Type\Reconciler;
-use function array_merge;
-use function array_keys;
-use function array_unique;
+
 use function array_intersect_key;
+use function array_keys;
+use function array_merge;
+use function array_unique;
 use function in_array;
 
 /**

@@ -1,11 +1,12 @@
 <?php
 namespace Psalm\Internal\TypeVisitor;
 
+use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TNamedObject;
-use Psalm\Type\Atomic\TClassConstant;
-use Psalm\Type\TypeNode;
 use Psalm\Type\NodeVisitor;
+use Psalm\Type\TypeNode;
+
 use function strtolower;
 
 class ContainsClassLikeVisitor extends NodeVisitor

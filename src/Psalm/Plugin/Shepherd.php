@@ -1,30 +1,32 @@
 <?php
 namespace Psalm\Plugin;
 
+use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Plugin\EventHandler\Event\AfterAnalysisEvent;
+
 use function array_filter;
+use function array_merge;
+use function array_values;
 use function curl_close;
 use function curl_exec;
 use function curl_getinfo;
 use function curl_init;
 use function curl_setopt;
+use function function_exists;
+use function fwrite;
+use function json_encode;
+use function parse_url;
+use function strlen;
+use function var_export;
+
 use const CURLINFO_HEADER_OUT;
 use const CURLOPT_HTTPHEADER;
 use const CURLOPT_POST;
 use const CURLOPT_POSTFIELDS;
 use const CURLOPT_RETURNTRANSFER;
-use function function_exists;
-use function fwrite;
-use function json_encode;
-use function parse_url;
 use const PHP_EOL;
 use const PHP_URL_SCHEME;
-use Psalm\Internal\Analyzer\IssueData;
 use const STDERR;
-use function strlen;
-use function var_export;
-use function array_merge;
-use function array_values;
 
 class Shepherd implements \Psalm\Plugin\EventHandler\AfterAnalysisInterface
 {

@@ -1,12 +1,12 @@
 <?php
 namespace Psalm\Test\Config\Plugin\Hook;
 
-use Psalm\Plugin\EventHandler\MethodExistenceProviderInterface;
-use Psalm\Plugin\EventHandler\MethodParamsProviderInterface;
-use Psalm\Plugin\EventHandler\MethodReturnTypeProviderInterface;
 use Psalm\Plugin\EventHandler\Event\MethodExistenceProviderEvent;
 use Psalm\Plugin\EventHandler\Event\MethodParamsProviderEvent;
 use Psalm\Plugin\EventHandler\Event\MethodReturnTypeProviderEvent;
+use Psalm\Plugin\EventHandler\MethodExistenceProviderInterface;
+use Psalm\Plugin\EventHandler\MethodParamsProviderInterface;
+use Psalm\Plugin\EventHandler\MethodReturnTypeProviderInterface;
 use Psalm\Type;
 
 class FooMethodProvider implements

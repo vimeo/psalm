@@ -2,27 +2,28 @@
 namespace Psalm\Internal\Analyzer\Statements\Block;
 
 use PhpParser;
+use Psalm\CodeLocation;
 use Psalm\Codebase;
+use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
-use Psalm\CodeLocation;
-use Psalm\Context;
+use Psalm\Internal\Scope\IfConditionalScope;
+use Psalm\Internal\Scope\IfScope;
 use Psalm\Issue\DocblockTypeContradiction;
+use Psalm\Issue\RedundantCondition;
 use Psalm\Issue\RedundantConditionGivenDocblockType;
 use Psalm\Issue\TypeDoesNotContainType;
-use Psalm\Issue\RedundantCondition;
 use Psalm\IssueBuffer;
-use Psalm\Internal\Scope\IfScope;
-use Psalm\Internal\Scope\IfConditionalScope;
 use Psalm\Type;
 use Psalm\Type\Reconciler;
-use function array_merge;
-use function array_map;
+
 use function array_diff_key;
 use function array_filter;
-use function array_values;
 use function array_keys;
+use function array_map;
+use function array_merge;
+use function array_values;
 use function count;
 
 class IfConditionalAnalyzer

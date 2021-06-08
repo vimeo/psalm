@@ -2,8 +2,8 @@
 namespace Psalm\Type\Atomic;
 
 use Psalm\Codebase;
-use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
+use Psalm\Internal\Type\TemplateResult;
 use Psalm\Type\Union;
 
 /**

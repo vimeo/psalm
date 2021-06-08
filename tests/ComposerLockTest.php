@@ -1,8 +1,9 @@
 <?php
 namespace Psalm\Tests;
 
-use function json_encode;
 use Psalm\Internal\PluginManager\ComposerLock;
+
+use function json_encode;
 
 /** @group PluginManager */
 class ComposerLockTest extends TestCase

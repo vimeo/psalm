@@ -7,8 +7,9 @@ use Psalm\Plugin\EventHandler\Event\MethodVisibilityProviderEvent;
 use Psalm\Plugin\EventHandler\MethodVisibilityProviderInterface;
 use Psalm\Plugin\Hook\MethodVisibilityProviderInterface as LegacyMethodVisibilityProviderInterface;
 use Psalm\StatementsSource;
-use function strtolower;
+
 use function is_subclass_of;
+use function strtolower;
 
 class MethodVisibilityProvider
 {

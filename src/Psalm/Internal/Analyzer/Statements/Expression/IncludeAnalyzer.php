@@ -2,39 +2,40 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
-use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
-use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\DataFlow\TaintSink;
-use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\FileIncludeException;
+use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\TaintFlowGraph;
+use Psalm\Internal\DataFlow\TaintSink;
 use Psalm\Issue\MissingFile;
 use Psalm\Issue\UnresolvableInclude;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 
-use function str_replace;
-use const DIRECTORY_SEPARATOR;
-use function dirname;
-use function preg_match;
-use function in_array;
-use function realpath;
-use function get_included_files;
-use function str_repeat;
-use const PHP_EOL;
-use function is_string;
-use function implode;
-use function defined;
 use function constant;
-use const PATH_SEPARATOR;
-use function preg_split;
-use function get_include_path;
+use function defined;
+use function dirname;
 use function explode;
-use function substr;
 use function file_exists;
+use function get_include_path;
+use function get_included_files;
+use function implode;
+use function in_array;
+use function is_string;
+use function preg_match;
 use function preg_replace;
+use function preg_split;
+use function realpath;
+use function str_repeat;
+use function str_replace;
+use function substr;
+
+use const DIRECTORY_SEPARATOR;
+use const PATH_SEPARATOR;
+use const PHP_EOL;
 
 /**
  * @internal

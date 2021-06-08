@@ -1,8 +1,9 @@
 <?php
 namespace Psalm;
 
-use function array_filter;
 use Psalm\Internal\Analyzer\IssueData;
+
+use function array_filter;
 
 abstract class Report
 {

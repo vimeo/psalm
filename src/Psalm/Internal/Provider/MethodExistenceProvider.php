@@ -3,11 +3,12 @@ namespace Psalm\Internal\Provider;
 
 use Psalm\CodeLocation;
 use Psalm\Plugin\EventHandler\Event\MethodExistenceProviderEvent;
-use Psalm\Plugin\Hook\MethodExistenceProviderInterface as LegacyMethodExistenceProviderInterface;
 use Psalm\Plugin\EventHandler\MethodExistenceProviderInterface;
+use Psalm\Plugin\Hook\MethodExistenceProviderInterface as LegacyMethodExistenceProviderInterface;
 use Psalm\StatementsSource;
-use function strtolower;
+
 use function is_subclass_of;
+use function strtolower;
 
 class MethodExistenceProvider
 {

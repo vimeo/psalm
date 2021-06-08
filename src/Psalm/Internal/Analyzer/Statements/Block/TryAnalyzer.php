@@ -2,26 +2,28 @@
 namespace Psalm\Internal\Analyzer\Statements\Block;
 
 use PhpParser;
+use Psalm\CodeLocation;
+use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
-use Psalm\CodeLocation;
-use Psalm\Context;
+use Psalm\Internal\Scope\FinallyScope;
 use Psalm\Issue\InvalidCatch;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
-use Psalm\Internal\Scope\FinallyScope;
-use function in_array;
-use function array_merge;
+
 use function array_intersect_key;
+use function array_map;
+use function array_merge;
+use function in_array;
 use function is_string;
 use function strtolower;
-use function array_map;
 use function version_compare;
+
 use const PHP_VERSION;
 
 /**

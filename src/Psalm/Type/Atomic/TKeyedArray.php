@@ -1,6 +1,16 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use Psalm\Codebase;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
+use Psalm\Internal\Type\TemplateResult;
+use Psalm\Internal\Type\TemplateStandinTypeReplacer;
+use Psalm\Internal\Type\TypeCombiner;
+use Psalm\Type;
+use Psalm\Type\Atomic;
+use Psalm\Type\Union;
+
 use function array_keys;
 use function array_map;
 use function count;
@@ -8,15 +18,6 @@ use function get_class;
 use function implode;
 use function is_int;
 use function sort;
-use Psalm\Codebase;
-use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Type\TypeCombiner;
-use Psalm\Internal\Type\TemplateResult;
-use Psalm\Internal\Type\TemplateStandinTypeReplacer;
-use Psalm\Internal\Type\TemplateInferredTypeReplacer;
-use Psalm\Type;
-use Psalm\Type\Atomic;
-use Psalm\Type\Union;
 
 /**
  * Represents an 'object-like array' - an array with known keys.

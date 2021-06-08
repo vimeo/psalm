@@ -1,8 +1,8 @@
 <?php
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call\Method;
 
-use Psalm\Codebase;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Issue\DeprecatedMethod;

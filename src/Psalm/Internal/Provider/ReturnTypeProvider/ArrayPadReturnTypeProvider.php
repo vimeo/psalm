@@ -2,10 +2,11 @@
 
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
-use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
-use function count;
 use Psalm\Internal\Type\ArrayType;
+use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Type;
+
+use function count;
 
 class ArrayPadReturnTypeProvider implements \Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface
 {

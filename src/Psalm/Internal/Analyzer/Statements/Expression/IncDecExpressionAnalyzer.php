@@ -2,13 +2,13 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
-use PhpParser\Node\Expr\PostInc;
 use PhpParser\Node\Expr\PostDec;
-use PhpParser\Node\Expr\PreInc;
+use PhpParser\Node\Expr\PostInc;
 use PhpParser\Node\Expr\PreDec;
+use PhpParser\Node\Expr\PreInc;
+use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Context;
 use Psalm\Node\Expr\BinaryOp\VirtualMinus;
 use Psalm\Node\Expr\BinaryOp\VirtualPlus;
 use Psalm\Node\Expr\VirtualAssign;

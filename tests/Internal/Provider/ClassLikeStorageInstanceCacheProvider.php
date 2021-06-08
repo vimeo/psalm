@@ -2,6 +2,7 @@
 namespace Psalm\Tests\Internal\Provider;
 
 use Psalm\Storage\ClassLikeStorage;
+
 use function strtolower;
 
 class ClassLikeStorageInstanceCacheProvider extends \Psalm\Internal\Provider\ClassLikeStorageCacheProvider

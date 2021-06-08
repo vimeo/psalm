@@ -1,9 +1,10 @@
 <?php
 namespace Psalm\Tests;
 
-use function array_values;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Type;
+
+use function array_values;
 
 class TypeCombinationTest extends TestCase
 {

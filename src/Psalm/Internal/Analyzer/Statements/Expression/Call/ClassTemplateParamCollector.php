@@ -6,12 +6,12 @@ use Psalm\Internal\Type\TypeExpander;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic;
-use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TClassConstant;
+use Psalm\Type\Atomic\TGenericObject;
 
+use function array_keys;
 use function array_merge;
 use function array_search;
-use function array_keys;
 
 class ClassTemplateParamCollector
 {

@@ -1,24 +1,13 @@
 <?php
 namespace Psalm\Internal\Codebase;
 
-use function array_merge;
-use function array_pop;
-use function count;
-use function end;
-use function explode;
-use function get_declared_classes;
-use function get_declared_interfaces;
-use function implode;
-use const PHP_EOL;
 use PhpParser;
-use function preg_match;
-use function preg_replace;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Exception\UnpopulatedClasslikeException;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
-use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\FileManipulation\ClassDocblockManipulator;
+use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\StatementsProvider;
@@ -36,11 +25,24 @@ use Psalm\Progress\VoidProgress;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
 use ReflectionProperty;
+
+use function array_merge;
+use function array_pop;
+use function count;
+use function end;
+use function explode;
+use function get_declared_classes;
+use function get_declared_interfaces;
+use function implode;
+use function preg_match;
+use function preg_quote;
+use function preg_replace;
 use function strlen;
 use function strrpos;
 use function strtolower;
 use function substr;
-use function preg_quote;
+
+use const PHP_EOL;
 
 /**
  * @internal

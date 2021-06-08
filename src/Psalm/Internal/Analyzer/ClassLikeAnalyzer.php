@@ -3,8 +3,8 @@ namespace Psalm\Internal\Analyzer;
 
 use PhpParser;
 use Psalm\Aliases;
-use Psalm\Codebase;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Issue\InaccessibleProperty;
@@ -19,14 +19,15 @@ use Psalm\Plugin\EventHandler\Event\AfterClassLikeExistenceCheckEvent;
 use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
-use function strtolower;
-use function preg_replace;
+
+use function array_pop;
+use function explode;
+use function gettype;
+use function implode;
 use function in_array;
 use function preg_match;
-use function explode;
-use function array_pop;
-use function implode;
-use function gettype;
+use function preg_replace;
+use function strtolower;
 
 /**
  * @internal

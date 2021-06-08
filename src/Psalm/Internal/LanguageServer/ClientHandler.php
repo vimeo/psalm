@@ -3,9 +3,10 @@ declare(strict_types = 1);
 namespace Psalm\Internal\LanguageServer;
 
 use AdvancedJsonRpc;
-use function Amp\call;
 use Amp\Deferred;
 use Amp\Promise;
+
+use function Amp\call;
 use function error_log;
 
 /**

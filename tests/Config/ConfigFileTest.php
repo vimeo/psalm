@@ -1,18 +1,19 @@
 <?php
 namespace Psalm\Tests\Config;
 
-use function file_get_contents;
-use function file_put_contents;
-use function getcwd;
-use const PHP_EOL;
 use Psalm\Config;
 use Psalm\Internal\PluginManager\ConfigFile;
 use Psalm\Internal\RuntimeCaches;
 
+use function file_get_contents;
+use function file_put_contents;
+use function getcwd;
 use function sys_get_temp_dir;
 use function tempnam;
 use function trim;
 use function unlink;
+
+use const PHP_EOL;
 
 /** @group PluginManager */
 class ConfigFileTest extends \Psalm\Tests\TestCase

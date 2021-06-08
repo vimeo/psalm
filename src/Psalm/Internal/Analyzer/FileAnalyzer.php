@@ -2,8 +2,8 @@
 namespace Psalm\Internal\Analyzer;
 
 use PhpParser;
-use Psalm\Codebase;
 use Psalm\CodeLocation\DocblockTypeLocation;
+use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Exception\UnpreparedAnalysisException;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
@@ -14,11 +14,12 @@ use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AfterFileAnalysisEvent;
 use Psalm\Plugin\EventHandler\Event\BeforeFileAnalysisEvent;
 use Psalm\Type;
-use function implode;
-use function strtolower;
-use function strpos;
+
 use function array_keys;
 use function count;
+use function implode;
+use function strpos;
+use function strtolower;
 
 /**
  * @internal

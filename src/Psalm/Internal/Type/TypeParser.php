@@ -1,24 +1,11 @@
 <?php
 namespace Psalm\Internal\Type;
 
-use Psalm\Type\TypeNode;
-use function array_keys;
-use function array_map;
-use function array_shift;
-use function array_unshift;
-use function array_values;
-use function count;
-use function explode;
-use function get_class;
-use function in_array;
-use function preg_match;
-use function preg_replace;
 use Psalm\Codebase;
 use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type\Atomic;
-use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TCallable;
@@ -27,6 +14,7 @@ use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TIterable;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -40,16 +28,29 @@ use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTypeAlias;
+use Psalm\Type\TypeNode;
 use Psalm\Type\Union;
+
 use function array_key_exists;
+use function array_keys;
+use function array_map;
+use function array_merge;
+use function array_shift;
+use function array_unique;
+use function array_unshift;
+use function array_values;
+use function count;
+use function explode;
+use function get_class;
+use function in_array;
+use function is_int;
+use function preg_match;
+use function preg_replace;
+use function reset;
 use function strlen;
 use function strpos;
 use function strtolower;
 use function substr;
-use function reset;
-use function is_int;
-use function array_merge;
-use function array_unique;
 
 class TypeParser
 {

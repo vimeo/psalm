@@ -2,11 +2,13 @@
 namespace Psalm\Internal\PluginManager;
 
 use Psalm\Internal\Composer;
+
 use function array_filter;
-use const DIRECTORY_SEPARATOR;
 use function json_encode;
 use function rtrim;
 use function urlencode;
+
+use const DIRECTORY_SEPARATOR;
 
 class PluginListFactory
 {

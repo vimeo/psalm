@@ -3,8 +3,8 @@
 namespace Psalm\Internal\Provider;
 
 use PhpParser;
-use SplObjectStorage;
 use Psalm\Type\Union;
+use SplObjectStorage;
 
 class NodeDataProvider implements \Psalm\NodeTypeProvider
 {

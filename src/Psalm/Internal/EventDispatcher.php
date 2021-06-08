@@ -2,13 +2,13 @@
 
 namespace Psalm\Internal;
 
-use Psalm\Plugin\Hook;
 use Psalm\Plugin\EventHandler;
 use Psalm\Plugin\EventHandler\Event;
+use Psalm\Plugin\Hook;
 use Psalm\Type\Atomic\TLiteralString;
+
 use function count;
 use function is_subclass_of;
-
 
 class EventDispatcher
 {

@@ -1,9 +1,9 @@
 <?php
 namespace Psalm\Tests;
 
+use PhpParser\Node\Stmt\Class_;
 use Psalm\Aliases;
 use Psalm\Internal\PhpVisitor\Reflector\ClassLikeDocblockParser;
-use PhpParser\Node\Stmt\Class_;
 
 class ClassLikeDocblockParserTest extends \Psalm\Tests\TestCase
 {

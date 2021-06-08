@@ -1,8 +1,8 @@
 <?php
 namespace Psalm\Internal\TypeVisitor;
 
-use Psalm\Type\TypeNode;
 use Psalm\Type\NodeVisitor;
+use Psalm\Type\TypeNode;
 
 class FromDocblockSetter extends NodeVisitor
 {

@@ -6,6 +6,7 @@ use Psalm\Codebase;
 use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
 use Psalm\Type;
 use Psalm\Type\Atomic;
+
 use function array_merge;
 
 /**

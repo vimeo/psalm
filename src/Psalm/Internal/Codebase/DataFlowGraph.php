@@ -2,14 +2,15 @@
 
 namespace Psalm\Internal\Codebase;
 
-use Psalm\Internal\DataFlow\Path;
 use Psalm\Internal\DataFlow\DataFlowNode;
-use function substr;
-use function strlen;
+use Psalm\Internal\DataFlow\Path;
+
+use function array_keys;
+use function array_merge;
 use function array_reverse;
 use function array_sum;
-use function array_merge;
-use function array_keys;
+use function strlen;
+use function substr;
 
 abstract class DataFlowGraph
 {

@@ -1,11 +1,12 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use Psalm\Type\Atomic;
+
+use function array_merge;
 use function count;
 use function implode;
-use Psalm\Type\Atomic;
 use function substr;
-use function array_merge;
 
 /**
  * Denotes an object type that has generic parameters e.g. `ArrayObject<string, Foo\Bar>`

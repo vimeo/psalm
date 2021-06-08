@@ -1,6 +1,11 @@
 <?php
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
+use PhpParser;
+use Psalm\Context;
+use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
+use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
+use Psalm\Internal\Type\ArrayType;
 use Psalm\Node\Expr\VirtualArrayDimFetch;
 use Psalm\Node\Expr\VirtualFuncCall;
 use Psalm\Node\Expr\VirtualMethodCall;
@@ -10,17 +15,13 @@ use Psalm\Node\Name\VirtualFullyQualified;
 use Psalm\Node\VirtualArg;
 use Psalm\Node\VirtualIdentifier;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
+use Psalm\Type;
+
 use function array_map;
 use function count;
 use function explode;
 use function in_array;
-use PhpParser;
-use Psalm\Context;
-use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
-use Psalm\Internal\Type\ArrayType;
-use Psalm\Type;
 use function strpos;
-use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
 
 class ArrayMapReturnTypeProvider implements \Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface
 {

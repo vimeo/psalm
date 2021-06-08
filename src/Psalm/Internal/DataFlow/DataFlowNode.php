@@ -3,6 +3,7 @@
 namespace Psalm\Internal\DataFlow;
 
 use Psalm\CodeLocation;
+
 use function strtolower;
 
 /**

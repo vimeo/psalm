@@ -1,15 +1,19 @@
 <?xml version="1.0"?>
-<ruleset name="PHP_CodeSniffer">
+<ruleset
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="vendor/squizlabs/php_codesniffer/phpcs.xsd"
+    name="Psalm coding standard"
+>
     <config name="installed_paths" value="../../slevomat/coding-standard"/>
     <rule ref="PSR2" />
     <!-- Forbid usage of a function or a class constant via fallback global name -->
     <rule ref="SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly">
         <properties>
-            <property name="allowFallbackGlobalConstants" type="boolean" value="false"/>
-            <property name="allowFallbackGlobalFunctions" type="boolean" value="false"/>
-            <property name="allowFullyQualifiedGlobalConstants" type="boolean" value="true"/>
-            <property name="allowFullyQualifiedGlobalFunctions" type="boolean" value="true"/>
-            <property name="allowFullyQualifiedGlobalClasses" type="boolean" value="true"/>
+            <property name="allowFallbackGlobalConstants" value="false"/>
+            <property name="allowFallbackGlobalFunctions" value="false"/>
+            <property name="allowFullyQualifiedGlobalConstants" value="true"/>
+            <property name="allowFullyQualifiedGlobalFunctions" value="true"/>
+            <property name="allowFullyQualifiedGlobalClasses" value="true"/>
         </properties>
         <exclude name="SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly.ReferenceViaFullyQualifiedName"/>
     </rule>
@@ -24,7 +28,17 @@
 
     <rule ref="SlevomatCodingStandard.Namespaces.UnusedUses">
         <properties>
-            <property name="searchAnnotations" type="boolean" value="true"/>
+            <property name="searchAnnotations" value="true"/>
+        </properties>
+    </rule>
+    <rule ref="SlevomatCodingStandard.Namespaces.AlphabeticallySortedUses">
+        <properties>
+            <property name="caseSensitive" value="true" />
+        </properties>
+    </rule>
+    <rule ref="SlevomatCodingStandard.Namespaces.UseSpacing">
+        <properties>
+            <property name="linesCountBetweenUseTypes" value="1" />
         </properties>
     </rule>
     <file>bin/</file>

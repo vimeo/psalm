@@ -2,19 +2,20 @@
 namespace Psalm\Internal\Analyzer\Statements;
 
 use PhpParser;
-use Psalm\Internal\PhpVisitor\CheckTrivialExprVisitor;
-use Psalm\Codebase;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\FileManipulation;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
+use Psalm\Internal\PhpVisitor\CheckTrivialExprVisitor;
+
+use function array_key_exists;
+use function array_slice;
+use function count;
+use function is_array;
 use function is_string;
 use function strlen;
 use function substr;
-use function array_key_exists;
-use function count;
 use function token_get_all;
-use function array_slice;
-use function is_array;
 use function trim;
 
 class UnusedAssignmentRemover

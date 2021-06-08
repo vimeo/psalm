@@ -3,15 +3,16 @@ namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
-use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\NonDivArithmeticOpAnalyzer;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\StatementsSource;
 use Psalm\Storage\ClassConstantStorage;
 use Psalm\Type;
-use function strtolower;
-use function count;
+
 use function array_shift;
+use function count;
 use function reset;
+use function strtolower;
 
 /**
  * This class takes a statement and return its type by analyzing each part of the statement if necessary

@@ -1,19 +1,20 @@
 <?php
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
+use PhpParser;
+use Psalm\CodeLocation;
+use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Issue\InvalidReturnType;
+use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
+use Psalm\Type;
+use Psalm\Type\Reconciler;
+
 use function array_map;
 use function count;
 use function is_string;
-use PhpParser;
-use Psalm\CodeLocation;
-use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
-use Psalm\Issue\InvalidReturnType;
-use Psalm\IssueBuffer;
-use Psalm\Type;
-use Psalm\Type\Reconciler;
-use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 
 class ArrayFilterReturnTypeProvider implements \Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface
 {

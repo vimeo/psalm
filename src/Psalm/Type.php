@@ -1,21 +1,12 @@
 <?php
 namespace Psalm;
 
-use Psalm\Internal\Type\Comparator\UnionTypeComparator;
-use Psalm\Plugin\EventHandler\Event\StringInterpreterEvent;
-use Psalm\Type\Atomic\TNever;
-use function array_merge;
-use function array_pop;
-use function array_shift;
-use function array_values;
-use function explode;
-use function implode;
-use function preg_quote;
-use function preg_replace;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
+use Psalm\Plugin\EventHandler\Event\StringInterpreterEvent;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
@@ -33,6 +24,7 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TLowercaseString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyLowercaseString;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNull;
@@ -48,7 +40,16 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Atomic\TVoid;
 use Psalm\Type\Union;
+
+use function array_merge;
+use function array_pop;
+use function array_shift;
+use function array_values;
+use function explode;
 use function get_class;
+use function implode;
+use function preg_quote;
+use function preg_replace;
 use function stripos;
 use function strlen;
 use function strpos;

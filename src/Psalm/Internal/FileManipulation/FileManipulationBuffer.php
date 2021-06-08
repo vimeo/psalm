@@ -1,10 +1,11 @@
 <?php
 namespace Psalm\Internal\FileManipulation;
 
-use function array_merge;
 use Psalm\CodeLocation;
 use Psalm\FileManipulation;
 use Psalm\Internal\Provider\FileProvider;
+
+use function array_merge;
 use function preg_match;
 use function strlen;
 use function strrpos;

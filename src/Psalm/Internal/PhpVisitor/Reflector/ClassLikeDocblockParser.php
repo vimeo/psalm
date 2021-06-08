@@ -14,24 +14,26 @@ use Psalm\Internal\Type\ParseTree;
 use Psalm\Internal\Type\ParseTreeCreator;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
-use function trim;
-use function substr_count;
-use function strlen;
-use function preg_replace;
-use function str_replace;
-use function preg_match;
-use function count;
-use function reset;
-use function preg_split;
+
+use function array_key_first;
 use function array_merge;
 use function array_shift;
+use function count;
 use function implode;
-use function substr;
+use function in_array;
+use function preg_match;
+use function preg_replace;
+use function preg_split;
+use function reset;
+use function str_replace;
+use function strlen;
 use function strpos;
 use function strtolower;
-use function in_array;
+use function substr;
+use function substr_count;
+use function trim;
+
 use const PREG_OFFSET_CAPTURE;
-use function array_key_first;
 
 /**
  * @internal

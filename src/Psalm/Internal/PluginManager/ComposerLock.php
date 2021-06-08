@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Internal\PluginManager;
 
+use RuntimeException;
+
 use function array_merge;
 use function file_get_contents;
 use function is_array;
@@ -8,7 +10,6 @@ use function is_string;
 use function json_decode;
 use function json_last_error;
 use function json_last_error_msg;
-use RuntimeException;
 
 class ComposerLock
 {

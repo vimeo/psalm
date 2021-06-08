@@ -4,8 +4,8 @@ namespace Psalm\Internal\PhpVisitor\Reflector;
 
 use PhpParser;
 use Psalm\Aliases;
-use Psalm\Codebase;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Exception\InvalidMethodOverrideException;
 use Psalm\Exception\TypeParseTreeException;

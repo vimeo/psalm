@@ -1,13 +1,15 @@
 <?php
 namespace Psalm\Tests\Traits;
 
-use function is_int;
-use const PHP_VERSION;
-use function preg_quote;
 use Psalm\Config;
 use Psalm\Context;
+
+use function is_int;
+use function preg_quote;
 use function strpos;
 use function version_compare;
+
+use const PHP_VERSION;
 
 trait InvalidCodeAnalysisTestTrait
 {

@@ -2,15 +2,16 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
+use Psalm\CodeLocation;
+use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\CodeLocation;
-use Psalm\Context;
 use Psalm\Type;
+
+use function implode;
 use function in_array;
 use function strtolower;
-use function implode;
 
 class InstanceofAnalyzer
 {

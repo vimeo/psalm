@@ -12,9 +12,9 @@ use function in_array;
 use function is_numeric;
 use function preg_match;
 use function preg_replace;
+use function str_split;
 use function strlen;
 use function strpos;
-use function str_split;
 use function strtolower;
 
 class TypeTokenizer

@@ -3,6 +3,7 @@
 namespace Psalm\Internal\Type;
 
 use Psalm\Type\Union;
+
 use function array_map;
 
 class TemplateResult

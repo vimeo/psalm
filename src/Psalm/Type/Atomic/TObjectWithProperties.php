@@ -1,19 +1,20 @@
 <?php
 namespace Psalm\Type\Atomic;
 
-use function array_keys;
-use function array_map;
-use function count;
-use function implode;
 use Psalm\Codebase;
-use Psalm\Type\Atomic;
-use Psalm\Type\Union;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
-use Psalm\Internal\Type\TemplateInferredTypeReplacer;
+use Psalm\Type\Atomic;
+use Psalm\Type\Union;
+
+use function array_keys;
+use function array_map;
 use function array_merge;
 use function array_values;
+use function count;
+use function implode;
 
 /**
  * Denotes an object with specified member variables e.g. `object{foo:int, bar:string}`.

@@ -1,8 +1,8 @@
 <?php
 namespace Psalm\Type\Atomic;
 
-use function implode;
 use function array_map;
+use function implode;
 
 class TTypeAlias extends \Psalm\Type\Atomic
 {

@@ -2,6 +2,7 @@
 namespace Psalm\Internal\PhpVisitor;
 
 use PhpParser;
+
 use function count;
 
 /**

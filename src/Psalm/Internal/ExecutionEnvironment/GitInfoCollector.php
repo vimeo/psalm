@@ -1,13 +1,14 @@
 <?php
 namespace Psalm\Internal\ExecutionEnvironment;
 
+use Psalm\SourceControl\Git\CommitInfo;
+use Psalm\SourceControl\Git\GitInfo;
+use Psalm\SourceControl\Git\RemoteInfo;
+
 use function array_keys;
 use function array_unique;
 use function count;
 use function explode;
-use Psalm\SourceControl\Git\CommitInfo;
-use Psalm\SourceControl\Git\GitInfo;
-use Psalm\SourceControl\Git\RemoteInfo;
 use function range;
 use function strpos;
 use function trim;

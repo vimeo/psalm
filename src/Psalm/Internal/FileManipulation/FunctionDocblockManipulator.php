@@ -2,26 +2,27 @@
 namespace Psalm\Internal\FileManipulation;
 
 use PhpParser;
-use function count;
-use function ltrim;
 use PhpParser\Node\Expr\ArrowFunction;
 use PhpParser\Node\Expr\Closure;
 use PhpParser\Node\FunctionLike;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Function_;
-use function preg_match;
 use Psalm\DocComment;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+
+use function array_merge;
+use function count;
+use function ltrim;
+use function preg_match;
+use function reset;
 use function str_replace;
 use function str_split;
 use function strlen;
 use function strpos;
 use function strrpos;
 use function substr;
-use function reset;
-use function array_merge;
 
 /**
  * @internal

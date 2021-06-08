@@ -2,11 +2,12 @@
 
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
+use Psalm\Internal\Type\ArrayType;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
-use function count;
-use Psalm\Internal\Type\ArrayType;
 use Psalm\Type;
+
+use function count;
 
 class MinMaxReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {

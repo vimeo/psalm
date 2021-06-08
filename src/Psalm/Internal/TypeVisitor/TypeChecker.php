@@ -6,13 +6,6 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeExpander;
-use Psalm\Storage\MethodStorage;
-use Psalm\Type\Atomic\TArray;
-use Psalm\Type\Atomic\TClassConstant;
-use Psalm\Type\Atomic\TGenericObject;
-use Psalm\Type\Atomic\TNamedObject;
-use Psalm\Type\Atomic\TResource;
-use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Issue\DeprecatedClass;
 use Psalm\Issue\InvalidTemplateParam;
 use Psalm\Issue\MissingTemplateParam;
@@ -20,8 +13,16 @@ use Psalm\Issue\TooManyTemplateParams;
 use Psalm\Issue\UndefinedConstant;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
-use Psalm\Type\TypeNode;
+use Psalm\Storage\MethodStorage;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TClassConstant;
+use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TResource;
+use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\NodeVisitor;
+use Psalm\Type\TypeNode;
+
 use function strtolower;
 
 class TypeChecker extends NodeVisitor

@@ -4,6 +4,7 @@ namespace Psalm\Internal\Analyzer;
 
 use PhpParser;
 
+use function array_diff;
 use function array_filter;
 use function array_intersect;
 use function array_merge;
@@ -13,7 +14,6 @@ use function count;
 use function end;
 use function in_array;
 use function strtolower;
-use function array_diff;
 
 /**
  * @internal

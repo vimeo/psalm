@@ -1,12 +1,14 @@
 <?php
 namespace Psalm\Tests;
 
-use function preg_quote;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\Internal\Provider;
+
+use function preg_quote;
 use function strpos;
+
 use const DIRECTORY_SEPARATOR;
 
 class UnusedVariableTest extends TestCase

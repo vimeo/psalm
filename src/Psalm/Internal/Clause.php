@@ -4,6 +4,7 @@ namespace Psalm\Internal;
 use function array_diff;
 use function array_keys;
 use function array_map;
+use function array_unique;
 use function array_values;
 use function count;
 use function implode;
@@ -11,7 +12,6 @@ use function json_encode;
 use function ksort;
 use function md5;
 use function sort;
-use function array_unique;
 use function strpos;
 
 /**

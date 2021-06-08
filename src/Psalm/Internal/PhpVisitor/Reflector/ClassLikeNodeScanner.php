@@ -1,20 +1,11 @@
 <?php
 namespace Psalm\Internal\PhpVisitor\Reflector;
 
-use Psalm\Internal\Analyzer\NamespaceAnalyzer;
-use Psalm\Internal\Scanner\ClassLikeDocblockComment;
-use function array_merge;
-use function array_pop;
-use function count;
-use function explode;
-use function implode;
 use PhpParser;
-use function preg_match;
-use function preg_replace;
 use Psalm\Aliases;
-use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\CodeLocation\DocblockTypeLocation;
+use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\DocComment;
 use Psalm\Exception\DocblockParseException;
@@ -24,8 +15,10 @@ use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Analyzer\ClassAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
+use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
 use Psalm\Internal\Codebase\PropertyMap;
+use Psalm\Internal\Scanner\ClassLikeDocblockComment;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Internal\Type\TypeAlias;
 use Psalm\Internal\Type\TypeParser;
@@ -40,15 +33,24 @@ use Psalm\Storage\FileStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
-use function strtolower;
-use function trim;
-use function str_replace;
-use function preg_split;
-use const PREG_SPLIT_DELIM_CAPTURE;
-use const PREG_SPLIT_NO_EMPTY;
+
+use function array_merge;
+use function array_pop;
 use function array_shift;
 use function array_values;
+use function count;
+use function explode;
 use function get_class;
+use function implode;
+use function preg_match;
+use function preg_replace;
+use function preg_split;
+use function str_replace;
+use function strtolower;
+use function trim;
+
+use const PREG_SPLIT_DELIM_CAPTURE;
+use const PREG_SPLIT_NO_EMPTY;
 
 class ClassLikeNodeScanner
 {

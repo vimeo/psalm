@@ -9,8 +9,9 @@ use Psalm\Plugin\EventHandler\MethodReturnTypeProviderInterface;
 use Psalm\Plugin\Hook\MethodReturnTypeProviderInterface as LegacyMethodReturnTypeProviderInterface;
 use Psalm\StatementsSource;
 use Psalm\Type;
-use function strtolower;
+
 use function is_subclass_of;
+use function strtolower;
 
 class MethodReturnTypeProvider
 {

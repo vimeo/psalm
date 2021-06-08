@@ -2,15 +2,14 @@
 
 namespace Psalm\Internal\Type;
 
-use function count;
 use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
-use Psalm\Issue\DocblockTypeContradiction;
-use Psalm\Issue\TypeDoesNotContainType;
-use Psalm\Issue\RedundantPropertyInitializationCheck;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Issue\DocblockTypeContradiction;
+use Psalm\Issue\RedundantPropertyInitializationCheck;
+use Psalm\Issue\TypeDoesNotContainType;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
@@ -19,12 +18,14 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Reconciler;
+
+use function array_values;
+use function count;
+use function explode;
+use function get_class;
 use function strpos;
 use function strtolower;
 use function substr;
-use function explode;
-use function get_class;
-use function array_values;
 
 class NegatedAssertionReconciler extends Reconciler
 {

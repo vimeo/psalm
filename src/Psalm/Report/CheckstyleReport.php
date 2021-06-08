@@ -1,8 +1,9 @@
 <?php
 namespace Psalm\Report;
 
-use function htmlspecialchars;
 use Psalm\Report;
+
+use function htmlspecialchars;
 use function sprintf;
 
 class CheckstyleReport extends Report

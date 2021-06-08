@@ -1,35 +1,36 @@
 <?php
 namespace Psalm\Internal\Type;
 
-use function count;
-use function get_class;
-use function is_string;
-use Psalm\Codebase;
 use Psalm\CodeLocation;
-use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Codebase;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\DocblockTypeContradiction;
+use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\TypeDoesNotContainNull;
 use Psalm\Issue\TypeDoesNotContainType;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic;
-use Psalm\Type\Union;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
-use function strpos;
-use function substr;
-use Psalm\Issue\InvalidDocblock;
+use Psalm\Type\Union;
+
 use function array_intersect_key;
 use function array_merge;
+use function count;
 use function explode;
+use function get_class;
+use function is_string;
+use function strpos;
+use function substr;
 
 class AssertionReconciler extends \Psalm\Type\Reconciler
 {

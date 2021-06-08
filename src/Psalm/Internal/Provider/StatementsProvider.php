@@ -1,6 +1,10 @@
 <?php
 namespace Psalm\Internal\Provider;
 
+use PhpParser;
+use Psalm\Progress\Progress;
+use Psalm\Progress\VoidProgress;
+
 use function abs;
 use function array_flip;
 use function array_intersect_key;
@@ -9,9 +13,6 @@ use function array_merge;
 use function count;
 use function filemtime;
 use function md5;
-use PhpParser;
-use Psalm\Progress\Progress;
-use Psalm\Progress\VoidProgress;
 use function strlen;
 use function substr;
 

@@ -3,8 +3,8 @@ namespace Psalm\Tests;
 
 use PHPUnit\Framework\TestCase as BaseTestCase;
 use Psalm\Exception\IncorrectDocblockException;
-use Psalm\Internal\RuntimeCaches;
 use Psalm\Internal\PhpVisitor\Reflector\FunctionLikeDocblockParser;
+use Psalm\Internal\RuntimeCaches;
 
 class FunctionLikeDocblockParserTest extends BaseTestCase
 {
