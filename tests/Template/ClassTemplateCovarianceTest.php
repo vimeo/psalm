@@ -47,39 +47,12 @@ class ClassTemplateCovarianceTest extends TestCase
 
                     class Bar {
                         /** @var Foo<array> */
-                        private $FooArray;
+                        private $arrayOfFoo;
 
                         public function __construct() {
-                            $this->FooArray = new Foo(function(): array { return ["foo" => "bar"]; });
+                            $this->arrayOfFoo = new Foo(function(): array { return ["foo" => "bar"]; });
                         }
                     }'
-            ],
-            'specializeTypeInPropertyAssignment' => [
-                '<?php
-                    /** @template-covariant T */
-                    class Foo {
-                        /** @var \Closure():T $closure */
-                        private $closure;
-
-                        /** @param \Closure():T $closure */
-                        public function __construct($closure)
-                        {
-                            $this->closure = $closure;
-                        }
-                    }
-
-                    class Bar {
-                        /** @var Foo<array> */
-                        private $FooArray;
-
-                        public function __construct() {
-                            $this->FooArray = new Foo(function(): array { return ["foo" => "bar"]; });
-                            expectsShape($this->FooArray);
-                        }
-                    }
-
-                    /** @param Foo<array{foo: string}> $_ */
-                    function expectsShape($_): void {}',
             ],
             'allowPassingToCovariantCollectionWithoutExtends' => [
                 '<?php

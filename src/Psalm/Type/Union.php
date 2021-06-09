@@ -635,13 +635,6 @@ class Union implements TypeNode
             ) === 1;
     }
 
-    public function hasEmptyArray(): bool
-    {
-        return isset($this->types['array'])
-            && $this->types['array'] instanceof Atomic\TArray
-            && $this->types['array']->type_params[1]->isEmpty();
-    }
-
     public function hasArrayAccessInterface(Codebase $codebase) : bool
     {
         return !!array_filter(
@@ -1346,6 +1339,15 @@ class Union implements TypeNode
         $classlike_visitor->traverseArray($this->types);
 
         return $classlike_visitor->matches();
+    }
+
+    public function containsAnyLiteral() : bool
+    {
+        $literal_visitor = new \Psalm\Internal\TypeVisitor\ContainsLiteralVisitor();
+
+        $literal_visitor->traverseArray($this->types);
+
+        return $literal_visitor->matches();
     }
 
     /**

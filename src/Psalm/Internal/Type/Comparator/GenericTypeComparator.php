@@ -162,9 +162,7 @@ class GenericTypeComparator
                 && !$container_param->hasTemplate()
                 && !$input_param->hasTemplate()
             ) {
-                if ($input_param->hasEmptyArray()
-                    || $input_param->hasLiteralValue()
-                ) {
+                if ($input_param->containsAnyLiteral()) {
                     if ($atomic_comparison_result) {
                         if (!$atomic_comparison_result->replacement_atomic_type) {
                             $atomic_comparison_result->replacement_atomic_type = clone $input_type_part;
