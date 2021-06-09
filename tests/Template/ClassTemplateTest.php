@@ -1637,7 +1637,7 @@ class ClassTemplateTest extends TestCase
                         }
                     }',
             ],
-            'SKIPPED-keyOfClassTemplateAcceptingIndexedAccess' => [
+            'keyOfClassTemplateAcceptingIndexedAccess' => [
                 '<?php
                     /**
                      * @template TData as array
