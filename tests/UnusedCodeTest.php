@@ -962,6 +962,25 @@ class UnusedCodeTest extends TestCase
 
                     (new A())->foo()->bar();',
             ],
+            'unusedInterfaceReturnValueWithImplementingClassSuppressed' => [
+                '<?php
+                    interface IWorker {
+                        /** @psalm-suppress PossiblyUnusedReturnValue */
+                        public function work(): bool;
+                    }
+
+                    class Worker implements IWorker{
+                        public function work(): bool {
+                            return true;
+                        }
+                    }
+
+                    function f(IWorker $worker): void {
+                        $worker->work();
+                    }
+
+                    f(new Worker());',
+            ],
         ];
     }
 
@@ -1339,6 +1358,36 @@ class UnusedCodeTest extends TestCase
                     $foo = new A();
                     echo $foo->a;',
                 'error_message' => 'PossiblyUnusedProperty',
+            ],
+            'unusedInterfaceReturnValue' => [
+                '<?php
+                    interface I {
+                        public function work(): bool;
+                    }
+
+                    function f(I $worker): void {
+                        $worker->work();
+                    }',
+                'error_message' => 'PossiblyUnusedReturnValue',
+            ],
+            'unusedInterfaceReturnValueWithImplementingClass' => [
+                '<?php
+                    interface IWorker {
+                        public function work(): bool;
+                    }
+
+                    class Worker implements IWorker{
+                        public function work(): bool {
+                            return true;
+                        }
+                    }
+
+                    function f(IWorker $worker): void {
+                        $worker->work();
+                    }
+
+                    f(new Worker());',
+                'error_message' => 'PossiblyUnusedReturnValue',
             ],
             'fluentSelfMethodsProhibited' => [
                 '<?php
