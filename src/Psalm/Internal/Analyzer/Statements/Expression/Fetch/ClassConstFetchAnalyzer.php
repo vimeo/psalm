@@ -290,7 +290,8 @@ class ClassConstFetchAnalyzer
             if ($context->calling_method_id) {
                 $codebase->file_reference_provider->addMethodReferenceToClassMember(
                     $context->calling_method_id,
-                    strtolower($fq_class_name) . '::' . $stmt->name->name
+                    strtolower($fq_class_name) . '::' . $stmt->name->name,
+                    false
                 );
             }
 

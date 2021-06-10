@@ -994,6 +994,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                  */
                 if (!$context->inside_assignment
                     && !$context->inside_call
+                    && !$context->inside_return
                     && !$context->inside_use
                     && !$context->inside_throw
                     && !self::callUsesByReferenceArguments($function_call_info, $stmt)

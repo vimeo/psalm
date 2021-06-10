@@ -424,6 +424,7 @@ class VariableFetchAnalyzer
         if ($statements_analyzer->data_flow_graph
             && $codebase->find_unused_variables
             && ($context->inside_call
+                || $context->inside_return
                 || $context->inside_conditional
                 || $context->inside_use
                 || $context->inside_isset
@@ -441,7 +442,7 @@ class VariableFetchAnalyzer
             }
 
             foreach ($stmt_type->parent_nodes as $parent_node) {
-                if ($context->inside_call) {
+                if ($context->inside_call || $context->inside_return) {
                     $statements_analyzer->data_flow_graph->addPath(
                         $parent_node,
                         new DataFlowNode(

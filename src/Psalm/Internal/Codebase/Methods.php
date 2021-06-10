@@ -89,7 +89,8 @@ class Methods
         ?CodeLocation $code_location = null,
         ?StatementsSource $source = null,
         ?string $source_file_path = null,
-        bool $use_method_existence_provider = true
+        bool $use_method_existence_provider = true,
+        bool $is_used = false
     ) : bool {
         $fq_class_name = $method_id->fq_class_name;
         $method_name = $method_id->method_name;
@@ -160,12 +161,14 @@ class Methods
                     if ($calling_method_id) {
                         $this->file_reference_provider->addMethodReferenceToClassMember(
                             $calling_method_id,
-                            $potential_id
+                            $potential_id,
+                            $is_used
                         );
                     } elseif ($source_file_path) {
                         $this->file_reference_provider->addFileReferenceToClassMember(
                             $source_file_path,
-                            $potential_id
+                            $potential_id,
+                            $is_used
                         );
                     }
                 }
@@ -173,12 +176,14 @@ class Methods
                 if ($calling_method_id) {
                     $this->file_reference_provider->addMethodReferenceToClassMember(
                         $calling_method_id,
-                        strtolower((string) $declaring_method_id)
+                        strtolower((string) $declaring_method_id),
+                        $is_used
                     );
                 } elseif ($source_file_path) {
                     $this->file_reference_provider->addFileReferenceToClassMember(
                         $source_file_path,
-                        strtolower((string) $declaring_method_id)
+                        strtolower((string) $declaring_method_id),
+                        $is_used
                     );
                 }
             }
@@ -203,12 +208,14 @@ class Methods
                 if ($calling_method_id) {
                     $this->file_reference_provider->addMethodReferenceToClassMember(
                         $calling_method_id,
-                        $interface_method_id_lc
+                        $interface_method_id_lc,
+                        $is_used
                     );
                 } elseif ($source_file_path) {
                     $this->file_reference_provider->addFileReferenceToClassMember(
                         $source_file_path,
-                        $interface_method_id_lc
+                        $interface_method_id_lc,
+                        $is_used
                     );
                 }
             }
@@ -233,12 +240,14 @@ class Methods
                         // also store failures in case the method is added later
                         $this->file_reference_provider->addMethodReferenceToClassMember(
                             $calling_method_id,
-                            strtolower((string) $overridden_method_id)
+                            strtolower((string) $overridden_method_id),
+                            $is_used
                         );
                     } elseif ($source_file_path) {
                         $this->file_reference_provider->addFileReferenceToClassMember(
                             $source_file_path,
-                            strtolower((string) $overridden_method_id)
+                            strtolower((string) $overridden_method_id),
+                            $is_used
                         );
                     }
                 }

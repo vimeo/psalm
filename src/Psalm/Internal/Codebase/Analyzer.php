@@ -49,12 +49,14 @@ use const PATHINFO_EXTENSION;
  *      method_references_to_classes: array<string, array<string,bool>>,
  *      file_references_to_class_members: array<string, array<string,bool>>,
  *      file_references_to_class_properties: array<string, array<string,bool>>,
+ *      file_references_to_method_returns: array<string, array<string,bool>>,
  *      file_references_to_missing_class_members: array<string, array<string,bool>>,
  *      mixed_counts: array<string, array{0: int, 1: int}>,
  *      mixed_member_names: array<string, array<string, bool>>,
  *      function_timings: array<string, float>,
  *      file_manipulations: array<string, FileManipulation[]>,
  *      method_references_to_class_members: array<string, array<string,bool>>,
+ *      method_references_to_method_returns: array<string, array<string,bool>>,
  *      method_references_to_class_properties: array<string, array<string,bool>>,
  *      method_references_to_missing_class_members: array<string, array<string,bool>>,
  *      method_param_uses: array<string, array<int, array<string, bool>>>,
@@ -448,7 +450,9 @@ class Analyzer
                         'file_references_to_class_members' => $file_reference_provider->getAllFileReferencesToClassMembers(),
                         'method_references_to_class_members' => $file_reference_provider->getAllMethodReferencesToClassMembers(),
                         'file_references_to_class_properties' => $file_reference_provider->getAllFileReferencesToClassProperties(),
+                        'file_references_to_method_returns' => $file_reference_provider->getAllFileReferencesToMethodReturns(),
                         'method_references_to_class_properties' => $file_reference_provider->getAllMethodReferencesToClassProperties(),
+                        'method_references_to_method_returns' => $file_reference_provider->getAllMethodReferencesToMethodReturns(),
                         'file_references_to_missing_class_members' => $file_reference_provider->getAllFileReferencesToMissingClassMembers(),
                         'method_references_to_missing_class_members' => $file_reference_provider->getAllMethodReferencesToMissingClassMembers(),
                         'method_param_uses' => $file_reference_provider->getAllMethodParamUses(),
@@ -508,11 +512,17 @@ class Analyzer
                 $codebase->file_reference_provider->addFileReferencesToClassProperties(
                     $pool_data['file_references_to_class_properties']
                 );
+                $codebase->file_reference_provider->addFileReferencesToMethodReturns(
+                    $pool_data['file_references_to_method_returns']
+                );
                 $codebase->file_reference_provider->addMethodReferencesToClassMembers(
                     $pool_data['method_references_to_class_members']
                 );
                 $codebase->file_reference_provider->addMethodReferencesToClassProperties(
                     $pool_data['method_references_to_class_properties']
+                );
+                $codebase->file_reference_provider->addMethodReferencesToMethodReturns(
+                    $pool_data['method_references_to_method_returns']
                 );
                 $codebase->file_reference_provider->addFileReferencesToMissingClassMembers(
                     $pool_data['file_references_to_missing_class_members']
@@ -600,6 +610,9 @@ class Analyzer
         }
     }
 
+    /**
+     * @psalm-suppress ComplexMethod
+     */
     public function loadCachedResults(ProjectAnalyzer $project_analyzer): void
     {
         $codebase = $project_analyzer->getCodebase();
@@ -630,6 +643,8 @@ class Analyzer
 
         $method_references_to_class_properties = $file_reference_provider->getAllMethodReferencesToClassProperties();
 
+        $method_references_to_method_returns = $file_reference_provider->getAllMethodReferencesToMethodReturns();
+
         $method_references_to_missing_class_members =
             $file_reference_provider->getAllMethodReferencesToMissingClassMembers();
 
@@ -644,6 +659,8 @@ class Analyzer
         $file_references_to_class_members = $file_reference_provider->getAllFileReferencesToClassMembers();
 
         $file_references_to_class_properties = $file_reference_provider->getAllFileReferencesToClassProperties();
+
+        $file_references_to_method_returns = $file_reference_provider->getAllFileReferencesToMethodReturns();
 
         $file_references_to_missing_class_members
             = $file_reference_provider->getAllFileReferencesToMissingClassMembers();
@@ -726,8 +743,10 @@ class Analyzer
                 unset(
                     $method_references_to_class_members[$member_id],
                     $method_references_to_class_properties[$member_id],
+                    $method_references_to_method_returns[$member_id],
                     $file_references_to_class_members[$member_id],
                     $file_references_to_class_properties[$member_id],
+                    $file_references_to_method_returns[$member_id],
                     $method_references_to_missing_class_members[$member_id],
                     $file_references_to_missing_class_members[$member_id],
                     $references_to_mixed_member_names[$member_id],
@@ -752,6 +771,10 @@ class Analyzer
 
             foreach ($method_references_to_class_properties as $i => $_) {
                 unset($method_references_to_class_properties[$i][$method_id]);
+            }
+
+            foreach ($method_references_to_method_returns as $i => $_) {
+                unset($method_references_to_method_returns[$i][$method_id]);
             }
 
             foreach ($method_references_to_classes as $i => $_) {
@@ -811,6 +834,10 @@ class Analyzer
                 unset($file_references_to_class_properties[$i][$file_path]);
             }
 
+            foreach ($file_references_to_method_returns as $i => $_) {
+                unset($file_references_to_method_returns[$i][$file_path]);
+            }
+
             foreach ($nonmethod_references_to_classes as $i => $_) {
                 unset($nonmethod_references_to_classes[$i][$file_path]);
             }
@@ -842,6 +869,10 @@ class Analyzer
             $method_references_to_class_properties
         );
 
+        $method_references_to_method_returns = array_filter(
+            $method_references_to_method_returns
+        );
+
         $method_references_to_missing_class_members = array_filter(
             $method_references_to_missing_class_members
         );
@@ -852,6 +883,10 @@ class Analyzer
 
         $file_references_to_class_properties = array_filter(
             $file_references_to_class_properties
+        );
+
+        $file_references_to_method_returns = array_filter(
+            $file_references_to_method_returns
         );
 
         $file_references_to_missing_class_members = array_filter(
@@ -882,12 +917,20 @@ class Analyzer
             $method_references_to_class_properties
         );
 
+        $file_reference_provider->setCallingMethodReferencesToMethodReturns(
+            $method_references_to_method_returns
+        );
+
         $file_reference_provider->setFileReferencesToClassMembers(
             $file_references_to_class_members
         );
 
         $file_reference_provider->setFileReferencesToClassProperties(
             $file_references_to_class_properties
+        );
+
+        $file_reference_provider->setFileReferencesToMethodReturns(
+            $file_references_to_method_returns
         );
 
         $file_reference_provider->setCallingMethodReferencesToMissingClassMembers(

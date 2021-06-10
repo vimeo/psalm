@@ -132,7 +132,8 @@ class Properties
             if ($context && $context->calling_method_id) {
                 $this->file_reference_provider->addMethodReferenceToClassMember(
                     $context->calling_method_id,
-                    strtolower($declaring_property_class) . '::$' . $property_name
+                    strtolower($declaring_property_class) . '::$' . $property_name,
+                    false
                 );
 
                 if ($read_mode) {
@@ -144,7 +145,8 @@ class Properties
             } elseif ($source) {
                 $this->file_reference_provider->addFileReferenceToClassMember(
                     $source->getFilePath(),
-                    strtolower($declaring_property_class) . '::$' . $property_name
+                    strtolower($declaring_property_class) . '::$' . $property_name,
+                    false
                 );
 
                 if ($read_mode) {

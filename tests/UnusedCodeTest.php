@@ -948,6 +948,20 @@ class UnusedCodeTest extends TestCase
 
                     (new A())->emitA();',
             ],
+            'fluentMethodsAllowed' => [
+                '<?php
+                    class A {
+                        public function foo(): static {
+                            return $this;
+                        }
+
+                        public function bar(): static {
+                            return $this;
+                        }
+                    }
+
+                    (new A())->foo()->bar();',
+            ],
         ];
     }
 
@@ -1325,6 +1339,21 @@ class UnusedCodeTest extends TestCase
                     $foo = new A();
                     echo $foo->a;',
                 'error_message' => 'PossiblyUnusedProperty',
+            ],
+            'fluentSelfMethodsProhibited' => [
+                '<?php
+                    class A {
+                        public function foo(): self {
+                            return $this;
+                        }
+
+                        public function bar(): self {
+                            return $this;
+                        }
+                    }
+
+                    (new A())->foo()->bar();',
+                'error_message' => 'PossiblyUnusedReturnValue',
             ],
         ];
     }

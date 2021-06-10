@@ -157,7 +157,8 @@ class TypeChecker extends NodeVisitor
         ) {
             $codebase->file_reference_provider->addMethodReferenceToClassMember(
                 $this->calling_method_id,
-                'use:' . $atomic->text . ':' . \md5($this->source->getFilePath())
+                'use:' . $atomic->text . ':' . \md5($this->source->getFilePath()),
+                false
             );
         }
 
