@@ -3,8 +3,8 @@ namespace Psalm\Internal\Provider\AddRemoveTaints;
 
 use PhpParser;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Plugin\EventHandler\AddTaintsInterface;
+use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Plugin\EventHandler\RemoveTaintsInterface;
 
 class HtmlFunctionTainter implements AddTaintsInterface, RemoveTaintsInterface
@@ -14,7 +14,8 @@ class HtmlFunctionTainter implements AddTaintsInterface, RemoveTaintsInterface
      *
      * @return list<string>
      */
-    public static function addTaints(AddRemoveTaintsEvent $event): array {
+    public static function addTaints(AddRemoveTaintsEvent $event): array
+    {
         $item = $event->getExpr();
         $statements_analyzer = $event->getStatementsSource();
         
@@ -61,7 +62,8 @@ class HtmlFunctionTainter implements AddTaintsInterface, RemoveTaintsInterface
      *
      * @return list<string>
      */
-    public static function removeTaints(AddRemoveTaintsEvent $event): array {
+    public static function removeTaints(AddRemoveTaintsEvent $event): array
+    {
         $item = $event->getExpr();
         $statements_analyzer = $event->getStatementsSource();
         
