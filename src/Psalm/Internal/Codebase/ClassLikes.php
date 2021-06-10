@@ -1879,6 +1879,41 @@ class ClassLikes
                     }
                 }
             } else {
+                if ($method_storage->return_type
+                    && $method_storage->return_type_location
+                    && !$method_storage->return_type->isVoid()
+                    && !$method_storage->return_type->isNever()
+                    && $method_id->method_name !== '__tostring'
+                ) {
+                    $method_return_referenced = $this->file_reference_provider->isMethodReturnReferenced(
+                        strtolower((string) $method_id)
+                    );
+
+                    if (!$method_return_referenced) {
+                        if ($method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE) {
+                            if (IssueBuffer::accepts(
+                                new \Psalm\Issue\UnusedReturnValue(
+                                    'The return value for this private method is never used',
+                                    $method_storage->return_type_location
+                                ),
+                                $method_storage->suppressed_issues
+                            )) {
+                                // fall through
+                            }
+                        } else {
+                            if (IssueBuffer::accepts(
+                                new \Psalm\Issue\PossiblyUnusedReturnValue(
+                                    'The return value for this method is never used',
+                                    $method_storage->return_type_location
+                                ),
+                                $method_storage->suppressed_issues
+                            )) {
+                                // fall through
+                            }
+                        }
+                    }
+                }
+
                 if ($method_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE
                     && !$classlike_storage->is_interface
                 ) {

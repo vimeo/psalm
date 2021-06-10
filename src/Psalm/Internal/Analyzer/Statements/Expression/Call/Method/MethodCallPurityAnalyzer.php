@@ -106,7 +106,7 @@ class MethodCallPurityAnalyzer
                 && !$context->inside_use
                 && !$context->inside_throw
             ) {
-                if (!$context->inside_assignment && !$context->inside_call) {
+                if (!$context->inside_assignment && !$context->inside_call && !$context->inside_return) {
                     if (IssueBuffer::accepts(
                         new \Psalm\Issue\UnusedMethodCall(
                             'The call to ' . $cased_method_id . ' is not used',

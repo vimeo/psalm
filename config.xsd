@@ -381,6 +381,7 @@
             <xs:element name="PossiblyUnusedMethod" type="MethodIssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyUnusedParam" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyUnusedProperty" type="PropertyIssueHandlerType" minOccurs="0" />
+            <xs:element name="PossiblyUnusedReturnValue" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PropertyNotSetInConstructor" type="PropertyIssueHandlerType" minOccurs="0" />
             <xs:element name="PropertyTypeCoercion" type="PropertyIssueHandlerType" minOccurs="0" />
             <xs:element name="RawObjectIteration" type="IssueHandlerType" minOccurs="0" />
@@ -456,6 +457,7 @@
             <xs:element name="UnusedParam" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnusedProperty" type="PropertyIssueHandlerType" minOccurs="0" />
             <xs:element name="UnusedPsalmSuppress" type="FunctionIssueHandlerType" minOccurs="0" />
+            <xs:element name="UnusedReturnValue" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnusedVariable" type="IssueHandlerType" minOccurs="0" />
         </xs:choice>
     </xs:complexType>

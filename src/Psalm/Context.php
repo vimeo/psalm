@@ -80,6 +80,13 @@ class Context
     public $inside_use = false;
 
     /**
+     * Whether or not we're inside a return expression
+     *
+     * @var bool
+     */
+    public $inside_return = false;
+
+    /**
      * Whether or not we're inside a throw
      *
      * @var bool

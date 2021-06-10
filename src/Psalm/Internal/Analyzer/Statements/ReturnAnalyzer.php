@@ -129,7 +129,7 @@ class ReturnAnalyzer
         }
 
         if ($stmt->expr) {
-            $context->inside_call = true;
+            $context->inside_return = true;
 
             if ($stmt->expr instanceof PhpParser\Node\Expr\Closure
                 || $stmt->expr instanceof PhpParser\Node\Expr\ArrowFunction
@@ -142,6 +142,7 @@ class ReturnAnalyzer
             }
 
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
+                $context->inside_return = false;
                 return;
             }
 
@@ -178,6 +179,8 @@ class ReturnAnalyzer
             } else {
                 $stmt_type = Type::getMixed();
             }
+
+            $context->inside_return = false;
         } else {
             $stmt_type = Type::getVoid();
         }

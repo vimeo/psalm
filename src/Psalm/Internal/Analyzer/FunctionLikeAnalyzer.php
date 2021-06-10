@@ -544,7 +544,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $this->source->getFQCLN(),
                 $storage->return_type_location,
                 $context->has_returned,
-                $global_context && $global_context->inside_call
+                $global_context && ($global_context->inside_call || $global_context->inside_return)
             );
 
             $closure_yield_types = [];

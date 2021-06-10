@@ -931,7 +931,13 @@ class ArgumentAnalyzer
                     $context->calling_method_id,
                     null,
                     $statements_analyzer,
-                    $statements_analyzer->getFilePath()
+                    $statements_analyzer->getFilePath(),
+                    true,
+                    $context->inside_return
+                        || $context->inside_call
+                        || $context->inside_use
+                        || $context->inside_assignment
+                        || $context->inside_conditional
                 );
             }
         }
