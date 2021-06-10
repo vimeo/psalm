@@ -12,7 +12,7 @@ class A {
 }
 
 $a = new A();
-$a->foo(1, 2);
+echo $a->foo(1, 2);
 ```
 
 Can be suppressed by prefixing the parameter name with an underscore:

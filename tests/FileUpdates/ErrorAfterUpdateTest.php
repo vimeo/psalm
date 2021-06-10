@@ -166,7 +166,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
                                 }
                             }
 
-                            (new B)->foo();',
+                            echo (new B)->foo();',
                     ],
                     [
                         getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
@@ -185,7 +185,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
                                 }
                             }
 
-                            (new B)->foo();',
+                            echo (new B)->foo();',
                     ],
                 ],
                 'error_message' => 'InvalidReturnStatement',
@@ -208,7 +208,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
                                 }
                             }
 
-                            (new B)->foo();',
+                            echo (new B)->foo();',
                     ],
                     [
                         getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
@@ -226,7 +226,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
                                 }
                             }
 
-                            (new B)->foo();',
+                            echo (new B)->foo();',
                     ],
                 ],
                 'error_message' => 'InvalidReturnStatement',
@@ -259,7 +259,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
                                 }
                             }
 
-                            (new C)->existingMethod();',
+                            echo (new C)->existingMethod();',
                     ],
                     [
                         getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
@@ -289,7 +289,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
                                 public function newMethod() : void {}
                             }
 
-                            (new C)->existingMethod();
+                            echo (new C)->existingMethod();
                             // newly-added call, removed in the next code block
                             (new C)->newMethod();',
                     ],
@@ -319,7 +319,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
                                 }
                             }
 
-                            (new C)->existingMethod();',
+                            echo (new C)->existingMethod();',
                     ],
                 ],
                 'error_message' => 'NullableReturnStatement',

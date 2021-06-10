@@ -109,9 +109,6 @@
         </PossiblyUnusedProperty>
 
         <PossiblyUnusedMethod>
-            <errorLevel type="info">
-                <file name="src/Psalm/Internal/Provider/FileReferenceProvider.php" />
-            </errorLevel>
             <errorLevel type="suppress">
                 <directory name="src/Psalm/Plugin"/>
                 <directory name="src/Psalm/SourceControl/Git/"/>

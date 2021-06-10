@@ -206,13 +206,11 @@ class UnusedCodeTest extends TestCase
                             }
                         }
 
-                        private function a(int $a, int $b): self
+                        private function a(int $a, int $b): void
                         {
                             $this->v($a, $b);
 
                             $this->i->foo();
-
-                            return $this;
                         }
 
                         private function v(int $a, int $b): void
@@ -414,15 +412,14 @@ class UnusedCodeTest extends TestCase
 
                         /**
                          * @param class-string<O>|null $type
-                         * @return self
                          */
-                        public function addType(?string $type, array $ids = array())
+                        public function addType(?string $type, array $ids = array()): void
                         {
                             if ($this->a) {
                                 $ids = self::mirror($ids);
                             }
                             $this->_types[$type ?: ""] = new ArrayObject($ids);
-                            return $this;
+                            return;
                         }
                     }
 
