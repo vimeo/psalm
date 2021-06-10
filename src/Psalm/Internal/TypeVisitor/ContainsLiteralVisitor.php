@@ -10,8 +10,6 @@ use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\NodeVisitor;
 use Psalm\Type\TypeNode;
 
-use function strtolower;
-
 class ContainsLiteralVisitor extends NodeVisitor
 {
     /**
