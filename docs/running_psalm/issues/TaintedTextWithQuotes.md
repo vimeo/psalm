@@ -32,7 +32,7 @@ Passing `');alert('injection');//` as a `GET` param here would would cause the `
 
 ## Mitigations
 
-- Sanitize user-input by using functions such as `htmlentities` or use an allowlist.
+- Sanitize user input by using functions such as `htmlentities` with the `ENT_QUOTES` flag or use an allowlist.
 - Set all cookies to `HTTPOnly`.
 - Consider using Content Security Policy (CSP), to limit the risk of XSS vulnerabilities.
 
