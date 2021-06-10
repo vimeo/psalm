@@ -128,12 +128,6 @@
             </errorLevel>
         </PossiblyUnusedMethod>
 
-        <PossiblyUnusedReturnValue>
-            <errorLevel type="suppress">
-                <directory name="tests" />
-            </errorLevel>
-        </PossiblyUnusedReturnValue>
-
         <InternalMethod>
             <errorLevel type="suppress">
                 <directory name="tests"/>
