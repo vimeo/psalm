@@ -131,7 +131,6 @@
         <PossiblyUnusedReturnValue>
             <errorLevel type="suppress">
                 <directory name="tests" />
-                <file name="src/Psalm/Internal/ExecutionEnvironment/BuildInfoCollector.php" />
             </errorLevel>
         </PossiblyUnusedReturnValue>
 
