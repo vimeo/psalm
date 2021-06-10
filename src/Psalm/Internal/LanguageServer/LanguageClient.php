@@ -2,7 +2,6 @@
 declare(strict_types = 1);
 namespace Psalm\Internal\LanguageServer;
 
-use Amp\Promise;
 use JsonMapper;
 
 /**
