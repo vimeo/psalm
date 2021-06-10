@@ -455,17 +455,17 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
      * @param string|null $additional_info This is additional info that the client
      *                                       can use as part of the display message.
      */
-    private function clientStatus(string $status, ?string $additional_info = null): Promise
+    private function clientStatus(string $status, ?string $additional_info = null): void
     {
         try {
             // here we send a notification to the client using the telemetry notification method
-            return $this->client->logMessage(
+            $this->client->logMessage(
                 $status . (!empty($additional_info) ? ': ' . $additional_info : ''),
                 3,
                 'telemetry/event'
             );
         } catch (\Throwable $err) {
-            return new Success(null);
+            new Success(null);
         }
     }
 
