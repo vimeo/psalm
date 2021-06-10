@@ -159,7 +159,8 @@ class PsalmEndToEndTest extends TestCase
         $result = $this->runPsalm(['--taint-analysis'], self::$tmpDir, true);
 
         $this->assertStringContainsString('TaintedHtml', $result['STDOUT']);
-        $this->assertStringContainsString('1 errors', $result['STDOUT']);
+        $this->assertStringContainsString('TaintedTextWithQuotes', $result['STDOUT']);
+        $this->assertStringContainsString('2 errors', $result['STDOUT']);
         $this->assertSame(2, $result['CODE']);
     }
 
@@ -168,7 +169,8 @@ class PsalmEndToEndTest extends TestCase
         $result = $this->runPsalm(['--taint-analysis'], self::$tmpDir, true, false);
 
         $this->assertStringContainsString('TaintedHtml', $result['STDOUT']);
-        $this->assertStringContainsString('1 errors', $result['STDOUT']);
+        $this->assertStringContainsString('TaintedTextWithQuotes', $result['STDOUT']);
+        $this->assertStringContainsString('2 errors', $result['STDOUT']);
         $this->assertSame(2, $result['CODE']);
     }
 
