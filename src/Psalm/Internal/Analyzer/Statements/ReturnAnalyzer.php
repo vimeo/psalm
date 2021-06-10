@@ -42,14 +42,11 @@ use function strtolower;
  */
 class ReturnAnalyzer
 {
-    /**
-     * @return false|null
-     */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Return_ $stmt,
         Context $context
-    ): ?bool {
+    ): void {
         $doc_comment = $stmt->getDocComment();
 
         $var_comments = [];
@@ -145,7 +142,7 @@ class ReturnAnalyzer
             }
 
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
-                return false;
+                return;
             }
 
             $stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr);
@@ -284,7 +281,7 @@ class ReturnAnalyzer
                     }
 
                     if ($local_return_type->isGenerator() && $storage->has_yield) {
-                        return null;
+                        return;
                     }
 
                     if ($stmt_type->hasMixed()) {
@@ -296,7 +293,7 @@ class ReturnAnalyzer
                                 ),
                                 $statements_analyzer->getSuppressedIssues()
                             )) {
-                                return false;
+                                return;
                             }
                         }
 
@@ -339,7 +336,7 @@ class ReturnAnalyzer
                                 // fall through
                             }
 
-                            return null;
+                            return;
                         }
 
                         if (IssueBuffer::accepts(
@@ -354,7 +351,7 @@ class ReturnAnalyzer
                     }
 
                     if ($local_return_type->isMixed()) {
-                        return null;
+                        return;
                     }
 
                     if (!$context->collect_initializations
@@ -373,10 +370,10 @@ class ReturnAnalyzer
                             ),
                             $statements_analyzer->getSuppressedIssues()
                         )) {
-                            return false;
+                            return;
                         }
 
-                        return null;
+                        return;
                     }
 
                     $union_comparison_results = new \Psalm\Internal\Type\Comparator\TypeComparisonResult();
@@ -446,7 +443,7 @@ class ReturnAnalyzer
                                         new ClassLikeNameOptions(true)
                                     ) === false
                                     ) {
-                                        return false;
+                                        return;
                                     }
                                 } elseif ($local_type_part instanceof Type\Atomic\TArray
                                     && $stmt->expr instanceof PhpParser\Node\Expr\Array_
@@ -467,7 +464,7 @@ class ReturnAnalyzer
                                                         new ClassLikeNameOptions(true)
                                                     ) === false
                                                     ) {
-                                                        return false;
+                                                        return;
                                                     }
                                                 }
                                             }
@@ -544,8 +541,6 @@ class ReturnAnalyzer
                 }
             }
         }
-
-        return null;
     }
 
     private static function handleTaints(

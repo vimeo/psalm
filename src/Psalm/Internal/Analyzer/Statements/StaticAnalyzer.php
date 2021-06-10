@@ -16,14 +16,11 @@ use function is_string;
 
 class StaticAnalyzer
 {
-    /**
-     * @return  false|null
-     */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Static_ $stmt,
         Context $context
-    ): ?bool {
+    ): void {
         $codebase = $statements_analyzer->getCodebase();
 
         if ($context->mutation_free) {
@@ -148,7 +145,7 @@ class StaticAnalyzer
 
             if ($var->default) {
                 if (ExpressionAnalyzer::analyze($statements_analyzer, $var->default, $context) === false) {
-                    return false;
+                    return;
                 }
 
                 if ($comment_type
@@ -186,7 +183,5 @@ class StaticAnalyzer
                 );
             }
         }
-
-        return null;
     }
 }

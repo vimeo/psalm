@@ -251,19 +251,18 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
     /**
      * Check that __clone, __construct, and __destruct do not have a return type
      * hint in their signature.
-     *
-     * @return false|null
      */
     public static function checkMethodSignatureMustOmitReturnType(
         MethodStorage $method_storage,
         CodeLocation $code_location
-    ): ?bool {
+    ): void {
         if ($method_storage->signature_return_type === null) {
-            return null;
+            return;
         }
 
         $cased_method_name = $method_storage->cased_name;
         $methodsOfInterest = ['__clone', '__construct', '__destruct'];
+
         if (in_array($cased_method_name, $methodsOfInterest)) {
             if (IssueBuffer::accepts(
                 new MethodSignatureMustOmitReturnType(
@@ -271,11 +270,9 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                     $code_location
                 )
             )) {
-                return false;
+                // fall through
             }
         }
-
-        return null;
     }
 
     public function getMethodId(?string $context_self = null): \Psalm\Internal\MethodIdentifier

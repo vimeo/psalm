@@ -46,7 +46,7 @@ interface EmitterInterface
         string $eventName,
         array $arguments = [],
         ?callable $continueCallBack = null
-    ) : bool;
+    ) : void;
 
     /**
      * Returns the list of listeners for an event.

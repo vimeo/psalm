@@ -115,12 +115,12 @@ class ClassAnalyzer extends ClassLikeAnalyzer
     }
 
     /**
-     * @return null|false
+     * @return void
      */
     public function analyze(
         ?Context $class_context = null,
         ?Context $global_context = null
-    ): ?bool {
+    ): void {
         $class = $this->class;
 
         if (!$class instanceof PhpParser\Node\Stmt\Class_ && !$class instanceof PhpParser\Node\Stmt\Enum_) {
@@ -132,7 +132,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         $storage = $this->storage;
 
         if ($storage->has_visitor_issues) {
-            return null;
+            return;
         }
 
         if ($class->name
@@ -160,7 +160,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 // fall through
             }
 
-            return null;
+            return;
         }
 
         $project_analyzer = $this->file_analyzer->project_analyzer;
@@ -332,11 +332,11 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             $fq_class_name,
             $storage
         ) === false) {
-            return false;
+            return;
         }
 
         if ($storage->invalid_dependencies) {
-            return null;
+            return;
         }
 
         if ($this->leftover_stmts) {
@@ -370,7 +370,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         ),
                         $storage->suppressed_issues + $this->getSuppressedIssues()
                     )) {
-                        return false;
+                        return;
                     }
                 }
             }
@@ -421,7 +421,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     $global_context,
                     $constructor_analyzer
                 ) === false) {
-                    return false;
+                    return;
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Property) {
                 foreach ($stmt->props as $prop) {
@@ -620,7 +620,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         );
 
         if ($codebase->config->eventDispatcher->dispatchAfterClassLikeAnalysis($event) === false) {
-            return false;
+            return;
         }
         $file_manipulations = $event->getFileReplacements();
         if ($file_manipulations) {
@@ -629,8 +629,6 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 $file_manipulations
             );
         }
-
-        return null;
     }
 
     public static function addContextProperties(

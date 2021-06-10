@@ -36,12 +36,10 @@ class TextDocument
      * Diagnostics notification are sent from the server to the client to signal results of validation runs.
      *
      * @param Diagnostic[] $diagnostics
-     *
-     * @return Promise<void>
      */
-    public function publishDiagnostics(string $uri, array $diagnostics): Promise
+    public function publishDiagnostics(string $uri, array $diagnostics): void
     {
-        return $this->handler->notify('textDocument/publishDiagnostics', [
+        $this->handler->notify('textDocument/publishDiagnostics', [
             'uri' => $uri,
             'diagnostics' => $diagnostics,
         ]);

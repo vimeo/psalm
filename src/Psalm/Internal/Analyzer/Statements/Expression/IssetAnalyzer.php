@@ -38,14 +38,11 @@ class IssetAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $stmt,
         Context $context
-    ) : bool {
-
+    ) : void {
         $context->inside_isset = true;
 
-        $result = ExpressionAnalyzer::analyze($statements_analyzer, $stmt, $context);
+        ExpressionAnalyzer::analyze($statements_analyzer, $stmt, $context);
 
         $context->inside_isset = false;
-
-        return $result;
     }
 }

@@ -21,20 +21,18 @@ use function in_array;
  */
 class SwitchAnalyzer
 {
-    /**
-     * @return  false|null
-     */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Switch_ $stmt,
         Context $context
-    ): ?bool {
+    ): void {
         $codebase = $statements_analyzer->getCodebase();
 
         $context->inside_conditional = true;
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->cond, $context) === false) {
-            return false;
+            return;
         }
+
         $context->inside_conditional = false;
 
         $switch_var_id = ExpressionIdentifier::getArrayVarId(
@@ -132,7 +130,7 @@ class SwitchAnalyzer
                 $switch_scope
             ) === false
             ) {
-                return false;
+                return;
             }
         }
 
@@ -225,7 +223,5 @@ class SwitchAnalyzer
 
         //a switch can't return in all options without a default
         $context->has_returned = $all_options_returned && $has_default;
-
-        return null;
     }
 }

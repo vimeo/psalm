@@ -12,14 +12,11 @@ use Psalm\Type;
 
 class ContinueAnalyzer
 {
-    /**
-     * @return false|null
-     */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Continue_ $stmt,
         Context $context
-    ): ?bool {
+    ): void {
         $count = $stmt->num
             && $stmt->num instanceof PhpParser\Node\Scalar\LNumber
             ? $stmt->num->value
@@ -44,7 +41,7 @@ class ContinueAnalyzer
                     ),
                     $statements_analyzer->getSource()->getSuppressedIssues()
                 )) {
-                    return false;
+                    return;
                 }
             }
         } else {
@@ -105,7 +102,5 @@ class ContinueAnalyzer
         }
 
         $context->has_returned = true;
-
-        return null;
     }
 }

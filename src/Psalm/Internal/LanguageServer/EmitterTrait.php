@@ -71,13 +71,13 @@ trait EmitterTrait
         string $eventName,
         array $arguments = [],
         ?callable $continueCallBack = null
-    ) : bool {
+    ): void {
         if ($continueCallBack === null) {
             foreach ($this->listeners($eventName) as $listener) {
                 /** @psalm-suppress MixedAssignment */
                 $result = \call_user_func_array($listener, $arguments);
                 if ($result === false) {
-                    return false;
+                    return;
                 }
             }
         } else {
@@ -89,7 +89,7 @@ trait EmitterTrait
                 /** @psalm-suppress MixedAssignment */
                 $result = \call_user_func_array($listener, $arguments);
                 if ($result === false) {
-                    return false;
+                    return;
                 }
 
                 if ($counter > 0) {
@@ -99,8 +99,6 @@ trait EmitterTrait
                 }
             }
         }
-
-        return true;
     }
 
     /**

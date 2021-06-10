@@ -395,10 +395,8 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
      * The shutdown request is sent from the client to the server. It asks the server to shut down,
      * but to not exit (otherwise the response might not be delivered correctly to the client).
      * There is a separate exit notification that asks the server to exit.
-     *
-     * @psalm-return Promise<null>
      */
-    public function shutdown(): Promise
+    public function shutdown(): void
     {
         $this->clientStatus('closing');
         $this->verboseLog("Shutting down...");
@@ -409,7 +407,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
             $scanned_files
         );
         $this->clientStatus('closed');
-        return new Success(null);
+        new Success(null);
     }
 
     /**
@@ -433,19 +431,20 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
      *  - 3 = Info
      *  - 4 = Log
      */
-    private function verboseLog(string $message, int $type = 4): Promise
+    private function verboseLog(string $message, int $type = 4): void
     {
         if ($this->project_analyzer->language_server_verbose) {
             try {
-                return $this->client->logMessage(
+                $this->client->logMessage(
                     '[Psalm ' .PSALM_VERSION. ' - PHP Language Server] ' . $message,
                     $type
                 );
+                return;
             } catch (\Throwable $err) {
                 // do nothing
             }
         }
-        return new Success(null);
+        new Success(null);
     }
 
     /**
