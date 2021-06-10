@@ -100,6 +100,17 @@ trait GenericTrait
             return $value_type_string . '[]';
         }
 
+        $type_params = $this->type_params;
+
+        //no need for special format if the key is not determined and the content can be displayed with phpdoc format
+        if ($this instanceof TArray &&
+            isset($type_params[0]) &&
+            $type_params[0]->isArrayKey()
+        ) {
+            //we remove the key for display
+            unset($type_params[0]);
+        }
+
         $extra_types = '';
 
         if ($this instanceof TNamedObject && $this->extra_types) {
@@ -128,7 +139,7 @@ trait GenericTrait
                         function (Union $type_param) use ($namespace, $aliased_classes, $this_class): string {
                             return $type_param->toNamespacedString($namespace, $aliased_classes, $this_class, false);
                         },
-                        $this->type_params
+                        $type_params
                     )
                 ) .
                 '>' . $extra_types;
