@@ -1295,6 +1295,10 @@ class Config
         foreach ($socket->getAdditionalFileTypeAnalyzers() as $extension => $className) {
             $this->filetype_analyzers[$extension] = $className;
         }
+
+        new \Psalm\Internal\Provider\AddRemoveTaints\HtmlFunctionTainter();
+
+        $socket->registerHooksFromClass(\Psalm\Internal\Provider\AddRemoveTaints\HtmlFunctionTainter::class);
     }
 
     private static function requirePath(string $path): void

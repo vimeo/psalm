@@ -676,7 +676,7 @@ function stripslashes(string $str) : string {}
 /**
  * @psalm-pure
  *
- * @psalm-taint-escape html
+ * Tainting is handled in a plugin
  *
  * @psalm-flow ($string) -> return
  */
@@ -685,7 +685,7 @@ function htmlentities(string $string, ?int $quote_style = null, ?string $charset
 /**
  * @psalm-pure
  *
- * @psalm-taint-unescape html
+ * Tainting is handled in a plugin
  *
  * @psalm-flow ($string) -> return
  */
@@ -694,8 +694,7 @@ function html_entity_decode(string $string, ?int $quote_style = null, ?string $c
 /**
  * @psalm-pure
  *
- * @psalm-taint-escape html
- * @psalm-taint-escape sql
+ * Tainting is handled in a plugin
  *
  * @psalm-flow ($string) -> return
  * @psalm-return (
@@ -709,8 +708,7 @@ function htmlspecialchars(string $string, int $flags = ENT_COMPAT | ENT_HTML401,
 /**
  * @psalm-pure
  *
- * @psalm-taint-unescape html
- * @psalm-taint-unescape sql
+ * Tainting is handled in a plugin
  *
  * @psalm-flow ($string) -> return
  */

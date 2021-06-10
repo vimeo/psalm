@@ -41,6 +41,7 @@ class ExitAnalyzer
 
                 $echo_param_sink->taints = [
                     Type\TaintKind::INPUT_HTML,
+                    Type\TaintKind::INPUT_HAS_QUOTES,
                     Type\TaintKind::USER_SECRET,
                     Type\TaintKind::SYSTEM_SECRET
                 ];

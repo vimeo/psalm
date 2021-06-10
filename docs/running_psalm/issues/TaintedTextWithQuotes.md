@@ -1,6 +1,6 @@
-# TaintedHtml
+# TaintedTextWithQuotes
 
-Emitted when user-controlled input that can contain HTML can be passed into to an `echo` statement.
+Emitted when user-controlled input that can contain quotation marks can be passed into to an `echo` statement.
 
 ## Risk
 
@@ -20,15 +20,15 @@ Wheter this is exploitable or not depends on a few conditions:
 
 ```php
 <?php
+$param = strip_tags($_GET['param']);
+?>
 
-$name = $_GET["name"];
-
-printName($name);
-
-function printName(string $name) {
-    echo $name;
-}
+<script>
+    console.log('<?=$param?>')
+</script>
 ```
+
+Passing `');alert('injection');//` as a `GET` param here would would cause the `alert` to trigger.
 
 ## Mitigations
 

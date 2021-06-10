@@ -19,6 +19,7 @@ use Psalm\Issue\TaintedSSRF;
 use Psalm\Issue\TaintedShell;
 use Psalm\Issue\TaintedSql;
 use Psalm\Issue\TaintedSystemSecret;
+use Psalm\Issue\TaintedTextWithQuotes;
 use Psalm\Issue\TaintedUnserialize;
 use Psalm\Issue\TaintedUserSecret;
 use Psalm\IssueBuffer;
@@ -347,6 +348,15 @@ class TaintFlowGraph extends DataFlowGraph
                             case TaintKind::INPUT_HTML:
                                 $issue = new TaintedHtml(
                                     'Detected tainted HTML',
+                                    $issue_location,
+                                    $issue_trace,
+                                    $path
+                                );
+                                break;
+
+                            case TaintKind::INPUT_HAS_QUOTES:
+                                $issue = new TaintedTextWithQuotes(
+                                    'Detected tainted text with possible quotes',
                                     $issue_location,
                                     $issue_trace,
                                     $path

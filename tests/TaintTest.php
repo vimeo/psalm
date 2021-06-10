@@ -32,6 +32,8 @@ class TaintTest extends TestCase
 
         $this->project_analyzer->trackTaintedInputs();
 
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
         $this->analyzeFile($file_path, new Context(), false);
     }
 
@@ -76,7 +78,7 @@ class TaintTest extends TestCase
 
                     $data = ["name" => $name, "id" => $id];
 
-                    echo "<h1>" . htmlentities($data["name"]) . "</h1>";
+                    echo "<h1>" . htmlentities($data["name"], \ENT_QUOTES) . "</h1>";
                     echo "<p>" . $data["id"] . "</p>";'
             ],
             'taintedInputInAssignedArrayNotEchoed' => [
@@ -88,7 +90,7 @@ class TaintTest extends TestCase
                     $data["name"] = $name;
                     $data["id"] = $id;
 
-                    echo "<h1>" . htmlentities($data["name"]) . "</h1>";
+                    echo "<h1>" . htmlentities($data["name"], \ENT_QUOTES) . "</h1>";
                     echo "<p>" . $data["id"] . "</p>";'
             ],
             'taintedInputDirectlySuppressed' => [
@@ -214,7 +216,7 @@ class TaintTest extends TestCase
 
                     class A {
                         public function foo() : void {
-                            echo(htmlentities(Utils::shorten((string) $_GET["user_id"])));
+                            echo(htmlentities(Utils::shorten((string) $_GET["user_id"]), \ENT_QUOTES));
                         }
 
                         public function bar() : void {
@@ -225,7 +227,7 @@ class TaintTest extends TestCase
             'taintHtmlEntities' => [
                 '<?php
                     function foo() : void {
-                        $a = htmlentities((string) $_GET["bad"]);
+                        $a = htmlentities((string) $_GET["bad"], \ENT_QUOTES);
                         echo $a;
                     }'
             ],
@@ -242,6 +244,7 @@ class TaintTest extends TestCase
                         /**
                          * @psalm-pure
                          * @psalm-taint-escape html
+                         * @psalm-taint-escape has_quotes
                          */
                         public static function shorten(string $s) : string {
                             return str_replace("foo", "bar", $s);
@@ -307,6 +310,7 @@ class TaintTest extends TestCase
                         public function foo(O1 $o) : void {
                             /**
                              * @psalm-taint-escape html
+                             * @psalm-taint-escape has_quotes
                              */
                             $a = str_replace("foo", "bar", $o->s);
                             echo $a;
@@ -323,7 +327,7 @@ class TaintTest extends TestCase
 
                         /** @psalm-pure */
                         public static function escape(string $s) : string {
-                            return htmlentities($s);
+                            return htmlentities($s, \ENT_QUOTES);
                         }
                     }
 
@@ -2240,7 +2244,7 @@ class TaintTest extends TestCase
                     $value = triggerShell($value);
                     $value = triggerFile($value);
                 ',
-                'expectedIssueTypes' => ['TaintedHtml', 'TaintedShell', 'TaintedFile'],
+                'expectedIssueTypes' => ['TaintedHtml', 'TaintedTextWithQuotes', 'TaintedShell', 'TaintedFile'],
             ]
         ];
     }

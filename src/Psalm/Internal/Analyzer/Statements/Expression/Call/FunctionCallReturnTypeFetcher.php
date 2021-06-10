@@ -588,6 +588,7 @@ class FunctionCallReturnTypeFetcher
 
                         if (self::simpleExclusion($pattern, $first_arg_value[0])) {
                             $removed_taints[] = 'html';
+                            $removed_taints[] = 'has_quotes';
                             $removed_taints[] = 'sql';
                         }
                     }
