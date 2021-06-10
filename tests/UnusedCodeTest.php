@@ -962,7 +962,7 @@ class UnusedCodeTest extends TestCase
 
                     (new A())->foo()->bar();',
             ],
-            'unusedInterfaceReturnValueWithImplementingClassSuppressed' => [
+            'SKIPPED-unusedInterfaceReturnValueWithImplementingClassSuppressed' => [
                 '<?php
                     interface IWorker {
                         /** @psalm-suppress PossiblyUnusedReturnValue */
@@ -1370,7 +1370,7 @@ class UnusedCodeTest extends TestCase
                     }',
                 'error_message' => 'PossiblyUnusedReturnValue',
             ],
-            'unusedInterfaceReturnValueWithImplementingClass' => [
+            'SKIPPED-unusedInterfaceReturnValueWithImplementingClass' => [
                 '<?php
                     interface IWorker {
                         public function work(): bool;
