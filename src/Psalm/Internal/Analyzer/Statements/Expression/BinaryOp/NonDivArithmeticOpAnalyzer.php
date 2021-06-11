@@ -279,7 +279,7 @@ class NonDivArithmeticOpAnalyzer
     private static function getNumericalType($result): Type\Union
     {
         if ($result <= PHP_INT_MAX && $result >= PHP_INT_MIN) {
-            /** @var int $result */
+            assert(is_int($result));
             return Type::getInt(false, $result);
         }
 
