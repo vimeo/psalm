@@ -20,8 +20,7 @@ Wheter this is exploitable or not depends on a few conditions:
 
 ```php
 <?php
-// converts tags, but not quotes
-$param = htmlentities($_GET['param']);
+$param = strip_tags($_GET['param']);
 ?>
 
 <script>
