@@ -48,7 +48,7 @@
         "phpmyadmin/sql-parser": "5.1.0||dev-master",
         "phpspec/prophecy": ">=1.9.0",
         "phpunit/phpunit": "^9.0",
-        "psalm/plugin-phpunit": "^0.13",
+        "psalm/plugin-phpunit": "^0.16",
         "slevomat/coding-standard": "^7.0",
         "squizlabs/php_codesniffer": "^3.5",
         "symfony/process": "^4.3",
