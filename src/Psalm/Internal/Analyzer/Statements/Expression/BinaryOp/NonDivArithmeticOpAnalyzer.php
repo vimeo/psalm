@@ -35,11 +35,13 @@ use Psalm\Type\Atomic\TTemplateParam;
 
 use function array_diff_key;
 use function array_values;
+use function assert;
 use function is_int;
 use function preg_match;
 use function strtolower;
 
 use const PHP_INT_MAX;
+use const PHP_INT_MIN;
 
 /**
  * @internal
