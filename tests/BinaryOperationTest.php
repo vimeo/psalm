@@ -532,6 +532,13 @@ class BinaryOperationTest extends TestCase
                     '$a' => 'float'
                 ],
             ],
+            'IntOverflowSub' => [
+                '<?php
+                    $a = (1 << 63) - (1 << 20);',
+                'assertions' => [
+                    '$a' => 'float'
+                ],
+            ],
         ];
     }
 
