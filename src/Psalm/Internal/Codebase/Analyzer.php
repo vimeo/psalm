@@ -56,6 +56,7 @@ use const PATHINFO_EXTENSION;
  *      function_timings: array<string, float>,
  *      file_manipulations: array<string, FileManipulation[]>,
  *      method_references_to_class_members: array<string, array<string,bool>>,
+ *      method_dependencies: array<string, array<string,bool>>,
  *      method_references_to_method_returns: array<string, array<string,bool>>,
  *      method_references_to_class_properties: array<string, array<string,bool>>,
  *      method_references_to_missing_class_members: array<string, array<string,bool>>,
@@ -449,6 +450,7 @@ class Analyzer
                         'method_references_to_classes' => $file_reference_provider->getAllMethodReferencesToClasses(),
                         'file_references_to_class_members' => $file_reference_provider->getAllFileReferencesToClassMembers(),
                         'method_references_to_class_members' => $file_reference_provider->getAllMethodReferencesToClassMembers(),
+                        'method_dependencies' => $file_reference_provider->getAllMethodDependencies(),
                         'file_references_to_class_properties' => $file_reference_provider->getAllFileReferencesToClassProperties(),
                         'file_references_to_method_returns' => $file_reference_provider->getAllFileReferencesToMethodReturns(),
                         'method_references_to_class_properties' => $file_reference_provider->getAllMethodReferencesToClassProperties(),
@@ -517,6 +519,9 @@ class Analyzer
                 );
                 $codebase->file_reference_provider->addMethodReferencesToClassMembers(
                     $pool_data['method_references_to_class_members']
+                );
+                $codebase->file_reference_provider->addMethodDependencies(
+                    $pool_data['method_dependencies']
                 );
                 $codebase->file_reference_provider->addMethodReferencesToClassProperties(
                     $pool_data['method_references_to_class_properties']
@@ -641,6 +646,8 @@ class Analyzer
 
         $method_references_to_class_members = $file_reference_provider->getAllMethodReferencesToClassMembers();
 
+        $method_dependencies = $file_reference_provider->getAllMethodDependencies();
+
         $method_references_to_class_properties = $file_reference_provider->getAllMethodReferencesToClassProperties();
 
         $method_references_to_method_returns = $file_reference_provider->getAllMethodReferencesToMethodReturns();
@@ -648,7 +655,9 @@ class Analyzer
         $method_references_to_missing_class_members =
             $file_reference_provider->getAllMethodReferencesToMissingClassMembers();
 
-        $all_referencing_methods = $method_references_to_class_members + $method_references_to_missing_class_members;
+        $all_referencing_methods = $method_references_to_class_members
+            + $method_references_to_missing_class_members
+            + $method_dependencies;
 
         $nonmethod_references_to_classes = $file_reference_provider->getAllNonMethodReferencesToClasses();
 
@@ -742,6 +751,7 @@ class Analyzer
 
                 unset(
                     $method_references_to_class_members[$member_id],
+                    $method_dependencies[$member_id],
                     $method_references_to_class_properties[$member_id],
                     $method_references_to_method_returns[$member_id],
                     $file_references_to_class_members[$member_id],
@@ -767,6 +777,10 @@ class Analyzer
         foreach ($newly_invalidated_methods as $method_id => $_) {
             foreach ($method_references_to_class_members as $i => $_) {
                 unset($method_references_to_class_members[$i][$method_id]);
+            }
+
+            foreach ($method_dependencies as $i => $_) {
+                unset($method_dependencies[$i][$method_id]);
             }
 
             foreach ($method_references_to_class_properties as $i => $_) {
@@ -865,6 +879,10 @@ class Analyzer
             $method_references_to_class_members
         );
 
+        $method_dependencies = array_filter(
+            $method_dependencies
+        );
+
         $method_references_to_class_properties = array_filter(
             $method_references_to_class_properties
         );
@@ -911,6 +929,10 @@ class Analyzer
 
         $file_reference_provider->setCallingMethodReferencesToClassMembers(
             $method_references_to_class_members
+        );
+
+        $file_reference_provider->setMethodDependencies(
+            $method_dependencies
         );
 
         $file_reference_provider->setCallingMethodReferencesToClassProperties(

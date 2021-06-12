@@ -962,7 +962,7 @@ class UnusedCodeTest extends TestCase
 
                     (new A())->foo()->bar();',
             ],
-            'SKIPPED-unusedInterfaceReturnValueWithImplementingClassSuppressed' => [
+            'unusedInterfaceReturnValueWithImplementingClassSuppressed' => [
                 '<?php
                     interface IWorker {
                         /** @psalm-suppress PossiblyUnusedReturnValue */
@@ -980,6 +980,33 @@ class UnusedCodeTest extends TestCase
                     }
 
                     f(new Worker());',
+            ],
+            'interfaceReturnValueWithImplementingAndAbstractClass' => [
+                '<?php
+                    interface IWorker {
+                        public function work(): int;
+                    }
+
+                    class AbstractWorker implements IWorker {
+                        public function work(): int {
+                            return 0;
+                        }
+                    }
+
+                    class Worker extends AbstractWorker {
+                        public function work(): int {
+                            return 1;
+                        }
+                    }
+
+                    class AnotherWorker extends AbstractWorker {}
+
+                    function f(IWorker $worker): void {
+                        echo $worker->work();
+                    }
+
+                    f(new Worker());
+                    f(new AnotherWorker());',
             ],
         ];
     }
@@ -1370,7 +1397,7 @@ class UnusedCodeTest extends TestCase
                     }',
                 'error_message' => 'PossiblyUnusedReturnValue',
             ],
-            'SKIPPED-unusedInterfaceReturnValueWithImplementingClass' => [
+            'unusedInterfaceReturnValueWithImplementingClass' => [
                 '<?php
                     interface IWorker {
                         public function work(): bool;
@@ -1403,6 +1430,23 @@ class UnusedCodeTest extends TestCase
 
                     (new A())->foo()->bar();',
                 'error_message' => 'PossiblyUnusedReturnValue',
+            ],
+            'interfaceWithImplementingClassMethodUnused' => [
+                '<?php
+                    interface IWorker {
+                        public function work(): void;
+                    }
+
+                    class Worker implements IWorker {
+                        public function work(): void {}
+                    }
+
+                    function f(IWorker $worker): void {
+                        echo get_class($worker);
+                    }
+
+                    f(new Worker());',
+                'error_message' => 'PossiblyUnusedMethod',
             ],
         ];
     }

@@ -64,10 +64,9 @@ class MethodComparator
 
         $cased_guide_method_id = $guide_classlike_storage->name . '::' . $guide_method_storage->cased_name;
 
-        $codebase->methods->file_reference_provider->addMethodReferenceToClassMember(
+        $codebase->methods->file_reference_provider->addMethodDependencyToClassMember(
             strtolower((string)($implementer_declaring_method_id ?: $implementer_method_id)),
-            strtolower($guide_classlike_storage->name . '::' . $guide_method_storage->cased_name),
-            true
+            strtolower($guide_classlike_storage->name . '::' . $guide_method_storage->cased_name)
         );
 
         self::checkForObviousMethodMismatches(

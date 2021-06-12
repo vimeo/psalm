@@ -95,6 +95,11 @@ class FileReferenceProvider
     /**
      * @var array<string, array<string, bool>>
      */
+    private static $method_dependencies = [];
+
+    /**
+     * @var array<string, array<string, bool>>
+     */
     private static $method_references_to_class_properties = [];
 
     /**
@@ -464,6 +469,14 @@ class FileReferenceProvider
     /**
      * @return array<string, array<string, bool>>
      */
+    public function getAllMethodDependencies(): array
+    {
+        return self::$method_dependencies;
+    }
+
+    /**
+     * @return array<string, array<string, bool>>
+     */
     public function getAllMethodReferencesToClassProperties(): array
     {
         return self::$method_references_to_class_properties;
@@ -548,6 +561,14 @@ class FileReferenceProvider
             }
 
             self::$method_references_to_class_members = $method_references_to_class_members;
+
+            $method_dependencies = $this->cache->getCachedMethodDependencies();
+
+            if ($method_dependencies === null) {
+                return false;
+            }
+
+            self::$method_dependencies = $method_dependencies;
 
             $method_references_to_class_properties = $this->cache->getCachedMethodPropertyReferences();
 
@@ -693,6 +714,7 @@ class FileReferenceProvider
             $this->cache->setCachedMethodClassReferences(self::$method_references_to_classes);
             $this->cache->setCachedNonMethodClassReferences(self::$nonmethod_references_to_classes);
             $this->cache->setCachedMethodMemberReferences(self::$method_references_to_class_members);
+            $this->cache->setCachedMethodDependencies(self::$method_dependencies);
             $this->cache->setCachedMethodPropertyReferences(self::$method_references_to_class_properties);
             $this->cache->setCachedMethodMethodReturnReferences(self::$method_references_to_method_returns);
             $this->cache->setCachedFileMemberReferences(self::$file_references_to_class_members);
@@ -739,6 +761,17 @@ class FileReferenceProvider
             } else {
                 self::$method_references_to_method_returns[$referenced_member_id][$calling_function_id] = true;
             }
+        }
+    }
+
+    public function addMethodDependencyToClassMember(
+        string $calling_function_id,
+        string $referenced_member_id
+    ): void {
+        if (!isset(self::$method_dependencies[$referenced_member_id])) {
+            self::$method_dependencies[$referenced_member_id] = [$calling_function_id => true];
+        } else {
+            self::$method_dependencies[$referenced_member_id][$calling_function_id] = true;
         }
     }
 
@@ -899,6 +932,24 @@ class FileReferenceProvider
      * @param array<string, array<string,bool>> $references
      *
      */
+    public function addMethodDependencies(array $references): void
+    {
+        foreach ($references as $key => $reference) {
+            if (isset(self::$method_dependencies[$key])) {
+                self::$method_dependencies[$key] = array_merge(
+                    $reference,
+                    self::$method_dependencies[$key]
+                );
+            } else {
+                self::$method_dependencies[$key] = $reference;
+            }
+        }
+    }
+
+    /**
+     * @param array<string, array<string,bool>> $references
+     *
+     */
     public function addMethodReferencesToClassProperties(array $references): void
     {
         foreach ($references as $key => $reference) {
@@ -1007,6 +1058,15 @@ class FileReferenceProvider
     public function setCallingMethodReferencesToClassMembers(array $references): void
     {
         self::$method_references_to_class_members = $references;
+    }
+
+    /**
+     * @param array<string, array<string,bool>> $references
+     *
+     */
+    public function setMethodDependencies(array $references): void
+    {
+        self::$method_dependencies = $references;
     }
 
     /**
@@ -1235,6 +1295,7 @@ class FileReferenceProvider
         self::$file_references_to_class_properties = [];
         self::$file_references_to_method_returns = [];
         self::$method_references_to_class_members = [];
+        self::$method_dependencies = [];
         self::$method_references_to_class_properties = [];
         self::$method_references_to_method_returns = [];
         self::$method_references_to_classes = [];

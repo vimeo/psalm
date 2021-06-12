@@ -23,6 +23,9 @@ class FakeFileReferenceCacheProvider extends \Psalm\Internal\Provider\FileRefere
     private $cached_method_member_references;
 
     /** @var ?array */
+    private $cached_method_dependencies;
+
+    /** @var ?array */
     private $cached_method_property_references;
 
     /** @var ?array */
@@ -112,6 +115,11 @@ class FakeFileReferenceCacheProvider extends \Psalm\Internal\Provider\FileRefere
         return $this->cached_method_member_references;
     }
 
+    public function getCachedMethodDependencies(): ?array
+    {
+        return $this->cached_method_dependencies;
+    }
+
     public function getCachedMethodPropertyReferences(): ?array
     {
         return $this->cached_method_property_references;
@@ -170,6 +178,11 @@ class FakeFileReferenceCacheProvider extends \Psalm\Internal\Provider\FileRefere
     public function setCachedMethodMemberReferences(array $member_references): void
     {
         $this->cached_method_member_references = $member_references;
+    }
+
+    public function setCachedMethodDependencies(array $member_references): void
+    {
+        $this->cached_method_dependencies = $member_references;
     }
 
     public function setCachedMethodPropertyReferences(array $property_references): void
