@@ -1884,9 +1884,7 @@ class ClassLikes
                     && !$method_storage->return_type->isVoid()
                     && !$method_storage->return_type->isNever()
                     && $method_id->method_name !== '__tostring'
-                    && ($method_storage->is_static
-                        || !($method_storage->return_type->getId() === 'static'
-                            || $method_storage->return_type->isFormerStaticObject()))
+                    && ($method_storage->is_static || !$method_storage->probably_fluent)
                 ) {
                     $method_return_referenced = $this->file_reference_provider->isMethodReturnReferenced(
                         strtolower((string) $method_id)

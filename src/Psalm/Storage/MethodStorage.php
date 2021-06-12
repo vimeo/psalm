@@ -94,4 +94,9 @@ class MethodStorage extends FunctionLikeStorage
      * @var bool
      */
     public $stubbed = false;
+
+    /**
+     * @var bool
+     */
+    public $probably_fluent = false;
 }

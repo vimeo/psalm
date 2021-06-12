@@ -341,6 +341,20 @@ class FunctionLikeNodeScanner
 
                 $storage->assertions = $var_assertions;
             }
+
+            if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod
+                && $stmt->stmts
+                && $storage instanceof MethodStorage
+            ) {
+                $last_stmt = end($stmt->stmts);
+
+                if ($last_stmt instanceof PhpParser\Node\Stmt\Return_
+                    && $last_stmt->expr instanceof PhpParser\Node\Expr\Variable
+                    && $last_stmt->expr->name === 'this'
+                ) {
+                    $storage->probably_fluent = true;
+                }
+            }
         }
 
         if (!$this->file_scanner->will_analyze
@@ -602,16 +616,14 @@ class FunctionLikeNodeScanner
                 $classlike_storage->appearing_property_ids[$param_storage->name] = $property_id;
                 $classlike_storage->initialized_properties[$param_storage->name] = true;
             }
-        }
 
-        if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod
-            && $stmt->name->name === '__construct'
-            && $classlike_storage
-            && $storage instanceof MethodStorage
-            && $storage->params
-            && $this->config->infer_property_types_from_constructor
-        ) {
-            $this->inferPropertyTypeFromConstructor($stmt, $storage, $classlike_storage);
+            if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod
+                && $storage instanceof MethodStorage
+                && $storage->params
+                && $this->config->infer_property_types_from_constructor
+            ) {
+                $this->inferPropertyTypeFromConstructor($stmt, $storage, $classlike_storage);
+            }
         }
 
         foreach ($stmt->getAttrGroups() as $attr_group) {

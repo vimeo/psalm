@@ -1416,21 +1416,6 @@ class UnusedCodeTest extends TestCase
                     f(new Worker());',
                 'error_message' => 'PossiblyUnusedReturnValue',
             ],
-            'fluentSelfMethodsProhibited' => [
-                '<?php
-                    class A {
-                        public function foo(): self {
-                            return $this;
-                        }
-
-                        public function bar(): self {
-                            return $this;
-                        }
-                    }
-
-                    (new A())->foo()->bar();',
-                'error_message' => 'PossiblyUnusedReturnValue',
-            ],
             'interfaceWithImplementingClassMethodUnused' => [
                 '<?php
                     interface IWorker {
