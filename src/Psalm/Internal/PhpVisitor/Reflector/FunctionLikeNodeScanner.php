@@ -346,7 +346,7 @@ class FunctionLikeNodeScanner
                 && $stmt->stmts
                 && $storage instanceof MethodStorage
             ) {
-                $last_stmt = end($stmt->stmts);
+                $last_stmt = \end($stmt->stmts);
 
                 if ($last_stmt instanceof PhpParser\Node\Stmt\Return_
                     && $last_stmt->expr instanceof PhpParser\Node\Expr\Variable
