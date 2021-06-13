@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="dev-master@5e8219b613d9f97cd7eeba16e1fea75cc8a808e6">
+<files psalm-version="dev-master@8a451f1c7f67a251d8825b7d7304d913316ae1bf">
   <file src="examples/TemplateChecker.php">
     <PossiblyUndefinedIntArrayOffset occurrences="2">
       <code>$comment_block-&gt;tags['variablesfrom'][0]</code>
@@ -91,13 +91,14 @@
     </InvalidPropertyAssignmentValue>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/AssertionFinder.php">
-    <PossiblyUndefinedIntArrayOffset occurrences="23">
+    <PossiblyUndefinedIntArrayOffset occurrences="24">
       <code>$assertion-&gt;rule[0]</code>
       <code>$assertion-&gt;rule[0]</code>
       <code>$assertion-&gt;rule[0]</code>
       <code>$assertion-&gt;rule[0]</code>
       <code>$assertion-&gt;rule[0]</code>
       <code>$assertion-&gt;rule[0]</code>
+      <code>$count_expr-&gt;args[0]</code>
       <code>$count_expr-&gt;args[0]</code>
       <code>$count_expr-&gt;args[0]</code>
       <code>$count_expr-&gt;args[0]</code>

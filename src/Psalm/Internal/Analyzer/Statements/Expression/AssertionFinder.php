@@ -336,6 +336,38 @@ class AssertionFinder
             );
         }
 
+        $count = null;
+        $count_equality_position = self::hasCountEqualityCheck($conditional, $count);
+
+        if ($count_equality_position) {
+            $if_types = [];
+
+            if ($count_equality_position === self::ASSIGNMENT_TO_RIGHT) {
+                $count_expr = $conditional->left;
+            } elseif ($count_equality_position === self::ASSIGNMENT_TO_LEFT) {
+                $count_expr = $conditional->right;
+            } else {
+                throw new \UnexpectedValueException('$count_equality_position value');
+            }
+
+            /** @var PhpParser\Node\Expr\FuncCall $count_expr */
+            $var_name = ExpressionIdentifier::getArrayVarId(
+                $count_expr->args[0]->value,
+                $this_class_name,
+                $source
+            );
+
+            if ($var_name) {
+                if ($count) {
+                    $if_types[$var_name] = [['has-exactly-' . $count]];
+                } else {
+                    $if_types[$var_name] = [['!non-empty-countable']];
+                }
+            }
+
+            return $if_types ? [$if_types] : [];
+        }
+
         $empty_array_position = self::hasEmptyArrayVariable($conditional);
 
         if ($empty_array_position !== null) {
@@ -543,7 +575,7 @@ class AssertionFinder
         }
 
         $count = null;
-        $count_inequality_position = self::hasNotCountEqualityCheck($conditional, $count);
+        $count_inequality_position = self::hasCountEqualityCheck($conditional, $count);
 
         if ($count_inequality_position) {
             $if_types = [];
@@ -1526,7 +1558,7 @@ class AssertionFinder
      * @param Equal|Identical|NotEqual|NotIdentical $conditional
      * @return false|int
      */
-    protected static function hasNotCountEqualityCheck(
+    protected static function hasCountEqualityCheck(
         PhpParser\Node\Expr\BinaryOp $conditional,
         ?int &$count
     ) {
