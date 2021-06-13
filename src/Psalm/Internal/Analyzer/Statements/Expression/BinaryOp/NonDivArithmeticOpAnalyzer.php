@@ -35,13 +35,9 @@ use Psalm\Type\Atomic\TTemplateParam;
 
 use function array_diff_key;
 use function array_values;
-use function assert;
 use function is_int;
 use function preg_match;
 use function strtolower;
-
-use const PHP_INT_MAX;
-use const PHP_INT_MIN;
 
 /**
  * @internal
@@ -280,8 +276,7 @@ class NonDivArithmeticOpAnalyzer
      */
     private static function getNumericalType($result): Type\Union
     {
-        if ($result <= PHP_INT_MAX && $result >= PHP_INT_MIN) {
-            assert(is_int($result));
+        if (is_int($result)) {
             return Type::getInt(false, $result);
         }
 
