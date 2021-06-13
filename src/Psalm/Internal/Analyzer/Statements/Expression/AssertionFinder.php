@@ -402,38 +402,6 @@ class AssertionFinder
             );
         }
 
-        $min_count = null;
-        $count_equality_position = self::hasNonEmptyCountEqualityCheck($conditional, $min_count);
-
-        if ($count_equality_position) {
-            $if_types = [];
-
-            if ($count_equality_position === self::ASSIGNMENT_TO_RIGHT) {
-                $count_expr = $conditional->left;
-            } elseif ($count_equality_position === self::ASSIGNMENT_TO_LEFT) {
-                $count_expr = $conditional->right;
-            } else {
-                throw new \UnexpectedValueException('$count_equality_position value');
-            }
-
-            /** @var PhpParser\Node\Expr\FuncCall $count_expr */
-            $var_name = ExpressionIdentifier::getArrayVarId(
-                $count_expr->args[0]->value,
-                $this_class_name,
-                $source
-            );
-
-            if ($var_name) {
-                if ($min_count) {
-                    $if_types[$var_name] = [['=has-at-least-' . $min_count]];
-                } else {
-                    $if_types[$var_name] = [['=non-empty-countable']];
-                }
-            }
-
-            return $if_types ? [$if_types] : [];
-        }
-
         if (!$source instanceof StatementsAnalyzer) {
             return [];
         }
@@ -1457,10 +1425,7 @@ class AssertionFinder
             && strtolower($conditional->left->name->parts[0]) === 'count'
             && $conditional->left->args;
 
-        $operator_greater_than_or_equal =
-            $conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
-            || $conditional instanceof PhpParser\Node\Expr\BinaryOp\Equal
-            || $conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater
+        $operator_greater_than_or_equal = $conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater
             || $conditional instanceof PhpParser\Node\Expr\BinaryOp\GreaterOrEqual;
 
         if ($left_count
@@ -1483,10 +1448,7 @@ class AssertionFinder
             && strtolower($conditional->right->name->parts[0]) === 'count'
             && $conditional->right->args;
 
-        $operator_less_than_or_equal =
-            $conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
-            || $conditional instanceof PhpParser\Node\Expr\BinaryOp\Equal
-            || $conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller
+        $operator_less_than_or_equal = $conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller
             || $conditional instanceof PhpParser\Node\Expr\BinaryOp\SmallerOrEqual;
 
         if ($right_count
