@@ -39,8 +39,6 @@ use function is_int;
 use function preg_match;
 use function strtolower;
 
-use const PHP_INT_MAX;
-
 /**
  * @internal
  */
@@ -274,6 +272,18 @@ class NonDivArithmeticOpAnalyzer
     }
 
     /**
+     * @param int|float $result
+     */
+    private static function getNumericalType($result): Type\Union
+    {
+        if (is_int($result)) {
+            return Type::getInt(false, $result);
+        }
+
+        return Type::getFloat($result);
+    }
+
+    /**
      * @param  string[]        &$invalid_left_messages
      * @param  string[]        &$invalid_right_messages
      */
@@ -309,25 +319,19 @@ class NonDivArithmeticOpAnalyzer
             $calculated_type = null;
 
             if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Plus) {
-                $calculated_type = Type::getInt(false, $left_type_part->value + $right_type_part->value);
+                $result = $left_type_part->value + $right_type_part->value;
+                $calculated_type = self::getNumericalType($result);
             } elseif ($parent instanceof PhpParser\Node\Expr\BinaryOp\Minus) {
-                $calculated_type = Type::getInt(false, $left_type_part->value - $right_type_part->value);
+                $result = $left_type_part->value - $right_type_part->value;
+                $calculated_type = self::getNumericalType($result);
             } elseif ($parent instanceof PhpParser\Node\Expr\BinaryOp\Mod) {
                 $calculated_type = Type::getInt(false, $left_type_part->value % $right_type_part->value);
             } elseif ($parent instanceof PhpParser\Node\Expr\BinaryOp\Mul) {
                 $result = $left_type_part->value * $right_type_part->value;
-                if ($result <= PHP_INT_MAX) {
-                    $calculated_type = Type::getInt(false, $result);
-                } else {
-                    $calculated_type = Type::getFloat($result);
-                }
+                $calculated_type = self::getNumericalType($result);
             } elseif ($parent instanceof PhpParser\Node\Expr\BinaryOp\Pow) {
                 $result = $left_type_part->value ** $right_type_part->value;
-                if ($result <= PHP_INT_MAX) {
-                    $calculated_type = Type::getInt(false, $result);
-                } else {
-                    $calculated_type = Type::getFloat($result);
-                }
+                $calculated_type = self::getNumericalType($result);
             } elseif ($parent instanceof PhpParser\Node\Expr\BinaryOp\BitwiseOr) {
                 $calculated_type = Type::getInt(false, $left_type_part->value | $right_type_part->value);
             } elseif ($parent instanceof PhpParser\Node\Expr\BinaryOp\BitwiseAnd) {
