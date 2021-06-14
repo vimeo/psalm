@@ -566,6 +566,16 @@ class BinaryOperationTest extends TestCase
                         return $s1 . $s2;
                     }',
             ],
+            'literalConcatCreatesLiteral2' => [
+                '<?php
+                    /**
+                     * @param  literal-string $s1
+                     * @return literal-string
+                     */
+                    function foo(string $s1): string {
+                        return $s1 . 2;
+                    }',
+            ],
             'encapsedStringIncludingLiterals' => [
                 '<?php
                     /**
@@ -574,6 +584,17 @@ class BinaryOperationTest extends TestCase
                      * @return literal-string
                      */
                     function foo(string $s1, string $s2): string {
+                        return "Hello $s1 $s2";
+                    }',
+            ],
+            'encapsedStringIncludingLiterals2' => [
+                '<?php
+                    /**
+                     * @param  literal-string $s1
+                     * @return literal-string
+                     */
+                    function foo(string $s1): string {
+                        $s2 = 2;
                         return "Hello $s1 $s2";
                     }',
             ],

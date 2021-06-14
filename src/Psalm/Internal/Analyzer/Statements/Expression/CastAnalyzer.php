@@ -370,7 +370,12 @@ class CastAnalyzer
                 || $atomic_type instanceof TInt
                 || $atomic_type instanceof Type\Atomic\TNumeric
             ) {
-                $castable_types[] = new Type\Atomic\TNumericString();
+                if ($atomic_type instanceof Type\Atomic\TLiteralInt) {
+                    $castable_types[] = new Type\Atomic\TLiteralString((string) $atomic_type->value);
+                } else {
+                    $castable_types[] = new Type\Atomic\TNumericString();
+                }
+
                 continue;
             }
 
