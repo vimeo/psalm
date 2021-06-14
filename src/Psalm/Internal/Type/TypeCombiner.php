@@ -38,6 +38,7 @@ use Psalm\Type\Atomic\TNonEmptyLowercaseString;
 use Psalm\Type\Atomic\TNonEmptyMixed;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNonFalsyString;
+use Psalm\Type\Atomic\TNonspecificLiteralString;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumericString;
 use Psalm\Type\Atomic\TObject;
@@ -942,25 +943,27 @@ class TypeCombiner
                         } else {
                             $combination->class_string_types['object'] = new TObject();
                         }
+                    } elseif (isset($combination->value_types['string'])
+                        && $combination->value_types['string'] instanceof TNonspecificLiteralString
+                    ) {
+                        // do nothing
+                    } elseif (isset($combination->value_types['string'])
+                        && $combination->value_types['string'] instanceof Type\Atomic\TLowercaseString
+                        && \strtolower($type->value) === $type->value
+                    ) {
+                        // do nothing
+                    } elseif (isset($combination->value_types['string'])
+                        && $combination->value_types['string'] instanceof Type\Atomic\TNonFalsyString
+                        && $type->value
+                    ) {
+                        // do nothing
+                    } elseif (isset($combination->value_types['string'])
+                        && $combination->value_types['string'] instanceof Type\Atomic\TNonEmptyString
+                        && $type->value !== ''
+                    ) {
+                        // do nothing
                     } else {
-                        if (isset($combination->value_types['string'])
-                            && $combination->value_types['string'] instanceof Type\Atomic\TLowercaseString
-                            && \strtolower($type->value) === $type->value
-                        ) {
-                            // do nothing
-                        } elseif (isset($combination->value_types['string'])
-                            && $combination->value_types['string'] instanceof Type\Atomic\TNonFalsyString
-                            && $type->value
-                        ) {
-                            // do nothing
-                        } elseif (isset($combination->value_types['string'])
-                            && $combination->value_types['string'] instanceof Type\Atomic\TNonEmptyString
-                            && $type->value !== ''
-                        ) {
-                            // do nothing
-                        } else {
-                            $combination->value_types['string'] = new TString();
-                        }
+                        $combination->value_types['string'] = new TString();
                     }
                 }
             } else {
@@ -1017,6 +1020,10 @@ class TypeCombiner
                             } else {
                                 $combination->value_types['string'] = $type;
                             }
+
+                            $combination->strings = null;
+                        } elseif ($type instanceof TNonspecificLiteralString) {
+                            $combination->value_types['string'] = $type;
 
                             $combination->strings = null;
                         } else {

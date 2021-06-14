@@ -555,6 +555,28 @@ class BinaryOperationTest extends TestCase
                     '$a' => 'float'
                 ],
             ],
+            'literalConcatCreatesLiteral' => [
+                '<?php
+                    /**
+                     * @param  literal-string $s1
+                     * @param  literal-string $s2
+                     * @return literal-string
+                     */
+                    function foo(string $s1, string $s2): string {
+                        return $s1 . $s2;
+                    }',
+            ],
+            'encapsedStringIncludingLiterals' => [
+                '<?php
+                    /**
+                     * @param  literal-string $s1
+                     * @param  literal-string $s2
+                     * @return literal-string
+                     */
+                    function foo(string $s1, string $s2): string {
+                        return "Hello $s1 $s2";
+                    }',
+            ],
         ];
     }
 
@@ -686,6 +708,28 @@ class BinaryOperationTest extends TestCase
                         }
                     }',
                     'error_message' => 'TypeDoesNotContainType',
+            ],
+            'literalConcatWithStringCreatesString' => [
+                '<?php
+                    /**
+                     * @param  literal-string $s2
+                     * @return literal-string
+                     */
+                    function foo(string $s1, string $s2): string {
+                        return $s1 . $s2;
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'encapsedConcatWithStringCreatesString' => [
+                '<?php
+                    /**
+                     * @param  literal-string $s2
+                     * @return literal-string
+                     */
+                    function foo(string $s1, string $s2): string {
+                        return "hello $s1 $s2";
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
             ],
         ];
     }

@@ -21,6 +21,8 @@ class EncapsulatedStringAnalyzer
 
         $non_empty = false;
 
+        $all_literals = true;
+
         foreach ($stmt->parts as $part) {
             if ($part instanceof PhpParser\Node\Scalar\EncapsedStringPart
                 && $part->value
@@ -41,6 +43,10 @@ class EncapsulatedStringAnalyzer
                     $part_type,
                     $part
                 );
+
+                if (!$casted_part_type->allLiterals()) {
+                    $all_literals = false;
+                }
 
                 if ($statements_analyzer->data_flow_graph
                     && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
@@ -74,7 +80,12 @@ class EncapsulatedStringAnalyzer
         }
 
         if ($non_empty) {
-            $new_type = new Type\Union([new Type\Atomic\TNonEmptyString()]);
+            if ($all_literals) {
+                $new_type = new Type\Union([new Type\Atomic\TNonspecificNonEmptyLiteralString()]);
+            } else {
+                $new_type = new Type\Union([new Type\Atomic\TNonEmptyString()]);
+            }
+
             $new_type->parent_nodes = $stmt_type->parent_nodes;
             $stmt_type = $new_type;
         }

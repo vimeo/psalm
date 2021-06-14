@@ -260,6 +260,9 @@ abstract class Atomic implements TypeNode
             case 'html-escaped-string':
                 return new THtmlEscapedString();
 
+            case 'literal-string':
+                return new Type\Atomic\TNonspecificLiteralString();
+
             case 'false-y':
                 return new TAssertionFalsy();
 

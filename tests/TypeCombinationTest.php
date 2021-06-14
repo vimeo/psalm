@@ -738,6 +738,20 @@ class TypeCombinationTest extends TestCase
                     'empty-scalar',
                 ]
             ],
+            'combineLiteralStringAndNonspecificLiteral' => [
+                'literal-string',
+                [
+                    'literal-string',
+                    '"foo"',
+                ]
+            ],
+            'combineNonspecificLiteralAndLiteralString' => [
+                'literal-string',
+                [
+                    '"foo"',
+                    'literal-string',
+                ]
+            ],
         ];
     }
 
