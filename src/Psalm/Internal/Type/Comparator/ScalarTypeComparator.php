@@ -25,10 +25,10 @@ use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TLowercaseString;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNonFalsyString;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
-use Psalm\Type\Atomic\TNonspecificNonEmptyLiteralString;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TNumericString;
 use Psalm\Type\Atomic\TPositiveInt;
@@ -88,7 +88,7 @@ class ScalarTypeComparator
         if ($container_type_part instanceof TNonspecificLiteralString
             && ($input_type_part instanceof TLiteralString
                 || $input_type_part instanceof TNonspecificLiteralString
-                || $input_type_part instanceof TNonspecificNonEmptyLiteralString)
+                || $input_type_part instanceof TNonEmptyNonspecificLiteralString)
         ) {
             return true;
         }
@@ -299,7 +299,7 @@ class ScalarTypeComparator
         }
 
         if ((get_class($container_type_part) === TNonEmptyString::class
-                || get_class($container_type_part) === TNonspecificNonEmptyLiteralString::class)
+                || get_class($container_type_part) === TNonEmptyNonspecificLiteralString::class)
             && $input_type_part instanceof TNonFalsyString
         ) {
             return true;
@@ -313,7 +313,7 @@ class ScalarTypeComparator
 
         if ($container_type_part instanceof TNonFalsyString
             && ($input_type_part instanceof TNonEmptyString
-                || $input_type_part instanceof TNonspecificNonEmptyLiteralString)
+                || $input_type_part instanceof TNonEmptyNonspecificLiteralString)
         ) {
             if ($atomic_comparison_result) {
                 $atomic_comparison_result->type_coerced = true;
@@ -437,7 +437,7 @@ class ScalarTypeComparator
         if ($container_type_part instanceof TTraitString
             && (get_class($input_type_part) === TString::class
                 || $input_type_part instanceof TNonEmptyString
-                || $input_type_part instanceof TNonspecificNonEmptyLiteralString)
+                || $input_type_part instanceof TNonEmptyNonspecificLiteralString)
         ) {
             if ($atomic_comparison_result) {
                 $atomic_comparison_result->type_coerced = true;

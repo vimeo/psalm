@@ -81,7 +81,7 @@ class EncapsulatedStringAnalyzer
 
         if ($non_empty) {
             if ($all_literals) {
-                $new_type = new Type\Union([new Type\Atomic\TNonspecificNonEmptyLiteralString()]);
+                $new_type = new Type\Union([new Type\Atomic\TNonEmptyNonspecificLiteralString()]);
             } else {
                 $new_type = new Type\Union([new Type\Atomic\TNonEmptyString()]);
             }

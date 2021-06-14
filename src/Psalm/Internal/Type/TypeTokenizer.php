@@ -49,6 +49,7 @@ class TypeTokenizer
         'mysql-escaped-string' => true, // deprecated
         'html-escaped-string' => true, // deprecated
         'literal-string' => true,
+        'non-empty-literal-string' => true,
         'lowercase-string' => true,
         'non-empty-lowercase-string' => true,
         'positive-int' => true,

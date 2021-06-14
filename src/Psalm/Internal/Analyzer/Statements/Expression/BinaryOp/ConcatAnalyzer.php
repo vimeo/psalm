@@ -173,7 +173,7 @@ class ConcatAnalyzer
                     if ($literal_concat) {
                         $result_type = new Type\Union($result_type_parts);
                     } else {
-                        $result_type = new Type\Union([new Type\Atomic\TNonspecificNonEmptyLiteralString]);
+                        $result_type = new Type\Union([new Type\Atomic\TNonEmptyNonspecificLiteralString]);
                     }
 
                     return;
@@ -238,7 +238,7 @@ class ConcatAnalyzer
 
                 if ($left_is_non_empty || $right_is_non_empty) {
                     if ($left_type->allLiterals() && $right_type->allLiterals()) {
-                        $result_type = new Type\Union([new Type\Atomic\TNonspecificNonEmptyLiteralString]);
+                        $result_type = new Type\Union([new Type\Atomic\TNonEmptyNonspecificLiteralString]);
                     } else {
                         $result_type = Type::getNonEmptyString();
                     }

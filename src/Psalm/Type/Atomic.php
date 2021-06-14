@@ -263,6 +263,9 @@ abstract class Atomic implements TypeNode
             case 'literal-string':
                 return new Type\Atomic\TNonspecificLiteralString();
 
+            case 'non-empty-literal-string':
+                return new Type\Atomic\TNonEmptyNonspecificLiteralString();
+
             case 'false-y':
                 return new TAssertionFalsy();
 
