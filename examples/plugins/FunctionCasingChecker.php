@@ -17,14 +17,10 @@ use function strtolower;
 use function end;
 
 /**
- * Prevents any assignment to a float value
+ * Checks that functions and methods are correctly-cased
  */
 class FunctionCasingChecker implements AfterFunctionCallAnalysisInterface, AfterMethodCallAnalysisInterface
 {
-    /**
-     * @param  MethodCall|StaticCall $expr
-     * @param  FileManipulation[] $file_replacements
-     */
     public static function afterMethodCallAnalysis(AfterMethodCallAnalysisEvent $event): void
     {
         $expr = $event->getExpr();

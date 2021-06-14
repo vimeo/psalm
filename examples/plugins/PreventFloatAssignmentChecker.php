@@ -16,8 +16,6 @@ class PreventFloatAssignmentChecker implements AfterExpressionAnalysisInterface
     /**
      * Called after an expression has been checked
      *
-     * @param  FileManipulation[]   $file_replacements
-     *
      * @return null|false
      */
     public static function afterExpressionAnalysis(AfterExpressionAnalysisEvent $event): ?bool {
