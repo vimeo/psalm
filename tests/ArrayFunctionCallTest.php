@@ -919,11 +919,10 @@ class ArrayFunctionCallTest extends TestCase
             ],
             'implodeNonEmptyArrayAndString' => [
                 '<?php
-                    /** @var non-empty-array<non-empty-string> */
                     $l = ["a", "b"];
                     $a = implode(":", $l);',
                 [
-                    '$a===' => 'non-empty-string',
+                    '$a===' => 'non-empty-literal-string',
                 ]
             ],
             'key' => [

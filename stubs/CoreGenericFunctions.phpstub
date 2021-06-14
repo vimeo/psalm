@@ -571,7 +571,7 @@ function rtrim(string $str, string $character_mask = " \t\n\r\0\x0B") : string {
  * @return (
  *     $glue is non-empty-string
  *     ? ($pieces is non-empty-array
- *         ? non-empty-string
+ *         ? ($pieces is array<literal-string> ? non-empty-literal-string : non-empty-string)
  *         : string)
  *     : string
  * )
