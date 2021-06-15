@@ -752,6 +752,34 @@ class TypeCombinationTest extends TestCase
                     'literal-string',
                 ]
             ],
+            'combineLiteralIntAndNonspecificLiteral' => [
+                'literal-int',
+                [
+                    'literal-int',
+                    '5',
+                ]
+            ],
+            'combineNonspecificLiteralAndLiteralInt' => [
+                'literal-int',
+                [
+                    '5',
+                    'literal-int',
+                ]
+            ],
+            'combineNonspecificLiteralAndPositiveInt' => [
+                'int',
+                [
+                    'positive-int',
+                    'literal-int',
+                ]
+            ],
+            'combinePositiveAndLiteralInt' => [
+                'int',
+                [
+                    'literal-int',
+                    'positive-int',
+                ]
+            ],
         ];
     }
 

@@ -146,10 +146,8 @@ class ConcatAnalyzer
             // type is all string or int literals, combine them into new literal(s).
             $literal_concat = false;
 
-            if ((($left_type->isSingleStringLiteral() || $left_type->isSingleIntLiteral())
-                    && ($right_type->allStringLiterals() || $right_type->allIntLiterals()))
-                || (($right_type->isSingleStringLiteral() || $right_type->isSingleIntLiteral())
-                    && ($left_type->allStringLiterals() || $left_type->allIntLiterals()))
+            if (($left_type->allStringLiterals() || $left_type->allIntLiterals())
+                && ($right_type->allStringLiterals() || $right_type->allIntLiterals())
             ) {
                 $literal_concat = true;
                 $result_type_parts = [];
@@ -170,7 +168,7 @@ class ConcatAnalyzer
                 }
 
                 if (!empty($result_type_parts)) {
-                    if ($literal_concat) {
+                    if ($literal_concat && count($result_type_parts) < 64) {
                         $result_type = new Type\Union($result_type_parts);
                     } else {
                         $result_type = new Type\Union([new Type\Atomic\TNonEmptyNonspecificLiteralString]);
@@ -189,27 +187,30 @@ class ConcatAnalyzer
                     $left_type,
                     $numeric_type
                 );
-                $right_uint = Type::getPositiveInt();
-                $right_uint->addType(new Type\Atomic\TLiteralInt(0));
-                $right_is_uint = UnionTypeComparator::isContainedBy(
-                    $codebase,
-                    $right_type,
-                    $right_uint
-                );
 
-                if ($left_is_numeric && $right_is_uint) {
-                    $result_type = Type::getNumericString();
-                    return;
+                if ($left_is_numeric) {
+                    $right_uint = Type::getPositiveInt();
+                    $right_uint->addType(new Type\Atomic\TLiteralInt(0));
+                    $right_is_uint = UnionTypeComparator::isContainedBy(
+                        $codebase,
+                        $right_type,
+                        $right_uint
+                    );
+
+                    if ($right_is_uint) {
+                        $result_type = Type::getNumericString();
+                        return;
+                    }
                 }
 
                 $lowercase_type = clone $numeric_type;
                 $lowercase_type->addType(new Type\Atomic\TLowercaseString());
-                $left_is_lowercase = UnionTypeComparator::isContainedBy(
+
+                $all_lowercase = UnionTypeComparator::isContainedBy(
                     $codebase,
                     $left_type,
                     $lowercase_type
-                );
-                $right_is_lowercase = UnionTypeComparator::isContainedBy(
+                ) && UnionTypeComparator::isContainedBy(
                     $codebase,
                     $right_type,
                     $lowercase_type
@@ -217,34 +218,31 @@ class ConcatAnalyzer
 
                 $non_empty_string = Type::getNonEmptyString();
 
-                $left_is_non_empty = UnionTypeComparator::isContainedBy(
+                $has_non_empty = UnionTypeComparator::isContainedBy(
                     $codebase,
                     $left_type,
                     $non_empty_string
-                );
-                $right_is_non_empty = UnionTypeComparator::isContainedBy(
+                ) || UnionTypeComparator::isContainedBy(
                     $codebase,
                     $right_type,
                     $non_empty_string
                 );
 
-                if ($left_is_lowercase && $right_is_lowercase) {
-                    $result_type = $left_is_non_empty || $right_is_non_empty
-                        ? Type::getNonEmptyLowercaseString()
-                        : Type::getLowercaseString();
+                $all_literals = $left_type->allLiterals() && $right_type->allLiterals();
 
-                    return;
-                }
-
-                if ($left_is_non_empty || $right_is_non_empty) {
-                    if ($left_type->allLiterals() && $right_type->allLiterals()) {
+                if ($has_non_empty) {
+                    if ($all_literals) {
                         $result_type = new Type\Union([new Type\Atomic\TNonEmptyNonspecificLiteralString]);
+                    } elseif ($all_lowercase) {
+                        $result_type = Type::getNonEmptyLowercaseString();
                     } else {
                         $result_type = Type::getNonEmptyString();
                     }
                 } else {
-                    if ($left_type->allLiterals() && $right_type->allLiterals()) {
+                    if ($all_literals) {
                         $result_type = new Type\Union([new Type\Atomic\TNonspecificLiteralString]);
+                    } elseif ($all_lowercase) {
+                        $result_type = Type::getLowercaseString();
                     } else {
                         $result_type = Type::getString();
                     }

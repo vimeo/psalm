@@ -1240,6 +1240,7 @@ class Union implements TypeNode
                 && !$atomic_key_type instanceof TLiteralInt
                 && !$atomic_key_type instanceof TLiteralFloat
                 && !$atomic_key_type instanceof Atomic\TNonspecificLiteralString
+                && !$atomic_key_type instanceof Atomic\TNonspecificLiteralInt
                 && !$atomic_key_type instanceof Atomic\TFalse
                 && !$atomic_key_type instanceof Atomic\TTrue
             ) {

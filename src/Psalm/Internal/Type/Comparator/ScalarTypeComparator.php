@@ -28,6 +28,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNonFalsyString;
+use Psalm\Type\Atomic\TNonspecificLiteralInt;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TNumericString;
@@ -94,8 +95,27 @@ class ScalarTypeComparator
         }
 
         if ($container_type_part instanceof TNonspecificLiteralString) {
-            if ($atomic_comparison_result) {
-                $atomic_comparison_result->type_coerced = true;
+            if ($input_type_part instanceof TString) {
+                if ($atomic_comparison_result) {
+                    $atomic_comparison_result->type_coerced = true;
+                }
+            }
+
+            return false;
+        }
+
+        if ($container_type_part instanceof TNonspecificLiteralInt
+            && ($input_type_part instanceof TLiteralInt
+                || $input_type_part instanceof TNonspecificLiteralInt)
+        ) {
+            return true;
+        }
+
+        if ($container_type_part instanceof TNonspecificLiteralInt) {
+            if ($input_type_part instanceof TInt) {
+                if ($atomic_comparison_result) {
+                    $atomic_comparison_result->type_coerced = true;
+                }
             }
 
             return false;

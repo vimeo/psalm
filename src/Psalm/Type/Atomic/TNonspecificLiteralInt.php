@@ -2,19 +2,19 @@
 namespace Psalm\Type\Atomic;
 
 /**
- * Denotes the `literal-string` type, where the exact value is unknown but
- * we know that the string is not from user input
+ * Denotes the `literal-int` type, where the exact value is unknown but
+ * we know that the int is not from user input
  */
-class TNonspecificLiteralString extends TString
+class TNonspecificLiteralInt extends TInt
 {
     public function __toString(): string
     {
-        return 'literal-string';
+        return 'literal-int';
     }
 
     public function getKey(bool $include_extra = true) : string
     {
-        return 'string';
+        return 'int';
     }
 
     public function canBeFullyExpressedInPhp(int $php_major_version, int $php_minor_version): bool
@@ -24,6 +24,6 @@ class TNonspecificLiteralString extends TString
 
     public function getAssertionString(bool $exact = false): string
     {
-        return 'string';
+        return 'int';
     }
 }

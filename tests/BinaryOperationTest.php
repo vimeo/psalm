@@ -201,10 +201,8 @@ class BinaryOperationTest extends TestCase
                         return $arg;
                     }
 
-                    /** @var "a"|"b" */
-                    $foo = "a";
-                    /** @var "c"|"d" */
-                    $bar = "c";
+                    $foo = rand(0, 1) ? "a" : "b";
+                    $bar = rand(0, 1) ? "c" : "d";
                     $baz = $foo . $bar;
                     foobar($baz);
                 ',
@@ -595,6 +593,49 @@ class BinaryOperationTest extends TestCase
                      */
                     function foo(string $s1): string {
                         $s2 = 2;
+                        return "Hello $s1 $s2";
+                    }',
+            ],
+            'literalIntConcatCreatesLiteral' => [
+                '<?php
+                    /**
+                     * @param  literal-string $s1
+                     * @param  literal-int $s2
+                     * @return literal-string
+                     */
+                    function foo(string $s1, int $s2): string {
+                        return $s1 . $s2;
+                    }',
+            ],
+            'literalIntConcatCreatesLiteral2' => [
+                '<?php
+                    /**
+                     * @param  literal-int $s1
+                     * @return literal-string
+                     */
+                    function foo(int $s1): string {
+                        return "foo" . $s1;
+                    }',
+            ],
+            'encapsedStringWithIntIncludingLiterals' => [
+                '<?php
+                    /**
+                     * @param  literal-int $s1
+                     * @param  literal-int $s2
+                     * @return literal-string
+                     */
+                    function foo(int $s1, int $s2): string {
+                        return "Hello $s1 $s2";
+                    }',
+            ],
+            'encapsedStringWithIntIncludingLiterals2' => [
+                '<?php
+                    /**
+                     * @param  literal-int $s1
+                     * @return literal-string
+                     */
+                    function foo(int $s1): string {
+                        $s2 = "foo";
                         return "Hello $s1 $s2";
                     }',
             ],
