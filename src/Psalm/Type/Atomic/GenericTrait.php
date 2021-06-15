@@ -11,9 +11,9 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
 use function array_map;
+use function array_values;
 use function count;
 use function implode;
-use function sort;
 use function substr;
 
 trait GenericTrait
@@ -104,7 +104,7 @@ trait GenericTrait
 
         $type_params = $this->type_params;
 
-        //no need for special format if the key is not determined and the content can be displayed with phpdoc format
+        //no need for special format if the key is not determined
         if ($this instanceof TArray &&
             count($type_params) === 2 &&
             isset($type_params[0]) &&
@@ -121,7 +121,7 @@ trait GenericTrait
             $type_params[0]->isMixed()
         ) {
             //when the value of an array is mixed, no need for namespaced phpdoc
-            return '';
+            return 'array';
         }
 
         $extra_types = '';
