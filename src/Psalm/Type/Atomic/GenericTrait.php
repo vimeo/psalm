@@ -11,6 +11,7 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
 use function array_map;
+use function count;
 use function implode;
 use function substr;
 
@@ -104,11 +105,21 @@ trait GenericTrait
 
         //no need for special format if the key is not determined and the content can be displayed with phpdoc format
         if ($this instanceof TArray &&
+            count($type_params) === 2 &&
             isset($type_params[0]) &&
             $type_params[0]->isArrayKey()
         ) {
             //we remove the key for display
             unset($type_params[0]);
+        }
+
+        if ($this instanceof TArray &&
+            count($type_params) === 1 &&
+            isset($type_params[0]) &&
+            $type_params[0]->isMixed()
+        ) {
+            //when the value of an array is mixed, no need for namespaced phpdoc
+            return '';
         }
 
         $extra_types = '';
