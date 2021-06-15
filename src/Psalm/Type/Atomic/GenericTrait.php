@@ -13,6 +13,7 @@ use Psalm\Type\Union;
 use function array_map;
 use function count;
 use function implode;
+use function sort;
 use function substr;
 
 trait GenericTrait
@@ -111,6 +112,7 @@ trait GenericTrait
         ) {
             //we remove the key for display
             unset($type_params[0]);
+            $type_params = array_values($type_params);
         }
 
         if ($this instanceof TArray &&
