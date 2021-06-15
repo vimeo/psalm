@@ -326,7 +326,7 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
                         public static $one = "one";
 
                         /**
-                         * @var array<array-key, mixed>
+                         * @var array
                          */
                         public static $vars = ["one"];
                     }
