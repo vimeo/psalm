@@ -310,6 +310,7 @@ These issues are treated as errors at level 7 and below.
  - [UnusedClass](issues/UnusedClass.md)
  - [UnusedClosureParam](issues/UnusedClosureParam.md)
  - [UnusedConstructor](issues/UnusedConstructor.md)
+ - [UnusedForeachValue](issues/UnusedForeachValue.md)
  - [UnusedMethod](issues/UnusedMethod.md)
  - [UnusedParam](issues/UnusedParam.md)
  - [UnusedProperty](issues/UnusedProperty.md)

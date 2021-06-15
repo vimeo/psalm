@@ -38,6 +38,7 @@ use Psalm\Issue\Trace;
 use Psalm\Issue\UndefinedTrace;
 use Psalm\Issue\UnevaluatedCode;
 use Psalm\Issue\UnrecognizedStatement;
+use Psalm\Issue\UnusedForeachValue;
 use Psalm\Issue\UnusedVariable;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AfterStatementAnalysisEvent;
@@ -128,6 +129,16 @@ class StatementsAnalyzer extends SourceAnalyzer
 
     /** @var ?DataFlowGraph */
     public $data_flow_graph;
+
+    /**
+     * Locations of foreach values
+     *
+     * Used to discern ordinary UnusedVariables from UnusedForeachValues
+     *
+     * @var array<string, list<CodeLocation>>
+     * @psalm-internal Psalm\Internal\Analyzer
+     */
+    public $foreach_var_locations = [];
 
     public function __construct(SourceAnalyzer $source, \Psalm\Internal\Provider\NodeDataProvider $node_data)
     {
@@ -769,12 +780,33 @@ class StatementsAnalyzer extends SourceAnalyzer
                 && $this->data_flow_graph instanceof VariableUseGraph
                 && !$this->data_flow_graph->isVariableUsed($assignment_node)
             ) {
-                $issue = new UnusedVariable(
-                    $var_id . ' is never referenced or the value is not used',
-                    $original_location
-                );
+                $var_id_lc = strtolower($var_id);
+
+                $is_foreach_var = false;
+
+                if (isset($this->foreach_var_locations[$var_id_lc])) {
+                    foreach ($this->foreach_var_locations[$var_id_lc] as $location) {
+                        if ($location->raw_file_start === $original_location->raw_file_start) {
+                            $is_foreach_var = true;
+                            break;
+                        }
+                    }
+                }
+
+                if ($is_foreach_var) {
+                    $issue = new UnusedForeachValue(
+                        $var_id . ' is never referenced or the value is not used',
+                        $original_location
+                    );
+                } else {
+                    $issue = new UnusedVariable(
+                        $var_id . ' is never referenced or the value is not used',
+                        $original_location
+                    );
+                }
 
                 if ($codebase->alter_code
+                    && $issue instanceof UnusedVariable
                     && !$unused_var_remover->checkIfVarRemoved($var_id, $original_location)
                     && isset($project_analyzer->getIssuesToFix()['UnusedVariable'])
                     && !IssueBuffer::isSuppressed($issue, $this->getSuppressedIssues())

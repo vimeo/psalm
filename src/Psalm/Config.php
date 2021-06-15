@@ -1606,6 +1606,10 @@ class Config
             return 'UndefinedClass';
         }
 
+        if ($issue_type === 'UnusedForeachValue') {
+            return 'UnusedVariable';
+        }
+
         return null;
     }
 
