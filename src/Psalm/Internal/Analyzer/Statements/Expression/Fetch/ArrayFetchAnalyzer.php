@@ -14,6 +14,7 @@ use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeCombiner;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\EmptyArrayAccess;
 use Psalm\Issue\InvalidArrayAccess;
 use Psalm\Issue\InvalidArrayAssignment;
@@ -42,6 +43,7 @@ use Psalm\Node\VirtualIdentifier;
 use Psalm\Node\VirtualName;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TClassStringMap;
@@ -450,7 +452,6 @@ class ArrayFetchAnalyzer
         $non_array_types = [];
 
         $has_valid_expected_offset = false;
-        $has_valid_absolute_offset = false;
         $expected_offset_types = [];
 
         $key_values = [];
@@ -519,28 +520,11 @@ class ArrayFetchAnalyzer
         }
 
         if ($array_type->isArray()) {
-            foreach ($offset_type->getAtomicTypes() as $atomic_offset_type) {
-                if ($atomic_offset_type instanceof Type\Atomic\TFalse &&
-                    $offset_type->ignore_falsable_issues === true
-                ) {
-                    //do nothing
-                } elseif ($atomic_offset_type instanceof Type\Atomic\TNull &&
-                    $offset_type->ignore_nullable_issues === true
-                ) {
-                    //do nothing
-                } elseif ($atomic_offset_type instanceof Type\Atomic\TString ||
-                    $atomic_offset_type instanceof Type\Atomic\TInt ||
-                    $atomic_offset_type instanceof Type\Atomic\TArrayKey ||
-                    $atomic_offset_type instanceof Type\Atomic\TMixed ||
-                    $atomic_offset_type instanceof Type\Atomic\TTemplateParam ||
-                    (
-                        $atomic_offset_type instanceof Type\Atomic\TObjectWithProperties
-                        && isset($atomic_offset_type->methods['__toString'])
-                    )
-                ) {
-                    $has_valid_absolute_offset = true;
-                }
-            }
+            $has_valid_absolute_offset = self::checkArrayOffsetType(
+                $offset_type,
+                $offset_type->getAtomicTypes(),
+                $codebase
+            );
 
             if ($has_valid_absolute_offset === false) {
                 //we didn't find a single type that could be valid
@@ -2068,5 +2052,89 @@ class ArrayFetchAnalyzer
                 );
             }
         }
+    }
+
+    /**
+     * @param Atomic[] $offset_types
+     */
+    private static function checkArrayOffsetType(
+        Type\Union $offset_type,
+        array $offset_types,
+        \Psalm\Codebase $codebase
+    ): bool {
+        $has_valid_absolute_offset = false;
+        foreach ($offset_types as $atomic_offset_type) {
+            if ($atomic_offset_type instanceof Type\Atomic\TClassConstant) {
+                $expanded = TypeExpander::expandAtomic(
+                    $codebase,
+                    $atomic_offset_type,
+                    $atomic_offset_type->fq_classlike_name,
+                    $atomic_offset_type->fq_classlike_name,
+                    null,
+                    true,
+                    true
+                );
+
+                if ($expanded instanceof Atomic) {
+                    $has_valid_absolute_offset = self::checkArrayOffsetType(
+                        $offset_type,
+                        [$expanded],
+                        $codebase
+                    );
+                } else {
+                    $has_valid_absolute_offset = self::checkArrayOffsetType(
+                        $offset_type,
+                        $expanded,
+                        $codebase
+                    );
+                }
+
+                if ($has_valid_absolute_offset) {
+                    break;
+                }
+            }
+
+            if ($atomic_offset_type instanceof Type\Atomic\TFalse &&
+                $offset_type->ignore_falsable_issues === true
+            ) {
+                //do nothing
+            } elseif ($atomic_offset_type instanceof Type\Atomic\TNull &&
+                $offset_type->ignore_nullable_issues === true
+            ) {
+                //do nothing
+            } elseif ($atomic_offset_type instanceof Type\Atomic\TString ||
+                $atomic_offset_type instanceof Type\Atomic\TInt ||
+                $atomic_offset_type instanceof Type\Atomic\TArrayKey ||
+                $atomic_offset_type instanceof Type\Atomic\TMixed ||
+                (
+                    $atomic_offset_type instanceof Type\Atomic\TObjectWithProperties
+                    && isset($atomic_offset_type->methods['__toString'])
+                )
+            ) {
+                $has_valid_absolute_offset = true;
+                break;
+            } elseif ($atomic_offset_type instanceof TNamedObject) {
+                $to_string_method_id = new \Psalm\Internal\MethodIdentifier(
+                    $atomic_offset_type->value,
+                    '__tostring'
+                );
+
+                if ($codebase->methods->methodExists($to_string_method_id)) {
+                    $has_valid_absolute_offset = true;
+                    break;
+                }
+            } elseif ($atomic_offset_type instanceof Type\Atomic\TTemplateParam) {
+                $has_valid_absolute_offset = self::checkArrayOffsetType(
+                    $offset_type,
+                    $atomic_offset_type->as->getAtomicTypes(),
+                    $codebase
+                );
+
+                if ($has_valid_absolute_offset) {
+                    break;
+                }
+            }
+        }
+        return $has_valid_absolute_offset;
     }
 }
