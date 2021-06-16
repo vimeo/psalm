@@ -331,7 +331,7 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                     /**
                      * @return string[]
                      *
-                     * @psalm-return array<array-key, string>
+                     * @psalm-return array<string>
                      */
                     function bar(): array {
                         return foo();
@@ -359,7 +359,7 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                     /**
                      * @return string[]
                      *
-                     * @psalm-return array<array-key, string>
+                     * @psalm-return array<string>
                      */
                     function bar() {
                         return foo();

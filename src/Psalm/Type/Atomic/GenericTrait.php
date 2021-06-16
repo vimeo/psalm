@@ -11,6 +11,8 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
 use function array_map;
+use function array_values;
+use function count;
 use function implode;
 use function substr;
 
@@ -100,6 +102,28 @@ trait GenericTrait
             return $value_type_string . '[]';
         }
 
+        $type_params = $this->type_params;
+
+        //no need for special format if the key is not determined
+        if ($this instanceof TArray &&
+            count($type_params) === 2 &&
+            isset($type_params[0]) &&
+            $type_params[0]->isArrayKey()
+        ) {
+            //we remove the key for display
+            unset($type_params[0]);
+            $type_params = array_values($type_params);
+        }
+
+        if ($this instanceof TArray &&
+            count($type_params) === 1 &&
+            isset($type_params[0]) &&
+            $type_params[0]->isMixed()
+        ) {
+            //when the value of an array is mixed, no need for namespaced phpdoc
+            return 'array';
+        }
+
         $extra_types = '';
 
         if ($this instanceof TNamedObject && $this->extra_types) {
@@ -128,7 +152,7 @@ trait GenericTrait
                         function (Union $type_param) use ($namespace, $aliased_classes, $this_class): string {
                             return $type_param->toNamespacedString($namespace, $aliased_classes, $this_class, false);
                         },
-                        $this->type_params
+                        $type_params
                     )
                 ) .
                 '>' . $extra_types;
