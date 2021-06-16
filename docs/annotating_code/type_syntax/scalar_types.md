@@ -50,6 +50,24 @@ Psalm also supports a `trait-string` annotation denote a trait that exists.
 
 `numeric-string` denotes a string value that has passed an `is_numeric` check.
 
+### literal-string
+
+`literal-string` denotes a string value that is entirely composed of strings in your application.
+
+Examples:
+
+- `"hello " . "world"`
+- `"hello " . Person::DEFAULT_NAME
+- `implode([', ', ["one", "two"])`
+- `implode([', ', [1, 2, 3])`
+- `"hello " . <another literal-string>`
+
+Strings that don't pass this type check:
+
+- `file_get_contents("foo.txt")`
+- `$_GET["foo"]`
+- `"hello " . $_GET["foo"]`
+
 ### lowercase-string, non-empty-string, non-empty-lowercase-string
 
 An empty string, lowercased or both at once.
