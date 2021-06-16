@@ -57,7 +57,7 @@ Psalm also supports a `trait-string` annotation denote a trait that exists.
 Examples:
 
 - `"hello " . "world"`
-- `"hello " . Person::DEFAULT_NAME
+- `"hello " . Person::DEFAULT_NAME`
 - `implode([', ', ["one", "two"])`
 - `implode([', ', [1, 2, 3])`
 - `"hello " . <another literal-string>`
