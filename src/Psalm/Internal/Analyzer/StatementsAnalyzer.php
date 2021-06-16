@@ -780,12 +780,10 @@ class StatementsAnalyzer extends SourceAnalyzer
                 && $this->data_flow_graph instanceof VariableUseGraph
                 && !$this->data_flow_graph->isVariableUsed($assignment_node)
             ) {
-                $var_id_lc = strtolower($var_id);
-
                 $is_foreach_var = false;
 
-                if (isset($this->foreach_var_locations[$var_id_lc])) {
-                    foreach ($this->foreach_var_locations[$var_id_lc] as $location) {
+                if (isset($this->foreach_var_locations[$var_id])) {
+                    foreach ($this->foreach_var_locations[$var_id] as $location) {
                         if ($location->raw_file_start === $original_location->raw_file_start) {
                             $is_foreach_var = true;
                             break;

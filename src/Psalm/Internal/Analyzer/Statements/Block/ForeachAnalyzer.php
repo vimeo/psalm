@@ -93,7 +93,7 @@ class ForeachAnalyzer
 
         if ($stmt->valueVar instanceof PhpParser\Node\Expr\Variable && is_string($stmt->valueVar->name)) {
             $safe_var_ids['$' . $stmt->valueVar->name] = true;
-            $statements_analyzer->foreach_var_locations['$' . strtolower($stmt->valueVar->name)][] = new CodeLocation(
+            $statements_analyzer->foreach_var_locations['$' . $stmt->valueVar->name][] = new CodeLocation(
                 $statements_analyzer,
                 $stmt->valueVar
             );
