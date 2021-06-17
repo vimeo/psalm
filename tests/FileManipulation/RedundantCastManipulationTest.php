@@ -22,7 +22,7 @@ class RedundantCastManipulationTest extends FileManipulationTestCase
                 ['RedundantCast'],
                 true,
             ],
-            'RemoveRedundantCast' => [
+            'RemoveRedundantCastGivenDocblockType' => [
                 '<?php
                     /** @param int $test */
                     function a($test){
