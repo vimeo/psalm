@@ -32,6 +32,8 @@ use Psalm\Issue\PossiblyUndefinedGlobalVariable;
 use Psalm\Issue\PossiblyUndefinedVariable;
 use Psalm\Issue\PossiblyUnusedMethod;
 use Psalm\Issue\PossiblyUnusedProperty;
+use Psalm\Issue\RedundantCast;
+use Psalm\Issue\RedundantCastGivenDocblockType;
 use Psalm\Issue\UnnecessaryVarAnnotation;
 use Psalm\Issue\UnusedMethod;
 use Psalm\Issue\UnusedProperty;
@@ -229,6 +231,8 @@ class ProjectAnalyzer
         PossiblyUndefinedVariable::class,
         PossiblyUnusedMethod::class,
         PossiblyUnusedProperty::class,
+        RedundantCast::class,
+        RedundantCastGivenDocblockType::class,
         UnusedMethod::class,
         UnusedProperty::class,
         UnusedVariable::class,
