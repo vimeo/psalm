@@ -7,6 +7,7 @@ use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Issue\InvalidCast;
 use Psalm\Issue\PossiblyInvalidCast;
@@ -52,21 +53,7 @@ class CastAnalyzer
                 if ($maybe_type->isInt()) {
                     $valid_int_type = $maybe_type;
                     if (!$maybe_type->from_calculation) {
-                        if ($maybe_type->from_docblock) {
-                            $issue = new RedundantCastGivenDocblockType(
-                                'Redundant cast to ' . $maybe_type->getKey() . ' given docblock-provided type',
-                                new CodeLocation($statements_analyzer->getSource(), $stmt)
-                            );
-                        } else {
-                            $issue = new RedundantCast(
-                                'Redundant cast to ' . $maybe_type->getKey(),
-                                new CodeLocation($statements_analyzer->getSource(), $stmt)
-                            );
-                        }
-
-                        if (IssueBuffer::accepts($issue, $statements_analyzer->getSuppressedIssues())) {
-                            // fall through
-                        }
+                        self::handleRedundantCast($maybe_type, $statements_analyzer, $stmt);
                     }
                 }
 
@@ -113,21 +100,7 @@ class CastAnalyzer
 
             if ($maybe_type) {
                 if ($maybe_type->isFloat()) {
-                    if ($maybe_type->from_docblock) {
-                        $issue = new RedundantCastGivenDocblockType(
-                            'Redundant cast to ' . $maybe_type->getKey() . ' given docblock-provided type',
-                            new CodeLocation($statements_analyzer->getSource(), $stmt)
-                        );
-                    } else {
-                        $issue = new RedundantCast(
-                            'Redundant cast to ' . $maybe_type->getKey(),
-                            new CodeLocation($statements_analyzer->getSource(), $stmt)
-                        );
-                    }
-
-                    if (IssueBuffer::accepts($issue, $statements_analyzer->getSuppressedIssues())) {
-                        // fall through
-                    }
+                    self::handleRedundantCast($maybe_type, $statements_analyzer, $stmt);
                 }
             }
 
@@ -153,21 +126,7 @@ class CastAnalyzer
 
             if ($maybe_type) {
                 if ($maybe_type->isBool()) {
-                    if ($maybe_type->from_docblock) {
-                        $issue = new RedundantCastGivenDocblockType(
-                            'Redundant cast to ' . $maybe_type->getKey() . ' given docblock-provided type',
-                            new CodeLocation($statements_analyzer->getSource(), $stmt)
-                        );
-                    } else {
-                        $issue = new RedundantCast(
-                            'Redundant cast to ' . $maybe_type->getKey(),
-                            new CodeLocation($statements_analyzer->getSource(), $stmt)
-                        );
-                    }
-
-                    if (IssueBuffer::accepts($issue, $statements_analyzer->getSuppressedIssues())) {
-                        // fall through
-                    }
+                    self::handleRedundantCast($maybe_type, $statements_analyzer, $stmt);
                 }
             }
 
@@ -193,21 +152,7 @@ class CastAnalyzer
 
             if ($stmt_expr_type) {
                 if ($stmt_expr_type->isString()) {
-                    if ($stmt_expr_type->from_docblock) {
-                        $issue = new RedundantCastGivenDocblockType(
-                            'Redundant cast to ' . $stmt_expr_type->getKey() . ' given docblock-provided type',
-                            new CodeLocation($statements_analyzer->getSource(), $stmt)
-                        );
-                    } else {
-                        $issue = new RedundantCast(
-                            'Redundant cast to ' . $stmt_expr_type->getKey(),
-                            new CodeLocation($statements_analyzer->getSource(), $stmt)
-                        );
-                    }
-
-                    if (IssueBuffer::accepts($issue, $statements_analyzer->getSuppressedIssues())) {
-                        // fall through
-                    }
+                    self::handleRedundantCast($stmt_expr_type, $statements_analyzer, $stmt);
                 }
 
                 $stmt_type = self::castStringAttempt(
@@ -262,21 +207,7 @@ class CastAnalyzer
 
             if ($stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr)) {
                 if ($stmt_expr_type->isArray()) {
-                    if ($stmt_expr_type->from_docblock) {
-                        $issue = new RedundantCastGivenDocblockType(
-                            'Redundant cast to ' . $stmt_expr_type->getKey() . ' given docblock-provided type',
-                            new CodeLocation($statements_analyzer->getSource(), $stmt)
-                        );
-                    } else {
-                        $issue = new RedundantCast(
-                            'Redundant cast to ' . $stmt_expr_type->getKey(),
-                            new CodeLocation($statements_analyzer->getSource(), $stmt)
-                        );
-                    }
-
-                    if (IssueBuffer::accepts($issue, $statements_analyzer->getSuppressedIssues())) {
-                        // fall through
-                    }
+                    self::handleRedundantCast($stmt_expr_type, $statements_analyzer, $stmt);
                 }
 
                 $all_permissible = true;
@@ -517,5 +448,56 @@ class CastAnalyzer
         }
 
         return $str_type;
+    }
+
+    private static function handleRedundantCast(
+        Type\Union $maybe_type,
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\Cast $stmt
+    ): void {
+        $codebase = $statements_analyzer->getCodebase();
+        $project_analyzer = $statements_analyzer->getProjectAnalyzer();
+
+        $file_manipulation = null;
+        if ($maybe_type->from_docblock) {
+            $issue = new RedundantCastGivenDocblockType(
+                'Redundant cast to ' . $maybe_type->getKey() . ' given docblock-provided type',
+                new CodeLocation($statements_analyzer->getSource(), $stmt)
+            );
+
+            if ($codebase->alter_code
+                && isset($project_analyzer->getIssuesToFix()['RedundantCastGivenDocblockType'])
+            ) {
+                $file_manipulation = new \Psalm\FileManipulation(
+                    (int) $stmt->getAttribute('startFilePos'),
+                    (int) $stmt->expr->getAttribute('startFilePos'),
+                    ''
+                );
+            }
+        } else {
+            $issue = new RedundantCast(
+                'Redundant cast to ' . $maybe_type->getKey(),
+                new CodeLocation($statements_analyzer->getSource(), $stmt)
+            );
+
+            if ($codebase->alter_code
+                && isset($project_analyzer->getIssuesToFix()['RedundantCast'])
+            ) {
+                $file_manipulation = new \Psalm\FileManipulation(
+                    (int) $stmt->getAttribute('startFilePos'),
+                    (int) $stmt->expr->getAttribute('startFilePos'),
+                    ''
+                );
+            }
+        }
+
+        if ($file_manipulation) {
+            FileManipulationBuffer::add($statements_analyzer->getFilePath(), [$file_manipulation]);
+        }
+
+
+        if (IssueBuffer::accepts($issue, $statements_analyzer->getSuppressedIssues())) {
+            // fall through
+        }
     }
 }
