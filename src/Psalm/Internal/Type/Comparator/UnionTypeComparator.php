@@ -3,7 +3,9 @@
 namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Type;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TMixed;
@@ -64,6 +66,26 @@ class UnionTypeComparator
                 && !$input_type_part->extra_types
             ) {
                 $input_atomic_types = array_merge($input_type_part->as->getAtomicTypes(), $input_atomic_types);
+                continue;
+            }
+
+            if ($input_type_part instanceof Type\Atomic\TClassConstant) {
+                $expanded = TypeExpander::expandAtomic(
+                    $codebase,
+                    $input_type_part,
+                    $input_type_part->fq_classlike_name,
+                    $input_type_part->fq_classlike_name,
+                    null,
+                    true,
+                    true
+                );
+
+                if ($expanded instanceof Atomic) {
+                    $input_atomic_types[] = $expanded;
+                } else {
+                    $input_atomic_types = array_merge($expanded, $input_atomic_types);
+                }
+
                 continue;
             }
 
