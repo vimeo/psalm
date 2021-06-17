@@ -2105,24 +2105,10 @@ class ArrayFetchAnalyzer
             } elseif ($atomic_offset_type instanceof Type\Atomic\TString ||
                 $atomic_offset_type instanceof Type\Atomic\TInt ||
                 $atomic_offset_type instanceof Type\Atomic\TArrayKey ||
-                $atomic_offset_type instanceof Type\Atomic\TMixed ||
-                (
-                    $atomic_offset_type instanceof Type\Atomic\TObjectWithProperties
-                    && isset($atomic_offset_type->methods['__toString'])
-                )
+                $atomic_offset_type instanceof Type\Atomic\TMixed
             ) {
                 $has_valid_absolute_offset = true;
                 break;
-            } elseif ($atomic_offset_type instanceof TNamedObject) {
-                $to_string_method_id = new \Psalm\Internal\MethodIdentifier(
-                    $atomic_offset_type->value,
-                    '__tostring'
-                );
-
-                if ($codebase->methods->methodExists($to_string_method_id)) {
-                    $has_valid_absolute_offset = true;
-                    break;
-                }
             } elseif ($atomic_offset_type instanceof Type\Atomic\TTemplateParam) {
                 $has_valid_absolute_offset = self::checkArrayOffsetType(
                     $offset_type,
