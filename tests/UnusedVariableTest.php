@@ -2968,7 +2968,7 @@ class UnusedVariableTest extends TestCase
                             $i = $i;
                         }
                     }',
-                'error_message' => 'UnusedVariable',
+                'error_message' => 'UnusedForeachValue',
             ],
             'detectUnusedVariableInsideLoopAfterAssignmentWithAddition' => [
                 '<?php
@@ -2977,7 +2977,7 @@ class UnusedVariableTest extends TestCase
                             $i = $i + 1;
                         }
                     }',
-                'error_message' => 'UnusedVariable',
+                'error_message' => 'UnusedForeachValue',
             ],
             'detectUnusedVariableInsideLoopCalledInFunction' => [
                 '<?php
@@ -3078,7 +3078,30 @@ class UnusedVariableTest extends TestCase
                         }
                         return 4;
                     }',
-                'error_message' => 'UnusedVariable',
+                'error_message' => 'UnusedForeachValue',
+            ],
+            'conditionalForeachWithUnusedValue' => [
+                '<?php
+                    if (rand(0, 1) > 0) {
+                        foreach ([1, 2, 3] as $val) {}
+                    }
+                ',
+                'error_message' => 'UnusedForeachValue',
+            ],
+            'doubleForeachWithInnerUnusedValue' => [
+                '<?php
+                    /**
+                     * @param non-empty-list<list<int>> $arr
+                     * @return list<int>
+                     */
+                    function f(array $arr): array {
+                        foreach ($arr as $elt) {
+                            foreach ($elt as $subelt) {}
+                        }
+                        return $elt;
+                    }
+                ',
+                'error_message' => 'UnusedForeachValue'
             ],
             'defineInBothBranchesOfConditional' => [
                 '<?php
