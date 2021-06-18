@@ -10568,7 +10568,7 @@ return [
 'RdKafka\KafkaConsumer::__construct' => ['void', 'conf'=>'RdKafka\Conf'],
 'RdKafka\KafkaConsumer::assign' => ['void', 'topic_partitions='=>'RdKafka\TopicPartition[]|null'],
 'RdKafka\KafkaConsumer::commit' => ['void', 'message_or_offsets='=>'RdKafka\Message|RdKafka\TopicPartition[]|null'],
-'RdKafka\KafkaConsumer::commitAsync' => ['void', 'message_or_offsets='=>'string'],
+'RdKafka\KafkaConsumer::commitAsync' => ['void', 'message_or_offsets='=>'RdKafka\Message|RdKafka\TopicPartition[]|null'],
 'RdKafka\KafkaConsumer::consume' => ['RdKafka\Message', 'timeout_ms'=>'int'],
 'RdKafka\KafkaConsumer::getAssignment' => ['RdKafka\TopicPartition[]'],
 'RdKafka\KafkaConsumer::getMetadata' => ['RdKafka\Metadata', 'all_topics'=>'bool', 'only_topic='=>'RdKafka\KafkaConsumerTopic', 'timeout_ms'=>'int'],
