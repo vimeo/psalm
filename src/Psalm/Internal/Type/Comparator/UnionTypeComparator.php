@@ -81,12 +81,14 @@ class UnionTypeComparator
                 );
 
                 if ($expanded instanceof Atomic) {
-                    $input_atomic_types[] = $expanded;
+                    if (!$expanded instanceof Atomic\TClassConstant) {
+                        $input_atomic_types[] = $expanded;
+                        continue;
+                    }
                 } else {
                     $input_atomic_types = array_merge($expanded, $input_atomic_types);
+                    continue;
                 }
-
-                continue;
             }
 
             $type_match_found = false;

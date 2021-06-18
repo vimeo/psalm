@@ -2076,11 +2076,13 @@ class ArrayFetchAnalyzer
                 );
 
                 if ($expanded instanceof Atomic) {
-                    $has_valid_absolute_offset = self::checkArrayOffsetType(
-                        $offset_type,
-                        [$expanded],
-                        $codebase
-                    );
+                    if (!$expanded instanceof Atomic\TClassConstant) {
+                        $has_valid_absolute_offset = self::checkArrayOffsetType(
+                            $offset_type,
+                            [$expanded],
+                            $codebase
+                        );
+                    }
                 } else {
                     $has_valid_absolute_offset = self::checkArrayOffsetType(
                         $offset_type,
