@@ -39,7 +39,7 @@ abstract class CodeIssue
     }
 
     /**
-     * @deprecated
+     * @deprecated going to be removed in Psalm 5
      * @psalm-suppress PossiblyUnusedMethod
      */
     public function getLocation(): CodeLocation
@@ -70,7 +70,7 @@ abstract class CodeIssue
     }
 
     /**
-     * @deprecated
+     * @deprecated going to be removed in Psalm 5
      * @psalm-suppress PossiblyUnusedMethod for convenience
      */
     public function getFileName(): string
@@ -79,7 +79,7 @@ abstract class CodeIssue
     }
 
     /**
-     * @deprecated
+     * @deprecated going to be removed in Psalm 5
      * @psalm-suppress PossiblyUnusedMethod
      */
     public function getMessage(): string
