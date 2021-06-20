@@ -58,16 +58,16 @@ Composer-based plugin is a composer package which conforms to these requirements
 
 ### Psalm API
 
-Plugins may implement one of (or more than one of) `Psalm\Plugin\Hook\*` interface(s).
+Plugins may implement one of (or more than one of) `Psalm\Plugin\EventHandler\*` interface(s).
 
 ```php
 <?php
-class SomePlugin implements \Psalm\Plugin\Hook\AfterStatementAnalysisInterface
+class SomePlugin implements \Psalm\Plugin\EventHandler\AfterStatementAnalysisInterface
 {
 }
 ```
 
-`Psalm\Plugin\Hook\*` offers the following interfaces that you can implement:
+`Psalm\Plugin\EventHandler\*` offers the following interfaces that you can implement:
 
 - `AfterAnalysisInterface` - called after Psalm has completed its analysis. Use this hook if you want to do something with the analysis results.
 - `AfterClassLikeAnalysisInterface` - called after Psalm has completed its analysis of a given class.
