@@ -618,10 +618,14 @@ final class Psalm
     ): array {
         fwrite(STDERR, 'Writing error baseline to file...' . PHP_EOL);
 
-        $issue_baseline = ErrorBaseline::read(
-            new \Psalm\Internal\Provider\FileProvider,
-            $options['set-baseline']
-        );
+        try {
+            $issue_baseline = ErrorBaseline::read(
+                new \Psalm\Internal\Provider\FileProvider,
+                $options['set-baseline']
+            );
+        } catch (\Psalm\Exception\ConfigException $e) {
+            $issue_baseline = [];
+        }
 
         ErrorBaseline::create(
             new \Psalm\Internal\Provider\FileProvider,
