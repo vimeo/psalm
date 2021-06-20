@@ -52,7 +52,7 @@ class DocComment
      * @psalm-return array{description:string, specials:array<string, array<int, string>>}
      * @psalm-suppress PossiblyUnusedMethod
      *
-     * @deprecated use parsePreservingLength instead
+     * @deprecated use parsePreservingLength instead, going to be removed in Psalm 5
      *
      * @psalm-pure
      */
