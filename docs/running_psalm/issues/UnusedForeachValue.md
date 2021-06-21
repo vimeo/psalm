@@ -6,12 +6,11 @@ references to the foreach value
 ```php
 <?php
 
-/** @param non-empty-array<string, int> $a */
+/** @param array<string, int> $a */
 function foo(array $a) : void {
     foreach ($a as $key => $value) { // $value is unused
-        break;
+        echo $key;
     }
-    echo $key;
 }
 ```
 
