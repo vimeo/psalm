@@ -244,6 +244,9 @@ abstract class Atomic implements TypeNode
             case 'callable-object':
                 return new TCallableObject();
 
+            case 'stringable-object':
+                return new Type\Atomic\TObjectWithProperties([], ['__tostring' => 'string']);
+
             case 'class-string':
             case 'interface-string':
                 return new TClassString();

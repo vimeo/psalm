@@ -43,6 +43,8 @@ class TypeTokenizer
         'class-string' => true,
         'callable-string' => true,
         'callable-array' => true,
+        'callable-object' => true,
+        'stringable-object' => true,
         'pure-callable' => true,
         'pure-Closure' => true,
         'trait-string' => true,

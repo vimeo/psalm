@@ -1531,6 +1531,7 @@ class UnusedVariableTest extends TestCase
                         takes_ref($a[$e]);
                     }
 
+                    /** @param array<string|int> $p */
                     function takes_ref(array &$p): void {
                         echo implode(",", $p);
                     }'
@@ -2381,6 +2382,7 @@ class UnusedVariableTest extends TestCase
             ],
             'varDocblockVariableIsUsedByRef' => [
                 '<?php
+                    /** @param array<string|int> $arr */
                     function foo(array $arr) : string {
                         /** @var string $val */
                         foreach ($arr as &$val) {
