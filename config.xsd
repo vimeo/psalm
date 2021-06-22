@@ -59,6 +59,7 @@
         <xs:attribute name="ignoreInternalFunctionFalseReturn" type="xs:boolean" default="true" />
         <xs:attribute name="ignoreInternalFunctionNullReturn" type="xs:boolean" default="true" />
         <xs:attribute name="includePhpVersionsInErrorBaseline" type="xs:boolean" default="false" />
+        <xs:attribute name="inferPropertyTypesFromConstructor" type="xs:boolean" default="true" />
         <xs:attribute name="loadXdebugStub" type="xs:boolean">
             <xs:annotation>
                 <xs:documentation xml:lang="en">

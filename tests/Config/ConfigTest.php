@@ -1341,6 +1341,15 @@ class ConfigTest extends \Psalm\Tests\TestCase
         $this->assertContains('datetime', $this->project_analyzer->getConfig()->getUniversalObjectCrates());
     }
 
+    public function testInferPropertyTypesFromConstructorIsRead(): void
+    {
+        $cfg = Config::loadFromXML(
+            dirname(__DIR__, 2),
+            '<?xml version="1.0"?><psalm inferPropertyTypesFromConstructor="false"></psalm>'
+        );
+        $this->assertFalse($cfg->infer_property_types_from_constructor);
+    }
+
     /**
      * @return array<string, array{0: int, 1: int|null}>
      */

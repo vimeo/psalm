@@ -213,6 +213,15 @@ When `true`, Psalm ignores possibly-false issues stemming from return values of 
 ```
 When `true`, Psalm ignores possibly-null issues stemming from return values of internal array functions (like `current`) that may return null, but do so rarely. Defaults to `true`.
 
+#### inferPropertyTypesFromConstructor
+
+```xml
+<psalm
+  inferPropertyTypesFromConstructor="[bool]"
+>
+```
+When `true`, Psalm infers property types from assignments seen in straightforward constructors. Defaults to `true`.
+
 #### findUnusedVariablesAndParams
 ```xml
 <psalm
