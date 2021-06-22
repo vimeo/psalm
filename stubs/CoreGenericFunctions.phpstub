@@ -567,7 +567,7 @@ function rtrim(string $str, string $character_mask = " \t\n\r\0\x0B") : string {
  * @psalm-pure
  *
  * @param string|array $glue
- * @param array<string|float|int|stringable-object> $pieces
+ * @param array<string|float|int|stringable-object|null|bool> $pieces
  *
  * @return (
  *     $glue is non-empty-string
