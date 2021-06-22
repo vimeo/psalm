@@ -457,7 +457,7 @@ class Functions
             'set_error_handler', 'user_error', 'trigger_error', 'restore_error_handler',
             'date_default_timezone_set', 'assert_options', 'setlocale',
             'set_exception_handler', 'set_time_limit', 'putenv', 'spl_autoload_register',
-            'spl_autoload_unregister', 'microtime', 'array_rand',
+            'spl_autoload_unregister', 'microtime', 'array_rand', 'set_include_path',
 
             // logging
             'openlog', 'syslog', 'error_log', 'define_syslog_variables',
