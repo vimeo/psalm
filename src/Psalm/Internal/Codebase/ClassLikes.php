@@ -670,6 +670,9 @@ class ClassLikes
             $fq_class_name = $this->classlike_aliases[$fq_class_name];
         }
 
+        if (!$this->classlike_storage_provider->has($fq_class_name)) {
+            return false;
+        }
         $class_storage = $this->classlike_storage_provider->get($fq_class_name);
 
         return isset($class_storage->class_implements[$interface_id]);
