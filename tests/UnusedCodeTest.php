@@ -1008,6 +1008,26 @@ class UnusedCodeTest extends TestCase
                     f(new Worker());
                     f(new AnotherWorker());',
             ],
+            'methodReturnValueUsedInThrow' => [
+                '<?php
+                    class A {
+                        public function foo() : Exception {
+                            return new Exception;
+                        }
+                    }
+                    throw (new A)->foo();
+                '
+            ],
+            'staticMethodReturnValueUsedInThrow' => [
+                '<?php
+                    class A {
+                        public static function foo() : Exception {
+                            return new Exception;
+                        }
+                    }
+                    throw A::foo();
+                '
+            ],
         ];
     }
 

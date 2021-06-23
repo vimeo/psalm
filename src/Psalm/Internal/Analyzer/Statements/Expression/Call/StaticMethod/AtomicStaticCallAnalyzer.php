@@ -306,6 +306,7 @@ class AtomicStaticCallAnalyzer
                 || $context->inside_use
                 || $context->inside_assignment
                 || $context->inside_conditional
+                || $context->inside_throw
         );
 
         $fake_method_exists = false;
@@ -352,6 +353,7 @@ class AtomicStaticCallAnalyzer
                         || $context->inside_use
                         || $context->inside_assignment
                         || $context->inside_conditional
+                        || $context->inside_throw
                 )) {
                     $mixin_candidates = [];
                     foreach ($class_storage->templatedMixins as $mixin_candidate) {
@@ -476,6 +478,7 @@ class AtomicStaticCallAnalyzer
                     || $context->inside_use
                     || $context->inside_assignment
                     || $context->inside_conditional
+                    || $context->inside_throw
             )) {
                 if ($codebase->methods->return_type_provider->has($fq_class_name)) {
                     $return_type_candidate = $codebase->methods->return_type_provider->getReturnType(

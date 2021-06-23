@@ -207,6 +207,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                 || $context->inside_use
                 || $context->inside_assignment
                 || $context->inside_conditional
+                || $context->inside_throw
         );
 
         $fake_method_exists = false;
@@ -331,6 +332,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                         || $context->inside_use
                         || $context->inside_assignment
                         || $context->inside_conditional
+                        || $context->inside_throw
                 )
             ) {
                 $new_call_context = MissingMethodCallHandler::handleMagicMethod(
@@ -737,6 +739,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                                     || $context->inside_use
                                     || $context->inside_assignment
                                     || $context->inside_conditional
+                                    || $context->inside_throw
                             )) {
                                 $lhs_type_part = clone $lhs_type_part_new;
                                 $class_storage = $mixin_class_storage;
@@ -809,6 +812,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                     || $context->inside_use
                     || $context->inside_assignment
                     || $context->inside_conditional
+                    || $context->inside_throw
             )) {
                 $mixin_declaring_class_storage = $codebase->classlike_storage_provider->get(
                     $class_storage->mixin_declaring_fqcln
