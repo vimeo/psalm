@@ -2256,6 +2256,20 @@ class TaintTest extends TestCase
                     'TaintedFile{ file_get_contents($value); }',
                 ],
             ],
+            'taintedIncludes' => [
+                '<?php
+                    $first = (string)($_GET["first"] ?? "");
+                    $second = (string)($_GET["second"] ?? "");
+                    require $first;
+                    require dirname(__DIR__)."/first.php";
+                    require $second;
+                    require dirname(__DIR__)."/second.php";
+                ',
+                'expectedIssueTypes' => [
+                    'TaintedInclude{ require $first; }',
+                    'TaintedInclude{ require $second; }',
+                ],
+            ],
         ];
     }
 }
