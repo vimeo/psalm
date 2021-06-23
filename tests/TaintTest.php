@@ -5,6 +5,8 @@ use Psalm\Context;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\IssueBuffer;
 
+use function trim;
+
 use const DIRECTORY_SEPARATOR;
 
 class TaintTest extends TestCase
@@ -2194,7 +2196,7 @@ class TaintTest extends TestCase
 
         $actualIssueTypes = \array_map(
             function (IssueData $issue): string {
-                return $issue->type;
+                return $issue->type . '{ ' . trim($issue->snippet) . ' }';
             },
             IssueBuffer::getIssuesDataForFile($filePath)
         );
@@ -2220,7 +2222,10 @@ class TaintTest extends TestCase
                     $data = process((string)($_GET["inject"] ?? ""));
                     exec($data);
                 ',
-                'expectedIssueTypes' => ['TaintedHtml', 'TaintedShell'],
+                'expectedIssueTypes' => [
+                    'TaintedHtml{ function process(string $value): string {} }',
+                    'TaintedShell{ exec($data); }',
+                ],
             ],
             'taintSinkCascade' => [
                 '<?php
@@ -2244,8 +2249,27 @@ class TaintTest extends TestCase
                     $value = triggerShell($value);
                     $value = triggerFile($value);
                 ',
-                'expectedIssueTypes' => ['TaintedHtml', 'TaintedTextWithQuotes', 'TaintedShell', 'TaintedFile'],
-            ]
+                'expectedIssueTypes' => [
+                    'TaintedHtml{ echo $value; }',
+                    'TaintedTextWithQuotes{ echo $value; }',
+                    'TaintedShell{ exec($value); }',
+                    'TaintedFile{ file_get_contents($value); }',
+                ],
+            ],
+            'taintedIncludes' => [
+                '<?php
+                    $first = (string)($_GET["first"] ?? "");
+                    $second = (string)($_GET["second"] ?? "");
+                    require $first;
+                    require dirname(__DIR__)."/first.php";
+                    require $second;
+                    require dirname(__DIR__)."/second.php";
+                ',
+                'expectedIssueTypes' => [
+                    'TaintedInclude{ require $first; }',
+                    'TaintedInclude{ require $second; }',
+                ],
+            ],
         ];
     }
 }
