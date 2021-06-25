@@ -935,12 +935,7 @@ class ArgumentAnalyzer
                     $statements_analyzer,
                     $statements_analyzer->getFilePath(),
                     true,
-                    $context->inside_return
-                        || $context->inside_call
-                        || $context->inside_general_use
-                        || $context->inside_assignment
-                        || $context->inside_conditional
-                        || $context->inside_throw
+                    $context->insideUse()
                 );
             }
         }

@@ -831,4 +831,15 @@ class Context
             $this->possibly_thrown_exceptions[$possibly_thrown_exception][$hash] = $codelocation;
         }
     }
+
+    public function insideUse(): bool
+    {
+        return $this->inside_assignment
+            || $this->inside_return
+            || $this->inside_call
+            || $this->inside_general_use
+            || $this->inside_conditional
+            || $this->inside_throw
+            || $this->inside_isset;
+    }
 }

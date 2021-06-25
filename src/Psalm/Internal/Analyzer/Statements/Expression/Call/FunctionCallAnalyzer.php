@@ -992,11 +992,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                  * If a function is pure, and has the return type of 'no-return',
                  * it's okay to dismiss it's return value.
                  */
-                if (!$context->inside_assignment
-                    && !$context->inside_call
-                    && !$context->inside_return
-                    && !$context->inside_general_use
-                    && !$context->inside_throw
+                if (!$context->insideUse()
                     && !self::callUsesByReferenceArguments($function_call_info, $stmt)
                     && !(
                         $function_call_info->function_storage &&

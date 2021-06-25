@@ -301,12 +301,7 @@ class AtomicStaticCallAnalyzer
             $statements_analyzer,
             $statements_analyzer->getFilePath(),
             false,
-            $context->inside_return
-                || $context->inside_call
-                || $context->inside_general_use
-                || $context->inside_assignment
-                || $context->inside_conditional
-                || $context->inside_throw
+            $context->insideUse()
         );
 
         $fake_method_exists = false;
@@ -348,12 +343,7 @@ class AtomicStaticCallAnalyzer
                         : null,
                     $statements_analyzer->getFilePath(),
                     true,
-                    $context->inside_return
-                        || $context->inside_call
-                        || $context->inside_general_use
-                        || $context->inside_assignment
-                        || $context->inside_conditional
-                        || $context->inside_throw
+                    $context->insideUse()
                 )) {
                     $mixin_candidates = [];
                     foreach ($class_storage->templatedMixins as $mixin_candidate) {
@@ -473,12 +463,7 @@ class AtomicStaticCallAnalyzer
                     : null,
                 $statements_analyzer->getFilePath(),
                 true,
-                $context->inside_return
-                    || $context->inside_call
-                    || $context->inside_general_use
-                    || $context->inside_assignment
-                    || $context->inside_conditional
-                    || $context->inside_throw
+                $context->insideUse()
             )) {
                 if ($codebase->methods->return_type_provider->has($fq_class_name)) {
                     $return_type_candidate = $codebase->methods->return_type_provider->getReturnType(

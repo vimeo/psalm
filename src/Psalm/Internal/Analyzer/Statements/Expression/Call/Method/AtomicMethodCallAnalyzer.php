@@ -202,12 +202,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                 : null,
             $statements_analyzer->getFilePath(),
             false,
-            $context->inside_return
-                || $context->inside_call
-                || $context->inside_general_use
-                || $context->inside_assignment
-                || $context->inside_conditional
-                || $context->inside_throw
+            $context->insideUse()
         );
 
         $fake_method_exists = false;
@@ -327,12 +322,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                         : null,
                     $statements_analyzer->getFilePath(),
                     true,
-                    $context->inside_return
-                        || $context->inside_call
-                        || $context->inside_general_use
-                        || $context->inside_assignment
-                        || $context->inside_conditional
-                        || $context->inside_throw
+                    $context->insideUse()
                 )
             ) {
                 $new_call_context = MissingMethodCallHandler::handleMagicMethod(
@@ -734,12 +724,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                                     : null,
                                 $statements_analyzer->getFilePath(),
                                 true,
-                                $context->inside_return
-                                    || $context->inside_call
-                                    || $context->inside_general_use
-                                    || $context->inside_assignment
-                                    || $context->inside_conditional
-                                    || $context->inside_throw
+                                $context->insideUse()
                             )) {
                                 $lhs_type_part = clone $lhs_type_part_new;
                                 $class_storage = $mixin_class_storage;
@@ -807,12 +792,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                     : null,
                 $statements_analyzer->getFilePath(),
                 true,
-                $context->inside_return
-                    || $context->inside_call
-                    || $context->inside_general_use
-                    || $context->inside_assignment
-                    || $context->inside_conditional
-                    || $context->inside_throw
+                $context->insideUse()
             )) {
                 $mixin_declaring_class_storage = $codebase->classlike_storage_provider->get(
                     $class_storage->mixin_declaring_fqcln

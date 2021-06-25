@@ -423,12 +423,12 @@ class VariableFetchAnalyzer
 
         if ($statements_analyzer->data_flow_graph
             && $codebase->find_unused_variables
-            && ($context->inside_call
-                || $context->inside_return
-                || $context->inside_conditional
+            && ($context->inside_return
+                || $context->inside_call
                 || $context->inside_general_use
-                || $context->inside_isset
-                || $context->inside_throw)
+                || $context->inside_conditional
+                || $context->inside_throw
+                || $context->inside_isset)
         ) {
             if (!$stmt_type->parent_nodes) {
                 $assignment_node = DataFlowNode::getForAssignment(
