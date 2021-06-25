@@ -140,7 +140,7 @@ class ArgumentAnalyzer
             && !$arg->value instanceof PhpParser\Node\Expr\ConstFetch
         ) {
             $values = \preg_split('//u', $arg_value_type->getSingleStringLiteral()->value, -1, \PREG_SPLIT_NO_EMPTY);
-            
+
             if ($values !== false) {
                 $prev_ord = 0;
 
@@ -940,6 +940,7 @@ class ArgumentAnalyzer
                         || $context->inside_use
                         || $context->inside_assignment
                         || $context->inside_conditional
+                        || $context->inside_throw
                 );
             }
         }

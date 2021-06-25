@@ -81,6 +81,9 @@ class Methods
 
     /**
      * Whether or not a given method exists
+     *
+     * If you pass true in $is_used argument the method return is considered used
+     *
      * @param lowercase-string|null $calling_method_id
      */
     public function methodExists(
