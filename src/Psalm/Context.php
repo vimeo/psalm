@@ -77,7 +77,7 @@ class Context
      *
      * @var bool
      */
-    public $inside_use = false;
+    public $inside_general_use = false;
 
     /**
      * Whether or not we're inside a return expression

@@ -188,12 +188,12 @@ class AtomicStaticCallAnalyzer
             );
         } else {
             if ($stmt->name instanceof PhpParser\Node\Expr) {
-                $was_inside_use = $context->inside_use;
-                $context->inside_use = true;
+                $was_inside_general_use = $context->inside_general_use;
+                $context->inside_general_use = true;
 
                 ExpressionAnalyzer::analyze($statements_analyzer, $stmt->name, $context);
 
-                $context->inside_use = $was_inside_use;
+                $context->inside_general_use = $was_inside_general_use;
             }
 
             if (!$context->ignore_variable_method) {
@@ -303,7 +303,7 @@ class AtomicStaticCallAnalyzer
             false,
             $context->inside_return
                 || $context->inside_call
-                || $context->inside_use
+                || $context->inside_general_use
                 || $context->inside_assignment
                 || $context->inside_conditional
                 || $context->inside_throw
@@ -350,7 +350,7 @@ class AtomicStaticCallAnalyzer
                     true,
                     $context->inside_return
                         || $context->inside_call
-                        || $context->inside_use
+                        || $context->inside_general_use
                         || $context->inside_assignment
                         || $context->inside_conditional
                         || $context->inside_throw
@@ -475,7 +475,7 @@ class AtomicStaticCallAnalyzer
                 true,
                 $context->inside_return
                     || $context->inside_call
-                    || $context->inside_use
+                    || $context->inside_general_use
                     || $context->inside_assignment
                     || $context->inside_conditional
                     || $context->inside_throw

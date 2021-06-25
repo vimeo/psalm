@@ -361,9 +361,9 @@ class StaticPropertyFetchAnalyzer
         PhpParser\Node\Expr\StaticPropertyFetch $stmt,
         Context $context
     ) : void {
-        $was_inside_use = $context->inside_use;
+        $was_inside_general_use = $context->inside_general_use;
 
-        $context->inside_use = true;
+        $context->inside_general_use = true;
 
         ExpressionAnalyzer::analyze(
             $statements_analyzer,
@@ -371,7 +371,7 @@ class StaticPropertyFetchAnalyzer
             $context
         );
 
-        $context->inside_use = $was_inside_use;
+        $context->inside_general_use = $was_inside_general_use;
 
         $stmt_class_type = $statements_analyzer->node_data->getType($stmt_class) ?: Type::getMixed();
 

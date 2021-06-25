@@ -681,8 +681,8 @@ class ArrayAssignmentAnalyzer
             $offset_type = null;
 
             if ($child_stmt->dim) {
-                $was_inside_use = $context->inside_use;
-                $context->inside_use = true;
+                $was_inside_general_use = $context->inside_general_use;
+                $context->inside_general_use = true;
 
                 if (ExpressionAnalyzer::analyze(
                     $statements_analyzer,
@@ -692,7 +692,7 @@ class ArrayAssignmentAnalyzer
                     return;
                 }
 
-                $context->inside_use = $was_inside_use;
+                $context->inside_general_use = $was_inside_general_use;
 
                 if (!($child_stmt_dim_type = $statements_analyzer->node_data->getType($child_stmt->dim))) {
                     return;

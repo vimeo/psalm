@@ -70,15 +70,15 @@ class StaticPropertyAssignmentAnalyzer
             $fq_class_name = $lhs_atomic_type->value;
 
             if (!$prop_name instanceof PhpParser\Node\Identifier) {
-                $was_inside_use = $context->inside_use;
+                $was_inside_general_use = $context->inside_general_use;
 
-                $context->inside_use = true;
+                $context->inside_general_use = true;
 
                 if (ExpressionAnalyzer::analyze($statements_analyzer, $prop_name, $context) === false) {
                     return false;
                 }
 
-                $context->inside_use = $was_inside_use;
+                $context->inside_general_use = $was_inside_general_use;
 
                 if (!$context->ignore_variable_property) {
                     $codebase->analyzer->addMixedMemberName(

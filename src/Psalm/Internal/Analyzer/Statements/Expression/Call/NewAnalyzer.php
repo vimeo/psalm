@@ -600,10 +600,10 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
         ?string &$fq_class_name,
         bool &$can_extend
     ): void {
-        $was_inside_use = $context->inside_use;
-        $context->inside_use = true;
+        $was_inside_general_use = $context->inside_general_use;
+        $context->inside_general_use = true;
         ExpressionAnalyzer::analyze($statements_analyzer, $stmt_class, $context);
-        $context->inside_use = $was_inside_use;
+        $context->inside_general_use = $was_inside_general_use;
 
         $stmt_class_type = $statements_analyzer->node_data->getType($stmt_class);
 

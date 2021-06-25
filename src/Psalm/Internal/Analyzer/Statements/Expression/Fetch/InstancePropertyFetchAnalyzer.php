@@ -34,8 +34,8 @@ class InstancePropertyFetchAnalyzer
         Context $context,
         bool $in_assignment = false
     ) : bool {
-        $was_inside_use = $context->inside_use;
-        $context->inside_use = true;
+        $was_inside_general_use = $context->inside_general_use;
+        $context->inside_general_use = true;
 
         if (!$stmt->name instanceof PhpParser\Node\Identifier) {
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->name, $context) === false) {
@@ -47,7 +47,7 @@ class InstancePropertyFetchAnalyzer
             return false;
         }
 
-        $context->inside_use = $was_inside_use;
+        $context->inside_general_use = $was_inside_general_use;
 
         if ($stmt->name instanceof PhpParser\Node\Identifier) {
             $prop_name = $stmt->name->name;

@@ -172,12 +172,12 @@ class CastAnalyzer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\Cast\Object_) {
-            $was_inside_use = $context->inside_use;
-            $context->inside_use = true;
+            $was_inside_general_use = $context->inside_general_use;
+            $context->inside_general_use = true;
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
                 return false;
             }
-            $context->inside_use = $was_inside_use;
+            $context->inside_general_use = $was_inside_general_use;
 
             $type = new Type\Union([new TNamedObject('stdClass')]);
 
@@ -195,12 +195,12 @@ class CastAnalyzer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\Cast\Array_) {
-            $was_inside_use = $context->inside_use;
-            $context->inside_use = true;
+            $was_inside_general_use = $context->inside_general_use;
+            $context->inside_general_use = true;
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
                 return false;
             }
-            $context->inside_use = $was_inside_use;
+            $context->inside_general_use = $was_inside_general_use;
 
             $permissible_atomic_types = [];
             $all_permissible = false;

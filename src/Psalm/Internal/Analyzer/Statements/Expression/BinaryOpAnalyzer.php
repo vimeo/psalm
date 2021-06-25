@@ -37,8 +37,8 @@ class BinaryOpAnalyzer
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd ||
             $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalAnd
         ) {
-            $was_inside_use = $context->inside_use;
-            $context->inside_use = true;
+            $was_inside_general_use = $context->inside_general_use;
+            $context->inside_general_use = true;
 
             $expr_result = BinaryOp\AndAnalyzer::analyze(
                 $statements_analyzer,
@@ -47,7 +47,7 @@ class BinaryOpAnalyzer
                 $from_stmt
             );
 
-            $context->inside_use = $was_inside_use;
+            $context->inside_general_use = $was_inside_general_use;
 
             $statements_analyzer->node_data->setType($stmt, Type::getBool());
 
@@ -57,8 +57,8 @@ class BinaryOpAnalyzer
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr ||
             $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
         ) {
-            $was_inside_use = $context->inside_use;
-            $context->inside_use = true;
+            $was_inside_general_use = $context->inside_general_use;
+            $context->inside_general_use = true;
 
             $expr_result = BinaryOp\OrAnalyzer::analyze(
                 $statements_analyzer,
@@ -67,7 +67,7 @@ class BinaryOpAnalyzer
                 $from_stmt
             );
 
-            $context->inside_use = $was_inside_use;
+            $context->inside_general_use = $was_inside_general_use;
 
             $statements_analyzer->node_data->setType($stmt, Type::getBool());
 

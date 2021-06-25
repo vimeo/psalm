@@ -198,7 +198,7 @@ class AssignmentAnalyzer
                 }
             }
 
-            $was_inside_use = $context->inside_use;
+            $was_inside_general_use = $context->inside_general_use;
 
             $root_expr = $assign_var;
 
@@ -211,7 +211,7 @@ class AssignmentAnalyzer
                 || (\is_string($root_expr->name)
                     && \in_array('$' . $root_expr->name, VariableFetchAnalyzer::SUPER_GLOBALS, true))
             ) {
-                $context->inside_use = true;
+                $context->inside_general_use = true;
             }
 
             if (ExpressionAnalyzer::analyze($statements_analyzer, $assign_value, $context) === false) {
@@ -227,7 +227,7 @@ class AssignmentAnalyzer
                 return false;
             }
 
-            $context->inside_use = $was_inside_use;
+            $context->inside_general_use = $was_inside_general_use;
         }
 
         if ($comment_type && $comment_type_location) {
@@ -1501,8 +1501,8 @@ class AssignmentAnalyzer
         ?string $var_id
     ): void {
         if (!$assign_var->name instanceof PhpParser\Node\Identifier) {
-            $was_inside_use = $context->inside_use;
-            $context->inside_use = true;
+            $was_inside_general_use = $context->inside_general_use;
+            $context->inside_general_use = true;
 
             // this can happen when the user actually means to type $this-><autocompleted>, but there's
             // a variable on the next line
@@ -1514,7 +1514,7 @@ class AssignmentAnalyzer
                 return;
             }
 
-            $context->inside_use = $was_inside_use;
+            $context->inside_general_use = $was_inside_general_use;
         }
 
         if ($assign_var->name instanceof PhpParser\Node\Identifier) {
@@ -1697,14 +1697,14 @@ class AssignmentAnalyzer
                 }
             }
         } else {
-            $was_inside_use = $context->inside_use;
-            $context->inside_use = true;
+            $was_inside_general_use = $context->inside_general_use;
+            $context->inside_general_use = true;
 
             if (ExpressionAnalyzer::analyze($statements_analyzer, $assign_var->name, $context) === false) {
                 return;
             }
 
-            $context->inside_use = $was_inside_use;
+            $context->inside_general_use = $was_inside_general_use;
 
             if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
                 && $assign_value_type->parent_nodes

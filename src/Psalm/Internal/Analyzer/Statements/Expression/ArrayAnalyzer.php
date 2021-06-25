@@ -282,12 +282,12 @@ class ArrayAnalyzer
         $item_is_list_item = false;
 
         if ($item->key) {
-            $was_inside_use = $context->inside_use;
-            $context->inside_use = true;
+            $was_inside_general_use = $context->inside_general_use;
+            $context->inside_general_use = true;
             if (ExpressionAnalyzer::analyze($statements_analyzer, $item->key, $context) === false) {
                 return;
             }
-            $context->inside_use = $was_inside_use;
+            $context->inside_general_use = $was_inside_general_use;
 
             if ($item_key_type = $statements_analyzer->node_data->getType($item->key)) {
                 $key_type = $item_key_type;

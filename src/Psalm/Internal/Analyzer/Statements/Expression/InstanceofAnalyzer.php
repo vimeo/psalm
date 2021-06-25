@@ -20,14 +20,14 @@ class InstanceofAnalyzer
         PhpParser\Node\Expr\Instanceof_ $stmt,
         Context $context
     ) : bool {
-        $was_inside_use = $context->inside_use;
-        $context->inside_use = true;
+        $was_inside_general_use = $context->inside_general_use;
+        $context->inside_general_use = true;
 
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
             return false;
         }
 
-        $context->inside_use = $was_inside_use;
+        $context->inside_general_use = $was_inside_general_use;
 
         if ($stmt->class instanceof PhpParser\Node\Expr) {
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->class, $context) === false) {

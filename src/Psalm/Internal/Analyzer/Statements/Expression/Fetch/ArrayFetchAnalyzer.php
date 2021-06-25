@@ -90,8 +90,8 @@ class ArrayFetchAnalyzer
         );
 
         if ($stmt->dim) {
-            $was_inside_use = $context->inside_use;
-            $context->inside_use = true;
+            $was_inside_general_use = $context->inside_general_use;
+            $context->inside_general_use = true;
 
             $was_inside_unset = $context->inside_unset;
             $context->inside_unset = false;
@@ -102,7 +102,7 @@ class ArrayFetchAnalyzer
 
             $context->inside_unset = $was_inside_unset;
 
-            $context->inside_use = $was_inside_use;
+            $context->inside_general_use = $was_inside_general_use;
         }
 
         $keyed_array_var_id = ExpressionIdentifier::getArrayVarId(

@@ -28,11 +28,11 @@ class NullsafeAnalyzer
         Context $context
     ) : bool {
         if (!$stmt->var instanceof PhpParser\Node\Expr\Variable) {
-            $was_inside_use = $context->inside_use;
+            $was_inside_general_use = $context->inside_general_use;
 
-            $context->inside_use = true;
+            $context->inside_general_use = true;
             ExpressionAnalyzer::analyze($statements_analyzer, $stmt->var, $context);
-            $context->inside_use = $was_inside_use;
+            $context->inside_general_use = $was_inside_general_use;
 
             $tmp_name = '__tmp_nullsafe__' . (int) $stmt->var->getAttribute('startFilePos');
 

@@ -608,12 +608,12 @@ class InstancePropertyAssignmentAnalyzer
         string $prop_name,
         ?string &$var_id
     ): array {
-        $was_inside_use = $context->inside_use;
-        $context->inside_use = true;
+        $was_inside_general_use = $context->inside_general_use;
+        $context->inside_general_use = true;
 
         ExpressionAnalyzer::analyze($statements_analyzer, $stmt->var, $context);
 
-        $context->inside_use = $was_inside_use;
+        $context->inside_general_use = $was_inside_general_use;
 
         $lhs_type = $statements_analyzer->node_data->getType($stmt->var);
 

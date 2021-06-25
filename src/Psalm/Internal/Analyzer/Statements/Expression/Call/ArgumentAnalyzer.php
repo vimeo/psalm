@@ -937,7 +937,7 @@ class ArgumentAnalyzer
                     true,
                     $context->inside_return
                         || $context->inside_call
-                        || $context->inside_use
+                        || $context->inside_general_use
                         || $context->inside_assignment
                         || $context->inside_conditional
                         || $context->inside_throw

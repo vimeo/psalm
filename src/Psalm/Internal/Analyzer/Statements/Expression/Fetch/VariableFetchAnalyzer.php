@@ -192,10 +192,10 @@ class VariableFetchAnalyzer
                 $statements_analyzer->getSource()->inferred_impure = true;
             }
 
-            $was_inside_use = $context->inside_use;
-            $context->inside_use = true;
+            $was_inside_general_use = $context->inside_general_use;
+            $context->inside_general_use = true;
             $expr_result = ExpressionAnalyzer::analyze($statements_analyzer, $stmt->name, $context);
-            $context->inside_use = $was_inside_use;
+            $context->inside_general_use = $was_inside_general_use;
 
             return $expr_result;
         }
@@ -426,7 +426,7 @@ class VariableFetchAnalyzer
             && ($context->inside_call
                 || $context->inside_return
                 || $context->inside_conditional
-                || $context->inside_use
+                || $context->inside_general_use
                 || $context->inside_isset
                 || $context->inside_throw)
         ) {

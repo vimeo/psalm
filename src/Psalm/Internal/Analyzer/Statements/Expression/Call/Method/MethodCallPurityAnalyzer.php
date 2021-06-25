@@ -103,7 +103,7 @@ class MethodCallPurityAnalyzer
 
             if ($codebase->find_unused_variables
                 && !$context->inside_conditional
-                && !$context->inside_use
+                && !$context->inside_general_use
                 && !$context->inside_throw
             ) {
                 if (!$context->inside_assignment && !$context->inside_call && !$context->inside_return) {
