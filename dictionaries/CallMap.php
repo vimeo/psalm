@@ -10608,7 +10608,7 @@ return [
 'RdKafka\ProducerTopic::__construct' => ['void'],
 'RdKafka\ProducerTopic::getName' => ['string'],
 'RdKafka\ProducerTopic::produce' => ['void', 'partition'=>'int', 'msgflags'=>'int', 'payload'=>'string', 'key='=>'?string'],
-'RdKafka\ProducerTopic::producev' => ['void', 'partition'=>'int', 'msgflags'=>'int', 'payload'=>'string', 'key='=>'?string', 'headers'=>'?array<string, string>', 'timestamp_ms'=>'?int'],
+'RdKafka\ProducerTopic::producev' => ['void', 'partition'=>'int', 'msgflags'=>'int', 'payload'=>'string', 'key='=>'?string', 'headers='=>'?array<string, string>', 'timestamp_ms='=>'?int', 'opaque='=>'?string'],
 'RdKafka\Queue::__construct' => ['void'],
 'RdKafka\Queue::consume' => ['?RdKafka\Message', 'timeout_ms'=>'string'],
 'RdKafka\Topic::getName' => ['string'],
