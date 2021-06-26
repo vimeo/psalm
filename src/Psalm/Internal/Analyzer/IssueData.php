@@ -2,6 +2,8 @@
 
 namespace Psalm\Internal\Analyzer;
 
+use function trim;
+
 class IssueData
 {
     /**
@@ -154,7 +156,7 @@ class IssueData
         $this->file_name = $file_name;
         $this->file_path = $file_path;
         $this->snippet = $snippet;
-        $this->selected_text = $selected_text;
+        $this->selected_text = trim($selected_text);
         $this->from = $from;
         $this->to = $to;
         $this->snippet_from = $snippet_from;
