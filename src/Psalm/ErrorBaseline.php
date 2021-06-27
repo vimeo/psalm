@@ -19,6 +19,7 @@ use function phpversion;
 use function preg_replace_callback;
 use function str_replace;
 use function strpos;
+use function trim;
 use function usort;
 
 use const LIBXML_NOBLANKS;
@@ -115,7 +116,7 @@ class ErrorBaseline
                 $codeSamples = $issue->getElementsByTagName('code');
 
                 foreach ($codeSamples as $codeSample) {
-                    $files[$fileName][$issueType]['s'][] = $codeSample->textContent;
+                    $files[$fileName][$issueType]['s'][] = trim($codeSample->textContent);
                 }
             }
         }
@@ -273,6 +274,10 @@ class ErrorBaseline
                 foreach ($existingIssueType['s'] as $selection) {
                     $codeNode = $baselineDoc->createElement('code');
 
+                    /** @todo in major version release (e.g. Psalm 5) replace $selection with trim($selection)
+                     * This will be a minor BC break as baselines generated will then not be compatible with Psalm
+                     * versions from before PR https://github.com/vimeo/psalm/pull/6000
+                     */
                     $codeNode->textContent = $selection;
                     $issueNode->appendChild($codeNode);
                 }
