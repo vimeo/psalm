@@ -48,6 +48,7 @@ use function sha1;
 use function sprintf;
 use function str_repeat;
 use function str_replace;
+use function trim;
 use function usort;
 
 use const DEBUG_BACKTRACE_IGNORE_ARGS;
@@ -518,7 +519,7 @@ class IssueBuffer
                         if (isset($issue_baseline[$file][$type]) && $issue_baseline[$file][$type]['o'] > 0) {
                             if ($issue_baseline[$file][$type]['o'] === count($issue_baseline[$file][$type]['s'])) {
                                 $position = array_search(
-                                    $issue_data->selected_text,
+                                    trim($issue_data->selected_text),
                                     $issue_baseline[$file][$type]['s'],
                                     true
                                 );
