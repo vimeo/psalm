@@ -274,7 +274,7 @@ class ErrorBaseline
                 foreach ($existingIssueType['s'] as $selection) {
                     $codeNode = $baselineDoc->createElement('code');
 
-                    /** @todo in major version release (e.g. 5.0.0) replace $selection with trim($selection)
+                    /** @todo in major version release (e.g. Psalm 5) replace $selection with trim($selection)
                      * This will be a minor BC break as baselines generated will then not be compatible with Psalm
                      * versions from before PR https://github.com/vimeo/psalm/pull/6000
                      */
