@@ -395,8 +395,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
      * The shutdown request is sent from the client to the server. It asks the server to shut down,
      * but to not exit (otherwise the response might not be delivered correctly to the client).
      * There is a separate exit notification that asks the server to exit.
-     * @psalm-return Promise<InitializeResult>
-     * @psalm-suppress PossiblyUnusedMethod
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function shutdown(): Promise
     {
@@ -432,8 +431,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
      *  - 2 = Warning
      *  - 3 = Info
      *  - 4 = Log
-     * @psalm-return Promise<InitializeResult>
-     * @psalm-suppress PossiblyUnusedMethod
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     private function verboseLog(string $message, int $type = 4): Promise
     {
@@ -457,8 +455,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
      * @param string $status The log message to send to the client. Should not contain colons `:`.
      * @param string|null $additional_info This is additional info that the client
      *                                       can use as part of the display message.
-     * @psalm-return Promise<InitializeResult>
-     * @psalm-suppress PossiblyUnusedMethod
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     private function clientStatus(string $status, ?string $additional_info = null): Promise
     {
