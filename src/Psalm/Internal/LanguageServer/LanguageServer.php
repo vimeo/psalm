@@ -431,7 +431,6 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
      *  - 2 = Warning
      *  - 3 = Info
      *  - 4 = Log
-     * @psalm-suppress PossiblyUnusedReturnValue
      */
     private function verboseLog(string $message, int $type = 4): Promise
     {
@@ -445,7 +444,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
                 // do nothing
             }
         }
-        return new Success(null);
+        new Success(null);
     }
 
     /**
@@ -455,7 +454,6 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
      * @param string $status The log message to send to the client. Should not contain colons `:`.
      * @param string|null $additional_info This is additional info that the client
      *                                       can use as part of the display message.
-     * @psalm-suppress PossiblyUnusedReturnValue
      */
     private function clientStatus(string $status, ?string $additional_info = null): Promise
     {
@@ -469,7 +467,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
         } catch (\Throwable $err) {
             // do nothing
         }
-        return new Success(null);
+        new Success(null);
     }
 
     /**
