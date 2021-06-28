@@ -16,6 +16,7 @@ use LanguageServerProtocol\ServerCapabilities;
 use LanguageServerProtocol\SignatureHelpOptions;
 use LanguageServerProtocol\TextDocumentSyncKind;
 use LanguageServerProtocol\TextDocumentSyncOptions;
+use LanguageServerProtocol\SaveOptions;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\LanguageServer\Server\TextDocument;
@@ -225,6 +226,12 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
 
                 $textDocumentSyncOptions = new TextDocumentSyncOptions();
 
+                $textDocumentSyncOptions->openClose = true;
+
+                $saveOptions = new SaveOptions();
+                $saveOptions->includeText = true;
+                $textDocumentSyncOptions->save = $saveOptions;
+
                 if ($this->project_analyzer->onchange_line_limit === 0) {
                     $textDocumentSyncOptions->change = TextDocumentSyncKind::NONE;
                 } else {
@@ -431,7 +438,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
      *  - 3 = Info
      *  - 4 = Log
      */
-    private function verboseLog(string $message, int $type = 4): void
+    public function verboseLog(string $message, int $type = 4): void
     {
         if ($this->project_analyzer->language_server_verbose) {
             try {
@@ -439,7 +446,6 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
                     '[Psalm ' .PSALM_VERSION. ' - PHP Language Server] ' . $message,
                     $type
                 );
-                return;
             } catch (\Throwable $err) {
                 // do nothing
             }

@@ -51,18 +51,21 @@ class TextDocument
 
     /**
      * The document open notification is sent from the client to the server to signal newly opened text documents. The
-     * document's truth is now managed by the client and the server must not try to read the document's truth using the
-     * document's uri.
+     * document’s content is now managed by the client and the server must not try to read the document’s content using
+     * the document’s Uri. Open in this sense means it is managed by the client. It doesn’t necessarily mean that its
+     * content is presented in an editor. An open notification must not be sent more than once without a corresponding
+     * close notification send before. This means open and close notification must be balanced and the max open count
+     * for a particular textDocument is one. Note that a server’s ability to fulfill requests is independent of whether
+     * a text document is open or closed.
      *
-     * @param \LanguageServerProtocol\TextDocumentItem $textDocument the document that was opened
+     * @param TextDocumentItem $textDocument the document that was opened
      */
     public function didOpen(TextDocumentItem $textDocument): void
     {
         $file_path = LanguageServer::uriToPath($textDocument->uri);
 
         if (!$this->codebase->config->isInProjectDirs($file_path)) {
-            error_log($file_path . ' is not in project');
-
+            $this->server->verboseLog($file_path . ' is not in project');
             return;
         }
 
@@ -71,11 +74,17 @@ class TextDocument
         $this->server->queueFileAnalysis($file_path, $textDocument->uri);
     }
 
+    /**
+     * The document save notification is sent from the client to the server when the document was saved in the client
+     *
+     * @param TextDocumentItem $textDocument the document that was opened
+     */
     public function didSave(TextDocumentItem $textDocument): void
     {
         $file_path = LanguageServer::uriToPath($textDocument->uri);
 
         if (!$this->codebase->config->isInProjectDirs($file_path)) {
+            $this->server->verboseLog($file_path . ' is not in project');
             return;
         }
 
@@ -94,9 +103,10 @@ class TextDocument
      */
     public function didChange(VersionedTextDocumentIdentifier $textDocument, array $contentChanges): void
     {
-        $file_path = \Psalm\Internal\LanguageServer\LanguageServer::uriToPath($textDocument->uri);
+        $file_path = LanguageServer::uriToPath($textDocument->uri);
 
         if (!$this->codebase->config->isInProjectDirs($file_path)) {
+            $this->server->verboseLog($file_path . ' is not in project');
             return;
         }
 
@@ -122,10 +132,13 @@ class TextDocument
 
     /**
      * The document close notification is sent from the client to the server when the document got closed in the client.
-     * The document's truth now exists where the document's uri points to (e.g. if the document's uri is a file uri the
-     * truth now exists on disk).
+     * The document’s master now exists where the document’s Uri points to (e.g. if the document’s Uri is a file Uri the
+     * master now exists on disk). As with the open notification the close notification is about managing the document’s
+     * content. Receiving a close notification doesn’t mean that the document was open in an editor before. A close
+     * notification requires a previous open notification to be sent. Note that a server’s ability to fulfill requests
+     * is independent of whether a text document is open or closed.
      *
-     * @param \LanguageServerProtocol\TextDocumentIdentifier $textDocument The document that was closed
+     * @param TextDocumentIdentifier $textDocument The document that was closed
      *
      */
     public function didClose(TextDocumentIdentifier $textDocument): void
@@ -286,6 +299,13 @@ class TextDocument
         return new Success(new CompletionList($completion_items, false));
     }
 
+    /**
+     * The signature help request is sent from the client to the server to request signature information at a given cursor position.
+     *
+     * @param TextDocumentIdentifier $textDocument
+     * @param Position $position
+     * @return Promise
+     */
     public function signatureHelp(TextDocumentIdentifier $textDocument, Position $position): Promise
     {
         $file_path = LanguageServer::uriToPath($textDocument->uri);
