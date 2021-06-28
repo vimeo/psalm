@@ -396,7 +396,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
      * but to not exit (otherwise the response might not be delivered correctly to the client).
      * There is a separate exit notification that asks the server to exit.
      */
-    public function shutdown(): void
+    public function shutdown(): Promise
     {
         $this->clientStatus('closing');
         $this->verboseLog("Shutting down...");
@@ -407,7 +407,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
             $scanned_files
         );
         $this->clientStatus('closed');
-        new Success(null);
+        return new Success(null);
     }
 
     /**
@@ -431,7 +431,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
      *  - 3 = Info
      *  - 4 = Log
      */
-    private function verboseLog(string $message, int $type = 4): void
+    private function verboseLog(string $message, int $type = 4): Promise
     {
         if ($this->project_analyzer->language_server_verbose) {
             try {
@@ -439,12 +439,11 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
                     '[Psalm ' .PSALM_VERSION. ' - PHP Language Server] ' . $message,
                     $type
                 );
-                return;
             } catch (\Throwable $err) {
                 // do nothing
             }
         }
-        new Success(null);
+        return new Success(null);
     }
 
     /**
@@ -455,7 +454,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
      * @param string|null $additional_info This is additional info that the client
      *                                       can use as part of the display message.
      */
-    private function clientStatus(string $status, ?string $additional_info = null): void
+    private function clientStatus(string $status, ?string $additional_info = null): Promise
     {
         try {
             // here we send a notification to the client using the telemetry notification method
@@ -465,8 +464,9 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
                 'telemetry/event'
             );
         } catch (\Throwable $err) {
-            new Success(null);
+            // do nothing
         }
+        return new Success(null);
     }
 
     /**
