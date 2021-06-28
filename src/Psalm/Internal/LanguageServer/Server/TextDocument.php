@@ -300,7 +300,8 @@ class TextDocument
     }
 
     /**
-     * The signature help request is sent from the client to the server to request signature information at a given cursor position.
+     * The signature help request is sent from the client to the server to request signature
+     * information at a given cursor position.
      *
      * @param TextDocumentIdentifier $textDocument
      * @param Position $position
