@@ -182,11 +182,6 @@ HELP;
             exit;
         }
 
-        if (array_key_exists('v', $options)) {
-            echo 'Psalm ' . PSALM_VERSION . PHP_EOL;
-            exit;
-        }
-
         if (getcwd() === false) {
             fwrite(STDERR, 'Cannot get current working directory' . PHP_EOL);
             exit(1);
@@ -221,6 +216,11 @@ HELP;
                 return CliUtils::requireAutoloaders($current_dir, isset($options['r']), $vendor_dir);
             }
         );
+
+        if (array_key_exists('v', $options)) {
+            echo 'Psalm ' . PSALM_VERSION . PHP_EOL;
+            exit;
+        }
 
         $ini_handler = new \Psalm\Internal\Fork\PsalmRestarter('PSALM');
 
