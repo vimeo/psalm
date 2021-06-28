@@ -432,7 +432,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
      *  - 3 = Info
      *  - 4 = Log
      */
-    private function verboseLog(string $message, int $type = 4): Promise
+    private function verboseLog(string $message, int $type = 4): void
     {
         if ($this->project_analyzer->language_server_verbose) {
             try {
@@ -455,7 +455,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
      * @param string|null $additional_info This is additional info that the client
      *                                       can use as part of the display message.
      */
-    private function clientStatus(string $status, ?string $additional_info = null): Promise
+    private function clientStatus(string $status, ?string $additional_info = null): void
     {
         try {
             // here we send a notification to the client using the telemetry notification method
