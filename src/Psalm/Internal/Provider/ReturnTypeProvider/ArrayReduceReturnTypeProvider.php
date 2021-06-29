@@ -217,7 +217,14 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\EventHandler\Functi
 
                             [$callable_fq_class_name, $method_name] = explode('::', $mapping_function_id_part);
 
-                            if (in_array($callable_fq_class_name, ['self', 'static', 'parent'], true)) {
+                            if (in_array($callable_fq_class_name, ['self', 'static'], true)) {
+                                $callable_fq_class_name = $statements_source->getFQCLN();
+                                if ($callable_fq_class_name === null) {
+                                    continue;
+                                }
+                            }
+
+                            if ($callable_fq_class_name === 'parent') {
                                 continue;
                             }
 
