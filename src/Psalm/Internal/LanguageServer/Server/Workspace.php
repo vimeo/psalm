@@ -8,7 +8,7 @@ use Psalm\Codebase;
 use Psalm\Internal\LanguageServer\LanguageServer;
 
 /**
- * Provides method handlers for all textDocument/* methods
+ * Provides method handlers for all workspace/* methods
  */
 class Workspace
 {
