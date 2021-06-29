@@ -20,6 +20,7 @@ use LanguageServerProtocol\TextDocumentSyncOptions;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\LanguageServer\Server\TextDocument;
+use Psalm\Internal\LanguageServer\Server\Workspace;
 use Throwable;
 
 use function Amp\asyncCoroutine;
@@ -51,6 +52,13 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
      * @var ?Server\TextDocument
      */
     public $textDocument;
+
+    /**
+     * Handles workspace/* method calls
+     *
+     * @var ?Server\Workspace
+     */
+    public $workspace;
 
     /**
      * @var ProtocolReader
@@ -216,6 +224,14 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
 
                 if ($this->textDocument === null) {
                     $this->textDocument = new TextDocument(
+                        $this,
+                        $codebase,
+                        $this->project_analyzer->onchange_line_limit
+                    );
+                }
+
+                if ($this->workspace === null) {
+                    $this->workspace = new Workspace(
                         $this,
                         $codebase,
                         $this->project_analyzer->onchange_line_limit
