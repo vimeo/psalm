@@ -302,10 +302,6 @@ class TextDocument
     /**
      * The signature help request is sent from the client to the server to request signature
      * information at a given cursor position.
-     *
-     * @param TextDocumentIdentifier $textDocument
-     * @param Position $position
-     * @return Promise
      */
     public function signatureHelp(TextDocumentIdentifier $textDocument, Position $position): Promise
     {
