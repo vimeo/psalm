@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Tests\TypeReconciliation;
 
+use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\RuntimeCaches;
 
 class ValueTest extends \Psalm\Tests\TestCase
@@ -12,7 +13,7 @@ class ValueTest extends \Psalm\Tests\TestCase
     {
         RuntimeCaches::clearAll();
 
-        $this->file_provider = new \Psalm\Tests\Internal\Provider\FakeFileProvider();
+        $this->file_provider = new FakeFileProvider();
 
         $this->project_analyzer = new \Psalm\Internal\Analyzer\ProjectAnalyzer(
             new \Psalm\Tests\TestConfig(),

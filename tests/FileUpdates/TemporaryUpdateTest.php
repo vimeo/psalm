@@ -2,6 +2,7 @@
 namespace Psalm\Tests\FileUpdates;
 
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Tests\Internal\Provider;
 use Psalm\Tests\TestConfig;
@@ -20,7 +21,7 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
     {
         parent::setUp();
 
-        $this->file_provider = new \Psalm\Tests\Internal\Provider\FakeFileProvider();
+        $this->file_provider = new FakeFileProvider();
 
         $config = new TestConfig();
         $config->throw_exception = false;

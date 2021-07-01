@@ -5,6 +5,7 @@ use PHPUnit\Framework\TestCase as BaseTestCase;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\Internal\Provider;
@@ -26,7 +27,7 @@ class TestCase extends BaseTestCase
     /** @var ProjectAnalyzer */
     protected $project_analyzer;
 
-    /** @var Provider\FakeFileProvider */
+    /** @var FakeFileProvider */
     protected $file_provider;
 
     /** @var Config */
@@ -59,7 +60,7 @@ class TestCase extends BaseTestCase
 
         RuntimeCaches::clearAll();
 
-        $this->file_provider = new \Psalm\Tests\Internal\Provider\FakeFileProvider();
+        $this->file_provider = new FakeFileProvider();
 
         $this->testConfig = $this->makeConfig();
 

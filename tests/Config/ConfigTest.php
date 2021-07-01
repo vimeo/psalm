@@ -5,6 +5,7 @@ use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\ConfigException;
 use Psalm\Internal\Analyzer\FileAnalyzer;
+use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Tests\Config\Plugin\FileTypeSelfRegisteringPlugin;
@@ -53,7 +54,7 @@ class ConfigTest extends \Psalm\Tests\TestCase
     public function setUp() : void
     {
         RuntimeCaches::clearAll();
-        $this->file_provider = new Provider\FakeFileProvider();
+        $this->file_provider = new FakeFileProvider();
     }
 
     private function getProjectAnalyzerWithConfig(Config $config): \Psalm\Internal\Analyzer\ProjectAnalyzer
