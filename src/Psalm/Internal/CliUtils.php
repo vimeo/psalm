@@ -589,7 +589,12 @@ HELP;
      */
     public static function getMemoryLimitInBytes(): int
     {
-        $limit = ini_get('memory_limit');
+        return self::convertMemoryLimitToBytes(ini_get('memory_limit'));
+    }
+
+    /** @psalm-pure */
+    public static function convertMemoryLimitToBytes(string $limit): int
+    {
         // for unlimited = -1
         if ($limit < 0) {
             return -1;
