@@ -4,4 +4,4 @@ Emitted for non-fatal configuration issues, e.g. deprecated configuration switch
 
 ## Why this is bad
 
-Your config file may be incompatible with feature Psalm versions.
+Your config file may be incompatible with future Psalm versions.
