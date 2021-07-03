@@ -275,9 +275,6 @@ class MethodCallTest extends TestCase
                     '$yesterday' => 'MyDate|false',
                     '$b' => 'DateTimeImmutable',
                 ],
-                'error_levels' => [],
-                'php_version' =>  '8.0'
-
             ],
             'magicCall' => [
                 '<?php
@@ -375,7 +372,7 @@ class MethodCallTest extends TestCase
                     takesString($formatted);',
                 'assertions' => [],
                 'error_levels' => [],
-                'php_version' =>  '8.0'
+                'php_version' =>  '7.4'
             ],
             'domElement' => [
                 '<?php
