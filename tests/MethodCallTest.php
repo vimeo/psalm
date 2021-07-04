@@ -370,6 +370,9 @@ class MethodCallTest extends TestCase
                     if (false !== $formatted) {}
                     function takesString(string $s) : void {}
                     takesString($formatted);',
+                'assertions' => [],
+                'error_levels' => [],
+                'php_version' =>  '7.4'
             ],
             'domElement' => [
                 '<?php

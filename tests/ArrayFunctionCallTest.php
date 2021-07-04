@@ -1445,7 +1445,7 @@ class ArrayFunctionCallTest extends TestCase
                     function Foo(DateTime ...$dateTimes) : array {
                         return array_map(
                             function ($dateTime) {
-                                return (string) ($dateTime->format("c"));
+                                return ($dateTime->format("c"));
                             },
                             $dateTimes
                         );
@@ -1456,13 +1456,13 @@ class ArrayFunctionCallTest extends TestCase
                     /** @return array<string> */
                     function Foo(DateTime ...$dateTimes) : array {
                         return array_map(
-                            fn ($dateTime) => (string) ($dateTime->format("c")),
+                            fn ($dateTime) => ($dateTime->format("c")),
                             $dateTimes
                         );
                     }',
                 'assertions' => [],
                 'error_levels' => [],
-                '7.4',
+                'php_version' => '7.4',
             ],
             'arrayPad' => [
                 '<?php
