@@ -53,9 +53,8 @@ I use the excellent Sublime [LSP plugin](https://github.com/tomv564/LSP) with th
         "psalm":
         {
             "command": ["php", "vendor/bin/psalm-language-server"],
-            "scopes": ["source.php", "embedding.php"],
-            "syntaxes": ["Packages/PHP/PHP.sublime-syntax"],
-            "languageId": "php"
+            "selector": "source.php | embedding.php",
+            "enabled": true
         }
 ```
 
