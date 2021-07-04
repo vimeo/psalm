@@ -24,7 +24,7 @@ collections)
 	;;
 
 psl)
-	git clone --depth=1 git@github.com:muglug/psl.git
+	git clone git@github.com:muglug/psl.git
 	cd psl
 	git checkout 1.6.x
 	composer install --ignore-platform-reqs
