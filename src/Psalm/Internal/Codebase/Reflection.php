@@ -280,7 +280,7 @@ class Reflection
         $callables = InternalCallMapHandler::getCallablesFromCallMap($method_id);
 
         if ($callables && $callables[0]->params !== null && $callables[0]->return_type !== null) {
-            $storage->params = [];
+            $storage->setParams([]);
 
             foreach ($callables[0]->params as $param) {
                 if ($param->type) {
@@ -288,18 +288,18 @@ class Reflection
                 }
             }
 
-            $storage->params = $callables[0]->params;
+            $storage->setParams($callables[0]->params);
 
             $storage->return_type = $callables[0]->return_type;
             $storage->return_type->queueClassLikesForScanning($this->codebase);
         } else {
             $params = $method->getParameters();
 
-            $storage->params = [];
+            $storage->setParams([]);
 
             foreach ($params as $param) {
                 $param_array = $this->getReflectionParamData($param);
-                $storage->params[] = $param_array;
+                $storage->addParam($param_array);
                 $storage->param_lookup[$param->name] = true;
             }
         }
@@ -367,14 +367,14 @@ class Reflection
                 && $callmap_callable->params !== null
                 && $callmap_callable->return_type !== null
             ) {
-                $storage->params = $callmap_callable->params;
+                $storage->setParams($callmap_callable->params);
                 $storage->return_type = $callmap_callable->return_type;
             } else {
                 $reflection_params = $reflection_function->getParameters();
 
                 foreach ($reflection_params as $param) {
                     $param_obj = $this->getReflectionParamData($param);
-                    $storage->params[] = $param_obj;
+                    $storage->addParam($param_obj);
                 }
 
                 if ($reflection_return_type = $reflection_function->getReturnType()) {

@@ -23,6 +23,7 @@ abstract class FunctionLikeStorage
     public $stmt_location;
 
     /**
+     * @psalm-readonly-allow-private-mutation
      * @var list<FunctionLikeParameter>
      */
     public $params = [];
@@ -270,5 +271,18 @@ abstract class FunctionLikeStorage
         }
 
         return $visibility_text . ' ' . $symbol_text;
+    }
+
+    /**
+     * @param list<FunctionLikeParameter> $params
+     */
+    public function setParams(array $params): void
+    {
+        $this->params = $params;
+    }
+
+    public function addParam(FunctionLikeParameter $param): void
+    {
+        $this->params[] = $param;
     }
 }

@@ -169,7 +169,7 @@ class FunctionLikeNodeScanner
         $has_optional_param = false;
 
         $existing_params = [];
-        $storage->params = [];
+        $storage->setParams([]);
 
         foreach ($stmt->getParams() as $param) {
             if ($param->var instanceof PhpParser\Node\Expr\Error) {
@@ -219,7 +219,7 @@ class FunctionLikeNodeScanner
 
             $existing_params['$' . $param_storage->name] = $i;
             $storage->param_lookup[$param_storage->name] = !!$param->type;
-            $storage->params[] = $param_storage;
+            $storage->addParam($param_storage);
 
             if (!$param_storage->is_optional && !$param_storage->is_variadic) {
                 $required_param_count = $i + 1;
