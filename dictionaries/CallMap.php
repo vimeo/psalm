@@ -16703,7 +16703,7 @@ return [
 'ZipArchive::isCompressionMethodSupported' => ['bool', 'method'=>'int', 'encode='=>'bool'],
 'ZipArchive::isEncryptionMethodSupported' => ['bool', 'method'=>'int', 'encode='=>'bool'],
 'ZipArchive::locateName' => ['int|false', 'filename'=>'string', 'flags='=>'int'],
-'ZipArchive::open' => ['int|bool', 'source'=>'string', 'flags='=>'int'],
+'ZipArchive::open' => ['int|true', 'source'=>'string', 'flags='=>'int'],
 'ZipArchive::registerCancelCallback' => ['bool', 'callback'=>'callable'],
 'ZipArchive::registerProgressCallback' => ['bool', 'rate'=>'float', 'callback'=>'callable'],
 'ZipArchive::renameIndex' => ['bool', 'index'=>'int', 'new_name'=>'string'],
