@@ -5,6 +5,8 @@ use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Type;
 
+use function array_column;
+use function array_fill_keys;
 use function array_map;
 use function implode;
 
@@ -29,6 +31,7 @@ abstract class FunctionLikeStorage
     public $params = [];
 
     /**
+     * @psalm-readonly-allow-private-mutation
      * @var array<string, bool>
      */
     public $param_lookup = [];
@@ -279,10 +282,13 @@ abstract class FunctionLikeStorage
     public function setParams(array $params): void
     {
         $this->params = $params;
+        $param_names = array_column($params, 'name');
+        $this->param_lookup = array_fill_keys($param_names, true);
     }
 
-    public function addParam(FunctionLikeParameter $param): void
+    public function addParam(FunctionLikeParameter $param, bool $lookup_value = null): void
     {
         $this->params[] = $param;
+        $this->param_lookup[$param->name] = $lookup_value ?? true;
     }
 }

@@ -300,7 +300,6 @@ class Reflection
             foreach ($params as $param) {
                 $param_array = $this->getReflectionParamData($param);
                 $storage->addParam($param_array);
-                $storage->param_lookup[$param->name] = true;
             }
         }
 
