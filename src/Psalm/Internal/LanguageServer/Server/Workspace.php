@@ -53,15 +53,15 @@ class Workspace
 
             if ($change->type === FileChangeType::DELETED) {
                 $this->codebase->invalidateInformationForFile($file_path);
-                return;
+                continue;
             }
 
             if (!$this->codebase->config->isInProjectDirs($file_path)) {
-                return;
+                continue;
             }
 
             if ($this->onchange_line_limit === 0) {
-                return;
+                continue;
             }
 
             //If the file is currently open then dont analyse it because its tracked by the client
