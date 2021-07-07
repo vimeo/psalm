@@ -41,7 +41,8 @@ class MissingMethodCallHandler
                 $method_id->method_name,
                 $stmt->args,
                 $context,
-                new CodeLocation($statements_analyzer->getSource(), $stmt->name)
+                new CodeLocation($statements_analyzer->getSource(), $stmt->name),
+                $stmt
             );
 
             if ($return_type_candidate) {

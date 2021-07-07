@@ -36,6 +36,10 @@ class MethodReturnTypeProviderEvent
      */
     private $code_location;
     /**
+     * @var PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall
+     */
+    private $stmt;
+    /**
      * @var Type\Union[]|null
      */
     private $template_type_parameters;
@@ -54,6 +58,7 @@ class MethodReturnTypeProviderEvent
      * something should be returned, but can't be more specific.
      *
      * @param  list<PhpParser\Node\Arg>    $call_args
+     * @param PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $stmt
      * @param  ?array<Type\Union> $template_type_parameters
      * @param lowercase-string $method_name_lowercase
      * @param lowercase-string $called_method_name_lowercase
@@ -65,6 +70,7 @@ class MethodReturnTypeProviderEvent
         array $call_args,
         Context $context,
         CodeLocation $code_location,
+        $stmt,
         ?array $template_type_parameters = null,
         ?string $called_fq_classlike_name = null,
         ?string $called_method_name_lowercase = null
@@ -75,6 +81,7 @@ class MethodReturnTypeProviderEvent
         $this->call_args = $call_args;
         $this->context = $context;
         $this->code_location = $code_location;
+        $this->stmt = $stmt;
         $this->template_type_parameters = $template_type_parameters;
         $this->called_fq_classlike_name = $called_fq_classlike_name;
         $this->called_method_name_lowercase = $called_method_name_lowercase;
@@ -135,5 +142,13 @@ class MethodReturnTypeProviderEvent
     public function getCalledMethodNameLowercase(): ?string
     {
         return $this->called_method_name_lowercase;
+    }
+
+    /**
+     * @return PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall
+     */
+    public function getStmt()
+    {
+        return $this->stmt;
     }
 }

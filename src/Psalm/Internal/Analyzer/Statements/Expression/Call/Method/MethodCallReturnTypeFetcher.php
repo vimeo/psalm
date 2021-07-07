@@ -56,6 +56,7 @@ class MethodCallReturnTypeFetcher
                 $stmt->args,
                 $context,
                 new CodeLocation($statements_analyzer->getSource(), $stmt->name),
+                $stmt,
                 $lhs_type_part instanceof TGenericObject ? $lhs_type_part->type_params : null
             );
 
@@ -76,6 +77,7 @@ class MethodCallReturnTypeFetcher
                     $stmt->args,
                     $context,
                     new CodeLocation($statements_analyzer->getSource(), $stmt->name),
+                    $stmt,
                     $lhs_type_part instanceof TGenericObject ? $lhs_type_part->type_params : null,
                     $fq_class_name,
                     $method_name
