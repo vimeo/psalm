@@ -264,6 +264,9 @@ final class CliUtils
                 }
 
                 if (substr($input_path, 0, 2) === '--' && strlen($input_path) > 2) {
+                    if (substr($input_path, 2) === 'config') {
+                        ++$i;
+                    }
                     continue;
                 }
 
