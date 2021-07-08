@@ -277,6 +277,8 @@ abstract class FunctionLikeStorage
     }
 
     /**
+     * @internal
+     *
      * @param list<FunctionLikeParameter> $params
      */
     public function setParams(array $params): void
@@ -286,6 +288,9 @@ abstract class FunctionLikeStorage
         $this->param_lookup = array_fill_keys($param_names, true);
     }
 
+    /**
+     * @internal
+     */
     public function addParam(FunctionLikeParameter $param, bool $lookup_value = null): void
     {
         $this->params[] = $param;
