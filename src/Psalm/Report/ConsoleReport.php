@@ -31,7 +31,7 @@ class ConsoleReport extends Report
             $issue_string .= 'INFO';
         }
 
-        $issue_reference = $issue_data->link ? ' (see ' . $issue_data->link . ')' : '';
+        $issue_reference = $issue_data->link ? ' - see: ' . $issue_data->link : '';
 
         $issue_string .= ': ' . $issue_data->type
             . ' - ' . $issue_data->file_name . ':' . $issue_data->line_from . ':' . $issue_data->column_from
