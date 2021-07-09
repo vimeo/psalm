@@ -24,8 +24,8 @@ collections)
 	;;
 
 psl)
-	git clone git@github.com:muglug/psl.git
-	cd psl
+	git clone git@github.com:psalm/endtoend-test-psl.git
+	cd endtoend-test-psl
 	git checkout 1.6.x
 	composer install --ignore-platform-reqs
 	~/project/psalm --monochrome --config=tools/psalm/psalm.xml
