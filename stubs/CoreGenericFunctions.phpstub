@@ -846,10 +846,15 @@ function strrev(string $string): string {}
 /**
  * @psalm-pure
  *
- * @psalm-return (
- *     $format is positive-int
- *     ? array<string>
- *     : int
+ * @param 0|1|2 $format
+ * @return (
+ *     $format is 0 ?
+ *     int : 
+ *     (
+ *         $format is 1 ?
+ *         list<string> :
+ *         array<int, string>
+ *     )
  * )
  */
 function str_word_count(string $string, int $format = 0, string|null $characters = null) {}
