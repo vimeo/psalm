@@ -846,6 +846,17 @@ function strrev(string $string): string {}
 /**
  * @psalm-pure
  *
+ * @psalm-return (
+ *     $format is positive-int
+ *     ? array<string>
+ *     : int
+ * )
+ */
+function str_word_count(string $string, int $format = 0, string|null $characters = null) {}
+
+/**
+ * @psalm-pure
+ *
  * @param string|string[] $pattern
  * @param string|array<string|int|float> $replacement
  * @param string|array<string|int|float> $subject
