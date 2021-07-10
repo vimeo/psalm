@@ -116,7 +116,7 @@ class TList extends \Psalm\Type\Atomic
         ?string $calling_class = null,
         ?string $calling_function = null,
         bool $replace = true,
-        bool $add_upper_bound = false,
+        bool $add_lower_bound = false,
         int $depth = 0
     ) : Atomic {
         $list = clone $this;
@@ -155,7 +155,7 @@ class TList extends \Psalm\Type\Atomic
                 $calling_class,
                 $calling_function,
                 $replace,
-                $add_upper_bound,
+                $add_lower_bound,
                 $depth + 1
             );
 

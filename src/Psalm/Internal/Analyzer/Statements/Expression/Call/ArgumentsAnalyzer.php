@@ -176,7 +176,7 @@ class ArgumentsAnalyzer
             if (($arg->value instanceof PhpParser\Node\Expr\Closure
                     || $arg->value instanceof PhpParser\Node\Expr\ArrowFunction)
                 && $template_result
-                && $template_result->upper_bounds
+                && $template_result->lower_bounds
                 && $param
                 && !$arg->value->getDocComment()
             ) {
@@ -268,12 +268,12 @@ class ArgumentsAnalyzer
             $context->calling_method_id ?: $context->calling_function_id
         );
 
-        if ($replace_template_result->upper_bounds) {
+        if ($replace_template_result->lower_bounds) {
             if (!$template_result) {
                 $template_result = new TemplateResult([], []);
             }
 
-            $template_result->upper_bounds += $replace_template_result->upper_bounds;
+            $template_result->lower_bounds += $replace_template_result->lower_bounds;
         }
     }
 
@@ -301,7 +301,7 @@ class ArgumentsAnalyzer
         ) {
             $function_like_params = [];
 
-            foreach ($template_result->upper_bounds as $template_name => $_) {
+            foreach ($template_result->lower_bounds as $template_name => $_) {
                 $function_like_params[] = new \Psalm\Storage\FunctionLikeParameter(
                     'function',
                     false,
@@ -335,7 +335,7 @@ class ArgumentsAnalyzer
                         $template_map
                     );
                 },
-                $template_result->upper_bounds
+                $template_result->lower_bounds
             ),
             []
         );
@@ -562,7 +562,7 @@ class ArgumentsAnalyzer
         $class_generic_params = [];
 
         if ($class_template_result) {
-            foreach ($class_template_result->upper_bounds as $template_name => $type_map) {
+            foreach ($class_template_result->lower_bounds as $template_name => $type_map) {
                 foreach ($type_map as $class => $bound) {
                     $class_generic_params[$template_name][$class] = clone $bound->type;
                 }
@@ -987,7 +987,7 @@ class ArgumentsAnalyzer
                         $context->calling_method_id ?: $context->calling_function_id
                     );
 
-                    if ($template_result->upper_bounds) {
+                    if ($template_result->lower_bounds) {
                         TemplateInferredTypeReplacer::replace(
                             $original_by_ref_type,
                             $template_result,
@@ -1012,7 +1012,7 @@ class ArgumentsAnalyzer
                         $context->calling_method_id ?: $context->calling_function_id
                     );
 
-                    if ($template_result->upper_bounds) {
+                    if ($template_result->lower_bounds) {
                         TemplateInferredTypeReplacer::replace(
                             $original_by_ref_out_type,
                             $template_result,

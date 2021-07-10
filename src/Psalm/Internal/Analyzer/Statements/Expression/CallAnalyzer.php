@@ -624,7 +624,7 @@ class CallAnalyzer
      * @param  \Psalm\Storage\Assertion[] $assertions
      * @param  string $thisName
      * @param  list<PhpParser\Node\Arg> $args
-     * @param  array<string, array<string, TemplateBound>> $inferred_upper_bounds,
+     * @param  array<string, array<string, TemplateBound>> $inferred_lower_bounds,
      *
      */
     public static function applyAssertionsToContext(
@@ -632,7 +632,7 @@ class CallAnalyzer
         ?string $thisName,
         array $assertions,
         array $args,
-        array $inferred_upper_bounds,
+        array $inferred_lower_bounds,
         Context $context,
         StatementsAnalyzer $statements_analyzer
     ): void {
@@ -687,8 +687,8 @@ class CallAnalyzer
                     $rule = substr($rule, 1);
                 }
 
-                if (isset($inferred_upper_bounds[$rule])) {
-                    foreach ($inferred_upper_bounds[$rule] as $template_map) {
+                if (isset($inferred_lower_bounds[$rule])) {
+                    foreach ($inferred_lower_bounds[$rule] as $template_map) {
                         if ($template_map->type->hasMixed()) {
                             continue 2;
                         }
@@ -810,7 +810,7 @@ class CallAnalyzer
                         $type_map
                     );
                 },
-                $inferred_upper_bounds
+                $inferred_lower_bounds
             );
 
             foreach (($statements_analyzer->getTemplateTypeMap() ?: []) as $template_name => $map) {
@@ -902,24 +902,24 @@ class CallAnalyzer
         CodeLocation $code_location,
         ?string $function_id
     ) : void {
-        if ($template_result->upper_bounds && $template_result->lower_bounds) {
-            foreach ($template_result->lower_bounds as $template_name => $defining_map) {
-                foreach ($defining_map as $defining_id => $lower_bound) {
-                    if (isset($template_result->upper_bounds[$template_name][$defining_id])) {
-                        $upper_bound_type = $template_result->upper_bounds[$template_name][$defining_id]->type;
-                        $lower_bound_type = $lower_bound->type;
+        if ($template_result->lower_bounds && $template_result->upper_bounds) {
+            foreach ($template_result->upper_bounds as $template_name => $defining_map) {
+                foreach ($defining_map as $defining_id => $upper_bound) {
+                    if (isset($template_result->lower_bounds[$template_name][$defining_id])) {
+                        $lower_bound_type = $template_result->lower_bounds[$template_name][$defining_id]->type;
+                        $upper_bound_type = $upper_bound->type;
 
                         $union_comparison_result = new \Psalm\Internal\Type\Comparator\TypeComparisonResult();
 
-                        if (count($template_result->lower_bounds_unintersectable_types) > 1) {
-                            [$upper_bound_type, $lower_bound_type]
-                                = $template_result->lower_bounds_unintersectable_types;
+                        if (count($template_result->upper_bounds_unintersectable_types) > 1) {
+                            [$lower_bound_type, $upper_bound_type]
+                                = $template_result->upper_bounds_unintersectable_types;
                         }
 
                         if (!UnionTypeComparator::isContainedBy(
                             $statements_analyzer->getCodebase(),
-                            $upper_bound_type,
                             $lower_bound_type,
+                            $upper_bound_type,
                             false,
                             false,
                             $union_comparison_result
@@ -928,8 +928,8 @@ class CallAnalyzer
                                 if ($union_comparison_result->type_coerced_from_mixed) {
                                     if (IssueBuffer::accepts(
                                         new MixedArgumentTypeCoercion(
-                                            'Type ' . $upper_bound_type->getId() . ' should be a subtype of '
-                                                . $lower_bound_type->getId(),
+                                            'Type ' . $lower_bound_type->getId() . ' should be a subtype of '
+                                                . $upper_bound_type->getId(),
                                             $code_location,
                                             $function_id
                                         ),
@@ -940,8 +940,8 @@ class CallAnalyzer
                                 } else {
                                     if (IssueBuffer::accepts(
                                         new ArgumentTypeCoercion(
-                                            'Type ' . $upper_bound_type->getId() . ' should be a subtype of '
-                                                . $lower_bound_type->getId(),
+                                            'Type ' . $lower_bound_type->getId() . ' should be a subtype of '
+                                                . $upper_bound_type->getId(),
                                             $code_location,
                                             $function_id
                                         ),
@@ -953,8 +953,8 @@ class CallAnalyzer
                             } elseif ($union_comparison_result->scalar_type_match_found) {
                                 if (IssueBuffer::accepts(
                                     new InvalidScalarArgument(
-                                        'Type ' . $upper_bound_type->getId() . ' should be a subtype of '
-                                                . $lower_bound_type->getId(),
+                                        'Type ' . $lower_bound_type->getId() . ' should be a subtype of '
+                                                . $upper_bound_type->getId(),
                                         $code_location,
                                         $function_id
                                     ),
@@ -965,8 +965,8 @@ class CallAnalyzer
                             } else {
                                 if (IssueBuffer::accepts(
                                     new InvalidArgument(
-                                        'Type ' . $upper_bound_type->getId() . ' should be a subtype of '
-                                                . $lower_bound_type->getId(),
+                                        'Type ' . $lower_bound_type->getId() . ' should be a subtype of '
+                                                . $upper_bound_type->getId(),
                                         $code_location,
                                         $function_id
                                     ),
@@ -977,8 +977,8 @@ class CallAnalyzer
                             }
                         }
                     } else {
-                        $template_result->upper_bounds[$template_name][$defining_id] = new TemplateBound(
-                            clone $lower_bound->type
+                        $template_result->lower_bounds[$template_name][$defining_id] = new TemplateBound(
+                            clone $upper_bound->type
                         );
                     }
                 }

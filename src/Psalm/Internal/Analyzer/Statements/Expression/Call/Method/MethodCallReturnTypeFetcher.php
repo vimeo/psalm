@@ -90,7 +90,7 @@ class MethodCallReturnTypeFetcher
         $class_storage = $codebase->methods->getClassLikeStorageForMethod($method_id);
 
         if (InternalCallMapHandler::inCallMap((string) $call_map_id)) {
-            if (($template_result->upper_bounds || $class_storage->stubbed)
+            if (($template_result->lower_bounds || $class_storage->stubbed)
                 && ($method_storage = ($class_storage->methods[$method_id->method_name] ?? null))
                 && $method_storage->return_type
             ) {
@@ -141,7 +141,7 @@ class MethodCallReturnTypeFetcher
             if ($return_type_candidate) {
                 $return_type_candidate = clone $return_type_candidate;
 
-                if ($template_result->upper_bounds) {
+                if ($template_result->lower_bounds) {
                     $return_type_candidate = \Psalm\Internal\Type\TypeExpander::expandUnion(
                         $codebase,
                         $return_type_candidate,
@@ -527,25 +527,25 @@ class MethodCallReturnTypeFetcher
             foreach ($bindable_template_types as $template_type) {
                 if ($template_type->defining_class !== $method_id->fq_class_name
                     && !isset(
-                        $template_result->upper_bounds
+                        $template_result->lower_bounds
                             [$template_type->param_name]
                             [$template_type->defining_class]
                     )
                 ) {
                     if ($template_type->param_name === 'TFunctionArgCount') {
-                        $template_result->upper_bounds[$template_type->param_name] = [
+                        $template_result->lower_bounds[$template_type->param_name] = [
                             'fn-' . strtolower((string) $method_id) => new TemplateBound(
                                 Type::getInt(false, $arg_count)
                             )
                         ];
                     } elseif ($template_type->param_name === 'TPhpMajorVersion') {
-                        $template_result->upper_bounds[$template_type->param_name] = [
+                        $template_result->lower_bounds[$template_type->param_name] = [
                             'fn-' . strtolower((string) $method_id) => new TemplateBound(
                                 Type::getInt(false, $codebase->php_major_version)
                             )
                         ];
                     } else {
-                        $template_result->upper_bounds[$template_type->param_name] = [
+                        $template_result->lower_bounds[$template_type->param_name] = [
                             ($template_type->defining_class) => new TemplateBound(Type::getEmpty())
                         ];
                     }
@@ -553,7 +553,7 @@ class MethodCallReturnTypeFetcher
             }
         }
 
-        if ($template_result->upper_bounds) {
+        if ($template_result->lower_bounds) {
             $return_type_candidate = \Psalm\Internal\Type\TypeExpander::expandUnion(
                 $codebase,
                 $return_type_candidate,

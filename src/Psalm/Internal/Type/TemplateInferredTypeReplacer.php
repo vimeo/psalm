@@ -32,7 +32,7 @@ class TemplateInferredTypeReplacer
 
         $is_mixed = false;
 
-        $inferred_upper_bounds = $template_result->upper_bounds ?: [];
+        $inferred_lower_bounds = $template_result->lower_bounds ?: [];
 
         foreach ($union->getAtomicTypes() as $key => $atomic_type) {
             $atomic_type->replaceTemplateTypesWithArgTypes($template_result, $codebase);
@@ -41,7 +41,7 @@ class TemplateInferredTypeReplacer
                 $template_type = null;
 
                 $traversed_type = \Psalm\Internal\Type\TemplateStandinTypeReplacer::getRootTemplateType(
-                    $inferred_upper_bounds,
+                    $inferred_lower_bounds,
                     $atomic_type->param_name,
                     $atomic_type->defining_class
                 );
@@ -79,7 +79,7 @@ class TemplateInferredTypeReplacer
                         }
                     }
                 } elseif ($codebase) {
-                    foreach ($inferred_upper_bounds as $template_type_map) {
+                    foreach ($inferred_lower_bounds as $template_type_map) {
                         foreach ($template_type_map as $template_class => $_) {
                             if (substr($template_class, 0, 3) === 'fn-') {
                                 continue;
@@ -95,12 +95,12 @@ class TemplateInferredTypeReplacer
                                         $param_map = $classlike_storage->template_extended_params[$defining_class];
 
                                         if (isset($param_map[$key])
-                                            && isset($inferred_upper_bounds[(string) $param_map[$key]][$template_class])
+                                            && isset($inferred_lower_bounds[(string) $param_map[$key]][$template_class])
                                         ) {
                                             $template_name = (string) $param_map[$key];
 
                                             $template_type
-                                                = clone $inferred_upper_bounds[$template_name][$template_class]->type;
+                                                = clone $inferred_lower_bounds[$template_name][$template_class]->type;
                                         }
                                     }
                                 }
@@ -122,8 +122,8 @@ class TemplateInferredTypeReplacer
                     }
                 }
             } elseif ($atomic_type instanceof Atomic\TTemplateParamClass) {
-                $template_type = isset($inferred_upper_bounds[$atomic_type->param_name][$atomic_type->defining_class])
-                    ? clone $inferred_upper_bounds[$atomic_type->param_name][$atomic_type->defining_class]->type
+                $template_type = isset($inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class])
+                    ? clone $inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class]->type
                     : null;
 
                 $class_template_type = null;
@@ -161,14 +161,14 @@ class TemplateInferredTypeReplacer
 
                 $template_type = null;
 
-                if (isset($inferred_upper_bounds[$atomic_type->array_param_name][$atomic_type->defining_class])
-                    && !empty($inferred_upper_bounds[$atomic_type->offset_param_name])
+                if (isset($inferred_lower_bounds[$atomic_type->array_param_name][$atomic_type->defining_class])
+                    && !empty($inferred_lower_bounds[$atomic_type->offset_param_name])
                 ) {
                     $array_template_type
-                        = $inferred_upper_bounds[$atomic_type->array_param_name][$atomic_type->defining_class]->type;
+                        = $inferred_lower_bounds[$atomic_type->array_param_name][$atomic_type->defining_class]->type;
                     $offset_template_type
                         = array_values(
-                            $inferred_upper_bounds[$atomic_type->offset_param_name]
+                            $inferred_lower_bounds[$atomic_type->offset_param_name]
                         )[0]->type;
 
                     if ($array_template_type->isSingle()
@@ -203,8 +203,8 @@ class TemplateInferredTypeReplacer
             } elseif ($atomic_type instanceof Atomic\TConditional
                 && $codebase
             ) {
-                $template_type = isset($inferred_upper_bounds[$atomic_type->param_name][$atomic_type->defining_class])
-                    ? clone $inferred_upper_bounds[$atomic_type->param_name][$atomic_type->defining_class]->type
+                $template_type = isset($inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class])
+                    ? clone $inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class]->type
                     : null;
 
                 $if_template_type = null;
@@ -274,7 +274,7 @@ class TemplateInferredTypeReplacer
 
                         $refined_template_result = clone $template_result;
 
-                        $refined_template_result->upper_bounds[$atomic_type->param_name][$atomic_type->defining_class]
+                        $refined_template_result->lower_bounds[$atomic_type->param_name][$atomic_type->defining_class]
                             = new \Psalm\Internal\Type\TemplateBound(
                                 $if_candidate_type
                             );
@@ -302,7 +302,7 @@ class TemplateInferredTypeReplacer
 
                         $refined_template_result = clone $template_result;
 
-                        $refined_template_result->upper_bounds[$atomic_type->param_name][$atomic_type->defining_class]
+                        $refined_template_result->lower_bounds[$atomic_type->param_name][$atomic_type->defining_class]
                             = new \Psalm\Internal\Type\TemplateBound(
                                 $else_candidate_type
                             );

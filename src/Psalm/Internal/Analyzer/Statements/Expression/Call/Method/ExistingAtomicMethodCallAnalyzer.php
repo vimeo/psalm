@@ -302,7 +302,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                 }
             }
 
-            $class_template_params = $template_result->upper_bounds;
+            $class_template_params = $template_result->lower_bounds;
 
             if ($method_storage->assertions) {
                 self::applyAssertionsToContext(

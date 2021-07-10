@@ -188,7 +188,7 @@ trait CallableTrait
         ?string $calling_class = null,
         ?string $calling_function = null,
         bool $replace = true,
-        bool $add_upper_bound = false,
+        bool $add_lower_bound = false,
         int $depth = 0
     ) : Atomic {
         $callable = clone $this;
@@ -217,7 +217,7 @@ trait CallableTrait
                     $calling_class,
                     $calling_function,
                     $replace,
-                    !$add_upper_bound,
+                    !$add_lower_bound,
                     $depth
                 );
             }
@@ -236,7 +236,7 @@ trait CallableTrait
                 $calling_class,
                 $calling_function,
                 $replace,
-                $add_upper_bound
+                $add_lower_bound
             );
         }
 

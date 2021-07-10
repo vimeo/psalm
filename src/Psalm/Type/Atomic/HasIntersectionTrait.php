@@ -83,9 +83,9 @@ trait HasIntersectionTrait
 
         foreach ($this->extra_types as $extra_type) {
             if ($extra_type instanceof TTemplateParam
-                && isset($template_result->upper_bounds[$extra_type->param_name][$extra_type->defining_class])
+                && isset($template_result->lower_bounds[$extra_type->param_name][$extra_type->defining_class])
             ) {
-                $template_type = clone $template_result->upper_bounds
+                $template_type = clone $template_result->lower_bounds
                     [$extra_type->param_name][$extra_type->defining_class]->type;
 
                 foreach ($template_type->getAtomicTypes() as $template_type_part) {

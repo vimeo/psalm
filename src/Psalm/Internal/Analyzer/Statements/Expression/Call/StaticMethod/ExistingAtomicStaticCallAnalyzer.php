@@ -300,7 +300,7 @@ class ExistingAtomicStaticCallAnalyzer
                 }
             }
 
-            $generic_params = $template_result->upper_bounds;
+            $generic_params = $template_result->lower_bounds;
 
             if ($method_storage->assertions) {
                 CallAnalyzer::applyAssertionsToContext(
@@ -482,24 +482,24 @@ class ExistingAtomicStaticCallAnalyzer
 
                 foreach ($bindable_template_types as $template_type) {
                     if (!isset(
-                        $template_result->upper_bounds
+                        $template_result->lower_bounds
                         [$template_type->param_name]
                         [$template_type->defining_class]
                     )) {
                         if ($template_type->param_name === 'TFunctionArgCount') {
-                            $template_result->upper_bounds[$template_type->param_name] = [
+                            $template_result->lower_bounds[$template_type->param_name] = [
                                 'fn-' . strtolower((string)$method_id) => new TemplateBound(
                                     Type::getInt(false, count($stmt->args))
                                 )
                             ];
                         } elseif ($template_type->param_name === 'TPhpMajorVersion') {
-                            $template_result->upper_bounds[$template_type->param_name] = [
+                            $template_result->lower_bounds[$template_type->param_name] = [
                                 'fn-' . strtolower((string)$method_id) => new TemplateBound(
                                     Type::getInt(false, $codebase->php_major_version)
                                 )
                             ];
                         } else {
-                            $template_result->upper_bounds[$template_type->param_name] = [
+                            $template_result->lower_bounds[$template_type->param_name] = [
                                 ($template_type->defining_class) => new TemplateBound(Type::getEmpty())
                             ];
                         }
@@ -531,7 +531,7 @@ class ExistingAtomicStaticCallAnalyzer
                 $static_type = $fq_class_name;
             }
 
-            if ($template_result->upper_bounds) {
+            if ($template_result->lower_bounds) {
                 $return_type_candidate = \Psalm\Internal\Type\TypeExpander::expandUnion(
                     $codebase,
                     $return_type_candidate,

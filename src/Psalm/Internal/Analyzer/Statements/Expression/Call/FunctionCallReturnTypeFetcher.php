@@ -64,21 +64,21 @@ class FunctionCallReturnTypeFetcher
             if (!$in_call_map || $is_stubbed) {
                 if ($function_storage && $function_storage->template_types) {
                     foreach ($function_storage->template_types as $template_name => $_) {
-                        if (!isset($template_result->upper_bounds[$template_name])) {
+                        if (!isset($template_result->lower_bounds[$template_name])) {
                             if ($template_name === 'TFunctionArgCount') {
-                                $template_result->upper_bounds[$template_name] = [
+                                $template_result->lower_bounds[$template_name] = [
                                     'fn-' . $function_id => new TemplateBound(
                                         Type::getInt(false, count($stmt->args))
                                     )
                                 ];
                             } elseif ($template_name === 'TPhpMajorVersion') {
-                                $template_result->upper_bounds[$template_name] = [
+                                $template_result->lower_bounds[$template_name] = [
                                     'fn-' . $function_id => new TemplateBound(
                                         Type::getInt(false, $codebase->php_major_version)
                                     )
                                 ];
                             } else {
-                                $template_result->upper_bounds[$template_name] = [
+                                $template_result->lower_bounds[$template_name] = [
                                     'fn-' . $function_id => new TemplateBound(
                                         Type::getEmpty()
                                     )
@@ -99,7 +99,7 @@ class FunctionCallReturnTypeFetcher
                     if ($function_storage && $function_storage->return_type) {
                         $return_type = clone $function_storage->return_type;
 
-                        if ($template_result->upper_bounds && $function_storage->template_types) {
+                        if ($template_result->lower_bounds && $function_storage->template_types) {
                             $return_type = TypeExpander::expandUnion(
                                 $codebase,
                                 $return_type,

@@ -277,7 +277,7 @@ class ArgumentAnalyzer
             $readonly_template_result = new TemplateResult($class_generic_params, []);
 
             // This flag ensures that the template results will never be written to
-            // It also supercedes the `$add_upper_bounds` flag so that closure params
+            // It also supercedes the `$add_lower_bounds` flag so that closure params
             // don’t get overwritten
             $readonly_template_result->readonly = true;
 
@@ -358,23 +358,23 @@ class ArgumentAnalyzer
 
             foreach ($bindable_template_params as $template_type) {
                 if (!isset(
-                    $template_result->upper_bounds
+                    $template_result->lower_bounds
                         [$template_type->param_name]
                         [$template_type->defining_class]
                 )) {
                     if (isset(
-                        $template_result->lower_bounds
+                        $template_result->upper_bounds
                             [$template_type->param_name]
                             [$template_type->defining_class]
                     )) {
-                        $template_result->upper_bounds[$template_type->param_name][$template_type->defining_class]
+                        $template_result->lower_bounds[$template_type->param_name][$template_type->defining_class]
                             = new TemplateBound(
-                                clone $template_result->lower_bounds
+                                clone $template_result->upper_bounds
                                     [$template_type->param_name]
                                     [$template_type->defining_class]->type
                             );
                     } else {
-                        $template_result->upper_bounds[$template_type->param_name][$template_type->defining_class]
+                        $template_result->lower_bounds[$template_type->param_name][$template_type->defining_class]
                             = new TemplateBound(
                                 clone $template_type->as
                             );

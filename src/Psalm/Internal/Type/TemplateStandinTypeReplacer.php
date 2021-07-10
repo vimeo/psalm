@@ -35,7 +35,7 @@ class TemplateStandinTypeReplacer
         ?string $calling_class = null,
         ?string $calling_function = null,
         bool $replace = true,
-        bool $add_upper_bound = false,
+        bool $add_lower_bound = false,
         int $depth = 0
     ) : Union {
         $atomic_types = [];
@@ -75,7 +75,7 @@ class TemplateStandinTypeReplacer
                     $calling_class,
                     $calling_function,
                     $replace,
-                    $add_upper_bound,
+                    $add_lower_bound,
                     $depth,
                     count($original_atomic_types) === 1,
                     $had_template
@@ -129,7 +129,7 @@ class TemplateStandinTypeReplacer
         ?string $calling_class,
         ?string $calling_function,
         bool $replace,
-        bool $add_upper_bound,
+        bool $add_lower_bound,
         int $depth,
         bool $was_single,
         bool &$had_template
@@ -152,7 +152,7 @@ class TemplateStandinTypeReplacer
                 $codebase,
                 $statements_analyzer,
                 $replace,
-                $add_upper_bound,
+                $add_lower_bound,
                 $depth,
                 $had_template
             );
@@ -172,7 +172,7 @@ class TemplateStandinTypeReplacer
                     $codebase,
                     $statements_analyzer,
                     $replace,
-                    $add_upper_bound,
+                    $add_lower_bound,
                     $depth,
                     $was_single,
                     $had_template
@@ -187,13 +187,13 @@ class TemplateStandinTypeReplacer
                 $include_first = true;
 
                 if (isset($template_result->template_types[$atomic_type->array_param_name][$atomic_type->defining_class])
-                    && !empty($template_result->upper_bounds[$atomic_type->offset_param_name])
+                    && !empty($template_result->lower_bounds[$atomic_type->offset_param_name])
                 ) {
                     $array_template_type
                         = $template_result->template_types[$atomic_type->array_param_name][$atomic_type->defining_class];
                     $offset_template_type
                         = array_values(
-                            $template_result->upper_bounds[$atomic_type->offset_param_name]
+                            $template_result->lower_bounds[$atomic_type->offset_param_name]
                         )[0]->type;
 
                     if ($array_template_type->isSingle()
@@ -297,7 +297,7 @@ class TemplateStandinTypeReplacer
                 $calling_class,
                 $calling_function,
                 $replace,
-                $add_upper_bound,
+                $add_lower_bound,
                 $depth + 1
             );
 
@@ -316,7 +316,7 @@ class TemplateStandinTypeReplacer
                 $calling_class,
                 $calling_function,
                 $replace,
-                $add_upper_bound,
+                $add_lower_bound,
                 $depth + 1
             );
         }
@@ -495,7 +495,7 @@ class TemplateStandinTypeReplacer
         ?Codebase $codebase,
         ?StatementsAnalyzer $statements_analyzer,
         bool $replace,
-        bool $add_upper_bound,
+        bool $add_lower_bound,
         int $depth,
         bool &$had_template
     ) : array {
@@ -533,7 +533,7 @@ class TemplateStandinTypeReplacer
                     $calling_class,
                     $calling_function,
                     $replace,
-                    $add_upper_bound,
+                    $add_lower_bound,
                     $depth + 1
                 );
 
@@ -582,7 +582,7 @@ class TemplateStandinTypeReplacer
                         $calling_class,
                         $calling_function,
                         $replace,
-                        $add_upper_bound,
+                        $add_lower_bound,
                         $depth + 1
                     );
                 }
@@ -618,7 +618,7 @@ class TemplateStandinTypeReplacer
                                 $atomic_types[] = clone $key_type_atomic;
                             }
 
-                            $template_result->upper_bounds[$atomic_type->param_name][$atomic_type->defining_class]->type
+                            $template_result->lower_bounds[$atomic_type->param_name][$atomic_type->defining_class]->type
                                 = clone $key_type;
                         }
                     }
@@ -664,7 +664,7 @@ class TemplateStandinTypeReplacer
                 $calling_class,
                 $calling_function,
                 $replace,
-                $add_upper_bound,
+                $add_lower_bound,
                 $depth + 1
             );
 
@@ -695,16 +695,16 @@ class TemplateStandinTypeReplacer
                     }
                 }
 
-                if ($add_upper_bound) {
+                if ($add_lower_bound) {
                     return array_values($generic_param->getAtomicTypes());
                 }
 
                 $generic_param->setFromDocblock();
 
                 if (isset(
-                    $template_result->upper_bounds[$param_name_key][$atomic_type->defining_class]
+                    $template_result->lower_bounds[$param_name_key][$atomic_type->defining_class]
                 )) {
-                    $existing_generic_param = $template_result->upper_bounds
+                    $existing_generic_param = $template_result->lower_bounds
                         [$param_name_key]
                         [$atomic_type->defining_class];
 
@@ -717,7 +717,7 @@ class TemplateStandinTypeReplacer
 
                     if ($existing_depth === $depth || $input_arg_offset !== $existing_arg_offset) {
                         $generic_param = \Psalm\Type::combineUnionTypes(
-                            $template_result->upper_bounds
+                            $template_result->lower_bounds
                                 [$param_name_key]
                                 [$atomic_type->defining_class]->type,
                             $generic_param,
@@ -726,7 +726,7 @@ class TemplateStandinTypeReplacer
                     }
                 }
 
-                $template_result->upper_bounds[$param_name_key][$atomic_type->defining_class] = new TemplateBound(
+                $template_result->lower_bounds[$param_name_key][$atomic_type->defining_class] = new TemplateBound(
                     $generic_param,
                     $depth,
                     $input_arg_offset
@@ -749,7 +749,7 @@ class TemplateStandinTypeReplacer
             return $atomic_types;
         }
 
-        if ($add_upper_bound && $input_type && !$template_result->readonly) {
+        if ($add_lower_bound && $input_type && !$template_result->readonly) {
             $matching_input_keys = [];
 
             if ($codebase
@@ -774,18 +774,18 @@ class TemplateStandinTypeReplacer
                     }
                 }
 
-                if (isset($template_result->lower_bounds[$param_name_key][$atomic_type->defining_class])) {
+                if (isset($template_result->upper_bounds[$param_name_key][$atomic_type->defining_class])) {
                     if (!UnionTypeComparator::isContainedBy(
                         $codebase,
-                        $template_result->lower_bounds[$param_name_key][$atomic_type->defining_class]->type,
+                        $template_result->upper_bounds[$param_name_key][$atomic_type->defining_class]->type,
                         $generic_param
                     ) || !UnionTypeComparator::isContainedBy(
                         $codebase,
                         $generic_param,
-                        $template_result->lower_bounds[$param_name_key][$atomic_type->defining_class]->type
+                        $template_result->upper_bounds[$param_name_key][$atomic_type->defining_class]->type
                     )) {
                         $intersection_type = \Psalm\Type::intersectUnionTypes(
-                            $template_result->lower_bounds[$param_name_key][$atomic_type->defining_class]->type,
+                            $template_result->upper_bounds[$param_name_key][$atomic_type->defining_class]->type,
                             $generic_param,
                             $codebase
                         );
@@ -794,18 +794,18 @@ class TemplateStandinTypeReplacer
                     }
 
                     if ($intersection_type) {
-                        $template_result->lower_bounds[$param_name_key][$atomic_type->defining_class]->type
+                        $template_result->upper_bounds[$param_name_key][$atomic_type->defining_class]->type
                             = $intersection_type;
                     } else {
-                        $template_result->lower_bounds_unintersectable_types[]
-                            = $template_result->lower_bounds[$param_name_key][$atomic_type->defining_class]->type;
-                        $template_result->lower_bounds_unintersectable_types[] = $generic_param;
+                        $template_result->upper_bounds_unintersectable_types[]
+                            = $template_result->upper_bounds[$param_name_key][$atomic_type->defining_class]->type;
+                        $template_result->upper_bounds_unintersectable_types[] = $generic_param;
 
-                        $template_result->lower_bounds[$param_name_key][$atomic_type->defining_class]->type
+                        $template_result->upper_bounds[$param_name_key][$atomic_type->defining_class]->type
                             = \Psalm\Type::getMixed();
                     }
                 } else {
-                    $template_result->lower_bounds[$param_name_key][$atomic_type->defining_class] = new TemplateBound(
+                    $template_result->upper_bounds[$param_name_key][$atomic_type->defining_class] = new TemplateBound(
                         $generic_param
                     );
                 }
@@ -828,7 +828,7 @@ class TemplateStandinTypeReplacer
         ?Codebase $codebase,
         ?StatementsAnalyzer $statements_analyzer,
         bool $replace,
-        bool $add_upper_bound,
+        bool $add_lower_bound,
         int $depth,
         bool $was_single,
         bool &$had_template
@@ -894,7 +894,7 @@ class TemplateStandinTypeReplacer
                     $calling_class,
                     $calling_function,
                     $replace,
-                    $add_upper_bound,
+                    $add_lower_bound,
                     $depth + 1
                 );
 
@@ -910,16 +910,16 @@ class TemplateStandinTypeReplacer
             }
 
             if ($generic_param) {
-                if (isset($template_result->upper_bounds[$atomic_type->param_name][$atomic_type->defining_class])) {
-                    $template_result->upper_bounds[$atomic_type->param_name][$atomic_type->defining_class] = new TemplateBound(
+                if (isset($template_result->lower_bounds[$atomic_type->param_name][$atomic_type->defining_class])) {
+                    $template_result->lower_bounds[$atomic_type->param_name][$atomic_type->defining_class] = new TemplateBound(
                         \Psalm\Type::combineUnionTypes(
                             $generic_param,
-                            $template_result->upper_bounds[$atomic_type->param_name][$atomic_type->defining_class]->type
+                            $template_result->lower_bounds[$atomic_type->param_name][$atomic_type->defining_class]->type
                         ),
                         $depth
                     );
                 } else {
-                    $template_result->upper_bounds[$atomic_type->param_name][$atomic_type->defining_class] = new TemplateBound(
+                    $template_result->lower_bounds[$atomic_type->param_name][$atomic_type->defining_class] = new TemplateBound(
                         $generic_param,
                         $depth,
                         $input_arg_offset

@@ -28,9 +28,9 @@ class Assertion
     }
 
     /**
-     * @param array<string, array<string, \Psalm\Internal\Type\TemplateBound>> $inferred_upper_bounds
+     * @param array<string, array<string, \Psalm\Internal\Type\TemplateBound>> $inferred_lower_bounds
      */
-    public function getUntemplatedCopy(array $inferred_upper_bounds, ?string $this_var_id) : self
+    public function getUntemplatedCopy(array $inferred_lower_bounds, ?string $this_var_id) : self
     {
         return new Assertion(
             \is_string($this->var_id) && $this_var_id
@@ -42,17 +42,17 @@ class Assertion
                  *
                  * @return array{0: string}
                  */
-                function (array $rules) use ($inferred_upper_bounds) : array {
+                function (array $rules) use ($inferred_lower_bounds) : array {
                     $first_rule = $rules[0];
 
-                    if ($inferred_upper_bounds) {
+                    if ($inferred_lower_bounds) {
                         $rule_tokens = \Psalm\Internal\Type\TypeTokenizer::tokenize($first_rule);
 
                         $substitute = false;
 
                         foreach ($rule_tokens as &$rule_token) {
-                            if (isset($inferred_upper_bounds[$rule_token[0]])) {
-                                foreach ($inferred_upper_bounds[$rule_token[0]] as $bound) {
+                            if (isset($inferred_lower_bounds[$rule_token[0]])) {
+                                foreach ($inferred_lower_bounds[$rule_token[0]] as $bound) {
                                     $substitute = true;
 
                                     $first_type = \array_values($bound->type->getAtomicTypes())[0];
