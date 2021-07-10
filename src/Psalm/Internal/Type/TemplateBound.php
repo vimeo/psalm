@@ -32,9 +32,7 @@ class TemplateBound
     public $arg_offset;
 
     /**
-     * TemplateResult implicitly supports bounds like
-     * `T >: some_type` and `T <: some_type` but not `T =: some_type`
-     * This adds support for that when
+     * When non-null, indicates an equality template bound (vs a lower or upper bound)
      *
      * @var ?string
      */
