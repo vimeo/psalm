@@ -43,7 +43,9 @@ class TemplateInferredTypeReplacer
                 $traversed_type = \Psalm\Internal\Type\TemplateStandinTypeReplacer::getRootTemplateType(
                     $inferred_lower_bounds,
                     $atomic_type->param_name,
-                    $atomic_type->defining_class
+                    $atomic_type->defining_class,
+                    [],
+                    $codebase
                 );
 
                 if ($traversed_type) {
@@ -100,7 +102,10 @@ class TemplateInferredTypeReplacer
                                             $template_name = (string) $param_map[$key];
 
                                             $template_type
-                                                = clone $inferred_lower_bounds[$template_name][$template_class]->type;
+                                                = clone TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+                                                    $inferred_lower_bounds[$template_name][$template_class],
+                                                    $codebase
+                                                );
                                         }
                                     }
                                 }
@@ -123,7 +128,10 @@ class TemplateInferredTypeReplacer
                 }
             } elseif ($atomic_type instanceof Atomic\TTemplateParamClass) {
                 $template_type = isset($inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class])
-                    ? clone $inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class]->type
+                    ? clone TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+                        $inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class],
+                        $codebase
+                    )
                     : null;
 
                 $class_template_type = null;
@@ -165,11 +173,16 @@ class TemplateInferredTypeReplacer
                     && !empty($inferred_lower_bounds[$atomic_type->offset_param_name])
                 ) {
                     $array_template_type
-                        = $inferred_lower_bounds[$atomic_type->array_param_name][$atomic_type->defining_class]->type;
+                        = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+                            $inferred_lower_bounds[$atomic_type->array_param_name][$atomic_type->defining_class],
+                            $codebase
+                        );
+
                     $offset_template_type
-                        = array_values(
-                            $inferred_lower_bounds[$atomic_type->offset_param_name]
-                        )[0]->type;
+                        = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+                            array_values($inferred_lower_bounds[$atomic_type->offset_param_name])[0],
+                            $codebase
+                        );
 
                     if ($array_template_type->isSingle()
                         && $offset_template_type->isSingle()
@@ -204,7 +217,10 @@ class TemplateInferredTypeReplacer
                 && $codebase
             ) {
                 $template_type = isset($inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class])
-                    ? clone $inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class]->type
+                    ? clone TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+                        $inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class],
+                        $codebase
+                    )
                     : null;
 
                 $if_template_type = null;
@@ -275,9 +291,11 @@ class TemplateInferredTypeReplacer
                         $refined_template_result = clone $template_result;
 
                         $refined_template_result->lower_bounds[$atomic_type->param_name][$atomic_type->defining_class]
-                            = new \Psalm\Internal\Type\TemplateBound(
+                            = [
+                            new \Psalm\Internal\Type\TemplateBound(
                                 $if_candidate_type
-                            );
+                            )
+                        ];
 
                         self::replace(
                             $if_template_type,
@@ -303,9 +321,11 @@ class TemplateInferredTypeReplacer
                         $refined_template_result = clone $template_result;
 
                         $refined_template_result->lower_bounds[$atomic_type->param_name][$atomic_type->defining_class]
-                            = new \Psalm\Internal\Type\TemplateBound(
+                            = [
+                            new \Psalm\Internal\Type\TemplateBound(
                                 $else_candidate_type
-                            );
+                            )
+                        ];
 
                         self::replace(
                             $else_template_type,

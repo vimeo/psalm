@@ -191,6 +191,8 @@ trait GenericTrait
 
         $input_object_type_params = [];
 
+        $container_type_params_covariant = [];
+
         if ($input_type instanceof Atomic\TGenericObject
             && ($this instanceof Atomic\TGenericObject || $this instanceof Atomic\TIterable)
             && $codebase
@@ -198,7 +200,8 @@ trait GenericTrait
             $input_object_type_params = TemplateStandinTypeReplacer::getMappedGenericTypeParams(
                 $codebase,
                 $input_type,
-                $this
+                $this,
+                $container_type_params_covariant
             );
         }
 
@@ -239,6 +242,10 @@ trait GenericTrait
                 $calling_function,
                 $replace,
                 $add_lower_bound,
+                !($container_type_params_covariant[$offset] ?? true)
+                    && $this instanceof Atomic\TGenericObject
+                    ? $this->value
+                    : null,
                 $depth + 1
             );
         }

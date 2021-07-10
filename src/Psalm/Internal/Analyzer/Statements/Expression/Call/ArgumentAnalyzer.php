@@ -367,17 +367,19 @@ class ArgumentAnalyzer
                             [$template_type->param_name]
                             [$template_type->defining_class]
                     )) {
-                        $template_result->lower_bounds[$template_type->param_name][$template_type->defining_class]
-                            = new TemplateBound(
+                        $template_result->lower_bounds[$template_type->param_name][$template_type->defining_class] = [
+                            new TemplateBound(
                                 clone $template_result->upper_bounds
                                     [$template_type->param_name]
                                     [$template_type->defining_class]->type
-                            );
+                            )
+                        ];
                     } else {
-                        $template_result->lower_bounds[$template_type->param_name][$template_type->defining_class]
-                            = new TemplateBound(
+                        $template_result->lower_bounds[$template_type->param_name][$template_type->defining_class] = [
+                            new TemplateBound(
                                 clone $template_type->as
-                            );
+                            )
+                        ];
                     }
                 }
             }

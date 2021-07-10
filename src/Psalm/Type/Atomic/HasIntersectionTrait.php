@@ -3,6 +3,7 @@ namespace Psalm\Type\Atomic;
 
 use Psalm\Codebase;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 
@@ -85,14 +86,16 @@ trait HasIntersectionTrait
             if ($extra_type instanceof TTemplateParam
                 && isset($template_result->lower_bounds[$extra_type->param_name][$extra_type->defining_class])
             ) {
-                $template_type = clone $template_result->lower_bounds
-                    [$extra_type->param_name][$extra_type->defining_class]->type;
+                $template_type = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+                    $template_result->lower_bounds[$extra_type->param_name][$extra_type->defining_class],
+                    $codebase
+                );
 
                 foreach ($template_type->getAtomicTypes() as $template_type_part) {
                     if ($template_type_part instanceof TNamedObject) {
-                        $new_types[$template_type_part->getKey()] = $template_type_part;
+                        $new_types[$template_type_part->getKey()] = clone $template_type_part;
                     } elseif ($template_type_part instanceof TTemplateParam) {
-                        $new_types[$template_type_part->getKey()] = $template_type_part;
+                        $new_types[$template_type_part->getKey()] = clone $template_type_part;
                     }
                 }
             } else {

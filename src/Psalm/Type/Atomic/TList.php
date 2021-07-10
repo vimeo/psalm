@@ -156,6 +156,7 @@ class TList extends \Psalm\Type\Atomic
                 $calling_function,
                 $replace,
                 $add_lower_bound,
+                null,
                 $depth + 1
             );
 

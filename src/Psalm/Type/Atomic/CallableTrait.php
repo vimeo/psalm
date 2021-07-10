@@ -218,6 +218,7 @@ trait CallableTrait
                     $calling_function,
                     $replace,
                     !$add_lower_bound,
+                    null,
                     $depth
                 );
             }

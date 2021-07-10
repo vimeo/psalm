@@ -67,21 +67,27 @@ class FunctionCallReturnTypeFetcher
                         if (!isset($template_result->lower_bounds[$template_name])) {
                             if ($template_name === 'TFunctionArgCount') {
                                 $template_result->lower_bounds[$template_name] = [
-                                    'fn-' . $function_id => new TemplateBound(
-                                        Type::getInt(false, count($stmt->args))
-                                    )
+                                    'fn-' . $function_id => [
+                                        new TemplateBound(
+                                            Type::getInt(false, count($stmt->args))
+                                        )
+                                    ]
                                 ];
                             } elseif ($template_name === 'TPhpMajorVersion') {
                                 $template_result->lower_bounds[$template_name] = [
-                                    'fn-' . $function_id => new TemplateBound(
-                                        Type::getInt(false, $codebase->php_major_version)
-                                    )
+                                    'fn-' . $function_id => [
+                                            new TemplateBound(
+                                                Type::getInt(false, $codebase->php_major_version)
+                                            )
+                                    ]
                                 ];
                             } else {
                                 $template_result->lower_bounds[$template_name] = [
-                                    'fn-' . $function_id => new TemplateBound(
-                                        Type::getEmpty()
-                                    )
+                                    'fn-' . $function_id => [
+                                        new TemplateBound(
+                                            Type::getEmpty()
+                                        )
+                                    ]
                                 ];
                             }
                         }

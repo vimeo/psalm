@@ -322,11 +322,13 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                     array_map(
                         function (Assertion $assertion) use (
                             $class_template_params,
-                            $lhs_var_id
+                            $lhs_var_id,
+                            $codebase
                         ) : Assertion {
                             return $assertion->getUntemplatedCopy(
                                 $class_template_params ?: [],
-                                $lhs_var_id
+                                $lhs_var_id,
+                                $codebase
                             );
                         },
                         $method_storage->if_true_assertions
@@ -340,11 +342,13 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                     array_map(
                         function (Assertion $assertion) use (
                             $class_template_params,
-                            $lhs_var_id
+                            $lhs_var_id,
+                            $codebase
                         ) : Assertion {
                             return $assertion->getUntemplatedCopy(
                                 $class_template_params ?: [],
-                                $lhs_var_id
+                                $lhs_var_id,
+                                $codebase
                             );
                         },
                         $method_storage->if_false_assertions

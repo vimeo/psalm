@@ -283,8 +283,8 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 $statements_analyzer->node_data->setIfTrueAssertions(
                     $stmt,
                     array_map(
-                        function (Assertion $assertion) use ($inferred_lower_bounds) : Assertion {
-                            return $assertion->getUntemplatedCopy($inferred_lower_bounds ?: [], null);
+                        function (Assertion $assertion) use ($inferred_lower_bounds, $codebase) : Assertion {
+                            return $assertion->getUntemplatedCopy($inferred_lower_bounds ?: [], null, $codebase);
                         },
                         $function_call_info->function_storage->if_true_assertions
                     )
@@ -295,8 +295,8 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 $statements_analyzer->node_data->setIfFalseAssertions(
                     $stmt,
                     array_map(
-                        function (Assertion $assertion) use ($inferred_lower_bounds) : Assertion {
-                            return $assertion->getUntemplatedCopy($inferred_lower_bounds ?: [], null);
+                        function (Assertion $assertion) use ($inferred_lower_bounds, $codebase) : Assertion {
+                            return $assertion->getUntemplatedCopy($inferred_lower_bounds ?: [], null, $codebase);
                         },
                         $function_call_info->function_storage->if_false_assertions
                     )
