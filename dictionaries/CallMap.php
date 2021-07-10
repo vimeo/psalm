@@ -11564,6 +11564,7 @@ return [
 'ReflectionProperty::getName' => ['string'],
 'ReflectionProperty::getType' => ['?ReflectionType'],
 'ReflectionProperty::getValue' => ['mixed', 'object='=>'object'],
+'ReflectionProperty::hasType' => ['bool'],
 'ReflectionProperty::isDefault' => ['bool'],
 'ReflectionProperty::isPrivate' => ['bool'],
 'ReflectionProperty::isProtected' => ['bool'],
