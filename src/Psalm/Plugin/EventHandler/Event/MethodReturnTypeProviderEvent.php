@@ -24,10 +24,6 @@ class MethodReturnTypeProviderEvent
      */
     private $method_name_lowercase;
     /**
-     * @var list<PhpParser\Node\Arg>
-     */
-    private $call_args;
-    /**
      * @var Context
      */
     private $context;
@@ -57,7 +53,6 @@ class MethodReturnTypeProviderEvent
      * but another plugin may be able to determine the type, return null. Otherwise return a mixed union type if
      * something should be returned, but can't be more specific.
      *
-     * @param  list<PhpParser\Node\Arg>    $call_args
      * @param PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $stmt
      * @param  ?array<Type\Union> $template_type_parameters
      * @param lowercase-string $method_name_lowercase
@@ -67,10 +62,9 @@ class MethodReturnTypeProviderEvent
         StatementsSource $source,
         string $fq_classlike_name,
         string $method_name_lowercase,
-        array $call_args,
+        $stmt,
         Context $context,
         CodeLocation $code_location,
-        $stmt,
         ?array $template_type_parameters = null,
         ?string $called_fq_classlike_name = null,
         ?string $called_method_name_lowercase = null
@@ -78,7 +72,6 @@ class MethodReturnTypeProviderEvent
         $this->source = $source;
         $this->fq_classlike_name = $fq_classlike_name;
         $this->method_name_lowercase = $method_name_lowercase;
-        $this->call_args = $call_args;
         $this->context = $context;
         $this->code_location = $code_location;
         $this->stmt = $stmt;
@@ -110,7 +103,7 @@ class MethodReturnTypeProviderEvent
      */
     public function getCallArgs(): array
     {
-        return $this->call_args;
+        return $this->stmt->args;
     }
 
     public function getContext(): Context
