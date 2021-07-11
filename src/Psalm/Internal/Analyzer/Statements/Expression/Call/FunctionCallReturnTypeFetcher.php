@@ -54,7 +54,7 @@ class FunctionCallReturnTypeFetcher
             $stmt_type = $codebase->functions->return_type_provider->getReturnType(
                 $statements_analyzer,
                 $function_id,
-                $stmt->args,
+                $stmt,
                 $context,
                 new CodeLocation($statements_analyzer->getSource(), $function_name)
             );

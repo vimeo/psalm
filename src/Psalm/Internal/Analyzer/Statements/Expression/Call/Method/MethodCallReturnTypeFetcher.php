@@ -53,7 +53,7 @@ class MethodCallReturnTypeFetcher
                 $statements_analyzer,
                 $premixin_method_id->fq_class_name,
                 $premixin_method_id->method_name,
-                $stmt->args,
+                $stmt,
                 $context,
                 new CodeLocation($statements_analyzer->getSource(), $stmt->name),
                 $lhs_type_part instanceof TGenericObject ? $lhs_type_part->type_params : null
@@ -73,7 +73,7 @@ class MethodCallReturnTypeFetcher
                     $statements_analyzer,
                     $declaring_fq_class_name,
                     $declaring_method_name,
-                    $stmt->args,
+                    $stmt,
                     $context,
                     new CodeLocation($statements_analyzer->getSource(), $stmt->name),
                     $lhs_type_part instanceof TGenericObject ? $lhs_type_part->type_params : null,

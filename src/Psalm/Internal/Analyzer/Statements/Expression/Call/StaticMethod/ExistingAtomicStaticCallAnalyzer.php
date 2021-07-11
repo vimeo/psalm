@@ -191,7 +191,7 @@ class ExistingAtomicStaticCallAnalyzer
                 $statements_analyzer,
                 $fq_class_name,
                 $stmt_name->name,
-                $stmt->args,
+                $stmt,
                 $context,
                 new CodeLocation($statements_analyzer->getSource(), $stmt_name)
             );
@@ -211,7 +211,7 @@ class ExistingAtomicStaticCallAnalyzer
                     $statements_analyzer,
                     $declaring_fq_class_name,
                     $declaring_method_name,
-                    $stmt->args,
+                    $stmt,
                     $context,
                     new CodeLocation($statements_analyzer->getSource(), $stmt_name),
                     null,
