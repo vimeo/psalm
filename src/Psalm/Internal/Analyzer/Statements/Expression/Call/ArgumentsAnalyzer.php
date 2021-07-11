@@ -40,6 +40,7 @@ use function array_reverse;
 use function count;
 use function in_array;
 use function is_string;
+use function reset;
 use function strpos;
 use function strtolower;
 
@@ -327,10 +328,13 @@ class ArgumentsAnalyzer
 
         $replace_template_result = new \Psalm\Internal\Type\TemplateResult(
             array_map(
-                function ($template_map) {
+                function ($template_map) use ($codebase) {
                     return array_map(
-                        function ($bound) {
-                            return $bound->type;
+                        function ($lower_bounds) use ($codebase) {
+                            return \Psalm\Internal\Type\TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+                                $lower_bounds,
+                                $codebase
+                            );
                         },
                         $template_map
                     );
@@ -563,8 +567,10 @@ class ArgumentsAnalyzer
 
         if ($class_template_result) {
             foreach ($class_template_result->lower_bounds as $template_name => $type_map) {
-                foreach ($type_map as $class => $bound) {
-                    $class_generic_params[$template_name][$class] = clone $bound->type;
+                foreach ($type_map as $class => $lower_bounds) {
+                    if (count($lower_bounds) === 1) {
+                        $class_generic_params[$template_name][$class] = clone reset($lower_bounds)->type;
+                    }
                 }
             }
         }

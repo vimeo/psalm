@@ -6,6 +6,21 @@ use Psalm\Type\Union;
 
 use function array_map;
 
+/**
+ * This class captures the result of running Psalm's argument analysis with
+ * regard to generic parameters.
+ *
+ * It captures upper and lower bounds for parameters. Mostly we just care about
+ * lower bounds — those are captured when calling a function that expects a
+ * non-callable templated argument.
+ *
+ * Upper bounds are found in callable parameter types. Given a parameter type
+ * `callable(T1): void` and an argument typed as `callable(int): void`, `int` will
+ * be added as an _upper_ bound for the template param `T1`. This only applies to
+ * parameters — given a parameter type `callable(): T2` and an argument typed as
+ * `callable(): string`, `string` will be added as a _lower_ bound for the template
+ * param `T2`.
+ */
 class TemplateResult
 {
     /**
@@ -14,7 +29,7 @@ class TemplateResult
     public $template_types;
 
     /**
-     * @var array<string, array<string, TemplateBound>>
+     * @var array<string, array<string, non-empty-list<TemplateBound>>>
      */
     public $lower_bounds;
 
@@ -47,7 +62,7 @@ class TemplateResult
             function ($type_map) {
                 return array_map(
                     function ($type) {
-                        return new TemplateBound($type);
+                        return [new TemplateBound($type)];
                     },
                     $type_map
                 );

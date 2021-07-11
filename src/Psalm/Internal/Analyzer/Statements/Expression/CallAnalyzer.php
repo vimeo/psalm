@@ -11,6 +11,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Issue\ArgumentTypeCoercion;
 use Psalm\Issue\InvalidArgument;
 use Psalm\Issue\InvalidScalarArgument;
@@ -24,8 +25,10 @@ use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 
+use function array_filter;
 use function array_map;
 use function array_merge;
+use function array_unique;
 use function count;
 use function in_array;
 use function is_int;
@@ -624,7 +627,7 @@ class CallAnalyzer
      * @param  \Psalm\Storage\Assertion[] $assertions
      * @param  string $thisName
      * @param  list<PhpParser\Node\Arg> $args
-     * @param  array<string, array<string, TemplateBound>> $inferred_lower_bounds,
+     * @param  array<string, array<string, non-empty-list<TemplateBound>>> $inferred_lower_bounds,
      *
      */
     public static function applyAssertionsToContext(
@@ -670,6 +673,8 @@ class CallAnalyzer
                 $assertion_var_id = $assertion->var_id;
             }
 
+            $codebase = $statements_analyzer->getCodebase();
+
             if ($assertion_var_id) {
                 $rule = $assertion->rule[0][0];
 
@@ -688,12 +693,17 @@ class CallAnalyzer
                 }
 
                 if (isset($inferred_lower_bounds[$rule])) {
-                    foreach ($inferred_lower_bounds[$rule] as $template_map) {
-                        if ($template_map->type->hasMixed()) {
+                    foreach ($inferred_lower_bounds[$rule] as $lower_bounds) {
+                        $lower_bound_type = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+                            $lower_bounds,
+                            $codebase
+                        );
+
+                        if ($lower_bound_type->hasMixed()) {
                             continue 2;
                         }
 
-                        $replacement_atomic_types = $template_map->type->getAtomicTypes();
+                        $replacement_atomic_types = $lower_bound_type->getAtomicTypes();
 
                         if (count($replacement_atomic_types) > 1) {
                             continue 2;
@@ -748,7 +758,7 @@ class CallAnalyzer
                         $conditional,
                         $context->self,
                         $statements_analyzer,
-                        $statements_analyzer->getCodebase()
+                        $codebase
                     );
                 } else {
                     $assert_clauses = FormulaGenerator::getFormula(
@@ -778,7 +788,7 @@ class CallAnalyzer
                         $arg_value,
                         $context->self,
                         $statements_analyzer,
-                        $statements_analyzer->getCodebase()
+                        $codebase
                     )
                 );
 
@@ -800,12 +810,17 @@ class CallAnalyzer
             $asserted_keys[$var_id] = true;
         }
 
+        $codebase = $statements_analyzer->getCodebase();
+
         if ($type_assertions) {
             $template_type_map = array_map(
-                function ($type_map) {
+                function ($type_map) use ($codebase) {
                     return array_map(
-                        function ($bound) {
-                            return $bound->type;
+                        function ($bounds) use ($codebase) {
+                            return TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+                                $bounds,
+                                $codebase
+                            );
                         },
                         $type_map
                     );
@@ -842,8 +857,6 @@ class CallAnalyzer
             foreach ($changed_var_ids as $var_id => $_) {
                 if (isset($op_vars_in_scope[$var_id])) {
                     $first_appearance = $statements_analyzer->getFirstAppearance($var_id);
-
-                    $codebase = $statements_analyzer->getCodebase();
 
                     if ($first_appearance
                         && isset($context->vars_in_scope[$var_id])
@@ -896,6 +909,32 @@ class CallAnalyzer
         }
     }
 
+    /**
+     * This method looks for problems with a generated TemplateResult.
+     *
+     * The TemplateResult object contains upper bounds and lower bounds for each template param.
+     *
+     * Those upper bounds represent a series of constraints like
+     *
+     * Lower bound:
+     * T >: X (the type param T matches X, or is a supertype of X)
+     * Upper bound:
+     * T <: Y (the type param T matches Y, or is a subtype of Y)
+     * Equality (currently represented as an upper bound with a special flag)
+     * T = Z  (the template T must match Z)
+     *
+     * This method attempts to reconcile those constraints.
+     *
+     * Valid constraints:
+     *
+     * T <: int|float, T >: int --- implies T is an int
+     * T = int --- implies T is an int
+     *
+     * Invalid constraints:
+     *
+     * T <: int|string, T >: string|float --- implies T <: int and T >: float, which is impossible
+     * T = int, T = string --- implies T is a string _and_ and int, which is impossible
+     */
     public static function checkTemplateResult(
         StatementsAnalyzer $statements_analyzer,
         TemplateResult $template_result,
@@ -906,7 +945,11 @@ class CallAnalyzer
             foreach ($template_result->upper_bounds as $template_name => $defining_map) {
                 foreach ($defining_map as $defining_id => $upper_bound) {
                     if (isset($template_result->lower_bounds[$template_name][$defining_id])) {
-                        $lower_bound_type = $template_result->lower_bounds[$template_name][$defining_id]->type;
+                        $lower_bound_type = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+                            $template_result->lower_bounds[$template_name][$defining_id],
+                            $statements_analyzer->getCodebase()
+                        );
+
                         $upper_bound_type = $upper_bound->type;
 
                         $union_comparison_result = new \Psalm\Internal\Type\Comparator\TypeComparisonResult();
@@ -977,9 +1020,72 @@ class CallAnalyzer
                             }
                         }
                     } else {
-                        $template_result->lower_bounds[$template_name][$defining_id] = new TemplateBound(
-                            clone $upper_bound->type
-                        );
+                        $template_result->lower_bounds[$template_name][$defining_id] = [
+                            new TemplateBound(
+                                clone $upper_bound->type
+                            )
+                        ];
+                    }
+                }
+            }
+        }
+
+        // Attempt to identify invalid lower bounds
+        foreach ($template_result->lower_bounds as $template_name => $lower_bounds) {
+            foreach ($lower_bounds as $lower_bounds) {
+                if (count($lower_bounds) > 1) {
+                    $bounds_with_equality = array_filter(
+                        $lower_bounds,
+                        function ($lower_bound) {
+                            return !!$lower_bound->equality_bound_classlike;
+                        }
+                    );
+
+                    if (!$bounds_with_equality) {
+                        continue;
+                    }
+
+                    $equality_classlikes = [];
+                    $equality_types = [];
+
+                    foreach ($bounds_with_equality as $bound_with_equality) {
+                        $equality_classlikes[] = $bound_with_equality->equality_bound_classlike;
+                        $equality_types[] = $bound_with_equality->type->getId();
+                    }
+
+                    $equality_classlikes = array_unique($equality_classlikes);
+                    $equality_types = array_unique($equality_types);
+
+                    if (count($equality_classlikes) > 1
+                        || count($equality_types) > 1
+                    ) {
+                        if (IssueBuffer::accepts(
+                            new InvalidArgument(
+                                'Incompatible types found for ' . $template_name,
+                                $code_location,
+                                $function_id
+                            ),
+                            $statements_analyzer->getSuppressedIssues()
+                        )) {
+                            // continue
+                        }
+                    } else {
+                        foreach ($lower_bounds as $lower_bound) {
+                            if ($lower_bound->equality_bound_classlike === null) {
+                                if (!in_array($lower_bound->type->getId(), $equality_types, true)) {
+                                    if (IssueBuffer::accepts(
+                                        new InvalidArgument(
+                                            'Incompatible types found for ' . $template_name,
+                                            $code_location,
+                                            $function_id
+                                        ),
+                                        $statements_analyzer->getSuppressedIssues()
+                                    )) {
+                                        // continue
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }

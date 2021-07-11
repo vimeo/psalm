@@ -1,6 +1,9 @@
 <?php
 namespace Psalm\Storage;
 
+use Psalm\Internal\Type\TemplateBound;
+use Psalm\Internal\Type\TemplateStandinTypeReplacer;
+
 use function array_map;
 use function implode;
 
@@ -28,10 +31,13 @@ class Assertion
     }
 
     /**
-     * @param array<string, array<string, \Psalm\Internal\Type\TemplateBound>> $inferred_lower_bounds
+     * @param array<string, array<string, non-empty-list<TemplateBound>>> $inferred_lower_bounds
      */
-    public function getUntemplatedCopy(array $inferred_lower_bounds, ?string $this_var_id) : self
-    {
+    public function getUntemplatedCopy(
+        array $inferred_lower_bounds,
+        ?string $this_var_id,
+        ?\Psalm\Codebase $codebase
+    ) : self {
         return new Assertion(
             \is_string($this->var_id) && $this_var_id
                 ? \str_replace('$this->', $this_var_id . '->', $this->var_id)
@@ -42,7 +48,7 @@ class Assertion
                  *
                  * @return array{0: string}
                  */
-                function (array $rules) use ($inferred_lower_bounds) : array {
+                function (array $rules) use ($inferred_lower_bounds, $codebase) : array {
                     $first_rule = $rules[0];
 
                     if ($inferred_lower_bounds) {
@@ -52,10 +58,15 @@ class Assertion
 
                         foreach ($rule_tokens as &$rule_token) {
                             if (isset($inferred_lower_bounds[$rule_token[0]])) {
-                                foreach ($inferred_lower_bounds[$rule_token[0]] as $bound) {
+                                foreach ($inferred_lower_bounds[$rule_token[0]] as $lower_bounds) {
                                     $substitute = true;
 
-                                    $first_type = \array_values($bound->type->getAtomicTypes())[0];
+                                    $bound_type = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+                                        $lower_bounds,
+                                        $codebase
+                                    );
+
+                                    $first_type = \array_values($bound_type->getAtomicTypes())[0];
 
                                     if ($first_type instanceof \Psalm\Type\Atomic\TTemplateParam) {
                                         $rule_token[0] = $first_type->param_name;

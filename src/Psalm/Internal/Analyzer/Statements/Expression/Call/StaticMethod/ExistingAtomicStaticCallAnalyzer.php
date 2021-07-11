@@ -318,8 +318,8 @@ class ExistingAtomicStaticCallAnalyzer
                 $statements_analyzer->node_data->setIfTrueAssertions(
                     $stmt,
                     array_map(
-                        function (Assertion $assertion) use ($generic_params) : Assertion {
-                            return $assertion->getUntemplatedCopy($generic_params, null);
+                        function (Assertion $assertion) use ($generic_params, $codebase) : Assertion {
+                            return $assertion->getUntemplatedCopy($generic_params, null, $codebase);
                         },
                         $method_storage->if_true_assertions
                     )
@@ -330,8 +330,8 @@ class ExistingAtomicStaticCallAnalyzer
                 $statements_analyzer->node_data->setIfFalseAssertions(
                     $stmt,
                     array_map(
-                        function (Assertion $assertion) use ($generic_params) : Assertion {
-                            return $assertion->getUntemplatedCopy($generic_params, null);
+                        function (Assertion $assertion) use ($generic_params, $codebase) : Assertion {
+                            return $assertion->getUntemplatedCopy($generic_params, null, $codebase);
                         },
                         $method_storage->if_false_assertions
                     )
@@ -488,19 +488,25 @@ class ExistingAtomicStaticCallAnalyzer
                     )) {
                         if ($template_type->param_name === 'TFunctionArgCount') {
                             $template_result->lower_bounds[$template_type->param_name] = [
-                                'fn-' . strtolower((string)$method_id) => new TemplateBound(
-                                    Type::getInt(false, count($stmt->args))
-                                )
+                                'fn-' . strtolower((string)$method_id) => [
+                                    new TemplateBound(
+                                        Type::getInt(false, count($stmt->args))
+                                    )
+                                ]
                             ];
                         } elseif ($template_type->param_name === 'TPhpMajorVersion') {
                             $template_result->lower_bounds[$template_type->param_name] = [
-                                'fn-' . strtolower((string)$method_id) => new TemplateBound(
-                                    Type::getInt(false, $codebase->php_major_version)
-                                )
+                                'fn-' . strtolower((string)$method_id) => [
+                                    new TemplateBound(
+                                        Type::getInt(false, $codebase->php_major_version)
+                                    )
+                                ]
                             ];
                         } else {
                             $template_result->lower_bounds[$template_type->param_name] = [
-                                ($template_type->defining_class) => new TemplateBound(Type::getEmpty())
+                                ($template_type->defining_class) => [
+                                    new TemplateBound(Type::getEmpty())
+                                ]
                             ];
                         }
                     }

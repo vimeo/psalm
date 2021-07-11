@@ -754,7 +754,10 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                                 $pt_name = array_keys($parent_storage->template_types)[$pt_offset];
                                 if (isset($template_standins->lower_bounds[$pt_name][$parent_class])) {
                                     $lower_bounds[$pt_name][$parent_class] =
-                                        $template_standins->lower_bounds[$pt_name][$parent_class]->type;
+                                        TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+                                            $template_standins->lower_bounds[$pt_name][$parent_class],
+                                            $codebase
+                                        );
                                 }
                             }
                         }

@@ -534,19 +534,25 @@ class MethodCallReturnTypeFetcher
                 ) {
                     if ($template_type->param_name === 'TFunctionArgCount') {
                         $template_result->lower_bounds[$template_type->param_name] = [
-                            'fn-' . strtolower((string) $method_id) => new TemplateBound(
-                                Type::getInt(false, $arg_count)
-                            )
+                            'fn-' . strtolower((string) $method_id) => [
+                                new TemplateBound(
+                                    Type::getInt(false, $arg_count)
+                                )
+                            ]
                         ];
                     } elseif ($template_type->param_name === 'TPhpMajorVersion') {
                         $template_result->lower_bounds[$template_type->param_name] = [
-                            'fn-' . strtolower((string) $method_id) => new TemplateBound(
-                                Type::getInt(false, $codebase->php_major_version)
-                            )
+                            'fn-' . strtolower((string) $method_id) => [
+                                new TemplateBound(
+                                    Type::getInt(false, $codebase->php_major_version)
+                                )
+                            ]
                         ];
                     } else {
                         $template_result->lower_bounds[$template_type->param_name] = [
-                            ($template_type->defining_class) => new TemplateBound(Type::getEmpty())
+                            ($template_type->defining_class) => [
+                                new TemplateBound(Type::getEmpty())
+                            ]
                         ];
                     }
                 }
