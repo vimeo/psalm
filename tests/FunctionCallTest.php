@@ -2106,6 +2106,15 @@ class FunctionCallTest extends TestCase
                     $a = max($b, $c);',
                 'error_message' => 'MixedAssignment'
             ],
+            'literalFalseArgument' => [
+                '<?php
+                    function takesAString(string $s): void{
+                        echo $s;
+                    }
+
+                    takesAString(false);',
+                'error_message' => 'InvalidArgument'
+            ],
         ];
     }
 }
