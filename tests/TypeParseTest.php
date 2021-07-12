@@ -993,7 +993,7 @@ class TypeParseTest extends TestCase
 
         $this->assertSame(
             'string',
-            (string) \Psalm\Codebase::getPsalmTypeFromReflection($reflectionFunc->getReturnType())
+            (string) \Psalm\Codebase::getPsalmTypeFromReflection($reflectionFunc->getReturnType()) // @psalm-suppress PossiblyInvalidArgument
         );
     }
 

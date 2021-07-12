@@ -377,6 +377,7 @@ class Reflection
                 }
 
                 if ($reflection_return_type = $reflection_function->getReturnType()) {
+                    /** @psalm-suppress PossiblyInvalidArgument */
                     $storage->return_type = self::getPsalmTypeFromReflectionType($reflection_return_type);
                 }
             }
