@@ -1115,22 +1115,35 @@ class ArgumentAnalyzer
             }
         }
 
-        if ($input_type->isFalsable()
-            && !$param_type->hasBool()
-            && !$param_type->hasScalar()
-            && !$input_type->ignore_falsable_issues
-            && $cased_method_id !== 'echo'
-        ) {
-            if (IssueBuffer::accepts(
-                new PossiblyFalseArgument(
-                    'Argument ' . ($argument_offset + 1) . $method_identifier . ' cannot be false, possibly ' .
+        if (!$param_type->isFalsable() && $cased_method_id !== 'echo' && $cased_method_id !== 'print') {
+            if ($input_type->isFalse()) {
+                if (IssueBuffer::accepts(
+                    new InvalidArgument(
+                        'Argument ' . ($argument_offset + 1) . $method_identifier . ' cannot be false, ' .
                         'false value provided',
-                    $arg_location,
-                    $cased_method_id
-                ),
-                $statements_analyzer->getSuppressedIssues()
-            )) {
-                // fall through
+                        $arg_location,
+                        $cased_method_id
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+
+                return null;
+            }
+
+            if ($input_type->isFalsable() && !$input_type->ignore_falsable_issues) {
+                if (IssueBuffer::accepts(
+                    new PossiblyFalseArgument(
+                        'Argument ' . ($argument_offset + 1) . $method_identifier . ' cannot be false, possibly ' .
+                        'false value provided',
+                        $arg_location,
+                        $cased_method_id
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
             }
         }
 
