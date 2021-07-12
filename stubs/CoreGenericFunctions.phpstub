@@ -589,11 +589,15 @@ function implode($glue, array $pieces = []) : string {}
  * @psalm-pure
  *
  * @param string|array $glue
+ * @param array<string|float|int|stringable-object|null|bool> $pieces
  *
  * @return (
  *     $glue is non-empty-string
  *     ? ($pieces is non-empty-array
- *         ? non-empty-string
+ *         ? ($pieces is array<literal-string|literal-int>
+ *             ? ($glue is literal-string ? non-empty-literal-string : non-empty-string)
+ *             : non-empty-string
+ *         )
  *         : string)
  *     : string
  * )
@@ -849,7 +853,7 @@ function strrev(string $string): string {}
  * @param 0|1|2 $format
  * @return (
  *     $format is 0 ?
- *     int : 
+ *     int :
  *     (
  *         $format is 1 ?
  *         list<string> :
