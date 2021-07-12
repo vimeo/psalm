@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
@@ -6,6 +7,8 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\VariableUseGraph;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Issue\InvalidOperand;
 use Psalm\Issue\PossiblyInvalidOperand;
 use Psalm\IssueBuffer;
@@ -20,7 +23,7 @@ class BitwiseNotAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\BitwiseNot $stmt,
         Context $context
-    ) : bool {
+    ): bool {
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
             return false;
         }
@@ -89,6 +92,34 @@ class BitwiseNotAnalyzer
             }
         }
 
+        self::addDataFlow($statements_analyzer, $stmt, $stmt->expr);
+
         return true;
+    }
+
+    private static function addDataFlow(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $stmt,
+        PhpParser\Node\Expr $value,
+        string $type = 'bitwisenot'
+    ): void {
+        $result_type = $statements_analyzer->node_data->getType($stmt);
+        if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph && $result_type) {
+            $var_location = new CodeLocation($statements_analyzer, $stmt);
+
+            $stmt_value_type = $statements_analyzer->node_data->getType($value);
+
+            $new_parent_node = DataFlowNode::getForAssignment($type, $var_location);
+            $statements_analyzer->data_flow_graph->addNode($new_parent_node);
+            $result_type->parent_nodes = [
+                $new_parent_node->id => $new_parent_node,
+            ];
+
+            if ($stmt_value_type && $stmt_value_type->parent_nodes) {
+                foreach ($stmt_value_type->parent_nodes as $parent_node) {
+                    $statements_analyzer->data_flow_graph->addPath($parent_node, $new_parent_node, $type);
+                }
+            }
+        }
     }
 }
