@@ -1610,6 +1610,19 @@ class ArrayAssignmentTest extends TestCase
                         }
                     }',
             ],
+            'InitVariableInOffset'  => [
+                '<?php
+                    $_a = [
+                        $_init_var = "a" => [
+                            "value" => $_init_var,
+                        ],
+                    ];
+
+                    /** @param array{a: array{value: "a"}} $a */
+                    function expectArray(array $a): array{
+                        return $a;
+                    }',
+            ],
         ];
     }
 
