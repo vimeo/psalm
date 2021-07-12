@@ -1115,7 +1115,11 @@ class ArgumentAnalyzer
             }
         }
 
-        if (!$param_type->isFalsable() && $cased_method_id !== 'echo' && $cased_method_id !== 'print') {
+        if (!$param_type->isFalsable() &&
+            !$param_type->hasBool() &&
+            $cased_method_id !== 'echo' &&
+            $cased_method_id !== 'print'
+        ) {
             if ($input_type->isFalse()) {
                 if (IssueBuffer::accepts(
                     new InvalidArgument(
