@@ -1117,6 +1117,7 @@ class ArgumentAnalyzer
 
         if (!$param_type->isFalsable() &&
             !$param_type->hasBool() &&
+            !$param_type->hasScalar() &&
             $cased_method_id !== 'echo' &&
             $cased_method_id !== 'print'
         ) {
@@ -1124,7 +1125,7 @@ class ArgumentAnalyzer
                 if (IssueBuffer::accepts(
                     new InvalidArgument(
                         'Argument ' . ($argument_offset + 1) . $method_identifier . ' cannot be false, ' .
-                        'false value provided',
+                        $param_type->getId() . ' value provided',
                         $arg_location,
                         $cased_method_id
                     ),
@@ -1140,7 +1141,7 @@ class ArgumentAnalyzer
                 if (IssueBuffer::accepts(
                     new PossiblyFalseArgument(
                         'Argument ' . ($argument_offset + 1) . $method_identifier . ' cannot be false, possibly ' .
-                        'false value provided',
+                        $param_type->getId() . ' value provided',
                         $arg_location,
                         $cased_method_id
                     ),
