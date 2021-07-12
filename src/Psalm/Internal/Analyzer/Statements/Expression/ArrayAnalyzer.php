@@ -228,10 +228,13 @@ class ArrayAnalyzer
     private static function analyzeArrayItem(
         StatementsAnalyzer $statements_analyzer,
         Context $context,
-        ArrayCreationInfo $array_creation_info,
+        ArrayCreationInfo &$array_creation_info,
         PhpParser\Node\Expr\ArrayItem $item,
         Codebase $codebase
     ) : void {
+        // we clone a temp ArrayCreationInfo we will discard if we need to handle unpacking later
+        $temp_array_creation_info = clone $array_creation_info;
+
         $item_key_value = null;
         $item_key_type = null;
         $item_is_list_item = false;
@@ -261,8 +264,8 @@ class ArrayAnalyzer
                     $key_type = Type::getInt(false, (int) $item->key->value);
                 }
 
-                $array_creation_info->item_key_atomic_types = array_merge(
-                    $array_creation_info->item_key_atomic_types,
+                $temp_array_creation_info->item_key_atomic_types = array_merge(
+                    $temp_array_creation_info->item_key_atomic_types,
                     array_values($key_type->getAtomicTypes())
                 );
 
@@ -271,29 +274,29 @@ class ArrayAnalyzer
                     $item_key_value = $item_key_literal_type->value;
 
                     if ($item_key_literal_type instanceof Type\Atomic\TLiteralClassString) {
-                        $array_creation_info->class_strings[$item_key_value] = true;
+                        $temp_array_creation_info->class_strings[$item_key_value] = true;
                     }
                 } elseif ($key_type->isSingleIntLiteral()) {
                     $item_key_value = $key_type->getSingleIntLiteral()->value;
 
-                    if ($item_key_value >= $array_creation_info->int_offset) {
-                        if ($item_key_value === $array_creation_info->int_offset) {
+                    if ($item_key_value >= $temp_array_creation_info->int_offset) {
+                        if ($item_key_value === $temp_array_creation_info->int_offset) {
                             $item_is_list_item = true;
                         }
-                        $array_creation_info->int_offset = $item_key_value + 1;
+                        $temp_array_creation_info->int_offset = $item_key_value + 1;
                     }
                 }
             }
         } else {
             $item_is_list_item = true;
-            $item_key_value = $array_creation_info->int_offset++;
-            $array_creation_info->item_key_atomic_types[] = new Type\Atomic\TLiteralInt($item_key_value);
+            $item_key_value = $temp_array_creation_info->int_offset++;
+            $temp_array_creation_info->item_key_atomic_types[] = new Type\Atomic\TLiteralInt($item_key_value);
         }
 
-        $array_creation_info->all_list = $array_creation_info->all_list && $item_is_list_item;
+        $temp_array_creation_info->all_list = $temp_array_creation_info->all_list && $item_is_list_item;
 
         if ($item_key_value !== null) {
-            if (isset($array_creation_info->array_keys[$item_key_value])) {
+            if (isset($temp_array_creation_info->array_keys[$item_key_value])) {
                 if (IssueBuffer::accepts(
                     new DuplicateArrayKey(
                         'Key \'' . $item_key_value . '\' already exists on array',
@@ -305,7 +308,7 @@ class ArrayAnalyzer
                 }
             }
 
-            $array_creation_info->array_keys[$item_key_value] = true;
+            $temp_array_creation_info->array_keys[$item_key_value] = true;
         }
 
         if (ExpressionAnalyzer::analyze($statements_analyzer, $item->value, $context) === false) {
@@ -351,6 +354,9 @@ class ArrayAnalyzer
             }
 
             return;
+        } else {
+            //we keep the cloned ArrayCreationInfo
+            $array_creation_info = $temp_array_creation_info;
         }
 
         if (($data_flow_graph = $statements_analyzer->data_flow_graph)
