@@ -34,6 +34,13 @@ class NonComparisonOpAnalyzer
             $stmt_type = Type::getString();
 
             $statements_analyzer->node_data->setType($stmt, $stmt_type);
+            BinaryOpAnalyzer::addDataFlow(
+                $statements_analyzer,
+                $stmt,
+                $stmt->left,
+                $stmt->right,
+                'nondivop'
+            );
 
             return;
         }

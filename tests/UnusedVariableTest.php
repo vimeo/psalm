@@ -2402,6 +2402,28 @@ class UnusedVariableTest extends TestCase
                         echo $key . " " . $value;
                     }',
             ],
+            'intAndBitwiseNotOperator' => [
+                '<?php
+                    function foo() : int
+                    {
+                        $bitmask = 0x1;
+                        $bytes = 2;
+                        $ret = $bytes | ~$bitmask;
+                        return $ret;
+                    }'
+            ],
+            'stringAndBitwiseAndOperator' => [
+                '<?php
+                    function randomBits() : string
+                    {
+                        $bitmask = \chr(0xFF >> 1);
+
+                        $randomBytes    = random_bytes(1);
+                        $randomBytes[0] = $randomBytes[0] & $bitmask;
+
+                        return $randomBytes;
+                    }'
+            ],
         ];
     }
 
