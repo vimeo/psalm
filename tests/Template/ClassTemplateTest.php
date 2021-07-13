@@ -2872,7 +2872,7 @@ class ClassTemplateTest extends TestCase
             ],
             'multipleMatchingObjectsInUnion' => [
                 '<?php
-                    /** @template T */
+                    /** @template-covariant T */
                     interface Container {
                         /** @return T */
                         public function get();
@@ -3458,6 +3458,101 @@ class ClassTemplateTest extends TestCase
                     takesContainer($me);
 
                     if ($me->data["name"] === "David") {}'
+            ],
+            'allowCovariantBoundsMismatchSameContainers' => [
+                '<?php
+                    /**
+                     * @param Collection<Dog> $c
+                     * @param Collection<Cat> $d
+                     */
+                    function bar(Collection $c, Collection $d): Dog|Cat {
+                        return foo($c, $d);
+                    }
+
+                    /** @template-covariant T of object */
+                    interface Collection {
+                        /** @return T */
+                        public function get(): object;
+                    }
+
+                    class Cat {}
+                    class Dog {}
+
+                    /**
+                     * @template T of object
+                     * @param Collection<T> $c
+                     * @param Collection<T> $d
+                     * @return T
+                     */
+                    function foo(Collection $c, Collection $d): object {
+                        return rand(0, 1) ? $c->get() : $d->get();
+                    }',
+            ],
+            'allowCovariantBoundsMismatchDifferentContainers' => [
+                '<?php
+                    /**
+                     * @param Collection1<Dog> $c
+                     * @param Collection2<Cat> $d
+                     */
+                    function bar(Collection1 $c, Collection2 $d): Dog|Cat {
+                        return foo($c, $d);
+                    }
+
+                    /** @template-covariant T of object */
+                    interface Collection1 {
+                        /** @return T */
+                        public function get(): object;
+                    }
+
+                    /** @template-covariant T of object */
+                    interface Collection2 {
+                        /** @return T */
+                        public function get(): object;
+                    }
+
+                    class Cat {}
+                    class Dog {}
+
+                    /**
+                     * @template T of object
+                     * @param Collection1<T> $c
+                     * @param Collection2<T> $d
+                     * @return T
+                     */
+                    function foo(Collection1 $c, Collection2 $d): object {
+                        return rand(0, 1) ? $c->get() : $d->get();
+                    }',
+            ],
+            'allowCovariantBoundsMismatchContainerAndObject' => [
+                '<?php
+                    /**
+                     * @param Collection<Cat> $d
+                     */
+                    function bar(Dog $c, Collection $d): Dog|Cat {
+                        $animal = foo($c, $d);
+                        if ($animal instanceof Dog) {}
+                        if ($animal instanceof Cat) {}
+                        return $animal;
+                    }
+
+                    /** @template-covariant T of object */
+                    interface Collection {
+                        /** @return T */
+                        public function get(): object;
+                    }
+
+                    class Cat {}
+                    class Dog {}
+
+                    /**
+                     * @template T of object
+                     * @param T $c
+                     * @param Collection<T> $d
+                     * @return T
+                     */
+                    function foo(object $c, Collection $d): object {
+                        return rand(0, 1) ? $c : $d->get();
+                    }',
             ],
         ];
     }
@@ -4120,6 +4215,104 @@ class ClassTemplateTest extends TestCase
                     $a = new A(function() { return "a";});
                     $a->setCallback(function() { return "b";});',
                 'error_message' => 'InvalidScalarArgument',
+            ],
+            'preventBoundsMismatchDifferentContainers' => [
+                '<?php
+                    /**
+                     * @param Collection1<Dog> $c
+                     * @param Collection2<Cat> $d
+                     */
+                    function bar(Collection1 $c, Collection2 $d): void {
+                        foo($c, $d);
+                    }
+
+                    /** @template T of object */
+                    interface Collection1 {
+                        /** @param T $item */
+                        public function add(object $item): void;
+                    }
+
+                    /** @template T of object */
+                    interface Collection2 {
+                        /** @param T $item */
+                        public function add(object $item): void;
+
+                        /** @return T */
+                        public function get(): object;
+                    }
+
+                    class Cat {}
+                    class Dog {}
+
+                    /**
+                     * @template T of object
+                     * @param Collection1<T> $c
+                     * @param Collection2<T> $d
+                     */
+                    function foo(Collection1 $c, Collection2 $d): void {
+                        $c->add($d->get());
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'preventBoundsMismatchSameContainers' => [
+                '<?php
+                    /**
+                     * @param Collection<Dog> $c
+                     * @param Collection<Cat> $d
+                     */
+                    function bar(Collection $c, Collection $d): void {
+                        foo($c, $d);
+                    }
+
+                    /** @template T of object */
+                    interface Collection {
+                        /** @param T $item */
+                        public function add(object $item): void;
+
+                        /** @return T */
+                        public function get(): object;
+                    }
+
+                    class Cat {}
+                    class Dog {}
+
+                    /**
+                     * @template T of object
+                     * @param Collection<T> $c
+                     * @param Collection<T> $d
+                     */
+                    function foo(Collection $c, Collection $d): void {
+                        $c->add($d->get());
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'preventBoundsMismatchDifferentBoundLevels' => [
+                '<?php
+                    /**
+                     * @param Collection<Dog> $c
+                     */
+                    function bar(Collection $c): void {
+                        foo($c, new Cat());
+                    }
+
+                    /** @template T of object */
+                    interface Collection {
+                        /** @param T $item */
+                        public function add(object $item): void;
+                    }
+
+                    class Cat {}
+                    class Dog {}
+
+                    /**
+                     * @template T of object
+                     * @param Collection<T> $c
+                     * @param T $d
+                     */
+                    function foo(Collection $c, object $d): void {
+                        $c->add($d);
+                    }',
+                'error_message' => 'InvalidArgument',
             ],
         ];
     }

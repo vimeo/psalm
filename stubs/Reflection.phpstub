@@ -76,6 +76,18 @@ class ReflectionProperty implements Reflector
      * @return array<ReflectionAttribute<TClass>>
      */
     public function getAttributes(?string $name = null, int $flags = 0): array {}
+
+    /**
+     * @since 7.4
+     * @psalm-assert-if-true ReflectionType $this->getType()
+     */
+    public function hasType() : bool {}
+
+    /**
+     * @since 7.4
+     * @psalm-mutation-free
+     */
+    public function getType() : ?ReflectionType {}
 }
 
 class ReflectionMethod implements Reflector

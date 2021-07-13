@@ -108,3 +108,47 @@ function isNull($value): bool {
   return ($value === null);
 }
 ```
+
+### Asserting return values of methods
+
+You can also use the `@psalm-assert-if-true` and `@psalm-assert-if-false` annotations to assert return values of
+methods inside classes. As you can see, Psalm even allows you to specify multiple annotations in the same DocBlock:
+
+```php
+<?php
+class Result {
+    /**
+     * @var ?Exception
+     */
+    private $exception;
+
+    /**
+     * @psalm-assert-if-true Exception $this->exception
+     * @psalm-assert-if-true Exception $this->getException()
+     */
+    public function hasException(): bool {
+        return $this->exception !== null;
+    }
+
+    public function getException(): ?Exception {
+        return $this->exception;
+    }
+
+    public function foo(): void {
+        if( $this->hasException() ) {
+            // Psalm now knows that $this->exception is an instance of Exception
+            echo $this->exception->getMessage();
+        }
+    }
+}
+
+$result = new Result;
+
+if( $result->hasException() ) {
+    // Psalm now knows that $result->getException() will return an instance of Exception
+    echo $result->getException()->getMessage();
+}
+```
+
+Please note that the example above only works if you enable [method call memoization](https://psalm.dev/docs/running_psalm/configuration/#memoizemethodcallresults)
+in the config file or annotate the class as [immutable](https://psalm.dev/docs/annotating_code/supported_annotations/#psalm-immutable).

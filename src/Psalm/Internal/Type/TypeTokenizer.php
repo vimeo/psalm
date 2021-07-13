@@ -384,6 +384,10 @@ class TypeTokenizer
                 continue;
             }
 
+            if ($string_type_token[0][0] === '-' && is_numeric($string_type_token[0])) {
+                continue;
+            }
+
             if (isset($type_tokens[$i + 1])
                 && $type_tokens[$i + 1][0] === ':'
                 && isset($type_tokens[$i - 1])

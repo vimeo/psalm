@@ -618,22 +618,21 @@ final class Psalm
     ): array {
         fwrite(STDERR, 'Writing error baseline to file...' . PHP_EOL);
 
-        ErrorBaseline::create(
-            new \Psalm\Internal\Provider\FileProvider,
-            $options['set-baseline'],
-            IssueBuffer::getIssuesData(),
-            $config->include_php_versions_in_error_baseline || isset($options['include-php-versions'])
-        );
-
         try {
             $issue_baseline = ErrorBaseline::read(
                 new \Psalm\Internal\Provider\FileProvider,
                 $options['set-baseline']
             );
         } catch (\Psalm\Exception\ConfigException $e) {
-            fwrite(STDERR, 'Failed to read created baseline' . PHP_EOL);
-            exit(1);
+            $issue_baseline = [];
         }
+
+        ErrorBaseline::create(
+            new \Psalm\Internal\Provider\FileProvider,
+            $options['set-baseline'],
+            IssueBuffer::getIssuesData(),
+            $config->include_php_versions_in_error_baseline || isset($options['include-php-versions'])
+        );
 
         fwrite(STDERR, "Baseline saved to {$options['set-baseline']}.");
 

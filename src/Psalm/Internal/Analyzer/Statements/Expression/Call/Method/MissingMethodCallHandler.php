@@ -39,7 +39,7 @@ class MissingMethodCallHandler
                 $statements_analyzer,
                 $method_id->fq_class_name,
                 $method_id->method_name,
-                $stmt->args,
+                $stmt,
                 $context,
                 new CodeLocation($statements_analyzer->getSource(), $stmt->name)
             );

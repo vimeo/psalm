@@ -589,11 +589,15 @@ function implode($glue, array $pieces = []) : string {}
  * @psalm-pure
  *
  * @param string|array $glue
+ * @param array<string|float|int|stringable-object|null|bool> $pieces
  *
  * @return (
  *     $glue is non-empty-string
  *     ? ($pieces is non-empty-array
- *         ? non-empty-string
+ *         ? ($pieces is array<literal-string|literal-int>
+ *             ? ($glue is literal-string ? non-empty-literal-string : non-empty-string)
+ *             : non-empty-string
+ *         )
  *         : string)
  *     : string
  * )
@@ -846,6 +850,22 @@ function strrev(string $string): string {}
 /**
  * @psalm-pure
  *
+ * @param 0|1|2 $format
+ * @return (
+ *     $format is 0 ?
+ *     int :
+ *     (
+ *         $format is 1 ?
+ *         list<string> :
+ *         array<int, string>
+ *     )
+ * )
+ */
+function str_word_count(string $string, int $format = 0, string|null $characters = null) {}
+
+/**
+ * @psalm-pure
+ *
  * @param string|string[] $pattern
  * @param string|array<string|int|float> $replacement
  * @param string|array<string|int|float> $subject
@@ -871,7 +891,7 @@ function preg_replace($search, $replace, $subject, int $limit = -1, &$count = nu
 
 /**
  * @param string|string[] $search
- * @param callable(array<int, string>):string $replace
+ * @param callable(string[]):string $replace
  * @param string|array<string|int|float> $subject
  * @param int $count
  * @return ($subject is array ? array<string>|null : string|null)

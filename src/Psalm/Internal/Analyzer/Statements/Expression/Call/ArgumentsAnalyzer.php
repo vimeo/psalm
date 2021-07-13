@@ -40,6 +40,7 @@ use function array_reverse;
 use function count;
 use function in_array;
 use function is_string;
+use function reset;
 use function strpos;
 use function strtolower;
 
@@ -176,7 +177,7 @@ class ArgumentsAnalyzer
             if (($arg->value instanceof PhpParser\Node\Expr\Closure
                     || $arg->value instanceof PhpParser\Node\Expr\ArrowFunction)
                 && $template_result
-                && $template_result->upper_bounds
+                && $template_result->lower_bounds
                 && $param
                 && !$arg->value->getDocComment()
             ) {
@@ -268,12 +269,12 @@ class ArgumentsAnalyzer
             $context->calling_method_id ?: $context->calling_function_id
         );
 
-        if ($replace_template_result->upper_bounds) {
+        if ($replace_template_result->lower_bounds) {
             if (!$template_result) {
                 $template_result = new TemplateResult([], []);
             }
 
-            $template_result->upper_bounds += $replace_template_result->upper_bounds;
+            $template_result->lower_bounds += $replace_template_result->lower_bounds;
         }
     }
 
@@ -301,7 +302,7 @@ class ArgumentsAnalyzer
         ) {
             $function_like_params = [];
 
-            foreach ($template_result->upper_bounds as $template_name => $_) {
+            foreach ($template_result->lower_bounds as $template_name => $_) {
                 $function_like_params[] = new \Psalm\Storage\FunctionLikeParameter(
                     'function',
                     false,
@@ -327,15 +328,18 @@ class ArgumentsAnalyzer
 
         $replace_template_result = new \Psalm\Internal\Type\TemplateResult(
             array_map(
-                function ($template_map) {
+                function ($template_map) use ($codebase) {
                     return array_map(
-                        function ($bound) {
-                            return $bound->type;
+                        function ($lower_bounds) use ($codebase) {
+                            return \Psalm\Internal\Type\TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+                                $lower_bounds,
+                                $codebase
+                            );
                         },
                         $template_map
                     );
                 },
-                $template_result->upper_bounds
+                $template_result->lower_bounds
             ),
             []
         );
@@ -562,9 +566,11 @@ class ArgumentsAnalyzer
         $class_generic_params = [];
 
         if ($class_template_result) {
-            foreach ($class_template_result->upper_bounds as $template_name => $type_map) {
-                foreach ($type_map as $class => $bound) {
-                    $class_generic_params[$template_name][$class] = clone $bound->type;
+            foreach ($class_template_result->lower_bounds as $template_name => $type_map) {
+                foreach ($type_map as $class => $lower_bounds) {
+                    if (count($lower_bounds) === 1) {
+                        $class_generic_params[$template_name][$class] = clone reset($lower_bounds)->type;
+                    }
                 }
             }
         }
@@ -987,7 +993,7 @@ class ArgumentsAnalyzer
                         $context->calling_method_id ?: $context->calling_function_id
                     );
 
-                    if ($template_result->upper_bounds) {
+                    if ($template_result->lower_bounds) {
                         TemplateInferredTypeReplacer::replace(
                             $original_by_ref_type,
                             $template_result,
@@ -1012,7 +1018,7 @@ class ArgumentsAnalyzer
                         $context->calling_method_id ?: $context->calling_function_id
                     );
 
-                    if ($template_result->upper_bounds) {
+                    if ($template_result->lower_bounds) {
                         TemplateInferredTypeReplacer::replace(
                             $original_by_ref_out_type,
                             $template_result,

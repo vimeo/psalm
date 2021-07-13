@@ -125,12 +125,11 @@ class FunctionReturnTypeProvider
 
     /**
      * @param  non-empty-string $function_id
-     * @param  list<PhpParser\Node\Arg>  $call_args
      */
     public function getReturnType(
         StatementsSource $statements_source,
         string $function_id,
-        array $call_args,
+        PhpParser\Node\Expr\FuncCall $stmt,
         Context $context,
         CodeLocation $code_location
     ): ?Type\Union {
@@ -138,7 +137,7 @@ class FunctionReturnTypeProvider
             $return_type = $function_handler(
                 $statements_source,
                 $function_id,
-                $call_args,
+                $stmt->args,
                 $context,
                 $code_location
             );
@@ -152,7 +151,7 @@ class FunctionReturnTypeProvider
             $event = new FunctionReturnTypeProviderEvent(
                 $statements_source,
                 $function_id,
-                $call_args,
+                $stmt,
                 $context,
                 $code_location
             );

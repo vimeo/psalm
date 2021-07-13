@@ -106,15 +106,14 @@ class MethodReturnTypeProvider
     }
 
     /**
-     * @param list<PhpParser\Node\Arg>  $call_args
+     * @param PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $stmt
      * @param  ?array<Type\Union> $template_type_parameters
-     *
      */
     public function getReturnType(
         StatementsSource $statements_source,
         string $fq_classlike_name,
         string $method_name,
-        array $call_args,
+        $stmt,
         Context $context,
         CodeLocation $code_location,
         ?array $template_type_parameters = null,
@@ -126,7 +125,7 @@ class MethodReturnTypeProvider
                 $statements_source,
                 $fq_classlike_name,
                 strtolower($method_name),
-                $call_args,
+                $stmt->args,
                 $context,
                 $code_location,
                 $template_type_parameters,
@@ -144,7 +143,7 @@ class MethodReturnTypeProvider
                 $statements_source,
                 $fq_classlike_name,
                 strtolower($method_name),
-                $call_args,
+                $stmt,
                 $context,
                 $code_location,
                 $template_type_parameters,

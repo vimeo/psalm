@@ -630,6 +630,16 @@ class TaintTest extends TestCase
                     echo U::foo($_GET["foo"], true);
                     echo U::foo($_GET["foo"]);'
             ],
+            'keysAreNotTainted' => [
+                '<?php
+                    function takesArray(array $arr): void {
+                        foreach ($arr as $key => $_) {
+                            echo $key;
+                        }
+                    }
+
+                    takesArray(["good" => $_GET["bad"]]);'
+            ],
         ];
     }
 
@@ -2128,15 +2138,15 @@ class TaintTest extends TestCase
                     $res = Wdb::query("SELECT blah FROM tablea ORDER BY ". $order. " DESC");',
                 'error_message' => 'TaintedSql',
             ],
-            'taintArrayKey' => [
+            'keysAreTainted' => [
                 '<?php
-                    function doTheMagic(array $values) {
-                        foreach ($values as $key => $value) {
-                            echo $key . " " . $value;
+                    function takesArray(array $arr): void {
+                        foreach ($arr as $key => $_) {
+                            echo $key;
                         }
                     }
 
-                    doTheMagic([(string)$_GET["bad"] => "foo"]);',
+                    takesArray([$_GET["bad"] => "good"]);',
                 'error_message' => 'TaintedHtml',
             ],
             'taintArrayKeyWithExplicitSink' => [

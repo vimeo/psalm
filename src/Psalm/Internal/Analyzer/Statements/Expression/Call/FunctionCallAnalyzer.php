@@ -265,7 +265,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
         );
 
         if ($function_call_info->function_storage) {
-            $inferred_upper_bounds = $template_result->upper_bounds;
+            $inferred_lower_bounds = $template_result->lower_bounds;
 
             if ($function_call_info->function_storage->assertions && $function_name instanceof PhpParser\Node\Name) {
                 self::applyAssertionsToContext(
@@ -273,7 +273,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     null,
                     $function_call_info->function_storage->assertions,
                     $stmt->args,
-                    $inferred_upper_bounds,
+                    $inferred_lower_bounds,
                     $context,
                     $statements_analyzer
                 );
@@ -283,8 +283,8 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 $statements_analyzer->node_data->setIfTrueAssertions(
                     $stmt,
                     array_map(
-                        function (Assertion $assertion) use ($inferred_upper_bounds) : Assertion {
-                            return $assertion->getUntemplatedCopy($inferred_upper_bounds ?: [], null);
+                        function (Assertion $assertion) use ($inferred_lower_bounds, $codebase) : Assertion {
+                            return $assertion->getUntemplatedCopy($inferred_lower_bounds ?: [], null, $codebase);
                         },
                         $function_call_info->function_storage->if_true_assertions
                     )
@@ -295,8 +295,8 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 $statements_analyzer->node_data->setIfFalseAssertions(
                     $stmt,
                     array_map(
-                        function (Assertion $assertion) use ($inferred_upper_bounds) : Assertion {
-                            return $assertion->getUntemplatedCopy($inferred_upper_bounds ?: [], null);
+                        function (Assertion $assertion) use ($inferred_lower_bounds, $codebase) : Assertion {
+                            return $assertion->getUntemplatedCopy($inferred_lower_bounds ?: [], null, $codebase);
                         },
                         $function_call_info->function_storage->if_false_assertions
                     )

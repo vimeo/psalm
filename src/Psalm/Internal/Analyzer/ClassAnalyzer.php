@@ -721,18 +721,18 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         : clone $guide_property_storage->type;
 
                     // Set upper bounds for all templates
-                    $upper_bounds = [];
+                    $lower_bounds = [];
                     $extended_templates = $storage->template_extended_params ?? [];
                     foreach ($extended_templates as $et_name => $et_array) {
                         foreach ($et_array as $et_class_name => $extended_template) {
-                            if (!isset($upper_bounds[$et_class_name][$et_name])) {
-                                $upper_bounds[$et_class_name][$et_name] = $extended_template;
+                            if (!isset($lower_bounds[$et_class_name][$et_name])) {
+                                $lower_bounds[$et_class_name][$et_name] = $extended_template;
                             }
                         }
                     }
 
                     // Get actual types used for templates (to support @template-covariant)
-                    $template_standins = new \Psalm\Internal\Type\TemplateResult($upper_bounds, []);
+                    $template_standins = new \Psalm\Internal\Type\TemplateResult($lower_bounds, []);
                     TemplateStandinTypeReplacer::replace(
                         $guide_property_type,
                         $template_standins,
@@ -752,16 +752,19 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                                 // If template_covariants is set template_types should also be set
                                 assert($parent_storage->template_types !== null);
                                 $pt_name = array_keys($parent_storage->template_types)[$pt_offset];
-                                if (isset($template_standins->upper_bounds[$pt_name][$parent_class])) {
-                                    $upper_bounds[$pt_name][$parent_class] =
-                                        $template_standins->upper_bounds[$pt_name][$parent_class]->type;
+                                if (isset($template_standins->lower_bounds[$pt_name][$parent_class])) {
+                                    $lower_bounds[$pt_name][$parent_class] =
+                                        TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+                                            $template_standins->lower_bounds[$pt_name][$parent_class],
+                                            $codebase
+                                        );
                                 }
                             }
                         }
                         $parent_class = $parent_storage->parent_class;
                     }
 
-                    $template_result = new \Psalm\Internal\Type\TemplateResult([], $upper_bounds);
+                    $template_result = new \Psalm\Internal\Type\TemplateResult([], $lower_bounds);
 
                     TemplateInferredTypeReplacer::replace(
                         $guide_property_type,

@@ -1299,7 +1299,7 @@ class FunctionCallTest extends TestCase
                     function foo(string $s) : string {
                         return preg_replace_callback(
                             \'/<files (psalm-version="[^"]+") (?:php-version="(.+)">\n)/\',
-                            /** @param array<int, string> $matches */
+                            /** @param string[] $matches */
                             function (array $matches) : string {
                                 return $matches[1];
                             },
@@ -2105,6 +2105,15 @@ class FunctionCallTest extends TestCase
                     /** @var mixed $c */;
                     $a = max($b, $c);',
                 'error_message' => 'MixedAssignment'
+            ],
+            'literalFalseArgument' => [
+                '<?php
+                    function takesAString(string $s): void{
+                        echo $s;
+                    }
+
+                    takesAString(false);',
+                'error_message' => 'InvalidArgument'
             ],
         ];
     }

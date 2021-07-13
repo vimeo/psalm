@@ -1325,6 +1325,28 @@ class ArrayFunctionCallTest extends TestCase
                     '$function_call_result' => 'int',
                 ],
             ],
+            'arrayReduceStaticMethods' => [
+                '<?php
+                    $arr = [2, 3, 4, 5];
+
+                    class C {
+                        public static function multiply (int $carry, int $item) : int {
+                            return $carry * $item;
+                        }
+
+                        public static function multiplySelf(array $arr): int {
+                            return array_reduce($arr, [self::class, "multiply"], 1);
+                        }
+
+                        public static function multiplyStatic(array $arr): int {
+                            return array_reduce($arr, [static::class, "multiply"], 1);
+                        }
+                    }
+
+                    $self_call_result = C::multiplySelf($arr);
+                    $static_call_result = C::multiplyStatic($arr);',
+                'assertions' => [],
+            ],
             'arrayReduceMixedReturn' => [
                 '<?php
                     $arr = [2, 3, 4, 5];
@@ -1423,7 +1445,7 @@ class ArrayFunctionCallTest extends TestCase
                     function Foo(DateTime ...$dateTimes) : array {
                         return array_map(
                             function ($dateTime) {
-                                return (string) ($dateTime->format("c"));
+                                return ($dateTime->format("c"));
                             },
                             $dateTimes
                         );
@@ -1434,13 +1456,13 @@ class ArrayFunctionCallTest extends TestCase
                     /** @return array<string> */
                     function Foo(DateTime ...$dateTimes) : array {
                         return array_map(
-                            fn ($dateTime) => (string) ($dateTime->format("c")),
+                            fn ($dateTime) => ($dateTime->format("c")),
                             $dateTimes
                         );
                     }',
                 'assertions' => [],
                 'error_levels' => [],
-                '7.4',
+                'php_version' => '7.4',
             ],
             'arrayPad' => [
                 '<?php
@@ -1907,6 +1929,26 @@ class ArrayFunctionCallTest extends TestCase
                             $data
                         );
                     }'
+            ],
+            'arrayMapShapeAndGenericArray' => [
+                '<?php
+                    /** @return string[] */
+                    function getLine(): array { return ["a", "b"]; }
+
+                    $line = getLine();
+
+                    if (empty($line[0])) { // converts array<string> to array{0:string}<string>
+                        throw new InvalidArgumentException;
+                    }
+
+                    $line = array_map( // should not destroy <string> part
+                        function($val) { return (int)$val; },
+                        $line
+                    );
+                ',
+                'assertions' => [
+                    '$line===' => 'array{0: int}<array-key, int>',
+                ],
             ],
         ];
     }

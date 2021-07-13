@@ -4,7 +4,8 @@ namespace Psalm\Internal\Analyzer\Statements\Expression;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
+use Psalm\Internal\Analyzer\FunctionAnalyzer;
+use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Issue\UndefinedConstant;
 use Psalm\IssueBuffer;
@@ -66,8 +67,17 @@ class MagicConstAnalyzer
             || $stmt instanceof PhpParser\Node\Scalar\MagicConst\Function_
         ) {
             $source = $statements_analyzer->getSource();
-            if ($source instanceof FunctionLikeAnalyzer) {
-                $statements_analyzer->node_data->setType($stmt, Type::getString($source->getId()));
+            if ($source instanceof MethodAnalyzer) {
+                if ($stmt instanceof PhpParser\Node\Scalar\MagicConst\Function_) {
+                    $statements_analyzer->node_data->setType($stmt, Type::getString($source->getMethodName()));
+                } else {
+                    $statements_analyzer->node_data->setType(
+                        $stmt,
+                        Type::getString($source->getCorrectlyCasedMethodId())
+                    );
+                }
+            } elseif ($source instanceof FunctionAnalyzer) {
+                $statements_analyzer->node_data->setType($stmt, Type::getString($source->getCorrectlyCasedMethodId()));
             } else {
                 $statements_analyzer->node_data->setType($stmt, new Type\Union([new Type\Atomic\TCallableString]));
             }

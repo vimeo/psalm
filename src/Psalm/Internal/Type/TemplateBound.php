@@ -18,7 +18,7 @@ class TemplateBound
      *
      * The shallowest-appearance of the template takes prominence when inferring the type of T.
      *
-     * @var ?int
+     * @var int
      */
     public $appearance_depth;
 
@@ -31,10 +31,22 @@ class TemplateBound
      */
     public $arg_offset;
 
-    public function __construct(Union $type, ?int $appearance_depth = null, ?int $arg_offset = null)
-    {
+    /**
+     * When non-null, indicates an equality template bound (vs a lower or upper bound)
+     *
+     * @var ?string
+     */
+    public $equality_bound_classlike;
+
+    public function __construct(
+        Union $type,
+        int $appearance_depth = 0,
+        ?int $arg_offset = null,
+        ?string $equality_bound_classlike = null
+    ) {
         $this->type = $type;
         $this->appearance_depth = $appearance_depth;
         $this->arg_offset = $arg_offset;
+        $this->equality_bound_classlike = $equality_bound_classlike;
     }
 }

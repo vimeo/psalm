@@ -24,10 +24,6 @@ class MethodReturnTypeProviderEvent
      */
     private $method_name_lowercase;
     /**
-     * @var list<PhpParser\Node\Arg>
-     */
-    private $call_args;
-    /**
      * @var Context
      */
     private $context;
@@ -35,6 +31,10 @@ class MethodReturnTypeProviderEvent
      * @var CodeLocation
      */
     private $code_location;
+    /**
+     * @var PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall
+     */
+    private $stmt;
     /**
      * @var Type\Union[]|null
      */
@@ -53,7 +53,7 @@ class MethodReturnTypeProviderEvent
      * but another plugin may be able to determine the type, return null. Otherwise return a mixed union type if
      * something should be returned, but can't be more specific.
      *
-     * @param  list<PhpParser\Node\Arg>    $call_args
+     * @param PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $stmt
      * @param  ?array<Type\Union> $template_type_parameters
      * @param lowercase-string $method_name_lowercase
      * @param lowercase-string $called_method_name_lowercase
@@ -62,7 +62,7 @@ class MethodReturnTypeProviderEvent
         StatementsSource $source,
         string $fq_classlike_name,
         string $method_name_lowercase,
-        array $call_args,
+        $stmt,
         Context $context,
         CodeLocation $code_location,
         ?array $template_type_parameters = null,
@@ -72,9 +72,9 @@ class MethodReturnTypeProviderEvent
         $this->source = $source;
         $this->fq_classlike_name = $fq_classlike_name;
         $this->method_name_lowercase = $method_name_lowercase;
-        $this->call_args = $call_args;
         $this->context = $context;
         $this->code_location = $code_location;
+        $this->stmt = $stmt;
         $this->template_type_parameters = $template_type_parameters;
         $this->called_fq_classlike_name = $called_fq_classlike_name;
         $this->called_method_name_lowercase = $called_method_name_lowercase;
@@ -103,7 +103,7 @@ class MethodReturnTypeProviderEvent
      */
     public function getCallArgs(): array
     {
-        return $this->call_args;
+        return $this->stmt->args;
     }
 
     public function getContext(): Context
@@ -135,5 +135,13 @@ class MethodReturnTypeProviderEvent
     public function getCalledMethodNameLowercase(): ?string
     {
         return $this->called_method_name_lowercase;
+    }
+
+    /**
+     * @return PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall
+     */
+    public function getStmt()
+    {
+        return $this->stmt;
     }
 }

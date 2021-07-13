@@ -678,7 +678,7 @@ class FunctionLikeDocblockScanner
                     null
                 );
 
-                $storage->params[] = $storage_param;
+                $storage->addParam($storage_param);
             }
 
             try {

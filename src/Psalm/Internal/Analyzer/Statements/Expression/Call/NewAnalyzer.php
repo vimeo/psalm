@@ -11,6 +11,7 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Issue\AbstractInstantiation;
 use Psalm\Issue\DeprecatedClass;
 use Psalm\Issue\ImpureMethodCall;
@@ -421,7 +422,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                     }
                 }
 
-                $generic_params = $template_result->upper_bounds;
+                $generic_params = $template_result->lower_bounds;
 
                 if ($method_storage->assertions && $stmt->class instanceof PhpParser\Node\Name) {
                     self::applyAssertionsToContext(
@@ -439,8 +440,8 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                     $statements_analyzer->node_data->setIfTrueAssertions(
                         $stmt,
                         \array_map(
-                            function ($assertion) use ($generic_params) {
-                                return $assertion->getUntemplatedCopy($generic_params, null);
+                            function ($assertion) use ($generic_params, $codebase) {
+                                return $assertion->getUntemplatedCopy($generic_params, null, $codebase);
                             },
                             $method_storage->if_true_assertions
                         )
@@ -451,8 +452,8 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                     $statements_analyzer->node_data->setIfFalseAssertions(
                         $stmt,
                         \array_map(
-                            function ($assertion) use ($generic_params) {
-                                return $assertion->getUntemplatedCopy($generic_params, null);
+                            function ($assertion) use ($generic_params, $codebase) {
+                                return $assertion->getUntemplatedCopy($generic_params, null, $codebase);
                             },
                             $method_storage->if_false_assertions
                         )
@@ -464,24 +465,29 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
 
             if ($storage->template_types) {
                 foreach ($storage->template_types as $template_name => $base_type) {
-                    if (isset($template_result->upper_bounds[$template_name][$fq_class_name])) {
-                        $generic_param_type
-                            = $template_result->upper_bounds[$template_name][$fq_class_name]->type;
-                    } elseif ($storage->template_extended_params && $template_result->upper_bounds) {
+                    if (isset($template_result->lower_bounds[$template_name][$fq_class_name])) {
+                        $generic_param_type = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+                            $template_result->lower_bounds[$template_name][$fq_class_name],
+                            $codebase
+                        );
+                    } elseif ($storage->template_extended_params && $template_result->lower_bounds) {
                         $generic_param_type = self::getGenericParamForOffset(
                             $fq_class_name,
                             $template_name,
                             $storage->template_extended_params,
                             array_map(
-                                function ($type_map) {
+                                function ($type_map) use ($codebase) {
                                     return array_map(
-                                        function ($bound) {
-                                            return $bound->type;
+                                        function ($bounds) use ($codebase) {
+                                            return TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+                                                $bounds,
+                                                $codebase
+                                            );
                                         },
                                         $type_map
                                     );
                                 },
-                                $template_result->upper_bounds
+                                $template_result->lower_bounds
                             )
                         );
                     } else {

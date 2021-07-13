@@ -264,6 +264,9 @@ final class CliUtils
                 }
 
                 if (substr($input_path, 0, 2) === '--' && strlen($input_path) > 2) {
+                    if (substr($input_path, 2) === 'config') {
+                        ++$i;
+                    }
                     continue;
                 }
 
@@ -589,7 +592,12 @@ HELP;
      */
     public static function getMemoryLimitInBytes(): int
     {
-        $limit = ini_get('memory_limit');
+        return self::convertMemoryLimitToBytes(ini_get('memory_limit'));
+    }
+
+    /** @psalm-pure */
+    public static function convertMemoryLimitToBytes(string $limit): int
+    {
         // for unlimited = -1
         if ($limit < 0) {
             return -1;

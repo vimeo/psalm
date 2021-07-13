@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Tests;
 
+use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Type;
 
@@ -14,7 +15,7 @@ class TypeParseTest extends TestCase
     public function setUp() : void
     {
         RuntimeCaches::clearAll();
-        $this->file_provider = new \Psalm\Tests\Internal\Provider\FakeFileProvider();
+        $this->file_provider = new FakeFileProvider();
 
         $config = new TestConfig();
 

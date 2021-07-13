@@ -614,7 +614,7 @@ abstract class Atomic implements TypeNode
         ?string $calling_class = null,
         ?string $calling_function = null,
         bool $replace = true,
-        bool $add_upper_bound = false,
+        bool $add_lower_bound = false,
         int $depth = 0
     ) : self {
         return $this;

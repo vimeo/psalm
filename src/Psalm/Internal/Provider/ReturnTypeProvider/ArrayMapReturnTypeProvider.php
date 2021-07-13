@@ -187,6 +187,8 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\EventHandler\FunctionR
                 );
                 $atomic_type->is_list = $array_arg_atomic_type->is_list;
                 $atomic_type->sealed = $array_arg_atomic_type->sealed;
+                $atomic_type->previous_key_type = $array_arg_atomic_type->previous_key_type;
+                $atomic_type->previous_value_type = $mapping_return_type;
 
                 return new Type\Union([$atomic_type]);
             }

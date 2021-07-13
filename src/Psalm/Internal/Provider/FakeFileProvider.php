@@ -1,11 +1,12 @@
 <?php
-namespace Psalm\Tests\Internal\Provider;
+
+namespace Psalm\Internal\Provider;
 
 use function microtime;
 use function strpos;
 use function strtolower;
 
-class FakeFileProvider extends \Psalm\Internal\Provider\FileProvider
+class FakeFileProvider extends FileProvider
 {
     /**
      * @var array<string, string>

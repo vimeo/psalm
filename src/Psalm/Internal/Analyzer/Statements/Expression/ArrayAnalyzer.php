@@ -232,11 +232,11 @@ class ArrayAnalyzer
         PhpParser\Node\Expr\ArrayItem $item,
         Codebase $codebase
     ) : void {
-        if (ExpressionAnalyzer::analyze($statements_analyzer, $item->value, $context) === false) {
-            return;
-        }
-
         if ($item->unpack) {
+            if (ExpressionAnalyzer::analyze($statements_analyzer, $item->value, $context) === false) {
+                return;
+            }
+
             $unpacked_array_type = $statements_analyzer->node_data->getType($item->value);
 
             if (!$unpacked_array_type) {
@@ -333,6 +333,10 @@ class ArrayAnalyzer
             $item_is_list_item = true;
             $item_key_value = $array_creation_info->int_offset++;
             $array_creation_info->item_key_atomic_types[] = new Type\Atomic\TLiteralInt($item_key_value);
+        }
+
+        if (ExpressionAnalyzer::analyze($statements_analyzer, $item->value, $context) === false) {
+            return;
         }
 
         $array_creation_info->all_list = $array_creation_info->all_list && $item_is_list_item;

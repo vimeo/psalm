@@ -277,7 +277,7 @@ class ArgumentAnalyzer
             $readonly_template_result = new TemplateResult($class_generic_params, []);
 
             // This flag ensures that the template results will never be written to
-            // It also supercedes the `$add_upper_bounds` flag so that closure params
+            // It also supercedes the `$add_lower_bounds` flag so that closure params
             // don’t get overwritten
             $readonly_template_result->readonly = true;
 
@@ -358,26 +358,28 @@ class ArgumentAnalyzer
 
             foreach ($bindable_template_params as $template_type) {
                 if (!isset(
-                    $template_result->upper_bounds
+                    $template_result->lower_bounds
                         [$template_type->param_name]
                         [$template_type->defining_class]
                 )) {
                     if (isset(
-                        $template_result->lower_bounds
+                        $template_result->upper_bounds
                             [$template_type->param_name]
                             [$template_type->defining_class]
                     )) {
-                        $template_result->upper_bounds[$template_type->param_name][$template_type->defining_class]
-                            = new TemplateBound(
-                                clone $template_result->lower_bounds
+                        $template_result->lower_bounds[$template_type->param_name][$template_type->defining_class] = [
+                            new TemplateBound(
+                                clone $template_result->upper_bounds
                                     [$template_type->param_name]
                                     [$template_type->defining_class]->type
-                            );
+                            )
+                        ];
                     } else {
-                        $template_result->upper_bounds[$template_type->param_name][$template_type->defining_class]
-                            = new TemplateBound(
+                        $template_result->lower_bounds[$template_type->param_name][$template_type->defining_class] = [
+                            new TemplateBound(
                                 clone $template_type->as
-                            );
+                            )
+                        ];
                     }
                 }
             }
@@ -1113,22 +1115,40 @@ class ArgumentAnalyzer
             }
         }
 
-        if ($input_type->isFalsable()
-            && !$param_type->hasBool()
-            && !$param_type->hasScalar()
-            && !$input_type->ignore_falsable_issues
-            && $cased_method_id !== 'echo'
+        if (!$param_type->isFalsable() &&
+            !$param_type->hasBool() &&
+            !$param_type->hasScalar() &&
+            $cased_method_id !== 'echo' &&
+            $cased_method_id !== 'print'
         ) {
-            if (IssueBuffer::accepts(
-                new PossiblyFalseArgument(
-                    'Argument ' . ($argument_offset + 1) . $method_identifier . ' cannot be false, possibly ' .
-                        'false value provided',
-                    $arg_location,
-                    $cased_method_id
-                ),
-                $statements_analyzer->getSuppressedIssues()
-            )) {
-                // fall through
+            if ($input_type->isFalse()) {
+                if (IssueBuffer::accepts(
+                    new InvalidArgument(
+                        'Argument ' . ($argument_offset + 1) . $method_identifier . ' cannot be false, ' .
+                        $param_type->getId() . ' value provided',
+                        $arg_location,
+                        $cased_method_id
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+
+                return null;
+            }
+
+            if ($input_type->isFalsable() && !$input_type->ignore_falsable_issues) {
+                if (IssueBuffer::accepts(
+                    new PossiblyFalseArgument(
+                        'Argument ' . ($argument_offset + 1) . $method_identifier . ' cannot be false, possibly ' .
+                        $param_type->getId() . ' value provided',
+                        $arg_location,
+                        $cased_method_id
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
             }
         }
 
