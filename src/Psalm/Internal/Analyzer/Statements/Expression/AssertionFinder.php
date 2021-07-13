@@ -2,6 +2,10 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
+use PhpParser\Node\Expr\BinaryOp\Equal;
+use PhpParser\Node\Expr\BinaryOp\Identical;
+use PhpParser\Node\Expr\BinaryOp\NotEqual;
+use PhpParser\Node\Expr\BinaryOp\NotIdentical;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\FileSource;
@@ -28,6 +32,10 @@ use function substr;
 
 /**
  * @internal
+ * This class transform conditions in code into "assertions" that will be reconciled with the type already known of a
+ * given variable to narrow the type or find paradox.
+ * For example if $a is an int, if(count($a) > 0) will be turned into an assertion to make psalm understand that in the
+ * if block, $a is a positive-int
  */
 class AssertionFinder
 {
@@ -271,7 +279,7 @@ class AssertionFinder
     }
 
     /**
-     * @param PhpParser\Node\Expr\BinaryOp\Identical|PhpParser\Node\Expr\BinaryOp $conditional
+     * @param PhpParser\Node\Expr\BinaryOp\Identical|PhpParser\Node\Expr\BinaryOp\Equal $conditional
      *
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<string>>>>
      */
@@ -477,7 +485,7 @@ class AssertionFinder
     }
 
     /**
-     * @param PhpParser\Node\Expr\BinaryOp\NotIdentical|PhpParser\Node\Expr\BinaryOp $conditional
+     * @param PhpParser\Node\Expr\BinaryOp\NotIdentical|PhpParser\Node\Expr\BinaryOp\NotEqual $conditional
      *
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<string>>>>
      */
@@ -1496,9 +1504,9 @@ class AssertionFinder
     }
 
     /**
-     * @param  PhpParser\Node\Expr\BinaryOp\NotIdentical|PhpParser\Node\Expr\BinaryOp $conditional
+     * @param Equal|Identical|NotEqual|NotIdentical $conditional
      *
-     * @return  false|int
+     * @return false|int
      */
     protected static function hasNotCountEqualityCheck(
         PhpParser\Node\Expr\BinaryOp $conditional,
@@ -2627,44 +2635,14 @@ class AssertionFinder
                 && $other_type
                 && $conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical
             ) {
-                $parent_source = $source->getSource();
-
-                if ($parent_source->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer
-                    && (($var_type->isSingleStringLiteral()
-                            && $var_type->getSingleStringLiteral()->value === $this_class_name)
-                        || ($other_type->isSingleStringLiteral()
-                            && $other_type->getSingleStringLiteral()->value === $this_class_name))
-                ) {
-                    // do nothing
-                } elseif (!UnionTypeComparator::canExpressionTypesBeIdentical(
-                    $codebase,
+                self::handleParadoxicalAssertions(
+                    $source,
+                    $var_type,
+                    $this_class_name,
                     $other_type,
-                    $var_type
-                )) {
-                    if ($var_type->from_docblock || $other_type->from_docblock) {
-                        if (IssueBuffer::accepts(
-                            new DocblockTypeContradiction(
-                                $var_type . ' can never contain ' . $other_type->getId(),
-                                new CodeLocation($source, $conditional),
-                                $var_type . ' ' . $other_type
-                            ),
-                            $source->getSuppressedIssues()
-                        )) {
-                            // fall through
-                        }
-                    } else {
-                        if (IssueBuffer::accepts(
-                            new RedundantCondition(
-                                $var_type->getId() . ' can never contain ' . $other_type->getId(),
-                                new CodeLocation($source, $conditional),
-                                $var_type->getId() . ' ' . $other_type->getId()
-                            ),
-                            $source->getSuppressedIssues()
-                        )) {
-                            // fall through
-                        }
-                    }
-                }
+                    $codebase,
+                    $conditional
+                );
             }
         }
 
@@ -3332,44 +3310,14 @@ class AssertionFinder
                     && $var_type->isString())
             )
         ) {
-            $parent_source = $source->getSource();
-
-            if ($parent_source->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer
-                && (($var_type->isSingleStringLiteral()
-                        && $var_type->getSingleStringLiteral()->value === $this_class_name)
-                    || ($other_type->isSingleStringLiteral()
-                        && $other_type->getSingleStringLiteral()->value === $this_class_name))
-            ) {
-                // do nothing
-            } elseif (!UnionTypeComparator::canExpressionTypesBeIdentical(
-                $codebase,
+            self::handleParadoxicalAssertions(
+                $source,
+                $var_type,
+                $this_class_name,
                 $other_type,
-                $var_type
-            )) {
-                if ($var_type->from_docblock || $other_type->from_docblock) {
-                    if (IssueBuffer::accepts(
-                        new DocblockTypeContradiction(
-                            $var_type->getId() . ' does not contain ' . $other_type->getId(),
-                            new CodeLocation($source, $conditional),
-                            $var_type->getId() . ' ' . $other_type->getId()
-                        ),
-                        $source->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
-                } else {
-                    if (IssueBuffer::accepts(
-                        new TypeDoesNotContainType(
-                            $var_type->getId() . ' cannot be identical to ' . $other_type->getId(),
-                            new CodeLocation($source, $conditional),
-                            $var_type->getId() . ' ' . $other_type->getId()
-                        ),
-                        $source->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
-                }
-            }
+                $codebase,
+                $conditional
+            );
         }
 
         return $if_types ? [$if_types] : [];
@@ -4058,5 +4006,66 @@ class AssertionFinder
         }
 
         return $if_types ? [$if_types] : [];
+    }
+
+    private static function handleParadoxicalAssertions(
+        StatementsAnalyzer $source,
+        Type\Union $var_type,
+        ?string $this_class_name,
+        Type\Union $other_type,
+        Codebase $codebase,
+        PhpParser\Node\Expr\BinaryOp $conditional
+    ): void {
+        $parent_source = $source->getSource();
+
+        if ($parent_source->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer
+            && (($var_type->isSingleStringLiteral()
+                    && $var_type->getSingleStringLiteral()->value === $this_class_name)
+                || ($other_type->isSingleStringLiteral()
+                    && $other_type->getSingleStringLiteral()->value === $this_class_name))
+        ) {
+            // do nothing
+        } elseif (!UnionTypeComparator::canExpressionTypesBeIdentical(
+            $codebase,
+            $other_type,
+            $var_type
+        )) {
+            if ($var_type->from_docblock || $other_type->from_docblock) {
+                if (IssueBuffer::accepts(
+                    new DocblockTypeContradiction(
+                        $var_type->getId() . ' does not contain ' . $other_type->getId(),
+                        new CodeLocation($source, $conditional),
+                        $var_type->getId() . ' ' . $other_type->getId()
+                    ),
+                    $source->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            } else {
+                if ($conditional instanceof NotEqual || $conditional instanceof NotIdentical) {
+                    if (IssueBuffer::accepts(
+                        new RedundantCondition(
+                            $var_type->getId() . ' can never contain ' . $other_type->getId(),
+                            new CodeLocation($source, $conditional),
+                            $var_type->getId() . ' ' . $other_type->getId()
+                        ),
+                        $source->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                } else {
+                    if (IssueBuffer::accepts(
+                        new TypeDoesNotContainType(
+                            $var_type->getId() . ' cannot be identical to ' . $other_type->getId(),
+                            new CodeLocation($source, $conditional),
+                            $var_type->getId() . ' ' . $other_type->getId()
+                        ),
+                        $source->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                }
+            }
+        }
     }
 }
