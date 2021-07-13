@@ -34,7 +34,7 @@ use function substr;
  * @internal
  * This class transform conditions in code into "assertions" that will be reconciled with the type already known of a
  * given variable to narrow the type or find paradox.
- * For example if $a is an int, if(count($a) > 0) will be turned into an assertion to make psalm understand that in the
+ * For example if $a is an int, if($a > 0) will be turned into an assertion to make psalm understand that in the
  * if block, $a is a positive-int
  */
 class AssertionFinder
