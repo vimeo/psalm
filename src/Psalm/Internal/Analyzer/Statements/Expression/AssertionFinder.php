@@ -1979,6 +1979,7 @@ class AssertionFinder
     }
 
     /**
+     * @param PhpParser\Node\Expr\BinaryOp\NotIdentical|PhpParser\Node\Expr\BinaryOp\NotEqual $conditional
      * @param int $null_position
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<string>>>>
      */
@@ -2064,6 +2065,7 @@ class AssertionFinder
     }
 
     /**
+     * @param PhpParser\Node\Expr\BinaryOp\NotIdentical|PhpParser\Node\Expr\BinaryOp\NotEqual $conditional
      * @param int $false_position
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<string>>>>
      */
@@ -2172,6 +2174,7 @@ class AssertionFinder
     }
 
     /**
+     * @param PhpParser\Node\Expr\BinaryOp\NotIdentical|PhpParser\Node\Expr\BinaryOp\NotEqual $conditional
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<string>>>>
      */
     private static function getTrueInequalityAssertions(
@@ -2299,6 +2302,7 @@ class AssertionFinder
     }
 
     /**
+     * @param PhpParser\Node\Expr\BinaryOp\NotIdentical|PhpParser\Node\Expr\BinaryOp\NotEqual $conditional
      * @param int $empty_array_position
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<string>>>>
      */
@@ -2380,6 +2384,7 @@ class AssertionFinder
     }
 
     /**
+     * @param PhpParser\Node\Expr\BinaryOp\NotIdentical|PhpParser\Node\Expr\BinaryOp\NotEqual $conditional
      * @param int $gettype_position
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<string>>>>
      */
@@ -2440,6 +2445,7 @@ class AssertionFinder
     }
 
     /**
+     * @param PhpParser\Node\Expr\BinaryOp\NotIdentical|PhpParser\Node\Expr\BinaryOp\NotEqual $conditional
      * @param int $get_debug_type_position
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<string>>>>
      */
@@ -2497,6 +2503,7 @@ class AssertionFinder
     }
 
     /**
+     * @param PhpParser\Node\Expr\BinaryOp\NotIdentical|PhpParser\Node\Expr\BinaryOp\NotEqual $conditional
      * @param StatementsAnalyzer $source
      * @param int $getclass_position
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<string>>>>
@@ -2579,6 +2586,7 @@ class AssertionFinder
     }
 
     /**
+     * @param PhpParser\Node\Expr\BinaryOp\NotIdentical|PhpParser\Node\Expr\BinaryOp\NotEqual $conditional
      * @param StatementsAnalyzer $source
      * @param int $typed_value_position
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<string>>>>
@@ -2650,6 +2658,7 @@ class AssertionFinder
     }
 
     /**
+     * @param PhpParser\Node\Expr\BinaryOp\Identical|PhpParser\Node\Expr\BinaryOp\Equal $conditional
      * @param int $null_position
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<string>>>>
      */
@@ -2734,6 +2743,7 @@ class AssertionFinder
     }
 
     /**
+     * @param PhpParser\Node\Expr\BinaryOp\Identical|PhpParser\Node\Expr\BinaryOp\Equal $conditional
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<string>>>>
      */
     private static function getTrueEqualityAssertions(
@@ -2864,6 +2874,7 @@ class AssertionFinder
     }
 
     /**
+     * @param PhpParser\Node\Expr\BinaryOp\Identical|PhpParser\Node\Expr\BinaryOp\Equal $conditional
      * @param int $false_position
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<string>>>>
      */
@@ -2988,6 +2999,7 @@ class AssertionFinder
     }
 
     /**
+     * @param PhpParser\Node\Expr\BinaryOp\Identical|PhpParser\Node\Expr\BinaryOp\Equal $conditional
      * @param int $empty_array_position
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<string>>>>
      */
@@ -3064,6 +3076,7 @@ class AssertionFinder
     }
 
     /**
+     * @param PhpParser\Node\Expr\BinaryOp\Identical|PhpParser\Node\Expr\BinaryOp\Equal $conditional
      * @param int $gettype_position
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<string>>>>
      */
@@ -3114,6 +3127,7 @@ class AssertionFinder
     }
 
     /**
+     * @param PhpParser\Node\Expr\BinaryOp\Identical|PhpParser\Node\Expr\BinaryOp\Equal $conditional
      * @param int $get_debug_type_position
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<string>>>>
      */
@@ -3171,6 +3185,7 @@ class AssertionFinder
     }
 
     /**
+     * @param PhpParser\Node\Expr\BinaryOp\Identical|PhpParser\Node\Expr\BinaryOp\Equal $conditional
      * @param StatementsAnalyzer $source
      * @param int $getclass_position
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<string>>>>
@@ -3251,6 +3266,7 @@ class AssertionFinder
     }
 
     /**
+     * @param PhpParser\Node\Expr\BinaryOp\Identical|PhpParser\Node\Expr\BinaryOp\Equal $conditional
      * @param StatementsAnalyzer $source
      * @param int $typed_value_position
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<string>>>>
@@ -4008,6 +4024,9 @@ class AssertionFinder
         return $if_types ? [$if_types] : [];
     }
 
+    /**
+     * @param NotIdentical|NotEqual|Identical|Equal $conditional
+     */
     private static function handleParadoxicalAssertions(
         StatementsAnalyzer $source,
         Type\Union $var_type,
