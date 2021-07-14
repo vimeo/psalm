@@ -1413,7 +1413,7 @@ class AssertionFinder
     }
 
     /**
-     * @param Greater|GreaterOrEqual|Identical|Equal|Smaller|SmallerOrEqual $conditional
+     * @param Greater|GreaterOrEqual|Smaller|SmallerOrEqual $conditional
      * @return false|int
      */
     protected static function hasNonEmptyCountEqualityCheck(
