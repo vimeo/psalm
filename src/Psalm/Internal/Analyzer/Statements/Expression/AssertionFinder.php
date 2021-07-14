@@ -2381,7 +2381,15 @@ class AssertionFinder
             }
         } else {
             if ($var_name && $var_type) {
-                $if_types[$var_name] = [['!' . $var_type]];
+                if ($var_type === 'class@anonymous') {
+                    $if_types[$var_name] = [['!=object']];
+                } elseif ($var_type === 'resource (closed)') {
+                    $if_types[$var_name] = [['!closed-resource']];
+                } elseif (substr($var_type, 0, 10) === 'resource (') {
+                    $if_types[$var_name] = [['!=resource']];
+                } else {
+                    $if_types[$var_name] = [['!' . $var_type]];
+                }
             }
         }
 
@@ -3054,7 +3062,15 @@ class AssertionFinder
             }
         } else {
             if ($var_name && $var_type) {
-                $if_types[$var_name] = [[$var_type]];
+                if ($var_type === 'class@anonymous') {
+                    $if_types[$var_name] = [['=object']];
+                } elseif ($var_type === 'resource (closed)') {
+                    $if_types[$var_name] = [['closed-resource']];
+                } elseif (substr($var_type, 0, 10) === 'resource (') {
+                    $if_types[$var_name] = [['=resource']];
+                } else {
+                    $if_types[$var_name] = [[$var_type]];
+                }
             }
         }
 

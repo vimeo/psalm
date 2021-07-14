@@ -792,6 +792,15 @@ class FunctionCallTest extends TestCase
                         if ($t === "object") {}
                     }',
             ],
+            'getTypeSwitchClosedResource' => [
+                '<?php
+                    $data = "foo";
+                    switch (gettype($data)) {
+                        case "resource (closed)":
+                        case "unknown type":
+                            return "foo";
+                    }',
+            ],
             'functionResolutionInNamespace' => [
                 '<?php
                     namespace Foo;
