@@ -762,12 +762,25 @@ function str_ireplace($search, $replace, $subject, &$count = null) {}
 /**
  * @psalm-pure
  *
+ * @return ($input is non-empty-string ? non-empty-string : ($pad_length is positive-int ? non-empty-string: string))
+ *
  * @psalm-flow ($input, $pad_string) -> return
  */
 function str_pad(string $input, int $pad_length, $pad_string = '', int $pad_type = STR_PAD_RIGHT): string {}
 
 /**
  * @psalm-pure
+ *
+ * @todo update $multiplier to be `0|positive-int`
+ * @return (
+ *      $input is non-empty-string
+ *      ? (
+ *          $multiplier is positive-int
+ *          ? non-empty-string
+ *          : ($multiplier is 0 ? '' : string)
+ *      )
+ *      : ($multiplier is 0 ? '' : string)
+ * )
  *
  * @psalm-flow ($input) -> return
  */
