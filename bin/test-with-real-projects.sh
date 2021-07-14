@@ -3,7 +3,12 @@
 set -e
 set -x
 
+SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
+PSALM="$(readlink -f "$SCRIPT_DIR/../psalm")"
+PSALM_PHAR="$(readlink -f "$SCRIPT_DIR/../build/psalm.phar")"
+
 cd /tmp/
+rm -Rf testing-with-real-projects
 mkdir -p testing-with-real-projects
 cd testing-with-real-projects
 
@@ -12,15 +17,15 @@ phpunit)
 	git clone --depth=1 git@github.com:psalm/endtoend-test-phpunit
 	cd endtoend-test-phpunit
 	composer install
-	~/project/build/psalm.phar --config=.psalm/config.xml --monochrome --show-info=false
-	~/project/build/psalm.phar --config=.psalm/static-analysis.xml --monochrome
+	"$PSALM_PHAR" --config=.psalm/config.xml --monochrome --show-info=false
+	"$PSALM_PHAR" --config=.psalm/static-analysis.xml --monochrome
 	;;
 
 collections)
 	git clone --depth=1 git@github.com:muglug/collections.git
 	cd collections
 	composer install
-	~/project/psalm --monochrome --show-info=false
+	"$PSALM" --monochrome --show-info=false
 	;;
 
 psl)
@@ -28,14 +33,14 @@ psl)
 	cd endtoend-test-psl
 	git checkout 1.6.x
 	composer install --ignore-platform-reqs
-	~/project/psalm --monochrome --config=tools/psalm/psalm.xml
+	"$PSALM" --monochrome --config=tools/psalm/psalm.xml
 	;;
 
 laravel)
 	git clone --depth=1 git@github.com:muglug/framework.git
 	cd framework
 	composer install
-	~/project/psalm --monochrome
+	"$PSALM" --monochrome
 	;;
 *)
 	echo "Usage: test-with-real-projects.sh {phpunit|collections|proxymanager|laravel|psl}"
