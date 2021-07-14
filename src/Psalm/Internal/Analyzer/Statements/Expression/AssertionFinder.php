@@ -2555,21 +2555,22 @@ class AssertionFinder
             throw new \UnexpectedValueException('$typed_value_position value');
         }
 
-        if ($var_name && $var_type) {
-            $not_identical = $conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical
-                || ($other_type
-                    && (($var_type->isString() && $other_type->isString())
-                        || ($var_type->isInt() && $other_type->isInt())
-                        || ($var_type->isFloat() && $other_type->isFloat())
-                    )
-                );
+        if ($var_type) {
+            if ($var_name) {
+                $not_identical = $conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical
+                    || ($other_type
+                        && (($var_type->isString() && $other_type->isString())
+                            || ($var_type->isInt() && $other_type->isInt())
+                            || ($var_type->isFloat() && $other_type->isFloat())
+                        )
+                    );
 
-            if ($not_identical) {
-                $if_types[$var_name] = [['!=' . $var_type->getAssertionString()]];
-            } else {
-                $if_types[$var_name] = [['!~' . $var_type->getAssertionString()]];
+                if ($not_identical) {
+                    $if_types[$var_name] = [['!=' . $var_type->getAssertionString()]];
+                } else {
+                    $if_types[$var_name] = [['!~' . $var_type->getAssertionString()]];
+                }
             }
-        }
 
             if ($codebase
                 && $other_type
