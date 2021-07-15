@@ -516,7 +516,9 @@ function strtolower(string $str) : string {}
  * @psalm-pure
  *
  * @return (
- *     $str is non-empty-string ? non-empty-string : string
+ *     $str is non-falsy-string
+ *     ? non-falsy-string
+ *     : ($str is non-empty-string ? non-empty-string : string)
  * )
  *
  * @psalm-flow ($str) -> return
