@@ -567,7 +567,7 @@ class TypeParser
             return new TNonEmptyList($generic_params[0]);
         }
 
-        if ($generic_type_value === 'class-string') {
+        if ($generic_type_value === 'class-string' || $generic_type_value === 'interface-string') {
             $class_name = (string)$generic_params[0];
 
             if (isset($template_type_map[$class_name])) {

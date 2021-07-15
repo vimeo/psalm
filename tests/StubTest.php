@@ -1282,15 +1282,15 @@ class StubTest extends TestCase
             '<?php
                 use Doctrine\ORM\EntityManager;
 
-                interface I {}
+                class A {}
 
                 function em(EntityManager $em) : void {
-                    echo $em->getReference(I::class, 1);
+                    echo $em->getReference(A::class, 1);
                 }'
         );
 
         $this->expectException(\Psalm\Exception\CodeException::class);
-        $this->expectExceptionMessage('I|null');
+        $this->expectExceptionMessage('A|null');
 
         $this->analyzeFile($file_path, new Context());
     }

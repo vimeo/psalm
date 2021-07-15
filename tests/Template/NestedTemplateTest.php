@@ -88,9 +88,13 @@ class NestedTemplateTest extends TestCase
                     }
 
                     /**
-                     * @extends Wrapper<string>
+                     * @implements Wrapper<string>
                      */
-                    interface StringWrapper extends Wrapper {}
+                    class StringWrapper implements Wrapper {
+                        public function unwrap() {
+                            return "hello";
+                        }
+                    }
 
                     /**
                      * @template TInner

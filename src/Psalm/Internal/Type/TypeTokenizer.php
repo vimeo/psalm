@@ -41,13 +41,14 @@ class TypeTokenizer
         'mixed' => true,
         'numeric-string' => true,
         'class-string' => true,
+        'interface-string' => true,
+        'trait-string' => true,
         'callable-string' => true,
         'callable-array' => true,
         'callable-object' => true,
         'stringable-object' => true,
         'pure-callable' => true,
         'pure-Closure' => true,
-        'trait-string' => true,
         'mysql-escaped-string' => true, // deprecated
         'html-escaped-string' => true, // deprecated
         'literal-string' => true,

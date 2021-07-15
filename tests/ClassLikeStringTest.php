@@ -4,7 +4,7 @@ namespace Psalm\Tests;
 use Psalm\Config;
 use Psalm\Context;
 
-class ClassStringTest extends TestCase
+class ClassLikeStringTest extends TestCase
 {
     use Traits\InvalidCodeAnalysisTestTrait;
     use Traits\ValidCodeAnalysisTestTrait;
@@ -437,7 +437,7 @@ class ClassStringTest extends TestCase
                     }
 
                     /**
-                     * @param class-string<Foo&Bar> $className
+                     * @param interface-string<Foo&Bar> $className
                      */
                     function foo($className) : void {
                         $className::one();
@@ -455,9 +455,9 @@ class ClassStringTest extends TestCase
                     }
 
                     /**
-                     * @param class-string<Bar> $className
+                     * @param interface-string<Bar> $className
                      */
-                    function foo($className) : void {
+                    function foo(string $className) : void {
                         $className::two();
 
                         if (is_subclass_of($className, Foo::class, true)) {
@@ -492,9 +492,9 @@ class ClassStringTest extends TestCase
             'filterIsObject' => [
                 '<?php
                     /**
-                     * @param class-string<DateTimeInterface>|DateTimeInterface $maybe
+                     * @param interface-string<DateTimeInterface>|DateTimeInterface $maybe
                      *
-                     * @return class-string<DateTimeInterface>
+                     * @return interface-string<DateTimeInterface>
                      */
                     function Foo($maybe) : string {
                         if (is_object($maybe)) {
@@ -507,9 +507,9 @@ class ClassStringTest extends TestCase
             'filterIsString' => [
                 '<?php
                     /**
-                     * @param class-string<DateTimeInterface>|DateTimeInterface $maybe
+                     * @param interface-string<DateTimeInterface>|DateTimeInterface $maybe
                      *
-                     * @return class-string<DateTimeInterface>
+                     * @return interface-string<DateTimeInterface>
                      */
                     function Bar($maybe) : string {
                         if (is_string($maybe)) {
@@ -778,8 +778,36 @@ class ClassStringTest extends TestCase
                         $class = $obj::class;
 
                         return $class;
-                    }
-                ',
+                    }',
+            ],
+            'classStringAllowsClasses' => [
+                '<?php
+                    /**
+                     * @param class-string $s
+                     */
+                    function takesOpen(string $s): void {}
+
+                    /**
+                     * @param class-string<Exception> $s
+                     */
+                    function takesException(string $s): void {}
+
+                    /**
+                     * @param class-string<Exception> $s
+                     */
+                    function takesThrowable(string $s): void {}
+
+                    takesOpen(InvalidArgumentException::class);
+                    takesException(InvalidArgumentException::class);
+                    takesThrowable(InvalidArgumentException::class);',
+            ],
+            'reflectionClassCoercion' => [
+                '<?php
+                    /** @return ReflectionClass<object> */
+                    function takesString(string $s) {
+                        /** @psalm-suppress ArgumentTypeCoercion */
+                        return new ReflectionClass($s);
+                    }',
             ],
         ];
     }
@@ -919,7 +947,6 @@ class ClassStringTest extends TestCase
                     }',
                 'error_message' => 'InvalidReturnStatement',
             ],
-
         ];
     }
 }
