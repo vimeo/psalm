@@ -515,6 +515,10 @@ function strtolower(string $str) : string {}
 /**
  * @psalm-pure
  *
+ * @return (
+ *     $str is non-empty-string ? non-empty-string : string
+ * )
+ *
  * @psalm-flow ($str) -> return
  */
 function strtoupper(string $str) : string {}
