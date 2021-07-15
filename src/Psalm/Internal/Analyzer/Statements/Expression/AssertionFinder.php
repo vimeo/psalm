@@ -374,6 +374,17 @@ class AssertionFinder
             return [];
         }
 
+        $getclass_position = self::hasGetClassCheck($conditional, $source);
+
+        if ($getclass_position) {
+            return self::getGetclassEqualityAssertions(
+                $conditional,
+                $this_class_name,
+                $source,
+                $getclass_position
+            );
+        }
+
         $typed_value_position = self::hasTypedValueComparison($conditional, $source);
 
         //we check for paradoxical assertions now, we'll use $typed_value_position later if not handled by CountEquality
@@ -439,16 +450,7 @@ class AssertionFinder
             return $if_types ? [$if_types] : [];
         }
 
-        $getclass_position = self::hasGetClassCheck($conditional, $source);
 
-        if ($getclass_position) {
-            return self::getGetclassEqualityAssertions(
-                $conditional,
-                $this_class_name,
-                $source,
-                $getclass_position
-            );
-        }
 
         if ($typed_value_position) {
             return self::getTypedValueEqualityAssertions(
