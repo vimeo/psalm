@@ -1257,3 +1257,8 @@ function get_headers(string $url, int $format = 0, $context = null) : array {}
  * @psalm-taint-sink ssrf $filename
  */
 function get_meta_tags(string $filename, bool $use_include_path = false) : array {}
+
+/**
+ * @return ($categorize is false : array<string,int|string|float|bool|null|array|resource> : array<string, array<string,int|string|float|bool|null|array|resource>>)
+ */
+function get_defined_constants(bool $categorize = false): array {}
