@@ -15706,7 +15706,7 @@ return [
 'xmlwriter_start_cdata' => ['bool', 'writer'=>'resource'],
 'xmlwriter_start_comment' => ['bool', 'writer'=>'resource'],
 'xmlwriter_start_document' => ['bool', 'writer'=>'resource', 'version='=>'?string', 'encoding='=>'?string', 'standalone='=>'?string'],
-'xmlwriter_start_dtd' => ['bool', 'writer'=>'resource', 'qualifiedName'=>'?string', 'publicId='=>'string', 'systemId='=>'?string'],
+'xmlwriter_start_dtd' => ['bool', 'writer'=>'resource', 'qualifiedName'=>'string', 'publicId='=>'?string', 'systemId='=>'?string'],
 'xmlwriter_start_dtd_attlist' => ['bool', 'writer'=>'resource', 'name'=>'string'],
 'xmlwriter_start_dtd_element' => ['bool', 'writer'=>'resource', 'qualifiedName'=>'string'],
 'xmlwriter_start_dtd_entity' => ['bool', 'writer'=>'resource', 'name'=>'string', 'isParam'=>'bool'],
