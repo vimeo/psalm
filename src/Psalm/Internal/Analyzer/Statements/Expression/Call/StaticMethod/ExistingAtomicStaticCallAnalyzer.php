@@ -517,7 +517,9 @@ class ExistingAtomicStaticCallAnalyzer
 
             if ($lhs_type_part instanceof Type\Atomic\TTemplateParam) {
                 $static_type = $lhs_type_part;
-            } elseif ($lhs_type_part instanceof Type\Atomic\TTemplateParamClass) {
+            } elseif ($lhs_type_part instanceof Type\Atomic\TTemplateParamClass
+                || $lhs_type_part instanceof Type\Atomic\TTemplateParamInterface
+            ) {
                 $static_type = new Type\Atomic\TTemplateParam(
                     $lhs_type_part->param_name,
                     $lhs_type_part->as_type

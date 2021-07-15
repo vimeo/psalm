@@ -13,6 +13,7 @@ use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TInterfaceString;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
@@ -306,6 +307,7 @@ class TypeParser
 
                 return self::getGenericParamClass(
                     $fq_classlike_name,
+                    'class-string',
                     $template_type_map[$fq_classlike_name][$first_class],
                     $first_class
                 );
@@ -341,12 +343,25 @@ class TypeParser
         return $atomic_type;
     }
 
+    /**
+     * @return Atomic\TTemplateParamClass|Atomic\TTemplateParamInterface
+     */
     private static function getGenericParamClass(
         string $param_name,
+        string $generic_type_value,
         Union $as,
         string $defining_class
-    ) : Atomic\TTemplateParamClass {
+    ) {
         if ($as->hasMixed()) {
+            if ($generic_type_value === 'interface-string') {
+                return new Atomic\TTemplateParamInterface(
+                    $param_name,
+                    'object',
+                    null,
+                    $defining_class
+                );
+            }
+
             return new Atomic\TTemplateParamClass(
                 $param_name,
                 'object',
@@ -363,6 +378,15 @@ class TypeParser
 
         foreach ($as->getAtomicTypes() as $t) {
             if ($t instanceof TObject) {
+                if ($generic_type_value === 'interface-string') {
+                    return new Atomic\TTemplateParamInterface(
+                        $param_name,
+                        'object',
+                        null,
+                        $defining_class
+                    );
+                }
+
                 return new Atomic\TTemplateParamClass(
                     $param_name,
                     'object',
@@ -378,6 +402,15 @@ class TypeParser
                 );
 
                 $as->substitute(new Union([$t]), new Union([$traversable]));
+
+                if ($generic_type_value === 'interface-string') {
+                    return new Atomic\TTemplateParamInterface(
+                        $param_name,
+                        $traversable->value,
+                        $traversable,
+                        $defining_class
+                    );
+                }
 
                 return new Atomic\TTemplateParamClass(
                     $param_name,
@@ -395,6 +428,15 @@ class TypeParser
                     $t_atomic_type = null;
                 }
 
+                if ($generic_type_value === 'interface-string') {
+                    return new Atomic\TTemplateParamInterface(
+                        $t->param_name,
+                        $t_atomic_type ? $t_atomic_type->value : 'object',
+                        $t_atomic_type,
+                        $t->defining_class
+                    );
+                }
+
                 return new Atomic\TTemplateParamClass(
                     $t->param_name,
                     $t_atomic_type ? $t_atomic_type->value : 'object',
@@ -406,6 +448,15 @@ class TypeParser
             if (!$t instanceof TNamedObject) {
                 throw new TypeParseTreeException(
                     'Invalid templated classname \'' . $t->getId() . '\''
+                );
+            }
+
+            if ($generic_type_value === 'interface-string') {
+                return new Atomic\TTemplateParamInterface(
+                    $param_name,
+                    $t->value,
+                    $t,
+                    $defining_class
                 );
             }
 
@@ -457,6 +508,7 @@ class TypeParser
      * @param  array<string, TypeAlias> $type_aliases
      * @return Atomic|Union
      * @throws TypeParseTreeException
+     * @psalm-suppress ComplexMethod because it's just effectively a big switch statement
      */
     private static function getTypeFromGenericTree(
         ParseTree\GenericTree $parse_tree,
@@ -575,6 +627,7 @@ class TypeParser
 
                 return self::getGenericParamClass(
                     $class_name,
+                    $generic_type_value,
                     $template_type_map[$class_name][$first_class],
                     $first_class
                 );
@@ -588,6 +641,10 @@ class TypeParser
 
             if (!$param_union_types[0] instanceof TNamedObject) {
                 throw new TypeParseTreeException('Class string param should be a named object');
+            }
+
+            if ($generic_type_value === 'interface-string') {
+                return new TInterfaceString($class_name, $param_union_types[0]);
             }
 
             return new TClassString($class_name, $param_union_types[0]);

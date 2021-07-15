@@ -154,6 +154,11 @@ class Union implements TypeNode
     private $typed_class_strings = [];
 
     /**
+     * @var array<string, Type\Atomic\TInterfaceString>
+     */
+    private $typed_interface_strings = [];
+
+    /**
      * @var array<string, TLiteralInt>
      */
     private $literal_int_types = [];
@@ -223,6 +228,10 @@ class Union implements TypeNode
                 && ($type->as_type || $type instanceof Type\Atomic\TTemplateParamClass)
             ) {
                 $this->typed_class_strings[$key] = $type;
+            } elseif ($type instanceof Type\Atomic\TInterfaceString
+                && ($type->as_type || $type instanceof Type\Atomic\TTemplateParamInterface)
+            ) {
+                $this->typed_interface_strings[$key] = $type;
             }
 
             $from_docblock = $from_docblock || $type->from_docblock;
@@ -263,11 +272,20 @@ class Union implements TypeNode
             foreach ($this->literal_string_types as $key => $_) {
                 unset($this->literal_string_types[$key], $this->types[$key]);
             }
+
             if (!$type instanceof Type\Atomic\TClassString
                 || (!$type->as_type && !$type instanceof Type\Atomic\TTemplateParamClass)
             ) {
                 foreach ($this->typed_class_strings as $key => $_) {
                     unset($this->typed_class_strings[$key], $this->types[$key]);
+                }
+            }
+
+            if (!$type instanceof Type\Atomic\TInterfaceString
+                || (!$type->as_type && !$type instanceof Type\Atomic\TTemplateParamInterface)
+            ) {
+                foreach ($this->typed_interface_strings as $key => $_) {
+                    unset($this->typed_interface_strings[$key], $this->types[$key]);
                 }
             }
         } elseif ($type instanceof TInt && $this->literal_int_types) {
@@ -289,6 +307,7 @@ class Union implements TypeNode
         $this->literal_int_types = [];
         $this->literal_float_types = [];
         $this->typed_class_strings = [];
+        $this->typed_interface_strings = [];
 
         foreach ($this->types as $key => &$type) {
             $type = clone $type;
@@ -303,6 +322,10 @@ class Union implements TypeNode
                 && ($type->as_type || $type instanceof Type\Atomic\TTemplateParamClass)
             ) {
                 $this->typed_class_strings[$key] = $type;
+            } elseif ($type instanceof Type\Atomic\TInterfaceString
+                && ($type->as_type || $type instanceof Type\Atomic\TTemplateParamInterface)
+            ) {
+                $this->typed_interface_strings[$key] = $type;
             }
         }
     }
@@ -576,6 +599,13 @@ class Union implements TypeNode
                 $this->typed_class_strings = [];
             }
 
+            if ($this->typed_interface_strings) {
+                foreach ($this->typed_interface_strings as $typed_class_key => $_) {
+                    unset($this->types[$typed_class_key]);
+                }
+                $this->typed_interface_strings = [];
+            }
+
             unset($this->types['class-string'], $this->types['trait-string']);
         } elseif ($type_string === 'int' && $this->literal_int_types) {
             foreach ($this->literal_int_types as $literal_key => $_) {
@@ -779,12 +809,14 @@ class Union implements TypeNode
     {
         return isset($this->types['string'])
             || isset($this->types['class-string'])
+            || isset($this->types['interface-string'])
             || isset($this->types['trait-string'])
             || isset($this->types['numeric-string'])
             || isset($this->types['callable-string'])
             || isset($this->types['array-key'])
             || $this->literal_string_types
-            || $this->typed_class_strings;
+            || $this->typed_class_strings
+            || $this->typed_interface_strings;
     }
 
     public function hasLowercaseString(): bool
@@ -856,6 +888,7 @@ class Union implements TypeNode
             || isset($this->types['float'])
             || isset($this->types['string'])
             || isset($this->types['class-string'])
+            || isset($this->types['interface-string'])
             || isset($this->types['trait-string'])
             || isset($this->types['bool'])
             || isset($this->types['false'])
@@ -865,7 +898,8 @@ class Union implements TypeNode
             || $this->literal_int_types
             || $this->literal_float_types
             || $this->literal_string_types
-            || $this->typed_class_strings;
+            || $this->typed_class_strings
+            || $this->typed_interface_strings;
     }
 
     public function hasTemplate(): bool

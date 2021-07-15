@@ -77,7 +77,8 @@ class AtomicStaticCallAnalyzer
             }
 
             $intersection_types = $lhs_type_part->extra_types;
-        } elseif ($lhs_type_part instanceof Type\Atomic\TClassString
+        } elseif (($lhs_type_part instanceof Type\Atomic\TClassString
+                || $lhs_type_part instanceof Type\Atomic\TInterfaceString)
             && $lhs_type_part->as_type
         ) {
             $fq_class_name = $lhs_type_part->as_type->value;
@@ -873,6 +874,7 @@ class AtomicStaticCallAnalyzer
         if ($lhs_type_part instanceof Type\Atomic\TMixed
             || $lhs_type_part instanceof Type\Atomic\TTemplateParam
             || $lhs_type_part instanceof Type\Atomic\TClassString
+            || $lhs_type_part instanceof Type\Atomic\TInterfaceString
             || $lhs_type_part instanceof Type\Atomic\TObject
         ) {
             if ($stmt->name instanceof PhpParser\Node\Identifier) {

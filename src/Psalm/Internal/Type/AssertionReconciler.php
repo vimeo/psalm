@@ -1288,12 +1288,21 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
             ]);
 
             if ($allow_string_comparison) {
-                $type->addType(
-                    new Type\Atomic\TClassString(
-                        $assertion,
-                        new Type\Atomic\TNamedObject($assertion)
-                    )
-                );
+                if ($codebase->interfaceExists($assertion)) {
+                    $type->addType(
+                        new Type\Atomic\TInterfaceString(
+                            $assertion,
+                            new Type\Atomic\TNamedObject($assertion)
+                        )
+                    );
+                } else {
+                    $type->addType(
+                        new Type\Atomic\TClassString(
+                            $assertion,
+                            new Type\Atomic\TNamedObject($assertion)
+                        )
+                    );
+                }
             }
 
             $should_return = true;
@@ -1325,7 +1334,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                 $old_type_has_interface_string = false;
 
                 foreach ($existing_var_type->getAtomicTypes() as $existing_type_part) {
-                    if ($existing_type_part instanceof TClassString
+                    if ($existing_type_part instanceof Type\Atomic\TInterfaceString
                         && $existing_type_part->as_type
                         && $codebase->interfaceExists($existing_type_part->as_type->value)
                     ) {
@@ -1367,7 +1376,8 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
 
                     foreach ($existing_var_type->getAtomicTypes() as $existing_var_type_part) {
                         if (!$new_type_part instanceof TNamedObject
-                            || !$existing_var_type_part instanceof TClassString
+                            || (!$existing_var_type_part instanceof TClassString
+                                && !$existing_var_type_part instanceof Type\Atomic\TInterfaceString)
                         ) {
                             $acceptable_atomic_types = [];
 
@@ -1402,6 +1412,12 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
 
                     if (count($acceptable_atomic_types) === 1) {
                         $should_return = true;
+
+                        if ($codebase->interfaceExists($acceptable_atomic_types[0]->value)) {
+                            return new Type\Union([
+                                new Type\Atomic\TInterfaceString('object', $acceptable_atomic_types[0]),
+                            ]);
+                        }
 
                         return new Type\Union([
                             new TClassString('object', $acceptable_atomic_types[0]),

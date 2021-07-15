@@ -164,7 +164,8 @@ class TemplateStandinTypeReplacer
             );
         }
 
-        if ($atomic_type instanceof Atomic\TTemplateParamClass
+        if (($atomic_type instanceof Atomic\TTemplateParamClass
+                || $atomic_type instanceof Atomic\TTemplateParamInterface)
             && isset($template_result->template_types[$atomic_type->param_name][$atomic_type->defining_class])
         ) {
             if ($replace) {
@@ -845,10 +846,12 @@ class TemplateStandinTypeReplacer
     }
 
     /**
-     * @return non-empty-list<Atomic\TClassString>
+     * @param Atomic\TTemplateParamClass|Atomic\TTemplateParamInterface $atomic_type
+     *
+     * @return non-empty-list<Atomic\TClassString|Atomic\TInterfaceString>
      */
     public static function handleTemplateParamClassStandin(
-        Atomic\TTemplateParamClass $atomic_type,
+        Atomic $atomic_type,
         ?Union $input_type,
         ?int $input_arg_offset,
         ?string $calling_class,
@@ -877,7 +880,9 @@ class TemplateStandinTypeReplacer
                     $valid_input_atomic_types[] = new Atomic\TNamedObject(
                         $input_atomic_type->value
                     );
-                } elseif ($input_atomic_type instanceof Atomic\TTemplateParamClass) {
+                } elseif ($input_atomic_type instanceof Atomic\TTemplateParamClass
+                    || $input_atomic_type instanceof Atomic\TTemplateParamInterface
+                ) {
                     $valid_input_atomic_types[] = new Atomic\TTemplateParam(
                         $input_atomic_type->param_name,
                         $input_atomic_type->as_type
@@ -971,20 +976,29 @@ class TemplateStandinTypeReplacer
 
             foreach ($template_type->getAtomicTypes() as $template_atomic_type) {
                 if ($template_atomic_type instanceof Atomic\TNamedObject) {
-                    $atomic_types[] = new Atomic\TClassString(
-                        $template_atomic_type->value,
-                        $template_atomic_type
-                    );
+                    $atomic_types[] = $atomic_type instanceof Atomic\TTemplateParamClass
+                        ? new Atomic\TClassString(
+                            $template_atomic_type->value,
+                            $template_atomic_type
+                        )
+                        : new Atomic\TInterfaceString(
+                            $template_atomic_type->value,
+                            $template_atomic_type
+                        );
                 } elseif ($template_atomic_type instanceof Atomic\TObject) {
-                    $atomic_types[] = new Atomic\TClassString();
+                    $atomic_types[] = $atomic_type instanceof Atomic\TTemplateParamClass
+                        ? new Atomic\TClassString()
+                        : new Atomic\TInterfaceString;
                 }
             }
         }
 
-        $class_string = new Atomic\TClassString($atomic_type->as, $atomic_type->as_type);
-
         if (!$atomic_types) {
-            $atomic_types[] = $class_string;
+            $class_string = $atomic_type instanceof Atomic\TTemplateParamClass
+                ? new Atomic\TClassString($atomic_type->as, $atomic_type->as_type)
+                : new Atomic\TInterfaceString($atomic_type->as, $atomic_type->as_type);
+
+            $atomic_types = [$class_string];
         }
 
         return $atomic_types;

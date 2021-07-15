@@ -24,6 +24,7 @@ use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\THtmlEscapedString;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TInterfaceString;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
@@ -248,8 +249,10 @@ abstract class Atomic implements TypeNode
                 return new Type\Atomic\TObjectWithProperties([], ['__tostring' => 'string']);
 
             case 'class-string':
-            case 'interface-string':
                 return new TClassString();
+
+            case 'interface-string':
+                return new TInterfaceString();
 
             case 'trait-string':
                 return new TTraitString();
@@ -498,7 +501,7 @@ abstract class Atomic implements TypeNode
             }
         }
 
-        if ($this instanceof TClassString && $this->as !== 'object') {
+        if (($this instanceof TClassString || $this instanceof TInterfaceString) && $this->as !== 'object') {
             if (strtolower($this->as) === $old) {
                 $this->as = $new;
             }

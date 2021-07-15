@@ -947,6 +947,26 @@ class ClassLikeStringTest extends TestCase
                     }',
                 'error_message' => 'InvalidReturnStatement',
             ],
+            'classStringPreventsInterfaces' => [
+                '<?php
+                    /**
+                     * @param class-string $s
+                     */
+                    function a(string $s): void {}
+
+                    a(Throwable::class);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'specifiClassStringPreventsInterfaces' => [
+                '<?php
+                    /**
+                     * @param class-string<Throwable> $s
+                     */
+                    function a(string $s): void {}
+
+                    a(Throwable::class);',
+                'error_message' => 'InvalidArgument',
+            ],
         ];
     }
 }

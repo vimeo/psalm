@@ -142,13 +142,16 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\EventHandler\FunctionR
                     foreach ($variable_type->getAtomicTypes() as $variable_atomic_type) {
                         if ($variable_atomic_type instanceof Type\Atomic\TTemplateParam
                             || $variable_atomic_type instanceof Type\Atomic\TTemplateParamClass
+                            || $variable_atomic_type instanceof Type\Atomic\TTemplateParamInterface
                         ) {
                             $fake_method_call = new VirtualStaticCall(
                                 $function_call_arg->value->items[0]->value,
                                 $function_call_arg->value->items[1]->value->value,
                                 []
                             );
-                        } elseif ($variable_atomic_type instanceof Type\Atomic\TTemplateParamClass) {
+                        } elseif ($variable_atomic_type instanceof Type\Atomic\TTemplateParamClass
+                            || $variable_atomic_type instanceof Type\Atomic\TTemplateParamInterface
+                        ) {
                             $fake_method_call = new VirtualStaticCall(
                                 $function_call_arg->value->items[0]->value,
                                 $function_call_arg->value->items[1]->value->value,

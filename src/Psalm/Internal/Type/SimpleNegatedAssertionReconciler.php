@@ -710,6 +710,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         if (isset($existing_var_atomic_types['string'])) {
             if (!$existing_var_atomic_types['string'] instanceof Type\Atomic\TNonFalsyString
                 && !$existing_var_atomic_types['string'] instanceof Type\Atomic\TClassString
+                && !$existing_var_atomic_types['string'] instanceof Type\Atomic\TInterfaceString
                 && !$existing_var_atomic_types['string'] instanceof Type\Atomic\TDependentGetClass
             ) {
                 $did_remove_type = true;

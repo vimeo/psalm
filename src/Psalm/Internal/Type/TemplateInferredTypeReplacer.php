@@ -126,7 +126,9 @@ class TemplateInferredTypeReplacer
                         $new_types[] = $template_type_part;
                     }
                 }
-            } elseif ($atomic_type instanceof Atomic\TTemplateParamClass) {
+            } elseif ($atomic_type instanceof Atomic\TTemplateParamClass
+                || $atomic_type instanceof Atomic\TTemplateParamInterface
+            ) {
                 $template_type = isset($inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class])
                     ? clone TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
                         $inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class],
@@ -141,12 +143,19 @@ class TemplateInferredTypeReplacer
                         if ($template_type_part instanceof Atomic\TMixed
                             || $template_type_part instanceof Atomic\TObject
                         ) {
-                            $class_template_type = new Atomic\TClassString();
+                            $class_template_type = $atomic_type instanceof Atomic\TTemplateParamInterface
+                                ? new Atomic\TInterfaceString()
+                                : new Atomic\TClassString();
                         } elseif ($template_type_part instanceof Atomic\TNamedObject) {
-                            $class_template_type = new Atomic\TClassString(
-                                $template_type_part->value,
-                                $template_type_part
-                            );
+                            $class_template_type = $atomic_type instanceof Atomic\TTemplateParamInterface
+                                ? new Atomic\TInterfaceString(
+                                    $template_type_part->value,
+                                    $template_type_part
+                                )
+                                : new Atomic\TClassString(
+                                    $template_type_part->value,
+                                    $template_type_part
+                                );
                         } elseif ($template_type_part instanceof Atomic\TTemplateParam) {
                             $first_atomic_type = array_values($template_type_part->as->getAtomicTypes())[0];
 

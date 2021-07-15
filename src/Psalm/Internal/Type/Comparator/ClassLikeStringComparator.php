@@ -5,9 +5,11 @@ namespace Psalm\Internal\Type\Comparator;
 use Psalm\Codebase;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TClassString;
+use Psalm\Type\Atomic\TInterfaceString;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParamClass;
+use Psalm\Type\Atomic\TTemplateParamInterface;
 
 use function get_class;
 
@@ -17,8 +19,8 @@ use function get_class;
 class ClassLikeStringComparator
 {
     /**
-     * @param TClassString|TLiteralClassString $input_type_part
-     * @param TClassString|TLiteralClassString $container_type_part
+     * @param TInterfaceString|TClassString|TLiteralClassString $input_type_part
+     * @param TInterfaceString|TClassString|TLiteralClassString $container_type_part
      */
     public static function isContainedBy(
         Codebase $codebase,
@@ -33,7 +35,8 @@ class ClassLikeStringComparator
             return $container_type_part->value === $input_type_part->value;
         }
 
-        if ($container_type_part instanceof TTemplateParamClass
+        if (($container_type_part instanceof TTemplateParamClass
+                || $container_type_part instanceof TTemplateParamInterface)
             && get_class($input_type_part) === TClassString::class
         ) {
             if ($atomic_comparison_result) {
@@ -47,7 +50,20 @@ class ClassLikeStringComparator
             && $container_type_part->as === 'object'
             && !$container_type_part->as_type
         ) {
-            return true;
+            return !$input_type_part instanceof TInterfaceString
+                && (!$input_type_part instanceof TLiteralClassString
+                    || !$codebase->classOrInterfaceExists($input_type_part->value)
+                    || $codebase->classExists($input_type_part->value));
+        }
+
+        if ($container_type_part instanceof TInterfaceString
+            && $container_type_part->as === 'object'
+            && !$container_type_part->as_type
+        ) {
+            return !$input_type_part instanceof TClassString
+                && (!$input_type_part instanceof TLiteralClassString
+                    || !$codebase->classOrInterfaceExists($input_type_part->value)
+                    || $codebase->interfaceExists($input_type_part->value));
         }
 
         if ($input_type_part instanceof TClassString
@@ -62,23 +78,29 @@ class ClassLikeStringComparator
             return false;
         }
 
-        $fake_container_object = $container_type_part instanceof TClassString
-            && $container_type_part->as_type
-            ? $container_type_part->as_type
-            : new TNamedObject(
-                $container_type_part instanceof TClassString
-                    ? $container_type_part->as
-                    : $container_type_part->value
-            );
+        if ($input_type_part instanceof TLiteralClassString
+            && $codebase->classOrInterfaceExists($input_type_part->value)
+        ) {
+            if (($container_type_part instanceof TClassString
+                    && !$codebase->classExists($input_type_part->value))
+                || ($container_type_part instanceof TInterfaceString
+                    && !$codebase->interfaceExists($input_type_part->value))
+            ) {
+                return false;
+            }
+        }
 
-        $fake_input_object = $input_type_part instanceof TClassString
-            && $input_type_part->as_type
-            ? $input_type_part->as_type
-            : new TNamedObject(
-                $input_type_part instanceof TClassString
-                    ? $input_type_part->as
-                    : $input_type_part->value
-            );
+        if ($container_type_part instanceof TClassString || $container_type_part instanceof TInterfaceString) {
+            $fake_container_object = $container_type_part->as_type ?: new TNamedObject($container_type_part->as);
+        } else {
+            $fake_container_object = new TNamedObject($container_type_part->value);
+        }
+
+        if ($input_type_part instanceof TClassString || $input_type_part instanceof TInterfaceString) {
+            $fake_input_object = $input_type_part->as_type ?: new TNamedObject($input_type_part->as);
+        } else {
+            $fake_input_object = new TNamedObject($input_type_part->value);
+        }
 
         return AtomicTypeComparator::isContainedBy(
             $codebase,

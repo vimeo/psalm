@@ -1171,7 +1171,9 @@ class AssertionFinder
                 foreach ($stmt_class_type->getAtomicTypes() as $atomic_type) {
                     if ($atomic_type instanceof Type\Atomic\TLiteralClassString) {
                         $literal_class_strings[] = $atomic_type->value;
-                    } elseif ($atomic_type instanceof Type\Atomic\TTemplateParamClass) {
+                    } elseif ($atomic_type instanceof Type\Atomic\TTemplateParamClass
+                        || $atomic_type instanceof Type\Atomic\TTemplateParamInterface
+                    ) {
                         $literal_class_strings[] = $atomic_type->param_name;
                     }
                 }
@@ -2505,7 +2507,9 @@ class AssertionFinder
 
             if ($type && $var_name) {
                 foreach ($type->getAtomicTypes() as $type_part) {
-                    if ($type_part instanceof Type\Atomic\TTemplateParamClass) {
+                    if ($type_part instanceof Type\Atomic\TTemplateParamClass
+                        || $type_part instanceof Type\Atomic\TTemplateParamInterface
+                    ) {
                         $if_types[$var_name] = [['!=' . $type_part->param_name]];
                     }
                 }
@@ -3203,7 +3207,9 @@ class AssertionFinder
 
             if ($type && $var_name) {
                 foreach ($type->getAtomicTypes() as $type_part) {
-                    if ($type_part instanceof Type\Atomic\TTemplateParamClass) {
+                    if ($type_part instanceof Type\Atomic\TTemplateParamClass
+                        || $type_part instanceof Type\Atomic\TTemplateParamInterface
+                    ) {
                         $if_types[$var_name] = [['=' . $type_part->param_name]];
                     }
                 }
@@ -3374,7 +3380,9 @@ class AssertionFinder
                     $vals = [];
 
                     foreach ($second_arg_type->getAtomicTypes() as $second_arg_atomic_type) {
-                        if ($second_arg_atomic_type instanceof Type\Atomic\TTemplateParamClass) {
+                        if ($second_arg_atomic_type instanceof Type\Atomic\TTemplateParamClass
+                            || $second_arg_atomic_type instanceof Type\Atomic\TTemplateParamInterface
+                        ) {
                             $vals[] = [$is_a_prefix . $second_arg_atomic_type->param_name];
                         }
                     }

@@ -21,6 +21,7 @@ use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TInterfaceString;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TMixed;
@@ -2324,6 +2325,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                 || $type instanceof TResource
                 || $type instanceof TCallable
                 || $type instanceof TClassString
+                || $type instanceof TInterfaceString
             ) {
                 $did_remove_type = true;
 

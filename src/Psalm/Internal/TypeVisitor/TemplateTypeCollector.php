@@ -4,6 +4,7 @@ namespace Psalm\Internal\TypeVisitor;
 use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
+use Psalm\Type\Atomic\TTemplateParamInterface;
 use Psalm\Type\NodeVisitor;
 use Psalm\Type\TypeNode;
 use Psalm\Type\Union;
@@ -19,12 +20,12 @@ class TemplateTypeCollector extends NodeVisitor
     {
         if ($type instanceof TTemplateParam) {
             $this->template_types[] = $type;
-        } elseif ($type instanceof TTemplateParamClass) {
+        } elseif ($type instanceof TTemplateParamClass || $type instanceof TTemplateParamInterface) {
             $extends = $type->as_type;
 
             $this->template_types[] = new TTemplateParam(
                 $type->param_name,
-                $extends ? new Union([$extends]) : \Psalm\Type::getMixed(),
+                $extends ? new Union([$extends]) : \Psalm\Type::getObject(),
                 $type->defining_class
             );
         } elseif ($type instanceof TConditional) {

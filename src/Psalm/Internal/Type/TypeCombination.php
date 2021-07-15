@@ -61,16 +61,19 @@ class TypeCombination
     public $mixed_from_loop_isset = null;
 
     /** @var array<string, Atomic\TLiteralString>|null */
-    public $strings = [];
+    public $literal_strings = [];
 
     /** @var array<string, Atomic\TLiteralInt>|null */
-    public $ints = [];
+    public $literal_ints = [];
 
     /** @var array<string, Atomic\TLiteralFloat>|null */
-    public $floats = [];
+    public $literal_floats = [];
 
-    /** @var array<string, Atomic\TNamedObject|Atomic\TObject>|null */
-    public $class_string_types = [];
+    /** @var array<string, Atomic\TClassString>|null */
+    public $class_strings = [];
+
+    /** @var array<string, Atomic\TInterfaceString>|null */
+    public $interface_strings = [];
 
     /**
      * @var array<string, Atomic\TNamedObject|Atomic\TTemplateParam|Atomic\TIterable|Atomic\TObject>|null

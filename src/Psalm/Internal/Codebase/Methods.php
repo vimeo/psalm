@@ -511,7 +511,9 @@ class Methods
                 }
             }
 
-            if ($atomic_type instanceof Type\Atomic\TTemplateParamClass) {
+            if ($atomic_type instanceof Type\Atomic\TTemplateParamClass
+                || $atomic_type instanceof Type\Atomic\TTemplateParamInterface
+            ) {
                 if ($atomic_type->defining_class === $base_fq_class_name) {
                     if (isset($extends[$base_fq_class_name][$atomic_type->param_name])) {
                         $extended_param = $extends[$base_fq_class_name][$atomic_type->param_name];

@@ -19,6 +19,7 @@ use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\THtmlEscapedString;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TInterfaceString;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -166,7 +167,7 @@ class ScalarTypeComparator
                 return false;
             }
 
-            if ($input_type_part instanceof TClassString) {
+            if ($input_type_part instanceof TClassString || $input_type_part instanceof TInterfaceString) {
                 return false;
             }
 
@@ -438,8 +439,13 @@ class ScalarTypeComparator
             return false;
         }
 
-        if (($container_type_part instanceof TClassString || $container_type_part instanceof TLiteralClassString)
-            && ($input_type_part instanceof TClassString || $input_type_part instanceof TLiteralClassString)
+        if (($container_type_part instanceof TClassString
+                || $container_type_part instanceof Type\Atomic\TInterfaceString
+                || $container_type_part instanceof TLiteralClassString
+            )
+            && ($input_type_part instanceof TClassString
+                || $input_type_part instanceof Type\Atomic\TInterfaceString
+                || $input_type_part instanceof TLiteralClassString)
         ) {
             return ClassLikeStringComparator::isContainedBy(
                 $codebase,
@@ -467,7 +473,8 @@ class ScalarTypeComparator
         }
 
         if (($input_type_part instanceof TClassString
-            || $input_type_part instanceof TLiteralClassString)
+            || $input_type_part instanceof TLiteralClassString
+            || $input_type_part instanceof TInterfaceString)
             && (get_class($container_type_part) === TSingleLetter::class
                 || get_class($container_type_part) === TNonEmptyString::class
                 || get_class($container_type_part) === TNonFalsyString::class)
@@ -537,6 +544,7 @@ class ScalarTypeComparator
 
         if (($container_type_part instanceof TClassString
                 || $container_type_part instanceof TLiteralClassString
+                || $container_type_part instanceof TInterfaceString
                 || $container_type_part instanceof TCallableString)
             && $input_type_part instanceof TString
         ) {

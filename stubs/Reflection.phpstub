@@ -5,8 +5,8 @@
  *
  * @property-read class-string<T> $name
  */
-class ReflectionClass implements Reflector {
-
+class ReflectionClass implements Reflector
+{
     /**
      * @var class-string<T>
      */
