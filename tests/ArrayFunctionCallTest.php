@@ -2001,7 +2001,7 @@ class ArrayFunctionCallTest extends TestCase
                     array_filter(["hello"], "foo");',
                 'error_message' => 'InvalidScalarArgument',
             ],
-            'SKIPPED-arrayFillPositiveConstantLength' => [
+            'arrayFillPositiveConstantLength' => [
                 '<?php
                     count(array_fill(0, 1, 0)) === 0;',
                 'error_message' => 'TypeDoesNotContainType'

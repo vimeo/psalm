@@ -336,38 +336,6 @@ class AssertionFinder
             );
         }
 
-        $count = null;
-        $count_equality_position = self::hasCountEqualityCheck($conditional, $count);
-
-        if ($count_equality_position) {
-            $if_types = [];
-
-            if ($count_equality_position === self::ASSIGNMENT_TO_RIGHT) {
-                $count_expr = $conditional->left;
-            } elseif ($count_equality_position === self::ASSIGNMENT_TO_LEFT) {
-                $count_expr = $conditional->right;
-            } else {
-                throw new \UnexpectedValueException('$count_equality_position value');
-            }
-
-            /** @var PhpParser\Node\Expr\FuncCall $count_expr */
-            $var_name = ExpressionIdentifier::getArrayVarId(
-                $count_expr->args[0]->value,
-                $this_class_name,
-                $source
-            );
-
-            if ($var_name) {
-                if ($count) {
-                    $if_types[$var_name] = [['has-exactly-' . $count]];
-                } else {
-                    $if_types[$var_name] = [['!non-empty-countable']];
-                }
-            }
-
-            return $if_types ? [$if_types] : [];
-        }
-
         $empty_array_position = self::hasEmptyArrayVariable($conditional);
 
         if ($empty_array_position !== null) {
@@ -406,6 +374,71 @@ class AssertionFinder
             return [];
         }
 
+        $typed_value_position = self::hasTypedValueComparison($conditional, $source);
+
+        //we check for paradoxical assertions now, we'll use $typed_value_position later if not handled by CountEquality
+        if ($typed_value_position) {
+            if ($typed_value_position === self::ASSIGNMENT_TO_RIGHT) {
+                $other_type = $source->node_data->getType($conditional->left);
+                $var_type = $source->node_data->getType($conditional->right);
+            } elseif ($typed_value_position === self::ASSIGNMENT_TO_LEFT) {
+                $var_type = $source->node_data->getType($conditional->left);
+                $other_type = $source->node_data->getType($conditional->right);
+            } else {
+                throw new \UnexpectedValueException('$typed_value_position value');
+            }
+
+            if ($codebase
+                && $other_type
+                && $var_type
+                && ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
+                    || ($other_type->isString()
+                        && $var_type->isString())
+                )
+            ) {
+                self::handleParadoxicalAssertions(
+                    $source,
+                    $var_type,
+                    $this_class_name,
+                    $other_type,
+                    $codebase,
+                    $conditional
+                );
+            }
+        }
+
+        $count = null;
+        $count_equality_position = self::hasCountEqualityCheck($conditional, $count);
+
+        if ($count_equality_position) {
+            $if_types = [];
+
+            if ($count_equality_position === self::ASSIGNMENT_TO_RIGHT) {
+                $count_expr = $conditional->left;
+            } elseif ($count_equality_position === self::ASSIGNMENT_TO_LEFT) {
+                $count_expr = $conditional->right;
+            } else {
+                throw new \UnexpectedValueException('$count_equality_position value');
+            }
+
+            /** @var PhpParser\Node\Expr\FuncCall $count_expr */
+            $var_name = ExpressionIdentifier::getArrayVarId(
+                $count_expr->args[0]->value,
+                $this_class_name,
+                $source
+            );
+
+            if ($var_name) {
+                if ($count) {
+                    $if_types[$var_name] = [['has-exactly-' . $count]];
+                } else {
+                    $if_types[$var_name] = [['!non-empty-countable']];
+                }
+            }
+
+            return $if_types ? [$if_types] : [];
+        }
+
         $getclass_position = self::hasGetClassCheck($conditional, $source);
 
         if ($getclass_position) {
@@ -416,8 +449,6 @@ class AssertionFinder
                 $getclass_position
             );
         }
-
-        $typed_value_position = self::hasTypedValueComparison($conditional, $source);
 
         if ($typed_value_position) {
             return self::getTypedValueEqualityAssertions(
