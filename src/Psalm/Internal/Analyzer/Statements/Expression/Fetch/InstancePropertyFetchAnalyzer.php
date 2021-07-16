@@ -391,6 +391,7 @@ class InstancePropertyFetchAnalyzer
             }
         }
 
+
         if (($stmt_var_type = $statements_analyzer->node_data->getType($stmt->var))
             && $stmt_var_type->hasObjectType()
             && $stmt->name instanceof PhpParser\Node\Identifier
@@ -404,6 +405,7 @@ class InstancePropertyFetchAnalyzer
 
                     $property_id = $lhs_type_part->value . '::$' . $stmt->name->name;
 
+
                     $class_storage = $codebase->classlike_storage_provider->get($lhs_type_part->value);
 
                     AtomicPropertyFetchAnalyzer::processTaints(
@@ -414,6 +416,21 @@ class InstancePropertyFetchAnalyzer
                         $class_storage,
                         $in_assignment
                     );
+
+                    $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
+                        $property_id,
+                        true,
+                        $statements_analyzer
+                    );
+
+                    if ($declaring_property_class) {
+                        AtomicPropertyFetchAnalyzer::checkPropertyDeprecation(
+                            $stmt->name->name,
+                            $declaring_property_class,
+                            $stmt,
+                            $statements_analyzer
+                        );
+                    }
 
                     $codebase->properties->propertyExists(
                         $property_id,
