@@ -168,6 +168,38 @@ class DeprecatedAnnotationTest extends TestCase
                     $a->foo = 5;',
                 'error_message' => 'DeprecatedProperty',
             ],
+            'deprecatedPropertyGetFromInsideTheClass' => [
+                '<?php
+                    class A{
+                        /**
+                         * @deprecated
+                         * @var ?int
+                         */
+                        public $foo;
+                        public function bar(): void
+                        {
+                            echo $this->foo;
+                        }
+                    }
+                ',
+                'error_message' => 'DeprecatedProperty',
+            ],
+            'deprecatedPropertySetFromInsideTheClass' => [
+                '<?php
+                    class A{
+                        /**
+                         * @deprecated
+                         * @var ?int
+                         */
+                        public $foo;
+                        public function bar(int $p): void
+                        {
+                            $this->foo = $p;
+                        }
+                    }
+                ',
+                'error_message' => 'DeprecatedProperty',
+            ],
             'deprecatedClassConstant' => [
                 '<?php
                     /**

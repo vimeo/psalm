@@ -344,6 +344,9 @@ class AtomicPropertyFetchAnalyzer
             }
         }
 
+        // FIXME: the following line look superfluous, but removing it makes
+        // Psalm\Tests\PropertyTypeTest::testValidCode with data set "callInParentContext"
+        // fail
         $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
             $property_id,
             true,
@@ -380,20 +383,9 @@ class AtomicPropertyFetchAnalyzer
         );
 
         if (isset($declaring_class_storage->properties[$prop_name])) {
-            $property_storage = $declaring_class_storage->properties[$prop_name];
+            self::checkPropertyDeprecation($prop_name, $declaring_property_class, $stmt, $statements_analyzer);
 
-            if ($property_storage->deprecated) {
-                if (IssueBuffer::accepts(
-                    new DeprecatedProperty(
-                        $property_id . ' is marked deprecated',
-                        new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        $property_id
-                    ),
-                    $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
-            }
+            $property_storage = $declaring_class_storage->properties[$prop_name];
 
             if ($context->self && !NamespaceAnalyzer::isWithin($context->self, $property_storage->internal)) {
                 if (IssueBuffer::accepts(
@@ -478,6 +470,36 @@ class AtomicPropertyFetchAnalyzer
             );
         } else {
             $statements_analyzer->node_data->setType($stmt, $class_property_type);
+        }
+    }
+
+    public static function checkPropertyDeprecation(
+        string $prop_name,
+        string $declaring_property_class,
+        PhpParser\Node\Expr\PropertyFetch $stmt,
+        StatementsAnalyzer $statements_analyzer
+    ): void {
+        $property_id = $declaring_property_class . '::$' . $prop_name;
+        $codebase = $statements_analyzer->getCodebase();
+        $declaring_class_storage = $codebase->classlike_storage_provider->get(
+            $declaring_property_class
+        );
+
+        if (isset($declaring_class_storage->properties[$prop_name])) {
+            $property_storage = $declaring_class_storage->properties[$prop_name];
+
+            if ($property_storage->deprecated) {
+                if (IssueBuffer::accepts(
+                    new DeprecatedProperty(
+                        $property_id . ' is marked deprecated',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        $property_id
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            }
         }
     }
 
