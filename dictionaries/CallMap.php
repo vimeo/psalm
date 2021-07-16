@@ -10470,7 +10470,7 @@ return [
 'radius_put_vendor_string' => ['bool', 'radius_handle'=>'resource', 'vendor'=>'int', 'type'=>'int', 'value'=>'string'],
 'radius_request_authenticator' => ['string', 'radius_handle'=>'resource'],
 'radius_salt_encrypt_attr' => ['string', 'radius_handle'=>'resource', 'data'=>'string'],
-'radius_send_request' => ['int', 'radius_handle'=>'resource'],
+'radius_send_request' => ['int|false', 'radius_handle'=>'resource'],
 'radius_server_secret' => ['string', 'radius_handle'=>'resource'],
 'radius_strerror' => ['string', 'radius_handle'=>'resource'],
 'rand' => ['int', 'min'=>'int', 'max'=>'int'],
