@@ -1185,6 +1185,14 @@ class AnnotationTest extends TestCase
 
                     takesFlags(FileFlag::MODIFIED | FileFlag::NEW);'
             ],
+            'intMaskWithZero' => [
+                '<?php
+                    /** @param int-mask<1,2> $_flags */
+                    function takesFlags(int $_flags): void {}
+
+                    takesFlags(0);
+                '
+            ],
             'intMaskOfWithClassWildcard' => [
                 '<?php
                     class FileFlag {
@@ -1201,6 +1209,20 @@ class AnnotationTest extends TestCase
                     }
 
                     takesFlags(FileFlag::MODIFIED | FileFlag::NEW);'
+            ],
+            'intMaskOfWithZero' => [
+                '<?php
+                    class FileFlag {
+                        public const OPEN = 1;
+                        public const MODIFIED = 2;
+                        public const NEW = 4;
+                    }
+
+                    /** @param int-mask-of<FileFlag::*> $_flags */
+                    function takesFlags(int $_flags): void {}
+
+                    takesFlags(0);
+                '
             ],
             'emptyStringFirst' => [
                 '<?php

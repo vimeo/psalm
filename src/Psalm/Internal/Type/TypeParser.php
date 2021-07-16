@@ -442,6 +442,7 @@ class TypeParser
             $potential_values = array_merge($new_values, $potential_values);
         }
 
+        array_unshift($potential_values, 0);
         $potential_values = array_unique($potential_values);
 
         return array_map(

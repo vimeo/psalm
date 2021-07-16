@@ -917,15 +917,15 @@ class TypeParseTest extends TestCase
 
         $docblock_type = Type::parseString('int-mask<1, 2, 4>');
 
-        $this->assertSame('1|2|3|4|5|6|7', $docblock_type->getId());
+        $this->assertSame('0|1|2|3|4|5|6|7', $docblock_type->getId());
 
         $docblock_type = Type::parseString('int-mask<1, 4>');
 
-        $this->assertSame('1|4|5', $docblock_type->getId());
+        $this->assertSame('0|1|4|5', $docblock_type->getId());
 
         $docblock_type = Type::parseString('int-mask<PREG_PATTERN_ORDER, PREG_OFFSET_CAPTURE, PREG_UNMATCHED_AS_NULL>');
 
-        $this->assertSame('1|256|257|512|513|768|769', $docblock_type->getId());
+        $this->assertSame('0|1|256|257|512|513|768|769', $docblock_type->getId());
     }
 
     public function testIntMaskWithClassConstant(): void
