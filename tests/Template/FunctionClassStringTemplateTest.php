@@ -61,7 +61,7 @@ class FunctionClassStringTemplateTest extends TestCase
                 '<?php
                     /**
                      * @template T as iterable
-                     * @param T::class $class
+                     * @param class-string<T> $class
                      */
                     function foo(string $class) : void {
                         $a = new $class();
@@ -236,7 +236,7 @@ class FunctionClassStringTemplateTest extends TestCase
                      * @template T as object
                      * @template S as object
                      * @param array<T> $a
-                     * @param class-string<S> $type
+                     * @param interface-string<S> $type
                      * @return array<T&S>
                      */
                     function filter(array $a, string $type): array {
@@ -265,7 +265,7 @@ class FunctionClassStringTemplateTest extends TestCase
                      * @template T as object
                      * @template S as object
                      * @param T $item
-                     * @param class-string<S> $type
+                     * @param interface-string<S> $type
                      * @return T&S
                      */
                     function filter($item, string $type) {

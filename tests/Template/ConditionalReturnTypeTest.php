@@ -627,7 +627,7 @@ class ConditionalReturnTypeTest extends TestCase
 
                     /**
                      * @template T
-                     * @param string|class-string<T> $name
+                     * @param literal-string|class-string<T> $name
                      * @return ($name is class-string ? T : mixed)
                      */
                     function get(string $name) {

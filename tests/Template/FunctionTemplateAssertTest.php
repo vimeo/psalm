@@ -425,7 +425,7 @@ class FunctionTemplateAssertTest extends TestCase
                      * @psalm-assert-if-true iterable<mixed,T> $i
                      *
                      * @param iterable<mixed,mixed> $i
-                     * @param class-string<T> $type
+                     * @param class-string<T>|interface-string<T> $type
                      */
                     function allInstanceOf(iterable $i, string $type): bool {
                         /** @psalm-suppress MixedAssignment */
@@ -458,16 +458,16 @@ class FunctionTemplateAssertTest extends TestCase
                     /**
                       * @psalm-template ExpectedType of object
                       * @param mixed $value
-                      * @psalm-param class-string<ExpectedType> $interface
-                      * @psalm-assert ExpectedType|class-string<ExpectedType> $value
+                      * @psalm-param interface-string<ExpectedType> $interface
+                      * @psalm-assert ExpectedType|interface-string<ExpectedType> $value
                       */
                     function implementsInterface($value, $interface, string $message = ""): void {}
 
                     /**
                       * @psalm-template ExpectedType of object
                       * @param mixed $value
-                      * @psalm-param class-string<ExpectedType> $interface
-                      * @psalm-assert null|ExpectedType|class-string<ExpectedType> $value
+                      * @psalm-param interface-string<ExpectedType> $interface
+                      * @psalm-assert null|ExpectedType|interface-string<ExpectedType> $value
                       */
                     function nullOrImplementsInterface(?object $value, $interface, string $message = ""): void {}
 

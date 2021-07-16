@@ -441,7 +441,7 @@ class ScalarTypeComparator
         if (($container_type_part instanceof TClassString || $container_type_part instanceof TLiteralClassString)
             && ($input_type_part instanceof TClassString || $input_type_part instanceof TLiteralClassString)
         ) {
-            return ClassStringComparator::isContainedBy(
+            return ClassLikeStringComparator::isContainedBy(
                 $codebase,
                 $input_type_part,
                 $container_type_part,
