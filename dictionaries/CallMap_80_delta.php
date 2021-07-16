@@ -594,7 +594,7 @@ return [
 'xmlwriter_start_pi' => ['bool', 'writer'=>'resource', 'target'=>'string'],
 'xmlwriter_text' => ['bool', 'writer'=>'resource', 'content'=>'string'],
 'xmlwriter_write_attribute' => ['bool', 'writer'=>'resource', 'name'=>'string', 'value'=>'string'],
-'xmlwriter_write_attribute_ns' => ['bool', 'writer'=>'resource', 'prefix'=>'string', 'name'=>'string', 'namespace'=>'string', 'value'=>'?string'],
+'xmlwriter_write_attribute_ns' => ['bool', 'writer'=>'resource', 'prefix'=>'string', 'name'=>'string', 'namespace'=>'?string', 'value'=>'string'],
 'xmlwriter_write_cdata' => ['bool', 'writer'=>'resource', 'content'=>'string'],
 'xmlwriter_write_comment' => ['bool', 'writer'=>'resource', 'content'=>'string'],
 'xmlwriter_write_dtd' => ['bool', 'writer'=>'resource', 'name'=>'string', 'publicId='=>'?string', 'systemId='=>'?string', 'content='=>'?string'],
