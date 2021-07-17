@@ -3269,15 +3269,6 @@ class UnusedVariableTest extends TestCase
                     };',
                 'error_message' => 'UnusedVariable',
             ],
-            'globalVariableUsage' => [
-                '<?php
-                    $a = "hello";
-                    function example() : void {
-                        global $a;
-                    }
-                    example();',
-                'error_message' => 'UnusedVariable',
-            ],
             'warnAboutOriginalBadArray' => [
                 '<?php
                     function takesArray(array $arr) : void {
