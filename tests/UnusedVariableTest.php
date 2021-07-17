@@ -2424,6 +2424,14 @@ class UnusedVariableTest extends TestCase
                         return $randomBytes;
                     }'
             ],
+            'globalChangeValue' => [
+                '<?php
+                    function setProxySettingsFromEnv(): void {
+                        global $a;
+
+                        $a = false;
+                    }'
+            ],
         ];
     }
 

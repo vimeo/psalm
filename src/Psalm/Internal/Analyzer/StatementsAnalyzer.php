@@ -194,7 +194,7 @@ class StatementsAnalyzer extends SourceAnalyzer
             && $context->check_variables
         ) {
             //var_dump($this->data_flow_graph);
-            $this->checkUnreferencedVars($stmts);
+            $this->checkUnreferencedVars($stmts, $context);
         }
 
         if ($codebase->alter_code && $root_scope && $this->vars_to_initialize) {
@@ -701,7 +701,7 @@ class StatementsAnalyzer extends SourceAnalyzer
     /**
      * @param  array<PhpParser\Node\Stmt>   $stmts
      */
-    public function checkUnreferencedVars(array $stmts): void
+    public function checkUnreferencedVars(array $stmts, Context $context): void
     {
         $source = $this->getSource();
         $codebase = $source->getCodebase();
@@ -776,6 +776,7 @@ class StatementsAnalyzer extends SourceAnalyzer
             $assignment_node = DataFlowNode::getForAssignment($var_id, $original_location);
 
             if (!isset($this->byref_uses[$var_id])
+                && !isset($context->vars_from_global[$var_id])
                 && !VariableFetchAnalyzer::isSuperGlobal($var_id)
                 && $this->data_flow_graph instanceof VariableUseGraph
                 && !$this->data_flow_graph->isVariableUsed($assignment_node)
