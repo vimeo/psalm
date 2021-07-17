@@ -65,6 +65,7 @@ class GlobalAnalyzer
                     $context->vars_in_scope[$var_id]->parent_nodes = [
                         $assignment_node->id => $assignment_node,
                     ];
+                    $context->vars_from_global[$var_id] = true;
                     $statements_analyzer->registerVariable(
                         $var_id,
                         new CodeLocation($statements_analyzer, $var),

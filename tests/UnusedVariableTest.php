@@ -2424,6 +2424,14 @@ class UnusedVariableTest extends TestCase
                         return $randomBytes;
                     }'
             ],
+            'globalChangeValue' => [
+                '<?php
+                    function setProxySettingsFromEnv(): void {
+                        global $a;
+
+                        $a = false;
+                    }'
+            ],
         ];
     }
 
@@ -3259,15 +3267,6 @@ class UnusedVariableTest extends TestCase
                     return function () use ($data) {
                         $data[] = 1;
                     };',
-                'error_message' => 'UnusedVariable',
-            ],
-            'globalVariableUsage' => [
-                '<?php
-                    $a = "hello";
-                    function example() : void {
-                        global $a;
-                    }
-                    example();',
                 'error_message' => 'UnusedVariable',
             ],
             'warnAboutOriginalBadArray' => [

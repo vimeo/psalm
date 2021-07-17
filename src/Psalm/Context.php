@@ -367,6 +367,11 @@ class Context
      */
     public $has_returned = false;
 
+    /**
+     * @var array<string, bool>
+     */
+    public $vars_from_global = [];
+
     public function __construct(?string $self = null)
     {
         $this->self = $self;
