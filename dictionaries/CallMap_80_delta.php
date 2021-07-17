@@ -5,7 +5,7 @@
  *
  * This has two sections.
  * The 'new' section contains function/method names from FunctionSignatureMap (And alternates, if applicable) that do not exist in php7.4 or have different signatures in php 8.0.
- *   If they were just updated, the function/method will be present in the 'added' signatures.
+ *   If they were just updated, the function/method will be present in the 'new' section with the new signature, and the 'old' section with the old signature
  * The 'old' signatures contains the signatures that are different in php 7.4.
  *   Functions are expected to be removed only in major releases of php.
  *
@@ -266,7 +266,7 @@ return [
 'XMLWriter::flush' => ['string|int', 'empty='=>'bool'],
 'XMLWriter::startAttributeNs' => ['bool', 'prefix'=>'?string', 'name'=>'string', 'namespace'=>'?string'],
 'XMLWriter::writeAttributeNs' => ['bool', 'prefix'=>'?string', 'name'=>'string', 'namespace'=>'?string', 'value'=>'string'],
-'XMLWriter::writeDtdEntity' => ['bool', 'name'=>'string', 'content'=>'string', 'isParam'=>'bool', 'publicId'=>'?string', 'systemId'=>'?string', 'notationData'=>'?string'],
+'XMLWriter::writeDtdEntity' => ['bool', 'name'=>'string', 'content'=>'string', 'isParam='=>'bool', 'publicId='=>'?string', 'systemId='=>'?string', 'notationData='=>'?string'],
 'xmlwriter_end_attribute' => ['bool', 'writer'=>'XMLWriter'],
 'xmlwriter_end_cdata' => ['bool', 'writer'=>'XMLWriter'],
 'xmlwriter_end_comment' => ['bool', 'writer'=>'XMLWriter'],
@@ -298,15 +298,15 @@ return [
 'xmlwriter_start_pi' => ['bool', 'writer'=>'XMLWriter', 'target'=>'string'],
 'xmlwriter_text' => ['bool', 'writer'=>'XMLWriter', 'content'=>'string'],
 'xmlwriter_write_attribute' => ['bool', 'writer'=>'XMLWriter', 'name'=>'string', 'value'=>'string'],
-'xmlwriter_write_attribute_ns' => ['bool', 'writer'=>'XMLWriter', 'prefix'=>'?string', 'name'=>'string', 'namespace'=>'string', 'value'=>'?string'],
+'xmlwriter_write_attribute_ns' => ['bool', 'writer'=>'XMLWriter', 'prefix'=>'?string', 'name'=>'string', '?namespace'=>'string', 'value'=>'string'],
 'xmlwriter_write_cdata' => ['bool', 'writer'=>'XMLWriter', 'content'=>'string'],
 'xmlwriter_write_comment' => ['bool', 'writer'=>'XMLWriter', 'content'=>'string'],
 'xmlwriter_write_dtd' => ['bool', 'writer'=>'XMLWriter', 'name'=>'string', 'publicId='=>'?string', 'systemId='=>'?string', 'content='=>'?string'],
 'xmlwriter_write_dtd_attlist' => ['bool', 'writer'=>'XMLWriter', 'name'=>'string', 'content'=>'string'],
 'xmlwriter_write_dtd_element' => ['bool', 'writer'=>'XMLWriter', 'name'=>'string', 'content'=>'string'],
-'xmlwriter_write_dtd_entity' => ['bool', 'writer'=>'XMLWriter', 'name'=>'string', 'content'=>'string', 'isParam'=>'bool', 'publicId'=>'?string', 'systemId'=>'?string', 'notationData'=>'?string'],
-'xmlwriter_write_element' => ['bool', 'writer'=>'XMLWriter', 'name'=>'string', 'content'=>'?string'],
-'xmlwriter_write_element_ns' => ['bool', 'writer'=>'XMLWriter', 'prefix'=>'?string', 'name'=>'string', 'namespace'=>'string', 'content'=>'?string'],
+'xmlwriter_write_dtd_entity' => ['bool', 'writer'=>'XMLWriter', 'name'=>'string', 'content'=>'string', 'isParam='=>'bool', 'publicId='=>'?string', 'systemId='=>'?string', 'notationData='=>'?string'],
+'xmlwriter_write_element' => ['bool', 'writer'=>'XMLWriter', 'name'=>'string', 'content='=>'?string'],
+'xmlwriter_write_element_ns' => ['bool', 'writer'=>'XMLWriter', 'prefix'=>'?string', 'name'=>'string', 'namespace'=>'?string', 'content='=>'?string'],
 'xmlwriter_write_pi' => ['bool', 'writer'=>'XMLWriter', 'target'=>'string', 'content'=>'string'],
 'xmlwriter_write_raw' => ['bool', 'writer'=>'XMLWriter', 'content'=>'string'],
 ],
