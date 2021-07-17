@@ -264,6 +264,24 @@ class Properties
         throw new \UnexpectedValueException('Property ' . $property_id . ' should exist');
     }
 
+    public function hasStorage(string $property_id): bool
+    {
+        // remove trailing backslash if it exists
+        $property_id = preg_replace('/^\\\\/', '', $property_id);
+
+        [$fq_class_name, $property_name] = explode('::$', $property_id);
+
+        $class_storage = $this->classlike_storage_provider->get($fq_class_name);
+
+        if (isset($class_storage->declaring_property_ids[$property_name])) {
+            $declaring_property_class = $class_storage->declaring_property_ids[$property_name];
+            $declaring_class_storage = $this->classlike_storage_provider->get($declaring_property_class);
+
+            return isset($declaring_class_storage->properties[$property_name]);
+        }
+        return false;
+    }
+
     public function getPropertyType(
         string $property_id,
         bool $property_set,

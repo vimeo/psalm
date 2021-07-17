@@ -66,7 +66,8 @@ class AtomicPropertyFetchAnalyzer
         Type\Atomic $lhs_type_part,
         string $prop_name,
         bool &$has_valid_fetch_type,
-        array &$invalid_fetch_types
+        array &$invalid_fetch_types,
+        bool $is_static_access = false
     ) : void {
         if ($lhs_type_part instanceof TNull) {
             return;
@@ -311,7 +312,13 @@ class AtomicPropertyFetchAnalyzer
             )
         ) {
             $property_id = $context->self . '::$' . $prop_name;
-        } elseif (!$naive_property_exists) {
+        } elseif (!$naive_property_exists
+            || (!$is_static_access
+                // when methods existance is asserted by a plugin it doesn't necessarily has storage
+                && $codebase->properties->hasStorage($property_id)
+                && $codebase->properties->getStorage($property_id)->is_static
+            )
+        ) {
             self::handleNonExistentProperty(
                 $statements_analyzer,
                 $codebase,

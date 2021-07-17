@@ -1148,7 +1148,12 @@ class InstancePropertyAssignmentAnalyzer
             $statements_analyzer,
             $context,
             new CodeLocation($statements_analyzer->getSource(), $stmt)
-        )) {
+        )
+        // when methods existance is asserted by a plugin it doesn't necessarily has storage
+        || ($codebase->properties->hasStorage($property_id)
+            && $codebase->properties->getStorage($property_id)->is_static
+        )
+        ) {
             if ($stmt->var instanceof PhpParser\Node\Expr\Variable && $stmt->var->name === 'this') {
                 // if this is a proper error, we'll see it on the first pass
                 if ($context->collect_mutations) {

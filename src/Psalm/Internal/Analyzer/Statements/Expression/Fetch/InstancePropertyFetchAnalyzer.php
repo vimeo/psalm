@@ -32,7 +32,8 @@ class InstancePropertyFetchAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\PropertyFetch $stmt,
         Context $context,
-        bool $in_assignment = false
+        bool $in_assignment = false,
+        bool $is_static_access = false
     ) : bool {
         $was_inside_general_use = $context->inside_general_use;
         $context->inside_general_use = true;
@@ -247,7 +248,8 @@ class InstancePropertyFetchAnalyzer
                 $lhs_type_part,
                 $prop_name,
                 $has_valid_fetch_type,
-                $invalid_fetch_types
+                $invalid_fetch_types,
+                $is_static_access
             );
         }
 
