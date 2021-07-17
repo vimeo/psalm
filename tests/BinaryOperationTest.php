@@ -107,6 +107,29 @@ class BinaryOperationTest extends TestCase
         $this->analyzeFile('somefile.php', new \Psalm\Context());
     }
 
+    public function testStringFalseInequivalence(): void
+    {
+        $config = \Psalm\Config::getInstance();
+        $config->strict_binary_operands = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                function returnsABool(): bool {
+                    return rand(1, 2) === 1;
+                }
+
+                if (returnsABool() !== false) {
+                    echo "hi!";
+                }'
+        );
+
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectExceptionMessage('RedundantIdentityWithTrue');
+
+        $this->analyzeFile('somefile.php', new \Psalm\Context());
+    }
+
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
@@ -532,7 +555,7 @@ class BinaryOperationTest extends TestCase
             ],
             'IntOverflowPlus' => [
                 '<?php
-                    $a = 2**62 - 1 + 2**62; 
+                    $a = 2**62 - 1 + 2**62;
                     $b = 2**62 + 2**62 - 1; // plus results in a float',
                 'assertions' => [
                     '$a' => 'int',

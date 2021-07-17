@@ -2076,41 +2076,58 @@ class AssertionFinder
         if ($codebase
             && $source instanceof StatementsAnalyzer
             && ($var_type = $source->node_data->getType($base_conditional))
+            && $conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical
         ) {
-            if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical) {
-                $false_type = Type::getFalse();
+            $config = $source->getCodebase()->config;
 
-                if (!UnionTypeComparator::isContainedBy(
-                    $codebase,
-                    $var_type,
-                    $false_type
-                ) && !UnionTypeComparator::isContainedBy(
-                    $codebase,
-                    $false_type,
-                    $var_type
+            if ($config->strict_binary_operands
+                && $var_type->isSingle()
+                && $var_type->hasBool()
+                && !$var_type->from_docblock
+            ) {
+                if (IssueBuffer::accepts(
+                    new RedundantIdentityWithTrue(
+                        'The "!== false" part of this comparison is redundant',
+                        new CodeLocation($source, $conditional)
+                    ),
+                    $source->getSuppressedIssues()
                 )) {
-                    if ($var_type->from_docblock) {
-                        if (IssueBuffer::accepts(
-                            new RedundantConditionGivenDocblockType(
-                                'Docblock-defined type ' . $var_type . ' can never contain false',
-                                new CodeLocation($source, $conditional),
-                                $var_type->getId() . ' false'
-                            ),
-                            $source->getSuppressedIssues()
-                        )) {
-                            // fall through
-                        }
-                    } else {
-                        if (IssueBuffer::accepts(
-                            new RedundantCondition(
-                                $var_type . ' can never contain false',
-                                new CodeLocation($source, $conditional),
-                                $var_type->getId() . ' false'
-                            ),
-                            $source->getSuppressedIssues()
-                        )) {
-                            // fall through
-                        }
+                    // fall through
+                }
+            }
+
+            $false_type = Type::getFalse();
+
+            if (!UnionTypeComparator::isContainedBy(
+                $codebase,
+                $var_type,
+                $false_type
+            ) && !UnionTypeComparator::isContainedBy(
+                $codebase,
+                $false_type,
+                $var_type
+            )) {
+                if ($var_type->from_docblock) {
+                    if (IssueBuffer::accepts(
+                        new RedundantConditionGivenDocblockType(
+                            'Docblock-defined type ' . $var_type . ' can never contain false',
+                            new CodeLocation($source, $conditional),
+                            $var_type->getId() . ' false'
+                        ),
+                        $source->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                } else {
+                    if (IssueBuffer::accepts(
+                        new RedundantCondition(
+                            $var_type . ' can never contain false',
+                            new CodeLocation($source, $conditional),
+                            $var_type->getId() . ' false'
+                        ),
+                        $source->getSuppressedIssues()
+                    )) {
+                        // fall through
                     }
                 }
             }
