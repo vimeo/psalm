@@ -370,7 +370,7 @@ class Context
     /**
      * @var array<string, bool>
      */
-    public $vars_from_global;
+    public $vars_from_global = [];
 
     public function __construct(?string $self = null)
     {
