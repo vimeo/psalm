@@ -12,7 +12,21 @@ jobs:
     executor: php-74
     steps:
       - checkout
+
+      - run: date "+%F" > /tmp/cachekey; cat composer.json >> /tmp/cachekey
+
+      - restore_cache:
+          keys:
+            - composer-v4
+
       - run: composer update
+
+      - save_cache:
+          key: composer-v4
+          paths:
+            - /home/docker/.composer/cache/files
+            - /home/docker/.composer/cache/vcs
+
       - run:
           name: Code Style Analysis with PHPCS
           command: vendor/bin/phpcs
