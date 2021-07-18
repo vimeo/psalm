@@ -493,6 +493,9 @@ class Functions
             // opcache
             'opcache_compile_file', 'opcache_get_configuration', 'opcache_get_status',
             'opcache_invalidate', 'opcache_is_script_cached', 'opcache_reset',
+
+            //gettext
+            'bindtextdomain',
         ];
 
         if (\in_array(strtolower($function_id), $impure_functions, true)) {
