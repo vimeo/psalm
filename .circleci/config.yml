@@ -27,9 +27,15 @@ jobs:
             - /home/docker/.composer/cache/files
             - /home/docker/.composer/cache/vcs
 
+      - persist_to_workspace:
+          root: /home/docker/project/
+          paths:
+            - .
+
       - run:
           name: Code Style Analysis with PHPCS
           command: vendor/bin/phpcs
+
   phar-build:
     executor: php-74
     steps:
