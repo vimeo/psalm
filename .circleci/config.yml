@@ -11,6 +11,8 @@ jobs:
   "Code Style Analysis":
     executor: php-74
     steps:
+      - checkout
+      - run: composer update
       - attach_workspace:
           at: /home/docker/project/
       - run:
