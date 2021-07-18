@@ -1149,7 +1149,7 @@ class InstancePropertyAssignmentAnalyzer
             $context,
             new CodeLocation($statements_analyzer->getSource(), $stmt)
         )
-        // when methods existance is asserted by a plugin it doesn't necessarily has storage
+        // when property existence is asserted by a plugin it doesn't necessarily has storage
         || ($codebase->properties->hasStorage($property_id)
             && $codebase->properties->getStorage($property_id)->is_static
         )

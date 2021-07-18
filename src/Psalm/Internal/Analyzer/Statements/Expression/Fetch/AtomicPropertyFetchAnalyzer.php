@@ -314,7 +314,7 @@ class AtomicPropertyFetchAnalyzer
             $property_id = $context->self . '::$' . $prop_name;
         } elseif (!$naive_property_exists
             || (!$is_static_access
-                // when methods existance is asserted by a plugin it doesn't necessarily has storage
+                // when property existence is asserted by a plugin it doesn't necessarily has storage
                 && $codebase->properties->hasStorage($property_id)
                 && $codebase->properties->getStorage($property_id)->is_static
             )
