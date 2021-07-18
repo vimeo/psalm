@@ -13,8 +13,6 @@ jobs:
     steps:
       - checkout
       - run: composer update
-      - attach_workspace:
-          at: /home/docker/project/
       - run:
           name: Code Style Analysis with PHPCS
           command: vendor/bin/phpcs
