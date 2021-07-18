@@ -8,38 +8,6 @@ executors:
     docker:
       - image: thecodingmachine/php:8.0-v4-cli
 jobs:
-  install-and-self-analyse:
-    executor: php-74
-    steps:
-      - checkout
-      - run: date "+%F" > /tmp/cachekey; cat composer.json >> /tmp/cachekey
-      - restore_cache:
-          keys:
-            - composer-v4
-      - restore_cache:
-          keys:
-            - psalm-cache-{{ checksum "/tmp/cachekey" }} # speeds up diff run
-      - run: composer update
-
-      - save_cache:
-          key: composer-v4
-          paths:
-            - /home/docker/.composer/cache/files
-            - /home/docker/.composer/cache/vcs
-
-      - run:
-          name: Static analysis
-          command: php -dextension=pcntl.so ./psalm --threads=10
-
-      - save_cache:
-          key: psalm-cache-{{ checksum "/tmp/cachekey" }}
-          paths:
-            - /tmp/psalm
-
-      - persist_to_workspace:
-          root: /home/docker/project/
-          paths:
-            - .
   "Code Style Analysis":
     executor: php-74
     steps:
@@ -91,10 +59,7 @@ jobs:
 workflows:
   Welcome:
     jobs:
-      - install-and-self-analyse
       - "Code Style Analysis":
-          requires:
-            - install-and-self-analyse
       - phar-build:
           requires:
             - "Code Style Analysis"
