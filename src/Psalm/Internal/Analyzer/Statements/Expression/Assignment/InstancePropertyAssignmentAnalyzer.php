@@ -19,6 +19,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\DeprecatedProperty;
 use Psalm\Issue\ImplicitToStringCast;
 use Psalm\Issue\ImpurePropertyAssignment;
@@ -994,8 +995,13 @@ class InstancePropertyAssignmentAnalyzer
 
             if ($var_id) {
                 if (isset($class_storage->pseudo_property_set_types['$' . $prop_name])) {
-                    $class_property_type =
-                        clone $class_storage->pseudo_property_set_types['$' . $prop_name];
+                    $class_property_type = TypeExpander::expandUnion(
+                        $codebase,
+                        clone $class_storage->pseudo_property_set_types['$' . $prop_name],
+                        $fq_class_name,
+                        $fq_class_name,
+                        $class_storage->parent_class
+                    );
 
                     $has_regular_setter = true;
 

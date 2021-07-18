@@ -16,6 +16,7 @@ use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\DeprecatedProperty;
 use Psalm\Issue\ImpurePropertyFetch;
 use Psalm\Issue\InternalProperty;
@@ -550,7 +551,13 @@ class AtomicPropertyFetchAnalyzer
             $has_magic_getter = true;
 
             if (isset($class_storage->pseudo_property_get_types['$' . $prop_name])) {
-                $stmt_type = clone $class_storage->pseudo_property_get_types['$' . $prop_name];
+                $stmt_type = TypeExpander::expandUnion(
+                    $codebase,
+                    clone $class_storage->pseudo_property_get_types['$' . $prop_name],
+                    $class_storage->name,
+                    $class_storage->name,
+                    $class_storage->parent_class
+                );
 
                 if ($class_storage->template_types) {
                     if (!$lhs_type_part instanceof TGenericObject) {
