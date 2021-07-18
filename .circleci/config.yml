@@ -59,7 +59,7 @@ jobs:
 workflows:
   Welcome:
     jobs:
-      - "Code Style Analysis":
+      - "Code Style Analysis"
       - phar-build:
           requires:
             - "Code Style Analysis"
