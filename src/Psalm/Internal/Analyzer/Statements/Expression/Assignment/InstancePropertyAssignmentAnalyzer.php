@@ -2,6 +2,7 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression\Assignment;
 
 use PhpParser;
+use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\PropertyFetch;
 use PhpParser\Node\Stmt\PropertyProperty;
 use Psalm\CodeLocation;
@@ -1025,54 +1026,14 @@ class InstancePropertyAssignmentAnalyzer
             }
 
             if ($assignment_value) {
-                if ($var_id) {
-                    $context->removeVarFromConflictingClauses(
-                        $var_id,
-                        Type::getMixed(),
-                        $statements_analyzer
-                    );
-
-                    unset($context->vars_in_scope[$var_id]);
-                }
-
-                $old_data_provider = $statements_analyzer->node_data;
-
-                $statements_analyzer->node_data = clone $statements_analyzer->node_data;
-
-                $fake_method_call = new VirtualMethodCall(
-                    $stmt->var,
-                    new VirtualIdentifier('__set', $stmt->name->getAttributes()),
-                    [
-                        new VirtualArg(
-                            new VirtualString(
-                                $prop_name,
-                                $stmt->name->getAttributes()
-                            )
-                        ),
-                        new VirtualArg(
-                            $assignment_value
-                        )
-                    ]
-                );
-
-                $suppressed_issues = $statements_analyzer->getSuppressedIssues();
-
-                if (!in_array('PossiblyNullReference', $suppressed_issues, true)) {
-                    $statements_analyzer->addSuppressedIssues(['PossiblyNullReference']);
-                }
-
-                \Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer::analyze(
-                    $statements_analyzer,
-                    $fake_method_call,
+                self::analyzeSetCall(
+                    $var_id,
                     $context,
-                    false
+                    $statements_analyzer,
+                    $stmt,
+                    $prop_name,
+                    $assignment_value
                 );
-
-                if (!in_array('PossiblyNullReference', $suppressed_issues, true)) {
-                    $statements_analyzer->removeSuppressedIssues(['PossiblyNullReference']);
-                }
-
-                $statements_analyzer->node_data = $old_data_provider;
             }
 
             /*
@@ -1514,5 +1475,63 @@ class InstancePropertyAssignmentAnalyzer
         }
 
         return $fleshed_out_type;
+    }
+
+    private static function analyzeSetCall(
+        ?string $var_id,
+        Context $context,
+        StatementsAnalyzer $statements_analyzer,
+        PropertyFetch $stmt,
+        string $prop_name,
+        Expr $assignment_value
+    ): void {
+        if ($var_id) {
+            $context->removeVarFromConflictingClauses(
+                $var_id,
+                Type::getMixed(),
+                $statements_analyzer
+            );
+
+            unset($context->vars_in_scope[$var_id]);
+        }
+
+        $old_data_provider = $statements_analyzer->node_data;
+
+        $statements_analyzer->node_data = clone $statements_analyzer->node_data;
+
+        $fake_method_call = new VirtualMethodCall(
+            $stmt->var,
+            new VirtualIdentifier('__set', $stmt->name->getAttributes()),
+            [
+                new VirtualArg(
+                    new VirtualString(
+                        $prop_name,
+                        $stmt->name->getAttributes()
+                    )
+                ),
+                new VirtualArg(
+                    $assignment_value
+                )
+            ]
+        );
+
+        $suppressed_issues = $statements_analyzer->getSuppressedIssues();
+
+        if (!in_array('PossiblyNullReference', $suppressed_issues, true)) {
+            $statements_analyzer->addSuppressedIssues(['PossiblyNullReference']);
+        }
+
+        \Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer::analyze(
+            $statements_analyzer,
+            $fake_method_call,
+            $context,
+            false
+        );
+
+        if (!in_array('PossiblyNullReference', $suppressed_issues, true)) {
+            $statements_analyzer->removeSuppressedIssues(['PossiblyNullReference']);
+        }
+
+        $statements_analyzer->node_data = $old_data_provider;
     }
 }
