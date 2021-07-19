@@ -735,7 +735,7 @@ class UnusedCodeTest extends TestCase
                         /**
                          * @var array<string, string>
                          */
-                        public $foo = [];
+                        public static $foo = [];
 
                         /**
                          * @param array<string, string> $map

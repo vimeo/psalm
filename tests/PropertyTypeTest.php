@@ -1270,11 +1270,9 @@ class PropertyTypeTest extends TestCase
                         public function bar() : void {}
                     }
 
-                    $a = new A();
-
-                    if ($a->instance) {
-                        $a->instance->bar();
-                        echo $a->instance->bat;
+                    if (A::$instance) {
+                        A::$instance->bar();
+                        echo A::$instance->bat;
                     }',
             ],
             'nonStaticPropertyMethodCall' => [
@@ -3534,6 +3532,46 @@ class PropertyTypeTest extends TestCase
                     (new A)->__get();',
                 'error_message' => 'TooFewArguments',
             ],
+            'staticReadOfNonStaticProperty' => [
+                '<?php
+                    class A {
+                        /** @var int */
+                        public $prop = 1;
+                    }
+                    echo A::$prop;
+                ',
+                'error_message' => 'UndefinedPropertyFetch',
+            ],
+            'staticWriteToNonStaticProperty' => [
+                '<?php
+                    class A {
+                        /** @var int */
+                        public $prop = 1;
+                    }
+                    A::$prop = 42;
+                ',
+                'error_message' => 'UndefinedPropertyAssignment',
+            ],
+            'nonStaticReadOfStaticProperty' => [
+                '<?php
+                    class A {
+                        /** @var int */
+                        public static $prop = 1;
+                    }
+                    echo (new A)->prop;
+                ',
+                'error_message' => 'UndefinedPropertyFetch',
+            ],
+            'nonStaticWriteToStaticProperty' => [
+                '<?php
+                    class A {
+                        /** @var int */
+                        public static $prop = 1;
+                    }
+                    (new A)->prop = 42;
+                ',
+                'error_message' => 'UndefinedPropertyAssignment',
+            ]
         ];
     }
 }

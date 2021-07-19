@@ -10,6 +10,7 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Issue\ParentNotFound;
+use Psalm\Issue\UndefinedPropertyAssignment;
 use Psalm\Issue\UndefinedPropertyFetch;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualPropertyFetch;
@@ -254,16 +255,6 @@ class StaticPropertyFetchAnalyzer
             return true;
         }
 
-        if (ClassLikeAnalyzer::checkPropertyVisibility(
-            $property_id,
-            $context,
-            $statements_analyzer,
-            new CodeLocation($statements_analyzer->getSource(), $stmt),
-            $statements_analyzer->getSuppressedIssues()
-        ) === false) {
-            return false;
-        }
-
         $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
             $fq_class_name . '::$' . $prop_name,
             true,
@@ -271,6 +262,51 @@ class StaticPropertyFetchAnalyzer
         );
 
         if ($declaring_property_class === null) {
+            return false;
+        }
+
+        $class_storage = $codebase->classlike_storage_provider->get($declaring_property_class);
+        $property = $class_storage->properties[$prop_name];
+
+        if (!$property->is_static) {
+            if ($context->inside_isset) {
+                return true;
+            }
+
+            if ($context->inside_assignment) {
+                if (IssueBuffer::accepts(
+                    new UndefinedPropertyAssignment(
+                        'Static property ' . $property_id . ' is not defined',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        $property_id
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            } else {
+                if (IssueBuffer::accepts(
+                    new UndefinedPropertyFetch(
+                        'Static property ' . $property_id . ' is not defined',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        $property_id
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            }
+
+            return true;
+        }
+
+        if (ClassLikeAnalyzer::checkPropertyVisibility(
+            $property_id,
+            $context,
+            $statements_analyzer,
+            new CodeLocation($statements_analyzer->getSource(), $stmt),
+            $statements_analyzer->getSuppressedIssues()
+        ) === false) {
             return false;
         }
 
@@ -317,9 +353,6 @@ class StaticPropertyFetchAnalyzer
                 }
             }
         }
-
-        $class_storage = $codebase->classlike_storage_provider->get($declaring_property_class);
-        $property = $class_storage->properties[$prop_name];
 
         if ($var_id) {
             if ($property->type) {
@@ -426,7 +459,9 @@ class StaticPropertyFetchAnalyzer
                 InstancePropertyFetchAnalyzer::analyze(
                     $statements_analyzer,
                     $fake_instance_property,
-                    $context
+                    $context,
+                    false,
+                    true
                 );
 
                 $fake_stmt_type = $statements_analyzer->node_data->getType($fake_instance_property)
