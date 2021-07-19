@@ -547,6 +547,11 @@ class Config
     /** @var list<ConfigIssue> */
     public $config_issues = [];
 
+    /**
+     * @var 'default'|'none'|'always'
+     */
+    public $trigger_error_exits = 'default';
+
     protected function __construct()
     {
         self::$instance = $this;
@@ -844,6 +849,7 @@ class Config
             'reportInfo' => 'report_info',
             'restrictReturnTypes' => 'restrict_return_types',
             'limitMethodComplexity' => 'limit_method_complexity',
+            'triggerErrorExits' => 'trigger_error_exits',
         ];
 
         foreach ($booleanAttributes as $xmlName => $internalName) {

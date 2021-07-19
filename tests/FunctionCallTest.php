@@ -2126,4 +2126,83 @@ class FunctionCallTest extends TestCase
             ],
         ];
     }
+
+    public function testTriggerErrorDefault(): void
+    {
+        $config = \Psalm\Config::getInstance();
+        $config->trigger_error_exits = 'default';
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @return true */
+                function returnsTrue(): bool {
+                    return trigger_error("", E_USER_NOTICE);
+                }
+                /** @return never */
+                function returnsNever(): void {
+                    trigger_error("", E_USER_ERROR);
+                }
+                /**
+                 * @psalm-suppress ArgumentTypeCoercion
+                 * @return mixed
+                 */
+                function returnsNeverOrBool(int $i) {
+                    return trigger_error("", $i);
+                }'
+        );
+
+        //will only pass if no exception is thrown
+        $this->assertTrue(true);
+
+        $this->analyzeFile('somefile.php', new \Psalm\Context());
+    }
+
+    public function testTriggerErrorAlways(): void
+    {
+        $config = \Psalm\Config::getInstance();
+        $config->trigger_error_exits = 'always';
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @return never */
+                function returnsNever1(): void {
+                    trigger_error("", E_USER_NOTICE);
+                }
+                /** @return never */
+                function returnsNever2(): void {
+                    trigger_error("", E_USER_ERROR);
+                }'
+        );
+
+        //will only pass if no exception is thrown
+        $this->assertTrue(true);
+
+        $this->analyzeFile('somefile.php', new \Psalm\Context());
+    }
+
+    public function testTriggerErrorNone(): void
+    {
+        $config = \Psalm\Config::getInstance();
+        $config->trigger_error_exits = 'none';
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @return true */
+                function returnsTrue1(): bool {
+                    return trigger_error("", E_USER_NOTICE);
+                }
+                /** @return true */
+                function returnsTrue2(): bool {
+                    return trigger_error("", E_USER_ERROR);
+                }'
+        );
+
+        //will only pass if no exception is thrown
+        $this->assertTrue(true);
+
+        $this->analyzeFile('somefile.php', new \Psalm\Context());
+    }
 }

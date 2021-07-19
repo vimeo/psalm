@@ -89,6 +89,7 @@
         <xs:attribute name="reportInfo" type="xs:boolean" default="true" />
         <xs:attribute name="restrictReturnTypes" type="xs:boolean" default="false" />
         <xs:attribute name="limitMethodComplexity" type="xs:boolean" default="false" />
+        <xs:attribute name="triggerErrorExits" type="TriggerErrorExitsType" default="default" />
     </xs:complexType>
 
     <xs:complexType name="ProjectFilesType">
@@ -644,6 +645,14 @@
             <xs:enumeration value="error"/>
             <xs:enumeration value="info"/>
             <xs:enumeration value="suppress"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="TriggerErrorExitsType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="default"/>
+            <xs:enumeration value="none"/>
+            <xs:enumeration value="always"/>
         </xs:restriction>
     </xs:simpleType>
 </xs:schema>
