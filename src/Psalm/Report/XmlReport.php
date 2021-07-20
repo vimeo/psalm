@@ -2,6 +2,7 @@
 namespace Psalm\Report;
 
 use LSS\Array2XML;
+use Psalm\Internal\Analyzer\DataFlowNodeData;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Report;
 
@@ -30,8 +31,8 @@ class XmlReport extends Report
 
                         if (null !== $issue_data['other_references']) {
                             $issue_data['other_references'] = array_map(
-                                function ($trace): array {
-                                    return (array) $trace;
+                                function (DataFlowNodeData $reference): array {
+                                    return (array) $reference;
                                 },
                                 $issue_data['other_references']
                             );
