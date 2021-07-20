@@ -7,6 +7,7 @@ use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Report;
 
 use function array_map;
+use function get_object_vars;
 
 class XmlReport extends Report
 {
@@ -17,7 +18,7 @@ class XmlReport extends Report
             [
                 'item' => array_map(
                     function (IssueData $issue_data): array {
-                        $issue_data = (array) $issue_data;
+                        $issue_data = get_object_vars($issue_data);
                         unset($issue_data['dupe_key']);
 
                         if (null !== $issue_data['taint_trace']) {
