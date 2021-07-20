@@ -18,6 +18,25 @@ class XmlReport extends Report
                     function (IssueData $issue_data): array {
                         $issue_data = (array) $issue_data;
                         unset($issue_data['dupe_key']);
+
+                        if (null !== $issue_data['taint_trace']) {
+                            $issue_data['taint_trace'] = array_map(
+                                function ($trace): array {
+                                    return (array) $trace;
+                                },
+                                $issue_data['taint_trace']
+                            );
+                        }
+
+                        if (null !== $issue_data['other_references']) {
+                            $issue_data['other_references'] = array_map(
+                                function ($trace): array {
+                                    return (array) $trace;
+                                },
+                                $issue_data['other_references']
+                            );
+                        }
+
                         return $issue_data;
                     },
                     $this->issues_data
