@@ -2182,7 +2182,7 @@ class FunctionCallTest extends TestCase
         $this->analyzeFile('somefile.php', new \Psalm\Context());
     }
 
-    public function testTriggerErrorNone(): void
+    public function testTriggerErrorNever(): void
     {
         $config = \Psalm\Config::getInstance();
         $config->trigger_error_exits = 'never';
