@@ -548,7 +548,7 @@ class Config
     public $config_issues = [];
 
     /**
-     * @var 'default'|'none'|'always'
+     * @var 'default'|'never'|'always'
      */
     public $trigger_error_exits = 'default';
 

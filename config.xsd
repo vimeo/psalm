@@ -651,7 +651,7 @@
     <xs:simpleType name="TriggerErrorExitsType">
         <xs:restriction base="xs:string">
             <xs:enumeration value="default"/>
-            <xs:enumeration value="none"/>
+            <xs:enumeration value="never"/>
             <xs:enumeration value="always"/>
         </xs:restriction>
     </xs:simpleType>

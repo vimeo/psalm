@@ -31,7 +31,7 @@ class TriggerErrorReturnTypeProvider implements \Psalm\Plugin\EventHandler\Funct
             return new Type\Union([new Type\Atomic\TNever()]);
         }
 
-        if ($config->trigger_error_exits === 'none') {
+        if ($config->trigger_error_exits === 'never') {
             return new Type\Union([new Type\Atomic\TTrue()]);
         }
 

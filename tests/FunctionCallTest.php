@@ -2185,7 +2185,7 @@ class FunctionCallTest extends TestCase
     public function testTriggerErrorNone(): void
     {
         $config = \Psalm\Config::getInstance();
-        $config->trigger_error_exits = 'none';
+        $config->trigger_error_exits = 'never';
 
         $this->addFile(
             'somefile.php',
