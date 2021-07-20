@@ -1029,6 +1029,26 @@ class UnusedCodeTest extends TestCase
                     throw A::foo();
                 '
             ],
+            'variableUsedAsUnaryMinusOperand' => [
+                '<?php
+                    function f(): int
+                    {
+                        $a = 1;
+                        $b = -$a;
+                        return $b;
+                    }
+                ',
+            ],
+            'variableUsedAsUnaryPlusOperand' => [
+                '<?php
+                    function f(): int
+                    {
+                        $a = 1;
+                        $b = +$a;
+                        return $b;
+                    }
+                ',
+            ],
         ];
     }
 
