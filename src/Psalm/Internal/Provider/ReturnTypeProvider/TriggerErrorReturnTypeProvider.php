@@ -2,6 +2,7 @@
 
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
+use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Type;
 
@@ -24,7 +25,8 @@ class TriggerErrorReturnTypeProvider implements \Psalm\Plugin\EventHandler\Funct
 
     public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): ?Type\Union
     {
-        $config = $event->getStatementsSource()->getCodebase()->config;
+        $codebase = $event->getStatementsSource()->getCodebase();
+        $config = $codebase->config;
         if ($config->trigger_error_exits === 'always') {
             return new Type\Union([new Type\Atomic\TNever()]);
         }
@@ -55,7 +57,7 @@ class TriggerErrorReturnTypeProvider implements \Psalm\Plugin\EventHandler\Funct
                 }
             }
 
-            return new Type\Union($return_types);
+            return TypeCombiner::combine($return_types, $codebase);
         }
 
         //default value is E_USER_NOTICE, so return true
