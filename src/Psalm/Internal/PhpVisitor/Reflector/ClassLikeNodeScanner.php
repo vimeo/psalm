@@ -1355,7 +1355,7 @@ class ClassLikeNodeScanner
             if (! $property_storage->internal && $var_comment && $var_comment->internal) {
                 $property_storage->internal = NamespaceAnalyzer::getNameSpaceRoot($fq_classlike_name);
             }
-            $property_storage->readonly = $var_comment ? $var_comment->readonly : false;
+            $property_storage->readonly = $stmt->isReadonly() || ($var_comment && $var_comment->readonly);
             $property_storage->allow_private_mutation = $var_comment ? $var_comment->allow_private_mutation : false;
             $property_storage->description = $var_comment ? $var_comment->description : null;
 

@@ -14,7 +14,7 @@ class ReadonlyPropertyTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
-            'readonlyPropertySetInConstructor' => [
+            'docblockReadonlyPropertySetInConstructor' => [
                 '<?php
                     class A {
                         /**
@@ -29,7 +29,22 @@ class ReadonlyPropertyTest extends TestCase
 
                     echo (new A)->bar;'
             ],
-            'readonlyWithPrivateMutationsAllowedPropertySetInAnotherMEthod' => [
+            'readonlyPropertySetInConstructor' => [
+                '<?php
+                    class A {
+                        public readonly string $bar;
+
+                        public function __construct() {
+                            $this->bar = "hello";
+                        }
+                    }
+
+                    echo (new A)->bar;',
+                [],
+                [],
+                '8.1'
+            ],
+            'docblockReadonlyWithPrivateMutationsAllowedPropertySetInAnotherMethod' => [
                 '<?php
                     class A {
                         /**
@@ -124,7 +139,7 @@ class ReadonlyPropertyTest extends TestCase
                     }',
                 'error_message' => 'InaccessibleProperty',
             ],
-            'readonlyPropertySetInConstructorAndAlsoOutsideClass' => [
+            'docblockReadonlyPropertySetInConstructorAndAlsoOutsideClass' => [
                 '<?php
                     class A {
                         /**
@@ -139,7 +154,24 @@ class ReadonlyPropertyTest extends TestCase
 
                     $a = new A();
                     $a->bar = "goodbye";',
-                'error_message' => 'InaccessibleProperty',
+                'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:21',
+            ],
+            'readonlyPropertySetInConstructorAndAlsoOutsideClass' => [
+                '<?php
+                    class A {
+                        public readonly string $bar;
+
+                        public function __construct() {
+                            $this->bar = "hello";
+                        }
+                    }
+
+                    $a = new A();
+                    $a->bar = "goodbye";',
+                'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:21',
+                [],
+                false,
+                '8.1',
             ],
             'readonlyPropertySetInConstructorAndAlsoOutsideClassWithAllowPrivate' => [
                 '<?php
@@ -200,6 +232,16 @@ class ReadonlyPropertyTest extends TestCase
 
                     $test->prop += 1;',
                 'error_message' => 'InaccessibleProperty'
+            ],
+            'readonlyPropertyWithDefault' => [
+                '<?php
+                    class A {
+                        public readonly string $s = "a";
+                    }',
+                'error_message' => 'InvalidPropertyAssignment',
+                [],
+                false,
+                '8.1',
             ],
         ];
     }
