@@ -405,6 +405,16 @@ class InstancePropertyAssignmentAnalyzer
     ): void {
         foreach ($stmt->props as $prop) {
             if ($prop->default) {
+                if ($stmt->isReadonly()) {
+                    IssueBuffer::add(
+                        new InvalidPropertyAssignment(
+                            'Readonly property ' . $context->self . '::$' . $prop->name->name
+                                . ' cannot have a default',
+                            new CodeLocation($statements_analyzer->getSource(), $prop->default)
+                        )
+                    );
+                }
+
                 ExpressionAnalyzer::analyze($statements_analyzer, $prop->default, $context);
 
                 if ($prop_default_type = $statements_analyzer->node_data->getType($prop->default)) {
