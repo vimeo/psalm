@@ -662,6 +662,18 @@ class BinaryOperationTest extends TestCase
                         return "Hello $s1 $s2";
                     }',
             ],
+            'NumericStringIncrement' => [
+                '<?php
+                    function scope(array $a): int|float {
+                        $offset = array_search("foo", $a);
+                        if(is_numeric($offset)){
+                            return $offset++;
+                        }
+                        else{
+                            return 0;
+                        }
+                    }',
+            ],
         ];
     }
 
