@@ -667,11 +667,15 @@ class NonDivArithmeticOpAnalyzer
                 }
 
                 if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Mod) {
-                    $result_type = Type::getInt();
-                } elseif (!$result_type) {
-                    $result_type = Type::getNumeric();
+                    $new_result_type = Type::getInt();
                 } else {
-                    $result_type = Type::combineUnionTypes(Type::getNumeric(), $result_type);
+                    $new_result_type = new Type\Union([new TFloat(), new TInt()]);
+                }
+
+                if (!$result_type) {
+                    $result_type = $new_result_type;
+                } else {
+                    $result_type = Type::combineUnionTypes($new_result_type, $result_type);
                 }
 
                 $has_valid_right_operand = true;

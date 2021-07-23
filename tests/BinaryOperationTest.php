@@ -640,6 +640,26 @@ class BinaryOperationTest extends TestCase
                         return "foo" . $s1;
                     }',
             ],
+            'numericWithInt' => [
+                '<?php
+                    /** @return numeric */
+                    function getNumeric(){
+                        return 1;
+                    }
+                    $a = getNumeric();
+                    $a++;
+                    $b = getNumeric() * 2;
+                    $c = 1 - getNumeric();
+                    $d = 2;
+                    $d -= getNumeric();
+                    ',
+                'assertions' => [
+                    '$a' => 'float|int',
+                    '$b' => 'float|int',
+                    '$c' => 'float|int',
+                    '$d' => 'float|int',
+                ],
+            ],
             'encapsedStringWithIntIncludingLiterals' => [
                 '<?php
                     /**
