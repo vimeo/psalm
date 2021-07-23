@@ -387,12 +387,18 @@ class NonDivArithmeticOpAnalyzer
             && $right_type_part instanceof TInt
             && $parent instanceof PhpParser\Node\Expr\PostInc
         ) {
-            $has_string_increment = true;
-
-            if (!$result_type) {
-                $result_type = Type::getNonEmptyString();
+            if ($left_type_part instanceof Type\Atomic\TNumericString) {
+                $new_result_type = new Type\Union([new TFloat(), new TInt()]);
+                $new_result_type->from_calculation = true;
             } else {
-                $result_type = Type::combineUnionTypes(Type::getNonEmptyString(), $result_type);
+                $new_result_type = Type::getNonEmptyString();
+                $has_string_increment = true;
+            }
+
+            if ($result_type) {
+                $result_type = Type::combineUnionTypes($new_result_type, $result_type);
+            } else {
+                $result_type = $new_result_type;
             }
 
             $has_valid_left_operand = true;
