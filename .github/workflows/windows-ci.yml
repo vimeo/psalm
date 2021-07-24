@@ -42,4 +42,4 @@ jobs:
           COMPOSER_ROOT_VERSION: dev-master
 
       - name: Run unit tests
-        run: vendor\bin\phpunit tests\
+        run: vendor/bin/paratest --log-junit build/phpunit/phpunit.xml
