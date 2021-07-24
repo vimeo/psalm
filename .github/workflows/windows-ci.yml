@@ -1,0 +1,112 @@
+name: Run unit tests on Windows
+
+on:
+  pull_request:
+  push:
+    branches:
+      - "master"
+
+jobs:
+  lint:
+    name: Check PHP syntax
+    runs-on: windows-latest
+    steps:
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.0'
+          tools: composer:v2
+
+      - uses: actions/checkout@v2
+
+      - name: Get Composer Cache Directories
+        id: composer-cache
+        run: |
+          echo "::set-output name=files_cache::$(composer config cache-files-dir)"
+          echo "::set-output name=vcs_cache::$(composer config cache-vcs-dir)"
+
+      - name: Cache composer cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ${{ steps.composer-cache.outputs.files_cache }}
+            ${{ steps.composer-cache.outputs.vcs_cache }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Run composer install
+        run: composer install -o --ignore-platform-reqs
+        env:
+          COMPOSER_ROOT_VERSION: dev-master
+
+      - run: |
+          vendor/bin/parallel-lint src
+  chunk-matrix:
+    name: Generate Chunk Matrix
+
+    runs-on: windows-latest
+    env:
+      CHUNK_COUNT: 8
+
+    outputs:
+      count: ${{ steps.chunk-matrix.outputs.count }}
+      chunks: ${{ steps.chunk-matrix.outputs.chunks }}
+
+    steps:
+      - id: chunk-matrix
+        name: Generates the Chunk Matrix
+        run: |
+          echo "::set-output name=count::$(php -r 'echo json_encode([ ${{ env.CHUNK_COUNT }} ]);')"
+          echo "::set-output name=chunks::$(php -r 'echo json_encode(range(1, ${{ env.CHUNK_COUNT }} ));')"
+
+  tests:
+    name: "Unit Tests - ${{ matrix.chunk }}"
+
+    runs-on: windows-latest
+    needs:
+      - chunk-matrix
+
+    strategy:
+      fail-fast: false
+      matrix:
+        count: ${{ fromJson(needs.chunk-matrix.outputs.count) }}
+        chunk: ${{ fromJson(needs.chunk-matrix.outputs.chunks) }}
+
+    env:
+      CHUNK_COUNT: "${{ matrix.count }}"
+      CHUNK_NUMBER: "${{ matrix.chunk }}"
+      PARALLEL_PROCESSES: 5
+
+    steps:
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.0'
+          tools: composer:v2
+
+      - uses: actions/checkout@v2
+
+      - name: Get Composer Cache Directories
+        id: composer-cache
+        run: |
+          echo "::set-output name=files_cache::$(composer config cache-files-dir)"
+          echo "::set-output name=vcs_cache::$(composer config cache-vcs-dir)"
+
+      - name: Cache composer cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ${{ steps.composer-cache.outputs.files_cache }}
+            ${{ steps.composer-cache.outputs.vcs_cache }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Run composer install
+        run: composer install -o
+        env:
+          COMPOSER_ROOT_VERSION: dev-master
+
+      - name: Run unit tests
+        run: bin/tests-github-actions.sh
