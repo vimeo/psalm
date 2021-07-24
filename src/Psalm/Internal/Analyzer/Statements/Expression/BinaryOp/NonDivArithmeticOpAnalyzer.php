@@ -36,6 +36,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use function array_diff_key;
 use function array_values;
 use function is_int;
+use function is_numeric;
 use function preg_match;
 use function strtolower;
 
@@ -385,14 +386,25 @@ class NonDivArithmeticOpAnalyzer
 
         if ($left_type_part instanceof Type\Atomic\TString
             && $right_type_part instanceof TInt
-            && $parent instanceof PhpParser\Node\Expr\PostInc
+            && (
+                $parent instanceof PhpParser\Node\Expr\PostInc ||
+                $parent instanceof PhpParser\Node\Expr\PreInc
+            )
         ) {
-            $has_string_increment = true;
-
-            if (!$result_type) {
-                $result_type = Type::getNonEmptyString();
+            if ($left_type_part instanceof Type\Atomic\TNumericString ||
+                ($left_type_part instanceof Type\Atomic\TLiteralString && is_numeric($left_type_part->value))
+            ) {
+                $new_result_type = new Type\Union([new TFloat(), new TInt()]);
+                $new_result_type->from_calculation = true;
             } else {
-                $result_type = Type::combineUnionTypes(Type::getNonEmptyString(), $result_type);
+                $new_result_type = Type::getNonEmptyString();
+                $has_string_increment = true;
+            }
+
+            if ($result_type) {
+                $result_type = Type::combineUnionTypes($new_result_type, $result_type);
+            } else {
+                $result_type = $new_result_type;
             }
 
             $has_valid_left_operand = true;
