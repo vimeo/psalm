@@ -3,6 +3,8 @@ platform:
   - x64
 
 clone_folder: c:\projects\php-project-workspace
+# Don't include full git history
+clone_depth: 1
 
 ## Set up environment variables
 init:
@@ -55,5 +57,5 @@ install:
 ## Run the actual test
 test_script:
     - cd c:\projects\php-project-workspace
-    - vendor/bin/paratest --log-junit build/phpunit/phpunit.xml
-    - php ./psalm --shepherd
+    - vendor/bin/paratest --processes 2 --log-junit build/phpunit/phpunit.xml
+    - php ./psalm
