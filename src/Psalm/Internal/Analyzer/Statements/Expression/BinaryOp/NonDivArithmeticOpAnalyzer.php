@@ -766,7 +766,8 @@ class NonDivArithmeticOpAnalyzer
                 if ($config->strict_binary_operands) {
                     if ($statements_source && IssueBuffer::accepts(
                         new InvalidOperand(
-                            'Cannot process ints and floats in strict binary operands mode',
+                            'Cannot process ints and floats in strict binary operands mode, '.
+                            'please cast explicitly',
                             new CodeLocation($statements_source, $parent)
                         ),
                         $statements_source->getSuppressedIssues()
