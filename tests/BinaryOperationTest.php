@@ -674,6 +674,18 @@ class BinaryOperationTest extends TestCase
                         }
                     }',
             ],
+            'NumericStringIncrementLiteral' => [
+                '<?php
+                    $a = "123";
+                    $b = "123";
+                    $a++;
+                    ++$b;
+                    ',
+                'assertions' => [
+                    '$a' => 'float|int',
+                    '$b' => 'float|int',
+                ],
+            ],
         ];
     }
 

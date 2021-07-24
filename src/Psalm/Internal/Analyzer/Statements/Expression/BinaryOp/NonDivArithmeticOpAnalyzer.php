@@ -390,7 +390,12 @@ class NonDivArithmeticOpAnalyzer
                 $parent instanceof PhpParser\Node\Expr\PreInc
             )
         ) {
-            if ($left_type_part instanceof Type\Atomic\TNumericString) {
+            if ($left_type_part instanceof Type\Atomic\TNumericString || (
+                    $left_type_part instanceof Type\Atomic\TLiteralString &&
+                    //Matches '1', '1.', '-1', '-1.'. Does not match '.1'
+                    preg_match('/^\-?\d+\.?\d*$/', $left_type_part->value)
+                )
+            ) {
                 $new_result_type = new Type\Union([new TFloat(), new TInt()]);
                 $new_result_type->from_calculation = true;
             } else {
