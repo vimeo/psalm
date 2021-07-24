@@ -385,7 +385,12 @@ class NonDivArithmeticOpAnalyzer
 
         if ($left_type_part instanceof Type\Atomic\TString
             && $right_type_part instanceof TInt
-            && $parent instanceof PhpParser\Node\Expr\PostInc
+            && (
+                $parent instanceof PhpParser\Node\Expr\PostInc ||
+                $parent instanceof PhpParser\Node\Expr\PreInc ||
+                $parent instanceof PhpParser\Node\Expr\PostDec ||
+                $parent instanceof PhpParser\Node\Expr\PreDec
+            )
         ) {
             if ($left_type_part instanceof Type\Atomic\TNumericString) {
                 $new_result_type = new Type\Union([new TFloat(), new TInt()]);
