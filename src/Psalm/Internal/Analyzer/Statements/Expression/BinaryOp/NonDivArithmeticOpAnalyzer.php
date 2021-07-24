@@ -36,6 +36,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use function array_diff_key;
 use function array_values;
 use function is_int;
+use function is_numeric;
 use function preg_match;
 use function strtolower;
 
@@ -390,11 +391,8 @@ class NonDivArithmeticOpAnalyzer
                 $parent instanceof PhpParser\Node\Expr\PreInc
             )
         ) {
-            if ($left_type_part instanceof Type\Atomic\TNumericString || (
-                    $left_type_part instanceof Type\Atomic\TLiteralString &&
-                    //Matches '1', '1.', '-1', '-1.'. Does not match '.1'
-                    preg_match('/^\-?\d+\.?\d*$/', $left_type_part->value)
-                )
+            if ($left_type_part instanceof Type\Atomic\TNumericString ||
+                ($left_type_part instanceof Type\Atomic\TLiteralString && is_numeric($left_type_part->value))
             ) {
                 $new_result_type = new Type\Union([new TFloat(), new TInt()]);
                 $new_result_type->from_calculation = true;
