@@ -12,6 +12,11 @@ jobs:
       fail-fast: false
 
     steps:
+      - name: Set git to use LF
+        run: |
+          git config --global core.autocrlf false
+          git config --global core.eol lf
+
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
