@@ -653,6 +653,19 @@ class NonDivArithmeticOpAnalyzer
             if (($left_type_part instanceof TNumeric || $right_type_part instanceof TNumeric)
                 && ($left_type_part->isNumericType() && $right_type_part->isNumericType())
             ) {
+                if ($config->strict_binary_operands) {
+                    if ($statements_source && IssueBuffer::accepts(
+                        new InvalidOperand(
+                            'Cannot process different numeric types together in strict binary operands mode, '.
+                            'please cast explicitly',
+                            new CodeLocation($statements_source, $parent)
+                        ),
+                        $statements_source->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                }
+
                 if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Mod) {
                     $result_type = Type::getInt();
                 } elseif (!$result_type) {
@@ -753,7 +766,7 @@ class NonDivArithmeticOpAnalyzer
                 if ($config->strict_binary_operands) {
                     if ($statements_source && IssueBuffer::accepts(
                         new InvalidOperand(
-                            'Cannot add ints to floats',
+                            'Cannot process ints and floats in strict binary operands mode',
                             new CodeLocation($statements_source, $parent)
                         ),
                         $statements_source->getSuppressedIssues()
@@ -780,7 +793,8 @@ class NonDivArithmeticOpAnalyzer
                 if ($config->strict_binary_operands) {
                     if ($statements_source && IssueBuffer::accepts(
                         new InvalidOperand(
-                            'Cannot add numeric types together, please cast explicitly',
+                            'Cannot process numeric types together in strict operands mode, '.
+                            'please cast explicitly',
                             new CodeLocation($statements_source, $parent)
                         ),
                         $statements_source->getSuppressedIssues()
