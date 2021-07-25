@@ -1789,6 +1789,29 @@ class AnnotationTest extends TestCase
                 ',
                 'error_message' => 'PossiblyInvalidDocblockTag',
             ],
+            'unterminatedParentheses' => [
+                '<?php
+                    /** @return ( */
+                    function f() {}
+                ',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'emptyParentheses' => [
+                '<?php
+                    /** @return () */
+                    function f() {}
+                ',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'unbalancedParentheses' => [
+                "<?php
+                    /** @return ((string) */
+                    function f(): string {
+                        return '';
+                    }
+                ",
+                'error_message' => 'InvalidDocblock',
+            ],
         ];
     }
 }
