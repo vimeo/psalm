@@ -179,6 +179,14 @@ class TypeParser
         }
 
         if ($parse_tree instanceof ParseTree\EncapsulationTree) {
+            if (!$parse_tree->terminated) {
+                throw new TypeParseTreeException('Unterminated parentheses');
+            }
+
+            if (!isset($parse_tree->children[0])) {
+                throw new TypeParseTreeException('Empty parentheses');
+            }
+
             return self::getTypeFromTree(
                 $parse_tree->children[0],
                 $codebase,

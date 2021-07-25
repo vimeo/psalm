@@ -69,7 +69,7 @@ function array_intersect_assoc(array $arr, array $arr2, array ...$arr3)
  * @return (
  *     PHP_MAJOR_VERSION is 8 ?
  *         ($arr is non-empty-array ? non-empty-array<TKey, TValue> : array<TKey, TValue>) :
- *         ($arr is non-empty-array ? non-empty-array<TKey, TValue>|false : array<TKey, TValue>|false
+ *         ($arr is non-empty-array ? non-empty-array<TKey, TValue>|false : array<TKey, TValue>|false)
  * )
  * @psalm-ignore-falsable-return
  * @psalm-pure
