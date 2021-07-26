@@ -852,7 +852,16 @@ echo $a;';
         $this->assertIsArray(json_decode($report->create()));
     }
 
-    public function testSonarqubeReport(): void
+    public function sonarSourceProvider(): array
+    {
+        return [
+            "SonarQube" => ['sonarqube', 'test-sonarqube.json'],
+            "SonarCloud" => ['sonarcloud', 'test-sonarcloud.json']
+        ];
+    }
+
+    /** @dataProvider sonarSourceProvider */
+    public function testSonarSourceReport(string $sonar_source_format, string $test_file): void
     {
         $this->analyzeFileForReport();
 
@@ -941,12 +950,12 @@ echo $a;';
             ],
         ];
 
-        $sonarqube_report_options = ProjectAnalyzer::getFileReportOptions([__DIR__ . '/test-sonarqube.json'])[0];
-        $sonarqube_report_options->format = 'sonarqube';
+        $sonar_source_report_options = ProjectAnalyzer::getFileReportOptions([__DIR__ . '/' . $test_file])[0];
+        $sonar_source_report_options->format = $sonar_source_format;
 
         $this->assertSame(
             $issue_data,
-            json_decode(IssueBuffer::getOutput(IssueBuffer::getIssuesData(), $sonarqube_report_options), true)
+            json_decode(IssueBuffer::getOutput(IssueBuffer::getIssuesData(), $sonar_source_report_options), true)
         );
     }
 

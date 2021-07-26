@@ -17,6 +17,7 @@ abstract class Report
     public const TYPE_JSON = 'json';
     public const TYPE_JSON_SUMMARY = 'json-summary';
     public const TYPE_SONARQUBE = 'sonarqube';
+    public const TYPE_SONARCLOUD = 'sonarcloud';
     public const TYPE_EMACS = 'emacs';
     public const TYPE_XML = 'xml';
     public const TYPE_JUNIT = 'junit';
@@ -34,6 +35,7 @@ abstract class Report
         self::TYPE_JSON,
         self::TYPE_JSON_SUMMARY,
         self::TYPE_SONARQUBE,
+        self::TYPE_SONARCLOUD,
         self::TYPE_EMACS,
         self::TYPE_XML,
         self::TYPE_JUNIT,

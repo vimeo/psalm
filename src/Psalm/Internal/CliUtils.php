@@ -396,7 +396,7 @@ Output:
 
     --output-format=console
         Changes the output format.
-        Available formats: compact, console, text, emacs, json, pylint, xml, checkstyle, junit, sonarqube, github,
+        Available formats: compact, console, text, emacs, json, pylint, xml, checkstyle, junit, sonarqube, sonarcloud, github,
                            phpstorm, codeclimate
 
     --no-progress
@@ -412,7 +412,7 @@ Reports:
     --report=PATH
         The path where to output report file. The output format is based on the file extension.
         (Currently supported formats: ".json", ".xml", ".txt", ".emacs", ".pylint", ".console",
-        ".sarif", "checkstyle.xml", "sonarqube.json", "codeclimate.json", "summary.json", "junit.xml")
+        ".sarif", "checkstyle.xml", "sonarqube.json", "sonarcloud.json", "codeclimate.json", "summary.json", "junit.xml")
 
     --report-show-info[=BOOLEAN]
         Whether the report should include non-errors in its output (defaults to true)

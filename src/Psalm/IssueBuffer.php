@@ -20,7 +20,8 @@ use Psalm\Report\JunitReport;
 use Psalm\Report\PhpStormReport;
 use Psalm\Report\PylintReport;
 use Psalm\Report\SarifReport;
-use Psalm\Report\SonarqubeReport;
+use Psalm\Report\SonarCloudReport;
+use Psalm\Report\SonarQubeReport;
 use Psalm\Report\TextReport;
 use Psalm\Report\XmlReport;
 
@@ -755,7 +756,11 @@ class IssueBuffer
                 break;
 
             case Report::TYPE_SONARQUBE:
-                $output = new SonarqubeReport($normalized_data, self::$fixable_issue_counts, $report_options);
+                $output = new SonarQubeReport($normalized_data, self::$fixable_issue_counts, $report_options);
+                break;
+
+            case Report::TYPE_SONARCLOUD:
+                $output = new SonarCloudReport($normalized_data, self::$fixable_issue_counts, $report_options);
                 break;
 
             case Report::TYPE_PYLINT:
