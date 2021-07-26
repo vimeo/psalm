@@ -1073,6 +1073,36 @@ class TypeTest extends \Psalm\Tests\TestCase
                      */
                     function consume($input): void{}'
             ],
+            'notDateTimeWithDateTimeInterface' => [
+                '<?php
+                    function foo(\DateTimeInterface $dateTime): DateTimeInterface {
+                        $dateInterval = new DateInterval("P1D");
+
+                        if ($dateTime instanceof \DateTime) {
+                            $dateTime->add($dateInterval);
+
+                            return $dateTime;
+                        } else {
+                            return $dateTime->add($dateInterval);
+                        }
+                    }
+                ',
+            ],
+            'notDateTimeImmutableWithDateTimeInterface' => [
+                '<?php
+                    function foo(\DateTimeInterface $dateTime): DateTimeInterface {
+                        $dateInterval = new DateInterval("P1D");
+
+                        if ($dateTime instanceof \DateTimeImmutable) {
+                            return $dateTime->add($dateInterval);
+                        } else {
+                            $dateTime->add($dateInterval);
+
+                            return $dateTime;
+                        }
+                    }
+                ',
+            ],
         ];
     }
 
