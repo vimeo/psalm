@@ -1,0 +1,4 @@
+build: false
+branches:
+  only:
+    - dear-appveyor-please-dont-build-this-repo
