@@ -110,6 +110,8 @@ class ReconcilerTest extends \Psalm\Tests\TestCase
             'notSomeClassWithSomeClassPipeBool' => ['bool', '!SomeClass', 'SomeClass|bool'],
             'notSomeClassWithSomeClassPipeNull' => ['null', '!SomeClass', 'SomeClass|null'],
             'notSomeClassWithAPipeB' => ['B', '!A', 'A|B'],
+            'notDateTimeWithDateTimeInterface' => ['DateTimeImmutable', '!DateTime', 'DateTimeInterface'],
+            'notDateTimeImmutableWithDateTimeInterface' => ['DateTime', '!DateTimeImmutable', 'DateTimeInterface'],
 
             'myObjectWithSomeClassPipeBool' => ['SomeClass', 'SomeClass', 'SomeClass|bool'],
             'myObjectWithAPipeB' => ['A', 'A', 'A|B'],
