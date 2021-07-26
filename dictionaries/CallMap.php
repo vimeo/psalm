@@ -12117,7 +12117,7 @@ return [
 'shapeObj::toWkt' => ['string'],
 'shapeObj::union' => ['shapeObj', 'shape'=>'shapeObj'],
 'shapeObj::within' => ['int', 'shape2'=>'shapeObj'],
-'shell_exec' => ['?string', 'command'=>'string'],
+'shell_exec' => ['string|false|null', 'command'=>'string'],
 'shm_attach' => ['resource', 'key'=>'int', 'size='=>'int', 'permissions='=>'int'],
 'shm_detach' => ['bool', 'shm'=>'resource'],
 'shm_get_var' => ['mixed', 'shm'=>'resource', 'key'=>'int'],
