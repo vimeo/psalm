@@ -8,7 +8,7 @@ use Psalm\Report;
 use function max;
 
 /**
- * JSON report format suitable for import into SonarQube as via `sonar.php.psalm.reportPaths`.
+ * JSON report format suitable for import into SonarQube via `sonar.php.psalm.reportPaths`.
  * @see https://docs.sonarqube.org/latest/analysis/external-issues/
  */
 class SonarQubeReport extends Report
