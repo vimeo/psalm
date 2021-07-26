@@ -208,6 +208,21 @@ class NegatedAssertionReconciler extends Reconciler
             return $existing_var_type;
         }
 
+        if (!$is_equality
+            && ($assertion === 'DateTime' || $assertion === 'DateTimeImmutable')
+            && isset($existing_var_atomic_types['DateTimeInterface'])
+        ) {
+            $existing_var_type->removeType('DateTimeInterface');
+
+            if ($assertion === 'DateTime') {
+                $existing_var_type->addType(new TNamedObject('DateTimeImmutable'));
+            } else {
+                $existing_var_type->addType(new TNamedObject('DateTime'));
+            }
+
+            return $existing_var_type;
+        }
+
         if (strtolower($assertion) === 'traversable'
             && isset($existing_var_atomic_types['iterable'])
         ) {
