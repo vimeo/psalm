@@ -1075,10 +1075,10 @@ class TypeTest extends \Psalm\Tests\TestCase
             ],
             'notDateTimeWithDateTimeInterface' => [
                 '<?php
-                    function foo(\DateTimeInterface $dateTime): DateTimeInterface {
+                    function foo(DateTimeInterface $dateTime): DateTimeInterface {
                         $dateInterval = new DateInterval("P1D");
 
-                        if ($dateTime instanceof \DateTime) {
+                        if ($dateTime instanceof DateTime) {
                             $dateTime->add($dateInterval);
 
                             return $dateTime;
@@ -1090,10 +1090,10 @@ class TypeTest extends \Psalm\Tests\TestCase
             ],
             'notDateTimeImmutableWithDateTimeInterface' => [
                 '<?php
-                    function foo(\DateTimeInterface $dateTime): DateTimeInterface {
+                    function foo(DateTimeInterface $dateTime): DateTimeInterface {
                         $dateInterval = new DateInterval("P1D");
 
-                        if ($dateTime instanceof \DateTimeImmutable) {
+                        if ($dateTime instanceof DateTimeImmutable) {
                             return $dateTime->add($dateInterval);
                         } else {
                             $dateTime->add($dateInterval);
