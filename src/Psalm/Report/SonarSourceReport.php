@@ -8,10 +8,11 @@ use Psalm\Report;
 use function max;
 
 /**
- * JSON report format suitable for import into SonarCloud via `sonar.php.psalm.reportPaths`.
- * @see https://sonarcloud.io/documentation/enriching/external-issues/
+ * JSON report format suitable for import into SonarQube or SonarCloud via `sonar.php.psalm.reportPaths`.
+ * SonarQube documentation @see https://docs.sonarqube.org/latest/analysis/external-issues/
+ * SonarCloud documentation @see https://sonarcloud.io/documentation/enriching/external-issues/
  */
-class SonarCloudReport extends Report
+class SonarSourceReport extends Report
 {
     public function create(): string
     {
