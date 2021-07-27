@@ -63,18 +63,18 @@ function array_intersect_assoc(array $arr, array $arr2, array ...$arr3)
  * @psalm-template TKey as array-key
  * @psalm-template TValue
  *
- * @param array<mixed, TKey> $arr
- * @param array<mixed, TValue> $arr2
+ * @param array<mixed, TKey> $keys
+ * @param array<mixed, TValue> $values
  *
  * @return (
  *     PHP_MAJOR_VERSION is 8 ?
- *         ($arr is non-empty-array ? non-empty-array<TKey, TValue> : array<TKey, TValue>) :
- *         ($arr is non-empty-array ? non-empty-array<TKey, TValue>|false : array<TKey, TValue>|false)
+ *         ($keys is non-empty-array ? non-empty-array<TKey, TValue> : array<TKey, TValue>) :
+ *         ($keys is non-empty-array ? non-empty-array<TKey, TValue>|false : array<TKey, TValue>|false)
  * )
  * @psalm-ignore-falsable-return
  * @psalm-pure
  */
-function array_combine(array $arr, array $arr2)
+function array_combine(array $keys, array $values)
 {
 }
 
