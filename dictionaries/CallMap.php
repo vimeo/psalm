@@ -397,7 +397,7 @@ return [
 'array_rand' => ['int|string|array<int,int>|array<int,string>', 'array'=>'non-empty-array', 'num'=>'int'],
 'array_rand\'1' => ['int|string', 'array'=>'array'],
 'array_reduce' => ['mixed', 'array'=>'array', 'callback'=>'callable(mixed,mixed):mixed', 'initial='=>'mixed'],
-'array_replace' => ['?array', 'array'=>'array', 'replacements'=>'array', '...args='=>'array'],
+'array_replace' => ['array', 'array'=>'array', 'replacements'=>'array', '...args='=>'array'],
 'array_replace_recursive' => ['array', 'array'=>'array', 'replacements'=>'array', '...args='=>'array'],
 'array_reverse' => ['array', 'array'=>'array', 'preserve_keys='=>'bool'],
 'array_search' => ['int|string|false', 'needle'=>'mixed', 'haystack'=>'array', 'strict='=>'bool'],
