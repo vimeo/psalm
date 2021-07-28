@@ -2909,7 +2909,7 @@ return [
 'Exception::getPrevious' => ['?Throwable|?Exception'],
 'Exception::getTrace' => ['list<array<string,mixed>>'],
 'Exception::getTraceAsString' => ['string'],
-'exec' => ['string', 'command'=>'string', '&w_output='=>'array', '&w_result_code='=>'int'],
+'exec' => ['string|false', 'command'=>'string', '&w_output='=>'array', '&w_result_code='=>'int'],
 'exif_imagetype' => ['int|false', 'filename'=>'string'],
 'exif_read_data' => ['array|false', 'file'=>'string|resource', 'required_sections='=>'string', 'as_arrays='=>'bool', 'read_thumbnail='=>'bool'],
 'exif_tagname' => ['string|false', 'index'=>'int'],
