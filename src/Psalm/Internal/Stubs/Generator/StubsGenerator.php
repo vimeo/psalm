@@ -6,6 +6,7 @@ use PhpParser;
 use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\Node\Expr\VirtualArray;
 use Psalm\Node\Expr\VirtualArrayItem;
+use Psalm\Node\Expr\VirtualClassConstFetch;
 use Psalm\Node\Expr\VirtualConstFetch;
 use Psalm\Node\Expr\VirtualVariable;
 use Psalm\Node\Name\VirtualFullyQualified;
@@ -331,6 +332,10 @@ class StubsGenerator
     public static function getExpressionFromType(Type\Union $type) : PhpParser\Node\Expr
     {
         foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof Type\Atomic\TLiteralClassString) {
+                return new VirtualClassConstFetch(new VirtualName($atomic_type->value), new VirtualIdentifier('class'));
+            }
+
             if ($atomic_type instanceof Type\Atomic\TLiteralString) {
                 return new VirtualString($atomic_type->value);
             }
