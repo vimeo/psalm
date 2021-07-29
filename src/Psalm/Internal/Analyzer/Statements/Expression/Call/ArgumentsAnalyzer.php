@@ -102,7 +102,7 @@ class ArgumentsAnalyzer
 
         foreach ($args as $argument_offset => $arg) {
             if ($function_params === null) {
-                if (self::evaluateAribitraryParam(
+                if (self::evaluateArbitraryParam(
                     $statements_analyzer,
                     $arg,
                     $context
@@ -1058,7 +1058,7 @@ class ArgumentsAnalyzer
     /**
      * @return false|null
      */
-    private static function evaluateAribitraryParam(
+    private static function evaluateArbitraryParam(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Arg $arg,
         Context $context

@@ -1079,7 +1079,7 @@ class TypeParser
                     $is_variadic
                 );
 
-                // type is not authoratative
+                // type is not authoritative
                 $param->signature_type = null;
 
                 return $param;
