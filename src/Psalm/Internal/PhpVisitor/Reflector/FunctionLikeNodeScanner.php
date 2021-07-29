@@ -567,7 +567,7 @@ class FunctionLikeNodeScanner
                 if (isset($classlike_storage->properties[$param_storage->name]) && $param_storage->location) {
                     IssueBuffer::add(
                         new \Psalm\Issue\ParseError(
-                            'Promoted propertty ' . $param_storage->name . ' clashes with an existing property',
+                            'Promoted property ' . $param_storage->name . ' clashes with an existing property',
                             $param_storage->location
                         )
                     );

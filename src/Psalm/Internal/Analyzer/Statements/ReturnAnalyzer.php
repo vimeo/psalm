@@ -428,7 +428,7 @@ class ReturnAnalyzer
                                     ),
                                     $statements_analyzer->getSuppressedIssues()
                                 )) {
-                                    // fall throuhg
+                                    // fall through
                                 }
                             }
 
@@ -523,7 +523,7 @@ class ReturnAnalyzer
                             ),
                             $statements_analyzer->getSuppressedIssues()
                         )) {
-                            // fall throughg
+                            // fall through
                         }
                     }
                 }

@@ -269,7 +269,7 @@ class IfConditionalAnalyzer
             }
         }
 
-        // get all the var ids that were referened in the conditional, but not assigned in it
+        // get all the var ids that were referenced in the conditional, but not assigned in it
         $cond_referenced_var_ids = array_diff_key($cond_referenced_var_ids, $assigned_in_conditional_var_ids);
 
         $cond_referenced_var_ids = array_merge($newish_var_ids, $cond_referenced_var_ids);

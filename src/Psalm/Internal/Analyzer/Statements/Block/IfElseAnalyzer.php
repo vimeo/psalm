@@ -195,7 +195,7 @@ class IfElseAnalyzer
             }
         }
 
-        // define this before we alter local claues after reconciliation
+        // define this before we alter local clauses after reconciliation
         $if_scope->reasonable_clauses = $if_context->clauses;
 
         try {

@@ -42,7 +42,7 @@ class UnusedAssignmentRemover
         $chain_assignment = false;
 
         if ($assign_stmt !== null && $assign_exp !== null) {
-            // Check if we have to remove assignment statemnt as expression (i.e. just "$var = ")
+            // Check if we have to remove assignment statement as expression (i.e. just "$var = ")
 
             // Consider chain of assignments
             $rhs_exp = $assign_exp->expr;
