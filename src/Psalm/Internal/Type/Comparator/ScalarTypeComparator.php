@@ -19,6 +19,7 @@ use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\THtmlEscapedString;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -383,13 +384,22 @@ class ScalarTypeComparator
             return false;
         }
 
+        if ($input_type_part instanceof TIntRange && $container_type_part instanceof TIntRange) {
+            return IntegerRangeComparator::isContainedBy(
+                $input_type_part,
+                $container_type_part
+            );
+        }
+
         if ($input_type_part instanceof TInt && $container_type_part instanceof TPositiveInt) {
             if ($input_type_part instanceof TPositiveInt) {
                 return true;
             }
-
             if ($input_type_part instanceof TLiteralInt) {
                 return $input_type_part->value > 0;
+            }
+            if ($input_type_part instanceof TIntRange) {
+                return $input_type_part->isPositive();
             }
 
             if ($atomic_comparison_result) {
