@@ -13,6 +13,7 @@ use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
@@ -466,6 +467,7 @@ class TypeParser
      * @param  array<string, TypeAlias> $type_aliases
      * @return Atomic|Union
      * @throws TypeParseTreeException
+     * @psalm-suppress ComplexMethod to be refactored
      */
     private static function getTypeFromGenericTree(
         ParseTree\GenericTree $parse_tree,
@@ -775,6 +777,51 @@ class TypeParser
             }
 
             return new Atomic\TIntMaskOf($param_type);
+        }
+
+        if ($generic_type_value === 'int') {
+            if (count($generic_params) !== 2) {
+                throw new TypeParseTreeException('int range must have 2 params');
+            }
+
+            $min_bound = Atomic\TIntRange::BOUND_MIN;
+            $max_bound = Atomic\TIntRange::BOUND_MAX;
+
+            $param0_union_types = array_values($generic_params[0]->getAtomicTypes());
+            $param1_union_types = array_values($generic_params[1]->getAtomicTypes());
+
+            if (count($param0_union_types) > 1 || count($param1_union_types) > 1) {
+                throw new TypeParseTreeException('Union types are not allowed in int range type');
+            }
+
+            if ($param0_union_types[0] instanceof TNamedObject &&
+                $param0_union_types[0]->value === TIntRange::BOUND_MAX
+            ) {
+                throw new TypeParseTreeException("min bound for int range param can't be 'max'");
+            }
+            if ($param1_union_types[0] instanceof TNamedObject &&
+                $param1_union_types[0]->value === TIntRange::BOUND_MIN
+            ) {
+                throw new TypeParseTreeException("max bound for int range param can't be 'min'");
+            }
+
+
+            if ($param0_union_types[0] instanceof TLiteralInt) {
+                $min_bound = $param0_union_types[0]->value;
+            }
+            if ($param1_union_types[0] instanceof TLiteralInt) {
+                $max_bound = $param1_union_types[0]->value;
+            }
+
+            if ($min_bound === TIntRange::BOUND_MIN && $max_bound === TIntRange::BOUND_MAX) {
+                return new Atomic\TInt();
+            }
+
+            if ($min_bound === 0 && $max_bound === TIntRange::BOUND_MAX) {
+                return new Atomic\TPositiveInt();
+            }
+
+            return new Atomic\TIntRange($min_bound, $max_bound);
         }
 
         if (isset(TypeTokenizer::PSALM_RESERVED_WORDS[$generic_type_value])
