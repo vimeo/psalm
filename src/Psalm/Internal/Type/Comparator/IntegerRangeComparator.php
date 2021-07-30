@@ -53,7 +53,7 @@ class IntegerRangeComparator
 {
     public static function isContainedBy(
         TIntRange $input_type_part,
-        TIntRange $container_type_part,
+        TIntRange $container_type_part
     ) : bool {
         $is_input_min = $input_type_part->min_bound === TIntRange::BOUND_MIN;
         $is_input_max = $input_type_part->max_bound === TIntRange::BOUND_MAX;
