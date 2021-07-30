@@ -1,10 +1,6 @@
 <?php
 namespace Psalm\Tests;
 
-use function class_exists;
-
-use const DIRECTORY_SEPARATOR;
-
 class IntRangeTest extends TestCase
 {
     use Traits\InvalidCodeAnalysisTestTrait;
