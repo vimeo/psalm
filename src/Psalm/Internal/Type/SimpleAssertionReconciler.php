@@ -1596,7 +1596,6 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                 } else {
                     $atomic_type->max_bound = min($atomic_type->max_bound, (int)$assertion);
                 }
-                $atomic_type->max_bound = min($atomic_type->max_bound, (int)$assertion);
                 $existing_var_type->addType($atomic_type);
             } elseif ($atomic_type instanceof TInt) {
                 $existing_var_type->removeType('int');
