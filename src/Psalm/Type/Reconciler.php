@@ -162,9 +162,9 @@ class Reconciler
                 $orred_type = null;
 
                 foreach ($new_type_part_parts as $new_type_part_part) {
-                    if ($new_type_part_part[0] === '>'
+                    if ($new_type_part_part[0] === '@'
                         || ($new_type_part_part[0] === '!'
-                            && $new_type_part_part[1] === '>')
+                            && $new_type_part_part[1] === '@')
                     ) {
                         if ($new_type_part_part[0] === '!') {
                             $nested_negated = !$negated;

@@ -93,7 +93,7 @@ class AssertionFinder
 
             if ($var_name) {
                 if ($candidate_if_types) {
-                    $if_types[$var_name] = [['&' . \json_encode($candidate_if_types[0])]];
+                    $if_types[$var_name] = [['@' . \json_encode($candidate_if_types[0])]];
                 } else {
                     $if_types[$var_name] = [['!falsy']];
                 }
