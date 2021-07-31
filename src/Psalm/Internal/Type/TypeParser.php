@@ -784,9 +784,6 @@ class TypeParser
                 throw new TypeParseTreeException('int range must have 2 params');
             }
 
-            $min_bound = Atomic\TIntRange::BOUND_MIN;
-            $max_bound = Atomic\TIntRange::BOUND_MAX;
-
             $param0_union_types = array_values($generic_params[0]->getAtomicTypes());
             $param1_union_types = array_values($generic_params[1]->getAtomicTypes());
 
@@ -805,7 +802,8 @@ class TypeParser
                 throw new TypeParseTreeException("max bound for int range param can't be 'min'");
             }
 
-
+            $min_bound = null;
+            $max_bound = null;
             if ($param0_union_types[0] instanceof TLiteralInt) {
                 $min_bound = $param0_union_types[0]->value;
             }
@@ -813,11 +811,11 @@ class TypeParser
                 $max_bound = $param1_union_types[0]->value;
             }
 
-            if ($min_bound === TIntRange::BOUND_MIN && $max_bound === TIntRange::BOUND_MAX) {
+            if ($min_bound === null && $max_bound === null) {
                 return new Atomic\TInt();
             }
 
-            if ($min_bound === 0 && $max_bound === TIntRange::BOUND_MAX) {
+            if ($min_bound === 1 && $max_bound === null) {
                 return new Atomic\TPositiveInt();
             }
 
