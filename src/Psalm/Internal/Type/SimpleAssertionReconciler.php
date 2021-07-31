@@ -102,14 +102,14 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
             );
         }
 
-        if ($assertion[0] === '+') {
+        if ($assertion[0] === '>') {
             return self::reconcileSuperiorTo(
                 $existing_var_type,
                 substr($assertion, 1)
             );
         }
 
-        if ($assertion[0] === '-') {
+        if ($assertion[0] === '<') {
             return self::reconcileInferiorTo(
                 $existing_var_type,
                 substr($assertion, 1)
