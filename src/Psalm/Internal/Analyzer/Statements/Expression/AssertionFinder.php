@@ -3730,7 +3730,7 @@ class AssertionFinder
             }
 
             if ($var_name) {
-                $if_types[$var_name] = [['+' . $superior_value_comparison]];
+                $if_types[$var_name] = [['=isset'], ['+' . $superior_value_comparison]];
             }
 
             return $if_types ? [$if_types] : [];
@@ -3937,7 +3937,7 @@ class AssertionFinder
             }
 
             if ($var_name) {
-                $if_types[$var_name] = [['-' . $inferior_value_comparison]];
+                $if_types[$var_name] = [['=isset'], ['-' . $inferior_value_comparison]];
             }
 
             return $if_types ? [$if_types] : [];
