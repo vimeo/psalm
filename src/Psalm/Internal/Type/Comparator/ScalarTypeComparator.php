@@ -412,12 +412,18 @@ class ScalarTypeComparator
 
         if ($input_type_part instanceof TInt && $container_type_part instanceof TIntRange) {
             if ($input_type_part instanceof TPositiveInt) {
-                if ($container_type_part->min_bound <= 0) {
+                if ($container_type_part->min_bound > 0) {
+                    //any positive int can't be pushed inside a range with a min > 0
+                    if ($atomic_comparison_result) {
+                        $atomic_comparison_result->type_coerced = true;
+                        $atomic_comparison_result->type_coerced_from_scalar = true;
+                    }
+
                     return false;
                 }
 
-                if ($container_type_part->max_bound === null) {
-                    //any positive int can't be pushed inside a range with no max without coercion
+                if ($container_type_part->max_bound !== null) {
+                    //any positive int can't be pushed inside a range where the max bound isn't max without coercion
                     if ($atomic_comparison_result) {
                         $atomic_comparison_result->type_coerced = true;
                         $atomic_comparison_result->type_coerced_from_scalar = true;
