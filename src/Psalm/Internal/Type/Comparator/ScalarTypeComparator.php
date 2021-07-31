@@ -444,7 +444,7 @@ class ScalarTypeComparator
             }
 
             //any int can't be pushed inside a range without coercion (unless the range is from min to max)
-            if ($container_type_part->min_bound !== null && $container_type_part->max_bound !== null) {
+            if ($container_type_part->min_bound !== null || $container_type_part->max_bound !== null) {
                 if ($atomic_comparison_result) {
                     $atomic_comparison_result->type_coerced = true;
                     $atomic_comparison_result->type_coerced_from_scalar = true;
