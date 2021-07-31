@@ -815,7 +815,7 @@ class TypeParser
                 return new Atomic\TInt();
             }
 
-            if ($min_bound === 0 && $max_bound === null) {
+            if ($min_bound === 1 && $max_bound === null) {
                 return new Atomic\TPositiveInt();
             }
 
