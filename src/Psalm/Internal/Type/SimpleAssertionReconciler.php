@@ -1569,7 +1569,11 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
         foreach ($existing_var_type->getAtomicTypes() as $atomic_type) {
             if ($atomic_type instanceof Atomic\TIntRange) {
                 $existing_var_type->removeType($atomic_type->getKey());
-                $atomic_type->min_bound = max($atomic_type->min_bound, (int)$assertion);
+                if ($atomic_type->min_bound === null) {
+                    $atomic_type->min_bound = (int)$assertion;
+                } else {
+                    $atomic_type->min_bound = max($atomic_type->min_bound, (int)$assertion);
+                }
                 $existing_var_type->addType($atomic_type);
             } elseif ($atomic_type instanceof TInt) {
                 $existing_var_type->removeType('int');
@@ -1587,6 +1591,11 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
         foreach ($existing_var_type->getAtomicTypes() as $atomic_type) {
             if ($atomic_type instanceof Atomic\TIntRange) {
                 $existing_var_type->removeType($atomic_type->getKey());
+                if ($atomic_type->max_bound === null) {
+                    $atomic_type->max_bound = (int)$assertion;
+                } else {
+                    $atomic_type->max_bound = min($atomic_type->max_bound, (int)$assertion);
+                }
                 $atomic_type->max_bound = min($atomic_type->max_bound, (int)$assertion);
                 $existing_var_type->addType($atomic_type);
             } elseif ($atomic_type instanceof TInt) {
@@ -1594,7 +1603,6 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                 $existing_var_type->addType(new Atomic\TIntRange(null, (int)$assertion));
             }
         }
-
         return $existing_var_type;
     }
 
