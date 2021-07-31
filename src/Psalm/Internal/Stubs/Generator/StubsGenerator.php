@@ -333,7 +333,7 @@ class StubsGenerator
     {
         foreach ($type->getAtomicTypes() as $atomic_type) {
             if ($atomic_type instanceof Type\Atomic\TLiteralClassString) {
-                return new VirtualClassConstFetch(new VirtualName($atomic_type->value), new VirtualIdentifier('class'));
+                return new VirtualClassConstFetch(new VirtualName('\\' . $atomic_type->value), new VirtualIdentifier('class'));
             }
 
             if ($atomic_type instanceof Type\Atomic\TLiteralString) {
