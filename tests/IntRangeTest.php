@@ -47,7 +47,7 @@ class IntRangeTest extends TestCase
                     function getInt(): int{return 0;}
                     $a = getInt();
                     assert($a >= 500);
-                    assert($a < 5000)',
+                    assert($a < 5000);',
                 'assertions' => [
                     '$a===' => 'int<500, 4999>'
                 ]
