@@ -40,6 +40,8 @@ use function array_filter;
 use function count;
 use function explode;
 use function get_class;
+use function max;
+use function min;
 use function strpos;
 use function substr;
 
@@ -97,6 +99,20 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
             return self::reconcileHasArrayKey(
                 $existing_var_type,
                 substr($assertion, 14)
+            );
+        }
+
+        if ($assertion[0] === '+') {
+            return self::reconcileSuperiorTo(
+                $existing_var_type,
+                substr($assertion, 1)
+            );
+        }
+
+        if ($assertion[0] === '-') {
+            return self::reconcileInferiorTo(
+                $existing_var_type,
+                substr($assertion, 1)
             );
         }
 
@@ -1540,6 +1556,42 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                         $atomic_type->class_strings[$assertion] = true;
                     }
                 }
+            }
+        }
+
+        return $existing_var_type;
+    }
+
+    private static function reconcileSuperiorTo(
+        Union $existing_var_type,
+        string $assertion
+    ) : Union {
+        foreach ($existing_var_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof Atomic\TIntRange) {
+                $existing_var_type->removeType($atomic_type->getKey());
+                $atomic_type->min_bound = max($atomic_type->min_bound, (int)$assertion);
+                $existing_var_type->addType($atomic_type);
+            } elseif ($atomic_type instanceof TInt) {
+                $existing_var_type->removeType('int');
+                $existing_var_type->addType(new Atomic\TIntRange((int)$assertion, null));
+            }
+        }
+
+        return $existing_var_type;
+    }
+
+    private static function reconcileInferiorTo(
+        Union $existing_var_type,
+        string $assertion
+    ) : Union {
+        foreach ($existing_var_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof Atomic\TIntRange) {
+                $existing_var_type->removeType($atomic_type->getKey());
+                $atomic_type->max_bound = min($atomic_type->max_bound, (int)$assertion);
+                $existing_var_type->addType($atomic_type);
+            } elseif ($atomic_type instanceof TInt) {
+                $existing_var_type->removeType('int');
+                $existing_var_type->addType(new Atomic\TIntRange(null, (int)$assertion));
             }
         }
 
