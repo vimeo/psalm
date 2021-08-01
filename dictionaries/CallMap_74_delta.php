@@ -16,10 +16,10 @@
 return [
 'new' => [
     'gzread' => ['string|false', 'stream'=>'resource', 'length'=>'int'],
-    'mb_str_split' => ['list<string>', 'string'=>'string', 'length='=>'int', 'encoding='=>'string|null'],
-    'password_hash' => ['string|null', 'password'=>'string', 'algo'=>'int|string|null', 'options='=>'array'],
+    'mb_str_split' => ['list<string>|false', 'string'=>'string', 'length='=>'int', 'encoding='=>'string'],
+    'password_hash' => ['string|false', 'password'=>'string', 'algo'=>'int|string|null', 'options='=>'array'],
     'password_needs_rehash' => ['bool', 'hash'=>'string', 'algo'=>'int|string|null', 'options='=>'array'],
-    'proc_open' => ['resource|false', 'command'=>'string|array', 'descriptorspec'=>'array', '&w_pipes'=>'resource[]', 'cwd='=>'?string', 'env='=>'?array', 'other_options='=>'array'],
+    'proc_open' => ['resource|false', 'cmd'=>'string|array', 'descriptorspec'=>'array', '&w_pipes'=>'resource[]', 'cwd='=>'?string', 'env='=>'?array', 'other_options='=>'array'],
     'ReflectionProperty::getType' => ['?ReflectionType'],
 ],
 'old' => [
