@@ -86,7 +86,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
 
         $original_assertion = $assertion;
 
-        if ($assertion[0] === '>') {
+        if ($assertion[0] === '@') {
             $assertion = 'falsy';
             $is_negation = true;
         }
