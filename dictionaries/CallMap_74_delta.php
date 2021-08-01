@@ -16,6 +16,7 @@
 return [
 'new' => [
     'gzread' => ['string|false', 'stream'=>'resource', 'length'=>'int'],
+    'mb_str_split' => ['list<string>', 'string'=>'string', 'limit='=>'int', 'encoding='=>'string|null'],
     'password_hash' => ['string|null', 'password'=>'string', 'algo'=>'int|string|null', 'options='=>'array'],
     'password_needs_rehash' => ['bool', 'hash'=>'string', 'algo'=>'int|string|null', 'options='=>'array'],
     'proc_open' => ['resource|false', 'command'=>'string|array', 'descriptorspec'=>'array', '&w_pipes'=>'resource[]', 'cwd='=>'?string', 'env='=>'?array', 'other_options='=>'array'],

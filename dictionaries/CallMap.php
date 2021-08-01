@@ -7289,6 +7289,7 @@ return [
 'mb_scrub' => ['string', 'string'=>'string', 'encoding='=>'string'],
 'mb_send_mail' => ['bool', 'to'=>'string', 'subject'=>'string', 'message'=>'string', 'additional_headers='=>'string|array', 'additional_params='=>'string'],
 'mb_split' => ['list<string>', 'pattern'=>'string', 'string'=>'string', 'limit='=>'int'],
+'mb_str_split' => ['list<string>', 'string'=>'string', 'limit='=>'int', 'encoding='=>'string|null'],
 'mb_strcut' => ['string', 'string'=>'string', 'start'=>'int', 'length='=>'?int', 'encoding='=>'string'],
 'mb_strimwidth' => ['string', 'string'=>'string', 'start'=>'int', 'width'=>'int', 'trim_marker='=>'string', 'encoding='=>'string'],
 'mb_stripos' => ['int|false', 'haystack'=>'string', 'needle'=>'string', 'offset='=>'int', 'encoding='=>'string'],
