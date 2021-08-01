@@ -1047,7 +1047,7 @@ class CallAnalyzer
 
                     $equality_types = array_unique(
                         array_map(
-                            function($bound_with_equality) {
+                            function ($bound_with_equality) {
                                 return $bound_with_equality->type->getId();
                             },
                             $bounds_with_equality
