@@ -1512,7 +1512,7 @@ class TypeTest extends \Psalm\Tests\TestCase
                     interface I {}
 
                     function takesI(I $i): void {}',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:32 - Argument 1 of takesI expects I, A&static provided',
+                'error_message' => 'PossiblyInvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:32 - Argument 1 of takesI expects I, possibly different type A&I|A&static provided',
             ],
         ];
     }

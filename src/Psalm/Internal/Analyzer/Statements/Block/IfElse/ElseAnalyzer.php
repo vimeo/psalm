@@ -114,8 +114,6 @@ class ElseAnalyzer
             }
         }
 
-        /** @var array<string, int> */
-        $new_assigned_var_ids = $else_context->assigned_var_ids;
         $else_context->assigned_var_ids = $pre_stmts_assigned_var_ids;
 
         /** @var array<string, bool> */
@@ -173,8 +171,6 @@ class ElseAnalyzer
                 $if_scope,
                 $else_context,
                 $original_context,
-                $new_assigned_var_ids,
-                $new_possibly_assigned_var_ids,
                 [],
                 (bool) $else
             );

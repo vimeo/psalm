@@ -128,8 +128,6 @@ class IfAnalyzer
                 $if_scope,
                 $if_context,
                 $outer_context,
-                $new_assigned_var_ids,
-                $new_possibly_assigned_var_ids,
                 $if_scope->if_cond_changed_var_ids
             );
 
@@ -432,8 +430,6 @@ class IfAnalyzer
     }
 
     /**
-     * @param  array<string, int>    $assigned_var_ids
-     * @param  array<string, bool>   $possibly_assigned_var_ids
      * @param  array<string, bool>   $newly_reconciled_var_ids
      */
     public static function updateIfScope(
@@ -441,8 +437,6 @@ class IfAnalyzer
         IfScope $if_scope,
         Context $if_context,
         Context $outer_context,
-        array $assigned_var_ids,
-        array $possibly_assigned_var_ids,
         array $newly_reconciled_var_ids,
         bool $update_new_vars = true
     ) : void {
@@ -469,7 +463,7 @@ class IfAnalyzer
         $possibly_redefined_vars = $redefined_vars;
 
         foreach ($possibly_redefined_vars as $var_id => $_) {
-            if (!isset($possibly_assigned_var_ids[$var_id])
+            if (!isset($if_context->possibly_assigned_var_ids[$var_id])
                 && isset($newly_reconciled_var_ids[$var_id])
             ) {
                 unset($possibly_redefined_vars[$var_id]);
@@ -477,12 +471,15 @@ class IfAnalyzer
         }
 
         if ($if_scope->assigned_var_ids === null) {
-            $if_scope->assigned_var_ids = $assigned_var_ids;
+            $if_scope->assigned_var_ids = $if_context->assigned_var_ids;
         } else {
-            $if_scope->assigned_var_ids = \array_intersect_key($assigned_var_ids, $if_scope->assigned_var_ids);
+            $if_scope->assigned_var_ids = \array_intersect_key(
+                $if_context->assigned_var_ids,
+                $if_scope->assigned_var_ids
+            );
         }
 
-        $if_scope->possibly_assigned_var_ids += $possibly_assigned_var_ids;
+        $if_scope->possibly_assigned_var_ids += $if_context->possibly_assigned_var_ids;
 
         if ($if_scope->redefined_vars === null) {
             $if_scope->redefined_vars = $redefined_vars;

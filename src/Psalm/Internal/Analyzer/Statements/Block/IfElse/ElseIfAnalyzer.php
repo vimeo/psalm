@@ -328,8 +328,6 @@ class ElseIfAnalyzer
                 $if_scope,
                 $elseif_context,
                 $outer_context,
-                array_merge($new_stmts_assigned_var_ids, $assigned_in_conditional_var_ids),
-                $new_stmts_possibly_assigned_var_ids,
                 $newly_reconciled_var_ids
             );
 

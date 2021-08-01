@@ -182,6 +182,15 @@ class UnusedVariableTest extends TestCase
                         echo $a;
                     }',
             ],
+            'varRedefinedInBooleanAnd' => [
+                '<?php
+                    function foo(): int {
+                        $max = 0;
+                        true && ($max = 1) && true;
+                        return $max;
+                    }
+                ',
+            ],
             'booleanOr' => [
                 '<?php
                     function foo(int $a, int $b): bool {
