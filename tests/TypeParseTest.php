@@ -991,6 +991,7 @@ class TypeParseTest extends TestCase
             (string) \Psalm\Codebase::getPsalmTypeFromReflection($reflectionParams[2]->getType())
         );
 
+        /** @psalm-suppress PossiblyInvalidArgument */
         $this->assertSame(
             'string',
             (string) \Psalm\Codebase::getPsalmTypeFromReflection($reflectionFunc->getReturnType())

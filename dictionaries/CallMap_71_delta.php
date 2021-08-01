@@ -40,6 +40,10 @@ return [
     'session_gc' => ['int'],
     'timezone_identifiers_list' => ['list<string>|false', 'timezoneGroup='=>'int', 'countryCode='=>'?string'],
     'unpack' => ['array', 'format'=>'string', 'string'=>'string', 'offset='=>'int'],
+    'ReflectionFunction::getReturnType' => ['?ReflectionNamedType'],
+    'ReflectionFunctionAbstract::getReturnType' => ['?ReflectionNamedType'],
+    'ReflectionMethod::getReturnType' => ['?ReflectionNamedType'],
+    'ReflectionParameter::getType' => ['?ReflectionNamedType']
 ],
 'old' => [
     'DateTimeZone::listIdentifiers' => ['list<string>|false', 'timezoneGroup='=>'int', 'countryCode='=>'string'],
