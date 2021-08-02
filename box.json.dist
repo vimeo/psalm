@@ -3,7 +3,7 @@
     "files": [
         "psalm"
     ],
-    "files-bin": ["config.xsd"],
+    "files-bin": ["config.xsd", "xml.xsd"],
     "directories-bin" : [
         "assets",
         "dictionaries",
