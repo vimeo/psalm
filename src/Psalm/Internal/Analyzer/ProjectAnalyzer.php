@@ -582,6 +582,7 @@ class ProjectAnalyzer
             || $deleted_files === null
             || count($diff_files) > 200
         ) {
+            $this->config->visitPreloadedStubFiles($this->codebase, $this->progress);
             $this->visitAutoloadFiles();
 
             $this->codebase->scanner->addFilesToShallowScan($this->extra_files);
@@ -589,8 +590,6 @@ class ProjectAnalyzer
             $this->codebase->analyzer->addFilesToAnalyze($this->project_files);
 
             $this->config->initializePlugins($this);
-
-            $this->config->visitPreloadedStubFiles($this->codebase, $this->progress);
 
             $this->codebase->scanFiles($this->threads);
 
@@ -608,13 +607,12 @@ class ProjectAnalyzer
                 $file_list = array_diff($file_list, $deleted_files);
 
                 if ($file_list) {
+                    $this->config->visitPreloadedStubFiles($this->codebase, $this->progress);
                     $this->visitAutoloadFiles();
 
                     $this->checkDiffFilesWithConfig($this->config, $file_list);
 
                     $this->config->initializePlugins($this);
-
-                    $this->config->visitPreloadedStubFiles($this->codebase, $this->progress);
 
                     $this->codebase->scanFiles($this->threads);
                 } else {
@@ -989,13 +987,13 @@ class ProjectAnalyzer
     {
         $this->file_reference_provider->loadReferenceCache();
 
+        $this->config->visitPreloadedStubFiles($this->codebase, $this->progress);
+
         $this->checkDirWithConfig($dir_name, $this->config, true);
 
         $this->progress->startScanningFiles();
 
         $this->config->initializePlugins($this);
-
-        $this->config->visitPreloadedStubFiles($this->codebase, $this->progress);
 
         $this->codebase->scanFiles($this->threads);
 
@@ -1116,6 +1114,8 @@ class ProjectAnalyzer
     {
         $this->progress->debug('Checking ' . $file_path . "\n");
 
+        $this->config->visitPreloadedStubFiles($this->codebase, $this->progress);
+
         $this->config->hide_external_errors = $this->config->isInProjectDirs($file_path);
 
         $this->codebase->addFilesToAnalyze([$file_path => $file_path]);
@@ -1125,8 +1125,6 @@ class ProjectAnalyzer
         $this->progress->startScanningFiles();
 
         $this->config->initializePlugins($this);
-
-        $this->config->visitPreloadedStubFiles($this->codebase, $this->progress);
 
         $this->codebase->scanFiles($this->threads);
 
@@ -1147,6 +1145,7 @@ class ProjectAnalyzer
      */
     public function checkPaths(array $paths_to_check): void
     {
+        $this->config->visitPreloadedStubFiles($this->codebase, $this->progress);
         $this->visitAutoloadFiles();
 
         $this->codebase->scanner->addFilesToShallowScan($this->extra_files);
@@ -1168,7 +1167,6 @@ class ProjectAnalyzer
 
         $this->config->initializePlugins($this);
 
-        $this->config->visitPreloadedStubFiles($this->codebase, $this->progress);
 
         $this->codebase->scanFiles($this->threads);
 

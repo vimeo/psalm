@@ -1394,7 +1394,7 @@ class AssignmentAnalyzer
                     }
 
                     if ($already_in_scope) {
-                        // removes dependennt vars from $context
+                        // removes dependent vars from $context
                         $context->removeDescendents(
                             $list_var_id,
                             $context->vars_in_scope[$list_var_id],

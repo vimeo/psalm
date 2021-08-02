@@ -63,18 +63,18 @@ function array_intersect_assoc(array $arr, array $arr2, array ...$arr3)
  * @psalm-template TKey as array-key
  * @psalm-template TValue
  *
- * @param array<mixed, TKey> $arr
- * @param array<mixed, TValue> $arr2
+ * @param array<mixed, TKey> $keys
+ * @param array<mixed, TValue> $values
  *
  * @return (
  *     PHP_MAJOR_VERSION is 8 ?
- *         ($arr is non-empty-array ? non-empty-array<TKey, TValue> : array<TKey, TValue>) :
- *         ($arr is non-empty-array ? non-empty-array<TKey, TValue>|false : array<TKey, TValue>|false
+ *         ($keys is non-empty-array ? non-empty-array<TKey, TValue> : array<TKey, TValue>) :
+ *         ($keys is non-empty-array ? non-empty-array<TKey, TValue>|false : array<TKey, TValue>|false)
  * )
  * @psalm-ignore-falsable-return
  * @psalm-pure
  */
-function array_combine(array $arr, array $arr2)
+function array_combine(array $keys, array $values)
 {
 }
 
@@ -1266,16 +1266,20 @@ function base64_encode(string $data) : string {}
  *
  * @param resource|null $context
  *
+ * @return ($format is 0 ? list<string> : array<string, string|list<string>>)|false
+ *
  * @psalm-taint-sink ssrf $url
  */
-function get_headers(string $url, int $format = 0, $context = null) : array {}
+function get_headers(string $url, int $format = 0, $context = null) : array|false {}
 
 /**
  * @psalm-pure
  *
+ * @return array<lowercase-string, string>|false
+ *
  * @psalm-taint-sink ssrf $filename
  */
-function get_meta_tags(string $filename, bool $use_include_path = false) : array {}
+function get_meta_tags(string $filename, bool $use_include_path = false) : array|false {}
 
 /**
  * @return ($categorize is false ? array<string,int|string|float|bool|null|array|resource> : array<string, array<string,int|string|float|bool|null|array|resource>>)

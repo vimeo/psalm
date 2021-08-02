@@ -18,50 +18,69 @@ class ArraySliceReturnTypeProvider implements \Psalm\Plugin\EventHandler\Functio
     {
         $statements_source = $event->getStatementsSource();
         $call_args = $event->getCallArgs();
+
         if (!$statements_source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
             return Type::getMixed();
         }
 
         $first_arg = isset($call_args[0]->value) ? $call_args[0]->value : null;
 
-        $first_arg_array = $first_arg
-            && ($first_arg_type = $statements_source->node_data->getType($first_arg))
-            && $first_arg_type->hasType('array')
-            && ($array_atomic_type = $first_arg_type->getAtomicTypes()['array'])
-            && ($array_atomic_type instanceof Type\Atomic\TArray
-                || $array_atomic_type instanceof Type\Atomic\TKeyedArray
-                || $array_atomic_type instanceof Type\Atomic\TList)
-        ? $array_atomic_type
-        : null;
-
-        if (!$first_arg_array) {
+        if (!$first_arg) {
             return Type::getArray();
+        }
+
+        $first_arg_type = $statements_source->node_data->getType($first_arg);
+
+        if (!$first_arg_type) {
+            return Type::getArray();
+        }
+
+        $atomic_types = $first_arg_type->getAtomicTypes();
+
+        $return_atomic_type = null;
+
+        while ($atomic_type = \array_shift($atomic_types)) {
+            if ($atomic_type instanceof Type\Atomic\TTemplateParam) {
+                $atomic_types = \array_merge($atomic_types, $atomic_type->as->getAtomicTypes());
+                continue;
+            }
+
+            $already_cloned = false;
+
+            if ($atomic_type instanceof Type\Atomic\TKeyedArray) {
+                $already_cloned = true;
+                $atomic_type = $atomic_type->getGenericArrayType();
+            }
+
+            if ($atomic_type instanceof Type\Atomic\TArray) {
+                if (!$already_cloned) {
+                    $atomic_type = clone $atomic_type;
+                }
+
+                $return_atomic_type = new Type\Atomic\TArray($atomic_type->type_params);
+                continue;
+            }
+
+            if ($atomic_type instanceof Type\Atomic\TList) {
+                $return_atomic_type = new Type\Atomic\TArray([Type::getInt(), clone $atomic_type->type_param]);
+                continue;
+            }
+
+            return Type::getArray();
+        }
+
+        if (!$return_atomic_type) {
+            throw new \UnexpectedValueException('This should never happen');
         }
 
         $dont_preserve_int_keys = !isset($call_args[3]->value)
             || (($third_arg_type = $statements_source->node_data->getType($call_args[3]->value))
                 && ((string) $third_arg_type === 'false'));
 
-        $already_cloned = false;
-
-        if ($first_arg_array instanceof Type\Atomic\TKeyedArray) {
-            $already_cloned = true;
-            $first_arg_array = $first_arg_array->getGenericArrayType();
+        if ($dont_preserve_int_keys && $return_atomic_type->type_params[0]->isInt()) {
+            $return_atomic_type = new Type\Atomic\TList($return_atomic_type->type_params[1]);
         }
 
-        if ($first_arg_array instanceof Type\Atomic\TArray) {
-            if (!$already_cloned) {
-                $first_arg_array = clone $first_arg_array;
-            }
-            $array_type = new Type\Atomic\TArray($first_arg_array->type_params);
-        } else {
-            $array_type = new Type\Atomic\TArray([Type::getInt(), clone $first_arg_array->type_param]);
-        }
-
-        if ($dont_preserve_int_keys && $array_type->type_params[0]->isInt()) {
-            $array_type = new Type\Atomic\TList($array_type->type_params[1]);
-        }
-
-        return new Type\Union([$array_type]);
+        return new Type\Union([$return_atomic_type]);
     }
 }

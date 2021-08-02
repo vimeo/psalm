@@ -333,6 +333,16 @@ When `false`, Psalm will not consider issue at lower level than `errorLevel` as 
 
 When `false`, Psalm will not report `ParamNameMismatch` issues in your code anymore. This does not replace the use of individual `@no-named-arguments` to prevent external access to a library's method or to reduce the type to a `list` when using variadics
 
+#### triggerErrorExits
+
+```xml
+<psalm
+   triggerErrorExits="[string]"
+>
+```
+
+Describe the behavior of trigger_error. `always` means it always exits, `never` means it never exits, `default` means it exits only for `E_USER_ERROR`. Default is `default`
+
 ### Running Psalm
 
 #### autoloader

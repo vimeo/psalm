@@ -640,6 +640,26 @@ class BinaryOperationTest extends TestCase
                         return "foo" . $s1;
                     }',
             ],
+            'numericWithInt' => [
+                '<?php
+                    /** @return numeric */
+                    function getNumeric(){
+                        return 1;
+                    }
+                    $a = getNumeric();
+                    $a++;
+                    $b = getNumeric() * 2;
+                    $c = 1 - getNumeric();
+                    $d = 2;
+                    $d -= getNumeric();
+                    ',
+                'assertions' => [
+                    '$a' => 'float|int',
+                    '$b' => 'float|int',
+                    '$c' => 'float|int',
+                    '$d' => 'float|int',
+                ],
+            ],
             'encapsedStringWithIntIncludingLiterals' => [
                 '<?php
                     /**
@@ -661,6 +681,30 @@ class BinaryOperationTest extends TestCase
                         $s2 = "foo";
                         return "Hello $s1 $s2";
                     }',
+            ],
+            'NumericStringIncrement' => [
+                '<?php
+                    function scope(array $a): int|float {
+                        $offset = array_search("foo", $a);
+                        if(is_numeric($offset)){
+                            return $offset++;
+                        }
+                        else{
+                            return 0;
+                        }
+                    }',
+            ],
+            'NumericStringIncrementLiteral' => [
+                '<?php
+                    $a = "123";
+                    $b = "123";
+                    $a++;
+                    ++$b;
+                    ',
+                'assertions' => [
+                    '$a' => 'float|int',
+                    '$b' => 'float|int',
+                ],
             ],
         ];
     }

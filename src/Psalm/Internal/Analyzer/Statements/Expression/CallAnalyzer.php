@@ -1045,20 +1045,16 @@ class CallAnalyzer
                         continue;
                     }
 
-                    $equality_classlikes = [];
-                    $equality_types = [];
+                    $equality_types = array_unique(
+                        array_map(
+                            function ($bound_with_equality) {
+                                return $bound_with_equality->type->getId();
+                            },
+                            $bounds_with_equality
+                        )
+                    );
 
-                    foreach ($bounds_with_equality as $bound_with_equality) {
-                        $equality_classlikes[] = $bound_with_equality->equality_bound_classlike;
-                        $equality_types[] = $bound_with_equality->type->getId();
-                    }
-
-                    $equality_classlikes = array_unique($equality_classlikes);
-                    $equality_types = array_unique($equality_types);
-
-                    if (count($equality_classlikes) > 1
-                        || count($equality_types) > 1
-                    ) {
+                    if (count($equality_types) > 1) {
                         if (IssueBuffer::accepts(
                             new InvalidArgument(
                                 'Incompatible types found for ' . $template_name,

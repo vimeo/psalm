@@ -174,6 +174,38 @@ class PureAnnotationTest extends TestCase
                         return $ar[0] ?? 0;
                     }',
             ],
+            'exitFunctionWithNoArgumentIsPure' => [
+                '<?php
+                    /** @psalm-pure */
+                    function foo(): void {
+                        exit;
+                    }
+                ',
+            ],
+            'exitFunctionWithIntegerArgumentIsPure' => [
+                '<?php
+                    /** @psalm-pure */
+                    function foo(): void {
+                        exit(0);
+                    }
+                ',
+            ],
+            'dieFunctionWithNoArgumentIsPure' => [
+                '<?php
+                    /** @psalm-pure */
+                    function foo(): void {
+                        die;
+                    }
+                ',
+            ],
+            'dieFunctionWithIntegerArgumentIsPure' => [
+                '<?php
+                    /** @psalm-pure */
+                    function foo(): void {
+                        die(0);
+                    }
+                ',
+            ],
             'allowPureToString' => [
                 '<?php
                     class A {
@@ -539,6 +571,33 @@ class PureAnnotationTest extends TestCase
 
                         return $ar[0] ?? 0;
                     }',
+                'error_message' => 'ImpureFunctionCall',
+            ],
+            'printFunctionIsImpure' => [
+                '<?php
+                    /** @psalm-pure */
+                    function foo(): void {
+                        print("x");
+                    }
+                ',
+                'error_message' => 'ImpureFunctionCall',
+            ],
+            'exitFunctionWithNonIntegerArgumentIsImpure' => [
+                '<?php
+                    /** @psalm-pure */
+                    function foo(): void {
+                        exit("x");
+                    }
+                ',
+                'error_message' => 'ImpureFunctionCall',
+            ],
+            'dieFunctionWithNonIntegerArgumentIsImpure' => [
+                '<?php
+                    /** @psalm-pure */
+                    function foo(): void {
+                        die("x");
+                    }
+                ',
                 'error_message' => 'ImpureFunctionCall',
             ],
             'impureByRef' => [

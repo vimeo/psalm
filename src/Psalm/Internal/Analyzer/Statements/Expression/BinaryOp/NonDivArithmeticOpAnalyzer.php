@@ -36,6 +36,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use function array_diff_key;
 use function array_values;
 use function is_int;
+use function is_numeric;
 use function preg_match;
 use function strtolower;
 
@@ -385,14 +386,25 @@ class NonDivArithmeticOpAnalyzer
 
         if ($left_type_part instanceof Type\Atomic\TString
             && $right_type_part instanceof TInt
-            && $parent instanceof PhpParser\Node\Expr\PostInc
+            && (
+                $parent instanceof PhpParser\Node\Expr\PostInc ||
+                $parent instanceof PhpParser\Node\Expr\PreInc
+            )
         ) {
-            $has_string_increment = true;
-
-            if (!$result_type) {
-                $result_type = Type::getNonEmptyString();
+            if ($left_type_part instanceof Type\Atomic\TNumericString ||
+                ($left_type_part instanceof Type\Atomic\TLiteralString && is_numeric($left_type_part->value))
+            ) {
+                $new_result_type = new Type\Union([new TFloat(), new TInt()]);
+                $new_result_type->from_calculation = true;
             } else {
-                $result_type = Type::combineUnionTypes(Type::getNonEmptyString(), $result_type);
+                $new_result_type = Type::getNonEmptyString();
+                $has_string_increment = true;
+            }
+
+            if ($result_type) {
+                $result_type = Type::combineUnionTypes($new_result_type, $result_type);
+            } else {
+                $result_type = $new_result_type;
             }
 
             $has_valid_left_operand = true;
@@ -653,12 +665,29 @@ class NonDivArithmeticOpAnalyzer
             if (($left_type_part instanceof TNumeric || $right_type_part instanceof TNumeric)
                 && ($left_type_part->isNumericType() && $right_type_part->isNumericType())
             ) {
+                if ($config->strict_binary_operands) {
+                    if ($statements_source && IssueBuffer::accepts(
+                        new InvalidOperand(
+                            'Cannot process different numeric types together in strict binary operands mode, '.
+                            'please cast explicitly',
+                            new CodeLocation($statements_source, $parent)
+                        ),
+                        $statements_source->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                }
+
                 if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Mod) {
-                    $result_type = Type::getInt();
-                } elseif (!$result_type) {
-                    $result_type = Type::getNumeric();
+                    $new_result_type = Type::getInt();
                 } else {
-                    $result_type = Type::combineUnionTypes(Type::getNumeric(), $result_type);
+                    $new_result_type = new Type\Union([new TFloat(), new TInt()]);
+                }
+
+                if (!$result_type) {
+                    $result_type = $new_result_type;
+                } else {
+                    $result_type = Type::combineUnionTypes($new_result_type, $result_type);
                 }
 
                 $has_valid_right_operand = true;
@@ -753,7 +782,8 @@ class NonDivArithmeticOpAnalyzer
                 if ($config->strict_binary_operands) {
                     if ($statements_source && IssueBuffer::accepts(
                         new InvalidOperand(
-                            'Cannot add ints to floats',
+                            'Cannot process ints and floats in strict binary operands mode, '.
+                            'please cast explicitly',
                             new CodeLocation($statements_source, $parent)
                         ),
                         $statements_source->getSuppressedIssues()
@@ -780,7 +810,8 @@ class NonDivArithmeticOpAnalyzer
                 if ($config->strict_binary_operands) {
                     if ($statements_source && IssueBuffer::accepts(
                         new InvalidOperand(
-                            'Cannot add numeric types together, please cast explicitly',
+                            'Cannot process numeric types together in strict operands mode, '.
+                            'please cast explicitly',
                             new CodeLocation($statements_source, $parent)
                         ),
                         $statements_source->getSuppressedIssues()

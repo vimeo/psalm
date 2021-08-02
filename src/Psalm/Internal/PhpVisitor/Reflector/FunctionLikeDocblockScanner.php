@@ -11,6 +11,7 @@ use Psalm\Exception\InvalidMethodOverrideException;
 use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Internal\Scanner\FunctionDocblockComment;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeAlias;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
@@ -908,6 +909,12 @@ class FunctionLikeDocblockScanner
                     && !$storage->return_type->isNullable()
                     && !$storage->return_type->hasTemplate()
                     && !$storage->return_type->hasConditional()
+                    //don't add null to docblock type if it's not contained in signature type
+                    && UnionTypeComparator::isContainedBy(
+                        $codebase,
+                        $storage->return_type,
+                        $storage->signature_return_type
+                    )
                 ) {
                     $storage->return_type->addType(new Type\Atomic\TNull());
                 }

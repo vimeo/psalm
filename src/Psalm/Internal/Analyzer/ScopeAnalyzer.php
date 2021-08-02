@@ -11,7 +11,6 @@ use function array_merge;
 use function array_unique;
 use function array_values;
 use function count;
-use function end;
 use function in_array;
 use function strtolower;
 
@@ -102,19 +101,6 @@ class ScopeAnalyzer
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\Expression) {
-                if ($stmt->expr instanceof PhpParser\Node\Expr\FuncCall
-                    && $stmt->expr->name instanceof PhpParser\Node\Name
-                    && $stmt->expr->name->parts === ['trigger_error']
-                    && isset($stmt->expr->args[1])
-                    && $stmt->expr->args[1]->value instanceof PhpParser\Node\Expr\ConstFetch
-                    && in_array(
-                        end($stmt->expr->args[1]->value->name->parts),
-                        ['E_ERROR', 'E_PARSE', 'E_CORE_ERROR', 'E_COMPILE_ERROR', 'E_USER_ERROR']
-                    )
-                ) {
-                    return array_values(array_unique(array_merge($control_actions, [self::ACTION_END])));
-                }
-
                 // This allows calls to functions that always exit to act as exit statements themselves
                 if ($nodes
                     && ($stmt_expr_type = $nodes->getType($stmt->expr))

@@ -468,15 +468,6 @@ class FunctionCallReturnTypeFetcher
                 }
         }
 
-        switch ($call_map_key) {
-            case 'array_replace':
-            case 'array_replace_recursive':
-                if ($codebase->config->ignore_internal_nullable_issues) {
-                    $stmt_type->ignore_nullable_issues = true;
-                }
-                break;
-        }
-
         return $stmt_type;
     }
 
