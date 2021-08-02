@@ -1817,7 +1817,14 @@ class Codebase
     {
         $file_contents = substr($file_contents, 0, $offset);
 
-        $before_newline_count = strrpos($file_contents, "\n", $offset - strlen($file_contents));
+        $offsetLength = $offset - strlen($file_contents);
+
+        //PHP 8.0: Argument #3 ($offset) must be contained in argument #1 ($haystack)
+        if (($textlen = strlen($file_contents)) < $offsetLength) {
+            $offsetLength = $textlen;
+        }
+
+        $before_newline_count = strrpos($file_contents, "\n", $offsetLength);
 
         return new Position(
             substr_count($file_contents, "\n"),
