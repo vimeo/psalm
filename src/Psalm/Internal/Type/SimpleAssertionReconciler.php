@@ -1483,7 +1483,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
         Codebase $codebase,
         Union $existing_var_type,
         string $assertion
-    ) : ?Union {
+    ) : Union {
         if (strpos($assertion, '::')) {
             [$fq_classlike_name, $const_name] = explode('::', $assertion);
 
@@ -1517,7 +1517,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
         try {
             $new_var_type = Type::parseString($assertion);
 
-            return Type::intersectUnionTypes($new_var_type, $existing_var_type, $codebase);
+            return Type::intersectUnionTypes($new_var_type, $existing_var_type, $codebase) ?? Type::getEmpty();
         } catch (TypeParseTreeException $e) {
             // Not all assertions can be parsed as type, it's fine.
             // One particular case is variable array key (E. g. $arr[$key])
