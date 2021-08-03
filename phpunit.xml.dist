@@ -48,7 +48,4 @@
             <directory>tests</directory>
         </testsuite>
     </testsuites>
-    <extensions>
-        <extension class="Weirdan\PhpUnitAppVeyorReporter\Listener"></extension>
-    </extensions>
 </phpunit>
