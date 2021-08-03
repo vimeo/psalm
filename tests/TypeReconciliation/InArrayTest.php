@@ -83,6 +83,35 @@ class InArrayTest extends \Psalm\Tests\TestCase
                     function acceptIntAndStr($x): void {
                     }',
             ],
+            'unionTypesReducedToIntersectionWithinAssertion' => [
+                '<?php
+                    /**
+                     * @param int|bool $x
+                     * @param non-empty-list<int|string> $y
+                     * @return int
+                     */
+                    function assertInArray($x, $y) {
+                        if (in_array($x, $y, true)) {
+                            return $x;
+                        }
+
+                        throw new Exception();
+                    }',
+            ],
+            'unionTypesReducedToIntersectionOutsideOfNegatedAssertion' => [
+                '<?php
+                    /**
+                     * @param int|bool $x
+                     * @param non-empty-list<int|string> $y
+                     * @return int
+                     */
+                    function assertInArray($x, $y) {
+                        if (!in_array($x, $y, true)) {
+                            throw new Exception();
+                        }
+                        return $x;
+                    }',
+            ],
         ];
     }
 
@@ -133,6 +162,36 @@ class InArrayTest extends \Psalm\Tests\TestCase
                     function acceptInt($x): void {
                     }',
                 'error_message' => 'PossiblyNullArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:39 - Argument 1 of acceptInt cannot be null, possibly null value provided',
+            ],
+            'initialTypeRemainsOutsideOfAssertion' => [
+                '<?php
+                    /**
+                     * @param int|bool $x
+                     * @param non-empty-list<int|string> $y
+                     * @return int
+                     */
+                    function assertInArray($x, $y) {
+                        if (in_array($x, $y, true)) {
+                            throw new Exception();
+                        }
+                        return $x;
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:32 - The inferred type \'bool|int\' does not match the declared return type \'int\' for assertInArray',
+            ],
+            'initialTypeRemainsWithinTheNegatedAssertion' => [
+                '<?php
+                    /**
+                     * @param int|bool $x
+                     * @param non-empty-list<int|string> $y
+                     * @return int
+                     */
+                    function assertInArray($x, $y) {
+                        if (!in_array($x, $y, true)) {
+                            return $x;
+                        }
+                        throw new Exception();
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:36 - The inferred type \'bool|int\' does not match the declared return type \'int\' for assertInArray',
             ],
         ];
     }
