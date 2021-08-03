@@ -822,7 +822,7 @@ class StatementsAnalyzer extends SourceAnalyzer
                 if (IssueBuffer::accepts(
                     $issue,
                     $this->getSuppressedIssues(),
-                    true
+                    $issue instanceof UnusedVariable
                 )) {
                     // fall through
                 }
