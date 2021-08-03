@@ -21,7 +21,7 @@ jobs:
           cancel_others: true
           do_not_skip: '["release"]'
           # list files that may affect or are included into the built phar
-          paths: '["bin/**", "assets/**", "build/**", "dictionaries/**", "src/**", "stubs/**", "psalm", "psalm-language-server", "psalm-plugin", "psalm-refactor", "psalter", "box.json.dist", "composer.json", "config.xsd", "xml.xsd", "keys.asc.gpg", "scoper.inc.php"]'
+          paths: '["bin/**", "assets/**", "build/**", "dictionaries/**", "src/**", "stubs/**", "psalm", "psalm-language-server", "psalm-plugin", "psalm-refactor", "psalter", "box.json.dist", "composer.json", "config.xsd", "keys.asc.gpg", "scoper.inc.php"]'
 
   build-phar:
     needs: pre_job
