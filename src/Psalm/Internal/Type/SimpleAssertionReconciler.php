@@ -1483,7 +1483,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
         Codebase $codebase,
         Union $existing_var_type,
         string $assertion
-    ) : Union {
+    ) : ?Union {
         if (strpos($assertion, '::')) {
             [$fq_classlike_name, $const_name] = explode('::', $assertion);
 
