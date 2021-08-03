@@ -3,6 +3,7 @@ namespace Psalm\Internal\Type;
 
 use Psalm\CodeLocation;
 use Psalm\Codebase;
+use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\ParadoxicalCondition;
 use Psalm\Issue\RedundantCondition;
@@ -1513,7 +1514,14 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
             }
         }
 
-        $existing_var_type->removeType('null');
+        try {
+            $new_var_type = Type::parseString($assertion);
+
+            return Type::intersectUnionTypes($new_var_type, $existing_var_type, $codebase);
+        } catch (TypeParseTreeException $e) {
+            // Not all assertions can be parsed as type, it's fine.
+            // One particular case is variable array key (E. g. $arr[$key])
+        }
 
         return $existing_var_type;
     }

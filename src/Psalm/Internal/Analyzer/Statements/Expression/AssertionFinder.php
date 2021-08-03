@@ -3429,43 +3429,52 @@ class AssertionFinder
                     || $atomic_type instanceof Type\Atomic\TKeyedArray
                     || $atomic_type instanceof Type\Atomic\TList
                 ) {
+                    $is_sealed = false;
                     if ($atomic_type instanceof Type\Atomic\TList) {
                         $value_type = $atomic_type->type_param;
                     } elseif ($atomic_type instanceof Type\Atomic\TKeyedArray) {
                         $value_type = $atomic_type->getGenericValueType();
+                        $is_sealed = $atomic_type->sealed;
                     } else {
                         $value_type = $atomic_type->type_params[1];
                     }
 
-                    $array_literal_types = \array_filter(
-                        $value_type->getAtomicTypes(),
-                        function ($type) {
-                            return $type instanceof Type\Atomic\TLiteralInt
-                                || $type instanceof Type\Atomic\TLiteralString
-                                || $type instanceof Type\Atomic\TLiteralFloat
-                                || $type instanceof Type\Atomic\TEnumCase;
+                    $assertions = [];
+
+                    foreach ($value_type->getAtomicTypes() as $atomic_value_type) {
+                        $assertion = '';
+                        // If it's not a sealed (fixed, known) array, we can't simply return value types as assertions.
+                        // E. g. in_array($x, ['a', 'b']) is the same as $x === 'a' || $x === 'b',
+                        // which can also be negated correctly.
+                        // However, in_array($x, $y), where y is list<'a'|'b'> doesn't work the same way.
+                        // With positive assertion it has similar meaning: $x is 'a'|'b'.
+                        // But without knowing exact contents of $y, it's not an equality assertion
+                        // threfore it cannot be safely negated.
+                        // If we simply return =string(a) and =string(b) assertions, they will have the same semantics
+                        // as in the first example. So when negated, we will end up with $x !== 'a' && $x !== 'b'.
+                        // That won't work for unknown (not sealed) haystack.
+                        // 'in-array-' prefix is added to distinguish such assertions.
+                        if (!$is_sealed) {
+                            $assertion .= 'in-array-';
                         }
-                    );
-
-                    if ($array_literal_types
-                        && count($value_type->getAtomicTypes())
-                    ) {
-                        $literal_assertions = [];
-
-                        foreach ($array_literal_types as $array_literal_type) {
-                            $literal_assertions[] = '=' . $array_literal_type->getAssertionString();
+                        if ($atomic_value_type instanceof Type\Atomic\TLiteralInt
+                            || $atomic_value_type instanceof Type\Atomic\TLiteralString
+                            || $atomic_value_type instanceof Type\Atomic\TLiteralFloat
+                            || $atomic_value_type instanceof Type\Atomic\TEnumCase
+                        ) {
+                            $assertion .= '=' . $atomic_value_type->getAssertionString();
+                        } elseif ($atomic_value_type instanceof Type\Atomic\TFalse
+                            || $atomic_value_type instanceof Type\Atomic\TTrue
+                            || $atomic_value_type instanceof Type\Atomic\TNull
+                        ) {
+                            $assertion .= $atomic_value_type->getAssertionString();
+                        } else {
+                            $assertion .= $atomic_value_type->getAssertionString();
                         }
-
-                        if ($value_type->isFalsable()) {
-                            $literal_assertions[] = 'false';
-                        }
-
-                        if ($value_type->isNullable()) {
-                            $literal_assertions[] = 'null';
-                        }
-
-                        $if_types[$first_var_name] = [$literal_assertions];
+                        $assertions[] = $assertion;
                     }
+
+                    $if_types[$first_var_name] = [$assertions];
                 }
             }
         }
