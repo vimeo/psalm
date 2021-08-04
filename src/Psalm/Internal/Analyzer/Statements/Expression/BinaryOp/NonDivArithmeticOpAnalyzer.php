@@ -819,8 +819,8 @@ class NonDivArithmeticOpAnalyzer
 
     /**
      * @param PhpParser\Node $operation
-     * @param numeric        $operand1
-     * @param numeric        $operand2
+     * @param float|int      $operand1
+     * @param float|int      $operand2
      */
     public static function arithmeticOperation(
         PhpParser\Node $operation,
