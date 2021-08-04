@@ -55,6 +55,7 @@ return [
 'DateTimeImmutable::format' => ['string', 'format'=>'string'],
 'DateTimeImmutable::createFromInterface' => ['self', 'object' => 'DateTimeInterface'],
 'DateTimeZone::listIdentifiers' => ['list<string>', 'timezoneGroup='=>'int', 'countryCode='=>'string|null'],
+'date' => ['string', 'format'=>'string', 'timestamp='=>'?int'],
 'date_add' => ['DateTime', 'object'=>'DateTime', 'interval'=>'DateInterval'],
 'date_date_set' => ['DateTime', 'object'=>'DateTime', 'year'=>'int', 'month'=>'int', 'day'=>'int'],
 'date_diff' => ['DateInterval', 'obj1'=>'DateTimeInterface', 'obj2'=>'DateTimeInterface', 'absolute='=>'bool'],
