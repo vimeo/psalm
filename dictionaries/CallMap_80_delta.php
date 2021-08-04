@@ -348,6 +348,7 @@ return [
 'curl_share_init' => ['resource'],
 'curl_share_setopt' => ['bool', 'sh'=>'resource', 'option'=>'int', 'value'=>'mixed'],
 'curl_unescape' => ['string|false', 'ch'=>'resource', 'string'=>'string'],
+'date' => ['string', 'format'=>'string', 'timestamp='=>'int'],
 'date_add' => ['DateTime|false', 'object'=>'DateTime', 'interval'=>'DateInterval'],
 'date_date_set' => ['DateTime|false', 'object'=>'DateTime', 'year'=>'int', 'month'=>'int', 'day'=>'int'],
 'date_diff' => ['DateInterval|false', 'obj1'=>'DateTimeInterface', 'obj2'=>'DateTimeInterface', 'absolute='=>'bool'],
