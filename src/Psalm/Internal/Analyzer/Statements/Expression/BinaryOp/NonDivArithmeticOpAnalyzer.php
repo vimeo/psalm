@@ -317,45 +317,12 @@ class NonDivArithmeticOpAnalyzer
                 || $right instanceof PhpParser\Node\Expr\BinaryOp)
         ) {
             // time for some arithmetic!
-            $calculated_type = null;
-
-            if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Plus) {
-                $result = $left_type_part->value + $right_type_part->value;
-                $calculated_type = self::getNumericalType($result);
-            } elseif ($parent instanceof PhpParser\Node\Expr\BinaryOp\Minus) {
-                $result = $left_type_part->value - $right_type_part->value;
-                $calculated_type = self::getNumericalType($result);
-            } elseif ($parent instanceof PhpParser\Node\Expr\BinaryOp\Mod) {
-                $calculated_type = Type::getInt(false, $left_type_part->value % $right_type_part->value);
-            } elseif ($parent instanceof PhpParser\Node\Expr\BinaryOp\Mul) {
-                $result = $left_type_part->value * $right_type_part->value;
-                $calculated_type = self::getNumericalType($result);
-            } elseif ($parent instanceof PhpParser\Node\Expr\BinaryOp\Pow) {
-                $result = $left_type_part->value ** $right_type_part->value;
-                $calculated_type = self::getNumericalType($result);
-            } elseif ($parent instanceof PhpParser\Node\Expr\BinaryOp\BitwiseOr) {
-                $calculated_type = Type::getInt(false, $left_type_part->value | $right_type_part->value);
-            } elseif ($parent instanceof PhpParser\Node\Expr\BinaryOp\BitwiseAnd) {
-                $calculated_type = Type::getInt(false, $left_type_part->value & $right_type_part->value);
-            } elseif ($parent instanceof PhpParser\Node\Expr\BinaryOp\BitwiseXor) {
-                $calculated_type = Type::getInt(false, $left_type_part->value ^ $right_type_part->value);
-            } elseif ($parent instanceof PhpParser\Node\Expr\BinaryOp\ShiftLeft) {
-                $calculated_type = Type::getInt(false, $left_type_part->value << $right_type_part->value);
-            } elseif ($parent instanceof PhpParser\Node\Expr\BinaryOp\ShiftRight) {
-                $calculated_type = Type::getInt(false, $left_type_part->value >> $right_type_part->value);
-            } elseif ($parent instanceof PhpParser\Node\Expr\BinaryOp\Div) {
-                if ($right_type_part->value === 0) {
-                    $calculated_type = Type::getEmpty();
-                } else {
-                    $value = $left_type_part->value / $right_type_part->value;
-
-                    if (is_int($value)) {
-                        $calculated_type = Type::getInt(false, $value);
-                    } else {
-                        $calculated_type = Type::getFloat($value);
-                    }
-                }
-            }
+            $calculated_type = self::arithmeticOperation(
+                $parent,
+                $left_type_part->value,
+                $right_type_part->value,
+                true
+            );
 
             if ($calculated_type) {
                 if ($result_type) {
@@ -848,5 +815,54 @@ class NonDivArithmeticOpAnalyzer
         }
 
         return null;
+    }
+
+    /**
+     * @param PhpParser\Node $operation
+     * @param float|int      $operand1
+     * @param float|int      $operand2
+     */
+    public static function arithmeticOperation(
+        PhpParser\Node $operation,
+        $operand1,
+        $operand2,
+        bool $allow_float_result
+    ): ?Type\Union {
+        if ($operation instanceof PhpParser\Node\Expr\BinaryOp\Plus) {
+            $result = $operand1 + $operand2;
+        } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\Minus) {
+            $result = $operand1 - $operand2;
+        } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\Mod) {
+            $result = $operand1 % $operand2;
+        } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\Mul) {
+            $result = $operand1 * $operand2;
+        } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\Pow) {
+            $result = $operand1 ** $operand2;
+        } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\BitwiseOr) {
+            $result = $operand1 | $operand2;
+        } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\BitwiseAnd) {
+            $result = $operand1 & $operand2;
+        } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\BitwiseXor) {
+            $result = $operand1 ^ $operand2;
+        } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\ShiftLeft) {
+            $result = $operand1 << $operand2;
+        } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\ShiftRight) {
+            $result = $operand1 >> $operand2;
+        } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\Div) {
+            if ($operand2 === 0) {
+                return Type::getEmpty();
+            }
+
+            $result = $operand1 / $operand2;
+        } else {
+            return null;
+        }
+
+        $calculated_type = self::getNumericalType($result);
+        if (!$allow_float_result && $calculated_type->isFloat()) {
+            return null;
+        }
+
+        return $calculated_type;
     }
 }
