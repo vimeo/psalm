@@ -70,4 +70,12 @@ class TIntRange extends TInt
     {
         return $this->min_bound !== null && $this->min_bound > 0;
     }
+
+    public function contains(int $i): bool
+    {
+        return
+            ($this->min_bound === null && $this->max_bound === null) ||
+            ($this->min_bound === null && $this->max_bound >= $i) ||
+            ($this->max_bound === null && $this->min_bound <= $i);
+    }
 }

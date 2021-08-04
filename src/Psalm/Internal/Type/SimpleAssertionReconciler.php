@@ -40,6 +40,8 @@ use function array_filter;
 use function count;
 use function explode;
 use function get_class;
+use function max;
+use function min;
 use function strpos;
 use function substr;
 
@@ -102,6 +104,22 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
             return self::reconcileHasArrayKey(
                 $existing_var_type,
                 substr($assertion, 14)
+            );
+        }
+
+        if ($assertion[0] === '>') {
+            return self::reconcileSuperiorTo(
+                $existing_var_type,
+                substr($assertion, 1),
+                $inside_loop
+            );
+        }
+
+        if ($assertion[0] === '<') {
+            return self::reconcileInferiorTo(
+                $existing_var_type,
+                substr($assertion, 1),
+                $inside_loop
             );
         }
 
@@ -1558,6 +1576,90 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
         return $existing_var_type;
     }
 
+    private static function reconcileSuperiorTo(
+        Union $existing_var_type,
+        string $assertion,
+        bool $inside_loop
+    ) : Union {
+        foreach ($existing_var_type->getAtomicTypes() as $atomic_type) {
+            if ($inside_loop) {
+                continue;
+            }
+
+            if ($atomic_type instanceof Atomic\TIntRange) {
+                $existing_var_type->removeType($atomic_type->getKey());
+                if ($atomic_type->min_bound === null) {
+                    $atomic_type->min_bound = (int)$assertion;
+                } else {
+                    $atomic_type->min_bound = max($atomic_type->min_bound, (int)$assertion);
+                }
+                $existing_var_type->addType($atomic_type);
+            } elseif ($atomic_type instanceof Atomic\TLiteralInt) {
+                $new_range = new Atomic\TIntRange((int)$assertion, null);
+                if (!$new_range->contains($atomic_type->value)) {
+                    //emit an issue here in the future about incompatible type
+                    $existing_var_type->removeType($atomic_type->getKey());
+                    $existing_var_type->addType($new_range);
+                } /*elseif ($inside_loop) {
+                    //when inside a loop, allow the range to extends the type
+                    $existing_var_type->removeType($atomic_type->getKey());
+                    if ($atomic_type->value < (int)$assertion) {
+                        $existing_var_type->addType(new Atomic\TIntRange($atomic_type->value, (int)$assertion));
+                    } else {
+                        $existing_var_type->addType(new Atomic\TIntRange((int)$assertion, $atomic_type->value));
+                    }
+                }*/
+            } elseif ($atomic_type instanceof TInt) {
+                $existing_var_type->removeType('int');
+                $existing_var_type->addType(new Atomic\TIntRange((int)$assertion, null));
+            }
+        }
+
+        return $existing_var_type;
+    }
+
+    private static function reconcileInferiorTo(
+        Union $existing_var_type,
+        string $assertion,
+        bool $inside_loop
+    ) : Union {
+        foreach ($existing_var_type->getAtomicTypes() as $atomic_type) {
+            if ($inside_loop) {
+                continue;
+            }
+
+            if ($atomic_type instanceof Atomic\TIntRange) {
+                $existing_var_type->removeType($atomic_type->getKey());
+                if ($atomic_type->max_bound === null) {
+                    $atomic_type->max_bound = (int)$assertion;
+                } else {
+                    $atomic_type->max_bound = min($atomic_type->max_bound, (int)$assertion);
+                }
+                $existing_var_type->addType($atomic_type);
+            } elseif ($atomic_type instanceof Atomic\TLiteralInt) {
+                $new_range = new Atomic\TIntRange(null, (int)$assertion);
+                if (!$new_range->contains($atomic_type->value)) {
+                    //emit an issue here in the future about incompatible type
+                    $existing_var_type->removeType($atomic_type->getKey());
+                    $existing_var_type->addType($new_range);
+                }/* elseif ($inside_loop) {
+                    //when inside a loop, allow the range to extends the type
+                    $existing_var_type->removeType($atomic_type->getKey());
+                    if ($atomic_type->value < (int)$assertion) {
+                        $existing_var_type->addType(new Atomic\TIntRange($atomic_type->value, (int)$assertion));
+                    } else {
+                        $existing_var_type->addType(new Atomic\TIntRange((int)$assertion, $atomic_type->value));
+                    }
+                }*/
+            } elseif ($atomic_type instanceof TInt) {
+                $existing_var_type->removeType('int');
+                $existing_var_type->addType(new Atomic\TIntRange(null, (int)$assertion));
+            }
+        }
+
+        return $existing_var_type;
+    }
+
     /**
      * @param   string[]  $suppressed_issues
      * @param   0|1|2    $failed_reconciliation
@@ -2227,11 +2329,20 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
 
         if ($existing_var_type->hasInt()) {
             $existing_int_types = $existing_var_type->getLiteralInts();
+            $existing_range_types = $existing_var_type->getRangeInts();
 
             if ($existing_int_types) {
                 foreach ($existing_int_types as $int_key => $literal_type) {
                     if ($literal_type->value) {
                         $existing_var_type->removeType($int_key);
+                        $did_remove_type = true;
+                    }
+                }
+            } elseif ($existing_range_types) {
+                foreach ($existing_range_types as $int_key => $literal_type) {
+                    if ($literal_type->contains(0)) {
+                        $existing_var_type->removeType($int_key);
+                        $existing_var_type->addType(new Type\Atomic\TLiteralInt(0));
                         $did_remove_type = true;
                     }
                 }

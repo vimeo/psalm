@@ -665,6 +665,99 @@ class NonDivArithmeticOpAnalyzer
                 return null;
             }
 
+            if ($left_type_part instanceof Type\Atomic\TIntRange && $right_type_part instanceof Type\Atomic\TIntRange) {
+                $calculated_min_type = null;
+                if ($left_type_part->min_bound !== null && $right_type_part->min_bound !== null) {
+                    // when there are two valid numbers, make any operation
+                    $calculated_min_type = self::arithmeticOperation(
+                        $parent,
+                        $left_type_part->min_bound,
+                        $right_type_part->min_bound,
+                        false
+                    );
+                }
+
+                $calculated_max_type = null;
+                if ($left_type_part->max_bound !== null && $right_type_part->max_bound !== null) {
+                    // when there are two valid numbers, make any operation
+                    $calculated_max_type = self::arithmeticOperation(
+                        $parent,
+                        $left_type_part->max_bound,
+                        $right_type_part->max_bound,
+                        false
+                    );
+                }
+
+                $min_value = $calculated_min_type !== null ? $calculated_min_type->getSingleIntLiteral()->value : null;
+                $max_value = $calculated_max_type !== null ? $calculated_max_type->getSingleIntLiteral()->value : null;
+
+                $new_result_type = new Type\Union([new Type\Atomic\TIntRange($min_value, $max_value)]);
+
+                if (!$result_type) {
+                    $result_type = $new_result_type;
+                } else {
+                    $result_type = Type::combineUnionTypes($new_result_type, $result_type);
+                }
+
+                return null;
+            }
+
+            if (($left_type_part instanceof Type\Atomic\TIntRange && $right_type_part instanceof TInt) ||
+                ($left_type_part instanceof TInt && $right_type_part instanceof Type\Atomic\TIntRange)
+            ) {
+                if ($left_type_part instanceof Type\Atomic\TIntRange) {
+                    $left_is_range = true;
+                    $range_operand = $left_type_part;
+                    $other_operand = $right_type_part;
+                } elseif ($right_type_part instanceof Type\Atomic\TIntRange) {
+                    $left_is_range = false;
+                    $range_operand = $right_type_part;
+                    $other_operand = $left_type_part;
+                } else {
+                    //this can't happen
+                    return null;
+                }
+
+                $calculated_min_type = null;
+                $calculated_max_type = null;
+                if ($other_operand instanceof TPositiveInt) {
+                    if ($range_operand->min_bound !== null) {
+                        $min_operand1 = $left_is_range ? $range_operand->min_bound : 1;
+                        $min_operand2 = $left_is_range ? 1 : $range_operand->min_bound;
+                        $calculated_min_type = self::arithmeticOperation($parent, $min_operand1, $min_operand2, false);
+                    }
+                    if ($range_operand->max_bound !== null) {
+                        $max_operand1 = $left_is_range ? $range_operand->max_bound : 1;
+                        $max_operand2 = $left_is_range ? 1 : $range_operand->max_bound;
+                        $calculated_max_type = self::arithmeticOperation($parent, $max_operand1, $max_operand2, false);
+                    }
+                } elseif ($other_operand instanceof TLiteralInt) {
+                    if ($range_operand->min_bound !== null) {
+                        $min_operand1 = $left_is_range ? $range_operand->min_bound : $other_operand->value;
+                        $min_operand2 = $left_is_range ? $other_operand->value : $range_operand->min_bound;
+                        $calculated_min_type = self::arithmeticOperation($parent, $min_operand1, $min_operand2, false);
+                    }
+                    if ($range_operand->max_bound !== null) {
+                        $max_operand1 = $left_is_range ? $range_operand->max_bound : $other_operand->value;
+                        $max_operand2 = $left_is_range ? $other_operand->value : $range_operand->max_bound;
+                        $calculated_max_type = self::arithmeticOperation($parent, $max_operand1, $max_operand2, false);
+                    }
+                }
+
+                $min_value = $calculated_min_type !== null ? $calculated_min_type->getSingleIntLiteral()->value : null;
+                $max_value = $calculated_max_type !== null ? $calculated_max_type->getSingleIntLiteral()->value : null;
+
+                $new_result_type = new Type\Union([new Type\Atomic\TIntRange($min_value, $max_value)]);
+
+                if (!$result_type) {
+                    $result_type = $new_result_type;
+                } else {
+                    $result_type = Type::combineUnionTypes($new_result_type, $result_type);
+                }
+
+                return null;
+            }
+
             if ($left_type_part instanceof TInt && $right_type_part instanceof TInt) {
                 if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Div) {
                     $result_type = new Type\Union([new Type\Atomic\TInt(), new Type\Atomic\TFloat()]);

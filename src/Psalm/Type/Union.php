@@ -801,7 +801,10 @@ class Union implements TypeNode
 
     public function hasInt(): bool
     {
-        return isset($this->types['int']) || isset($this->types['array-key']) || $this->literal_int_types;
+        return isset($this->types['int']) || isset($this->types['array-key']) || $this->literal_int_types
+            || array_filter($this->types, function (Atomic $type) {
+                return $type instanceof Type\Atomic\TIntRange;
+            });
     }
 
     public function hasPositiveInt(): bool
@@ -1591,6 +1594,21 @@ class Union implements TypeNode
     public function getLiteralInts(): array
     {
         return $this->literal_int_types;
+    }
+
+    /**
+     * @return array<string, Type\Atomic\TIntRange>
+     */
+    public function getRangeInts(): array
+    {
+        $ranges = [];
+        foreach ($this->getAtomicTypes() as $atomic) {
+            if ($atomic instanceof Type\Atomic\TIntRange) {
+                $ranges[$atomic->getKey()] = $atomic;
+            }
+        }
+
+        return $ranges;
     }
 
     /**
