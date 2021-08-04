@@ -14,6 +14,8 @@ class AnnotationTest extends TestCase
     public function testPhpStormGenericsWithValidArrayIteratorArgument(): void
     {
         Config::getInstance()->allow_phpstorm_generics = true;
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->reportUnusedVariables();
 
         $this->addFile(
             'somefile.php',
@@ -266,7 +268,10 @@ class AnnotationTest extends TestCase
                 '<?php
                     /** @param mixed $b */
                     function foo($b): void {
-                        /** @var array */
+                        /**
+                         * @psalm-suppress UnnecessaryVarAnnotation
+                         * @var array
+                         */
                         $a = (array)$b;
                         if (is_array($a)) {
                             // do something
@@ -774,7 +779,10 @@ class AnnotationTest extends TestCase
                      * @return _A
                      */
                     function f($p) {
-                        /** @var _A */
+                        /**
+                         * @psalm-suppress UnnecessaryVarAnnotation
+                         * @var _A
+                         */
                         $r = $p;
                         return $r;
                     }',
@@ -1232,6 +1240,27 @@ class AnnotationTest extends TestCase
                     function testBad(string $v): void {
                         echo $v;
                     }'
+            ],
+            'UnnecessaryVarAnnotationSuppress' => [
+                '<?php
+                    /** @psalm-consistent-constructor */
+                    final class Foo{}
+                    /**
+                     * @param class-string $class
+                     */
+                    function foo(string $class): Foo {
+                        if (!is_subclass_of($class, Foo::class)) {
+                            throw new \LogicException();
+                        }
+
+                        /**
+                         * @psalm-suppress UnnecessaryVarAnnotation
+                         * @var Foo $instance
+                         */
+                        $instance = new $class();
+
+                        return $instance;
+                    }',
             ],
         ];
     }

@@ -251,7 +251,9 @@ class AssignmentAnalyzer
                         'The @var ' . $comment_type . ' annotation for '
                             . $array_var_id . ' is unnecessary',
                         $comment_type_location
-                    )
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                    true
                 )) {
                     // fall through
                 }
