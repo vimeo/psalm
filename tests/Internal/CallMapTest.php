@@ -185,9 +185,8 @@ class CallMapTest extends \Psalm\Tests\TestCase
     {
         $newFunctions = [];
         foreach ($deltaFiles as $deltaFile) {
-            $removedInDelta = array_diff_key($deltaFile['old'], $deltaFile['new']);
-            $newFunctions = array_diff_key($newFunctions, $removedInDelta);
-            $newFunctions = array_merge($newFunctions, $deltaFile['new']);
+            $newFunctions = array_diff_key($newFunctions, $deltaFile['old']);
+            $newFunctions = array_merge($deltaFile['new'], $newFunctions);
         }
             
         $missingNewFunctions = array_diff(array_keys($newFunctions), array_keys($mainCallMap));

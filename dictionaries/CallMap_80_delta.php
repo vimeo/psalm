@@ -364,8 +364,8 @@ return [
 'xmlwriter_write_raw' => ['bool', 'writer'=>'XMLWriter', 'content'=>'string'],
 ],
 'old' => [
-
 'array_combine' => ['associative-array|false', 'keys'=>'string[]|int[]', 'values'=>'array'],
+'bcadd' => ['numeric-string', 'num1'=>'numeric-string', 'num2'=>'numeric-string', 'scale='=>'int'],
 'bccomp' => ['int', 'num1'=>'numeric-string', 'num2'=>'numeric-string', 'scale='=>'int'],
 'bcdiv' => ['numeric-string|null', 'dividend'=>'string', 'divisor'=>'string', 'scale='=>'int'],
 'bcmod' => ['numeric-string|null', 'dividend'=>'string', 'divisor'=>'string', 'scale='=>'int'],
