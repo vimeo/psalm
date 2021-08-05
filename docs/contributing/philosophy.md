@@ -12,7 +12,7 @@ This is about why Psalm is the way it is. This is a living document!
 ### Drawbacks
 
 - Psalm is slow in very large monorepos (over 5 million lines of checked-in code).
-- Psalm’s language server is more limited in what it can provide than comparable compiled-language tools. For example, it's infeasible to find/change all occurences of a symbol, in all files that use it, as you type.
+- Psalm’s language server is more limited in what it can provide than comparable compiled-language tools. For example, it's infeasible to find/change all occurrences of a symbol, in all files that use it, as you type.
 
 ### Comparison to other languages & tools
 
