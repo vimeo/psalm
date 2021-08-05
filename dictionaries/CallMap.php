@@ -1705,7 +1705,7 @@ return [
 'cyrus_connect' => ['resource', 'host='=>'string', 'port='=>'string', 'flags='=>'int'],
 'cyrus_query' => ['array', 'connection'=>'resource', 'query'=>'string'],
 'cyrus_unbind' => ['bool', 'connection'=>'resource', 'trigger_name'=>'string'],
-'date' => ['string|false', 'format'=>'string', 'timestamp='=>'int'],
+'date' => ['string', 'format'=>'string', 'timestamp='=>'?int'],
 'date_add' => ['DateTime|false', 'object'=>'DateTime', 'interval'=>'DateInterval'],
 'date_create' => ['DateTime|false', 'datetime='=>'string', 'timezone='=>'?DateTimeZone'],
 'date_create_from_format' => ['DateTime|false', 'format'=>'string', 'datetime'=>'string', 'timezone='=>'?\DateTimeZone'],
