@@ -4,7 +4,6 @@ namespace Psalm\Internal\Type;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Exception\TypeParseTreeException;
-use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\ParadoxicalCondition;
 use Psalm\Issue\RedundantCondition;
 use Psalm\IssueBuffer;
@@ -90,7 +89,12 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
             return self::reconcileInArray(
                 $codebase,
                 $existing_var_type,
-                substr($assertion, 9)
+                substr($assertion, 9),
+                $key,
+                $negated,
+                $code_location,
+                $suppressed_issues,
+                $failed_reconciliation
             );
         }
 
@@ -1482,48 +1486,44 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
     private static function reconcileInArray(
         Codebase $codebase,
         Union $existing_var_type,
-        string $assertion
+        string $assertion,
+        ?string $key,
+        bool $negated,
+        ?CodeLocation $code_location,
+        array $suppressed_issues,
+        int &$failed_reconciliation
     ) : Union {
-        if (strpos($assertion, '::')) {
-            [$fq_classlike_name, $const_name] = explode('::', $assertion);
-
-            $class_constant_type = $codebase->classlikes->getClassConstantType(
-                $fq_classlike_name,
-                $const_name,
-                \ReflectionProperty::IS_PRIVATE
-            );
-
-            if ($class_constant_type) {
-                foreach ($class_constant_type->getAtomicTypes() as $const_type_atomic) {
-                    if ($const_type_atomic instanceof Type\Atomic\TKeyedArray
-                        || $const_type_atomic instanceof Type\Atomic\TArray
-                    ) {
-                        if ($const_type_atomic instanceof Type\Atomic\TKeyedArray) {
-                            $const_type_atomic = $const_type_atomic->getGenericArrayType();
-                        }
-
-                        if (UnionTypeComparator::isContainedBy(
-                            $codebase,
-                            $const_type_atomic->type_params[0],
-                            $existing_var_type
-                        )) {
-                            return clone $const_type_atomic->type_params[0];
-                        }
-                    }
-                }
-            }
-        }
-
         try {
             $new_var_type = Type::parseString($assertion);
-
-            return Type::intersectUnionTypes($new_var_type, $existing_var_type, $codebase) ?? Type::getEmpty();
         } catch (TypeParseTreeException $e) {
             // Not all assertions can be parsed as type, it's fine.
-            // One particular case is variable array key (E. g. $arr[$key])
+            // One particular case is variable array key (e. g. $arr[$key]), which end up as in-array-$arr assertion
+
+            return $existing_var_type;
         }
 
-        return $existing_var_type;
+        $intersection = Type::intersectUnionTypes($new_var_type, $existing_var_type, $codebase);
+
+        if ($intersection === null) {
+            if ($key && $code_location) {
+                self::triggerIssueForImpossible(
+                    $existing_var_type,
+                    $existing_var_type->getId(),
+                    $key,
+                    '!' . $assertion,
+                    true,
+                    $negated,
+                    $code_location,
+                    $suppressed_issues
+                );
+            }
+
+            $failed_reconciliation = 2;
+
+            return Type::getMixed();
+        }
+
+        return $intersection;
     }
 
     private static function reconcileHasArrayKey(

@@ -3441,40 +3441,33 @@ class AssertionFinder
 
                     $assertions = [];
 
-                    foreach ($value_type->getAtomicTypes() as $atomic_value_type) {
-                        $assertion = '';
-                        // If it's not a sealed (fixed, known) array, we can't simply return value types as assertions.
-                        // E. g. in_array($x, ['a', 'b']) is the same as $x === 'a' || $x === 'b',
-                        // which can also be negated correctly.
-                        // However, in_array($x, $y), where y is list<'a'|'b'> doesn't work the same way.
-                        // With positive assertion it has similar meaning: $x is 'a'|'b'.
-                        // But without knowing exact contents of $y, it's not an equality assertion
-                        // threfore it cannot be safely negated.
-                        // If we simply return =string(a) and =string(b) assertions, they will have the same semantics
-                        // as in the first example. So when negated, we will end up with $x !== 'a' && $x !== 'b'.
-                        // That won't work for unknown (not sealed) haystack.
-                        // 'in-array-' prefix is added to distinguish such assertions.
-                        if (!$is_sealed) {
-                            $assertion .= 'in-array-';
+                    if (!$is_sealed) {
+                        if ($value_type->getId() !== '') {
+                            $assertions = ['in-array-' . $value_type->getId()];
                         }
-                        if ($atomic_value_type instanceof Type\Atomic\TLiteralInt
-                            || $atomic_value_type instanceof Type\Atomic\TLiteralString
-                            || $atomic_value_type instanceof Type\Atomic\TLiteralFloat
-                            || $atomic_value_type instanceof Type\Atomic\TEnumCase
-                        ) {
-                            $assertion .= '=' . $atomic_value_type->getAssertionString();
-                        } elseif ($atomic_value_type instanceof Type\Atomic\TFalse
-                            || $atomic_value_type instanceof Type\Atomic\TTrue
-                            || $atomic_value_type instanceof Type\Atomic\TNull
-                        ) {
-                            $assertion .= $atomic_value_type->getAssertionString();
-                        } else {
-                            $assertion .= $atomic_value_type->getAssertionString();
+                    } else {
+                        $assertions = [];
+                        foreach ($value_type->getAtomicTypes() as $atomic_value_type) {
+                            $assertion = '';
+                            if ($atomic_value_type instanceof Type\Atomic\TLiteralInt
+                                || $atomic_value_type instanceof Type\Atomic\TLiteralString
+                                || $atomic_value_type instanceof Type\Atomic\TLiteralFloat
+                                || $atomic_value_type instanceof Type\Atomic\TEnumCase
+                            ) {
+                                $assertion .= '='.$atomic_value_type->getAssertionString();
+                            } elseif ($atomic_value_type instanceof Type\Atomic\TFalse
+                                || $atomic_value_type instanceof Type\Atomic\TTrue
+                                || $atomic_value_type instanceof Type\Atomic\TNull
+                            ) {
+                                $assertion .= $atomic_value_type->getAssertionString();
+                            }
+                            $assertions[] = $assertion;
                         }
-                        $assertions[] = $assertion;
                     }
 
-                    $if_types[$first_var_name] = [$assertions];
+                    if ($assertions !== []) {
+                        $if_types[$first_var_name] = [$assertions];
+                    }
                 }
             }
         }
