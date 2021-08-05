@@ -11,6 +11,13 @@ class AnnotationTest extends TestCase
     use Traits\InvalidCodeAnalysisTestTrait;
     use Traits\ValidCodeAnalysisTestTrait;
 
+    public function setUp(): void
+    {
+        parent::setUp();
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->reportUnusedVariables();
+    }
+
     public function testPhpStormGenericsWithValidArrayIteratorArgument(): void
     {
         Config::getInstance()->allow_phpstorm_generics = true;
@@ -129,7 +136,7 @@ class AnnotationTest extends TestCase
         $this->addFile(
             'somefile.php',
             '<?php
-                function takesInt(int $s): void {}
+                function takesInt(int $_s): void {}
 
                 /** @param ArrayIterator|string[] $i */
                 function takesArrayIteratorOfString(ArrayIterator $i): void {
@@ -218,9 +225,6 @@ class AnnotationTest extends TestCase
      */
     public function providerValidCodeParse(): iterable
     {
-        $codebase = $this->project_analyzer->getCodebase();
-        $codebase->reportUnusedVariables();
-
         return [
             'nopType' => [
                 '<?php
@@ -1701,15 +1705,15 @@ class AnnotationTest extends TestCase
             ],
             'spreadOperatorArrayAnnotationBadArg' => [
                 '<?php
-                    /** @param string[] $s */
-                    function foo(string ...$s) : void {}
+                    /** @param string[] $_s */
+                    function foo(string ...$_s) : void {}
                     foo(5);',
                 'error_message' => 'InvalidScalarArgument',
             ],
             'spreadOperatorArrayAnnotationBadSpreadArg' => [
                 '<?php
-                    /** @param string[] $s */
-                    function foo(string ...$s) : void {}
+                    /** @param string[] $_s */
+                    function foo(string ...$_s) : void {}
                     foo(...[5]);',
                 'error_message' => 'InvalidScalarArgument',
             ],
