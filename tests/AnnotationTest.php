@@ -14,8 +14,6 @@ class AnnotationTest extends TestCase
     public function testPhpStormGenericsWithValidArrayIteratorArgument(): void
     {
         Config::getInstance()->allow_phpstorm_generics = true;
-        $codebase = $this->project_analyzer->getCodebase();
-        $codebase->reportUnusedVariables();
 
         $this->addFile(
             'somefile.php',
@@ -220,6 +218,9 @@ class AnnotationTest extends TestCase
      */
     public function providerValidCodeParse(): iterable
     {
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->reportUnusedVariables();
+
         return [
             'nopType' => [
                 '<?php
