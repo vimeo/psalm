@@ -174,21 +174,38 @@ class CallMapTest extends \Psalm\Tests\TestCase
     }
     
     /**
-     * @depends testMainCallmapFileContainsACallmap
      * @depends testDeltaFilesContainOldAndNewCallmaps
      * @depends testSignatureKeysAreZeroOrStringAndValuesAreTypes
      * @param array<string, array<int|string,string>> $mainCallMap
      * @param array<string, array<string, array<string, array<int|string, string>>>> $deltaFiles
      * @return array<string, array<int|string,string>>
      */
-    public function testFunctionsAddedInDeltaFilesArePresentInMainCallmap(array $mainCallMap, array $deltaFiles): array
+    public function testFunctionsUpdatedInDeltaFilesMustBeRemovedFirst(array $deltaFiles): array
     {
         $newFunctions = [];
         foreach ($deltaFiles as $deltaFile) {
             $newFunctions = array_diff_key($newFunctions, $deltaFile['old']);
-            $newFunctions = array_merge($deltaFile['new'], $newFunctions);
+            $notRemovedFunctions = array_keys(array_intersect_key($newFunctions, $deltaFile['new']));
+            self::assertEquals(
+                array_values($notRemovedFunctions),
+                [],    // Compare against empty array to get handy diff in output
+                "Not all functions updated in delta files are removed first"
+            );
+            $newFunctions = array_merge($newFunctions, $deltaFile['new']);
         }
-            
+        
+        return $newFunctions;
+    }
+    
+    /**
+     * @depends testMainCallmapFileContainsACallmap
+     * @depends testFunctionsUpdatedInDeltaFilesMustBeRemovedFirst
+     * @depends testSignatureKeysAreZeroOrStringAndValuesAreTypes
+     * @param array<string, array<int|string,string>> $mainCallMap
+     * @param array<string, array<int|string,string>> $newFunctions
+     */
+    public function testFunctionsAddedInDeltaFilesArePresentInMainCallmap(array $mainCallMap, array $newFunctions): array
+    {
         $missingNewFunctions = array_diff(array_keys($newFunctions), array_keys($mainCallMap));
         
         self::assertEquals(
@@ -200,23 +217,44 @@ class CallMapTest extends \Psalm\Tests\TestCase
         return $newFunctions;
     }
     
-      /**
+    /**
      * @depends testMainCallmapFileContainsACallmap
      * @depends testDeltaFilesContainOldAndNewCallmaps
      * @depends testSignatureKeysAreZeroOrStringAndValuesAreTypes
      * @param array<string, array<int|string,string>> $mainCallMap
      * @param array<string, array<string, array<string, array<int|string, string>>>> $deltaFiles
+     * @return list<string>
      */
-    public function testFunctionsRemovedInDeltaFilesAreAbsentFromMainCallmap(array $mainCallMap, array $deltaFiles): void
+    public function testFunctionsRemovedTwiceInDeltaFilesMustBeAddedFirst(array $mainCallMap, array $deltaFiles): array
     {
         $removedFunctions = [];
         foreach ($deltaFiles as $deltaFile) {
-            $addedInDelta = array_diff(array_keys($deltaFile['new']), array_keys($deltaFile['old']));
-            $removedInDelta = array_diff(array_keys($deltaFile['old']), array_keys($deltaFile['new']));
+            $oldFunctions = array_keys($deltaFile['old']);
+            $newFunctions = array_keys($deltaFile['new']);
+            $notAddedFunctions = array_intersect($removedFunctions, $oldFunctions);
+            self::assertEquals(
+                [],    // Compare against empty array to get handy diff in output
+                array_values($notAddedFunctions),
+                "Not all functions removed in delta files are added first"
+            );
+            $addedInDelta = array_diff($newFunctions, $oldFunctions);
+            $removedInDelta = array_diff($oldFunctions, $newFunctions);
             $removedFunctions = array_diff($removedFunctions, $addedInDelta);
             $removedFunctions = array_merge($removedFunctions, $removedInDelta);
         }
-            
+        
+        return $removedFunctions;
+    }
+    
+    /**
+     * @depends testMainCallmapFileContainsACallmap
+     * @depends testFunctionsRemovedTwiceInDeltaFilesMustBeAddedFirst
+     * @depends testSignatureKeysAreZeroOrStringAndValuesAreTypes
+     * @param array<string, array<int|string,string>> $mainCallMap
+     * @param list<string> $removedFunctions
+     */
+    public function testFunctionsRemovedInDeltaFilesAreAbsentFromMainCallmap(array $mainCallMap, array $removedFunctions): void
+    {
         $stillPresentRemovedFunctions  = array_intersect($removedFunctions, array_keys($mainCallMap));
         
         self::assertEquals(
