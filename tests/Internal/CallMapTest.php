@@ -176,11 +176,10 @@ class CallMapTest extends \Psalm\Tests\TestCase
     /**
      * @depends testDeltaFilesContainOldAndNewCallmaps
      * @depends testSignatureKeysAreZeroOrStringAndValuesAreTypes
-     * @param array<string, array<int|string,string>> $mainCallMap
      * @param array<string, array<string, array<string, array<int|string, string>>>> $deltaFiles
      * @return array<string, array<int|string,string>>
      */
-    public function testFunctionsUpdatedInDeltaFilesMustBeRemovedFirst(array $deltaFiles): array
+    public function testExistingFunctionsPresentInNewSectionMustBePresentInOld(array $deltaFiles): array
     {
         $newFunctions = [];
         foreach ($deltaFiles as $deltaFile) {
@@ -199,7 +198,7 @@ class CallMapTest extends \Psalm\Tests\TestCase
     
     /**
      * @depends testMainCallmapFileContainsACallmap
-     * @depends testFunctionsUpdatedInDeltaFilesMustBeRemovedFirst
+     * @depends testExistingFunctionsPresentInNewSectionMustBePresentInOld
      * @depends testSignatureKeysAreZeroOrStringAndValuesAreTypes
      * @param array<string, array<int|string,string>> $mainCallMap
      * @param array<string, array<int|string,string>> $newFunctions
@@ -218,14 +217,12 @@ class CallMapTest extends \Psalm\Tests\TestCase
     }
     
     /**
-     * @depends testMainCallmapFileContainsACallmap
      * @depends testDeltaFilesContainOldAndNewCallmaps
      * @depends testSignatureKeysAreZeroOrStringAndValuesAreTypes
-     * @param array<string, array<int|string,string>> $mainCallMap
      * @param array<string, array<string, array<string, array<int|string, string>>>> $deltaFiles
      * @return list<string>
      */
-    public function testFunctionsRemovedTwiceInDeltaFilesMustBeAddedFirst(array $mainCallMap, array $deltaFiles): array
+    public function testFunctionsRemovedTwiceInDeltaFilesMustBeAddedFirst(array $deltaFiles): array
     {
         $removedFunctions = [];
         foreach ($deltaFiles as $deltaFile) {
