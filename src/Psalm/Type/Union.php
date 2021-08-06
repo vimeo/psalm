@@ -1489,4 +1489,31 @@ class Union implements TypeNode
     {
         return $this->types;
     }
+
+    /**
+     * @return bool true if this is a float literal with only one possible value
+     */
+    public function isSingleFloatLiteral(): bool
+    {
+        return count($this->types) === 1 && count($this->literal_float_types) === 1;
+    }
+
+    /**
+     * @throws \InvalidArgumentException if isSingleFloatLiteral is false
+     *
+     * @return TLiteralFloat the only float literal represented by this union type
+     */
+    public function getSingleFloatLiteral(): TLiteralFloat
+    {
+        if (count($this->types) !== 1 || count($this->literal_float_types) !== 1) {
+            throw new \InvalidArgumentException('Not a float literal');
+        }
+
+        return reset($this->literal_float_types);
+    }
+
+    public function hasLiteralFloat(): bool
+    {
+        return count($this->literal_float_types) > 0;
+    }
 }
