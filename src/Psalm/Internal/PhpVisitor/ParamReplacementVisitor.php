@@ -63,7 +63,10 @@ class ParamReplacementVisitor extends PhpParser\NodeVisitorAbstract
         } elseif ($node instanceof PhpParser\Node\Stmt\ClassMethod
             && ($docblock = $node->getDocComment())
         ) {
-            $parsed_docblock = \Psalm\Internal\Scanner\DocblockParser::parse($docblock->getText());
+            $parsed_docblock = \Psalm\Internal\Scanner\DocblockParser::parse(
+                $docblock->getText(),
+                $docblock->getStartFilePos()
+            );
 
             $replaced = false;
 

@@ -102,11 +102,11 @@ class CommentAnalyzer
 
                 $line_parts = self::splitDocLine($var_line);
 
-                $line_number = $comment->getStartLine() + substr_count($comment_text, "\n", 0, $offset);
+                $line_number = $comment->getStartLine() + substr_count($comment_text, "\n", 0, $offset - $comment->getStartFilePos());
                 $description = $parsed_docblock->description;
 
                 if ($line_parts && $line_parts[0]) {
-                    $type_start = $offset + $comment->getStartFilePos();
+                    $type_start = $offset;
                     $type_end = $type_start + strlen($line_parts[0]);
 
                     $line_parts[0] = self::sanitizeDocblockType($line_parts[0]);

@@ -67,7 +67,7 @@ class FunctionLikeDocblockParser
 
                         $line_parts[1] = preg_replace('/,$/', '', $line_parts[1]);
 
-                        $start = $offset + $comment->getStartFilePos();
+                        $start = $offset;
                         $end = $start + strlen($line_parts[0]);
 
                         $line_parts[0] = CommentAnalyzer::sanitizeDocblockType($line_parts[0]);
@@ -82,7 +82,7 @@ class FunctionLikeDocblockParser
                         $info_param = [
                             'name' => trim($line_parts[1]),
                             'type' => $line_parts[0],
-                            'line_number' => $comment->getStartLine() + substr_count($comment_text, "\n", 0, $offset),
+                            'line_number' => $comment->getStartLine() + substr_count($comment_text, "\n", 0, $offset - $comment->getStartFilePos()),
                             'start' => $start,
                             'end' => $end,
                         ];
@@ -137,7 +137,7 @@ class FunctionLikeDocblockParser
                         $info->params_out[] = [
                             'name' => trim($line_parts[1]),
                             'type' => str_replace("\n", '', $line_parts[0]),
-                            'line_number' => $comment->getStartLine() + substr_count($comment_text, "\n", 0, $offset),
+                            'line_number' => $comment->getStartLine() + substr_count($comment_text, "\n", 0, $offset - $comment->getStartFilePos()),
                         ];
                     }
                 } else {
@@ -155,7 +155,7 @@ class FunctionLikeDocblockParser
 
                     $info->self_out = [
                         'type' => str_replace("\n", '', $line_parts[0]),
-                        'line_number' => $comment->getStartLine() + substr_count($comment_text, "\n", 0, $offset),
+                        'line_number' => $comment->getStartLine() + substr_count($comment_text, "\n", 0, $offset - $comment->getStartFilePos()),
                     ];
                 }
             }
@@ -289,7 +289,7 @@ class FunctionLikeDocblockParser
                         $info->globals[] = [
                             'name' => $line_parts[1],
                             'type' => $line_parts[0],
-                            'line_number' => $comment->getStartLine() + substr_count($comment_text, "\n", 0, $offset),
+                            'line_number' => $comment->getStartLine() + substr_count($comment_text, "\n", 0, $offset - $comment->getStartFilePos()),
                         ];
                     }
                 } else {
@@ -330,7 +330,7 @@ class FunctionLikeDocblockParser
         if (isset($parsed_docblock->tags['psalm-suppress'])) {
             foreach ($parsed_docblock->tags['psalm-suppress'] as $offset => $suppress_entry) {
                 foreach (DocComment::parseSuppressList($suppress_entry) as $issue_offset => $suppressed_issue) {
-                    $info->suppressed_issues[$issue_offset + $offset + $comment->getStartFilePos()] = $suppressed_issue;
+                    $info->suppressed_issues[$issue_offset + $offset] = $suppressed_issue;
                 }
             }
         }
@@ -345,8 +345,8 @@ class FunctionLikeDocblockParser
 
                 $info->throws[] = [
                     $throws_class,
-                    $offset + $comment->getStartFilePos(),
-                    $comment->getStartLine() + substr_count($comment->getText(), "\n", 0, $offset)
+                    $offset,
+                    $comment->getStartLine() + substr_count($comment->getText(), "\n", 0, $offset - $comment->getStartFilePos())
                 ];
             }
         }
@@ -517,7 +517,8 @@ class FunctionLikeDocblockParser
                     throw new IncorrectDocblockException('Misplaced variable');
                 }
 
-                $start = $offset + $comment->getStartFilePos();
+                $start = $offset;
+
                 $end = $start + strlen($line_parts[0]);
 
                 $line_parts[0] = CommentAnalyzer::sanitizeDocblockType($line_parts[0]);
@@ -526,7 +527,7 @@ class FunctionLikeDocblockParser
                 $info->return_type_description = $line_parts ? implode(' ', $line_parts) : null;
 
                 $info->return_type_line_number
-                    = $comment->getStartLine() + substr_count($comment->getText(), "\n", 0, $offset);
+                    = $comment->getStartLine() + substr_count($comment->getText(), "\n", 0, $offset - $comment->getStartFilePos());
                 $info->return_type_start = $start;
                 $info->return_type_end = $end;
             } else {
@@ -612,6 +613,6 @@ class FunctionLikeDocblockParser
 
     private static function docblockLineNumber(PhpParser\Comment\Doc $comment, int $offset): int
     {
-        return $comment->getStartLine() + substr_count($comment->getText(), "\n", 0, $offset);
+        return $comment->getStartLine() + substr_count($comment->getText(), "\n", 0, $offset - $comment->getStartFilePos());
     }
 }

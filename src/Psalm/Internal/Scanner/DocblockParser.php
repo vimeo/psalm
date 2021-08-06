@@ -19,7 +19,7 @@ use const PREG_OFFSET_CAPTURE;
 
 class DocblockParser
 {
-    public static function parse(string $docblock) : ParsedDocblock
+    public static function parse(string $docblock, int $offsetStart) : ParsedDocblock
     {
         // Strip off comments.
         $docblock = trim($docblock);
@@ -89,7 +89,7 @@ class DocblockParser
 
                 $data_offset += $line_offset;
 
-                $special[$type][$data_offset + 3] = $data;
+                $special[$type][$data_offset + 3 + $offsetStart] = $data;
 
                 unset($lines[$k]);
             } else {
