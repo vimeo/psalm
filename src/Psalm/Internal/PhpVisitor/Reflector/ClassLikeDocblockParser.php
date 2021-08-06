@@ -506,8 +506,7 @@ class ClassLikeDocblockParser
 
                     $line_parts[1] = preg_replace('/,$/', '', $line_parts[1]);
 
-                    $start = $offset;
-                    $end = $start + strlen($line_parts[0]);
+                    $end = $offset + strlen($line_parts[0]);
 
                     $line_parts[0] = str_replace("\n", '', preg_replace('@^[ \t]*\*@m', '', $line_parts[0]));
 
@@ -534,7 +533,7 @@ class ClassLikeDocblockParser
                             $offset - $comment->getStartFilePos()
                         ),
                         'tag' => $property_tag,
-                        'start' => $start,
+                        'start' => $offset,
                         'end' => $end,
                     ];
                 }
