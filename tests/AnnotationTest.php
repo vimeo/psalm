@@ -1274,7 +1274,7 @@ class AnnotationTest extends TestCase
                         /**
                          * @var array
                          */
-                        public $config = [];
+                        public array $config = [];
                         public function getConfig(): array {return $this->config;}
                     }
 
@@ -1284,7 +1284,7 @@ class AnnotationTest extends TestCase
                          * @var string[]
                          * @psalm-suppress NonInvariantDocblockPropertyType
                          */
-                        public $config = [];
+                        public array $config = [];
                     }
                     $a = new Vendor();
                     $_b = new A();
