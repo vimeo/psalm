@@ -573,10 +573,6 @@ return [
       'old' => ['bool', 'image'=>'resource', 'file='=>'string|resource|null', 'quality='=>'int'],
       'new' => ['bool', 'image'=>'GdImage', 'file='=>'string|resource|null', 'quality='=>'int'],
     ],
-    'imagejpeg\'1' => [
-      'old' => ['string|false', 'image'=>'resource', 'file='=>'null', 'quality='=>'int'],
-      'new' => ['string|false', 'image'=>'GdImage', 'file='=>'null', 'quality='=>'int'],
-    ],
     'imagelayereffect' => [
       'old' => ['bool', 'image'=>'resource', 'effect'=>'int'],
       'new' => ['bool', 'image'=>'GdImage', 'effect'=>'int'],

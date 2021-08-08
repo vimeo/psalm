@@ -5407,7 +5407,6 @@ return [
 'imageinterlace' => ['int|false', 'image'=>'GdImage', 'enable='=>'int'],
 'imageistruecolor' => ['bool', 'image'=>'GdImage'],
 'imagejpeg' => ['bool', 'image'=>'GdImage', 'file='=>'string|resource|null', 'quality='=>'int'],
-'imagejpeg\'1' => ['string|false', 'image'=>'GdImage', 'file='=>'null', 'quality='=>'int'],
 'imagelayereffect' => ['bool', 'image'=>'GdImage', 'effect'=>'int'],
 'imageline' => ['bool', 'image'=>'GdImage', 'x1'=>'int', 'y1'=>'int', 'x2'=>'int', 'y2'=>'int', 'color'=>'int'],
 'imageloadfont' => ['int|false', 'filename'=>'string'],
