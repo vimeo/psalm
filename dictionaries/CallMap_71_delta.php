@@ -4,11 +4,11 @@
  * This contains the information needed to convert the function signatures for php 7.1 to php 7.0 (and vice versa)
  *
  * This file has three sections.
- * The 'added' section contains function/method names from FunctionSignatureMap (And alternates, if applicable) that do not exist in php 0.0
+ * The 'added' section contains function/method names from FunctionSignatureMap (And alternates, if applicable) that did not exist prior to PHP 7.1
  * The 'removed' section contains the signatures that were removed in php 7.1.
  * The 'changed' section contains functions for which the signature has changed for php 7.1.
- *     Each function in the 'changed' section has an 'old' and a 'new' section, 
- *     representing the function as it was in PHP 0.0 and in PHP 7.1, respectively
+ *     Each function in the 'changed' section has an 'old' and a 'new' section,
+ *     representing the function as it was in PHP before 7.1 and in PHP 7.1, respectively
  *
  * @see CallMap.php
  *
