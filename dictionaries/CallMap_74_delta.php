@@ -6,7 +6,6 @@
  * This file has three sections.
  * The 'added' section contains function/method names from FunctionSignatureMap (And alternates, if applicable) that do not exist in php 7.3
  * The 'removed' section contains the signatures that were removed in php 7.4.
- *     Functions are expected to be removed only in major releases of php. (e.g. php 7.0 removed various functions that were deprecated in 5.6)
  * The 'changed' section contains functions for which the signature has changed for php 7.4.
  *     Each function in the 'changed' section has an 'old' and a 'new' section, 
  *     representing the function as it was in PHP 7.3 and in PHP 7.4, respectively
