@@ -8,15 +8,23 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
+use Psalm\Internal\Type\TypeParser;
+use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\Tests\Internal\Provider;
+use Psalm\Type\Union;
 use RuntimeException;
+use Throwable;
 
+use function array_filter;
+use function count;
 use function define;
 use function defined;
 use function getcwd;
 use function ini_set;
+use function is_string;
 use function method_exists;
 
+use const ARRAY_FILTER_USE_KEY;
 use const DIRECTORY_SEPARATOR;
 
 class TestCase extends BaseTestCase
@@ -170,6 +178,49 @@ class TestCase extends BaseTestCase
             self::assertMatchesRegularExpression($pattern, $string, $message);
         } else {
             parent::assertRegExp($pattern, $string, $message);
+        }
+    }
+    
+    public static function assertArrayKeysAreStrings(array $array, string $message = ''): void
+    {
+        $validKeys = array_filter($array, 'is_string', ARRAY_FILTER_USE_KEY);
+        self::assertTrue(count($array) === count($validKeys), $message);
+    }
+    
+    public static function assertArrayKeysAreZeroOrString(array $array, string $message = ''): void
+    {
+        $isZeroOrString = /** @param mixed $key */ function ($key): bool {
+            return $key === 0 || is_string($key);
+        };
+        $validKeys = array_filter($array, $isZeroOrString, ARRAY_FILTER_USE_KEY);
+        self::assertTrue(count($array) === count($validKeys), $message);
+    }
+    
+    public static function assertArrayValuesAreArrays(array $array, string $message = ''): void
+    {
+        $validValues = array_filter($array, 'is_array');
+        self::assertTrue(count($array) === count($validValues), $message);
+    }
+    
+    public static function assertArrayValuesAreStrings(array $array, string $message = ''): void
+    {
+        $validValues = array_filter($array, 'is_string');
+        self::assertTrue(count($array) === count($validValues), $message);
+    }
+    
+    public static function assertStringIsParsableType(string $type, string $message = ''): void
+    {
+        if ($type === '') {
+            //    Ignore empty types for now, as these are quite common for pecl libraries
+            self::assertTrue(true);
+        } else {
+            $union = null;
+            try {
+                $tokens = TypeTokenizer::tokenize($type);
+                $union = TypeParser::parseTokens($tokens);
+            } catch (Throwable $_e) {
+            }
+            self::assertInstanceOf(Union::class, $union, $message);
         }
     }
 }

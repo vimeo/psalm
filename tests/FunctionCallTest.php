@@ -948,6 +948,15 @@ class FunctionCallTest extends TestCase
                 [],
                 '7.3',
             ],
+            'hashInit80' => [
+                '<?php
+                    $h = hash_init("sha256");',
+                [
+                    '$h' => 'HashContext',
+                ],
+                [],
+                '8.0',
+            ],
             'nullableByRef' => [
                 '<?php
                     function foo(?string &$s) : void {}

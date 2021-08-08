@@ -3,55 +3,62 @@
 /**
  * This contains the information needed to convert the function signatures for php 7.3 to php 7.2 (and vice versa)
  *
- * This has two sections.
- * The 'new' section contains function/method names from FunctionSignatureMap (And alternates, if applicable) that do not exist in php7.2 or have different signatures in php 7.3.
- *   If they were just updated, the function/method will be present in the 'added' signatures.
- * The 'old' signatures contains the signatures that are different in php 7.2.
- *   Functions are expected to be removed only in major releases of php. (e.g. php 7.0 removed various functions that were deprecated in 5.6)
+ * This file has three sections.
+ * The 'added' section contains function/method names from FunctionSignatureMap (And alternates, if applicable) that do not exist in php 7.2
+ * The 'removed' section contains the signatures that were removed in php 7.3.
+ * The 'changed' section contains functions for which the signature has changed for php 7.3.
+ *     Each function in the 'changed' section has an 'old' and a 'new' section, 
+ *     representing the function as it was in PHP 7.2 and in PHP 7.3, respectively
  *
- * @see FunctionSignatureMap.php
+ * @see CallMap.php
  *
  * @phan-file-suppress PhanPluginMixedKeyNoKey (read by Phan when analyzing this file)
- *
- * TODO: Fix GMP signatures for gmp_div in 7.2, update other deltas.
  */
 return [
-'new' => [
+  'added' => [
+    'DateTime::createFromImmutable' => ['static', 'object'=>'DateTimeImmutable'],
+    'JsonException::__clone' => ['void'],
+    'JsonException::__construct' => ['void'],
+    'JsonException::__toString' => ['string'],
+    'JsonException::__wakeup' => ['void'],
+    'JsonException::getCode' => ['int'],
+    'JsonException::getFile' => ['string'],
+    'JsonException::getLine' => ['int'],
+    'JsonException::getMessage' => ['string'],
+    'JsonException::getPrevious' => ['?Throwable'],
+    'JsonException::getTrace' => ['list<array<string,mixed>>'],
+    'JsonException::getTraceAsString' => ['string'],
+    'SplPriorityQueue::isCorrupted' => ['bool'],
     'array_key_first' => ['int|string|null', 'array'=>'array'],
     'array_key_last' => ['int|string|null', 'array'=>'array'],
-    'DateTime::createFromImmutable' => ['static', 'datetime'=>'DateTimeImmutable'],
-    'fpm_get_status' => ['array'],
-    'gmp_binomial' => ['GMP', 'n'=>'GMP|string|int', 'k'=>'GMP|string|int'],
-    'gmp_lcm' => ['GMP', 'a'=>'GMP|string|int', 'b'=>'GMP|string|int'],
-    'gmp_perfect_power' => ['GMP', 'a'=>'GMP|string|int'],
-    'gmp_kronecker' => ['GMP', 'a'=>'GMP|string|int', 'b'=>'GMP|string|int'],
-    'JsonException::__clone' => [''],
-    'JsonException::__construct' => [''],
-    'JsonException::__toString' => [''],
-    'JsonException::__wakeup' => [''],
-    'JsonException::getCode' => [''],
-    'JsonException::getFile' => [''],
-    'JsonException::getLine' => [''],
-    'JsonException::getMessage' => [''],
-    'JsonException::getPrevious' => [''],
-    'JsonException::getTrace' => [''],
-    'JsonException::getTraceAsString' => [''],
-    'net_get_interfaces' => ['array<string,array<string,mixed>>|false'],
-    'openssl_pkey_derive' => ['string|false', 'peer_pub_key'=>'mixed', 'priv_key'=>'mixed', 'keylen='=>'?int'],
+    'fpm_get_status' => ['array|false'],
     'gc_status' => ['array{runs:int,collected:int,threshold:int,roots:int}'],
-    'hrtime' => ['array{0:int,1:int}|false', 'get_as_number='=>'false'],
-    'hrtime\'1' => ['int|float|false', 'get_as_number='=>'true'],
-    'is_countable' => ['bool', 'var'=>'mixed'],
+    'gmp_binomial' => ['GMP|false', 'n'=>'GMP|string|int', 'k'=>'int'],
+    'gmp_kronecker' => ['int', 'num1'=>'GMP|string|int', 'num2'=>'GMP|string|int'],
+    'gmp_lcm' => ['GMP', 'num1'=>'GMP|string|int', 'num2'=>'GMP|string|int'],
+    'gmp_perfect_power' => ['bool', 'num'=>'GMP|string|int'],
+    'hrtime' => ['array{0:int,1:int}|false', 'as_number='=>'false'],
+    'hrtime\'1' => ['int|float|false', 'as_number='=>'true'],
+    'is_countable' => ['bool', 'value'=>'mixed'],
+    'net_get_interfaces' => ['array<string,array<string,mixed>>|false'],
+    'openssl_pkey_derive' => ['string|false', 'public_key'=>'mixed', 'private_key'=>'mixed', 'key_length='=>'?int'],
     'session_set_cookie_params\'1' => ['bool', 'options'=>'array{lifetime?:int,path?:string,domain?:?string,secure?:bool,httponly?:bool}'],
-    'setcookie' => ['bool', 'name'=>'string', 'value='=>'string', 'options='=>'array'],
-    'setrawcookie' => ['bool', 'name'=>'string', 'value='=>'string', 'options='=>'array'],
-    'socket_wsaprotocol_info_export' => ['string|false', 'sock='=>'resource','pid'=>'int'],
-    'socket_wsaprotocol_info_import' => ['resource|false', 'id'=>'string'],
-    'socket_wsaprotocol_info_release' => ['bool', 'id'=>'string'],
-    'SplPriorityQueue::isCorrupted' => ['bool'],
-],
-'old' => [
-    'setcookie' => ['bool', 'name'=>'string', 'value='=>'string', 'expires='=>'int', 'path='=>'string', 'domain='=>'string', 'secure='=>'bool', 'httponly='=>'bool'],
-    'setrawcookie' => ['bool', 'name'=>'string', 'value='=>'string', 'expires='=>'int', 'path='=>'string', 'domain='=>'string', 'secure='=>'bool', 'httponly='=>'bool'],
-]
+    'setcookie\'1' => ['bool', 'name'=>'string', 'value='=>'string', 'options='=>'array'],
+    'setrawcookie\'1' => ['bool', 'name'=>'string', 'value='=>'string', 'options='=>'array'],
+    'socket_wsaprotocol_info_export' => ['string|false', 'socket'=>'resource', 'process_id'=>'int'],
+    'socket_wsaprotocol_info_import' => ['resource|false', 'info_id'=>'string'],
+    'socket_wsaprotocol_info_release' => ['bool', 'info_id'=>'string'],
+  ],
+  'changed' => [
+    'bcscale' => [
+      'old' => ['int', 'scale'=>'int'],
+      'new' => ['int', 'scale='=>'int'],
+    ],
+    'ldap_exop_passwd' => [
+      'old' => ['bool|string', 'ldap'=>'resource', 'user='=>'string', 'old_password='=>'string', 'new_password='=>'string'],
+      'new' => ['bool|string', 'ldap'=>'resource', 'user='=>'string', 'old_password='=>'string', 'new_password='=>'string', '&w_controls='=>'array'],
+    ],
+  ],
+  'removed' => [
+  ],
 ];
