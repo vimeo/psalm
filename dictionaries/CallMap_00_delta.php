@@ -1,17 +1,16 @@
 <?php // phpcs:ignoreFile
 
 /**
- * This contains the information needed to convert the function signatures for php 0.0 to php 7.0 (and vice versa)
+ * This file contains the historic state of PHP functions before version 7.1
  *
- * This file has three sections.
- * The 'added' section contains function/method names from FunctionSignatureMap (And alternates, if applicable) that do not exist in php 7.0
- * The 'removed' section contains the signatures that were removed in php 7.0.
- *     Functions are expected to be removed only in major releases of php. (e.g. php 7.0 removed various functions that were deprecated in 5.6)
- * The 'changed' section contains functions for which the signature has changed for php 0.0.
- *     Each function in the 'changed' section has an 'old' and a 'new' section, 
- *     representing the function as it was in PHP 7.0 and in PHP 0.0, respectively
+ * It is _NOT_ used by the Psalm application itself, but serves as a baseline
+ * for testing the validity of the CallMap.php and CallMap_xx_delta.php files
  *
- * @see CallMap.php
+ * Updates to this file are only needed if an old function in the main callmap turns out to be incorrect
+ *
+ * @see tests\Internal\CallMapTest.php
+ *
+ * @see FunctionSignatureMap.php
  *
  * @phan-file-suppress PhanPluginMixedKeyNoKey (read by Phan when analyzing this file)
  */
