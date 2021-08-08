@@ -54,8 +54,9 @@ class FileReferenceCacheProvider
 
     public function hasConfigChanged() : bool
     {
-        $has_changed = $this->config->hash !== $this->getConfigHashCache();
-        $this->setConfigHashCache($this->config->hash);
+        $new_hash = $this->config->computeHash();
+        $has_changed = $new_hash !== $this->getConfigHashCache();
+        $this->setConfigHashCache($new_hash);
         return $has_changed;
     }
 

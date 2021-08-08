@@ -65,7 +65,7 @@ class ClassLikeStorageCacheProvider
             $this->modified_timestamps .= ' ' . filemtime($dependent_file_path);
         }
 
-        $this->modified_timestamps .= $this->config->hash;
+        $this->modified_timestamps .= $this->config->computeHash();
     }
 
     public function writeToCache(ClassLikeStorage $storage, ?string $file_path, ?string $file_contents): void

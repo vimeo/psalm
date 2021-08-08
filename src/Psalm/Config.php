@@ -634,6 +634,14 @@ class Config
     }
 
     /**
+     * Computes the hash to use for a cache folder from CLI flags and from the config file's xml contents
+     */
+    public function computeHash(): string
+    {
+        return sha1($this->hash . ':' . $this->level);
+    }
+
+    /**
      * Creates a new config object from an XML string
      * @param  string|null      $current_dir Current working directory, if different to $base_dir
      *
