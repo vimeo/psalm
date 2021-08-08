@@ -7,7 +7,7 @@
  * The 'added' section contains function/method names from FunctionSignatureMap (And alternates, if applicable) that do not exist in php 7.4
  * The 'removed' section contains the signatures that were removed in php 8.0
  * The 'changed' section contains functions for which the signature has changed for php 8.0.
- *     Each function in the 'changed' section has an 'old' and a 'new' section, 
+ *     Each function in the 'changed' section has an 'old' and a 'new' section,
  *     representing the function as it was in PHP 7.4 and in PHP 8.0, respectively
  *
  * @see CallMap.php
@@ -122,12 +122,12 @@ return [
       'new' => ['int', 'num1'=>'numeric-string', 'num2'=>'numeric-string', 'scale='=>'int|null'],
     ],
     'bcdiv' => [
-      'old' => ['numeric-string|null', 'dividend'=>'string', 'divisor'=>'string', 'scale='=>'int'],
-      'new' => ['numeric-string|null', 'dividend'=>'string', 'divisor'=>'string', 'scale='=>'int|null'],
+      'old' => ['numeric-string|null', 'dividend'=>'numeric-string', 'divisor'=>'numeric-string', 'scale='=>'int'],
+      'new' => ['numeric-string|null', 'dividend'=>'numeric-string', 'divisor'=>'numeric-string', 'scale='=>'int|null'],
     ],
     'bcmod' => [
-      'old' => ['numeric-string|null', 'dividend'=>'string', 'divisor'=>'string', 'scale='=>'int'],
-      'new' => ['numeric-string|null', 'dividend'=>'string', 'divisor'=>'string', 'scale='=>'int|null'],
+      'old' => ['numeric-string|null', 'dividend'=>'numeric-string', 'divisor'=>'numeric-string', 'scale='=>'int'],
+      'new' => ['numeric-string|null', 'dividend'=>'numeric-string', 'divisor'=>'numeric-string', 'scale='=>'int|null'],
     ],
     'bcmul' => [
       'old' => ['numeric-string', 'num1'=>'numeric-string', 'num2'=>'numeric-string', 'scale='=>'int'],
@@ -138,8 +138,8 @@ return [
       'new' => ['numeric-string', 'num'=>'numeric-string', 'exponent'=>'numeric-string', 'scale='=>'int|null'],
     ],
     'bcpowmod' => [
-      'old' => ['numeric-string|false', 'base'=>'string', 'exponent'=>'string', 'modulus'=>'string', 'scale='=>'int'],
-      'new' => ['numeric-string|false', 'base'=>'string', 'exponent'=>'string', 'modulus'=>'string', 'scale='=>'int|null'],
+      'old' => ['numeric-string|false', 'base'=>'numeric-string', 'exponent'=>'numeric-string', 'modulus'=>'numeric-string', 'scale='=>'int'],
+      'new' => ['numeric-string|false', 'base'=>'numeric-string', 'exponent'=>'numeric-string', 'modulus'=>'numeric-string', 'scale='=>'int|null'],
     ],
     'bcscale' => [
       'old' => ['int', 'scale='=>'int'],
@@ -902,8 +902,8 @@ return [
       'new' => ['string', 'password'=>'string', 'algo'=>'int|string|null', 'options='=>'array'],
     ],
     'proc_get_status' => [
-      'old' => ['array<string,int|string|bool>|false', 'process'=>'resource'],
-      'new' => ['array<string,int|string|bool>', 'process'=>'resource'],
+      'old' => ['array{command: string, pid: int, running: bool, signaled: bool, stopped: bool, exitcode: int, termsig: int, stopsig: int}|false', 'process'=>'resource'],
+      'new' => ['array{command: string, pid: int, running: bool, signaled: bool, stopped: bool, exitcode: int, termsig: int, stopsig: int}', 'process'=>'resource'],
     ],
     'socket_accept' => [
       'old' => ['resource|false', 'socket'=>'resource'],
