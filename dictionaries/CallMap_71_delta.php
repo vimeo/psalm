@@ -1,11 +1,11 @@
 <?php // phpcs:ignoreFile
 
 /**
- * This contains the information needed to convert the function signatures for php 7.1 to php 0.0 (and vice versa)
+ * This contains the information needed to convert the function signatures for php 7.1 to php 7.0 (and vice versa)
  *
  * This file has three sections.
  * The 'added' section contains function/method names from FunctionSignatureMap (And alternates, if applicable) that do not exist in php 0.0
- * The 'removed' section contains the signatures that were removed in php 0.0.
+ * The 'removed' section contains the signatures that were removed in php 7.1.
  *     Functions are expected to be removed only in major releases of php. (e.g. php 7.0 removed various functions that were deprecated in 5.6)
  * The 'changed' section contains functions for which the signature has changed for php 7.1.
  *     Each function in the 'changed' section has an 'old' and a 'new' section, 
