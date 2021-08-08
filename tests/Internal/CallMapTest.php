@@ -3,11 +3,9 @@ namespace Psalm\Tests\Internal;
 
 use FilesystemIterator;
 use RegexIterator;
-use Throwable;
 
 use function array_diff;
 use function array_diff_key;
-use function array_filter;
 use function array_intersect;
 use function array_intersect_key;
 use function array_keys;
@@ -15,11 +13,9 @@ use function array_merge;
 use function array_values;
 use function count;
 use function is_file;
-use function is_string;
 use function ksort;
 use function uksort;
 
-use const ARRAY_FILTER_USE_KEY;
 use const DIRECTORY_SEPARATOR;
 
 class CallMapTest extends \Psalm\Tests\TestCase
@@ -63,9 +59,16 @@ class CallMapTest extends \Psalm\Tests\TestCase
     
     /**
      * @depends testDictionaryPathMustBeAReadableDirectory
-     * @return array<string, array<string, array<string, array<int|string, string>>>>
+     * @return array<string, array{
+     *     added: array<string, array<int|string, string>>,
+     *     changed: array<string, array{
+     *         old: array<int|string, string>,
+     *         new: array<int|string, string>
+     *     }>,
+     *     removed: array<string, array<int|string, string>>
+     * }>
      */
-    public function testDeltaFilesContainOldAndNewCallmaps(): array
+    public function testDeltaFilesContainAddedChangedAndRemovedSections(): array
     {
         /** @var iterable<string, string> */
         $deltaFileIterator = new RegexIterator(
@@ -84,7 +87,16 @@ class CallMapTest extends \Psalm\Tests\TestCase
                 continue;
             }
 
-            /** @var array<string, array<string, array<int|string, string>>> */
+            /**
+             * @var array{
+             *     added: array<string, array<int|string, string>>,
+             *     changed: array<string, array{
+             *         old: array<int|string, string>,
+             *         new: array<int|string, string>
+             *     }>,
+             *     removed: array<string, array<int|string, string>>
+             * }
+             */
             $deltaFiles[$deltaFile] = include($deltaFilePath);
         }
         
@@ -93,12 +105,15 @@ class CallMapTest extends \Psalm\Tests\TestCase
         foreach ($deltaFiles as $name => $deltaFile) {
             /** @psalm-suppress RedundantConditionGivenDocblockType */
             self::assertIsArray($deltaFile, "Delta file " . $name . " doesn't contain a readable array");
-            self::assertArrayHasKey('old', $deltaFile, "Delta file " . $name . " has no 'old' section");
-            self::assertArrayHasKey('new', $deltaFile, "Delta file " . $name . " has no 'new' section");
+            self::assertArrayHasKey('added', $deltaFile, "Delta file " . $name . " has no 'added' section");
+            self::assertArrayHasKey('changed', $deltaFile, "Delta file " . $name . " has no 'changed' section");
+            self::assertArrayHasKey('removed', $deltaFile, "Delta file " . $name . " has no 'removed' section");
             /** @psalm-suppress RedundantConditionGivenDocblockType */
-            self::assertIsArray($deltaFile['old'], "'Old' section in Delta file " . $name . " doesn't contain a readable array");
+            self::assertIsArray($deltaFile['added'], "'added' section in Delta file " . $name . " doesn't contain a readable array");
             /** @psalm-suppress RedundantConditionGivenDocblockType */
-            self::assertIsArray($deltaFile['new'], "'New' section in Delta file " . $name . " doesn't contain a readable array");
+            self::assertIsArray($deltaFile['removed'], "'removed' section in Delta file " . $name . " doesn't contain a readable array");
+            /** @psalm-suppress RedundantConditionGivenDocblockType */
+            self::assertIsArray($deltaFile['changed'], "'changed' section in Delta file " . $name . " doesn't contain a readable array");
         }
         
         return $deltaFiles;
@@ -106,28 +121,49 @@ class CallMapTest extends \Psalm\Tests\TestCase
 
     /**
      * @depends testMainCallmapFileContainsACallmap
-     * @depends testDeltaFilesContainOldAndNewCallmaps
+     * @depends testDeltaFilesContainAddedChangedAndRemovedSections
      * @param array<string, array<int|string,string>> $mainCallMap
-     * @param array<string, array<string, array<string, array<int|string, string>>>> $deltaFiles
+     * @param array<string, array{
+     *     added: array<string, array<int|string, string>>,
+     *     changed: array<string, array{
+     *         old: array<int|string, string>,
+     *         new: array<int|string, string>
+     *     }>,
+     *     removed: array<string, array<int|string, string>>
+     * }> $deltaFiles
      */
     public function testCallmapKeysAreStringsAndValuesAreSignatures(array $mainCallMap, array $deltaFiles): void
     {
         self::assertArrayKeysAreStrings($mainCallMap, "Main CallMap has non-string keys");
         self::assertArrayValuesAreArrays($mainCallMap, "Main CallMap has non-array values");
         foreach ($deltaFiles as $name => $deltaFile) {
-            foreach (['old', 'new'] as $section) {
+            foreach (['added', 'changed', 'removed'] as $section) {
                 self::assertArrayKeysAreStrings($deltaFile[$section], "'" . $section . "' in delta file " . $name . " has non-string keys");
                 self::assertArrayValuesAreArrays($deltaFile[$section], "'" . $section . "' in delta file " . $name . " has non-array values");
+            }
+            foreach ($deltaFile['changed'] as $changedFunction => $diff) {
+                self::assertArrayKeysAreStrings($diff, "Changed function " . $changedFunction . "in delta file " . $name . " has non-string keys");
+                self::assertArrayValuesAreArrays($diff, "Changed function " . $changedFunction . "in delta file " . $name . " has non-array values");
+                foreach (['old', 'new'] as $section) {
+                    self::assertArrayHasKey($section, $diff, "Changed function " . $changedFunction . "in delta file " . $name . " has no '" . $section . "' section");
+                }
             }
         }
     }
     
     /**
      * @depends testMainCallmapFileContainsACallmap
-     * @depends testDeltaFilesContainOldAndNewCallmaps
+     * @depends testDeltaFilesContainAddedChangedAndRemovedSections
      * @depends testCallmapKeysAreStringsAndValuesAreSignatures
      * @param array<string, array<int|string,string>> $mainCallMap
-     * @param array<string, array<string, array<string, array<int|string, string>>>> $deltaFiles
+     * @param array<string, array{
+     *     added: array<string, array<int|string, string>>,
+     *     changed: array<string, array{
+     *         old: array<int|string, string>,
+     *         new: array<int|string, string>
+     *     }>,
+     *     removed: array<string, array<int|string, string>>
+     * }> $deltaFiles
      */
     public function testSignatureKeysAreZeroOrStringAndValuesAreTypes(array $mainCallMap, array $deltaFiles): void
     {
@@ -136,20 +172,39 @@ class CallMapTest extends \Psalm\Tests\TestCase
             self::assertArrayValuesAreStrings($signature, "Function " . $function . " in main CallMap has non-string values");
         }
         foreach ($deltaFiles as $name => $deltaFile) {
-            foreach (['old', 'new'] as $section) {
+            foreach (['added', 'removed'] as $section) {
                 foreach ($deltaFile[$section] as $function => $signature) {
                     self::assertArrayKeysAreZeroOrString($signature, "Function " . $function . " in '" . $section . "' of delta file " . $name . " has invalid keys");
                     self::assertArrayValuesAreStrings($signature, "Function " . $function . " in '" . $section . "' of delta file " . $name . " has non-string values");
+                }
+            }
+            foreach ($deltaFile['changed'] as $function => $diff) {
+                foreach (['old', 'new'] as $section) {
+                    self::assertArrayKeysAreZeroOrString(
+                        $diff[$section],
+                        "'" . $section . "' function " . $function . " in 'changed' of delta file " . $name . " has invalid keys"
+                    );
+                    self::assertArrayValuesAreStrings(
+                        $diff[$section],
+                        "'" . $section . "' function " . $function . " in 'changed' of delta file " . $name . " has non-string values"
+                    );
                 }
             }
         }
     }
     /**
      * @depends testMainCallmapFileContainsACallmap
-     * @depends testDeltaFilesContainOldAndNewCallmaps
+     * @depends testDeltaFilesContainAddedChangedAndRemovedSections
      * @depends testSignatureKeysAreZeroOrStringAndValuesAreTypes
      * @param array<string, array<int|string,string>> $mainCallMap
-     * @param array<string, array<string, array<string, array<int|string, string>>>> $deltaFiles
+     * @param array<string, array{
+     *     added: array<string, array<int|string, string>>,
+     *     changed: array<string, array{
+     *         old: array<int|string, string>,
+     *         new: array<int|string, string>
+     *     }>,
+     *     removed: array<string, array<int|string, string>>
+     * }> $deltaFiles
      */
     public function testTypesAreParsable(array $mainCallMap, array $deltaFiles): void
     {
@@ -160,7 +215,7 @@ class CallMapTest extends \Psalm\Tests\TestCase
         }
         
         foreach ($deltaFiles as $name => $deltaFile) {
-            foreach (['old', 'new'] as $section) {
+            foreach (['added', 'removed'] as $section) {
                 foreach ($deltaFile[$section] as $function => $signature) {
                     foreach ($signature as $type) {
                         self::assertStringIsParsableType(
@@ -170,36 +225,140 @@ class CallMapTest extends \Psalm\Tests\TestCase
                     }
                 }
             }
+            foreach ($deltaFile['changed'] as $function => $diff) {
+                foreach (['old', 'new'] as $section) {
+                    foreach ($diff[$section] as $type) {
+                        self::assertStringIsParsableType(
+                            $type,
+                            "'" . $section . "' function " . $function . " in 'changed' of delta file " . $name . " contains invalid type declaration " . $type
+                        );
+                    }
+                }
+            }
         }
     }
     
     /**
-     * @depends testDeltaFilesContainOldAndNewCallmaps
-     * @depends testSignatureKeysAreZeroOrStringAndValuesAreTypes
-     * @param array<string, array<string, array<string, array<int|string, string>>>> $deltaFiles
-     * @return array<string, array<int|string,string>>
+     * @depends testDeltaFilesContainAddedChangedAndRemovedSections
+     * @depends testCallmapKeysAreStringsAndValuesAreSignatures
+     * @param array<string, array{
+     *     added: array<string, array<int|string, string>>,
+     *     changed: array<string, array{
+     *         old: array<int|string, string>,
+     *         new: array<int|string, string>
+     *     }>,
+     *     removed: array<string, array<int|string, string>>
+     * }> $deltaFiles
+     * @return list<string>
      */
-    public function testExistingFunctionsPresentInNewSectionMustBePresentInOld(array $deltaFiles): array
+    public function testChangedAndRemovedFunctionsMustExist(array $deltaFiles): array
     {
         $newFunctions = [];
-        foreach ($deltaFiles as $deltaFile) {
-            $newFunctions = array_diff_key($newFunctions, $deltaFile['old']);
-            $notRemovedFunctions = array_keys(array_intersect_key($newFunctions, $deltaFile['new']));
+        $deletedFunctions = [];
+        foreach ($deltaFiles as $name => $deltaFile) {
+            $addedFunctions = array_keys($deltaFile['added']);
+            $removedFunctions = array_keys($deltaFile['removed']);
+            $nonExistingChangedFunctions = array_diff(array_keys($deltaFile['changed']), $newFunctions);
+            $nonExistingRemovedFunctions = array_diff($removedFunctions, $newFunctions);
+
             self::assertEquals(
-                array_values($notRemovedFunctions),
+                array_values($nonExistingChangedFunctions),
                 [],    // Compare against empty array to get handy diff in output
-                "Not all functions updated in delta files are removed first"
+                "Deltafile " . $name . " tries to change non-existing functions"
             );
-            $newFunctions = array_merge($newFunctions, $deltaFile['new']);
+            
+            self::assertEquals(
+                array_values($nonExistingRemovedFunctions),
+                [],    // Compare against empty array to get handy diff in output
+                "Deltafile " . $name . " tries to remove non-existing functions"
+            );
+            
+            $newFunctions = array_diff($newFunctions, $removedFunctions);
+            $newFunctions = array_merge($newFunctions, $addedFunctions);
+            $deletedFunctions = array_diff($deletedFunctions, $addedFunctions);
+            $deletedFunctions = array_merge($deletedFunctions, $removedFunctions);
         }
-        
+        return $deletedFunctions;
+    }
+    
+    /**
+     * @depends testDeltaFilesContainAddedChangedAndRemovedSections
+     * @depends testCallmapKeysAreStringsAndValuesAreSignatures
+     * @depends testChangedAndRemovedFunctionsMustExist
+     * @param array<string, array{
+     *     added: array<string, array<int|string, string>>,
+     *     changed: array<string, array{
+     *         old: array<int|string, string>,
+     *         new: array<int|string, string>
+     *     }>,
+     *     removed: array<string, array<int|string, string>>
+     * }> $deltaFiles
+     * @return array<string, array<int|string, string>>
+     */
+    public function testExistingFunctionsCanNotBeAdded(array $deltaFiles): array
+    {
+        $newFunctions = [];
+        foreach ($deltaFiles as $name => $deltaFile) {
+            $alreadyExistingFunctions = array_intersect_key($deltaFile['added'], $newFunctions);
+
+            self::assertEquals(
+                array_values($alreadyExistingFunctions),
+                [],    // Compare against empty array to get handy diff in output
+                "Deltafile " . $name . " adds already existing functions"
+            );
+            
+            $newFunctions = array_diff_key($newFunctions, $deltaFile['removed']);
+            foreach ($deltaFile['changed'] as $function => ['new' => $new]) {
+                $newFunctions[$function] = $new;
+            }
+            $newFunctions = array_merge($newFunctions, $deltaFile['added']);
+        }
         return $newFunctions;
     }
     
     /**
+     * @depends testDeltaFilesContainAddedChangedAndRemovedSections
+     * @depends testCallmapKeysAreStringsAndValuesAreSignatures
+     * @param array<string, array{
+     *     added: array<string, array<int|string, string>>,
+     *     changed: array<string, array{
+     *         old: array<int|string, string>,
+     *         new: array<int|string, string>
+     *     }>,
+     *     removed: array<string, array<int|string, string>>
+     * }> $deltaFiles
+     */
+    public function testFunctionsCanNotBeInMoreThanOneSection(array $deltaFiles): void
+    {
+        foreach ($deltaFiles as $name => $deltaFile) {
+            $addedFunctions = array_keys($deltaFile['added']);
+            $changedFunctions = array_keys($deltaFile['changed']);
+            $removedFunctions = array_keys($deltaFile['removed']);
+            $overlapAddedChanged = array_intersect($addedFunctions, $changedFunctions);
+            $overlapAddedRemoved = array_intersect($addedFunctions, $removedFunctions);
+            $overlapChangedRemoved = array_intersect($changedFunctions, $removedFunctions);
+            self::assertEquals(
+                array_values($overlapAddedChanged),
+                [],    // Compare against empty array to get handy diff in output
+                "Deltafile " . $name . " adds and changes the same functions"
+            );
+            self::assertEquals(
+                array_values($overlapAddedRemoved),
+                [],    // Compare against empty array to get handy diff in output
+                "Deltafile " . $name . " adds and removes the same functions. Move them to the 'changed' section"
+            );
+            self::assertEquals(
+                array_values($overlapChangedRemoved),
+                [],    // Compare against empty array to get handy diff in output
+                "Deltafile " . $name . " changes and removes the same function"
+            );
+        }
+    }
+    
+    /**
      * @depends testMainCallmapFileContainsACallmap
-     * @depends testExistingFunctionsPresentInNewSectionMustBePresentInOld
-     * @depends testSignatureKeysAreZeroOrStringAndValuesAreTypes
+     * @depends testExistingFunctionsCanNotBeAdded
+     * @depends testCallmapKeysAreStringsAndValuesAreSignatures
      * @param array<string, array<int|string,string>> $mainCallMap
      * @param array<string, array<int|string,string>> $newFunctions
      */
@@ -217,35 +376,8 @@ class CallMapTest extends \Psalm\Tests\TestCase
     }
     
     /**
-     * @depends testDeltaFilesContainOldAndNewCallmaps
-     * @depends testSignatureKeysAreZeroOrStringAndValuesAreTypes
-     * @param array<string, array<string, array<string, array<int|string, string>>>> $deltaFiles
-     * @return list<string>
-     */
-    public function testFunctionsRemovedTwiceInDeltaFilesMustBeAddedFirst(array $deltaFiles): array
-    {
-        $removedFunctions = [];
-        foreach ($deltaFiles as $deltaFile) {
-            $oldFunctions = array_keys($deltaFile['old']);
-            $newFunctions = array_keys($deltaFile['new']);
-            $notAddedFunctions = array_intersect($removedFunctions, $oldFunctions);
-            self::assertEquals(
-                [],    // Compare against empty array to get handy diff in output
-                array_values($notAddedFunctions),
-                "Not all functions removed in delta files are added first"
-            );
-            $addedInDelta = array_diff($newFunctions, $oldFunctions);
-            $removedInDelta = array_diff($oldFunctions, $newFunctions);
-            $removedFunctions = array_diff($removedFunctions, $addedInDelta);
-            $removedFunctions = array_merge($removedFunctions, $removedInDelta);
-        }
-        
-        return $removedFunctions;
-    }
-    
-    /**
      * @depends testMainCallmapFileContainsACallmap
-     * @depends testFunctionsRemovedTwiceInDeltaFilesMustBeAddedFirst
+     * @depends testChangedAndRemovedFunctionsMustExist
      * @depends testSignatureKeysAreZeroOrStringAndValuesAreTypes
      * @param array<string, array<int|string,string>> $mainCallMap
      * @param list<string> $removedFunctions
@@ -281,18 +413,31 @@ class CallMapTest extends \Psalm\Tests\TestCase
     }
     
     /**
-     * @depends testDeltaFilesContainOldAndNewCallmaps
+     * @depends testDeltaFilesContainAddedChangedAndRemovedSections
      * @depends testSignatureKeysAreZeroOrStringAndValuesAreTypes
-     * @param array<string, array<string, array<string, array<int|string, string>>>> $deltaFiles
+     * @param array<string, array{
+     *     added: array<string, array<int|string, string>>,
+     *     changed: array<string, array{
+     *         old: array<int|string, string>,
+     *         new: array<int|string, string>
+     *     }>,
+     *     removed: array<string, array<int|string, string>>
+     * }> $deltaFiles
      */
     public function testOutgoingSignaturesMustMatchMostRecentIncomingSignatures(array $deltaFiles): void
     {
         $deltaFileNames = array_keys($deltaFiles);
         for ($i = count($deltaFileNames) - 1; $i > 0; $i--) {
-            $outgoingSignatures = $deltaFiles[$deltaFileNames[$i]]['old'];
+            $outgoingSignatures = $deltaFiles[$deltaFileNames[$i]]['removed'];
+            foreach ($deltaFiles[$deltaFileNames[$i]]['changed'] as $function => ['old' => $old]) {
+                $outgoingSignatures[$function] = $old;
+            }
             ksort($outgoingSignatures);
             for ($j = $i - 1; $j >= 0; $j--) {
-                $incomingSignatures = $deltaFiles[$deltaFileNames[$j]]['new'];
+                $incomingSignatures = $deltaFiles[$deltaFileNames[$j]]['added'];
+                foreach ($deltaFiles[$deltaFileNames[$j]]['changed'] as $function => ['new' => $new]) {
+                    $incomingSignatures[$function] = $new;
+                }
                 ksort($incomingSignatures);
                 $overlapOutgoing = array_intersect_key($outgoingSignatures, $incomingSignatures);
                 if (count($overlapOutgoing) !== 0) {
@@ -308,48 +453,6 @@ class CallMapTest extends \Psalm\Tests\TestCase
                     $outgoingSignatures = array_diff_key($outgoingSignatures, $overlapOutgoing);
                 }
             }
-        }
-    }
-    
-    public static function assertArrayKeysAreStrings(array $array, string $message = ''): void
-    {
-        $validKeys = array_filter($array, 'is_string', ARRAY_FILTER_USE_KEY);
-        self::assertTrue(count($array) === count($validKeys), $message);
-    }
-    public static function assertArrayKeysAreZeroOrString(array $array, string $message = ''): void
-    {
-        $isZeroOrString = /** @param mixed $key */ function ($key): bool {
-            return $key === 0 || is_string($key);
-        };
-        $validKeys = array_filter($array, $isZeroOrString, ARRAY_FILTER_USE_KEY);
-        self::assertTrue(count($array) === count($validKeys), $message);
-    }
-    
-    public static function assertArrayValuesAreArrays(array $array, string $message = ''): void
-    {
-        $validValues = array_filter($array, 'is_array');
-        self::assertTrue(count($array) === count($validValues), $message);
-    }
-    
-    public static function assertArrayValuesAreStrings(array $array, string $message = ''): void
-    {
-        $validValues = array_filter($array, 'is_string');
-        self::assertTrue(count($array) === count($validValues), $message);
-    }
-    
-    public static function assertStringIsParsableType(string $type, string $message = ''): void
-    {
-        if ($type === '') {
-            //    Ignore empty types for now, as these are quite common for pecl libraries
-            self::assertTrue(true);
-        } else {
-            $union = null;
-            try {
-                $tokens = \Psalm\Internal\Type\TypeTokenizer::tokenize($type);
-                $union = \Psalm\Internal\Type\TypeParser::parseTokens($tokens);
-            } catch (Throwable $_e) {
-            }
-            self::assertInstanceOf(\Psalm\Type\Union::class, $union, $message);
         }
     }
 }

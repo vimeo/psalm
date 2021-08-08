@@ -3,27 +3,27 @@
 /**
  * This contains the information needed to convert the function signatures for php 7.2 to php 7.1 (and vice versa)
  *
- * This has two sections.
- * The 'new' section contains function/method names from FunctionSignatureMap (And alternates, if applicable) that do not exist in php7.1 or have different signatures in php 7.2.
- *   If they were just updated, the function/method will be present in the 'added' signatures.
- * The 'old' signatures contains the signatures that are different in php 7.1.
- *   Functions are expected to be removed only in major releases of php. (e.g. php 7.0 removed various functions that were deprecated in 5.6)
+ * This file has three sections.
+ * The 'added' section contains function/method names from FunctionSignatureMap (And alternates, if applicable) that do not exist in php 7.1
+ * The 'removed' section contains the signatures that were removed in php 7.1.
+ *     Functions are expected to be removed only in major releases of php. (e.g. php 7.0 removed various functions that were deprecated in 5.6)
+ * The 'changed' section contains functions for which the signature has changed for php 7.2.
+ *     Each function in the 'changed' section has an 'old' and a 'new' section, 
+ *     representing the function as it was in PHP 7.1 and in PHP 7.2, respectively
  *
- * @see FunctionSignatureMap.php
+ * @see CallMap.php
  *
  * @phan-file-suppress PhanPluginMixedKeyNoKey (read by Phan when analyzing this file)
  */
 return [
-'new' => [
+  'added' => [
     'DOMNodeList::count' => ['int'],
+    'ReflectionClass::isIterable' => ['bool'],
+    'ZipArchive::count' => ['int'],
+    'ZipArchive::setEncryptionIndex' => ['bool', 'index'=>'int', 'method'=>'string', 'password='=>'string'],
+    'ZipArchive::setEncryptionName' => ['bool', 'name'=>'string', 'method'=>'int', 'password='=>'string'],
     'ftp_append' => ['bool', 'ftp'=>'resource', 'remote_filename'=>'string', 'local_filename'=>'string', 'mode='=>'int'],
-    'hash_copy' => ['HashContext', 'context'=>'HashContext'],
-    'hash_final' => ['string', 'context'=>'HashContext', 'binary='=>'bool'],
     'hash_hmac_algos' => ['list<string>'],
-    'hash_init' => ['HashContext|false', 'algo'=>'string', 'flags='=>'int', 'key='=>'string'],
-    'hash_update' => ['bool', 'context'=>'HashContext', 'data'=>'string'],
-    'hash_update_file' => ['bool', 'context'=>'HashContext', 'filename'=>'string', 'stream_context='=>'resource'],
-    'hash_update_stream' => ['int', 'context'=>'HashContext', 'stream'=>'resource', 'length='=>'int'],
     'imagebmp' => ['bool', 'image'=>'resource', 'file='=>'resource|string|null', 'compressed='=>'int'],
     'imagecreatefrombmp' => ['resource|false', 'filename'=>'string'],
     'imageopenpolygon' => ['bool', 'image'=>'resource', 'points'=>'array', 'num_points'=>'int', 'color'=>'int'],
@@ -34,14 +34,11 @@ return [
     'ldap_exop_refresh' => ['int|false', 'ldap'=>'resource', 'dn'=>'string', 'ttl'=>'int'],
     'ldap_exop_whoami' => ['string|false', 'ldap'=>'resource'],
     'ldap_parse_exop' => ['bool', 'ldap'=>'resource', 'result'=>'resource', '&w_response_data='=>'string', '&w_response_oid='=>'string'],
-    'mb_check_encoding' => ['bool', 'value='=>'array|string', 'encoding='=>'string'],
     'mb_chr' => ['string|false', 'codepoint'=>'int', 'encoding='=>'string'],
     'mb_ord' => ['int|false', 'string'=>'string', 'encoding='=>'string'],
     'mb_scrub' => ['string', 'string'=>'string', 'encoding='=>'string'],
     'oci_register_taf_callback' => ['bool', 'connection'=>'resource', 'callback='=>'callable'],
     'oci_unregister_taf_callback' => ['bool', 'connection'=>'resource'],
-    'ReflectionClass::isIterable' => ['bool'],
-    'SQLite3::openBlob' => ['resource|false', 'table'=>'string', 'column'=>'string', 'rowid'=>'int', 'database='=>'string', 'flags='=>'int'],
     'sapi_windows_vt100_support' => ['bool', 'stream'=>'resource', 'enable='=>'bool'],
     'socket_addrinfo_bind' => ['?resource', 'addrinfo'=>'resource'],
     'socket_addrinfo_connect' => ['resource', 'addrinfo'=>'resource'],
@@ -133,18 +130,42 @@ return [
     'sodium_pad' => ['string', 'string'=>'string', 'block_size'=>'int'],
     'sodium_unpad' => ['string', 'string'=>'string', 'block_size'=>'int'],
     'stream_isatty' => ['bool', 'stream'=>'resource'],
-    'ZipArchive::count' => ['int'],
-    'ZipArchive::setEncryptionIndex' => ['bool', 'index'=>'int', 'method'=>'string', 'password='=>'string'],
-    'ZipArchive::setEncryptionName' => ['bool', 'name'=>'string', 'method'=>'int', 'password='=>'string'],
-],
-'old' => [
-    'hash_copy' => ['resource', 'context'=>'resource'],
-    'hash_final' => ['string', 'context'=>'resource', 'raw_output='=>'bool'],
-    'hash_init' => ['resource', 'algo'=>'string', 'options='=>'int', 'key='=>'string'],
-    'hash_update' => ['bool', 'context'=>'resource', 'data'=>'string'],
-    'hash_update_file' => ['bool', 'hcontext'=>'resource', 'filename'=>'string', 'scontext='=>'resource'],
-    'hash_update_stream' => ['int', 'context'=>'resource', 'handle'=>'resource', 'length='=>'int'],
-    'mb_check_encoding' => ['bool', 'value='=>'string', 'encoding='=>'string'],
+  ],
+  'changed' => [
+    'SQLite3::openBlob' => [
+      'old' => ['resource|false', 'table'=>'string', 'column'=>'string', 'rowid'=>'int', 'dbname='=>'string'],
+      'new' => ['resource|false', 'table'=>'string', 'column'=>'string', 'rowid'=>'int', 'database='=>'string', 'flags='=>'int'],
+    ],
+    'hash_copy' => [
+      'old' => ['resource', 'context'=>'resource'],
+      'new' => ['HashContext', 'context'=>'HashContext'],
+    ],
+    'hash_final' => [
+      'old' => ['string', 'context'=>'resource', 'raw_output='=>'bool'],
+      'new' => ['string', 'context'=>'HashContext', 'binary='=>'bool'],
+    ],
+    'hash_init' => [
+      'old' => ['resource', 'algo'=>'string', 'options='=>'int', 'key='=>'string'],
+      'new' => ['HashContext|false', 'algo'=>'string', 'flags='=>'int', 'key='=>'string'],
+    ],
+    'hash_update' => [
+      'old' => ['bool', 'context'=>'resource', 'data'=>'string'],
+      'new' => ['bool', 'context'=>'HashContext', 'data'=>'string'],
+    ],
+    'hash_update_file' => [
+      'old' => ['bool', 'hcontext'=>'resource', 'filename'=>'string', 'scontext='=>'resource'],
+      'new' => ['bool', 'context'=>'HashContext', 'filename'=>'string', 'stream_context='=>'resource'],
+    ],
+    'hash_update_stream' => [
+      'old' => ['int', 'context'=>'resource', 'handle'=>'resource', 'length='=>'int'],
+      'new' => ['int', 'context'=>'HashContext', 'stream'=>'resource', 'length='=>'int'],
+    ],
+    'mb_check_encoding' => [
+      'old' => ['bool', 'value='=>'string', 'encoding='=>'string'],
+      'new' => ['bool', 'value='=>'array|string', 'encoding='=>'string'],
+    ],
+  ],
+  'removed' => [
     'Sodium\add' => ['void', '&left'=>'string', 'right'=>'string'],
     'Sodium\bin2hex' => ['string', 'binary'=>'string'],
     'Sodium\compare' => ['int', 'left'=>'string', 'right'=>'string'],
@@ -204,7 +225,6 @@ return [
     'Sodium\randombytes_buf' => ['string', 'length'=>'int'],
     'Sodium\randombytes_random16' => ['int|string'],
     'Sodium\randombytes_uniform' => ['int', 'upperBoundNonInclusive'=>'int'],
-    'Sodium\version_string' => ['string'],    
-    'SQLite3::openBlob' => ['resource|false', 'table'=>'string', 'column'=>'string', 'rowid'=>'int', 'dbname='=>'string'],
-]
+    'Sodium\version_string' => ['string'],
+  ],
 ];
