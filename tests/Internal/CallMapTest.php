@@ -21,25 +21,25 @@ use const DIRECTORY_SEPARATOR;
 class CallMapTest extends \Psalm\Tests\TestCase
 {
     protected const DICTIONARY_PATH = 'dictionaries';
-    
+
     public function testDictionaryPathMustBeAReadableDirectory(): void
     {
         self::assertDirectoryExists(self::DICTIONARY_PATH, self::DICTIONARY_PATH . " is not a valid directory");
         self::assertDirectoryIsReadable(self::DICTIONARY_PATH, self::DICTIONARY_PATH . " is not a readable directory");
     }
-    
+
     /**
      * @depends testDictionaryPathMustBeAReadableDirectory
      */
     public function testMainCallmapFileExists(): string
     {
         $callMapFilePath = self::DICTIONARY_PATH . DIRECTORY_SEPARATOR . 'CallMap.php';
-        
+
         self::assertFileExists($callMapFilePath, "Main CallMap " . $callMapFilePath . " file not found");
 
         return $callMapFilePath;
     }
-    
+
     /**
      * @depends testMainCallmapFileExists
      * @return array<string, array<int|string,string>>
@@ -51,12 +51,12 @@ class CallMapTest extends \Psalm\Tests\TestCase
          * @psalm-suppress UnresolvableInclude
          */
         $mainCallMap = include($callMapFilePath);
-        
+
         /** @psalm-suppress RedundantConditionGivenDocblockType */
         self::assertIsArray($mainCallMap, "Main CallMap file " . $callMapFilePath . " does not contain a readable array");
         return $mainCallMap;
     }
-    
+
     /**
      * @depends testDictionaryPathMustBeAReadableDirectory
      * @return array<string, array{
@@ -80,7 +80,7 @@ class CallMapTest extends \Psalm\Tests\TestCase
             RegexIterator::MATCH,
             RegexIterator::USE_KEY
         );
-        
+
         $deltaFiles = [];
         foreach ($deltaFileIterator as $deltaFile => $deltaFilePath) {
             if (!is_file($deltaFilePath)) {
@@ -99,23 +99,31 @@ class CallMapTest extends \Psalm\Tests\TestCase
              */
             $deltaFiles[$deltaFile] = include($deltaFilePath);
         }
-        
+
         uksort($deltaFiles, 'strnatcasecmp');
-        
+
+        $deltaFiles = [
+            'CallMap_historical.php' => [
+                'added' => include 'dictionaries/CallMap_historical.php',
+                'changed' => [],
+                'removed' => [],
+            ]
+        ] + $deltaFiles;
+
         foreach ($deltaFiles as $name => $deltaFile) {
             /** @psalm-suppress RedundantConditionGivenDocblockType */
             self::assertIsArray($deltaFile, "Delta file " . $name . " doesn't contain a readable array");
             self::assertArrayHasKey('added', $deltaFile, "Delta file " . $name . " has no 'added' section");
             self::assertArrayHasKey('changed', $deltaFile, "Delta file " . $name . " has no 'changed' section");
             self::assertArrayHasKey('removed', $deltaFile, "Delta file " . $name . " has no 'removed' section");
-            /** @psalm-suppress RedundantConditionGivenDocblockType */
+            /** @psalm-suppress RedundantCondition */
             self::assertIsArray($deltaFile['added'], "'added' section in Delta file " . $name . " doesn't contain a readable array");
-            /** @psalm-suppress RedundantConditionGivenDocblockType */
+            /** @psalm-suppress RedundantCondition */
             self::assertIsArray($deltaFile['removed'], "'removed' section in Delta file " . $name . " doesn't contain a readable array");
-            /** @psalm-suppress RedundantConditionGivenDocblockType */
+            /** @psalm-suppress RedundantCondition */
             self::assertIsArray($deltaFile['changed'], "'changed' section in Delta file " . $name . " doesn't contain a readable array");
         }
-        
+
         return $deltaFiles;
     }
 
@@ -150,7 +158,7 @@ class CallMapTest extends \Psalm\Tests\TestCase
             }
         }
     }
-    
+
     /**
      * @depends testMainCallmapFileContainsACallmap
      * @depends testDeltaFilesContainAddedChangedAndRemovedSections
@@ -192,6 +200,7 @@ class CallMapTest extends \Psalm\Tests\TestCase
             }
         }
     }
+
     /**
      * @depends testMainCallmapFileContainsACallmap
      * @depends testDeltaFilesContainAddedChangedAndRemovedSections
@@ -213,7 +222,7 @@ class CallMapTest extends \Psalm\Tests\TestCase
                 self::assertStringIsParsableType($type, "Function " . $function . " in main CallMap contains invalid type declaration " . $type);
             }
         }
-        
+
         foreach ($deltaFiles as $name => $deltaFile) {
             foreach (['added', 'removed'] as $section) {
                 foreach ($deltaFile[$section] as $function => $signature) {
@@ -237,7 +246,7 @@ class CallMapTest extends \Psalm\Tests\TestCase
             }
         }
     }
-    
+
     /**
      * @depends testDeltaFilesContainAddedChangedAndRemovedSections
      * @depends testCallmapKeysAreStringsAndValuesAreSignatures
@@ -266,13 +275,13 @@ class CallMapTest extends \Psalm\Tests\TestCase
                 [],    // Compare against empty array to get handy diff in output
                 "Deltafile " . $name . " tries to change non-existing functions"
             );
-            
+
             self::assertEquals(
                 array_values($nonExistingRemovedFunctions),
                 [],    // Compare against empty array to get handy diff in output
                 "Deltafile " . $name . " tries to remove non-existing functions"
             );
-            
+
             $newFunctions = array_diff($newFunctions, $removedFunctions);
             $newFunctions = array_merge($newFunctions, $addedFunctions);
             $deletedFunctions = array_diff($deletedFunctions, $addedFunctions);
@@ -280,7 +289,7 @@ class CallMapTest extends \Psalm\Tests\TestCase
         }
         return $deletedFunctions;
     }
-    
+
     /**
      * @depends testDeltaFilesContainAddedChangedAndRemovedSections
      * @depends testCallmapKeysAreStringsAndValuesAreSignatures
@@ -306,7 +315,7 @@ class CallMapTest extends \Psalm\Tests\TestCase
                 [],    // Compare against empty array to get handy diff in output
                 "Deltafile " . $name . " adds already existing functions"
             );
-            
+
             $newFunctions = array_diff_key($newFunctions, $deltaFile['removed']);
             foreach ($deltaFile['changed'] as $function => ['new' => $new]) {
                 $newFunctions[$function] = $new;
@@ -315,7 +324,7 @@ class CallMapTest extends \Psalm\Tests\TestCase
         }
         return $newFunctions;
     }
-    
+
     /**
      * @depends testDeltaFilesContainAddedChangedAndRemovedSections
      * @depends testCallmapKeysAreStringsAndValuesAreSignatures
@@ -354,7 +363,7 @@ class CallMapTest extends \Psalm\Tests\TestCase
             );
         }
     }
-    
+
     /**
      * @depends testMainCallmapFileContainsACallmap
      * @depends testExistingFunctionsCanNotBeAdded
@@ -365,16 +374,34 @@ class CallMapTest extends \Psalm\Tests\TestCase
     public function testFunctionsAddedInDeltaFilesArePresentInMainCallmap(array $mainCallMap, array $newFunctions): array
     {
         $missingNewFunctions = array_diff(array_keys($newFunctions), array_keys($mainCallMap));
-        
+
         self::assertEquals(
             array_values($missingNewFunctions),
             [],    // Compare against empty array to get handy diff in output
             "Not all functions added in delta files are present in main CallMap file"
         );
-        
+
         return $newFunctions;
     }
-    
+
+    /**
+     * @depends testMainCallmapFileContainsACallmap
+     * @depends testExistingFunctionsCanNotBeAdded
+     * @depends testCallmapKeysAreStringsAndValuesAreSignatures
+     * @param array<string, array<int|string,string>> $mainCallMap
+     * @param array<string, array<int|string,string>> $newFunctions
+     */
+    public function testFunctionsPresentInMainCallmapAreAddedInDeltaFiles(array $mainCallMap, array $newFunctions): void
+    {
+        $strayNewFunctions = array_diff(array_keys($mainCallMap), array_keys($newFunctions));
+
+        self::assertEquals(
+            [],    // Compare against empty array to get handy diff in output
+            array_values($strayNewFunctions),
+            "Not all functions present in main CallMap file are added in delta files"
+        );
+    }
+
     /**
      * @depends testMainCallmapFileContainsACallmap
      * @depends testChangedAndRemovedFunctionsMustExist
@@ -385,17 +412,18 @@ class CallMapTest extends \Psalm\Tests\TestCase
     public function testFunctionsRemovedInDeltaFilesAreAbsentFromMainCallmap(array $mainCallMap, array $removedFunctions): void
     {
         $stillPresentRemovedFunctions  = array_intersect($removedFunctions, array_keys($mainCallMap));
-        
+
         self::assertEquals(
             [],    // Compare against empty array to get handy diff in output
             array_values($stillPresentRemovedFunctions),
             "Not all functions removed in delta files are absent in main CallMap file"
         );
     }
-    
+
     /**
      * @depends testMainCallmapFileContainsACallmap
      * @depends testFunctionsAddedInDeltaFilesArePresentInMainCallmap
+     * @depends testFunctionsPresentInMainCallmapAreAddedInDeltaFiles
      * @param array<string, array<int|string,string>> $mainCallMap
      * @param array<string, array<int|string,string>> $newFunctions
      */
@@ -404,14 +432,14 @@ class CallMapTest extends \Psalm\Tests\TestCase
         $existingFunctions = array_intersect_key($mainCallMap, $newFunctions);
         ksort($existingFunctions);
         ksort($newFunctions);
-        
+
         self::assertEquals(
             $newFunctions,
             $existingFunctions,
             "Signatures in CallMap file don't match most recent signatures in delta files"
         );
     }
-    
+
     /**
      * @depends testDeltaFilesContainAddedChangedAndRemovedSections
      * @depends testSignatureKeysAreZeroOrStringAndValuesAreTypes
@@ -442,13 +470,13 @@ class CallMapTest extends \Psalm\Tests\TestCase
                 $overlapOutgoing = array_intersect_key($outgoingSignatures, $incomingSignatures);
                 if (count($overlapOutgoing) !== 0) {
                     $overlapIncoming = array_intersect_key($incomingSignatures, $outgoingSignatures);
-                    
+
                     self::assertEquals(
                         $overlapOutgoing,
                         $overlapIncoming,
                         "Outgoing signatures in " . $deltaFileNames[$i] . " don't match corresponding incoming signatures in " . $deltaFileNames[$j]
                     );
-                    
+
                     // Don't check what has already been matched
                     $outgoingSignatures = array_diff_key($outgoingSignatures, $overlapOutgoing);
                 }

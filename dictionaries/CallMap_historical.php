@@ -15,7 +15,6 @@
  * @phan-file-suppress PhanPluginMixedKeyNoKey (read by Phan when analyzing this file)
  */
 return [
-  'added' => [
     'AMQPBasicProperties::__construct' => ['void', 'content_type='=>'string', 'content_encoding='=>'string', 'headers='=>'array', 'delivery_mode='=>'int', 'priority='=>'int', 'correlation_id='=>'string', 'reply_to='=>'string', 'expiration='=>'string', 'message_id='=>'string', 'timestamp='=>'int', 'type='=>'string', 'user_id='=>'string', 'app_id='=>'string', 'cluster_id='=>'string'],
     'AMQPBasicProperties::getAppId' => ['string'],
     'AMQPBasicProperties::getClusterId' => ['string'],
@@ -16550,9 +16549,4 @@ return [
     'zlib_encode' => ['string', 'data'=>'string', 'encoding'=>'int', 'level='=>'string|int'],
     'zlib_get_coding_type' => ['string|false'],
     'zookeeper_dispatch' => ['void'],
-  ],
-  'changed' => [
-  ],
-  'removed' => [
-  ],
 ];
