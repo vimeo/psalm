@@ -73,7 +73,7 @@ Psalm supports the [SARIF](http://docs.oasis-open.org/sarif/sarif/v2.0/csprd01/s
 
 Alternatively, the generated SARIF file can be manually uploaded as described in [the GitHub documentation](https://docs.github.com/en/free-pro-team@latest/github/finding-security-vulnerabilities-and-errors-in-your-code/uploading-a-sarif-file-to-github).
 
-The results will then be avaible in the "Security" tab of your repository.
+The results will then be available in the "Security" tab of your repository.
 
 ### Other SARIF compatible software
 
