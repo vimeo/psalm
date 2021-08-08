@@ -12048,7 +12048,6 @@ return [
     'imageinterlace' => ['int|false', 'image'=>'resource', 'enable='=>'int'],
     'imageistruecolor' => ['bool', 'image'=>'resource'],
     'imagejpeg' => ['bool', 'image'=>'resource', 'file='=>'string|resource|null', 'quality='=>'int'],
-    'imagejpeg\'1' => ['string|false', 'image'=>'resource', 'file='=>'null', 'quality='=>'int'],
     'imagelayereffect' => ['bool', 'image'=>'resource', 'effect'=>'int'],
     'imageline' => ['bool', 'image'=>'resource', 'x1'=>'int', 'y1'=>'int', 'x2'=>'int', 'y2'=>'int', 'color'=>'int'],
     'imageloadfont' => ['int|false', 'filename'=>'string'],
