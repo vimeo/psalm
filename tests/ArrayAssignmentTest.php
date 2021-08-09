@@ -1629,7 +1629,7 @@ class ArrayAssignmentTest extends TestCase
                     }
                     $_a = Token::ONE + Token::TWO + Token::THREE;
                     ',
-                'assertions' => ['$_a' => 'array{16: 16, 17: 17, 18: 18}']
+                'assertions' => ['$_a===' => 'array{16: 16, 17: 17, 18: 18}']
             ],
         ];
     }
