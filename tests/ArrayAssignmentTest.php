@@ -1545,7 +1545,8 @@ class ArrayAssignmentTest extends TestCase
                     }'
             ],
             'ArrayCreateTemplateArrayKey' => [
-                '/**
+                '<?php
+                /**
                   * @template K of array-key
                   * @param K $key
                   */
@@ -1609,6 +1610,26 @@ class ArrayAssignmentTest extends TestCase
                             return $names[$aprop];
                         }
                     }',
+            ],
+            'AddTwoSealedArrays'  => [
+                '<?php
+                    final class Token
+                    {
+                        public const ONE = [
+                            16 => 16,
+                        ];
+
+                        public const TWO = [
+                            17 => 17,
+                        ];
+
+                        public const THREE = [
+                            18 => 18,
+                        ];
+                    }
+                    $_a = Token::ONE + Token::TWO + Token::THREE;
+                    ',
+                'assertions' => ['$_a' => 'array{16: 16, 17: 17, 18: 18}']
             ],
         ];
     }
