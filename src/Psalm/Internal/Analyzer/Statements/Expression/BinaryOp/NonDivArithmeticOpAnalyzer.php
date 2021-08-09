@@ -553,7 +553,6 @@ class NonDivArithmeticOpAnalyzer
                     $codebase,
                     true
                 );
-
             }
 
             if (!$result_type) {
