@@ -137,6 +137,9 @@ class ConstFetchAnalyzer
                 case 'PHP_VERSION':
                 case 'DIRECTORY_SEPARATOR':
                 case 'PATH_SEPARATOR':
+                case 'PHP_EOL':
+                    return Type::getNonEmptyString();
+
                 case 'PEAR_EXTENSION_DIR':
                 case 'PEAR_INSTALL_DIR':
                 case 'PHP_BINARY':
@@ -144,7 +147,6 @@ class ConstFetchAnalyzer
                 case 'PHP_CONFIG_FILE_PATH':
                 case 'PHP_CONFIG_FILE_SCAN_DIR':
                 case 'PHP_DATADIR':
-                case 'PHP_EOL':
                 case 'PHP_EXTENSION_DIR':
                 case 'PHP_EXTRA_VERSION':
                 case 'PHP_LIBDIR':
