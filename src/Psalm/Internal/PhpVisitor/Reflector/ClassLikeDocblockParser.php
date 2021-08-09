@@ -16,7 +16,6 @@ use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
 
 use function array_key_first;
-use function array_merge;
 use function array_shift;
 use function count;
 use function implode;
@@ -82,10 +81,16 @@ class ClassLikeDocblockParser
                         $template_modifier,
                         implode(' ', $template_type),
                         false,
-                        $offset
+                        $offset - $comment->getStartFilePos()
                     ];
                 } else {
-                    $templates[$template_name][$source_prefix] = [$template_name, null, null, false, $offset];
+                    $templates[$template_name][$source_prefix] = [
+                        $template_name,
+                        null,
+                        null,
+                        false,
+                        $offset - $comment->getStartFilePos()
+                    ];
                 }
             }
         }
@@ -116,10 +121,16 @@ class ClassLikeDocblockParser
                         $template_modifier,
                         implode(' ', $template_type),
                         true,
-                        $offset
+                        $offset - $comment->getStartFilePos()
                     ];
                 } else {
-                    $templates[$template_name][$source_prefix] = [$template_name, null, null, true, $offset];
+                    $templates[$template_name][$source_prefix] = [
+                        $template_name,
+                        null,
+                        null,
+                        true,
+                        $offset - $comment->getStartFilePos()
+                    ];
                 }
             }
         }
@@ -255,21 +266,24 @@ class ClassLikeDocblockParser
         if (isset($parsed_docblock->tags['psalm-suppress'])) {
             foreach ($parsed_docblock->tags['psalm-suppress'] as $offset => $suppress_entry) {
                 foreach (DocComment::parseSuppressList($suppress_entry) as $issue_offset => $suppressed_issue) {
-                    $info->suppressed_issues[$issue_offset + $offset + $comment->getStartFilePos()] = $suppressed_issue;
+                    $info->suppressed_issues[$issue_offset + $offset] = $suppressed_issue;
                 }
             }
         }
 
-        $imported_types = array_merge(
-            $parsed_docblock->tags['phpstan-import-type'] ?? [],
-            $parsed_docblock->tags['psalm-import-type'] ?? []
-        );
+        $imported_types = ($parsed_docblock->tags['phpstan-import-type'] ?? []) +
+            ($parsed_docblock->tags['psalm-import-type'] ?? []);
 
         foreach ($imported_types as $offset => $imported_type_entry) {
             $info->imported_types[] = [
-                'line_number' => $comment->getStartLine() + substr_count($comment->getText(), "\n", 0, $offset),
-                'start_offset' => $comment->getStartFilePos() + $offset,
-                'end_offset' => $comment->getStartFilePos() + $offset + strlen($imported_type_entry),
+                'line_number' => $comment->getStartLine() + substr_count(
+                    $comment->getText(),
+                    "\n",
+                    0,
+                    $offset - $comment->getStartFilePos()
+                ),
+                'start_offset' => $offset,
+                'end_offset' => $offset + strlen($imported_type_entry),
                 'parts' => CommentAnalyzer::splitDocLine($imported_type_entry) ?: []
             ];
         }
@@ -428,7 +442,12 @@ class ClassLikeDocblockParser
                     $statements[0]->stmts[0]->setDocComment(
                         new \PhpParser\Comment\Doc(
                             $doc_comment->getText(),
-                            $comment->getStartLine() + substr_count($comment->getText(), "\n", 0, $offset),
+                            $comment->getStartLine() + substr_count(
+                                $comment->getText(),
+                                "\n",
+                                0,
+                                $offset - $comment->getStartFilePos()
+                            ),
                             $node_doc_comment->getStartFilePos()
                         )
                     );
@@ -487,8 +506,7 @@ class ClassLikeDocblockParser
 
                     $line_parts[1] = preg_replace('/,$/', '', $line_parts[1]);
 
-                    $start = $offset + $comment->getStartFilePos();
-                    $end = $start + strlen($line_parts[0]);
+                    $end = $offset + strlen($line_parts[0]);
 
                     $line_parts[0] = str_replace("\n", '', preg_replace('@^[ \t]*\*@m', '', $line_parts[0]));
 
@@ -508,9 +526,14 @@ class ClassLikeDocblockParser
                     $info->properties[] = [
                         'name' => $name,
                         'type' => $line_parts[0],
-                        'line_number' => $comment->getStartLine() + substr_count($comment->getText(), "\n", 0, $offset),
+                        'line_number' => $comment->getStartLine() + substr_count(
+                            $comment->getText(),
+                            "\n",
+                            0,
+                            $offset - $comment->getStartFilePos()
+                        ),
                         'tag' => $property_tag,
-                        'start' => $start,
+                        'start' => $offset,
                         'end' => $end,
                     ];
                 }

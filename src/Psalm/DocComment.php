@@ -180,7 +180,10 @@ class DocComment
      */
     public static function parsePreservingLength(\PhpParser\Comment\Doc $docblock) : ParsedDocblock
     {
-        $parsed_docblock = \Psalm\Internal\Scanner\DocblockParser::parse($docblock->getText());
+        $parsed_docblock = \Psalm\Internal\Scanner\DocblockParser::parse(
+            $docblock->getText(),
+            $docblock->getStartFilePos()
+        );
 
         foreach ($parsed_docblock->tags as $special_key => $_) {
             if (substr($special_key, 0, 6) === 'psalm-') {
