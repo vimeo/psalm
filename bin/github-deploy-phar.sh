@@ -26,6 +26,7 @@ git commit -m "Updated Psalm phar to commit ${GITHUB_SHA}"
 git push origin master
 
 tag=${GITHUB_REF/refs\/heads\//}
+tag=${tag/refs\/tags\//}
 
 if [[ "$tag" != 'master' ]] ; then
     git tag "$tag"
