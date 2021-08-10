@@ -1282,6 +1282,13 @@ class ClassLikeNodeScanner
                 $property_is_initialized = true;
             }
 
+            if (preg_match('/[ \t\*]+@property[ \t]+/', (string)$comment)) {
+                $storage->docblock_issues[] = new InvalidDocblock(
+                    '@property is valid only in docblocks for class',
+                    new CodeLocation($this->file_scanner, $stmt, null, true)
+                );
+            }
+
             try {
                 $var_comments = CommentAnalyzer::getTypeFromComment(
                     $comment,
