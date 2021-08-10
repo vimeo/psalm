@@ -430,7 +430,6 @@ class SimpleTypeInferer
             return Type::getEmptyArray();
         }
 
-        $property_types = [];
         $class_strings = [];
 
         $can_create_objectlike = true;
@@ -485,8 +484,9 @@ class SimpleTypeInferer
                 || $item->key instanceof PhpParser\Node\Scalar\LNumber
                 || !$item->key
             ) {
-                if (count($property_types) <= 50) {
-                    $property_types[$item->key ? $item->key->value : $int_offset] = $single_item_value_type;
+                if (count($array_creation_info->property_types) <= 50) {
+                    $key_value = $item->key ? $item->key->value : $int_offset;
+                    $array_creation_info->property_types[$key_value] = $single_item_value_type;
                 } else {
                     $can_create_objectlike = false;
                 }
@@ -507,7 +507,10 @@ class SimpleTypeInferer
 
                 $dim_atomic_types = $dim_type->getAtomicTypes();
 
-                if (count($dim_atomic_types) > 1 || $dim_type->hasMixed() || count($property_types) > 50) {
+                if (count($dim_atomic_types) > 1
+                    || $dim_type->hasMixed()
+                    || count($array_creation_info->property_types) > 50
+                ) {
                     $can_create_objectlike = false;
                 } else {
                     $atomic_type = array_shift($dim_atomic_types);
@@ -519,7 +522,7 @@ class SimpleTypeInferer
                             $class_strings[$atomic_type->value] = true;
                         }
 
-                        $property_types[$atomic_type->value] = $single_item_value_type;
+                        $array_creation_info->property_types[$atomic_type->value] = $single_item_value_type;
                     } else {
                         $can_create_objectlike = false;
                     }
@@ -559,9 +562,12 @@ class SimpleTypeInferer
             && $item_key_type
             && ($item_key_type->hasString() || $item_key_type->hasInt())
             && $can_create_objectlike
-            && $property_types
+            && $array_creation_info->property_types
         ) {
-            $objectlike = new Type\Atomic\TKeyedArray($property_types, $class_strings);
+            $objectlike = new Type\Atomic\TKeyedArray(
+                $array_creation_info->property_types,
+                $class_strings
+            );
             $objectlike->sealed = true;
             $objectlike->is_list = $is_list;
             return new Type\Union([$objectlike]);
