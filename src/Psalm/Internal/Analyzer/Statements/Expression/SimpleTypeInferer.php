@@ -431,7 +431,7 @@ class SimpleTypeInferer
         }
 
         $item_key_type_atomic = [];
-        $item_value_type = null;
+        $item_value_type_atomic = [];
 
         $property_types = [];
         $class_strings = [];
@@ -527,24 +527,27 @@ class SimpleTypeInferer
                 }
             }
 
-            if ($item_value_type) {
-                $item_value_type = Type::combineUnionTypes(
-                    $single_item_value_type,
-                    $item_value_type,
-                    null,
-                    false,
-                    true,
-                    30
-                );
-            } else {
-                $item_value_type = $single_item_value_type;
-            }
+            $item_value_type_atomic = array_merge(
+                $item_value_type_atomic,
+                array_values($single_item_value_type->getAtomicTypes())
+            );
         }
 
         $item_key_type = null;
         if ($item_key_type_atomic) {
             $item_key_type = TypeCombiner::combine(
                 $item_key_type_atomic,
+                null,
+                false,
+                true,
+                30
+            );
+        }
+
+        $item_value_type = null;
+        if ($item_value_type_atomic) {
+            $item_value_type = TypeCombiner::combine(
+                $item_value_type_atomic,
                 null,
                 false,
                 true,
