@@ -430,8 +430,6 @@ class SimpleTypeInferer
             return Type::getEmptyArray();
         }
 
-        $is_list = true;
-
         $array_creation_info = new ArrayCreationInfo();
 
         foreach ($stmt->items as $int_offset => $item) {
@@ -491,10 +489,10 @@ class SimpleTypeInferer
                     && (!$item->key instanceof PhpParser\Node\Scalar\LNumber
                         || $item->key->value !== $int_offset)
                 ) {
-                    $is_list = false;
+                    $array_creation_info->all_list = false;
                 }
             } else {
-                $is_list = false;
+                $array_creation_info->all_list = false;
                 $dim_type = $single_item_key_type;
 
                 if (!$dim_type) {
@@ -565,7 +563,7 @@ class SimpleTypeInferer
                 $array_creation_info->class_strings
             );
             $objectlike->sealed = true;
-            $objectlike->is_list = $is_list;
+            $objectlike->is_list = $array_creation_info->all_list;
             return new Type\Union([$objectlike]);
         }
 
