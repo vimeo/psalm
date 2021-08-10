@@ -430,15 +430,14 @@ class SimpleTypeInferer
             return Type::getEmptyArray();
         }
 
-        $item_key_type_atomic = [];
-        $item_value_type_atomic = [];
-
         $property_types = [];
         $class_strings = [];
 
         $can_create_objectlike = true;
 
         $is_list = true;
+
+        $array_creation_info = new ArrayCreationInfo();
 
         foreach ($stmt->items as $int_offset => $item) {
             if ($item === null) {
@@ -459,13 +458,13 @@ class SimpleTypeInferer
                 );
 
                 if ($single_item_key_type) {
-                    $item_key_type_atomic = array_merge(
-                        $item_key_type_atomic,
+                    $array_creation_info->item_key_atomic_types = array_merge(
+                        $array_creation_info->item_key_atomic_types,
                         array_values($single_item_key_type->getAtomicTypes())
                     );
                 }
             } else {
-                $item_key_type_atomic[] = new Type\Atomic\TInt();
+                $array_creation_info->item_key_atomic_types[] =  new Type\Atomic\TInt();
             }
 
             $single_item_value_type = self::infer(
@@ -527,16 +526,16 @@ class SimpleTypeInferer
                 }
             }
 
-            $item_value_type_atomic = array_merge(
-                $item_value_type_atomic,
+            $array_creation_info->item_value_atomic_types = array_merge(
+                $array_creation_info->item_value_atomic_types,
                 array_values($single_item_value_type->getAtomicTypes())
             );
         }
 
         $item_key_type = null;
-        if ($item_key_type_atomic) {
+        if ($array_creation_info->item_key_atomic_types) {
             $item_key_type = TypeCombiner::combine(
-                $item_key_type_atomic,
+                $array_creation_info->item_key_atomic_types,
                 null,
                 false,
                 true,
@@ -545,9 +544,9 @@ class SimpleTypeInferer
         }
 
         $item_value_type = null;
-        if ($item_value_type_atomic) {
+        if ($array_creation_info->item_value_atomic_types) {
             $item_value_type = TypeCombiner::combine(
-                $item_value_type_atomic,
+                $array_creation_info->item_value_atomic_types,
                 null,
                 false,
                 true,
