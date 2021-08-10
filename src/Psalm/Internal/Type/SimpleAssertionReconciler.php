@@ -1483,6 +1483,10 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
         return Type::getMixed();
     }
 
+    /**
+     * @param   string[]  $suppressed_issues
+     * @param   0|1|2    $failed_reconciliation
+     */
     private static function reconcileInArray(
         Codebase $codebase,
         Union $existing_var_type,
