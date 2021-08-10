@@ -437,96 +437,19 @@ class SimpleTypeInferer
                 continue;
             }
 
-            $single_item_key_type = null;
-
-            if ($item->key) {
-                $single_item_key_type = self::infer(
-                    $codebase,
-                    $nodes,
-                    $item->key,
-                    $aliases,
-                    $file_source,
-                    $existing_class_constants,
-                    $fq_classlike_name
-                );
-
-                if ($single_item_key_type) {
-                    $array_creation_info->item_key_atomic_types = array_merge(
-                        $array_creation_info->item_key_atomic_types,
-                        array_values($single_item_key_type->getAtomicTypes())
-                    );
-                }
-            } else {
-                $array_creation_info->item_key_atomic_types[] =  new Type\Atomic\TInt();
-            }
-
-            $single_item_value_type = self::infer(
+            if (!self::handleArrayItem(
                 $codebase,
                 $nodes,
-                $item->value,
+                $array_creation_info,
+                $int_offset,
+                $item,
                 $aliases,
                 $file_source,
                 $existing_class_constants,
                 $fq_classlike_name
-            );
-
-            if (!$single_item_value_type) {
+            )) {
                 return null;
             }
-
-            if ($item->key instanceof PhpParser\Node\Scalar\String_
-                || $item->key instanceof PhpParser\Node\Scalar\LNumber
-                || !$item->key
-            ) {
-                if (count($array_creation_info->property_types) <= 50) {
-                    $key_value = $item->key ? $item->key->value : $int_offset;
-                    $array_creation_info->property_types[$key_value] = $single_item_value_type;
-                } else {
-                    $array_creation_info->can_create_objectlike = false;
-                }
-
-                if ($item->key
-                    && (!$item->key instanceof PhpParser\Node\Scalar\LNumber
-                        || $item->key->value !== $int_offset)
-                ) {
-                    $array_creation_info->all_list = false;
-                }
-            } else {
-                $array_creation_info->all_list = false;
-                $dim_type = $single_item_key_type;
-
-                if (!$dim_type) {
-                    return null;
-                }
-
-                $dim_atomic_types = $dim_type->getAtomicTypes();
-
-                if (count($dim_atomic_types) > 1
-                    || $dim_type->hasMixed()
-                    || count($array_creation_info->property_types) > 50
-                ) {
-                    $array_creation_info->can_create_objectlike = false;
-                } else {
-                    $atomic_type = array_shift($dim_atomic_types);
-
-                    if ($atomic_type instanceof Type\Atomic\TLiteralInt
-                        || $atomic_type instanceof Type\Atomic\TLiteralString
-                    ) {
-                        if ($atomic_type instanceof Type\Atomic\TLiteralClassString) {
-                            $array_creation_info->class_strings[$atomic_type->value] = true;
-                        }
-
-                        $array_creation_info->property_types[$atomic_type->value] = $single_item_value_type;
-                    } else {
-                        $array_creation_info->can_create_objectlike = false;
-                    }
-                }
-            }
-
-            $array_creation_info->item_value_atomic_types = array_merge(
-                $array_creation_info->item_value_atomic_types,
-                array_values($single_item_value_type->getAtomicTypes())
-            );
         }
 
         $item_key_type = null;
@@ -577,5 +500,113 @@ class SimpleTypeInferer
                 $item_value_type,
             ]),
         ]);
+    }
+
+    /**
+     * @param   ?array<string, ClassConstantStorage> $existing_class_constants
+     */
+    private static function handleArrayItem(
+        \Psalm\Codebase $codebase,
+        \Psalm\Internal\Provider\NodeDataProvider $nodes,
+        ArrayCreationInfo $array_creation_info,
+        int $int_offset,
+        PhpParser\Node\Expr\ArrayItem $item,
+        \Psalm\Aliases $aliases,
+        \Psalm\FileSource $file_source = null,
+        ?array $existing_class_constants = null,
+        ?string $fq_classlike_name = null
+    ): bool {
+        $single_item_key_type = null;
+
+        if ($item->key) {
+            $single_item_key_type = self::infer(
+                $codebase,
+                $nodes,
+                $item->key,
+                $aliases,
+                $file_source,
+                $existing_class_constants,
+                $fq_classlike_name
+            );
+
+            if ($single_item_key_type) {
+                $array_creation_info->item_key_atomic_types = array_merge(
+                    $array_creation_info->item_key_atomic_types,
+                    array_values($single_item_key_type->getAtomicTypes())
+                );
+            }
+        } else {
+            $array_creation_info->item_key_atomic_types[] =  new Type\Atomic\TInt();
+        }
+
+        $single_item_value_type = self::infer(
+            $codebase,
+            $nodes,
+            $item->value,
+            $aliases,
+            $file_source,
+            $existing_class_constants,
+            $fq_classlike_name
+        );
+
+        if (!$single_item_value_type) {
+            return false;
+        }
+
+        if ($item->key instanceof PhpParser\Node\Scalar\String_
+            || $item->key instanceof PhpParser\Node\Scalar\LNumber
+            || !$item->key
+        ) {
+            if (count($array_creation_info->property_types) <= 50) {
+                $key_value = $item->key ? $item->key->value : $int_offset;
+                $array_creation_info->property_types[$key_value] = $single_item_value_type;
+            } else {
+                $array_creation_info->can_create_objectlike = false;
+            }
+
+            if ($item->key
+                && (!$item->key instanceof PhpParser\Node\Scalar\LNumber
+                    || $item->key->value !== $int_offset)
+            ) {
+                $array_creation_info->all_list = false;
+            }
+        } else {
+            $array_creation_info->all_list = false;
+            $dim_type = $single_item_key_type;
+
+            if (!$dim_type) {
+                return false;
+            }
+
+            $dim_atomic_types = $dim_type->getAtomicTypes();
+
+            if (count($dim_atomic_types) > 1
+                || $dim_type->hasMixed()
+                || count($array_creation_info->property_types) > 50
+            ) {
+                $array_creation_info->can_create_objectlike = false;
+            } else {
+                $atomic_type = array_shift($dim_atomic_types);
+
+                if ($atomic_type instanceof Type\Atomic\TLiteralInt
+                    || $atomic_type instanceof Type\Atomic\TLiteralString
+                ) {
+                    if ($atomic_type instanceof Type\Atomic\TLiteralClassString) {
+                        $array_creation_info->class_strings[$atomic_type->value] = true;
+                    }
+
+                    $array_creation_info->property_types[$atomic_type->value] = $single_item_value_type;
+                } else {
+                    $array_creation_info->can_create_objectlike = false;
+                }
+            }
+        }
+
+        $array_creation_info->item_value_atomic_types = array_merge(
+            $array_creation_info->item_value_atomic_types,
+            array_values($single_item_value_type->getAtomicTypes())
+        );
+
+        return true;
     }
 }
