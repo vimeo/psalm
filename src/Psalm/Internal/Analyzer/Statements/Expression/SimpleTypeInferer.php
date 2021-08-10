@@ -430,8 +430,6 @@ class SimpleTypeInferer
             return Type::getEmptyArray();
         }
 
-        $class_strings = [];
-
         $can_create_objectlike = true;
 
         $is_list = true;
@@ -519,7 +517,7 @@ class SimpleTypeInferer
                         || $atomic_type instanceof Type\Atomic\TLiteralString
                     ) {
                         if ($atomic_type instanceof Type\Atomic\TLiteralClassString) {
-                            $class_strings[$atomic_type->value] = true;
+                            $array_creation_info->class_strings[$atomic_type->value] = true;
                         }
 
                         $array_creation_info->property_types[$atomic_type->value] = $single_item_value_type;
@@ -566,7 +564,7 @@ class SimpleTypeInferer
         ) {
             $objectlike = new Type\Atomic\TKeyedArray(
                 $array_creation_info->property_types,
-                $class_strings
+                $array_creation_info->class_strings
             );
             $objectlike->sealed = true;
             $objectlike->is_list = $is_list;
