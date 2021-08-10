@@ -5,11 +5,14 @@ use PhpParser;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\NonDivArithmeticOpAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Type\TypeCombiner;
 use Psalm\StatementsSource;
 use Psalm\Storage\ClassConstantStorage;
 use Psalm\Type;
 
+use function array_merge;
 use function array_shift;
+use function array_values;
 use function count;
 use function reset;
 use function strtolower;
@@ -427,7 +430,7 @@ class SimpleTypeInferer
             return Type::getEmptyArray();
         }
 
-        $item_key_type = null;
+        $item_key_type_atomic = [];
         $item_value_type = null;
 
         $property_types = [];
@@ -456,21 +459,13 @@ class SimpleTypeInferer
                 );
 
                 if ($single_item_key_type) {
-                    if ($item_key_type) {
-                        $item_key_type = Type::combineUnionTypes(
-                            $single_item_key_type,
-                            $item_key_type,
-                            null,
-                            false,
-                            true,
-                            30
-                        );
-                    } else {
-                        $item_key_type = $single_item_key_type;
-                    }
+                    $item_key_type_atomic = array_merge(
+                        $item_key_type_atomic,
+                        array_values($single_item_key_type->getAtomicTypes())
+                    );
                 }
             } else {
-                $item_key_type = Type::getInt();
+                $item_key_type_atomic[] = new Type\Atomic\TInt();
             }
 
             $single_item_value_type = self::infer(
@@ -544,6 +539,17 @@ class SimpleTypeInferer
             } else {
                 $item_value_type = $single_item_value_type;
             }
+        }
+
+        $item_key_type = null;
+        if ($item_key_type_atomic) {
+            $item_key_type = TypeCombiner::combine(
+                $item_key_type_atomic,
+                null,
+                false,
+                true,
+                30
+            );
         }
 
         // if this array looks like an object-like array, let's return that instead
