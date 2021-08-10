@@ -430,8 +430,6 @@ class SimpleTypeInferer
             return Type::getEmptyArray();
         }
 
-        $can_create_objectlike = true;
-
         $is_list = true;
 
         $array_creation_info = new ArrayCreationInfo();
@@ -486,7 +484,7 @@ class SimpleTypeInferer
                     $key_value = $item->key ? $item->key->value : $int_offset;
                     $array_creation_info->property_types[$key_value] = $single_item_value_type;
                 } else {
-                    $can_create_objectlike = false;
+                    $array_creation_info->can_create_objectlike = false;
                 }
 
                 if ($item->key
@@ -509,7 +507,7 @@ class SimpleTypeInferer
                     || $dim_type->hasMixed()
                     || count($array_creation_info->property_types) > 50
                 ) {
-                    $can_create_objectlike = false;
+                    $array_creation_info->can_create_objectlike = false;
                 } else {
                     $atomic_type = array_shift($dim_atomic_types);
 
@@ -522,7 +520,7 @@ class SimpleTypeInferer
 
                         $array_creation_info->property_types[$atomic_type->value] = $single_item_value_type;
                     } else {
-                        $can_create_objectlike = false;
+                        $array_creation_info->can_create_objectlike = false;
                     }
                 }
             }
@@ -559,7 +557,7 @@ class SimpleTypeInferer
         if ($item_value_type
             && $item_key_type
             && ($item_key_type->hasString() || $item_key_type->hasInt())
-            && $can_create_objectlike
+            && $array_creation_info->can_create_objectlike
             && $array_creation_info->property_types
         ) {
             $objectlike = new Type\Atomic\TKeyedArray(
