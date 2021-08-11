@@ -14,8 +14,11 @@ use function array_merge;
 use function array_shift;
 use function array_values;
 use function count;
+use function preg_match;
 use function reset;
 use function strtolower;
+
+use const PHP_INT_MAX;
 
 /**
  * This class takes a statement and return its type by analyzing each part of the statement if necessary
@@ -432,7 +435,7 @@ class SimpleTypeInferer
 
         $array_creation_info = new ArrayCreationInfo();
 
-        foreach ($stmt->items as $int_offset => $item) {
+        foreach ($stmt->items as $item) {
             if ($item === null) {
                 continue;
             }
@@ -441,7 +444,6 @@ class SimpleTypeInferer
                 $codebase,
                 $nodes,
                 $array_creation_info,
-                $int_offset,
                 $item,
                 $aliases,
                 $file_source,
@@ -509,14 +511,33 @@ class SimpleTypeInferer
         \Psalm\Codebase $codebase,
         \Psalm\Internal\Provider\NodeDataProvider $nodes,
         ArrayCreationInfo $array_creation_info,
-        int $int_offset,
         PhpParser\Node\Expr\ArrayItem $item,
         \Psalm\Aliases $aliases,
         \Psalm\FileSource $file_source = null,
         ?array $existing_class_constants = null,
         ?string $fq_classlike_name = null
     ): bool {
+        if ($item->unpack) {
+            $unpacked_array_type = self::infer(
+                $codebase,
+                $nodes,
+                $item->value,
+                $aliases,
+                $file_source,
+                $existing_class_constants,
+                $fq_classlike_name
+            );
+
+            if (!$unpacked_array_type) {
+                return false;
+            }
+
+            return self::handleUnpackedArray($array_creation_info, $unpacked_array_type);
+        }
+
         $single_item_key_type = null;
+        $item_is_list_item = false;
+        $item_key_value = null;
 
         if ($item->key) {
             $single_item_key_type = self::infer(
@@ -530,13 +551,47 @@ class SimpleTypeInferer
             );
 
             if ($single_item_key_type) {
+                $key_type = $single_item_key_type;
+                if ($key_type->isNull()) {
+                    $key_type = Type::getString('');
+                }
+                if ($item->key instanceof PhpParser\Node\Scalar\String_
+                    && preg_match('/^(0|[1-9][0-9]*)$/', $item->key->value)
+                    && (
+                        (int) $item->key->value < PHP_INT_MAX ||
+                        $item->key->value === (string) PHP_INT_MAX
+                    )
+                ) {
+                    $key_type = Type::getInt(false, (int) $item->key->value);
+                }
+
                 $array_creation_info->item_key_atomic_types = array_merge(
                     $array_creation_info->item_key_atomic_types,
-                    array_values($single_item_key_type->getAtomicTypes())
+                    array_values($key_type->getAtomicTypes())
                 );
+
+                if ($key_type->isSingleStringLiteral()) {
+                    $item_key_literal_type = $key_type->getSingleStringLiteral();
+                    $item_key_value = $item_key_literal_type->value;
+
+                    if ($item_key_literal_type instanceof Type\Atomic\TLiteralClassString) {
+                        $array_creation_info->class_strings[$item_key_value] = true;
+                    }
+                } elseif ($key_type->isSingleIntLiteral()) {
+                    $item_key_value = $key_type->getSingleIntLiteral()->value;
+
+                    if ($item_key_value >= $array_creation_info->int_offset) {
+                        if ($item_key_value === $array_creation_info->int_offset) {
+                            $item_is_list_item = true;
+                        }
+                        $array_creation_info->int_offset = $item_key_value + 1;
+                    }
+                }
             }
         } else {
-            $array_creation_info->item_key_atomic_types[] =  new Type\Atomic\TInt();
+            $item_is_list_item = true;
+            $item_key_value = $array_creation_info->int_offset++;
+            $array_creation_info->item_key_atomic_types[] = new Type\Atomic\TLiteralInt($item_key_value);
         }
 
         $single_item_value_type = self::infer(
@@ -553,25 +608,18 @@ class SimpleTypeInferer
             return false;
         }
 
+        $array_creation_info->all_list = $array_creation_info->all_list && $item_is_list_item;
+
         if ($item->key instanceof PhpParser\Node\Scalar\String_
             || $item->key instanceof PhpParser\Node\Scalar\LNumber
             || !$item->key
         ) {
-            if (count($array_creation_info->property_types) <= 50) {
-                $key_value = $item->key ? $item->key->value : $int_offset;
-                $array_creation_info->property_types[$key_value] = $single_item_value_type;
+            if ($item_key_value !== null && count($array_creation_info->property_types) <= 50) {
+                $array_creation_info->property_types[$item_key_value] = $single_item_value_type;
             } else {
                 $array_creation_info->can_create_objectlike = false;
             }
-
-            if ($item->key
-                && (!$item->key instanceof PhpParser\Node\Scalar\LNumber
-                    || $item->key->value !== $int_offset)
-            ) {
-                $array_creation_info->all_list = false;
-            }
         } else {
-            $array_creation_info->all_list = false;
             $dim_type = $single_item_key_type;
 
             if (!$dim_type) {
@@ -607,6 +655,68 @@ class SimpleTypeInferer
             array_values($single_item_value_type->getAtomicTypes())
         );
 
+        return true;
+    }
+
+    private static function handleUnpackedArray(
+        ArrayCreationInfo $array_creation_info,
+        Type\Union $unpacked_array_type
+    ): bool {
+        foreach ($unpacked_array_type->getAtomicTypes() as $unpacked_atomic_type) {
+            if ($unpacked_atomic_type instanceof Type\Atomic\TKeyedArray) {
+                foreach ($unpacked_atomic_type->properties as $key => $property_value) {
+                    if (\is_string($key)) {
+                        // string keys are not supported in unpacked arrays
+                        return false;
+                    }
+
+                    $new_int_offset = $array_creation_info->int_offset++;
+
+                    $array_creation_info->item_key_atomic_types[] = new Type\Atomic\TLiteralInt($new_int_offset);
+                    $array_creation_info->item_value_atomic_types = array_merge(
+                        $array_creation_info->item_value_atomic_types,
+                        array_values($property_value->getAtomicTypes())
+                    );
+
+                    $array_creation_info->array_keys[$new_int_offset] = true;
+                    $array_creation_info->property_types[$new_int_offset] = $property_value;
+                }
+            } elseif ($unpacked_atomic_type instanceof Type\Atomic\TArray) {
+                /** @psalm-suppress PossiblyUndefinedArrayOffset provably true, but Psalm can’t see it */
+                if ($unpacked_atomic_type->type_params[1]->isEmpty()) {
+                    continue;
+                }
+                $array_creation_info->can_create_objectlike = false;
+
+                if ($unpacked_atomic_type->type_params[0]->hasString()) {
+                    // string keys are not supported in unpacked arrays
+                    return false;
+                } elseif ($unpacked_atomic_type->type_params[0]->hasInt()) {
+                    $array_creation_info->item_key_atomic_types[] = new Type\Atomic\TInt();
+                }
+
+                $array_creation_info->item_value_atomic_types = array_merge(
+                    $array_creation_info->item_value_atomic_types,
+                    array_values(
+                        isset($unpacked_atomic_type->type_params[1])
+                            ? $unpacked_atomic_type->type_params[1]->getAtomicTypes()
+                            : [new Type\Atomic\TMixed()]
+                    )
+                );
+            } elseif ($unpacked_atomic_type instanceof Type\Atomic\TList) {
+                if ($unpacked_atomic_type->type_param->isEmpty()) {
+                    continue;
+                }
+                $array_creation_info->can_create_objectlike = false;
+
+                $array_creation_info->item_key_atomic_types[] = new Type\Atomic\TInt();
+
+                $array_creation_info->item_value_atomic_types = array_merge(
+                    $array_creation_info->item_value_atomic_types,
+                    array_values($unpacked_atomic_type->type_param->getAtomicTypes())
+                );
+            }
+        }
         return true;
     }
 }
