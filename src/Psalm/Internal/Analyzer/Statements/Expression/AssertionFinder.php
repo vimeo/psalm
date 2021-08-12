@@ -3443,25 +3443,22 @@ class AssertionFinder
 
                     if (!$is_sealed) {
                         if ($value_type->getId() !== '') {
-                            $assertions = ['in-array-' . $value_type->getId()];
+                            $assertions[] = 'in-array-' . $value_type->getId();
                         }
                     } else {
-                        $assertions = [];
                         foreach ($value_type->getAtomicTypes() as $atomic_value_type) {
-                            $assertion = '';
                             if ($atomic_value_type instanceof Type\Atomic\TLiteralInt
                                 || $atomic_value_type instanceof Type\Atomic\TLiteralString
                                 || $atomic_value_type instanceof Type\Atomic\TLiteralFloat
                                 || $atomic_value_type instanceof Type\Atomic\TEnumCase
                             ) {
-                                $assertion .= '='.$atomic_value_type->getAssertionString();
+                                $assertions[] = '=' . $atomic_value_type->getAssertionString();
                             } elseif ($atomic_value_type instanceof Type\Atomic\TFalse
                                 || $atomic_value_type instanceof Type\Atomic\TTrue
                                 || $atomic_value_type instanceof Type\Atomic\TNull
                             ) {
-                                $assertion .= $atomic_value_type->getAssertionString();
+                                $assertions[] = $atomic_value_type->getAssertionString();
                             }
-                            $assertions[] = $assertion;
                         }
                     }
 
