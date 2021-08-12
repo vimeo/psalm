@@ -33,20 +33,16 @@ class InArrayTest extends \Psalm\Tests\TestCase
                     /**
                      * @param int|null $x
                      * @param non-empty-list<int> $y
-                     * @return int|null
+                     * @return int
                      */
                     function assertInArray($x, $y) {
                         if (in_array($x, $y, true)) {
-                            acceptInt($x);
+                            return $x;
                         }
 
-                        return $x;
+                        throw new \Exception();
                     }
-                    /**
-                     * @param int $x
-                     */
-                    function acceptInt($x): void {
-                    }',
+                ',
             ],
             'typeNotChangedAfterAssertionAgainstArrayOfMixed' => [
                 '<?php
@@ -68,20 +64,15 @@ class InArrayTest extends \Psalm\Tests\TestCase
                     /**
                      * @param int|string|bool $x
                      * @param non-empty-list<int|string> $y
-                     * @return int|string|bool
+                     * @return int|string
                      */
                     function assertInArray($x, $y) {
                         if (in_array($x, $y, true)) {
-                            acceptIntAndStr($x);
+                            return $x;
                         }
-
-                        return $x;
+                        throw new \Exception();
                     }
-                    /**
-                     * @param int|string $x
-                     */
-                    function acceptIntAndStr($x): void {
-                    }',
+                ',
             ],
             'unionTypesReducedToIntersectionWithinAssertion' => [
                 '<?php
@@ -150,8 +141,8 @@ class InArrayTest extends \Psalm\Tests\TestCase
                 '<?php
                     /**
                      * @param string|bool $x
-                     * @param non-empty-list<\'a\'|\'b\'|int> $y
-                     * @return \'a\'|\'b\'
+                     * @param non-empty-list<"a"|"b"|int> $y
+                     * @return "a"|"b"
                      */
                     function assertInArray($x, $y) {
                         if (in_array($x, $y, true)) {
@@ -164,8 +155,8 @@ class InArrayTest extends \Psalm\Tests\TestCase
             'assertAgainstListOfLiteralsAndScalarUnionTypeHint' => [
                 '<?php
                     /**
-                     * @param non-empty-list<\'a\'|\'b\'|int> $y
-                     * @return \'a\'|\'b\'
+                     * @param non-empty-list<"a"|"b"|int> $y
+                     * @return "a"|"b"
                      */
                     function assertInArray(string|bool $x, $y) {
                         if (in_array($x, $y, true)) {
@@ -192,42 +183,32 @@ class InArrayTest extends \Psalm\Tests\TestCase
                     /**
                      * @param int|null $x
                      * @param non-empty-list<mixed> $y
-                     * @return int|null
+                     * @return int
                      */
                     function assertInArray($x, $y) {
                         if (!in_array($x, $y, true)) {
-                            acceptInt($x);
+                            return $x;
                         }
-
-                        return $x;
+                        throw new \Exception();
                     }
-                    /**
-                     * @param int $x
-                     */
-                    function acceptInt($x): void {
-                    }',
-                'error_message' => 'PossiblyNullArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:39 - Argument 1 of acceptInt cannot be null, possibly null value provided',
+                ',
+                'error_message' => 'NullableReturnStatement',
             ],
             'typeNotChangedAfterNegatedAssertionAgainstUnsealedArrayOfUnionType' => [
                 '<?php
                     /**
                      * @param int|null $x
                      * @param non-empty-list<int|null> $y
-                     * @return int|null
+                     * @return int
                      */
                     function assertInArray($x, $y) {
                         if (!in_array($x, $y, true)) {
-                            acceptInt($x);
+                            return $x;
                         }
-
-                        return $x;
+                        throw new \Exception();
                     }
-                    /**
-                     * @param int $x
-                     */
-                    function acceptInt($x): void {
-                    }',
-                'error_message' => 'PossiblyNullArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:39 - Argument 1 of acceptInt cannot be null, possibly null value provided',
+                ',
+                'error_message' => 'NullableReturnStatement',
             ],
             'initialTypeRemainsOutsideOfAssertion' => [
                 '<?php
