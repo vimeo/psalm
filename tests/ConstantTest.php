@@ -1070,6 +1070,50 @@ class ConstantTest extends TestCase
                         }
                     }'
             ],
+            'arrayUnpack' => [
+                '<?php
+                    class C {
+                        const A = [...[...[1]], ...[2]];
+                    }
+                    $arr = C::A;
+                ',
+                'assertions' => [
+                    '$arr===' => 'array{1, 2}',
+                ],
+            ],
+            'keysInUnpackedArrayAreReset' => [
+                '<?php
+                    class C {
+                        const A = [...[11 => 2]];
+                    }
+                    $arr = C::A;
+                ',
+                'assertions' => [
+                    '$arr===' => 'array{2}',
+                ],
+            ],
+            'arrayKeysSequenceContinuesAfterExplicitIntKey' => [
+                '<?php
+                    class C {
+                        const A = [5 => "a", "z", 10 => "aa", "zz"];
+                    }
+                    $arr = C::A;
+                ',
+                'assertions' => [
+                    '$arr===' => 'array{10: "aa", 11: "zz", 5: "a", 6: "z"}',
+                ],
+            ],
+            'arrayKeysSequenceContinuesAfterNonIntKey' => [
+                '<?php
+                    class C {
+                        const A = [5 => "a", "zz" => "z", "aa"];
+                    }
+                    $arr = C::A;
+                ',
+                'assertions' => [
+                    '$arr===' => 'array{5: "a", 6: "aa", zz: "z"}',
+                ],
+            ],
         ];
     }
 
