@@ -3465,42 +3465,41 @@ class AssertionFinder
                     || $atomic_type instanceof Type\Atomic\TKeyedArray
                     || $atomic_type instanceof Type\Atomic\TList
                 ) {
+                    $is_sealed = false;
                     if ($atomic_type instanceof Type\Atomic\TList) {
                         $value_type = $atomic_type->type_param;
                     } elseif ($atomic_type instanceof Type\Atomic\TKeyedArray) {
                         $value_type = $atomic_type->getGenericValueType();
+                        $is_sealed = $atomic_type->sealed;
                     } else {
                         $value_type = $atomic_type->type_params[1];
                     }
 
-                    $array_literal_types = \array_filter(
-                        $value_type->getAtomicTypes(),
-                        function ($type) {
-                            return $type instanceof Type\Atomic\TLiteralInt
-                                || $type instanceof Type\Atomic\TLiteralString
-                                || $type instanceof Type\Atomic\TLiteralFloat
-                                || $type instanceof Type\Atomic\TEnumCase;
+                    $assertions = [];
+
+                    if (!$is_sealed) {
+                        if ($value_type->getId() !== '') {
+                            $assertions[] = 'in-array-' . $value_type->getId();
                         }
-                    );
-
-                    if ($array_literal_types
-                        && count($value_type->getAtomicTypes())
-                    ) {
-                        $literal_assertions = [];
-
-                        foreach ($array_literal_types as $array_literal_type) {
-                            $literal_assertions[] = '=' . $array_literal_type->getAssertionString();
+                    } else {
+                        foreach ($value_type->getAtomicTypes() as $atomic_value_type) {
+                            if ($atomic_value_type instanceof Type\Atomic\TLiteralInt
+                                || $atomic_value_type instanceof Type\Atomic\TLiteralString
+                                || $atomic_value_type instanceof Type\Atomic\TLiteralFloat
+                                || $atomic_value_type instanceof Type\Atomic\TEnumCase
+                            ) {
+                                $assertions[] = '=' . $atomic_value_type->getAssertionString();
+                            } elseif ($atomic_value_type instanceof Type\Atomic\TFalse
+                                || $atomic_value_type instanceof Type\Atomic\TTrue
+                                || $atomic_value_type instanceof Type\Atomic\TNull
+                            ) {
+                                $assertions[] = $atomic_value_type->getAssertionString();
+                            }
                         }
+                    }
 
-                        if ($value_type->isFalsable()) {
-                            $literal_assertions[] = 'false';
-                        }
-
-                        if ($value_type->isNullable()) {
-                            $literal_assertions[] = 'null';
-                        }
-
-                        $if_types[$first_var_name] = [$literal_assertions];
+                    if ($assertions !== []) {
+                        $if_types[$first_var_name] = [$assertions];
                     }
                 }
             }

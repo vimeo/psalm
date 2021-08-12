@@ -794,7 +794,7 @@ class ValueTest extends \Psalm\Tests\TestCase
             'returnFromUnionLiteral' => [
                 '<?php
                     /**
-                     * @return list<"a1"|"a2">
+                     * @return array{"a1", "a2"}
                      */
                     function getSupportedConsts() {
                         return ["a1", "a2"];
@@ -814,7 +814,7 @@ class ValueTest extends \Psalm\Tests\TestCase
             'returnFromUnionLiteralNegated' => [
                 '<?php
                     /**
-                     * @return list<"a1"|"a2">
+                     * @return array{"a1", "a2"}
                      */
                     function getSupportedConsts() {
                         return ["a1", "a2"];

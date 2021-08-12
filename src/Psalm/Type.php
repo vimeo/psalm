@@ -1,12 +1,14 @@
 <?php
 namespace Psalm;
 
+use LogicException;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\Plugin\EventHandler\Event\StringInterpreterEvent;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
@@ -567,10 +569,11 @@ abstract class Type
                 $combined_type = clone $type_1;
                 $intersection_performed = true;
             } else {
-                $combined_type = clone $type_1;
-
-                foreach ($combined_type->getAtomicTypes() as $t1_key => $type_1_atomic) {
-                    foreach ($type_2->getAtomicTypes() as $t2_key => $type_2_atomic) {
+                $combined_type = null;
+                foreach ($type_1->getAtomicTypes() as $type_1_atomic) {
+                    foreach ($type_2->getAtomicTypes() as $type_2_atomic) {
+                        $intersection_atomic = null;
+                        $wider_type = null;
                         if ($type_1_atomic instanceof TNamedObject
                             && $type_2_atomic instanceof TNamedObject
                         ) {
@@ -578,74 +581,88 @@ abstract class Type
                                 && get_class($type_1_atomic) === TNamedObject::class
                                 && get_class($type_2_atomic) !== TNamedObject::class)
                             ) {
-                                $combined_type->removeType($t1_key);
-                                $combined_type->addType(clone $type_2_atomic);
+                                $intersection_atomic = clone $type_2_atomic;
+                                $wider_type = $type_1_atomic;
                                 $intersection_performed = true;
                             } elseif (($type_1_atomic->value === $type_2_atomic->value
                                 && get_class($type_2_atomic) === TNamedObject::class
                                 && get_class($type_1_atomic) !== TNamedObject::class)
                             ) {
-                                $combined_type->removeType($t2_key);
-                                $combined_type->addType(clone $type_1_atomic);
+                                $intersection_atomic = clone $type_1_atomic;
+                                $wider_type = $type_2_atomic;
                                 $intersection_performed = true;
-                            } elseif (AtomicTypeComparator::isContainedBy(
+                            }
+                        }
+
+                        if (null === $intersection_atomic) {
+                            if (AtomicTypeComparator::isContainedBy(
                                 $codebase,
                                 $type_2_atomic,
                                 $type_1_atomic
                             )) {
-                                $combined_type->removeType($t1_key);
-                                $combined_type->addType(clone $type_2_atomic);
+                                $intersection_atomic = clone $type_2_atomic;
+                                $wider_type = $type_1_atomic;
                                 $intersection_performed = true;
                             } elseif (AtomicTypeComparator::isContainedBy(
                                 $codebase,
                                 $type_1_atomic,
                                 $type_2_atomic
                             )) {
-                                $combined_type->removeType($t2_key);
-                                $combined_type->addType(clone $type_1_atomic);
+                                $intersection_atomic = clone $type_1_atomic;
+                                $wider_type = $type_2_atomic;
                                 $intersection_performed = true;
                             }
                         }
 
-                        if (($type_1_atomic instanceof TIterable
-                                || $type_1_atomic instanceof TNamedObject
-                                || $type_1_atomic instanceof TTemplateParam
-                                || $type_1_atomic instanceof TObjectWithProperties)
-                            && ($type_2_atomic instanceof TIterable
-                                || $type_2_atomic instanceof TNamedObject
-                                || $type_2_atomic instanceof TTemplateParam
-                                || $type_2_atomic instanceof TObjectWithProperties)
+                        if (static::mayHaveIntersection($type_1_atomic)
+                            && static::mayHaveIntersection($type_2_atomic)
                         ) {
-                            if (!$type_1_atomic->extra_types) {
-                                $type_1_atomic->extra_types = [];
+                            if ($intersection_atomic === null && $wider_type === null) {
+                                $intersection_atomic = clone $type_1_atomic;
+                                $wider_type = $type_2_atomic;
+                            }
+                            if ($intersection_atomic === null || $wider_type === null) {
+                                throw new LogicException(
+                                    '$intersection_atomic and $wider_type should be both set or null.'
+                                    .' Check the preceding code for errors.'
+                                    .' Did you forget to assign one of the variables?'
+                                );
+                            }
+                            if (!static::mayHaveIntersection($intersection_atomic)
+                                || !static::mayHaveIntersection($wider_type)
+                            ) {
+                                throw new LogicException(
+                                    '$intersection_atomic and $wider_type should be both support intersection.'
+                                    .' Check the preceding code for errors.'
+                                );
+                            }
+                            if (!$intersection_atomic->extra_types) {
+                                $intersection_atomic->extra_types = [];
                             }
 
                             $intersection_performed = true;
 
-                            $type_2_atomic_clone = clone $type_2_atomic;
+                            $wider_type_clone = clone $wider_type;
 
-                            $type_2_atomic_clone->extra_types = [];
+                            $wider_type_clone->extra_types = [];
 
-                            $type_1_atomic->extra_types[$type_2_atomic_clone->getKey()] = $type_2_atomic_clone;
+                            $intersection_atomic->extra_types[$wider_type_clone->getKey()] = $wider_type_clone;
 
-                            $type_2_atomic_intersection_types = $type_2_atomic->getIntersectionTypes();
+                            $wider_type_intersection_types = $wider_type->getIntersectionTypes();
 
-                            if ($type_2_atomic_intersection_types) {
-                                foreach ($type_2_atomic_intersection_types as $type_2_intersection_type) {
-                                    $type_1_atomic->extra_types[$type_2_intersection_type->getKey()]
-                                        = clone $type_2_intersection_type;
+                            if ($wider_type_intersection_types !== null) {
+                                foreach ($wider_type_intersection_types as $wider_type_intersection_type) {
+                                    $intersection_atomic->extra_types[$wider_type_intersection_type->getKey()]
+                                        = clone $wider_type_intersection_type;
                                 }
                             }
                         }
-
-                        if ($type_1_atomic instanceof TObject && $type_2_atomic instanceof TNamedObject) {
-                            $combined_type->removeType($t1_key);
-                            $combined_type->addType(clone $type_2_atomic);
-                            $intersection_performed = true;
-                        } elseif ($type_2_atomic instanceof TObject && $type_1_atomic instanceof TNamedObject) {
-                            $combined_type->removeType($t2_key);
-                            $combined_type->addType(clone $type_1_atomic);
-                            $intersection_performed = true;
+                        if (null !== $intersection_atomic) {
+                            if (null === $combined_type) {
+                                $combined_type = new Union([$intersection_atomic]);
+                            } else {
+                                $combined_type->addType($intersection_atomic);
+                            }
                         }
                     }
                 }
@@ -664,32 +681,34 @@ abstract class Type
                 }
             }
 
-            if (!$type_1->initialized && !$type_2->initialized) {
-                $combined_type->initialized = false;
-            }
+            if ($combined_type !== null) {
+                if (!$type_1->initialized && !$type_2->initialized) {
+                    $combined_type->initialized = false;
+                }
 
-            if ($type_1->possibly_undefined_from_try && $type_2->possibly_undefined_from_try) {
-                $combined_type->possibly_undefined_from_try = true;
-            }
+                if ($type_1->possibly_undefined_from_try && $type_2->possibly_undefined_from_try) {
+                    $combined_type->possibly_undefined_from_try = true;
+                }
 
-            if ($type_1->from_docblock && $type_2->from_docblock) {
-                $combined_type->from_docblock = true;
-            }
+                if ($type_1->from_docblock && $type_2->from_docblock) {
+                    $combined_type->from_docblock = true;
+                }
 
-            if ($type_1->from_calculation && $type_2->from_calculation) {
-                $combined_type->from_calculation = true;
-            }
+                if ($type_1->from_calculation && $type_2->from_calculation) {
+                    $combined_type->from_calculation = true;
+                }
 
-            if ($type_1->ignore_nullable_issues && $type_2->ignore_nullable_issues) {
-                $combined_type->ignore_nullable_issues = true;
-            }
+                if ($type_1->ignore_nullable_issues && $type_2->ignore_nullable_issues) {
+                    $combined_type->ignore_nullable_issues = true;
+                }
 
-            if ($type_1->ignore_falsable_issues && $type_2->ignore_falsable_issues) {
-                $combined_type->ignore_falsable_issues = true;
-            }
+                if ($type_1->ignore_falsable_issues && $type_2->ignore_falsable_issues) {
+                    $combined_type->ignore_falsable_issues = true;
+                }
 
-            if ($both_failed_reconciliation) {
-                $combined_type->failed_reconciliation = true;
+                if ($both_failed_reconciliation) {
+                    $combined_type->failed_reconciliation = true;
+                }
             }
         }
 
@@ -697,10 +716,21 @@ abstract class Type
             return null;
         }
 
-        if ($type_1->possibly_undefined && $type_2->possibly_undefined) {
+        if ($type_1->possibly_undefined && $type_2->possibly_undefined && $combined_type !== null) {
             $combined_type->possibly_undefined = true;
         }
 
         return $combined_type;
+    }
+
+    /**
+     * @psalm-assert-if-true TIterable|TNamedObject|TTemplateParam|TObjectWithProperties $type
+     */
+    private static function mayHaveIntersection(Atomic $type): bool
+    {
+        return $type instanceof TIterable
+            || $type instanceof TNamedObject
+            || $type instanceof TTemplateParam
+            || $type instanceof TObjectWithProperties;
     }
 }

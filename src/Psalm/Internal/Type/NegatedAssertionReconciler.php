@@ -154,6 +154,32 @@ class NegatedAssertionReconciler extends Reconciler
             } elseif ($assertion === 'array-key-exists') {
                 return Type::getEmpty();
             } elseif (substr($assertion, 0, 9) === 'in-array-') {
+                $assertion = substr($assertion, 9);
+                $new_var_type = Type::parseString($assertion);
+
+                $intersection = Type::intersectUnionTypes(
+                    $new_var_type,
+                    $existing_var_type,
+                    $statements_analyzer->getCodebase()
+                );
+
+                if ($intersection === null) {
+                    if ($key && $code_location) {
+                        self::triggerIssueForImpossible(
+                            $existing_var_type,
+                            $existing_var_type->getId(),
+                            $key,
+                            '!' . $assertion,
+                            true,
+                            $negated,
+                            $code_location,
+                            $suppressed_issues
+                        );
+                    }
+
+                    $failed_reconciliation = 2;
+                }
+
                 return $existing_var_type;
             } elseif (substr($assertion, 0, 14) === 'has-array-key-') {
                 return $existing_var_type;
