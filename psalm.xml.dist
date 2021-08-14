@@ -56,7 +56,6 @@
             <errorLevel type="suppress">
                 <referencedClass name="PackageVersions\Versions"/>
                 <referencedClass name="Psalm\Plugin\Hook\*" />
-                <referencedClass name="Psalm\Type\Atomic\TPositiveInt" />
             </errorLevel>
         </DeprecatedClass>
 

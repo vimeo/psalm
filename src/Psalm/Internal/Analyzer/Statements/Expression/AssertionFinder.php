@@ -93,7 +93,7 @@ class AssertionFinder
 
             if ($var_name) {
                 if ($candidate_if_types) {
-                    $if_types[$var_name] = [['@' . \json_encode($candidate_if_types[0])]];
+                    $if_types[$var_name] = [['>' . \json_encode($candidate_if_types[0])]];
                 } else {
                     $if_types[$var_name] = [['!falsy']];
                 }
@@ -1572,42 +1572,6 @@ class AssertionFinder
         ) {
             $min_count = $conditional->right->value +
                 ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater ? 1 : 0);
-
-            return self::ASSIGNMENT_TO_RIGHT;
-        }
-
-        return false;
-    }
-
-    /**
-     * @param PhpParser\Node\Expr\BinaryOp\Greater|PhpParser\Node\Expr\BinaryOp\GreaterOrEqual $conditional
-     * @return false|int
-     */
-    protected static function hasSuperiorNumberCheck(
-        PhpParser\Node\Expr\BinaryOp $conditional,
-        ?int &$literal_value_comparison
-    ) {
-        if ($conditional->right instanceof PhpParser\Node\Scalar\LNumber) {
-            $literal_value_comparison = $conditional->right->value +
-                ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater ? 1 : 0);
-
-            return self::ASSIGNMENT_TO_RIGHT;
-        }
-
-        return false;
-    }
-
-    /**
-     * @param PhpParser\Node\Expr\BinaryOp\Smaller|PhpParser\Node\Expr\BinaryOp\SmallerOrEqual $conditional
-     * @return false|int
-     */
-    protected static function hasInferiorNumberCheck(
-        PhpParser\Node\Expr\BinaryOp $conditional,
-        ?int &$literal_value_comparison
-    ) {
-        if ($conditional->right instanceof PhpParser\Node\Scalar\LNumber) {
-            $literal_value_comparison = $conditional->right->value +
-                ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller ? -1 : 0);
 
             return self::ASSIGNMENT_TO_RIGHT;
         }
@@ -3652,8 +3616,6 @@ class AssertionFinder
         $count_equality_position = self::hasNonEmptyCountEqualityCheck($conditional, $min_count);
         $min_comparison = null;
         $positive_number_position = self::hasPositiveNumberCheck($conditional, $min_comparison);
-        $superior_value_comparison = null;
-        $superior_value_position = self::hasSuperiorNumberCheck($conditional, $superior_value_comparison);
         $zero_comparison = null;
         $zero_position = self::hasZeroCheck($conditional, $zero_comparison);
         $max_count = null;
@@ -3708,28 +3670,6 @@ class AssertionFinder
                 } else {
                     $if_types[$var_name] = [['!non-empty-countable']];
                 }
-            }
-
-            return $if_types ? [$if_types] : [];
-        }
-
-        if ($superior_value_position) {
-            if ($superior_value_position === self::ASSIGNMENT_TO_RIGHT) {
-                $var_name = ExpressionIdentifier::getArrayVarId(
-                    $conditional->left,
-                    $this_class_name,
-                    $source
-                );
-            } else {
-                $var_name = ExpressionIdentifier::getArrayVarId(
-                    $conditional->right,
-                    $this_class_name,
-                    $source
-                );
-            }
-
-            if ($var_name) {
-                $if_types[$var_name] = [['=isset'], ['>' . $superior_value_comparison]];
             }
 
             return $if_types ? [$if_types] : [];
@@ -3864,8 +3804,6 @@ class AssertionFinder
         $min_count = null;
         $count_equality_position = self::hasNonEmptyCountEqualityCheck($conditional, $min_count);
         $typed_value_position = self::hasTypedValueComparison($conditional, $source);
-        $inferior_value_comparison = null;
-        $inferior_value_position = self::hasInferiorNumberCheck($conditional, $inferior_value_comparison);
 
         $max_count = null;
         $count_inequality_position = self::hasLessThanCountEqualityCheck($conditional, $max_count);
@@ -3915,28 +3853,6 @@ class AssertionFinder
                 } else {
                     $if_types[$var_name] = [['!non-empty-countable']];
                 }
-            }
-
-            return $if_types ? [$if_types] : [];
-        }
-
-        if ($inferior_value_position) {
-            if ($inferior_value_position === self::ASSIGNMENT_TO_RIGHT) {
-                $var_name = ExpressionIdentifier::getArrayVarId(
-                    $conditional->left,
-                    $this_class_name,
-                    $source
-                );
-            } else {
-                $var_name = ExpressionIdentifier::getArrayVarId(
-                    $conditional->right,
-                    $this_class_name,
-                    $source
-                );
-            }
-
-            if ($var_name) {
-                $if_types[$var_name] = [['=isset'], ['<' . $inferior_value_comparison]];
             }
 
             return $if_types ? [$if_types] : [];
