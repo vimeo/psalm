@@ -11,6 +11,7 @@ use LanguageServerProtocol\MarkupContent;
 use LanguageServerProtocol\MarkupKind;
 use LanguageServerProtocol\Position;
 use LanguageServerProtocol\Range;
+use LanguageServerProtocol\TextDocumentContentChangeEvent;
 use LanguageServerProtocol\TextDocumentIdentifier;
 use LanguageServerProtocol\TextDocumentItem;
 use LanguageServerProtocol\VersionedTextDocumentIdentifier;
@@ -98,8 +99,8 @@ class TextDocument
     /**
      * The document change notification is sent from the client to the server to signal changes to a text document.
      *
-     * @param \LanguageServerProtocol\VersionedTextDocumentIdentifier $textDocument
-     * @param \LanguageServerProtocol\TextDocumentContentChangeEvent[] $contentChanges
+     * @param VersionedTextDocumentIdentifier $textDocument
+     * @param TextDocumentContentChangeEvent[] $contentChanges
      */
     public function didChange(VersionedTextDocumentIdentifier $textDocument, array $contentChanges): void
     {
