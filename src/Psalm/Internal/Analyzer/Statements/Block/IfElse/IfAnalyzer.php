@@ -316,13 +316,12 @@ class IfAnalyzer
                     $parent_source = $statements_analyzer->getSource();
 
                     $functionlike_storage = $parent_source instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
-                        ? $parent_source->getFunctionLikeStorage()
+                        ? $parent_source->getFunctionLikeStorage($statements_analyzer)
                         : null;
 
-                    if (!$parent_source instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                    if (!$functionlike_storage
                             || (!$parent_source->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer
-                                && (!$functionlike_storage
-                                    || !isset($functionlike_storage->param_lookup[substr($var_id, 1)])))
+                                && !isset($functionlike_storage->param_lookup[substr($var_id, 1)]))
                     ) {
                         $codebase = $statements_analyzer->getCodebase();
                         $codebase->analyzer->decrementMixedCount($statements_analyzer->getFilePath());
