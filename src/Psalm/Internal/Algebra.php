@@ -456,10 +456,6 @@ class Algebra
         array $right_clauses,
         int $conditional_object_id
     ): array {
-        if (count($left_clauses) > 60000 || count($right_clauses) > 60000) {
-            return [];
-        }
-
         $clauses = [];
 
         $all_wedges = true;
