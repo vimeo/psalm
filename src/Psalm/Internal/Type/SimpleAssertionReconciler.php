@@ -640,6 +640,14 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                 }
             } elseif ($atomic_type instanceof Type\Atomic\TPositiveInt) {
                 $positive_types[] = $atomic_type;
+            } elseif ($atomic_type instanceof Type\Atomic\TIntRange) {
+                if (!$atomic_type->isPositive()) {
+                    $did_remove_type = true;
+                }
+                $positive_types[] = new Type\Atomic\TIntRange(
+                    $atomic_type->min_bound === null ? 1 : max(1, $atomic_type->min_bound),
+                    $atomic_type->max_bound === null ? null : max(1, $atomic_type->max_bound)
+                );
             } elseif (get_class($atomic_type) === TInt::class) {
                 $positive_types[] = new Type\Atomic\TPositiveInt();
                 $did_remove_type = true;
