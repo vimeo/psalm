@@ -116,7 +116,7 @@ class IntRangeTest extends TestCase
                     $a = getInt();
                     $_arr[$a] = 12;',
                 'assertions' => [
-                    '$_arr===' => 'non-empty-array<int<min, 2>, "a"|"b"|"c"|"d"|12>'
+                    '$_arr===' => 'non-empty-array<int<min, 2>, "a"|"b"|"c"|12>'
                 ]
             ],
             'SKIPPED-statementsInLoopAffectsEverything' => [
