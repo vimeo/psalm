@@ -174,7 +174,6 @@ class AssertionFinder
         ) {
             return self::getGreaterAssertions(
                 $conditional,
-                $codebase,
                 $source,
                 $this_class_name
             );
@@ -3605,7 +3604,6 @@ class AssertionFinder
      */
     private static function getGreaterAssertions(
         PhpParser\Node\Expr $conditional,
-        ?Codebase $_codebase,
         FileSource $source,
         ?string $this_class_name
     ): array {
