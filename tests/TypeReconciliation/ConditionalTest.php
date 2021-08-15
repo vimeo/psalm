@@ -2743,15 +2743,6 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                     }',
                 'error_message' => 'PossiblyNullOperand',
             ],
-            'dontEraseNullAfterGreaterThanCheck' => [
-                '<?php
-                    $a = mt_rand(0, 1) ? mt_rand(-10, 10): null;
-
-                    if (0 > $a) {
-                      echo $a + 3;
-                    }',
-                'error_message' => 'PossiblyNullOperand',
-            ],
             'nonRedundantConditionGivenDocblockType' => [
                 '<?php
                     /** @param array[] $arr */
