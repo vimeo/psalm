@@ -927,6 +927,8 @@ class Codebase
         }
 
         $this->file_storage_provider->remove($file_path);
+
+        $this->file_reference_provider->clearExistingIssuesForFile($file_path);
     }
 
     public function getFunctionStorageForSymbol(string $file_path, string $symbol): ?FunctionLikeStorage
