@@ -1570,6 +1570,13 @@ class AssertionFinder
             return self::ASSIGNMENT_TO_RIGHT;
         }
 
+        if ($conditional->left instanceof PhpParser\Node\Scalar\LNumber) {
+            $literal_value_comparison = $conditional->left->value +
+                ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater ? 1 : 0);
+
+            return self::ASSIGNMENT_TO_LEFT;
+        }
+
         return false;
     }
 
@@ -1586,6 +1593,13 @@ class AssertionFinder
                 ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller ? -1 : 0);
 
             return self::ASSIGNMENT_TO_RIGHT;
+        }
+
+        if ($conditional->left instanceof PhpParser\Node\Scalar\LNumber) {
+            $literal_value_comparison = $conditional->left->value +
+                ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller ? -1 : 0);
+
+            return self::ASSIGNMENT_TO_LEFT;
         }
 
         return false;
@@ -3674,12 +3688,16 @@ class AssertionFinder
             }
 
             if ($var_name !== null) {
-                if ($superior_value_comparison === 0) {
-                    $if_types[$var_name] = [['positive-numeric', '=int(0)']];
-                } if ($superior_value_comparison === 1) {
-                    $if_types[$var_name] = [['positive-numeric']];
+                if ($superior_value_position === self::ASSIGNMENT_TO_RIGHT) {
+                    if ($superior_value_comparison === 0) {
+                        $if_types[$var_name] = [['=isset'], ['positive-numeric', '=int(0)']];
+                    } elseif ($superior_value_comparison === 1) {
+                        $if_types[$var_name] = [['=isset'], ['positive-numeric']];
+                    } else {
+                        $if_types[$var_name] = [['=isset'], ['>' . $superior_value_comparison]];
+                    }
                 } else {
-                    $if_types[$var_name] = [['=isset'], ['>' . $superior_value_comparison]];
+                    $if_types[$var_name] = [['=isset'], ['<' . $superior_value_comparison]];
                 }
             }
 
@@ -3703,7 +3721,6 @@ class AssertionFinder
         $count_equality_position = self::hasNonEmptyCountEqualityCheck($conditional, $min_count);
         $max_count = null;
         $count_inequality_position = self::hasLessThanCountEqualityCheck($conditional, $max_count);
-        //$typed_value_position = self::hasTypedValueComparison($conditional, $source);
         $inferior_value_comparison = null;
         $inferior_value_position = self::hasInferiorNumberCheck($conditional, $inferior_value_comparison);
 
@@ -3757,42 +3774,6 @@ class AssertionFinder
             return $if_types ? [$if_types] : [];
         }
 
-        /*if ($typed_value_position) {
-            if ($typed_value_position === self::ASSIGNMENT_TO_RIGHT) {
-                $var_name = ExpressionIdentifier::getArrayVarId(
-                    $conditional->left,
-                    $this_class_name,
-                    $source
-                );
-
-                $expr = $conditional->right;
-            } elseif ($typed_value_position === self::ASSIGNMENT_TO_LEFT) {
-                $var_name = ExpressionIdentifier::getArrayVarId(
-                    $conditional->right,
-                    $this_class_name,
-                    $source
-                );
-
-                $expr = $conditional->left;
-            } else {
-                throw new \UnexpectedValueException('$typed_value_position value');
-            }
-
-            $expr_type = $source instanceof StatementsAnalyzer
-                ? $source->node_data->getType($expr)
-                : null;
-
-            if ($var_name
-                && $expr_type
-                && $expr_type->isSingleIntLiteral()
-                && ($expr_type->getSingleIntLiteral()->value === 0)
-            ) {
-                $if_types[$var_name] = [['=isset']];
-            }
-
-            return $if_types ? [$if_types] : [];
-        }*/
-
         if ($inferior_value_position) {
             if ($inferior_value_position === self::ASSIGNMENT_TO_RIGHT) {
                 $var_name = ExpressionIdentifier::getArrayVarId(
@@ -3808,8 +3789,19 @@ class AssertionFinder
                 );
             }
 
-            if ($var_name) {
-                $if_types[$var_name] = [['=isset'], ['<' . $inferior_value_comparison]];
+
+            if ($var_name !== null) {
+                if ($inferior_value_position === self::ASSIGNMENT_TO_RIGHT) {
+                    $if_types[$var_name] = [['=isset'], ['<' . $inferior_value_comparison]];
+                } else {
+                    if ($inferior_value_comparison === 0) {
+                        $if_types[$var_name] = [['=isset'], ['positive-numeric', '=int(0)']];
+                    } elseif ($inferior_value_comparison === 1) {
+                        $if_types[$var_name] = [['=isset'], ['positive-numeric']];
+                    } else {
+                        $if_types[$var_name] = [['=isset'], ['>' . $inferior_value_comparison]];
+                    }
+                }
             }
 
             return $if_types ? [$if_types] : [];
