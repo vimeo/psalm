@@ -21,6 +21,7 @@ use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
@@ -61,6 +62,8 @@ use function get_class;
 use function in_array;
 use function is_int;
 use function is_string;
+use function max;
+use function min;
 use function strpos;
 use function substr;
 
@@ -1239,6 +1242,46 @@ class TypeCombiner
                         !== get_class($type)
                 ) {
                     $combination->value_types['int'] = new TInt();
+                }
+            } elseif ($type instanceof TIntRange) {
+                if ($combination->ints) {
+                    foreach ($combination->ints as $int) {
+                        if (!$type->contains($int->value)) {
+                            if ($type->min_bound !== null) {
+                                $type->min_bound = min($type->min_bound, $int->value);
+                            }
+                            if ($type->max_bound !== null) {
+                                $type->max_bound = max($type->max_bound, $int->value);
+                            }
+                        }
+                    }
+
+                    $combination->value_types['int'] = $type;
+                } elseif (!isset($combination->value_types['int'])) {
+                    $combination->value_types['int'] = $type;
+                } else {
+                    $old_type = $combination->value_types['int'];
+                    if ($old_type instanceof TIntRange) {
+                        if ($old_type->min_bound === null || $type->min_bound === null) {
+                            $type->min_bound = null;
+                        } else {
+                            $type->min_bound = min($old_type->min_bound, $type->min_bound);
+                        }
+
+                        if ($old_type->max_bound === null || $type->max_bound === null) {
+                            $type->max_bound = null;
+                        } else {
+                            $type->max_bound = max($old_type->max_bound, $type->max_bound);
+                        }
+                    } elseif ($old_type instanceof TPositiveInt) {
+                        if ($type->min_bound !== null) {
+                            $type->min_bound = min($type->min_bound, 0);
+                        }
+                        $type->max_bound = null;
+                    } else {
+                        $type = new TInt();
+                    }
+                    $combination->value_types['int'] = $type;
                 }
             } else {
                 $combination->value_types['int'] = $type;
