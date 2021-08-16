@@ -32,6 +32,10 @@ use function strtolower;
  */
 class ClassConstFetchAnalyzer
 {
+    /**
+     * @psalm-suppress ComplexMethod to be refactored. We should probably regroup the two big if about $stmt->class and
+     * analyse the ::class int $stmt->name separately
+     */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ClassConstFetch $stmt,
@@ -475,49 +479,12 @@ class ClassConstFetchAnalyzer
                     $statements_analyzer,
                     $stmt->class,
                     $fq_class_name,
-                    $context->calling_method_id,
-                    false,
-                    false
+                    $context->calling_method_id
                 );
             }
 
             if ($codebase->classlikes->classExists($fq_class_name)) {
                 $fq_class_name = $codebase->classlikes->getUnAliasedName($fq_class_name);
-            }
-
-            if ($stmt->name instanceof PhpParser\Node\Identifier && $stmt->name->name === 'class') {
-                if ($codebase->classlikes->classExists($fq_class_name)) {
-                    $const_class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
-                    $fq_class_name = $const_class_storage->name;
-
-                    if ($const_class_storage->deprecated && $fq_class_name !== $context->self) {
-                        if (IssueBuffer::accepts(
-                            new DeprecatedClass(
-                                'Class ' . $fq_class_name . ' is deprecated',
-                                new CodeLocation($statements_analyzer->getSource(), $stmt),
-                                $fq_class_name
-                            ),
-                            $statements_analyzer->getSuppressedIssues()
-                        )) {
-                            // fall through
-                        }
-                    }
-                }
-
-                $statements_analyzer->node_data->setType($stmt, Type::getLiteralClassString($fq_class_name));
-
-                if ($codebase->store_node_types
-                    && !$context->collect_initializations
-                    && !$context->collect_mutations
-                ) {
-                    $codebase->analyzer->addNodeReference(
-                        $statements_analyzer->getFilePath(),
-                        $stmt->class,
-                        $fq_class_name
-                    );
-                }
-
-                return true;
             }
 
             // if we're ignoring that the class doesn't exist, exit anyway
