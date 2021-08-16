@@ -452,6 +452,292 @@ class ClassConstFetchAnalyzer
 
         $context->inside_general_use = $was_inside_general_use;
 
+        if ($stmt->class instanceof PhpParser\Node\Expr\Variable) {
+            $type = $statements_analyzer->node_data->getType($stmt->class);
+
+            $fq_class_name = null;
+            if ($type !== null && $type->isSingle()) {
+                $atomic_type = \array_values($type->getAtomicTypes())[0];
+                if ($atomic_type instanceof TNamedObject) {
+                    $fq_class_name = $atomic_type->value;
+                }
+            }
+
+            if ($fq_class_name === null) {
+                return true;
+            }
+
+            $moved_class = false;
+
+            if ($codebase->alter_code) {
+                $moved_class = $codebase->classlikes->handleClassLikeReferenceInMigration(
+                    $codebase,
+                    $statements_analyzer,
+                    $stmt->class,
+                    $fq_class_name,
+                    $context->calling_method_id,
+                    false,
+                    false
+                );
+            }
+
+            if ($codebase->classlikes->classExists($fq_class_name)) {
+                $fq_class_name = $codebase->classlikes->getUnAliasedName($fq_class_name);
+            }
+
+            if ($stmt->name instanceof PhpParser\Node\Identifier && $stmt->name->name === 'class') {
+                if ($codebase->classlikes->classExists($fq_class_name)) {
+                    $const_class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+                    $fq_class_name = $const_class_storage->name;
+
+                    if ($const_class_storage->deprecated && $fq_class_name !== $context->self) {
+                        if (IssueBuffer::accepts(
+                            new DeprecatedClass(
+                                'Class ' . $fq_class_name . ' is deprecated',
+                                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                                $fq_class_name
+                            ),
+                            $statements_analyzer->getSuppressedIssues()
+                        )) {
+                            // fall through
+                        }
+                    }
+                }
+
+                $statements_analyzer->node_data->setType($stmt, Type::getLiteralClassString($fq_class_name));
+
+                if ($codebase->store_node_types
+                    && !$context->collect_initializations
+                    && !$context->collect_mutations
+                ) {
+                    $codebase->analyzer->addNodeReference(
+                        $statements_analyzer->getFilePath(),
+                        $stmt->class,
+                        $fq_class_name
+                    );
+                }
+
+                return true;
+            }
+
+            // if we're ignoring that the class doesn't exist, exit anyway
+            if (!$codebase->classlikes->classOrInterfaceOrEnumExists($fq_class_name)) {
+                $statements_analyzer->node_data->setType($stmt, Type::getMixed());
+
+                return true;
+            }
+
+            if ($codebase->store_node_types
+                && !$context->collect_initializations
+                && !$context->collect_mutations
+            ) {
+                $codebase->analyzer->addNodeReference(
+                    $statements_analyzer->getFilePath(),
+                    $stmt->class,
+                    $fq_class_name
+                );
+            }
+
+            if (!$stmt->name instanceof PhpParser\Node\Identifier) {
+                return true;
+            }
+
+            $const_id = $fq_class_name . '::' . $stmt->name;
+
+            if ($codebase->store_node_types
+                && !$context->collect_initializations
+                && !$context->collect_mutations
+            ) {
+                $codebase->analyzer->addNodeReference(
+                    $statements_analyzer->getFilePath(),
+                    $stmt->name,
+                    $const_id
+                );
+            }
+
+            $const_class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+
+            if ($const_class_storage->is_enum) {
+                if (isset($const_class_storage->enum_cases[$stmt->name->name])) {
+                    $class_constant_type = new Type\Union([
+                        new Type\Atomic\TEnumCase($fq_class_name, $stmt->name->name)
+                    ]);
+                } else {
+                    $class_constant_type = null;
+                }
+            } else {
+                if ($fq_class_name === $context->self
+                    || (
+                        $statements_analyzer->getSource()->getSource() instanceof TraitAnalyzer &&
+                        $fq_class_name === $statements_analyzer->getSource()->getFQCLN()
+                    )
+                ) {
+                    $class_visibility = \ReflectionProperty::IS_PRIVATE;
+                } elseif ($context->self &&
+                    ($codebase->classlikes->classExtends($context->self, $fq_class_name)
+                        || $codebase->classlikes->classExtends($fq_class_name, $context->self))
+                ) {
+                    $class_visibility = \ReflectionProperty::IS_PROTECTED;
+                } else {
+                    $class_visibility = \ReflectionProperty::IS_PUBLIC;
+                }
+
+                try {
+                    $class_constant_type = $codebase->classlikes->getClassConstantType(
+                        $fq_class_name,
+                        $stmt->name->name,
+                        $class_visibility,
+                        $statements_analyzer
+                    );
+                } catch (\InvalidArgumentException $_) {
+                    return true;
+                } catch (\Psalm\Exception\CircularReferenceException $e) {
+                    if (IssueBuffer::accepts(
+                        new CircularReference(
+                            'Constant ' . $const_id . ' contains a circular reference',
+                            new CodeLocation($statements_analyzer->getSource(), $stmt)
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+
+                    return true;
+                }
+            }
+
+            if (!$class_constant_type) {
+                if ($fq_class_name !== $context->self) {
+                    $class_constant_type = $codebase->classlikes->getClassConstantType(
+                        $fq_class_name,
+                        $stmt->name->name,
+                        \ReflectionProperty::IS_PRIVATE,
+                        $statements_analyzer
+                    );
+                }
+
+                if ($class_constant_type) {
+                    if (IssueBuffer::accepts(
+                        new InaccessibleClassConstant(
+                            'Constant ' . $const_id . ' is not visible in this context',
+                            new CodeLocation($statements_analyzer->getSource(), $stmt)
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                } elseif ($context->check_consts) {
+                    if (IssueBuffer::accepts(
+                        new UndefinedConstant(
+                            'Constant ' . $const_id . ' is not defined',
+                            new CodeLocation($statements_analyzer->getSource(), $stmt)
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                }
+
+                return true;
+            }
+
+            if ($context->calling_method_id) {
+                $codebase->file_reference_provider->addMethodReferenceToClassMember(
+                    $context->calling_method_id,
+                    strtolower($fq_class_name) . '::' . $stmt->name->name,
+                    false
+                );
+            }
+
+            $declaring_const_id = strtolower($fq_class_name) . '::' . $stmt->name->name;
+
+            if ($codebase->alter_code && !$moved_class) {
+                foreach ($codebase->class_constant_transforms as $original_pattern => $transformation) {
+                    if ($declaring_const_id === $original_pattern) {
+                        [$new_fq_class_name, $new_const_name] = explode('::', $transformation);
+
+                        $file_manipulations = [];
+
+                        if (strtolower($new_fq_class_name) !== strtolower($fq_class_name)) {
+                            $file_manipulations[] = new \Psalm\FileManipulation(
+                                (int) $stmt->class->getAttribute('startFilePos'),
+                                (int) $stmt->class->getAttribute('endFilePos') + 1,
+                                Type::getStringFromFQCLN(
+                                    $new_fq_class_name,
+                                    $statements_analyzer->getNamespace(),
+                                    $statements_analyzer->getAliasedClassesFlipped(),
+                                    null
+                                )
+                            );
+                        }
+
+                        $file_manipulations[] = new \Psalm\FileManipulation(
+                            (int) $stmt->name->getAttribute('startFilePos'),
+                            (int) $stmt->name->getAttribute('endFilePos') + 1,
+                            $new_const_name
+                        );
+
+                        FileManipulationBuffer::add($statements_analyzer->getFilePath(), $file_manipulations);
+                    }
+                }
+            }
+
+            if ($context->self
+                && !$context->collect_initializations
+                && !$context->collect_mutations
+                && $const_class_storage->internal
+                && !NamespaceAnalyzer::isWithin($context->self, $const_class_storage->internal)
+            ) {
+                if (IssueBuffer::accepts(
+                    new InternalClass(
+                        $fq_class_name . ' is internal to ' . $const_class_storage->internal
+                        . ' but called from ' . $context->self,
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        $fq_class_name
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            }
+
+            if ($const_class_storage->deprecated && $fq_class_name !== $context->self) {
+                if (IssueBuffer::accepts(
+                    new DeprecatedClass(
+                        'Class ' . $fq_class_name . ' is deprecated',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        $fq_class_name
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            } elseif (isset($const_class_storage->constants[$stmt->name->name])
+                && $const_class_storage->constants[$stmt->name->name]->deprecated
+            ) {
+                if (IssueBuffer::accepts(
+                    new DeprecatedConstant(
+                        'Constant ' . $const_id . ' is deprecated',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt)
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            }
+
+            if ($const_class_storage->final) {
+                $stmt_type = clone $class_constant_type;
+
+                $statements_analyzer->node_data->setType($stmt, $stmt_type);
+                $context->vars_in_scope[$const_id] = $stmt_type;
+            } else {
+                $statements_analyzer->node_data->setType($stmt, Type::getMixed());
+            }
+
+            return true;
+        }
+
         return true;
     }
 

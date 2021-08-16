@@ -314,6 +314,17 @@ class ConstantTest extends TestCase
                 ',
                 'assertions' => ['$foo' => 'string'],
             ],
+            'dynamicClassConstFetch' => [
+                '<?php
+                    final class Foo
+                    {
+                        public const BAR = "bar";
+                    }
+
+                    $foo = new Foo();
+                    $_trace = $foo::BAR;',
+                'assertions' => ['$_trace===' => '"bar"'],
+            ],
             'allowConstCheckForDifferentPlatforms' => [
                 '<?php
                     if ("phpdbg" === \PHP_SAPI) {}',
