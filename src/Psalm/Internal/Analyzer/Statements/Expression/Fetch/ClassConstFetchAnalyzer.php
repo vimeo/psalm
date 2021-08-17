@@ -21,6 +21,7 @@ use Psalm\Issue\ParentNotFound;
 use Psalm\Issue\UndefinedConstant;
 use Psalm\IssueBuffer;
 use Psalm\Type;
+use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TNamedObject;
 
 use function array_values;
@@ -42,6 +43,8 @@ class ClassConstFetchAnalyzer
         Context $context
     ) : bool {
         $codebase = $statements_analyzer->getCodebase();
+
+        $statements_analyzer->node_data->setType($stmt, Type::getMixed());
 
         if ($stmt->class instanceof PhpParser\Node\Name) {
             $first_part_lc = strtolower($stmt->class->parts[0]);
@@ -172,8 +175,6 @@ class ClassConstFetchAnalyzer
 
             // if we're ignoring that the class doesn't exist, exit anyway
             if (!$codebase->classlikes->classOrInterfaceOrEnumExists($fq_class_name)) {
-                $statements_analyzer->node_data->setType($stmt, Type::getMixed());
-
                 return true;
             }
 
@@ -381,71 +382,10 @@ class ClassConstFetchAnalyzer
 
                 $statements_analyzer->node_data->setType($stmt, $stmt_type);
                 $context->vars_in_scope[$const_id] = $stmt_type;
-            } else {
-                $statements_analyzer->node_data->setType($stmt, Type::getMixed());
             }
 
             return true;
         }
-
-        if ($stmt->name instanceof PhpParser\Node\Identifier && $stmt->name->name === 'class') {
-            $was_inside_general_use = $context->inside_general_use;
-            $context->inside_general_use = true;
-            ExpressionAnalyzer::analyze($statements_analyzer, $stmt->class, $context);
-            $context->inside_general_use = $was_inside_general_use;
-
-            $lhs_type = $statements_analyzer->node_data->getType($stmt->class);
-
-            $class_string_types = [];
-
-            $has_mixed_or_object = false;
-
-            if ($lhs_type) {
-                foreach ($lhs_type->getAtomicTypes() as $lhs_atomic_type) {
-                    if ($lhs_atomic_type instanceof Type\Atomic\TNamedObject) {
-                        $class_string_types[] = new Type\Atomic\TClassString(
-                            $lhs_atomic_type->value,
-                            clone $lhs_atomic_type
-                        );
-                    } elseif ($lhs_atomic_type instanceof Type\Atomic\TTemplateParam
-                        && $lhs_atomic_type->as->isSingle()) {
-                        $as_atomic_type = array_values($lhs_atomic_type->as->getAtomicTypes())[0];
-
-                        if ($as_atomic_type instanceof Type\Atomic\TObject) {
-                            $class_string_types[] = new Type\Atomic\TTemplateParamClass(
-                                $lhs_atomic_type->param_name,
-                                'object',
-                                null,
-                                $lhs_atomic_type->defining_class
-                            );
-                        } elseif ($as_atomic_type instanceof TNamedObject) {
-                            $class_string_types[] = new Type\Atomic\TTemplateParamClass(
-                                $lhs_atomic_type->param_name,
-                                $as_atomic_type->value,
-                                $as_atomic_type,
-                                $lhs_atomic_type->defining_class
-                            );
-                        }
-                    } elseif ($lhs_atomic_type instanceof Type\Atomic\TObject
-                        || $lhs_atomic_type instanceof Type\Atomic\TMixed
-                    ) {
-                        $has_mixed_or_object = true;
-                    }
-                }
-            }
-
-            if ($has_mixed_or_object) {
-                $statements_analyzer->node_data->setType($stmt, new Type\Union([new Type\Atomic\TClassString()]));
-            } elseif ($class_string_types) {
-                $statements_analyzer->node_data->setType($stmt, new Type\Union($class_string_types));
-            } else {
-                $statements_analyzer->node_data->setType($stmt, Type::getMixed());
-            }
-
-            return true;
-        }
-
-        $statements_analyzer->node_data->setType($stmt, Type::getMixed());
 
         $was_inside_general_use = $context->inside_general_use;
         $context->inside_general_use = true;
@@ -456,13 +396,65 @@ class ClassConstFetchAnalyzer
 
         $context->inside_general_use = $was_inside_general_use;
 
-        if ($stmt->class instanceof PhpParser\Node\Expr\Variable) {
-            $type = $statements_analyzer->node_data->getType($stmt->class);
+        $lhs_type = $statements_analyzer->node_data->getType($stmt->class);
 
+        if ($lhs_type === null) {
+            return true;
+        }
+
+        if ($stmt->name instanceof PhpParser\Node\Identifier && $stmt->name->name === 'class') {
+            $class_string_types = [];
+
+            $has_mixed_or_object = false;
+
+            foreach ($lhs_type->getAtomicTypes() as $lhs_atomic_type) {
+                if ($lhs_atomic_type instanceof Type\Atomic\TNamedObject) {
+                    $class_string_types[] = new Type\Atomic\TClassString(
+                        $lhs_atomic_type->value,
+                        clone $lhs_atomic_type
+                    );
+                } elseif ($lhs_atomic_type instanceof Type\Atomic\TTemplateParam
+                    && $lhs_atomic_type->as->isSingle()) {
+                    $as_atomic_type = array_values($lhs_atomic_type->as->getAtomicTypes())[0];
+
+                    if ($as_atomic_type instanceof Type\Atomic\TObject) {
+                        $class_string_types[] = new Type\Atomic\TTemplateParamClass(
+                            $lhs_atomic_type->param_name,
+                            'object',
+                            null,
+                            $lhs_atomic_type->defining_class
+                        );
+                    } elseif ($as_atomic_type instanceof TNamedObject) {
+                        $class_string_types[] = new Type\Atomic\TTemplateParamClass(
+                            $lhs_atomic_type->param_name,
+                            $as_atomic_type->value,
+                            $as_atomic_type,
+                            $lhs_atomic_type->defining_class
+                        );
+                    }
+                } elseif ($lhs_atomic_type instanceof Type\Atomic\TObject
+                    || $lhs_atomic_type instanceof Type\Atomic\TMixed
+                ) {
+                    $has_mixed_or_object = true;
+                }
+            }
+
+            if ($has_mixed_or_object) {
+                $statements_analyzer->node_data->setType($stmt, new Type\Union([new Type\Atomic\TClassString()]));
+            } elseif ($class_string_types) {
+                $statements_analyzer->node_data->setType($stmt, new Type\Union($class_string_types));
+            }
+
+            return true;
+        }
+
+        if ($stmt->class instanceof PhpParser\Node\Expr\Variable) {
             $fq_class_name = null;
-            if ($type !== null && $type->isSingle()) {
-                $atomic_type = \array_values($type->getAtomicTypes())[0];
+            if ($lhs_type->isSingle()) {
+                $atomic_type = \array_values($lhs_type->getAtomicTypes())[0];
                 if ($atomic_type instanceof TNamedObject) {
+                    $fq_class_name = $atomic_type->value;
+                } elseif ($atomic_type instanceof TLiteralClassString) {
                     $fq_class_name = $atomic_type->value;
                 }
             }
@@ -471,26 +463,12 @@ class ClassConstFetchAnalyzer
                 return true;
             }
 
-            $moved_class = false;
-
-            if ($codebase->alter_code) {
-                $moved_class = $codebase->classlikes->handleClassLikeReferenceInMigration(
-                    $codebase,
-                    $statements_analyzer,
-                    $stmt->class,
-                    $fq_class_name,
-                    $context->calling_method_id
-                );
-            }
-
             if ($codebase->classlikes->classExists($fq_class_name)) {
                 $fq_class_name = $codebase->classlikes->getUnAliasedName($fq_class_name);
             }
 
             // if we're ignoring that the class doesn't exist, exit anyway
             if (!$codebase->classlikes->classOrInterfaceOrEnumExists($fq_class_name)) {
-                $statements_analyzer->node_data->setType($stmt, Type::getMixed());
-
                 return true;
             }
 
@@ -616,39 +594,6 @@ class ClassConstFetchAnalyzer
                 );
             }
 
-            $declaring_const_id = strtolower($fq_class_name) . '::' . $stmt->name->name;
-
-            if ($codebase->alter_code && !$moved_class) {
-                foreach ($codebase->class_constant_transforms as $original_pattern => $transformation) {
-                    if ($declaring_const_id === $original_pattern) {
-                        [$new_fq_class_name, $new_const_name] = explode('::', $transformation);
-
-                        $file_manipulations = [];
-
-                        if (strtolower($new_fq_class_name) !== strtolower($fq_class_name)) {
-                            $file_manipulations[] = new \Psalm\FileManipulation(
-                                (int) $stmt->class->getAttribute('startFilePos'),
-                                (int) $stmt->class->getAttribute('endFilePos') + 1,
-                                Type::getStringFromFQCLN(
-                                    $new_fq_class_name,
-                                    $statements_analyzer->getNamespace(),
-                                    $statements_analyzer->getAliasedClassesFlipped(),
-                                    null
-                                )
-                            );
-                        }
-
-                        $file_manipulations[] = new \Psalm\FileManipulation(
-                            (int) $stmt->name->getAttribute('startFilePos'),
-                            (int) $stmt->name->getAttribute('endFilePos') + 1,
-                            $new_const_name
-                        );
-
-                        FileManipulationBuffer::add($statements_analyzer->getFilePath(), $file_manipulations);
-                    }
-                }
-            }
-
             if ($context->self
                 && !$context->collect_initializations
                 && !$context->collect_mutations
@@ -698,8 +643,6 @@ class ClassConstFetchAnalyzer
 
                 $statements_analyzer->node_data->setType($stmt, $stmt_type);
                 $context->vars_in_scope[$const_id] = $stmt_type;
-            } else {
-                $statements_analyzer->node_data->setType($stmt, Type::getMixed());
             }
 
             return true;
