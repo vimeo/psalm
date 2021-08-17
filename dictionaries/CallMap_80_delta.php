@@ -1006,8 +1006,8 @@ return [
       'new' => ['int|false', 'socket'=>'Socket', '&w_message'=>'string', 'flags='=>'int'],
     ],
     'socket_select' => [
-      'old' => ['int|false', '&rw_read_fds'=>'resource[]|null', '&rw_write_fds'=>'resource[]|null', '&rw_except_fds'=>'resource[]|null', 'tv_sec'=>'int', 'tv_usec='=>'int'],
-      'new' => ['int|false', '&rw_read_fds'=>'Socket[]|null', '&rw_write_fds'=>'Socket[]|null', '&rw_except_fds'=>'Socket[]|null', 'tv_sec'=>'int', 'tv_usec='=>'int'],
+      'old' => ['int|false', '&rw_read_fds'=>'resource[]|null', '&rw_write_fds'=>'resource[]|null', '&rw_except_fds'=>'resource[]|null', 'tv_sec'=>'int|null', 'tv_usec='=>'int'],
+      'new' => ['int|false', '&rw_read_fds'=>'Socket[]|null', '&rw_write_fds'=>'Socket[]|null', '&rw_except_fds'=>'Socket[]|null', 'tv_sec'=>'int|null', 'tv_usec='=>'int'],
     ],
     'socket_send' => [
       'old' => ['int|false', 'socket'=>'resource', 'buf'=>'string', 'length'=>'int', 'flags'=>'int'],

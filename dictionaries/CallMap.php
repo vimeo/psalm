@@ -12268,7 +12268,7 @@ return [
 'socket_recv' => ['int|false', 'socket'=>'Socket', '&w_buf'=>'string', 'length'=>'int', 'flags'=>'int'],
 'socket_recvfrom' => ['int|false', 'socket'=>'Socket', '&w_buf'=>'string', 'length'=>'int', 'flags'=>'int', '&w_name'=>'string', '&w_port='=>'int'],
 'socket_recvmsg' => ['int|false', 'socket'=>'Socket', '&w_message'=>'string', 'flags='=>'int'],
-'socket_select' => ['int|false', '&rw_read_fds'=>'Socket[]|null', '&rw_write_fds'=>'Socket[]|null', '&rw_except_fds'=>'Socket[]|null', 'tv_sec'=>'int', 'tv_usec='=>'int'],
+'socket_select' => ['int|false', '&rw_read_fds'=>'Socket[]|null', '&rw_write_fds'=>'Socket[]|null', '&rw_except_fds'=>'Socket[]|null', 'tv_sec'=>'int|null', 'tv_usec='=>'int'],
 'socket_send' => ['int|false', 'socket'=>'Socket', 'buf'=>'string', 'length'=>'int', 'flags'=>'int'],
 'socket_sendmsg' => ['int|false', 'socket'=>'Socket', 'message'=>'array', 'flags'=>'int'],
 'socket_sendto' => ['int|false', 'socket'=>'Socket', 'buf'=>'string', 'length'=>'int', 'flags'=>'int', 'addr'=>'string', 'port='=>'int'],
