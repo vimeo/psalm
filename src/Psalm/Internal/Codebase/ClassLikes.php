@@ -680,11 +680,9 @@ class ClassLikes
         }
 
         foreach ($class_storage->class_implements as $implementing_interface_lc => $_) {
-            if (!isset($this->classlike_aliases[$implementing_interface_lc])) {
-                continue;
-            }
-
-            $aliased_interface_lc = strtolower($this->classlike_aliases[$implementing_interface_lc]);
+            $aliased_interface_lc = strtolower(
+                $this->getUnAliasedName($implementing_interface_lc)
+            );
 
             if ($aliased_interface_lc === $interface_id) {
                 return true;
