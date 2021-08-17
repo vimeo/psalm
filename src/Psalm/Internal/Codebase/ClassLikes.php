@@ -26,7 +26,6 @@ use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
 use ReflectionProperty;
 
-use function array_keys;
 use function array_merge;
 use function array_pop;
 use function count;
@@ -680,7 +679,7 @@ class ClassLikes
             return true;
         }
 
-        foreach (array_keys($class_storage->class_implements) as $implementing_interface_lc) {
+        foreach ($class_storage->class_implements as $implementing_interface_lc => $_) {
             if (!isset($this->classlike_aliases[$implementing_interface_lc])) {
                 continue;
             }
