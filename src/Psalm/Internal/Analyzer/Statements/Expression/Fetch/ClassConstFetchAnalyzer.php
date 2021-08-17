@@ -467,6 +467,18 @@ class ClassConstFetchAnalyzer
                 $fq_class_name = $codebase->classlikes->getUnAliasedName($fq_class_name);
             }
 
+            $moved_class = false;
+
+            if ($codebase->alter_code) {
+                $moved_class = $codebase->classlikes->handleClassLikeReferenceInMigration(
+                    $codebase,
+                    $statements_analyzer,
+                    $stmt->class,
+                    $fq_class_name,
+                    $context->calling_method_id
+                );
+            }
+
             // if we're ignoring that the class doesn't exist, exit anyway
             if (!$codebase->classlikes->classOrInterfaceOrEnumExists($fq_class_name)) {
                 return true;
@@ -592,6 +604,26 @@ class ClassConstFetchAnalyzer
                     strtolower($fq_class_name) . '::' . $stmt->name->name,
                     false
                 );
+            }
+
+            $declaring_const_id = strtolower($fq_class_name) . '::' . $stmt->name->name;
+
+            if ($codebase->alter_code && !$moved_class) {
+                foreach ($codebase->class_constant_transforms as $original_pattern => $transformation) {
+                    if ($declaring_const_id === $original_pattern) {
+                        [, $new_const_name] = explode('::', $transformation);
+
+                        $file_manipulations = [];
+
+                        $file_manipulations[] = new \Psalm\FileManipulation(
+                            (int) $stmt->name->getAttribute('startFilePos'),
+                            (int) $stmt->name->getAttribute('endFilePos') + 1,
+                            $new_const_name
+                        );
+
+                        FileManipulationBuffer::add($statements_analyzer->getFilePath(), $file_manipulations);
+                    }
+                }
             }
 
             if ($context->self
