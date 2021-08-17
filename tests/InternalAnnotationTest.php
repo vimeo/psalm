@@ -548,7 +548,24 @@ class InternalAnnotationTest extends TestCase
                             }
                         }
                     }',
-                'error_message' => 'InternalMethod',
+                'error_message' => 'The method A\Foo::barBar is internal to A but called from B\Bat',
+            ],
+            'internalMethodWithCallFromRootNamespace' => [
+                '<?php
+                    namespace A {
+                        class Foo {
+                            /**
+                             * @internal
+                             */
+                            public static function barBar(): void {
+                            }
+                        }
+                    }
+
+                    namespace {
+                        \A\Foo::barBar();
+                    }',
+                'error_message' => 'The method A\Foo::barBar is internal to A but called from root namespace',
             ],
             'internalClassWithStaticCall' => [
                 '<?php
