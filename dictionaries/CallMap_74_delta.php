@@ -17,7 +17,7 @@
 return [
   'added' => [
     'ReflectionProperty::getType' => ['?ReflectionType'],
-    'mb_str_split' => ['non-empty-list<string>', 'string'=>'string', 'length='=>'positive-int', 'encoding='=>'string'],
+    'mb_str_split' => ['non-empty-list<string>|false', 'string'=>'string', 'length='=>'positive-int', 'encoding='=>'string'],
   ],
   'changed' => [
     'gzread' => [
