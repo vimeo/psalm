@@ -34,6 +34,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyList;
+use Psalm\Type\Atomic\TNonEmptyMixed;
 use Psalm\Type\Atomic\TNonEmptyScalar;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
@@ -283,6 +284,9 @@ abstract class Atomic implements TypeNode
 
             case 'empty-scalar':
                 return new TEmptyScalar;
+
+            case 'non-empty-mixed':
+                return new TNonEmptyMixed();
         }
 
         if (strpos($value, '-') && substr($value, 0, 4) !== 'OCI-') {
