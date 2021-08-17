@@ -675,7 +675,21 @@ class ClassLikes
         }
         $class_storage = $this->classlike_storage_provider->get($fq_class_name);
 
-        return isset($class_storage->class_implements[$interface_id]);
+        if (isset($class_storage->class_implements[$interface_id])) {
+            return true;
+        }
+
+        foreach ($class_storage->class_implements as $implementing_interface_lc => $_) {
+            $aliased_interface_lc = strtolower(
+                $this->getUnAliasedName($implementing_interface_lc)
+            );
+
+            if ($aliased_interface_lc === $interface_id) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function interfaceExists(
