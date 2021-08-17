@@ -15111,7 +15111,7 @@ return [
     'str_replace' => ['string|string[]', 'search'=>'string|array', 'replace'=>'string|array', 'subject'=>'string|array', '&w_count='=>'int'],
     'str_rot13' => ['string', 'string'=>'string'],
     'str_shuffle' => ['string', 'string'=>'string'],
-    'str_split' => ['list<string>|false', 'string'=>'string', 'length='=>'int'],
+    'str_split' => ['non-empty-list<string>|false', 'string'=>'string', 'length='=>'int'],
     'str_word_count' => ['array<int, string>|int', 'string'=>'string', 'format='=>'int', 'characters='=>'string'],
     'strcasecmp' => ['int', 'string1'=>'string', 'string2'=>'string'],
     'strchr' => ['string|false', 'haystack'=>'string', 'needle'=>'string|int', 'before_needle='=>'bool'],
