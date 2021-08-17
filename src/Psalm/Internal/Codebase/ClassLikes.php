@@ -26,6 +26,7 @@ use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
 use ReflectionProperty;
 
+use function array_keys;
 use function array_merge;
 use function array_pop;
 use function count;
@@ -675,7 +676,23 @@ class ClassLikes
         }
         $class_storage = $this->classlike_storage_provider->get($fq_class_name);
 
-        return isset($class_storage->class_implements[$interface_id]);
+        if (isset($class_storage->class_implements[$interface_id])) {
+            return true;
+        }
+
+        foreach (array_keys($class_storage->class_implements) as $implementing_interface_lc) {
+            if (!isset($this->classlike_aliases[$implementing_interface_lc])) {
+                continue;
+            }
+
+            $aliased_interface_lc = strtolower($this->classlike_aliases[$implementing_interface_lc]);
+
+            if ($aliased_interface_lc === $interface_id) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function interfaceExists(
