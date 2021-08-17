@@ -670,12 +670,10 @@ class ClassConstFetchAnalyzer
                 }
             }
 
-            if ($const_class_storage->final) {
-                $stmt_type = clone $class_constant_type;
+            $stmt_type = clone $class_constant_type;
 
-                $statements_analyzer->node_data->setType($stmt, $stmt_type);
-                $context->vars_in_scope[$const_id] = $stmt_type;
-            }
+            $statements_analyzer->node_data->setType($stmt, $stmt_type);
+            $context->vars_in_scope[$const_id] = $stmt_type;
 
             return true;
         }
