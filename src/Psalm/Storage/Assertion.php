@@ -46,51 +46,54 @@ class Assertion
                 /**
                  * @param array<int, string> $rules
                  *
-                 * @return array{0: string}
+                 * @return array<int, string>
                  */
                 function (array $rules) use ($inferred_lower_bounds, $codebase) : array {
-                    $first_rule = $rules[0];
+                    if (!$inferred_lower_bounds) {
+                        return $rules;
+                    }
+                    return array_map(
+                        function ($rule) use ($inferred_lower_bounds, $codebase) {
+                            $rule_tokens = \Psalm\Internal\Type\TypeTokenizer::tokenize($rule);
 
-                    if ($inferred_lower_bounds) {
-                        $rule_tokens = \Psalm\Internal\Type\TypeTokenizer::tokenize($first_rule);
+                            $substitute = false;
 
-                        $substitute = false;
+                            foreach ($rule_tokens as &$rule_token) {
+                                if (isset($inferred_lower_bounds[$rule_token[0]])) {
+                                    foreach ($inferred_lower_bounds[$rule_token[0]] as $lower_bounds) {
+                                        $substitute = true;
 
-                        foreach ($rule_tokens as &$rule_token) {
-                            if (isset($inferred_lower_bounds[$rule_token[0]])) {
-                                foreach ($inferred_lower_bounds[$rule_token[0]] as $lower_bounds) {
-                                    $substitute = true;
+                                        $bound_type = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+                                            $lower_bounds,
+                                            $codebase
+                                        );
 
-                                    $bound_type = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
-                                        $lower_bounds,
-                                        $codebase
-                                    );
+                                        $first_type = \array_values($bound_type->getAtomicTypes())[0];
 
-                                    $first_type = \array_values($bound_type->getAtomicTypes())[0];
-
-                                    if ($first_type instanceof \Psalm\Type\Atomic\TTemplateParam) {
-                                        $rule_token[0] = $first_type->param_name;
-                                    } else {
-                                        $rule_token[0] = $first_type->getKey();
+                                        if ($first_type instanceof \Psalm\Type\Atomic\TTemplateParam) {
+                                            $rule_token[0] = $first_type->param_name;
+                                        } else {
+                                            $rule_token[0] = $first_type->getKey();
+                                        }
                                     }
                                 }
                             }
-                        }
 
-                        if ($substitute) {
-                            return [implode(
-                                '',
-                                array_map(
-                                    function ($f) {
-                                        return $f[0];
-                                    },
-                                    $rule_tokens
-                                )
-                            )];
-                        }
-                    }
-
-                    return [$first_rule];
+                            if ($substitute) {
+                                return implode(
+                                    '',
+                                    array_map(
+                                        function ($f) {
+                                            return $f[0];
+                                        },
+                                        $rule_tokens
+                                    )
+                                );
+                            }
+                            return $rule;
+                        },
+                        $rules
+                    );
                 },
                 $this->rule
             )

@@ -27,6 +27,8 @@ use Psalm\Issue\UnevaluatedCode;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 
+use function array_map;
+use function array_values;
 use function count;
 use function in_array;
 use function is_int;
@@ -1013,6 +1015,10 @@ class AssertionFinder
                     }
                 }
 
+                if (!isset($assertion->rule[0]) || [] === $assertion->rule[0]) {
+                    continue;
+                }
+
                 if (is_int($assertion->var_id) && isset($expr->args[$assertion->var_id])) {
                     if ($assertion->var_id === 0) {
                         $var_name = $first_var_name;
@@ -1025,7 +1031,7 @@ class AssertionFinder
                     }
 
                     if ($var_name) {
-                        $if_types[$var_name] = [[$assertion->rule[0][0]]];
+                        $if_types[$var_name] = [array_values($assertion->rule[0])];
                     }
                 } elseif ($assertion->var_id === '$this' && $expr instanceof PhpParser\Node\Expr\MethodCall) {
                     $var_id = ExpressionIdentifier::getArrayVarId(
@@ -1035,7 +1041,7 @@ class AssertionFinder
                     );
 
                     if ($var_id) {
-                        $if_types[$var_id] = [[$assertion->rule[0][0]]];
+                        $if_types[$var_id] = [array_values($assertion->rule[0])];
                     }
                 } elseif (\is_string($assertion->var_id)
                     && (
@@ -1047,7 +1053,7 @@ class AssertionFinder
                     if (strpos($var_id, 'self::') === 0) {
                         $var_id = $this_class_name . '::' . substr($var_id, 6);
                     }
-                    $if_types[$var_id] = [[$assertion->rule[0][0]]];
+                    $if_types[$var_id] = [array_values($assertion->rule[0])];
                 }
 
                 if ($if_types) {
@@ -1078,6 +1084,10 @@ class AssertionFinder
                     }
                 }
 
+                if (!isset($assertion->rule[0]) || [] === $assertion->rule[0]) {
+                    continue;
+                }
+
                 if (is_int($assertion->var_id) && isset($expr->args[$assertion->var_id])) {
                     if ($assertion->var_id === 0) {
                         $var_name = $first_var_name;
@@ -1090,11 +1100,14 @@ class AssertionFinder
                     }
 
                     if ($var_name) {
-                        if ('!' === $assertion->rule[0][0][0]) {
-                            $if_types[$var_name] = [[substr($assertion->rule[0][0], 1)]];
-                        } else {
-                            $if_types[$var_name] = [['!' . $assertion->rule[0][0]]];
-                        }
+                        $if_types[$var_name] = [
+                            array_map(
+                                function ($rule) {
+                                    return $rule[0] === '!' ? (string) substr($rule, 1) : ('!' . $rule);
+                                },
+                                array_values($assertion->rule[0])
+                            )
+                        ];
                     }
                 } elseif ($assertion->var_id === '$this' && $expr instanceof PhpParser\Node\Expr\MethodCall) {
                     $var_id = ExpressionIdentifier::getArrayVarId(
@@ -1104,11 +1117,14 @@ class AssertionFinder
                     );
 
                     if ($var_id) {
-                        if ('!' === $assertion->rule[0][0][0]) {
-                            $if_types[$var_id] = [[substr($assertion->rule[0][0], 1)]];
-                        } else {
-                            $if_types[$var_id] = [['!' . $assertion->rule[0][0]]];
-                        }
+                        $if_types[$var_id] = [
+                            array_map(
+                                function ($rule) {
+                                    return $rule[0] === '!' ? (string) substr($rule, 1) : ('!' . $rule);
+                                },
+                                array_values($assertion->rule[0])
+                            )
+                        ];
                     }
                 } elseif (\is_string($assertion->var_id)
                     && (
@@ -1120,7 +1136,14 @@ class AssertionFinder
                     if (strpos($var_id, 'self::') === 0) {
                         $var_id = $this_class_name . '::' . substr($var_id, 6);
                     }
-                    $if_types[$var_id] = [['!' . $assertion->rule[0][0]]];
+                    $if_types[$var_id] = [
+                        array_map(
+                            function ($rule) {
+                                return $rule[0] === '!' ? (string) substr($rule, 1) : ('!' . $rule);
+                            },
+                            array_values($assertion->rule[0])
+                        )
+                    ];
                 }
 
                 if ($if_types) {
