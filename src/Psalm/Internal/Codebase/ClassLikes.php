@@ -852,7 +852,12 @@ class ClassLikes
             return $alias_name;
         }
 
-        return $this->classlike_aliases[$alias_name_lc] ?? $alias_name;
+        $result = $this->classlike_aliases[$alias_name_lc] ?? $alias_name;
+        if ($result === $alias_name) {
+            return $result;
+        }
+
+        return $this->getUnAliasedName($result);
     }
 
     public function consolidateAnalyzedData(Methods $methods, ?Progress $progress, bool $find_unused_code): void
