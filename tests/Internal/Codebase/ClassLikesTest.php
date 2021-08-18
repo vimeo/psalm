@@ -38,4 +38,13 @@ final class ClassLikesTest extends TestCase
 
         self::assertTrue($this->classlikes->classImplements('Baz', 'Foo'));
     }
+
+    public function testWillResolveAliasedAliases(): void
+    {
+        $this->classlikes->addClassAlias('Foo', 'bar');
+        $this->classlikes->addClassAlias('Bar', 'baz');
+        $this->classlikes->addClassAlias('Baz', 'qoo');
+
+        self::assertSame('Foo', $this->classlikes->getUnAliasedName('Qoo'));
+    }
 }
