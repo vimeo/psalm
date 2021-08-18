@@ -316,7 +316,7 @@ class ConstantTest extends TestCase
             ],
             'dynamicClassConstFetch' => [
                 '<?php
-                    final class Foo
+                    class Foo
                     {
                         public const BAR = "bar";
                     }
@@ -325,9 +325,33 @@ class ConstantTest extends TestCase
                     $_trace = $foo::BAR;',
                 'assertions' => ['$_trace===' => '"bar"'],
             ],
+            'unsafeInferenceClassConstFetch' => [
+                '<?php
+                    class Foo
+                    {
+                        public const BAR = "bar";
+                    }
+
+                    /** @var Foo $foo */
+                    $foo = new stdClass();
+                    $_trace = $foo::BAR;',
+                'assertions' => ['$_trace' => 'mixed'],
+            ],
+            'FinalInferenceClassConstFetch' => [
+                '<?php
+                    final class Foo
+                    {
+                        public const BAR = "bar";
+                    }
+
+                    /** @var Foo $foo */
+                    $foo = new stdClass();
+                    $_trace = $foo::BAR;',
+                'assertions' => ['$_trace===' => '"bar"'],
+            ],
             'dynamicClassConstFetchClassString' => [
                 '<?php
-                    final class C {
+                    class C {
                         public const CC = 1;
                     }
 

@@ -156,7 +156,7 @@ class ClassConstFetchAnalyzer
                         ])
                     );
                 } else {
-                    $statements_analyzer->node_data->setType($stmt, Type::getLiteralClassString($fq_class_name));
+                    $statements_analyzer->node_data->setType($stmt, Type::getLiteralClassString($fq_class_name, true));
                 }
 
                 if ($codebase->store_node_types
@@ -450,16 +450,19 @@ class ClassConstFetchAnalyzer
 
         if ($stmt->class instanceof PhpParser\Node\Expr\Variable) {
             $fq_class_name = null;
+            $lhs_type_definite_class = null;
             if ($lhs_type->isSingle()) {
                 $atomic_type = \array_values($lhs_type->getAtomicTypes())[0];
                 if ($atomic_type instanceof TNamedObject) {
                     $fq_class_name = $atomic_type->value;
+                    $lhs_type_definite_class = $atomic_type->definite_class;
                 } elseif ($atomic_type instanceof TLiteralClassString) {
                     $fq_class_name = $atomic_type->value;
+                    $lhs_type_definite_class = $atomic_type->definite_class;
                 }
             }
 
-            if ($fq_class_name === null) {
+            if ($fq_class_name === null || $lhs_type_definite_class === null) {
                 return true;
             }
 
@@ -670,10 +673,12 @@ class ClassConstFetchAnalyzer
                 }
             }
 
-            $stmt_type = clone $class_constant_type;
+            if ($const_class_storage->final || $lhs_type_definite_class === true) {
+                $stmt_type = clone $class_constant_type;
 
-            $statements_analyzer->node_data->setType($stmt, $stmt_type);
-            $context->vars_in_scope[$const_id] = $stmt_type;
+                $statements_analyzer->node_data->setType($stmt, $stmt_type);
+                $context->vars_in_scope[$const_id] = $stmt_type;
+            }
 
             return true;
         }
