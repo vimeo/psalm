@@ -403,6 +403,32 @@ class NamedFunctionCallHandler
                 }
             }
         }
+
+        if ($first_arg && $function_id === 'array_walk') {
+            $first_arg_type = $statements_analyzer->node_data->getType($first_arg->value);
+
+            if ($first_arg_type && $first_arg_type->hasObjectType()) {
+                if ($first_arg_type->isSingle()) {
+                    if (IssueBuffer::accepts(
+                        new \Psalm\Issue\RawObjectIteration(
+                            'Possibly undesired iteration over object properties',
+                            new CodeLocation($statements_analyzer, $function_name)
+                        )
+                    )) {
+                        // fall through
+                    }
+                } else {
+                    if (IssueBuffer::accepts(
+                        new \Psalm\Issue\PossibleRawObjectIteration(
+                            'Possibly undesired iteration over object properties',
+                            new CodeLocation($statements_analyzer, $function_name)
+                        )
+                    )) {
+                        // fall through
+                    }
+                }
+            }
+        }
     }
 
     private static function handleDependentTypeFunction(
