@@ -9,7 +9,6 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 
 use function array_shift;
 use function count;
-use function in_array;
 use function ltrim;
 use function str_replace;
 use function strlen;
