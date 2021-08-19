@@ -395,6 +395,10 @@ class IssueBuffer
                 continue;
             }
 
+            if (!$config->isInProjectDirs($file_path)) {
+                continue;
+            }
+
             $file_contents = $file_provider->getContents($file_path);
 
             foreach ($offsets as $start => $end) {
