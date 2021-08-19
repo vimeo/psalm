@@ -2,6 +2,7 @@
 namespace Psalm\Internal\FileManipulation;
 
 use PhpParser\Node\Stmt\Property;
+use Psalm\Config;
 use Psalm\DocComment;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
@@ -95,7 +96,8 @@ class PropertyDocblockManipulator
         $file_contents = $codebase->getFileContents($file_path);
 
         if (count($stmt->props) > 1) {
-            if (in_array($file_path, $project_analyzer->getConfig()->getProjectFiles())) {
+            $config = Config::getInstance();
+            if ($config->isInProjectDirs($file_path)) {
                 throw new \UnexpectedValueException('Cannot replace multiple inline properties in ' . $file_path);
             }
 
