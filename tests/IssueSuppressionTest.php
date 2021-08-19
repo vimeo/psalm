@@ -17,7 +17,7 @@ class IssueSuppressionTest extends TestCase
         $this->expectExceptionMessage('UnusedPsalmSuppress');
 
         $this->addFile(
-            'somefile.php',
+            getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php',
             '<?php
                 class A {
                     /**
@@ -32,7 +32,7 @@ class IssueSuppressionTest extends TestCase
                 }'
         );
 
-        $this->analyzeFile('somefile.php', new \Psalm\Context());
+        $this->analyzeFile(getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php', new \Psalm\Context());
     }
 
     public function testIssueSuppressedOnStatement(): void
@@ -41,13 +41,13 @@ class IssueSuppressionTest extends TestCase
         $this->expectExceptionMessage('UnusedPsalmSuppress');
 
         $this->addFile(
-            'somefile.php',
+            getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php',
             '<?php
                 /** @psalm-suppress InvalidArgument */
                 echo strlen("hello");'
         );
 
-        $this->analyzeFile('somefile.php', new \Psalm\Context());
+        $this->analyzeFile(getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php', new \Psalm\Context());
     }
 
     public function testUnusedSuppressAllOnFunction(): void
@@ -55,8 +55,9 @@ class IssueSuppressionTest extends TestCase
         $this->expectException(\Psalm\Exception\CodeException::class);
         $this->expectExceptionMessage('UnusedPsalmSuppress');
 
+
         $this->addFile(
-            'somefile.php',
+            getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php',
             '<?php
                 /** @psalm-suppress all */
                 function foo(): string {
@@ -64,7 +65,7 @@ class IssueSuppressionTest extends TestCase
                 }'
         );
 
-        $this->analyzeFile('somefile.php', new \Psalm\Context());
+        $this->analyzeFile(getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php', new \Psalm\Context());
     }
 
     public function testUnusedSuppressAllOnStatement(): void
@@ -73,13 +74,12 @@ class IssueSuppressionTest extends TestCase
         $this->expectExceptionMessage('UnusedPsalmSuppress');
 
         $this->addFile(
-            'somefile.php',
+            getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php',
             '<?php
                 /** @psalm-suppress all */
                 print("foo");'
         );
-
-        $this->analyzeFile('somefile.php', new \Psalm\Context());
+        $this->analyzeFile(getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php', new \Psalm\Context());
     }
 
     public function testMissingThrowsDocblockSuppressed(): void
@@ -87,7 +87,7 @@ class IssueSuppressionTest extends TestCase
         Config::getInstance()->check_for_throws_docblock = true;
 
         $this->addFile(
-            'somefile.php',
+            getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php',
             '<?php
                 function example1 (): void {
                     /** @psalm-suppress MissingThrowsDocblock */
@@ -104,7 +104,7 @@ class IssueSuppressionTest extends TestCase
 
         $context = new Context();
 
-        $this->analyzeFile('somefile.php', $context);
+        $this->analyzeFile(getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php', $context);
     }
 
     public function testMissingThrowsDocblockSuppressedWithoutThrow(): void
@@ -114,7 +114,7 @@ class IssueSuppressionTest extends TestCase
         Config::getInstance()->check_for_throws_docblock = true;
 
         $this->addFile(
-            'somefile.php',
+            getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php',
             '<?php
                 /** @psalm-suppress MissingThrowsDocblock */
                 if (rand(0, 1)) {
@@ -124,7 +124,7 @@ class IssueSuppressionTest extends TestCase
 
         $context = new Context();
 
-        $this->analyzeFile('somefile.php', $context);
+        $this->analyzeFile(getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php', $context);
     }
 
     public function testMissingThrowsDocblockSuppressedDuplicate(): void
@@ -134,7 +134,7 @@ class IssueSuppressionTest extends TestCase
         Config::getInstance()->check_for_throws_docblock = true;
 
         $this->addFile(
-            'somefile.php',
+            getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php',
             '<?php
                 /** @psalm-suppress MissingThrowsDocblock */
                 function example1 (): void {
@@ -145,7 +145,7 @@ class IssueSuppressionTest extends TestCase
 
         $context = new Context();
 
-        $this->analyzeFile('somefile.php', $context);
+        $this->analyzeFile(getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php', $context);
     }
 
     public function testUncaughtThrowInGlobalScopeSuppressed(): void
@@ -153,7 +153,7 @@ class IssueSuppressionTest extends TestCase
         Config::getInstance()->check_for_throws_in_global_scope = true;
 
         $this->addFile(
-            'somefile.php',
+            getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php',
             '<?php
                 /** @psalm-suppress UncaughtThrowInGlobalScope */
                 throw new Exception();
@@ -171,7 +171,7 @@ class IssueSuppressionTest extends TestCase
 
         $context = new Context();
 
-        $this->analyzeFile('somefile.php', $context);
+        $this->analyzeFile(getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php', $context);
     }
 
     public function testUncaughtThrowInGlobalScopeSuppressedWithoutThrow(): void
@@ -181,7 +181,7 @@ class IssueSuppressionTest extends TestCase
         Config::getInstance()->check_for_throws_in_global_scope = true;
 
         $this->addFile(
-            'somefile.php',
+            getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php',
             '<?php
                 /** @psalm-suppress UncaughtThrowInGlobalScope */
                 echo "hello";'
@@ -189,7 +189,7 @@ class IssueSuppressionTest extends TestCase
 
         $context = new Context();
 
-        $this->analyzeFile('somefile.php', $context);
+        $this->analyzeFile(getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php', $context);
     }
 
     /**
