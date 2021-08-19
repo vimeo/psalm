@@ -4,6 +4,8 @@ namespace Psalm\Tests;
 use Psalm\Config;
 use Psalm\Context;
 
+use function getcwd;
+
 use const DIRECTORY_SEPARATOR;
 
 class IssueSuppressionTest extends TestCase
