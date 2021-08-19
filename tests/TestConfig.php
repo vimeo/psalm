@@ -47,6 +47,7 @@ class TestConfig extends Config
         return '<?xml version="1.0"?>
                 <projectFiles>
                     <directory name="src" />
+                    <file name="tests/somefile.php" />
                     <ignoreFiles>
                         <directory name="src/Psalm/Internal/Stubs" />
                     </ignoreFiles>
