@@ -51,6 +51,7 @@ class UnsetAnalyzer
                             ) {
                                 if (isset($atomic_root_type->properties[$var->dim->value])) {
                                     unset($atomic_root_type->properties[$var->dim->value]);
+                                    $root_type->bustCache(); //remove id cache
                                 }
 
                                 if (!$atomic_root_type->properties) {
