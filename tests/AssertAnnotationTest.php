@@ -1522,6 +1522,22 @@ class AssertAnnotationTest extends TestCase
                     [],
                     '7.4'
             ],
+            'assertIfTrueWithUnion' => [
+                '<?php
+                    /** @psalm-assert-if-true "a"|"b"|"c" $_ */
+                    function isValid(string $_): bool { exit; }
+
+                    $s = random_bytes(1);
+                    if (isValid($s)) {
+                        $r = $s;
+                    } else {
+                        exit;
+                    }
+                ',
+                'assertions' => [
+                    '$r===' => '"a"|"b"|"c"',
+                ],
+            ],
         ];
     }
 
