@@ -271,9 +271,9 @@ abstract class Type
         ]);
     }
 
-    public static function getLiteralClassString(string $class_type): Union
+    public static function getLiteralClassString(string $class_type, bool $definite_class = false): Union
     {
-        $type = new TLiteralClassString($class_type);
+        $type = new TLiteralClassString($class_type, $definite_class);
 
         return new Union([$type]);
     }

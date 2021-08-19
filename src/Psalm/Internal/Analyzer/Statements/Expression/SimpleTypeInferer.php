@@ -256,7 +256,7 @@ class SimpleTypeInferer
                 }
 
                 if (strtolower($stmt->name->name) === 'class') {
-                    return Type::getLiteralClassString($const_fq_class_name);
+                    return Type::getLiteralClassString($const_fq_class_name, true);
                 }
 
                 if ($existing_class_constants === null
