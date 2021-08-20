@@ -474,11 +474,14 @@ class IntRangeTest extends TestCase
             'IntRangeContainedInMultipleInt' => [
                 '<?php
                     $_arr = [];
+
                     foreach ([0, 1] as $i) {
                         $_arr[$i] = 1;
                     }
+
                     /** @var int<0,1> $j */
                     $j = 0;
+
                     echo $_arr[$j];'
             ],
             'modulo' => [
@@ -579,6 +582,30 @@ class IntRangeTest extends TestCase
                     ',
                 'assertions' => [
                     '$c===' => 'int<0, 0>|null',
+                ],
+            ],
+            'minMax' => [
+                '<?php
+                    function getInt(): int{return 0;}
+                    $a = $b = $c = $d = $e = getInt();
+                    assert($b > 10);
+                    assert($c < -15);
+                    assert($d === 20);
+                    assert($e > 0);
+                    $f = min($a, $b, $c, $d);
+                    $g = min($b, $c, $d);
+                    $h = min($d, $e);
+                    $i = max($b, $c, $d);
+                    $j = max($d, $e);
+                    $k = max($e, 40);
+                    ',
+                'assertions' => [
+                    '$f===' => 'int<min, -16>',
+                    '$g===' => 'int<min, -16>',
+                    '$h===' => 'int<1, 20>',
+                    '$i===' => 'int<20, max>',
+                    '$j===' => 'int<20, max>',
+                    '$k===' => 'int<40, max>',
                 ],
             ],
         ];

@@ -72,6 +72,7 @@ class FunctionReturnTypeProvider
         $this->registerClass(ReturnTypeProvider\HexdecReturnTypeProvider::class);
         $this->registerClass(ReturnTypeProvider\MinMaxReturnTypeProvider::class);
         $this->registerClass(ReturnTypeProvider\TriggerErrorReturnTypeProvider::class);
+        $this->registerClass(ReturnTypeProvider\RandReturnTypeProvider::class);
     }
 
     /**

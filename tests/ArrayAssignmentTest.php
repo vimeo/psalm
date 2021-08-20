@@ -1144,7 +1144,7 @@ class ArrayAssignmentTest extends TestCase
                     $b[] = rand(0, 10);',
                 'assertions' => [
                     '$a' => 'array{int, int, int}',
-                    '$b' => 'array{int, int, int, int}',
+                    '$b' => 'array{int, int, int, int<0, 10>}',
                 ],
             ],
             'listMergedWithTKeyedArrayList' => [

@@ -52,8 +52,10 @@ class Php70Test extends TestCase
             ],
             'nullCoalesce' => [
                 '<?php
+                    /** @var int $i */
+                    $i = 0;
                     $arr = ["hello", "goodbye"];
-                    $a = $arr[rand(0, 10)] ?? null;',
+                    $a = $arr[$i] ?? null;',
                 'assertions' => [
                     '$a' => 'null|string',
                 ],
