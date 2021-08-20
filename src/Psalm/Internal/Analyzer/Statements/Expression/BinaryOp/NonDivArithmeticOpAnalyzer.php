@@ -666,6 +666,16 @@ class NonDivArithmeticOpAnalyzer
             }
 
             if ($left_type_part instanceof Type\Atomic\TIntRange && $right_type_part instanceof Type\Atomic\TIntRange) {
+                if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Div) {
+                    //can't assume an int range will stay int after division
+                    if (!$result_type) {
+                        $result_type = Type::getFloat();
+                    } else {
+                        $result_type = Type::combineUnionTypes(Type::getFloat(), $result_type);
+                    }
+                    return null;
+                }
+
                 $calculated_min_type = null;
                 if ($left_type_part->min_bound !== null && $right_type_part->min_bound !== null) {
                     // when there are two valid numbers, make any operation
@@ -715,6 +725,16 @@ class NonDivArithmeticOpAnalyzer
                     $other_operand = $left_type_part;
                 } else {
                     //this can't happen
+                    return null;
+                }
+
+                if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Div) {
+                    //can't assume an int range will stay int after division
+                    if (!$result_type) {
+                        $result_type = Type::getFloat();
+                    } else {
+                        $result_type = Type::combineUnionTypes(Type::getFloat(), $result_type);
+                    }
                     return null;
                 }
 
