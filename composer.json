@@ -16,6 +16,7 @@
     "require": {
         "php": "^7.1|^8",
         "ext-SimpleXML": "*",
+        "ext-ctype": "*",
         "ext-dom": "*",
         "ext-json": "*",
         "ext-libxml": "*",
