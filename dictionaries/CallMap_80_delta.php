@@ -893,6 +893,10 @@ return [
       'old' => ['int|false', 'hour='=>'int', 'minute='=>'int', 'second='=>'int', 'month='=>'int', 'day='=>'int', 'year='=>'int'],
       'new' => ['int|false', 'hour'=>'int', 'minute='=>'int|null', 'second='=>'int|null', 'month='=>'int|null', 'day='=>'int|null', 'year='=>'int|null'],
     ],
+    'openssl_x509_parse' => [
+        'old' => ['array|false', 'certificate'=>'resource|string', 'short_names'=>'bool|null'],
+        'new' => ['array|false', 'certificate'=>'OpenSSLCertificate|string', 'short_names'=>'bool|null'],
+    ],
     'parse_str' => [
       'old' => ['void', 'string'=>'string', '&w_result='=>'array'],
       'new' => ['void', 'string'=>'string', '&w_result'=>'array'],
