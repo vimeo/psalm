@@ -11,6 +11,8 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NewAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticCallAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\VariableUseGraph;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\UnrecognizedExpression;
@@ -340,6 +342,26 @@ class ExpressionAnalyzer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\ShellExec) {
+            if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
+                foreach ($stmt->parts as $part) {
+                    if ($part instanceof PhpParser\Node\Expr\Variable) {
+                        if (self::analyze($statements_analyzer, $part, $context) === false) {
+                            break;
+                        }
+
+                        $expr_type = $statements_analyzer->node_data->getType($part);
+
+                        foreach ($expr_type->parent_nodes as $parent_node) {
+                            $statements_analyzer->data_flow_graph->addPath(
+                                $parent_node,
+                                new DataFlowNode('variable-use', 'variable use', null),
+                                'variable-use'
+                            );
+                        }
+                    }
+                }
+            }
+
             if (IssueBuffer::accepts(
                 new ForbiddenCode(
                     'Use of shell_exec',
