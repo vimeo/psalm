@@ -517,6 +517,9 @@ return [
     'phpparser\\node\\matcharm' => [
         'conds' => 'null|non-empty-list<PhpParser\Node\Expr>',
     ],
+    'phpparser\\node\\expr\\shellexec' => [
+        'parts' => 'list<PhpParser\Node>',
+    ],
     'rdkafka\\message' => [
         'err' => 'int',
         'topic_name' => 'string',

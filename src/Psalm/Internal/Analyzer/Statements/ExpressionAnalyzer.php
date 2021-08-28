@@ -350,6 +350,9 @@ class ExpressionAnalyzer
                         }
 
                         $expr_type = $statements_analyzer->node_data->getType($part);
+                        if ($expr_type === null) {
+                            break;
+                        }
 
                         foreach ($expr_type->parent_nodes as $parent_node) {
                             $statements_analyzer->data_flow_graph->addPath(
