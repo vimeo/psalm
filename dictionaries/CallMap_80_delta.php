@@ -895,7 +895,7 @@ return [
     ],
     'openssl_x509_parse' => [
       'old' => ['array|false', 'certificate'=>'string|resource', 'short_names='=>'bool'],
-      'new' => ['array|false', 'certificate'=>'OpenSSLCertificate|string', 'short_names'=>'bool|null'],
+      'new' => ['array|false', 'certificate'=>'OpenSSLCertificate|string', 'short_names='=>'bool'],
     ],
     'openssl_x509_read' => [
       'old' => ['resource|false', 'certificate'=>'string|resource'],
