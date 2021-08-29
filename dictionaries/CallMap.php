@@ -9334,7 +9334,7 @@ return [
 'openssl_x509_export_to_file' => ['bool', 'certificate'=>'string|resource', 'output_filename'=>'string', 'no_text='=>'bool'],
 'openssl_x509_fingerprint' => ['string|false', 'certificate'=>'string|resource', 'digest_algo='=>'string', 'binary='=>'bool'],
 'openssl_x509_free' => ['void', 'certificate'=>'resource'],
-'openssl_x509_parse' => ['array|false', 'certificate'=>'OpenSSLCertificate|string', 'short_names'=>'bool|null'],
+'openssl_x509_parse' => ['array|false', 'certificate'=>'OpenSSLCertificate|string', 'short_names='=>'bool'],
 'openssl_x509_read' => ['OpenSSLCertificate|false', 'certificate'=>'OpenSSLCertificate|string'],
 'ord' => ['int', 'character'=>'string'],
 'OuterIterator::current' => ['mixed'],
