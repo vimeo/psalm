@@ -404,7 +404,11 @@ class NamedFunctionCallHandler
             }
         }
 
-        if ($first_arg && $function_id === 'array_walk') {
+        if ($first_arg
+            && ($function_id === 'array_walk'
+                || $function_id === 'array_walk_recursive'
+            )
+        ) {
             $first_arg_type = $statements_analyzer->node_data->getType($first_arg->value);
 
             if ($first_arg_type && $first_arg_type->hasObjectType()) {

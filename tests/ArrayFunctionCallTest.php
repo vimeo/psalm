@@ -2177,6 +2177,13 @@ class ArrayFunctionCallTest extends TestCase
                 ',
                 'error_message' => 'RawObjectIteration',
             ],
+            'arrayWalkRecursiveOverObject' => [
+                '<?php
+                    $o = new stdClass();
+                    array_walk_recursive($o, "var_dump");
+                ',
+                'error_message' => 'RawObjectIteration',
+            ],
         ];
     }
 }
