@@ -45,11 +45,14 @@ class IntRangeTest extends TestCase
             'intReduced' => [
                 '<?php
                     function getInt(): int{return 0;}
-                    $a = getInt();
+                    $a = $b = getInt();
                     assert($a >= 500);
-                    assert($a < 5000);',
+                    assert($a < 5000);
+                    assert($b >= -5000);
+                    assert($b < -500);',
                 'assertions' => [
-                    '$a===' => 'int<500, 4999>'
+                    '$a===' => 'int<500, 4999>',
+                    '$b===' => 'int<-5000, -499>',
                 ]
             ],
             'intOperations' => [
