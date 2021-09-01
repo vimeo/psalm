@@ -409,6 +409,8 @@ Contains a list of all the directories that Psalm should inspect. You can also s
 </projectFiles>
 ```
 
+> If you're looking to ignore individual files, consider starting with a [baseline suppression file](https://psalm.dev/docs/running_psalm/dealing_with_code_issues/#using-a-baseline-file) (which can be automatically generated for your existing errors).
+
 #### &lt;extraFiles&gt;
 Optional. Same format as `<projectFiles>`. Directories Psalm should load but not inspect.
 
