@@ -1563,7 +1563,8 @@ class AssertionFinder
      */
     protected static function hasSuperiorNumberCheck(
         PhpParser\Node\Expr\BinaryOp $conditional,
-        ?int &$literal_value_comparison
+        ?int &$literal_value_comparison,
+        bool &$isset_assert
     ) {
         $right_assignment = false;
         $positive_right = null;
@@ -1582,6 +1583,8 @@ class AssertionFinder
             $value_right = $conditional->right->expr->value;
         }
         if ($right_assignment === true && $positive_right !== null && $value_right !== null) {
+            $isset_assert = $value_right === 0 && $conditional instanceof GreaterOrEqual;
+
             $literal_value_comparison = ($positive_right ? 1 : -1) * $value_right +
                 ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater ? 1 : 0);
 
@@ -1605,6 +1608,8 @@ class AssertionFinder
             $value_left = $conditional->left->expr->value;
         }
         if ($left_assignment === true && $positive_left !== null && $value_left !== null) {
+            $isset_assert = $value_left === 0 && $conditional instanceof Greater;
+
             $literal_value_comparison = ($positive_left ? 1 : -1) * $value_left +
                 ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater ? -1 : 0);
 
@@ -1620,7 +1625,8 @@ class AssertionFinder
      */
     protected static function hasInferiorNumberCheck(
         PhpParser\Node\Expr\BinaryOp $conditional,
-        ?int &$literal_value_comparison
+        ?int &$literal_value_comparison,
+        bool &$isset_assert
     ) {
         $right_assignment = false;
         $positive_right = null;
@@ -1639,6 +1645,8 @@ class AssertionFinder
             $value_right = $conditional->right->expr->value;
         }
         if ($right_assignment === true && $positive_right !== null && $value_right !== null) {
+            $isset_assert = $value_right === 0 && $conditional instanceof Smaller;
+
             $literal_value_comparison = ($positive_right ? 1 : -1) * $value_right +
                 ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller ? -1 : 0);
             return self::ASSIGNMENT_TO_RIGHT;
@@ -1661,6 +1669,8 @@ class AssertionFinder
             $value_left = $conditional->left->expr->value;
         }
         if ($left_assignment === true && $positive_left !== null && $value_left !== null) {
+            $isset_assert = $value_left === 0 && $conditional instanceof SmallerOrEqual;
+
             $literal_value_comparison = ($positive_left ? 1 : -1) * $value_left +
                 ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller ? 1 : 0);
 
@@ -3679,8 +3689,13 @@ class AssertionFinder
         $count_equality_position = self::hasNonEmptyCountEqualityCheck($conditional, $min_count);
         $max_count = null;
         $count_inequality_position = self::hasLessThanCountEqualityCheck($conditional, $max_count);
+        $isset_assert = false;
         $superior_value_comparison = null;
-        $superior_value_position = self::hasSuperiorNumberCheck($conditional, $superior_value_comparison);
+        $superior_value_position = self::hasSuperiorNumberCheck(
+            $conditional,
+            $superior_value_comparison,
+            $isset_assert
+        );
 
         if ($count_equality_position) {
             if ($count_equality_position === self::ASSIGNMENT_TO_RIGHT) {
@@ -3754,18 +3769,18 @@ class AssertionFinder
             if ($var_name !== null) {
                 if ($superior_value_position === self::ASSIGNMENT_TO_RIGHT) {
                     if ($superior_value_comparison === 0) {
-                        $if_types[$var_name] = [['=isset'], ['positive-numeric', '=int(0)']];
+                        $if_types[$var_name] = [['positive-numeric', '=int(0)']];
                     } elseif ($superior_value_comparison === 1) {
-                        $if_types[$var_name] = [['=isset'], ['positive-numeric']];
+                        $if_types[$var_name] = [['positive-numeric']];
                     } else {
-                        $if_types[$var_name] = [['=isset'], ['>' . $superior_value_comparison]];
+                        $if_types[$var_name] = [['>' . $superior_value_comparison]];
                     }
                 } else {
-                    if ($superior_value_comparison === 0) {
-                        $if_types[$var_name] = [['<' . $superior_value_comparison]];
-                    } else {
-                        $if_types[$var_name] = [['=isset'], ['<' . $superior_value_comparison]];
-                    }
+                    $if_types[$var_name] = [['<' . $superior_value_comparison]];
+                }
+
+                if ($isset_assert) {
+                    $if_types[$var_name][] = ['=isset'];
                 }
             }
 
@@ -3789,8 +3804,13 @@ class AssertionFinder
         $count_equality_position = self::hasNonEmptyCountEqualityCheck($conditional, $min_count);
         $max_count = null;
         $count_inequality_position = self::hasLessThanCountEqualityCheck($conditional, $max_count);
+        $isset_assert = false;
         $inferior_value_comparison = null;
-        $inferior_value_position = self::hasInferiorNumberCheck($conditional, $inferior_value_comparison);
+        $inferior_value_position = self::hasInferiorNumberCheck(
+            $conditional,
+            $inferior_value_comparison,
+            $isset_assert
+        );
 
         if ($count_equality_position) {
             if ($count_equality_position === self::ASSIGNMENT_TO_LEFT) {
@@ -3860,19 +3880,19 @@ class AssertionFinder
 
             if ($var_name !== null) {
                 if ($inferior_value_position === self::ASSIGNMENT_TO_RIGHT) {
-                    if ($inferior_value_comparison === 0) {
-                        $if_types[$var_name] = [['<' . $inferior_value_comparison]];
-                    } else {
-                        $if_types[$var_name] = [['=isset'], ['<' . $inferior_value_comparison]];
-                    }
+                    $if_types[$var_name] = [['<' . $inferior_value_comparison]];
                 } else {
                     if ($inferior_value_comparison === 0) {
-                        $if_types[$var_name] = [['=isset'], ['positive-numeric', '=int(0)']];
+                        $if_types[$var_name] = [['positive-numeric', '=int(0)']];
                     } elseif ($inferior_value_comparison === 1) {
-                        $if_types[$var_name] = [['=isset'], ['positive-numeric']];
+                        $if_types[$var_name] = [['positive-numeric']];
                     } else {
-                        $if_types[$var_name] = [['=isset'], ['>' . $inferior_value_comparison]];
+                        $if_types[$var_name] = [['>' . $inferior_value_comparison]];
                     }
+                }
+
+                if ($isset_assert) {
+                    $if_types[$var_name][] = ['=isset'];
                 }
             }
 
