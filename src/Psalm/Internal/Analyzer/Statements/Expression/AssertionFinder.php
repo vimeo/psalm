@@ -1583,7 +1583,7 @@ class AssertionFinder
             $value_right = $conditional->right->expr->value;
         }
         if ($right_assignment === true && $positive_right !== null && $value_right !== null) {
-            $isset_assert = $value_right === 0 && $conditional instanceof GreaterOrEqual;
+            $isset_assert = $value_right === 0 && $conditional instanceof Greater;
 
             $literal_value_comparison = ($positive_right ? 1 : -1) * $value_right +
                 ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater ? 1 : 0);
@@ -1669,7 +1669,7 @@ class AssertionFinder
             $value_left = $conditional->left->expr->value;
         }
         if ($left_assignment === true && $positive_left !== null && $value_left !== null) {
-            $isset_assert = $value_left === 0 && $conditional instanceof SmallerOrEqual;
+            $isset_assert = $value_left === 0 && $conditional instanceof Smaller;
 
             $literal_value_comparison = ($positive_left ? 1 : -1) * $value_left +
                 ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller ? 1 : 0);
