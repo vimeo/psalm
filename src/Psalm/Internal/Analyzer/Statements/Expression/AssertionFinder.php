@@ -1582,9 +1582,8 @@ class AssertionFinder
             $value_right = $conditional->right->expr->value;
         }
         if ($right_assignment === true && $positive_right !== null && $value_right !== null) {
-            $literal_value_comparison = ($value_right +
-                ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater ? 1 : 0)) *
-                ($positive_right ? 1 : -1);
+            $literal_value_comparison = ($positive_right ? 1 : -1) * $value_right +
+                ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater ? 1 : 0);
 
             return self::ASSIGNMENT_TO_RIGHT;
         }
@@ -1606,9 +1605,8 @@ class AssertionFinder
             $value_left = $conditional->left->expr->value;
         }
         if ($left_assignment === true && $positive_left !== null && $value_left !== null) {
-            $literal_value_comparison = ($value_left +
-                ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater ? 1 : 0)) *
-                ($positive_left ? 1 : -1);
+            $literal_value_comparison = ($positive_left ? 1 : -1) * $value_left +
+                ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater ? -1 : 0);
 
             return self::ASSIGNMENT_TO_LEFT;
         }
@@ -1641,10 +1639,8 @@ class AssertionFinder
             $value_right = $conditional->right->expr->value;
         }
         if ($right_assignment === true && $positive_right !== null && $value_right !== null) {
-            $literal_value_comparison = ($value_right +
-                ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller ? -1 : 0)) *
-                ($positive_right ? 1 : -1);
-
+            $literal_value_comparison = ($positive_right ? 1 : -1) * $value_right +
+                ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller ? -1 : 0);
             return self::ASSIGNMENT_TO_RIGHT;
         }
 
@@ -1665,9 +1661,8 @@ class AssertionFinder
             $value_left = $conditional->left->expr->value;
         }
         if ($left_assignment === true && $positive_left !== null && $value_left !== null) {
-            $literal_value_comparison = $value_left +
-                ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller ? -1 : 0) *
-                ($positive_left ? 1 : -1);
+            $literal_value_comparison = ($positive_left ? 1 : -1) * $value_left +
+                ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller ? 1 : 0);
 
             return self::ASSIGNMENT_TO_LEFT;
         }
