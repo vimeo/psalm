@@ -5,6 +5,7 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Issue\ForbiddenCode;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 
