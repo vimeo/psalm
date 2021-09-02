@@ -18,6 +18,8 @@ class EmptyAnalyzer
     ) : void {
         IssetAnalyzer::analyzeIssetVar($statements_analyzer, $stmt->expr, $context);
 
+        $codebase = $statements_analyzer->getCodebase();
+
         if (isset($codebase->config->forbidden_functions['empty'])) {
             if (IssueBuffer::accepts(
                 new ForbiddenCode(
