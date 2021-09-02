@@ -345,6 +345,22 @@ class ScopeAnalyzer
                         return $action !== self::ACTION_NONE;
                     }
                 );
+
+                if ($stmt instanceof PhpParser\Node\Stmt\While_
+                    && $nodes
+                    && ($stmt_expr_type = $nodes->getType($stmt->cond))
+                    && $stmt_expr_type->isTrue()
+                ) {
+                    //infinite while loop that only return don't have an exit path
+                    $have_exit_path = (bool)array_diff(
+                        $control_actions,
+                        [self::ACTION_END, self::ACTION_RETURN]
+                    );
+
+                    if (!$have_exit_path) {
+                        return array_values(array_unique($control_actions));
+                    }
+                }
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\TryCatch) {
