@@ -270,6 +270,22 @@ class GeneratorTest extends TestCase
                 [],
                 ['UndefinedClass']
             ],
+            'fillTemplatesForIteratorFromGenerator' => [
+                '<?php
+                    /**
+                     * @return Generator<int, string>
+                     */
+                    function generator(): Generator
+                    {
+                        yield "test";
+                    }
+
+                    $iterator = new NoRewindIterator(generator());
+                    ',
+                'assertions' => [
+                    '$iterator' => 'NoRewindIterator<int, string>',
+                ]
+            ],
         ];
     }
 
