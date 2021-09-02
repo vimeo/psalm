@@ -357,7 +357,7 @@ class TemplateStandinTypeReplacer
                 $input_key = substr($input_key, 0, $bracket_pos);
             }
 
-            if ($input_key === $key || is_a($input_key, $key, true)) {
+            if ($input_key === $key) {
                 $matching_atomic_types[$atomic_input_type->getId()] = $atomic_input_type;
                 continue;
             }
@@ -484,6 +484,12 @@ class TemplateStandinTypeReplacer
                         $atomic_input_type->as
                     )
                 );
+                continue;
+            }
+
+            if (is_a($input_key, $key, true)) {
+                $matching_atomic_types[$atomic_input_type->getId()] = $atomic_input_type;
+                continue;
             }
         }
 
