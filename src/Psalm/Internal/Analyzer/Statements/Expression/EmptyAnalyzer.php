@@ -5,6 +5,7 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Issue\ForbiddenCode;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 
@@ -16,6 +17,20 @@ class EmptyAnalyzer
         Context $context
     ) : void {
         IssetAnalyzer::analyzeIssetVar($statements_analyzer, $stmt->expr, $context);
+
+        $codebase = $statements_analyzer->getCodebase();
+
+        if (isset($codebase->config->forbidden_functions['empty'])) {
+            if (IssueBuffer::accepts(
+                new ForbiddenCode(
+                    'You have forbidden the use of empty',
+                    new CodeLocation($statements_analyzer->getSource(), $stmt)
+                ),
+                $statements_analyzer->getSuppressedIssues()
+            )) {
+                // continue
+            }
+        }
 
         if (($stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr))
             && $stmt_expr_type->hasBool()

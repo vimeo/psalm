@@ -873,6 +873,33 @@ class ConfigTest extends \Psalm\Tests\TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    public function testForbiddenEmptyFunction(): void
+    {
+        $this->expectExceptionMessage('ForbiddenCode');
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <forbiddenFunctions>
+                        <function name="empty" />
+                    </forbiddenFunctions>
+                </psalm>'
+            )
+        );
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                empty(false);'
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
     public function testValidThrowInvalidCatch(): void
     {
         $this->expectExceptionMessage('InvalidCatch');
