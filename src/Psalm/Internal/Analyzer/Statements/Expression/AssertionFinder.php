@@ -3442,7 +3442,7 @@ class AssertionFinder
                     $assertions = [];
 
                     if (!$is_sealed) {
-                        if ($value_type->getId() !== '') {
+                        if ($value_type->getId() !== '' && !$value_type->isMixed()) {
                             $assertions[] = 'in-array-' . $value_type->getId();
                         }
                     } else {
