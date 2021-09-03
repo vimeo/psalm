@@ -3458,6 +3458,9 @@ class AssertionFinder
                                 || $atomic_value_type instanceof Type\Atomic\TNull
                             ) {
                                 $assertions[] = $atomic_value_type->getAssertionString();
+                            } else {
+                                //unknown type, meaning it's not possible to infer anything from in_array
+                                return [];
                             }
                         }
                     }
