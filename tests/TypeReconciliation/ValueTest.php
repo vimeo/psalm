@@ -961,6 +961,39 @@ class ValueTest extends \Psalm\Tests\TestCase
                     }',
                 'error_message' => 'RedundantCondition',
             ],
+            'inArrayRemoveNull' => [
+                '<?php
+                    function x(?string $foo, string $bar): void {
+                        if (!in_array($foo, [$bar], true)) {
+                            throw new Exception();
+                        }
+
+                        if (is_string($foo)) {}
+                    }',
+                'error_message' => 'RedundantCondition',
+            ],
+            'inArrayDetectType' => [
+                '<?php
+                    function x($foo, string $bar): void {
+                        if (!in_array($foo, [$bar], true)) {
+                            throw new Exception();
+                        }
+
+                        if (is_string($foo)) {}
+                    }',
+                // foo is always string
+                'error_message' => 'RedundantCondition',
+            ],
+            'inArrayRemoveInvalid' => [
+                '<?php
+                    function x(?string $foo, int $bar): void {
+                        if (!in_array($foo, [$bar], true)) {
+                            throw new Exception();
+                        }
+                    }',
+                // Type null|string is never int
+                'error_message' => 'RedundantCondition',
+            ],
             'neverNotIdenticalFloatType' => [
                 '<?php
                     $a = 4.1;

@@ -3442,7 +3442,7 @@ class AssertionFinder
                     $assertions = [];
 
                     if (!$is_sealed) {
-                        if ($value_type->getId() !== '') {
+                        if ($value_type->getId() !== '' && !$value_type->isMixed()) {
                             $assertions[] = 'in-array-' . $value_type->getId();
                         }
                     } else {
@@ -3453,10 +3453,7 @@ class AssertionFinder
                                 || $atomic_value_type instanceof Type\Atomic\TEnumCase
                             ) {
                                 $assertions[] = '=' . $atomic_value_type->getAssertionString();
-                            } elseif ($atomic_value_type instanceof Type\Atomic\TFalse
-                                || $atomic_value_type instanceof Type\Atomic\TTrue
-                                || $atomic_value_type instanceof Type\Atomic\TNull
-                            ) {
+                            } else {
                                 $assertions[] = $atomic_value_type->getAssertionString();
                             }
                         }
