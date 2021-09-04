@@ -372,6 +372,10 @@ class AssertionFinder
             );
         }
 
+        if (!$source instanceof StatementsAnalyzer) {
+            return [];
+        }
+
         $min_count = null;
         $count_equality_position = self::hasCountEqualityCheck($conditional, $min_count);
 
@@ -393,6 +397,24 @@ class AssertionFinder
                 $source
             );
 
+            $var_type = $source->node_data->getType($conditional->left);
+            $other_type = $source->node_data->getType($conditional->right);
+
+            if ($codebase
+                && $other_type
+                && $var_type
+                && $conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
+            ) {
+                self::handleParadoxicalAssertions(
+                    $source,
+                    $var_type,
+                    $this_class_name,
+                    $other_type,
+                    $codebase,
+                    $conditional
+                );
+            }
+
             if ($var_name) {
                 if ($min_count) {
                     $if_types[$var_name] = [['=has-at-least-' . $min_count]];
@@ -402,10 +424,6 @@ class AssertionFinder
             }
 
             return $if_types ? [$if_types] : [];
-        }
-
-        if (!$source instanceof StatementsAnalyzer) {
-            return [];
         }
 
         $getclass_position = self::hasGetClassCheck($conditional, $source);
