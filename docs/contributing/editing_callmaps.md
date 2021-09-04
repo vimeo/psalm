@@ -27,7 +27,7 @@ optional parameter is postfixed with `=`.
 
 Delta files (named `CallMap_<PHP major version><PHP minor version>_delta.php`)
 list the changed that happened in the corresponding PHP version. There are
-three section with self-explanatory names: `aded` (for functions/methods that
+three section with self-explanatory names: `added` (for functions/methods that
 were added in that PHP version), `removed` (for those that were removed) and
 `changed`.
 
