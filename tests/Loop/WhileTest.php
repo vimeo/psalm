@@ -712,7 +712,7 @@ class WhileTest extends \Psalm\Tests\TestCase
                 '<?php
                     function getResultWithRetry(): string
                     {
-                        while (true) {
+                        while (new stdClass) {
                             return "";
                         }
                     }'
