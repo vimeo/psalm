@@ -15,6 +15,7 @@ use Psalm\Type;
 use Psalm\Type\Reconciler;
 
 use function array_filter;
+use function array_intersect;
 use function array_keys;
 use function array_map;
 use function array_merge;
@@ -230,6 +231,17 @@ class TernaryAnalyzer
                     $type
                 );
             }
+        }
+
+        $redef_var_ifs = array_keys($if_context->getRedefinedVars($context->vars_in_scope));
+        $redef_var_else = array_keys($t_else_context->getRedefinedVars($context->vars_in_scope));
+        $redef_all = array_intersect($redef_var_ifs, $redef_var_else);
+
+        foreach ($redef_all as $redef_var_id) {
+            $context->vars_in_scope[$redef_var_id] = Type::combineUnionTypes(
+                $if_context->vars_in_scope[$redef_var_id],
+                $t_else_context->vars_in_scope[$redef_var_id]
+            );
         }
 
         $context->vars_possibly_in_scope = array_merge(

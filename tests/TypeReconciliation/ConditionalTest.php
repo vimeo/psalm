@@ -2665,7 +2665,16 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                          $takesValid($val3);
                      }
                  }'
-            ]
+            ],
+            'ternaryRedefineAllVars' => [
+                '<?php
+                    $_a = null;
+                    $b = rand(0,1) ? "" : "a";
+                    $b === "a" ? $_a = "Y" : $_a = "N";',
+                'assertions' => [
+                    '$_a===' => '"N"|"Y"',
+                ]
+            ],
         ];
     }
 
