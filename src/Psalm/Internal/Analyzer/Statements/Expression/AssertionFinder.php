@@ -563,7 +563,7 @@ class AssertionFinder
         }
 
         $count = null;
-        $count_inequality_position = self::hasNotCountEqualityCheck($conditional, $count);
+        $count_inequality_position = self::hasCountEqualityCheck($conditional, $count);
 
         if ($count_inequality_position) {
             $if_types = [];
@@ -1435,7 +1435,7 @@ class AssertionFinder
     }
 
     /**
-     * @param Greater|GreaterOrEqual|Identical|Equal|Smaller|SmallerOrEqual $conditional
+     * @param Greater|GreaterOrEqual|Smaller|SmallerOrEqual $conditional
      * @return false|int
      */
     protected static function hasNonEmptyCountEqualityCheck(
@@ -1448,9 +1448,7 @@ class AssertionFinder
             && $conditional->left->args;
 
         $operator_greater_than_or_equal =
-            $conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
-            || $conditional instanceof PhpParser\Node\Expr\BinaryOp\Equal
-            || $conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater
+            $conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater
             || $conditional instanceof PhpParser\Node\Expr\BinaryOp\GreaterOrEqual;
 
         if ($left_count
@@ -1474,9 +1472,7 @@ class AssertionFinder
             && $conditional->right->args;
 
         $operator_less_than_or_equal =
-            $conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
-            || $conditional instanceof PhpParser\Node\Expr\BinaryOp\Equal
-            || $conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller
+            $conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller
             || $conditional instanceof PhpParser\Node\Expr\BinaryOp\SmallerOrEqual;
 
         if ($right_count
@@ -1496,7 +1492,7 @@ class AssertionFinder
     }
 
     /**
-     * @param Identical|Equal $conditional
+     * @param Identical|Equal|NotIdentical|NotEqual $conditional
      * @return false|int
      */
     protected static function hasCountEqualityCheck(
@@ -1570,39 +1566,6 @@ class AssertionFinder
         ) {
             $max_count = $conditional->left->value -
                 ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater ? 1 : 0);
-
-            return self::ASSIGNMENT_TO_LEFT;
-        }
-
-        return false;
-    }
-
-    /**
-     * @param Equal|Identical|NotEqual|NotIdentical $conditional
-     * @return false|int
-     */
-    protected static function hasNotCountEqualityCheck(
-        PhpParser\Node\Expr\BinaryOp $conditional,
-        ?int &$count
-    ) {
-        $left_count = $conditional->left instanceof PhpParser\Node\Expr\FuncCall
-            && $conditional->left->name instanceof PhpParser\Node\Name
-            && strtolower($conditional->left->name->parts[0]) === 'count'
-            && $conditional->left->args;
-
-        if ($left_count && $conditional->right instanceof PhpParser\Node\Scalar\LNumber) {
-            $count = $conditional->right->value;
-
-            return self::ASSIGNMENT_TO_RIGHT;
-        }
-
-        $right_count = $conditional->right instanceof PhpParser\Node\Expr\FuncCall
-            && $conditional->right->name instanceof PhpParser\Node\Name
-            && strtolower($conditional->right->name->parts[0]) === 'count'
-            && $conditional->right->args;
-
-        if ($right_count && $conditional->left instanceof PhpParser\Node\Scalar\LNumber) {
-            $count = $conditional->left->value;
 
             return self::ASSIGNMENT_TO_LEFT;
         }
