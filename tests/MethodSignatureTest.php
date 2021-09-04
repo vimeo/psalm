@@ -610,6 +610,21 @@ class MethodSignatureTest extends TestCase
 
                     class C extends A implements I {}',
             ],
+            'allowInterfaceImplementationWithStaticReturn' => [
+                '<?php
+                    abstract class A {
+                        public function foo(): static {
+                            return $this;
+                        }
+                    }
+
+                    interface I {
+                        /** @return I */
+                        public function foo();
+                    }
+
+                    class C extends A implements I {}',
+            ],
             'enforceParameterInheritanceWithInheritDocAndParam' => [
                 '<?php
                     class A {}

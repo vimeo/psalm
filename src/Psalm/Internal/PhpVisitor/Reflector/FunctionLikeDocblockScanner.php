@@ -879,6 +879,19 @@ class FunctionLikeDocblockScanner
                 $type_aliases
             );
 
+            $storage_type_string = (string)$storage->return_type;
+            if ($classlike_storage
+                && ($storage_type_string === 'self' || $storage_type_string === 'static')
+                && !$classlike_storage->is_trait
+            ) {
+                $fq_type_string = $classlike_storage->name;
+                if ($storage_type_string === 'static') {
+                    $fq_type_string .= '&static';
+                }
+
+                $storage->return_type = Type::parseString($fq_type_string);
+            }
+
             $storage->return_type->setFromDocblock();
 
             if ($storage instanceof MethodStorage) {
