@@ -1239,7 +1239,7 @@ class TypeCombiner
                     $combination->value_types['int'] = $type;
                 } elseif (isset($combination->value_types['int'])
                     && get_class($combination->value_types['int'])
-                        !== get_class($type)
+                    !== get_class($type)
                 ) {
                     $combination->value_types['int'] = new TInt();
                 }
@@ -1247,12 +1247,8 @@ class TypeCombiner
                 if ($combination->ints) {
                     foreach ($combination->ints as $int) {
                         if (!$type->contains($int->value)) {
-                            if ($type->min_bound !== null) {
-                                $type->min_bound = min($type->min_bound, $int->value);
-                            }
-                            if ($type->max_bound !== null) {
-                                $type->max_bound = max($type->max_bound, $int->value);
-                            }
+                            $type->min_bound = TIntRange::getNewLowestBound($type->min_bound, $int->value);
+                            $type->max_bound = TIntRange::getNewHighestBound($type->max_bound, $int->value);
                         }
                     }
 
@@ -1262,21 +1258,10 @@ class TypeCombiner
                 } else {
                     $old_type = $combination->value_types['int'];
                     if ($old_type instanceof TIntRange) {
-                        if ($old_type->min_bound === null || $type->min_bound === null) {
-                            $type->min_bound = null;
-                        } else {
-                            $type->min_bound = min($old_type->min_bound, $type->min_bound);
-                        }
-
-                        if ($old_type->max_bound === null || $type->max_bound === null) {
-                            $type->max_bound = null;
-                        } else {
-                            $type->max_bound = max($old_type->max_bound, $type->max_bound);
-                        }
+                        $type->min_bound = TIntRange::getNewLowestBound($old_type->min_bound, $type->min_bound);
+                        $type->max_bound = TIntRange::getNewHighestBound($old_type->max_bound, $type->max_bound);
                     } elseif ($old_type instanceof TPositiveInt) {
-                        if ($type->min_bound !== null) {
-                            $type->min_bound = min($type->min_bound, 0);
-                        }
+                        $type->min_bound = TIntRange::getNewLowestBound($type->min_bound, 0);
                         $type->max_bound = null;
                     } else {
                         $type = new TInt();

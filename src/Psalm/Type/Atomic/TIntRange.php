@@ -1,6 +1,9 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use function max;
+use function min;
+
 /**
  * Denotes an interval of integers between two bounds
  */
@@ -78,5 +81,21 @@ class TIntRange extends TInt
             ($this->min_bound === null && $this->max_bound >= $i) ||
             ($this->max_bound === null && $this->min_bound <= $i) ||
             ($this->min_bound <= $i && $this->max_bound >= $i);
+    }
+
+    public static function getNewLowestBound(?int $bound1, ?int $bound2): ?int
+    {
+        if ($bound1 === null || $bound2 === null) {
+            return null;
+        }
+        return min($bound1, $bound2);
+    }
+
+    public static function getNewHighestBound(?int $bound1, ?int $bound2): ?int
+    {
+        if ($bound1 === null || $bound2 === null) {
+            return null;
+        }
+        return max($bound1, $bound2);
     }
 }

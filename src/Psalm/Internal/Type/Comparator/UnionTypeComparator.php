@@ -108,6 +108,15 @@ class UnionTypeComparator
                 continue;
             }
 
+            if ($input_type_part instanceof Atomic\TIntRange && $container_type->hasInt()) {
+                if (IntegerRangeComparator::isContainedByUnion(
+                    $input_type_part,
+                    $container_type
+                )) {
+                    continue;
+                }
+            }
+
             foreach ($container_type->getAtomicTypes() as $container_type_part) {
                 if ($ignore_null
                     && $container_type_part instanceof TNull
@@ -394,6 +403,24 @@ class UnionTypeComparator
 
         foreach ($type1->getAtomicTypes() as $type1_part) {
             foreach ($type2->getAtomicTypes() as $type2_part) {
+                //special case for TIntRange because it can contain a part of the other.
+                //For exemple int<0,1> and positive-int can be identical but none contain the other
+                if (($type1_part instanceof Atomic\TIntRange && $type2_part instanceof Atomic\TPositiveInt)) {
+                    return
+                        (
+                            ($type1_part->min_bound !== null && $type1_part->min_bound > 0) ||
+                            ($type1_part->max_bound !== null && $type1_part->max_bound > 0) ||
+                            ($type1_part->max_bound === null && $type1_part->min_bound === null)
+                        );
+                } elseif ($type2_part instanceof Atomic\TIntRange && $type1_part instanceof Atomic\TPositiveInt) {
+                    return
+                        (
+                            ($type2_part->min_bound !== null && $type2_part->min_bound > 0) ||
+                            ($type2_part->max_bound !== null && $type2_part->max_bound > 0) ||
+                            ($type2_part->max_bound === null && $type2_part->min_bound === null)
+                        );
+                }
+
                 $either_contains = AtomicTypeComparator::canBeIdentical(
                     $codebase,
                     $type1_part,
