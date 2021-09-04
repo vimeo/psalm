@@ -1,6 +1,6 @@
 # Contributing to Psalm
 
-Psalm is made possible through the contributions of almost 200 developers.
+Psalm is made possible through the contributions of [hundreds of developers](https://github.com/vimeo/psalm/graphs/contributors).
 
 Hopefully you can be one of them?
 
