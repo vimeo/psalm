@@ -3046,6 +3046,13 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                     }',
                 'error_message' => 'TypeDoesNotContainType',
             ],
+            'falsyValuesInIf' => [
+                '<?php
+                    if (0) {
+                        echo 123;
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
         ];
     }
 }

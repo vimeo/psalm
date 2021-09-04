@@ -218,7 +218,7 @@ class IfConditionalAnalyzer
         $cond_type = $statements_analyzer->node_data->getType($cond);
 
         if ($cond_type !== null) {
-            if ($cond_type->isFalse()) {
+            if ($cond_type->isAlwaysFalsy()) {
                 if ($cond_type->from_docblock) {
                     if (IssueBuffer::accepts(
                         new DocblockTypeContradiction(
