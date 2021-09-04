@@ -373,7 +373,7 @@ class AssertionFinder
         }
 
         $min_count = null;
-        $count_equality_position = self::hasNonEmptyCountEqualityCheck($conditional, $min_count);
+        $count_equality_position = self::hasCountEqualityCheck($conditional, $min_count);
 
         if ($count_equality_position) {
             $if_types = [];
@@ -397,7 +397,7 @@ class AssertionFinder
                 if ($min_count) {
                     $if_types[$var_name] = [['=has-at-least-' . $min_count]];
                 } else {
-                    $if_types[$var_name] = [['=non-empty-countable']];
+                    $if_types[$var_name] = [['!non-empty-countable']];
                 }
             }
 
@@ -1470,6 +1470,39 @@ class AssertionFinder
         ) {
             $min_count = $conditional->left->value +
                 ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller ? 1 : 0);
+
+            return self::ASSIGNMENT_TO_LEFT;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param Identical|Equal $conditional
+     * @return false|int
+     */
+    protected static function hasCountEqualityCheck(
+        PhpParser\Node\Expr\BinaryOp $conditional,
+        ?int &$min_count
+    ) {
+        $left_count = $conditional->left instanceof PhpParser\Node\Expr\FuncCall
+            && $conditional->left->name instanceof PhpParser\Node\Name
+            && strtolower($conditional->left->name->parts[0]) === 'count'
+            && $conditional->left->args;
+
+        if ($left_count && $conditional->right instanceof PhpParser\Node\Scalar\LNumber) {
+            $min_count = $conditional->right->value;
+
+            return self::ASSIGNMENT_TO_RIGHT;
+        }
+
+        $right_count = $conditional->right instanceof PhpParser\Node\Expr\FuncCall
+            && $conditional->right->name instanceof PhpParser\Node\Name
+            && strtolower($conditional->right->name->parts[0]) === 'count'
+            && $conditional->right->args;
+
+        if ($right_count && $conditional->left instanceof PhpParser\Node\Scalar\LNumber) {
+            $min_count = $conditional->left->value;
 
             return self::ASSIGNMENT_TO_LEFT;
         }
