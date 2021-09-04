@@ -349,7 +349,7 @@ class ScopeAnalyzer
                 if ($stmt instanceof PhpParser\Node\Stmt\While_
                     && $nodes
                     && ($stmt_expr_type = $nodes->getType($stmt->cond))
-                    && $stmt_expr_type->isTruthy()
+                    && $stmt_expr_type->isAlwaysTruthy()
                 ) {
                     //infinite while loop that only return don't have an exit path
                     $have_exit_path = (bool)array_diff(

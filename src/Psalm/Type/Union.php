@@ -983,12 +983,6 @@ class Union implements TypeNode
                 continue;
             }
 
-            if ($atomic_type instanceof Type\Atomic\TKeyedArray &&
-                $atomic_type->sealed === true &&
-                count($atomic_type->properties) === 0) {
-                continue;
-            }
-
             if ($atomic_type instanceof TTemplateParam && $atomic_type->as->isAlwaysFalsy()) {
                 continue;
             }
@@ -1012,7 +1006,7 @@ class Union implements TypeNode
         return count($this->types) === 1 && isset($this->types['true']);
     }
 
-    public function isTruthy(): bool
+    public function isAlwaysTruthy(): bool
     {
         foreach ($this->getAtomicTypes() as $atomic_type) {
             if ($atomic_type instanceof Type\Atomic\TTrue) {
@@ -1053,9 +1047,9 @@ class Union implements TypeNode
                 continue;
             }
 
-            if ($atomic_type instanceof Type\Atomic\TIntRange && !$atomic_type->contains(0)) {
+            /*if ($atomic_type instanceof Type\Atomic\TIntRange && !$atomic_type->contains(0)) {
                 continue;
-            }
+            }*/
 
             if ($atomic_type instanceof Type\Atomic\TPositiveInt) {
                 continue;
