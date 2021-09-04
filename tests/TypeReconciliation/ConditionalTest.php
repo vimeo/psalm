@@ -2672,7 +2672,7 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                     $b = rand(0,1) ? "" : "a";
                     $b === "a" ? $_a = "Y" : $_a = "N";',
                 'assertions' => [
-                    '$_a===' => "'N'|'Y'",
+                    '$_a===' => '"N"|"Y"',
                 ]
             ],
         ];
