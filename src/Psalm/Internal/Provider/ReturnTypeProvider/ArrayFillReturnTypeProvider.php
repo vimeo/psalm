@@ -74,6 +74,14 @@ class ArrayFillReturnTypeProvider implements \Psalm\Plugin\EventHandler\Function
             return true;
         }
 
+        if ($arg->isSingle()) {
+            foreach ($arg->getRangeInts() as $range_int) {
+                if ($range_int->isPositive()) {
+                    return true;
+                }
+            }
+        }
+
         return $arg->isSingleIntLiteral() && $arg->getSingleIntLiteral()->value > 0;
     }
 }
