@@ -26,6 +26,10 @@ There's a lot of interesting theory behind the things Psalm does, too. If you wa
 
 Lastly, working to improve static analysis tools will also make you a better PHP developer – it'll help you think more about how values flow through your program.
 
+### Guides
+
+* [Editing callmaps](editing_callmaps.md)
+
 ## Pull Requests
 
 Before you send a pull request, make sure you follow these guidelines:
