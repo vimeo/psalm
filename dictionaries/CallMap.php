@@ -2,7 +2,7 @@
 namespace Phan\Language\Internal;
 
 /**
- * CURRENT PHP TARGET VERSION: 8.0
+ * CURRENT PHP TARGET VERSION: 8.1
  * The version above has to match Psalm\Internal\Codebase\InternalCallMapHandler::PHP_(MAJOR|MINOR)_VERSION
  *
  * Format
@@ -382,6 +382,7 @@ return [
 'array_intersect_uassoc\'1' => ['associative-array', 'array'=>'array', 'rest'=>'array', 'arr3'=>'array', 'arg4'=>'array|callable(mixed,mixed):int', '...rest'=>'array|callable(mixed,mixed):int'],
 'array_intersect_ukey' => ['associative-array', 'array'=>'array', 'rest'=>'array', 'key_compare_func'=>'callable(mixed,mixed):int'],
 'array_intersect_ukey\'1' => ['associative-array', 'array'=>'array', 'rest'=>'array', 'arr3'=>'array', 'arg4'=>'array|callable(mixed,mixed):int', '...rest'=>'array|callable(mixed,mixed):int'],
+'array_is_list' => ['bool', 'array'=>'array'],
 'array_key_exists' => ['bool', 'key'=>'string|int', 'array'=>'array|ArrayObject'],
 'array_key_first' => ['int|string|null', 'array'=>'array'],
 'array_key_last' => ['int|string|null', 'array'=>'array'],
