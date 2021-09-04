@@ -1050,9 +1050,9 @@ class Union implements TypeNode
                 continue;
             }
 
-            /*if ($atomic_type instanceof Type\Atomic\TIntRange && !$atomic_type->contains(0)) {
+            if ($atomic_type instanceof Type\Atomic\TIntRange && !$atomic_type->contains(0)) {
                 continue;
-            }*/
+            }
 
             if ($atomic_type instanceof Type\Atomic\TPositiveInt) {
                 continue;
