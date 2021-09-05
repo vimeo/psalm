@@ -58,6 +58,102 @@ class IntRangeTest extends TestCase
                     '$c===' => 'int<-499, -61>',
                 ]
             ],
+            'negatedAssertions' => [
+                '<?php
+                    function getInt(): int{return 0;}
+                    $a = $b = $c = $d = $e = $f = $g = $h = $i = $j = $k = $l = $m = $n = $o = $p = getInt();
+                    //>
+                    if($a > 10){
+                        die();
+                    }
+
+                    if($b > -10){
+                        die();
+                    }
+
+                    //<
+                    if($c < 500){
+                        die();
+                    }
+
+                    if($d < -500){
+                        die();
+                    }
+
+                    //>=
+                    if($e >= 10){
+                        die();
+                    }
+
+                    if($f >= -10){
+                        die();
+                    }
+
+                    //<=
+                    if($g <= 500){
+                        die();
+                    }
+
+                    if($h <= -500){
+                        die();
+                    }
+
+                    //>
+                    if(10 > $i){
+                        die();
+                    }
+
+                    if(-10 > $j){
+                        die();
+                    }
+
+                    //<
+                    if(500 < $k){
+                        die();
+                    }
+
+                    if(-500 < $l){
+                        die();
+                    }
+
+                    //>=
+                    if(10 >= $m){
+                        die();
+                    }
+
+                    if(-10 >= $n){
+                        die();
+                    }
+
+                    //<=
+                    if(500 <= $o){
+                        die();
+                    }
+
+                    if(-500 <= $p){
+                        die();
+                    }
+                    //inverse
+                    ',
+                'assertions' => [
+                    '$a===' => 'int<min, 10>',
+                    '$b===' => 'int<min, -10>',
+                    '$c===' => 'int<500, max>',
+                    '$d===' => 'int<-500, max>',
+                    '$e===' => 'int<min, 9>',
+                    '$f===' => 'int<min, -11>',
+                    '$g===' => 'int<501, max>',
+                    '$h===' => 'int<-499, max>',
+                    '$i===' => 'int<10, max>',
+                    '$j===' => 'int<-10, max>',
+                    '$k===' => 'int<min, 500>',
+                    '$l===' => 'int<min, -500>',
+                    '$m===' => 'int<11, max>',
+                    '$n===' => 'int<-9, max>',
+                    '$o===' => 'int<min, 499>',
+                    '$p===' => 'int<min, -501>',
+                ]
+            ],
             'intOperations' => [
                 '<?php
                     function getInt(): int{return 0;}

@@ -48,7 +48,8 @@ class NegatedAssertionReconciler extends Reconciler
         bool $negated,
         ?CodeLocation $code_location,
         array $suppressed_issues,
-        int &$failed_reconciliation
+        int &$failed_reconciliation,
+        bool $inside_loop
     ): Type\Union {
         $is_equality = $is_strict_equality || $is_loose_equality;
 
@@ -211,7 +212,8 @@ class NegatedAssertionReconciler extends Reconciler
                 $suppressed_issues,
                 $failed_reconciliation,
                 $is_equality,
-                $is_strict_equality
+                $is_strict_equality,
+                $inside_loop
             );
 
             if ($simple_negated_type) {
