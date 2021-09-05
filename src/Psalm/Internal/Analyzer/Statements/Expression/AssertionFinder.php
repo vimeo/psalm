@@ -1567,50 +1567,42 @@ class AssertionFinder
         bool &$isset_assert
     ) {
         $right_assignment = false;
-        $positive_right = null;
         $value_right = null;
         if ($conditional->right instanceof LNumber) {
             $right_assignment = true;
-            $positive_right = true;
             $value_right = $conditional->right->value;
         } elseif ($conditional->right instanceof UnaryMinus && $conditional->right->expr instanceof LNumber) {
             $right_assignment = true;
-            $positive_right = false;
-            $value_right = $conditional->right->expr->value;
+            $value_right = -$conditional->right->expr->value;
         } elseif ($conditional->right instanceof UnaryPlus && $conditional->right->expr instanceof LNumber) {
             $right_assignment = true;
-            $positive_right = true;
             $value_right = $conditional->right->expr->value;
         }
-        if ($right_assignment === true && $positive_right !== null && $value_right !== null) {
+        if ($right_assignment === true && $value_right !== null) {
             $isset_assert = $value_right === 0 && $conditional instanceof Greater;
 
-            $literal_value_comparison = ($positive_right ? 1 : -1) * $value_right +
+            $literal_value_comparison = $value_right +
                 ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater ? 1 : 0);
 
             return self::ASSIGNMENT_TO_RIGHT;
         }
 
         $left_assignment = false;
-        $positive_left = null;
         $value_left = null;
         if ($conditional->left instanceof LNumber) {
             $left_assignment = true;
-            $positive_left = true;
             $value_left = $conditional->left->value;
         } elseif ($conditional->left instanceof UnaryMinus && $conditional->left->expr instanceof LNumber) {
             $left_assignment = true;
-            $positive_left = false;
-            $value_left = $conditional->left->expr->value;
+            $value_left = -$conditional->left->expr->value;
         } elseif ($conditional->left instanceof UnaryPlus && $conditional->left->expr instanceof LNumber) {
             $left_assignment = true;
-            $positive_left = true;
             $value_left = $conditional->left->expr->value;
         }
-        if ($left_assignment === true && $positive_left !== null && $value_left !== null) {
+        if ($left_assignment === true && $value_left !== null) {
             $isset_assert = $value_left === 0 && $conditional instanceof Greater;
 
-            $literal_value_comparison = ($positive_left ? 1 : -1) * $value_left +
+            $literal_value_comparison = $value_left +
                 ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater ? -1 : 0);
 
             return self::ASSIGNMENT_TO_LEFT;
@@ -1629,49 +1621,41 @@ class AssertionFinder
         bool &$isset_assert
     ) {
         $right_assignment = false;
-        $positive_right = null;
         $value_right = null;
         if ($conditional->right instanceof LNumber) {
             $right_assignment = true;
-            $positive_right = true;
             $value_right = $conditional->right->value;
         } elseif ($conditional->right instanceof UnaryMinus && $conditional->right->expr instanceof LNumber) {
             $right_assignment = true;
-            $positive_right = false;
-            $value_right = $conditional->right->expr->value;
+            $value_right = -$conditional->right->expr->value;
         } elseif ($conditional->right instanceof UnaryPlus && $conditional->right->expr instanceof LNumber) {
             $right_assignment = true;
-            $positive_right = true;
             $value_right = $conditional->right->expr->value;
         }
-        if ($right_assignment === true && $positive_right !== null && $value_right !== null) {
+        if ($right_assignment === true && $value_right !== null) {
             $isset_assert = $value_right === 0 && $conditional instanceof Smaller;
 
-            $literal_value_comparison = ($positive_right ? 1 : -1) * $value_right +
+            $literal_value_comparison = $value_right +
                 ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller ? -1 : 0);
             return self::ASSIGNMENT_TO_RIGHT;
         }
 
         $left_assignment = false;
-        $positive_left = null;
         $value_left = null;
         if ($conditional->left instanceof LNumber) {
             $left_assignment = true;
-            $positive_left = true;
             $value_left = $conditional->left->value;
         } elseif ($conditional->left instanceof UnaryMinus && $conditional->left->expr instanceof LNumber) {
             $left_assignment = true;
-            $positive_left = false;
-            $value_left = $conditional->left->expr->value;
+            $value_left = -$conditional->left->expr->value;
         } elseif ($conditional->left instanceof UnaryPlus && $conditional->left->expr instanceof LNumber) {
             $left_assignment = true;
-            $positive_left = true;
             $value_left = $conditional->left->expr->value;
         }
-        if ($left_assignment === true && $positive_left !== null && $value_left !== null) {
+        if ($left_assignment === true && $value_left !== null) {
             $isset_assert = $value_left === 0 && $conditional instanceof Smaller;
 
-            $literal_value_comparison = ($positive_left ? 1 : -1) * $value_left +
+            $literal_value_comparison = $value_left +
                 ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller ? 1 : 0);
 
             return self::ASSIGNMENT_TO_LEFT;
