@@ -1599,7 +1599,10 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                 if ($atomic_type->min_bound === null) {
                     $atomic_type->min_bound = (int)$assertion;
                 } else {
-                    $atomic_type->min_bound = max($atomic_type->min_bound, (int)$assertion);
+                    $atomic_type->min_bound = Atomic\TIntRange::getNewHighestBound(
+                        (int)$assertion,
+                        $atomic_type->min_bound
+                    );
                 }
                 $existing_var_type->addType($atomic_type);
             } elseif ($atomic_type instanceof Atomic\TLiteralInt) {
