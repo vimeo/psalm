@@ -19,11 +19,12 @@ use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Issue\DeprecatedClass;
 use Psalm\Issue\DeprecatedInterface;
 use Psalm\Issue\DeprecatedTrait;
+use Psalm\Issue\DuplicateEnumCaseValue;
 use Psalm\Issue\ExtensionRequirementViolation;
 use Psalm\Issue\ImplementationRequirementViolation;
 use Psalm\Issue\InaccessibleMethod;
 use Psalm\Issue\InternalClass;
-use Psalm\Issue\InvalidEnumBackingType;
+use Psalm\Issue\InvalidEnumCaseValue;
 use Psalm\Issue\InvalidExtendClass;
 use Psalm\Issue\InvalidTemplateParam;
 use Psalm\Issue\InvalidTraversableImplementation;
@@ -70,6 +71,8 @@ use function count;
 use function explode;
 use function implode;
 use function in_array;
+use function is_int;
+use function is_string;
 use function preg_match;
 use function preg_replace;
 use function str_replace;
@@ -249,9 +252,6 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             );
         }
 
-        if ($class instanceof PhpParser\Node\Stmt\Enum_) {
-            $this->checkEnum($class);
-        }
 
         if ($storage->template_types) {
             foreach ($storage->template_types as $param_name => $_) {
@@ -518,6 +518,10 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 $global_context,
                 $constructor_analyzer
             );
+        }
+
+        if ($class instanceof PhpParser\Node\Stmt\Enum_) {
+            $this->checkEnum();
         }
 
         foreach ($class->stmts as $stmt) {
@@ -2607,23 +2611,57 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         }
     }
 
-    private function checkEnum(PhpParser\Node\Stmt\Enum_ $enum): void
+    private function checkEnum(): void
     {
-        if (null === $enum->name) {
-            throw new \UnexpectedValueException('Anonymous enums are not allowed');
-        }
+        $storage = $this->storage;
 
-        if (null !== $enum->scalarType) {
-            $scalarType = $enum->scalarType;
-            if ($scalarType->name !== 'string' && $scalarType->name !== 'int') {
+        $seen_values = [];
+        foreach ($storage->enum_cases as $case_storage) {
+            if ($case_storage->value !== null && $storage->enum_type === null) {
                 if (IssueBuffer::accepts(
-                    new InvalidEnumBackingType(
-                        'Enums cannot be backed by ' . $scalarType->name . ', string or int expected',
-                        new CodeLocation($this, $scalarType),
-                        $enum->name->name
+                    new InvalidEnumCaseValue(
+                        'Case of a non-backed enum should not have a value',
+                        $case_storage->stmt_location,
+                        $storage->name
                     )
                 )) {
-                    // fall through
+                }
+            } elseif ($case_storage->value === null && $storage->enum_type !== null) {
+                if (IssueBuffer::accepts(
+                    new InvalidEnumCaseValue(
+                        'Case of a backed enum should have a value',
+                        $case_storage->stmt_location,
+                        $storage->name
+                    )
+                )) {
+                }
+            } elseif ($case_storage->value !== null && $storage->enum_type !== null) {
+                if ((is_int($case_storage->value) && $storage->enum_type === 'string')
+                    || (is_string($case_storage->value) && $storage->enum_type === 'int')
+                ) {
+                    if (IssueBuffer::accepts(
+                        new InvalidEnumCaseValue(
+                            'Enum case value type should be ' . $storage->enum_type,
+                            $case_storage->stmt_location,
+                            $storage->name
+                        )
+                    )) {
+                    }
+                }
+            }
+
+            if ($case_storage->value !== null) {
+                if (in_array($case_storage->value, $seen_values, true)) {
+                    if (IssueBuffer::accepts(
+                        new DuplicateEnumCaseValue(
+                            'Enum case values should be unique',
+                            $case_storage->stmt_location,
+                            $storage->name
+                        )
+                    )) {
+                    }
+                } else {
+                    $seen_values[] = $case_storage->value;
                 }
             }
         }

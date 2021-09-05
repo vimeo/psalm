@@ -6,7 +6,8 @@ by something else.
 ```php
 <?php
 
-enum Status: array {
+enum Status: array 
+{
    case None = [];
 }
 ```

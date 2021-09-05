@@ -24,7 +24,9 @@ use Psalm\Internal\Type\TypeAlias;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\Issue\DuplicateClass;
+use Psalm\Issue\DuplicateEnumCase;
 use Psalm\Issue\InvalidDocblock;
+use Psalm\Issue\InvalidEnumBackingType;
 use Psalm\Issue\InvalidTypeImport;
 use Psalm\Issue\MissingDocblockType;
 use Psalm\IssueBuffer;
@@ -33,6 +35,7 @@ use Psalm\Storage\FileStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
+use RuntimeException;
 
 use function array_merge;
 use function array_pop;
@@ -276,7 +279,22 @@ class ClassLikeNodeScanner
             $storage->is_enum = true;
 
             if ($node->scalarType) {
-                $storage->enum_type = $node->scalarType->name === 'string' ? 'string' : 'int';
+                if ($node->scalarType->name === 'string' || $node->scalarType->name === 'int') {
+                    $storage->enum_type = $node->scalarType->name;
+                } else {
+                    if (IssueBuffer::accepts(
+                        new InvalidEnumBackingType(
+                            'Enums cannot be backed by ' . $node->scalarType->name . ', string or int expected',
+                            new CodeLocation($this->file_scanner, $node->scalarType),
+                            $fq_classlike_name
+                        )
+                    )) {
+                        // fall through
+                    }
+                    $this->file_storage->has_visitor_issues = true;
+                    $storage->has_visitor_issues = true;
+                }
+                // todo: $this->codebase->scanner->queueClassLikeForScanning('BackedEnum');
             }
 
             $this->codebase->scanner->queueClassLikeForScanning('UnitEnum');
@@ -653,7 +671,7 @@ class ClassLikeNodeScanner
             } elseif ($node_stmt instanceof PhpParser\Node\Stmt\EnumCase
                 && $node instanceof PhpParser\Node\Stmt\Enum_
             ) {
-                $this->visitEnumDeclaration($node_stmt, $storage);
+                $this->visitEnumDeclaration($node_stmt, $storage, $fq_classlike_name);
             }
         }
 
@@ -1249,19 +1267,54 @@ class ClassLikeNodeScanner
 
     private function visitEnumDeclaration(
         PhpParser\Node\Stmt\EnumCase $stmt,
-        ClassLikeStorage $storage
+        ClassLikeStorage $storage,
+        string $fq_classlike_name
     ): void {
         $enum_value = null;
 
-        if ($stmt->expr instanceof PhpParser\Node\Scalar\String_
-            || $stmt->expr instanceof PhpParser\Node\Scalar\LNumber
-        ) {
-            $enum_value = $stmt->expr->value;
+        if ($stmt->expr !== null) {
+            $case_type = SimpleTypeInferer::infer(
+                $this->codebase,
+                new \Psalm\Internal\Provider\NodeDataProvider(),
+                $stmt->expr,
+                $this->aliases,
+                $this->file_scanner,
+                null, // enum case value expressions cannot reference constants
+                $fq_classlike_name
+            );
+
+            if ($case_type) {
+                if ($case_type->isSingleIntLiteral()) {
+                    $enum_value = $case_type->getSingleIntLiteral()->value;
+                } elseif ($case_type->isSingleStringLiteral()) {
+                    $enum_value = $case_type->getSingleStringLiteral()->value;
+                } else {
+                    throw new RuntimeException(
+                        'Unexpected: case value for ' . $stmt->name->name . ' is ' . $case_type->getId()
+                    );
+                }
+            } else {
+                throw new RuntimeException('Failed to infer case value for ' . $stmt->name->name);
+            }
         }
 
-        $storage->enum_cases[$stmt->name->name] = new \Psalm\Storage\EnumCaseStorage(
-            $enum_value
-        );
+        $case_location = new CodeLocation($this->file_scanner, $stmt);
+
+        if (!isset($storage->enum_cases[$stmt->name->name])) {
+            $storage->enum_cases[$stmt->name->name] = new \Psalm\Storage\EnumCaseStorage(
+                $enum_value,
+                $case_location
+            );
+        } else {
+            if (IssueBuffer::accepts(
+                new DuplicateEnumCase(
+                    'Enum case names should be unique',
+                    $case_location,
+                    $fq_classlike_name
+                )
+            )) {
+            }
+        }
     }
 
     private function visitPropertyDeclaration(

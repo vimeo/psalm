@@ -84,6 +84,21 @@ class EnumTest extends TestCase
                 [],
                 '8.1'
             ],
+            'literalExpressionAsCaseValue' => [
+                '<?php
+                    enum Mask: int {
+                        case One = 1 << 0;
+                        case Two = 1 << 1;
+                    }
+                    $z = Mask::Two->value;
+                ',
+                'assertions' => [
+                    // xxx: we should be able to do better when we reference a case explicitly, like above
+                    '$z===' => '1|2',
+                ],
+                [],
+                '8.1'
+            ],
         ];
     }
 
@@ -206,6 +221,69 @@ class EnumTest extends TestCase
                     enum Status: array {}
                 ',
                 'error_message' => 'InvalidEnumBackingType',
+                [],
+                false,
+                '8.1',
+            ],
+            'duplicateValues' => [
+                '<?php
+                    enum Status: string
+                    {
+                        case Foo = "foo";
+                        case Bar = "bar";
+                        case Baz = "bar";
+                    }
+                ',
+                'error_message' => 'DuplicateEnumCaseValue',
+                [],
+                false,
+                '8.1',
+            ],
+            'duplicateCases' => [
+                '<?php
+                    enum Status
+                    {
+                        case Foo;
+                        case Foo;
+                    }
+                ',
+                'error_message' => 'DuplicateEnumCase',
+                [],
+                false,
+                '8.1',
+            ],
+            'caseWithAValueOfANonBackedEnum' => [
+                '<?php
+                    enum Status
+                    {
+                        case Foo = 1;
+                    }
+                ',
+                'error_message' => 'InvalidEnumCaseValue',
+                [],
+                false,
+                '8.1',
+            ],
+            'caseWithoutAValueOfABackedEnum' => [
+                '<?php
+                    enum Status: int
+                    {
+                        case Foo;
+                    }
+                ',
+                'error_message' => 'InvalidEnumCaseValue',
+                [],
+                false,
+                '8.1',
+            ],
+            'caseTypeMismatch' => [
+                '<?php
+                    enum Status: int
+                    {
+                        case Foo = "one";
+                    }
+                ',
+                'error_message' => 'InvalidEnumCaseValue',
                 [],
                 false,
                 '8.1',
