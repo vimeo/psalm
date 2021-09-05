@@ -25,8 +25,8 @@ use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Reconciler;
-
 use Psalm\Type\Union;
+
 use function get_class;
 use function max;
 use function substr;
