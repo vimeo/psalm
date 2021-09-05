@@ -669,9 +669,12 @@ class NonDivArithmeticOpAnalyzer
                 if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Div) {
                     //can't assume an int range will stay int after division
                     if (!$result_type) {
-                        $result_type = Type::getFloat();
+                        $result_type = new Type\Union([new Type\Atomic\TInt(), new Type\Atomic\TFloat()]);
                     } else {
-                        $result_type = Type::combineUnionTypes(Type::getFloat(), $result_type);
+                        $result_type = Type::combineUnionTypes(
+                            new Type\Union([new Type\Atomic\TInt(), new Type\Atomic\TFloat()]),
+                            $result_type
+                        );
                     }
                     return null;
                 }
@@ -731,9 +734,12 @@ class NonDivArithmeticOpAnalyzer
                 if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Div) {
                     //can't assume an int range will stay int after division
                     if (!$result_type) {
-                        $result_type = Type::getFloat();
+                        $result_type = new Type\Union([new Type\Atomic\TInt(), new Type\Atomic\TFloat()]);
                     } else {
-                        $result_type = Type::combineUnionTypes(Type::getFloat(), $result_type);
+                        $result_type = Type::combineUnionTypes(
+                            new Type\Union([new Type\Atomic\TInt(), new Type\Atomic\TFloat()]),
+                            $result_type
+                        );
                     }
                     return null;
                 }
@@ -815,17 +821,24 @@ class NonDivArithmeticOpAnalyzer
                     }
 
                     if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Mod) {
-                        if ($always_positive) {
-                            if ($right_type_part instanceof TLiteralInt && $right_type_part->value === 1) {
-                                $result_type = Type::getInt(true, 0);
+                        if ($right_type_part instanceof TLiteralInt) {
+                            $literal_value_max = $right_type_part->value - 1;
+                            if ($always_positive) {
+                                $result_type = new Type\Union([new Type\Atomic\TIntRange(0, $literal_value_max)]);
                             } else {
+                                $result_type = new Type\Union(
+                                    [new Type\Atomic\TIntRange(-$literal_value_max, $literal_value_max)]
+                                );
+                            }
+                        } else {
+                            if ($always_positive) {
                                 $result_type = new Type\Union([
                                     new Type\Atomic\TPositiveInt(),
                                     new TLiteralInt(0)
                                 ]);
+                            } else {
+                                $result_type = Type::getInt();
                             }
-                        } else {
-                            $result_type = Type::getInt();
                         }
                     } elseif (!$result_type) {
                         $result_type = $always_positive ? Type::getPositiveInt(true) : Type::getInt(true);
