@@ -3769,7 +3769,7 @@ class AssertionFinder
             if ($var_name !== null) {
                 if ($superior_value_position === self::ASSIGNMENT_TO_RIGHT) {
                     if ($superior_value_comparison === 0) {
-                        $if_types[$var_name] = [['positive-numeric', '=int(0)']];
+                        $if_types[$var_name] = [['=positive-numeric', '=int(0)']];
                     } elseif ($superior_value_comparison === 1) {
                         $if_types[$var_name] = [['positive-numeric']];
                     } else {
@@ -3883,7 +3883,7 @@ class AssertionFinder
                     $if_types[$var_name] = [['<' . $inferior_value_comparison]];
                 } else {
                     if ($inferior_value_comparison === 0) {
-                        $if_types[$var_name] = [['positive-numeric', '=int(0)']];
+                        $if_types[$var_name] = [['=positive-numeric', '=int(0)']];
                     } elseif ($inferior_value_comparison === 1) {
                         $if_types[$var_name] = [['positive-numeric']];
                     } else {
