@@ -201,6 +201,15 @@ class EnumTest extends TestCase
                 false,
                 '8.1'
             ],
+            'invalidBackingType' => [
+                '<?php
+                    enum Status: array {}
+                ',
+                'error_message' => 'InvalidEnumBackingType',
+                [],
+                false,
+                '8.1',
+            ],
         ];
     }
 }

@@ -23,6 +23,7 @@ use Psalm\Issue\ExtensionRequirementViolation;
 use Psalm\Issue\ImplementationRequirementViolation;
 use Psalm\Issue\InaccessibleMethod;
 use Psalm\Issue\InternalClass;
+use Psalm\Issue\InvalidEnumBackingType;
 use Psalm\Issue\InvalidExtendClass;
 use Psalm\Issue\InvalidTemplateParam;
 use Psalm\Issue\InvalidTraversableImplementation;
@@ -246,6 +247,10 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 $codebase,
                 $class_context
             );
+        }
+
+        if ($class instanceof PhpParser\Node\Stmt\Enum_) {
+            $this->checkEnum($class);
         }
 
         if ($storage->template_types) {
@@ -2599,6 +2604,28 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             }
         } catch (\InvalidArgumentException $e) {
             // do nothing
+        }
+    }
+
+    private function checkEnum(PhpParser\Node\Stmt\Enum_ $enum): void
+    {
+        if (null === $enum->name) {
+            throw new \UnexpectedValueException('Anonymous enums are not allowed');
+        }
+
+        if (null !== $enum->scalarType) {
+            $scalarType = $enum->scalarType;
+            if ($scalarType->name !== 'string' && $scalarType->name !== 'int') {
+                if (IssueBuffer::accepts(
+                    new InvalidEnumBackingType(
+                        'Enums cannot be backed by ' . $scalarType->name . ', string or int expected',
+                        new CodeLocation($this, $scalarType),
+                        $enum->name->name
+                    )
+                )) {
+                    // fall through
+                }
+            }
         }
     }
 }
