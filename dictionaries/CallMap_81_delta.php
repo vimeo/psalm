@@ -164,6 +164,18 @@ return [
       'old' => ['mixed|false', 'ftp' => 'resource', 'option' => 'int'],
       'new' => ['mixed|false', 'ftp' => 'FTP\Connection', 'option' => 'int'],
     ],
+    'mysqli_execute' => [
+      'old' => ['bool', 'statement' => 'mysqli_stmt'],
+      'new' => ['bool', 'statement' => 'mysqli_stmt', 'params=' => 'list<mixed>|null'],
+    ],
+    'mysqli_stmt_execute' => [
+      'old' => ['bool', 'statement' => 'mysqli_stmt'],
+      'new' => ['bool', 'statement' => 'mysqli_stmt', 'params=' => 'list<mixed>|null'],
+    ],
+    'mysqli_stmt::execute' => [
+      'old' => ['bool'],
+      'new' => ['bool', 'params=' => 'list<mixed>|null'],
+    ],
   ],
 
   'removed' => [],
