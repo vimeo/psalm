@@ -166,6 +166,18 @@ return [
       'old' => ['mixed|false', 'ftp' => 'resource', 'option' => 'int'],
       'new' => ['mixed|false', 'ftp' => 'FTP\Connection', 'option' => 'int'],
     ],
+    'hash' => [
+      'old' => ['string|false', 'algo'=>'string', 'data'=>'string', 'binary='=>'bool'],
+      'new' => ['string|false', 'algo'=>'string', 'data'=>'string', 'binary='=>'bool', 'options='=>'array'],
+    ],
+    'hash_file' => [
+      'old' => ['string|false', 'algo'=>'string', 'filename'=>'string', 'binary='=>'bool'],
+      'new' => ['string|false', 'algo'=>'string', 'filename'=>'string', 'binary='=>'bool', 'options='=>'array'],
+    ],
+    'hash_init' => [
+      'old' => ['HashContext', 'algo'=>'string', 'flags='=>'int', 'key='=>'string'],
+      'new' => ['HashContext', 'algo'=>'string', 'flags='=>'int', 'key='=>'string', 'options='=>'array'],
+    ],
     'mysqli_execute' => [
       'old' => ['bool', 'statement' => 'mysqli_stmt'],
       'new' => ['bool', 'statement' => 'mysqli_stmt', 'params=' => 'list<mixed>|null'],
