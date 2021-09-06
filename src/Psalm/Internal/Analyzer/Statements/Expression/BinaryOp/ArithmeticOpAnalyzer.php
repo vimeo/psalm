@@ -181,7 +181,7 @@ class ArithmeticOpAnalyzer
 
             foreach ($left_type->getAtomicTypes() as $left_type_part) {
                 foreach ($right_type->getAtomicTypes() as $right_type_part) {
-                    $candidate_result_type = self::analyzeNonDivOperands(
+                    $candidate_result_type = self::analyzeOperands(
                         $statements_source,
                         $codebase,
                         $config,
@@ -288,7 +288,7 @@ class ArithmeticOpAnalyzer
      * @param  string[]        &$invalid_left_messages
      * @param  string[]        &$invalid_right_messages
      */
-    private static function analyzeNonDivOperands(
+    private static function analyzeOperands(
         ?StatementsSource $statements_source,
         ?\Psalm\Codebase $codebase,
         Config $config,
