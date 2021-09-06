@@ -1,8 +1,6 @@
 <?php
 namespace Psalm\Tests\FileManipulation;
 
-use const PHP_VERSION;
-
 class UndefinedVariableManipulationTest extends FileManipulationTestCase
 {
     /**
@@ -136,7 +134,7 @@ class UndefinedVariableManipulationTest extends FileManipulationTestCase
 
                         new D();
                     }',
-                PHP_VERSION,
+                '7.4',
                 [],
                 true,
             ],
