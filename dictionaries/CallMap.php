@@ -3179,6 +3179,8 @@ return [
 'fdiv' => ['float', 'num1'=>'float', 'num2'=>'float'],
 'feof' => ['bool', 'stream'=>'resource'],
 'fflush' => ['bool', 'stream'=>'resource'],
+'fsync' => ['bool', 'stream'=>'resource'],
+'fdatasync' => ['bool', 'stream'=>'resource'],
 'ffmpeg_animated_gif::__construct' => ['void', 'output_file_path'=>'string', 'width'=>'int', 'height'=>'int', 'frame_rate'=>'int', 'loop_count='=>'int'],
 'ffmpeg_animated_gif::addFrame' => ['', 'frame_to_add'=>'ffmpeg_frame'],
 'ffmpeg_frame::__construct' => ['void', 'gd_image'=>'resource'],

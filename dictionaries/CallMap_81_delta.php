@@ -17,6 +17,8 @@
 return [
   'added' => [
     'array_is_list' => ['bool', 'array' => 'array'],
+    'fsync' => ['bool', 'stream' => 'resource'],
+    'fdatasync' => ['bool', 'stream' => 'resource'],
   ],
 
   'changed' => [
