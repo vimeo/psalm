@@ -23,6 +23,7 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -666,52 +667,7 @@ class ArithmeticOpAnalyzer
             }
 
             if ($left_type_part instanceof Type\Atomic\TIntRange && $right_type_part instanceof Type\Atomic\TIntRange) {
-                if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Div) {
-                    //can't assume an int range will stay int after division
-                    if (!$result_type) {
-                        $result_type = new Type\Union([new Type\Atomic\TInt(), new Type\Atomic\TFloat()]);
-                    } else {
-                        $result_type = Type::combineUnionTypes(
-                            new Type\Union([new Type\Atomic\TInt(), new Type\Atomic\TFloat()]),
-                            $result_type
-                        );
-                    }
-                    return null;
-                }
-
-                $calculated_min_type = null;
-                if ($left_type_part->min_bound !== null && $right_type_part->min_bound !== null) {
-                    // when there are two valid numbers, make any operation
-                    $calculated_min_type = self::arithmeticOperation(
-                        $parent,
-                        $left_type_part->min_bound,
-                        $right_type_part->min_bound,
-                        false
-                    );
-                }
-
-                $calculated_max_type = null;
-                if ($left_type_part->max_bound !== null && $right_type_part->max_bound !== null) {
-                    // when there are two valid numbers, make any operation
-                    $calculated_max_type = self::arithmeticOperation(
-                        $parent,
-                        $left_type_part->max_bound,
-                        $right_type_part->max_bound,
-                        false
-                    );
-                }
-
-                $min_value = $calculated_min_type !== null ? $calculated_min_type->getSingleIntLiteral()->value : null;
-                $max_value = $calculated_max_type !== null ? $calculated_max_type->getSingleIntLiteral()->value : null;
-
-                $new_result_type = new Type\Union([new Type\Atomic\TIntRange($min_value, $max_value)]);
-
-                if (!$result_type) {
-                    $result_type = $new_result_type;
-                } else {
-                    $result_type = Type::combineUnionTypes($new_result_type, $result_type);
-                }
-
+                self::analyzeOperandsBetweenIntRange($parent, $result_type, $left_type_part, $right_type_part);
                 return null;
             }
 
@@ -992,5 +948,71 @@ class ArithmeticOpAnalyzer
         }
 
         return $calculated_type;
+    }
+
+    private static function analyzeOperandsBetweenIntRange(
+        PhpParser\Node $parent,
+        ?Type\Union &$result_type,
+        TIntRange $left_type_part,
+        TIntRange $right_type_part
+    ): void {
+        if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Div) {
+            //can't assume an int range will stay int after division
+            if (!$result_type) {
+                $result_type = new Type\Union([new Type\Atomic\TInt(), new Type\Atomic\TFloat()]);
+            } else {
+                $result_type = Type::combineUnionTypes(
+                    new Type\Union([new Type\Atomic\TInt(), new Type\Atomic\TFloat()]),
+                    $result_type
+                );
+            }
+            return;
+        } elseif ($parent instanceof PhpParser\Node\Expr\BinaryOp\Minus) {
+            //for Minus, we have to assume the min is the min from first range minus the max from the second
+            $min_operand1 = $left_type_part->min_bound;
+            $min_operand2 = $right_type_part->max_bound;
+            //and the max is the max from first range minus the min from the second
+            $max_operand1 = $left_type_part->max_bound;
+            $max_operand2 = $right_type_part->min_bound;
+        } else {
+            $min_operand1 = $left_type_part->min_bound;
+            $min_operand2 = $right_type_part->min_bound;
+
+            $max_operand1 = $left_type_part->max_bound;
+            $max_operand2 = $right_type_part->max_bound;
+        }
+
+        $calculated_min_type = null;
+        if ($left_type_part->min_bound !== null && $right_type_part->min_bound !== null) {
+            // when there are two valid numbers, make any operation
+            $calculated_min_type = self::arithmeticOperation(
+                $parent,
+                $min_operand1,
+                $min_operand2,
+                false
+            );
+        }
+
+        $calculated_max_type = null;
+        if ($left_type_part->max_bound !== null && $right_type_part->max_bound !== null) {
+            // when there are two valid numbers, make any operation
+            $calculated_max_type = self::arithmeticOperation(
+                $parent,
+                $max_operand1,
+                $max_operand2,
+                false
+            );
+        }
+
+        $min_value = $calculated_min_type !== null ? $calculated_min_type->getSingleIntLiteral()->value : null;
+        $max_value = $calculated_max_type !== null ? $calculated_max_type->getSingleIntLiteral()->value : null;
+
+        $new_result_type = new Type\Union([new Type\Atomic\TIntRange($min_value, $max_value)]);
+
+        if (!$result_type) {
+            $result_type = $new_result_type;
+        } else {
+            $result_type = Type::combineUnionTypes($new_result_type, $result_type);
+        }
     }
 }

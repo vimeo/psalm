@@ -305,6 +305,19 @@ class IntRangeTest extends TestCase
                     '$d===' => '0|positive-int'
                 ],
             ],
+            'minus' => [
+                '<?php
+                    function getInt(): int{return 0;}
+                    $a = $b = getInt();
+                    assert($a > 5);
+                    assert($a <= 10);
+                    assert($b > -10);
+                    assert($b <= 100);
+                    $c = $a - $b;',
+                'assertions' => [
+                    '$c===' => 'int<-94, 19>',
+                ],
+            ],
         ];
     }
 
