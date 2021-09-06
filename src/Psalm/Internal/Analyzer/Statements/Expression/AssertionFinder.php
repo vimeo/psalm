@@ -3442,6 +3442,15 @@ class AssertionFinder
                     $assertions = [];
 
                     if (!$is_sealed) {
+                        // `in-array-*` has special handling in the detection of paradoxical
+                        // conditions and the fact the negation doesn't imply anything.
+                        //
+                        // In the vast majority of cases, the negation of `in-array-*`
+                        // (`Algebra::negateType`) doesn't imply anything because:
+                        // - The array can be empty, or
+                        // - The array may have one of the types but not the others.
+                        //
+                        // NOTE: the negation of the negation is the original assertion.
                         if ($value_type->getId() !== '' && !$value_type->isMixed()) {
                             $assertions[] = 'in-array-' . $value_type->getId();
                         }
