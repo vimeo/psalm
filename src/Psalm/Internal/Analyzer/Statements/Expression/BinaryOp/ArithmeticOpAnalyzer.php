@@ -43,7 +43,7 @@ use function strtolower;
 /**
  * @internal
  */
-class NonDivArithmeticOpAnalyzer
+class ArithmeticOpAnalyzer
 {
     public static function analyze(
         ?StatementsSource $statements_source,
