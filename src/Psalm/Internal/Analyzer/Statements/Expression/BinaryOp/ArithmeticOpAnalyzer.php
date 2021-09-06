@@ -967,7 +967,9 @@ class ArithmeticOpAnalyzer
                 );
             }
             return;
-        } elseif ($parent instanceof PhpParser\Node\Expr\BinaryOp\Minus) {
+        }
+
+        if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Minus) {
             //for Minus, we have to assume the min is the min from first range minus the max from the second
             $min_operand1 = $left_type_part->min_bound;
             $min_operand2 = $right_type_part->max_bound;
@@ -983,7 +985,7 @@ class ArithmeticOpAnalyzer
         }
 
         $calculated_min_type = null;
-        if ($left_type_part->min_bound !== null && $right_type_part->min_bound !== null) {
+        if ($min_operand1 !== null && $min_operand2 !== null) {
             // when there are two valid numbers, make any operation
             $calculated_min_type = self::arithmeticOperation(
                 $parent,
@@ -994,7 +996,7 @@ class ArithmeticOpAnalyzer
         }
 
         $calculated_max_type = null;
-        if ($left_type_part->max_bound !== null && $right_type_part->max_bound !== null) {
+        if ($max_operand1 !== null && $max_operand2 !== null) {
             // when there are two valid numbers, make any operation
             $calculated_max_type = self::arithmeticOperation(
                 $parent,
