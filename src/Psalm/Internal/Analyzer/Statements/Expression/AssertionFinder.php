@@ -3456,13 +3456,22 @@ class AssertionFinder
                         }
                     } else {
                         foreach ($value_type->getAtomicTypes() as $atomic_value_type) {
-                            if ($atomic_value_type instanceof Type\Atomic\TFalse
+                            if ($atomic_value_type instanceof Type\Atomic\TLiteralInt
+                                || $atomic_value_type instanceof Type\Atomic\TLiteralString
+                                || $atomic_value_type instanceof Type\Atomic\TLiteralFloat
+                                || $atomic_value_type instanceof Type\Atomic\TEnumCase
+                            ) {
+                                $assertions[] = '=' . $atomic_value_type->getAssertionString();
+                            } elseif ($atomic_value_type instanceof Type\Atomic\TFalse
                                 || $atomic_value_type instanceof Type\Atomic\TTrue
                                 || $atomic_value_type instanceof Type\Atomic\TNull
                             ) {
                                 $assertions[] = $atomic_value_type->getAssertionString();
-                            } else {
-                                $assertions[] = '=' . $atomic_value_type->getAssertionString();
+                            } elseif (!$atomic_value_type instanceof Type\Atomic\TMixed) {
+                                // mixed doesn't tell us anything and can be omitted.
+                                //
+                                // For the meaning of in-array, see the above comment.
+                                $assertions[] = 'in-array-' . $value_type->getId();
                             }
                         }
                     }
