@@ -913,6 +913,37 @@ class ArithmeticOpAnalyzer
             return;
         }
 
+        if ($parent instanceof PhpParser\Node\Expr\BinaryOp\BitwiseAnd ||
+            $parent instanceof PhpParser\Node\Expr\BinaryOp\BitwiseOr ||
+            $parent instanceof PhpParser\Node\Expr\BinaryOp\BitwiseXor
+        ) {
+            //really complex to calculate
+            if (!$result_type) {
+                $result_type = Type::getInt();
+            } else {
+                $result_type = Type::combineUnionTypes(
+                    Type::getInt(),
+                    $result_type
+                );
+            }
+            return;
+        }
+
+        if ($parent instanceof PhpParser\Node\Expr\BinaryOp\ShiftLeft ||
+            $parent instanceof PhpParser\Node\Expr\BinaryOp\ShiftRight
+        ) {
+            //really complex to calculate
+            if (!$result_type) {
+                $result_type = new Type\Union([new Type\Atomic\TIntRange(0, null)]);
+            } else {
+                $result_type = Type::combineUnionTypes(
+                    new Type\Union([new Type\Atomic\TIntRange(0, null)]),
+                    $result_type
+                );
+            }
+            return;
+        }
+
         if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Minus) {
             //for Minus, we have to assume the min is the min from first range minus the max from the second
             $min_operand1 = $left_type_part->min_bound;
