@@ -5371,6 +5371,7 @@ return [
 'imagecopyresampled' => ['bool', 'dst_image'=>'GdImage', 'src_image'=>'GdImage', 'dst_x'=>'int', 'dst_y'=>'int', 'src_x'=>'int', 'src_y'=>'int', 'dst_width'=>'int', 'dst_height'=>'int', 'src_width'=>'int', 'src_height'=>'int'],
 'imagecopyresized' => ['bool', 'dst_image'=>'GdImage', 'src_image'=>'GdImage', 'dst_x'=>'int', 'dst_y'=>'int', 'src_x'=>'int', 'src_y'=>'int', 'dst_width'=>'int', 'dst_height'=>'int', 'src_width'=>'int', 'src_height'=>'int'],
 'imagecreate' => ['false|GdImage', 'width'=>'int', 'height'=>'int'],
+'imagecreatefromavif' => ['false|GdImage', 'filename'=>'string'],
 'imagecreatefrombmp' => ['false|GdImage', 'filename'=>'string'],
 'imagecreatefromgd' => ['false|GdImage', 'filename'=>'string'],
 'imagecreatefromgd2' => ['false|GdImage', 'filename'=>'string'],
