@@ -98,4 +98,20 @@ class TIntRange extends TInt
         }
         return max($bound1, $bound2);
     }
+
+    /**
+     * convert any int to its equivalent in int range
+     */
+    public static function convertToIntRange(TInt $int_atomic): TIntRange
+    {
+        if ($int_atomic instanceof TPositiveInt) {
+            return new TIntRange(1, null);
+        }
+
+        if ($int_atomic instanceof TLiteralInt) {
+            return new TIntRange($int_atomic->value, $int_atomic->value);
+        }
+
+        return new TIntRange(null, null);
+    }
 }
