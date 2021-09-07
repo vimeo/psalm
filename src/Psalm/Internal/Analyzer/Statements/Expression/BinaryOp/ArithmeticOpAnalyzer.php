@@ -974,9 +974,11 @@ class ArithmeticOpAnalyzer
     ): void {
         if ($left_type_part instanceof Type\Atomic\TIntRange) {
             $left_is_range = true;
+            $range_operand = $left_type_part;
             $other_operand = $right_type_part;
         } elseif ($right_type_part instanceof Type\Atomic\TIntRange) {
             $left_is_range = false;
+            $range_operand = $right_type_part;
             $other_operand = $left_type_part;
         } else {
             //this can't happen
@@ -985,9 +987,9 @@ class ArithmeticOpAnalyzer
 
         $new_range = TIntRange::convertToIntRange($other_operand);
         if ($left_is_range) {
-            self::analyzeOperandsBetweenIntRange($parent, $result_type, $left_type_part, $new_range);
+            self::analyzeOperandsBetweenIntRange($parent, $result_type, $range_operand, $new_range);
         } else {
-            self::analyzeOperandsBetweenIntRange($parent, $result_type, $new_range, $right_type_part);
+            self::analyzeOperandsBetweenIntRange($parent, $result_type, $new_range, $range_operand);
         }
     }
 }
