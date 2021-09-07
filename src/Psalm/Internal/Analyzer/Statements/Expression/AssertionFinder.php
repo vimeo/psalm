@@ -465,7 +465,7 @@ class AssertionFinder
 
                     if ($var_name_left &&
                         (!$var_type->isSingle() || $var_type->getAssertionString() !== $assertion)) {
-                        $if_types[$var_name_left] = [['~'.$assertion]];
+                        $if_types[$var_name_left] = [['='.$assertion]];
                     }
 
                     $var_name_right = ExpressionIdentifier::getArrayVarId(
@@ -476,7 +476,7 @@ class AssertionFinder
 
                     if ($var_name_right &&
                         (!$other_type->isSingle() || $other_type->getAssertionString() !== $assertion)) {
-                        $if_types[$var_name_right] = [['~'.$assertion]];
+                        $if_types[$var_name_right] = [['='.$assertion]];
                     }
 
                     return $if_types ? [$if_types] : [];
@@ -3456,14 +3456,13 @@ class AssertionFinder
                         }
                     } else {
                         foreach ($value_type->getAtomicTypes() as $atomic_value_type) {
-                            if ($atomic_value_type instanceof Type\Atomic\TLiteralInt
-                                || $atomic_value_type instanceof Type\Atomic\TLiteralString
-                                || $atomic_value_type instanceof Type\Atomic\TLiteralFloat
-                                || $atomic_value_type instanceof Type\Atomic\TEnumCase
+                            if ($atomic_value_type instanceof Type\Atomic\TFalse
+                                || $atomic_value_type instanceof Type\Atomic\TTrue
+                                || $atomic_value_type instanceof Type\Atomic\TNull
                             ) {
-                                $assertions[] = '=' . $atomic_value_type->getAssertionString();
-                            } else {
                                 $assertions[] = $atomic_value_type->getAssertionString();
+                            } else {
+                                $assertions[] = '=' . $atomic_value_type->getAssertionString();
                             }
                         }
                     }
