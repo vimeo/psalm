@@ -2,6 +2,7 @@
 namespace Psalm\Internal\Analyzer\Statements\Block;
 
 use PhpParser;
+use PhpParser\Node\Expr\Variable;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
@@ -13,14 +14,20 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\Scope\LoopScope;
 use Psalm\IssueBuffer;
+use Psalm\Node\Expr\BinaryOp\VirtualPlus;
+use Psalm\Node\Expr\VirtualAssign;
+use Psalm\Node\Scalar\VirtualLNumber;
 use Psalm\Type;
+use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Reconciler;
 
 use function array_intersect_key;
 use function array_keys;
 use function array_merge;
+use function array_shift;
 use function array_unique;
 use function in_array;
+use function is_string;
 
 /**
  * @internal
@@ -143,15 +150,8 @@ class LoopAnalyzer
             $statements_analyzer->analyze($stmts, $inner_context);
             self::updateLoopScopeContexts($loop_scope, $loop_scope->loop_parent_context);
 
-            foreach ($post_expressions as $post_expression) {
-                if (ExpressionAnalyzer::analyze(
-                    $statements_analyzer,
-                    $post_expression,
-                    $loop_scope->loop_context
-                ) === false
-                ) {
-                    return false;
-                }
+            if (!self::analyzePostExpressions($statements_analyzer, $post_expressions, $loop_scope->loop_context)) {
+                return false;
             }
 
             $inner_context->referenced_var_ids = $old_referenced_var_ids + $inner_context->referenced_var_ids;
@@ -227,10 +227,8 @@ class LoopAnalyzer
 
             $always_assigned_before_loop_body_vars = array_unique($always_assigned_before_loop_body_vars);
 
-            foreach ($post_expressions as $post_expression) {
-                if (ExpressionAnalyzer::analyze($statements_analyzer, $post_expression, $inner_context) === false) {
-                    return false;
-                }
+            if (!self::analyzePostExpressions($statements_analyzer, $post_expressions, $inner_context)) {
+                return false;
             }
 
             $inner_context->referenced_var_ids = array_intersect_key(
@@ -399,11 +397,7 @@ class LoopAnalyzer
                     }
                 }
 
-                foreach ($post_expressions as $post_expression) {
-                    if (ExpressionAnalyzer::analyze($statements_analyzer, $post_expression, $inner_context) === false) {
-                        return false;
-                    }
-                }
+                self::analyzePostExpressions($statements_analyzer, $post_expressions, $inner_context);
 
                 $recorded_issues = IssueBuffer::clearRecordingLevel();
 
@@ -721,5 +715,61 @@ class LoopAnalyzer
         }
 
         return $max_depth;
+    }
+
+    /**
+     * @param PhpParser\Node\Expr[] $post_expressions
+     */
+    private static function analyzePostExpressions(
+        StatementsAnalyzer $statements_analyzer,
+        array $post_expressions,
+        Context $context
+    ): bool {
+        foreach ($post_expressions as $post_expression) {
+            $fake_assignment = null;
+            if ($post_expression instanceof PhpParser\Node\Expr\PostDec ||
+                $post_expression instanceof PhpParser\Node\Expr\PreDec ||
+                $post_expression instanceof PhpParser\Node\Expr\PostInc ||
+                $post_expression instanceof PhpParser\Node\Expr\PreInc ||
+                $post_expression instanceof PhpParser\Node\Expr\AssignOp\Plus ||
+                $post_expression instanceof PhpParser\Node\Expr\AssignOp\Minus
+            ) {
+                $var_name = null;
+                if ($post_expression->var instanceof Variable && is_string($post_expression->var->name)) {
+                    $var_name = '$' . $post_expression->var->name;
+                }
+
+                if ($var_name
+                    && isset($context->vars_in_scope[$var_name])
+                    && $context->vars_in_scope[$var_name]->isSingle()
+                    && ($atomics = $context->vars_in_scope[$var_name]->getAtomicTypes())
+                    && array_shift($atomics) instanceof TInt
+                ) {
+                    $fake_right_expr = new VirtualLNumber(0, $post_expression->getAttributes());
+
+                    $operation = new VirtualPlus(
+                        $post_expression->var,
+                        $fake_right_expr,
+                        $post_expression->var->getAttributes()
+                    );
+
+                    $fake_assignment = new VirtualAssign(
+                        $post_expression->var,
+                        $operation,
+                        $post_expression->getAttributes()
+                    );
+                }
+            }
+
+            if (!ExpressionAnalyzer::analyze(
+                $statements_analyzer,
+                $fake_assignment ?? $post_expression,
+                $context
+            )) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

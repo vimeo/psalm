@@ -1591,10 +1591,6 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
     ) : Union {
         $assertion_value = (int)$assertion;
         foreach ($existing_var_type->getAtomicTypes() as $atomic_type) {
-            if ($inside_loop) {
-                continue;
-            }
-
             if ($atomic_type instanceof Atomic\TIntRange) {
                 $existing_var_type->removeType($atomic_type->getKey());
                 if ($atomic_type->min_bound === null) {
@@ -1610,7 +1606,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                 $new_range = new Atomic\TIntRange($assertion_value, null);
                 if (!$new_range->contains($atomic_type->value)) {
                     $existing_var_type->removeType($atomic_type->getKey());
-                } /*elseif ($inside_loop) {
+                } elseif ($inside_loop) {
                     //when inside a loop, allow the range to extends the type
                     $existing_var_type->removeType($atomic_type->getKey());
                     if ($atomic_type->value < $assertion_value) {
@@ -1618,7 +1614,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                     } else {
                         $existing_var_type->addType(new Atomic\TIntRange($assertion_value, $atomic_type->value));
                     }
-                }*/
+                }
             } elseif ($atomic_type instanceof Atomic\TPositiveInt) {
                 if ($assertion_value <= 0) {
                     //emit an issue here in the future about incompatible type
@@ -1641,10 +1637,6 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
     ) : Union {
         $assertion_value = (int)$assertion;
         foreach ($existing_var_type->getAtomicTypes() as $atomic_type) {
-            if ($inside_loop) {
-                continue;
-            }
-
             if ($atomic_type instanceof Atomic\TIntRange) {
                 $existing_var_type->removeType($atomic_type->getKey());
                 if ($atomic_type->max_bound === null) {
@@ -1657,7 +1649,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                 $new_range = new Atomic\TIntRange(null, $assertion_value);
                 if (!$new_range->contains($atomic_type->value)) {
                     $existing_var_type->removeType($atomic_type->getKey());
-                }/* elseif ($inside_loop) {
+                } elseif ($inside_loop) {
                     //when inside a loop, allow the range to extends the type
                     $existing_var_type->removeType($atomic_type->getKey());
                     if ($atomic_type->value < $assertion_value) {
@@ -1665,7 +1657,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                     } else {
                         $existing_var_type->addType(new Atomic\TIntRange($assertion_value, $atomic_type->value));
                     }
-                }*/
+                }
             } elseif ($atomic_type instanceof Atomic\TPositiveInt) {
                 if ($assertion_value <= 0) {
                     //emit an issue here in the future about incompatible type

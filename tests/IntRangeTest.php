@@ -361,9 +361,8 @@ class IntRangeTest extends TestCase
                     '$z===' => 'int<-4, 4>',
                 ]
             ],
-            'SKIPPED-intLoopPositive' => [
+            'intLoopPositive' => [
                 '<?php
-                    //skipped, int range in loops not supported yet
                     for($i = 0; $i < 10; $i++){
 
                     }',
@@ -371,9 +370,8 @@ class IntRangeTest extends TestCase
                     '$i===' => 'int<0, 9>'
                 ]
             ],
-            'SKIPPED-intLoopNegative' => [
+            'intLoopNegative' => [
                 '<?php
-                    //skipped, int range in loops not supported yet
                     for($i = 10; $i > 1; $i--){
 
                     }',
@@ -411,9 +409,8 @@ class IntRangeTest extends TestCase
                     '$_arr===' => 'non-empty-array<int<min, 2>, "a"|"b"|"c"|12>'
                 ]
             ],
-            'SKIPPED-statementsInLoopAffectsEverything' => [
+            'statementsInLoopAffectsEverything' => [
                 '<?php
-                    //skipped, int range in loops not supported yet
                     $remainder = 1;
                     for ($i = 0; $i < 5; $i++) {
                         if ($remainder) {
@@ -421,12 +418,11 @@ class IntRangeTest extends TestCase
                         }
                     }',
                 'assertions' => [
-                    '$remainder===' => 'int<min, 1>'
+                    '$remainder===' => 'int'
                 ]
             ],
-            'SKIPPED-IntRangeRestrictWhenUntouched' => [
+            'IntRangeRestrictWhenUntouched' => [
                 '<?php
-                    //skipped, int range in loops not supported yet
                     foreach ([1, 2, 3] as $i) {
                         if ($i > 1) {
                             takesInt($i);
@@ -437,39 +433,6 @@ class IntRangeTest extends TestCase
                     function takesInt(int $i): void{
                         return;
                     }',
-            ],
-            'SKIPPED-wrongLoopAssertion' => [
-                '<?php
-                    //skipped, int range in loops not supported yet
-                    function a(): array {
-                        $type_tokens = getArray();
-
-                        for ($i = 0, $l = rand(0,100); $i < $l; ++$i) {
-
-                            /** @psalm-trace $i */;
-                            if ($i > 0 && rand(0,1)) {
-                                continue;
-                            }
-                            /** @psalm-trace $i  */;
-
-
-                            $type_tokens[$i] = "";
-
-                            /** @psalm-trace $type_tokens */;
-
-                            if($i > 1){
-                                $type_tokens[$i - 2];
-                            }
-                        }
-
-                        return [];
-                    }
-
-
-                    /** @return array<int, string> */
-                    function getArray(): array{
-                        return [];
-                    }'
             ],
             'IntRangeContainedInMultipleInt' => [
                 '<?php
