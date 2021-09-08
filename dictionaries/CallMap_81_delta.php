@@ -19,7 +19,7 @@ return [
     'array_is_list' => ['bool', 'array' => 'array'],
     'fsync' => ['bool', 'stream' => 'resource'],
     'fdatasync' => ['bool', 'stream' => 'resource'],
-    'imageavif' => ['bool', 'image'=>'GdImage', 'file'=>'resource|string|null', 'quality'=>'int', 'speed'=>'int'],
+    'imageavif' => ['bool', 'image'=>'GdImage', 'file='=>'resource|string|null', 'quality='=>'int', 'speed='=>'int'],
     'imagecreatefromavif' => ['false|GdImage', 'filename'=>'string'],
     'mysqli_fetch_column' => ['null|int|float|string|false', 'result'=>'mysqli_result', 'column='=>'int'],
     'mysqli_result::fetch_column' => ['null|int|float|string|false', 'column='=>'int'],
