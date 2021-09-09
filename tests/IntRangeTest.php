@@ -344,6 +344,24 @@ class IntRangeTest extends TestCase
                     '$h===' => 'int<0, max>',
                 ],
             ],
+            'UnaryMinus' => [
+                '<?php
+                    function getInt(): int{return 0;}
+                    $a = $c = $e = getInt();
+                    assert($a > 5);
+                    $b = -$a;
+                    assert($c > 0);
+                    $d = -$c;
+                    assert($e > 5);
+                    assert($e < 10);
+                    $f = -$e;
+                    ',
+                'assertions' => [
+                    '$b===' => 'int<min, -6>',
+                    '$d===' => 'int<min, 0>',
+                    '$f===' => 'int<-9, -6>',
+                ],
+            ],
         ];
     }
 
