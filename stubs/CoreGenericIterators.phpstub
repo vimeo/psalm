@@ -180,7 +180,7 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
 
     /**
      * @param array<TKey, TValue> $array The array or object to be iterated on.
-     * @param int-mask-of<self::*> $flags Flags to control the behaviour of the ArrayObject object.
+     * @param int-mask-of<static::*> $flags Flags to control the behaviour of the ArrayObject object.
      */
     public function __construct($array = array(), $flags = 0) { }
 
