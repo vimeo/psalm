@@ -3354,11 +3354,23 @@ class AssertionFinder
                 $source
             );
 
+            $other_var_name = ExpressionIdentifier::getArrayVarId(
+                $conditional->right,
+                $this_class_name,
+                $source
+            );
+
             $other_type = $source->node_data->getType($conditional->left);
             $var_type = $source->node_data->getType($conditional->right);
         } elseif ($typed_value_position === self::ASSIGNMENT_TO_LEFT) {
             $var_name = ExpressionIdentifier::getArrayVarId(
                 $conditional->right,
+                $this_class_name,
+                $source
+            );
+
+            $other_var_name = ExpressionIdentifier::getArrayVarId(
+                $conditional->left,
                 $this_class_name,
                 $source
             );
@@ -3382,6 +3394,14 @@ class AssertionFinder
                 $if_types[$var_name] = [['=' . $var_type->getAssertionString(true)]];
             } else {
                 $if_types[$var_name] = [['~' . $var_type->getAssertionString()]];
+            }
+
+            if ($other_var_name && $other_type && count($other_type->getAtomicTypes()) === 1) {
+                if ($identical) {
+                    $if_types[$other_var_name] = [['=' . $other_type->getAssertionString(true)]];
+                } else {
+                    $if_types[$other_var_name] = [['~' . $other_type->getAssertionString()]];
+                }
             }
         }
 
