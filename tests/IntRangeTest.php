@@ -362,6 +362,22 @@ class IntRangeTest extends TestCase
                     '$f===' => 'int<-9, -6>',
                 ],
             ],
+            'intersections' => [
+                '<?php
+                    function getInt(): int{return 0;}
+                    $a = getInt();
+                    /** @var int<0, 10> $a */
+                    $b = -$a;
+                    $c = null;
+                    if($b === $a){
+                        //$b and $a should intersect at 0, so $c should be 0
+                        $c = $b;
+                    }
+                    ',
+                'assertions' => [
+                    '$c===' => 'int<0, 0>|null',
+                ],
+            ],
         ];
     }
 

@@ -114,4 +114,25 @@ class TIntRange extends TInt
 
         return new TIntRange(null, null);
     }
+
+    public static function intersectIntRanges(TIntRange $int_range1, TIntRange $int_range2): ?TIntRange
+    {
+        if ($int_range1->min_bound === null || $int_range2->min_bound === null) {
+            $new_min_bound = $int_range1->min_bound ?? $int_range2->min_bound;
+        } else {
+            $new_min_bound = self::getNewHighestBound($int_range1->min_bound, $int_range2->min_bound);
+        }
+
+        if ($int_range1->max_bound === null || $int_range2->max_bound === null) {
+            $new_max_bound = $int_range1->max_bound ?? $int_range2->max_bound;
+        } else {
+            $new_max_bound = self::getNewLowestBound($int_range1->max_bound, $int_range2->max_bound);
+        }
+
+        if ($new_min_bound > $new_max_bound) {
+            return null;
+        }
+
+        return new self($new_min_bound, $new_max_bound);
+    }
 }

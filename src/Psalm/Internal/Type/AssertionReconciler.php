@@ -17,6 +17,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TString;
@@ -835,6 +836,34 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                         $matching_atomic_types[] = $existing_type_part;
                         $atomic_comparison_results->type_coerced = true;
                     }
+                }
+
+                //These partial match wouldn't have been handled by AtomicTypeComparator
+                $new_range = null;
+                if ($new_type_part instanceof Atomic\TIntRange && $existing_type_part instanceof Atomic\TPositiveInt) {
+                    $new_range = TIntRange::intersectIntRanges(
+                        TIntRange::convertToIntRange($existing_type_part),
+                        $new_type_part
+                    );
+                } elseif ($existing_type_part instanceof Atomic\TIntRange
+                    && $new_type_part instanceof Atomic\TPositiveInt
+                ) {
+                    $new_range = TIntRange::intersectIntRanges(
+                        $existing_type_part,
+                        TIntRange::convertToIntRange($new_type_part)
+                    );
+                } elseif ($new_type_part instanceof Atomic\TIntRange
+                    && $existing_type_part instanceof Atomic\TIntRange
+                ) {
+                    $new_range = TIntRange::intersectIntRanges(
+                        $existing_type_part,
+                        $new_type_part
+                    );
+                }
+
+                if ($new_range !== null) {
+                    $has_local_match = true;
+                    $matching_atomic_types[] = $new_range;
                 }
 
                 if ($atomic_comparison_results->type_coerced) {
