@@ -916,65 +916,7 @@ class ArithmeticOpAnalyzer
         }
 
         if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Mod) {
-            //result of Mod is not directly dependant on the bounds of the range
-            if ($right_type_part->min_bound !== null && $right_type_part->min_bound === $right_type_part->max_bound) {
-                //if the second operand is a literal, we can be pretty detailed
-                if ($right_type_part->min_bound === 0) {
-                    $new_result_type = Type::getEmpty();
-                } else {
-                    if ($left_type_part->isPositiveOrZero()) {
-                        if ($right_type_part->isPositive()) {
-                            $max = $right_type_part->min_bound - 1;
-                            $new_result_type = new Type\Union([new TIntRange(0, $max)]);
-                        } else {
-                            $max = $right_type_part->min_bound + 1;
-                            $new_result_type = new Type\Union([new TIntRange($max, 0)]);
-                        }
-                    } elseif ($left_type_part->isNegativeOrZero()) {
-                        if ($right_type_part->isPositive()) {
-                            $max = $right_type_part->min_bound - 1;
-                            $new_result_type = new Type\Union([new TIntRange(-$max, 0)]);
-                        } else {
-                            $max = $right_type_part->min_bound + 1;
-                            $new_result_type = new Type\Union([new TIntRange(-$max, 0)]);
-                        }
-                    } else {
-                        if ($right_type_part->isPositive()) {
-                            $max = $right_type_part->min_bound - 1;
-                        } else {
-                            $max = -$right_type_part->min_bound - 1;
-                        }
-                        $new_result_type = new Type\Union([new TIntRange(-$max, $max)]);
-                    }
-                }
-            } elseif ($right_type_part->isPositive()) {
-                if ($left_type_part->isPositiveOrZero()) {
-                    $new_result_type = new Type\Union([new TIntRange(0, null)]);
-                } elseif ($left_type_part->isNegativeOrZero()) {
-                    $new_result_type = new Type\Union([new TIntRange(null, 0)]);
-                } else {
-                    $new_result_type = Type::getInt(true);
-                }
-            } elseif ($right_type_part->isNegative()) {
-                if ($left_type_part->isPositiveOrZero()) {
-                    $new_result_type = new Type\Union([new TIntRange(null, 0)]);
-                } elseif ($left_type_part->isNegativeOrZero()) {
-                    $new_result_type = new Type\Union([new TIntRange(null, 0)]);
-                } else {
-                    $new_result_type = Type::getInt(true);
-                }
-            } else {
-                $new_result_type = Type::getInt(true);
-            }
-
-            if (!$result_type) {
-                $result_type = $new_result_type;
-            } else {
-                $result_type = Type::combineUnionTypes(
-                    $new_result_type,
-                    $result_type
-                );
-            }
+            self::analyzeModBetweenIntRange($right_type_part, $left_type_part, $result_type);
             return;
         }
 
@@ -1010,236 +952,12 @@ class ArithmeticOpAnalyzer
         }
 
         if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Mul) {
-            //Mul is a special case because of double negatives. We can only infer when we know both signs strictly
-            if ($right_type_part->min_bound !== null
-                && $right_type_part->max_bound !== null
-                && $left_type_part->min_bound !== null
-                && $left_type_part->max_bound !== null
-            ) {
-                //everything is known, we can do calculations
-                //[ x_1 , x_2 ] ⋆ [ y_1 , y_2 ] =
-                //      [
-                //          min(x_1 ⋆ y_1 , x_1 ⋆ y_2 , x_2 ⋆ y_1 , x_2 ⋆ y_2),
-                //          max(x_1 ⋆ y_1 , x_1 ⋆ y_2 , x_2 ⋆ y_1 , x_2 ⋆ y_2)
-                //      ]
-                $x_1 = $right_type_part->min_bound;
-                $x_2 = $right_type_part->max_bound;
-                $y_1 = $left_type_part->min_bound;
-                $y_2 = $left_type_part->max_bound;
-                $min_value = min($x_1 * $y_1, $x_1 * $y_2, $x_2 * $y_1, $x_2 * $y_2);
-                $max_value = max($x_1 * $y_1, $x_1 * $y_2, $x_2 * $y_1, $x_2 * $y_2);
-
-                $new_result_type = new Type\Union([new TIntRange($min_value, $max_value)]);
-            } elseif ($right_type_part->isPositiveOrZero() && $left_type_part->isPositiveOrZero()) {
-                // both operands are positive, result will be only positive
-                $min_operand1 = $left_type_part->min_bound;
-                $min_operand2 = $right_type_part->min_bound;
-
-                $max_operand1 = $left_type_part->max_bound;
-                $max_operand2 = $right_type_part->max_bound;
-
-                $calculated_min_type = null;
-                if ($min_operand1 !== null && $min_operand2 !== null) {
-                    // when there are two valid numbers, make any operation
-                    $calculated_min_type = self::arithmeticOperation(
-                        $parent,
-                        $min_operand1,
-                        $min_operand2,
-                        false
-                    );
-                }
-
-                $calculated_max_type = null;
-                if ($max_operand1 !== null && $max_operand2 !== null) {
-                    // when there are two valid numbers, make any operation
-                    $calculated_max_type = self::arithmeticOperation(
-                        $parent,
-                        $max_operand1,
-                        $max_operand2,
-                        false
-                    );
-                }
-
-                $min_value = $calculated_min_type !== null ? $calculated_min_type->getSingleIntLiteral()->value : null;
-                $max_value = $calculated_max_type !== null ? $calculated_max_type->getSingleIntLiteral()->value : null;
-
-                $new_result_type = new Type\Union([new Type\Atomic\TIntRange($min_value, $max_value)]);
-            } elseif ($right_type_part->isPositiveOrZero() && $left_type_part->isNegativeOrZero()) {
-                // one operand is negative, result will be negative and we have to check min vs max
-                $min_operand1 = $left_type_part->max_bound;
-                $min_operand2 = $right_type_part->min_bound;
-
-                $max_operand1 = $left_type_part->min_bound;
-                $max_operand2 = $right_type_part->max_bound;
-
-                $calculated_min_type = null;
-                if ($min_operand1 !== null && $min_operand2 !== null) {
-                    // when there are two valid numbers, make any operation
-                    $calculated_min_type = self::arithmeticOperation(
-                        $parent,
-                        $min_operand1,
-                        $min_operand2,
-                        false
-                    );
-                }
-
-                $calculated_max_type = null;
-                if ($max_operand1 !== null && $max_operand2 !== null) {
-                    // when there are two valid numbers, make any operation
-                    $calculated_max_type = self::arithmeticOperation(
-                        $parent,
-                        $max_operand1,
-                        $max_operand2,
-                        false
-                    );
-                }
-
-                $min_value = $calculated_min_type !== null ? $calculated_min_type->getSingleIntLiteral()->value : null;
-                $max_value = $calculated_max_type !== null ? $calculated_max_type->getSingleIntLiteral()->value : null;
-
-                if ($min_value > $max_value) {
-                    [$min_value, $max_value] = [$max_value, $min_value];
-                }
-
-                $new_result_type = new Type\Union([new Type\Atomic\TIntRange($min_value, $max_value)]);
-            } elseif ($right_type_part->isNegativeOrZero() && $left_type_part->isPositiveOrZero()) {
-                // one operand is negative, result will be negative and we have to check min vs max
-                $min_operand1 = $left_type_part->min_bound;
-                $min_operand2 = $right_type_part->max_bound;
-
-                $max_operand1 = $left_type_part->max_bound;
-                $max_operand2 = $right_type_part->min_bound;
-
-                $calculated_min_type = null;
-                if ($min_operand1 !== null && $min_operand2 !== null) {
-                    // when there are two valid numbers, make any operation
-                    $calculated_min_type = self::arithmeticOperation(
-                        $parent,
-                        $min_operand1,
-                        $min_operand2,
-                        false
-                    );
-                }
-
-                $calculated_max_type = null;
-                if ($max_operand1 !== null && $max_operand2 !== null) {
-                    // when there are two valid numbers, make any operation
-                    $calculated_max_type = self::arithmeticOperation(
-                        $parent,
-                        $max_operand1,
-                        $max_operand2,
-                        false
-                    );
-                }
-
-                $min_value = $calculated_min_type !== null ? $calculated_min_type->getSingleIntLiteral()->value : null;
-                $max_value = $calculated_max_type !== null ? $calculated_max_type->getSingleIntLiteral()->value : null;
-
-                if ($min_value > $max_value) {
-                    [$min_value, $max_value] = [$max_value, $min_value];
-                }
-
-                $new_result_type = new Type\Union([new Type\Atomic\TIntRange($min_value, $max_value)]);
-            } elseif ($right_type_part->isNegativeOrZero() && $left_type_part->isNegativeOrZero()) {
-                // both operand are negative, result will be positive
-                $min_operand1 = $left_type_part->max_bound;
-                $min_operand2 = $right_type_part->max_bound;
-
-                $max_operand1 = $left_type_part->min_bound;
-                $max_operand2 = $right_type_part->min_bound;
-
-                $calculated_min_type = null;
-                if ($min_operand1 !== null && $min_operand2 !== null) {
-                    // when there are two valid numbers, make any operation
-                    $calculated_min_type = self::arithmeticOperation(
-                        $parent,
-                        $min_operand1,
-                        $min_operand2,
-                        false
-                    );
-                }
-
-                $calculated_max_type = null;
-                if ($max_operand1 !== null && $max_operand2 !== null) {
-                    // when there are two valid numbers, make any operation
-                    $calculated_max_type = self::arithmeticOperation(
-                        $parent,
-                        $max_operand1,
-                        $max_operand2,
-                        false
-                    );
-                }
-
-                $min_value = $calculated_min_type !== null ? $calculated_min_type->getSingleIntLiteral()->value : null;
-                $max_value = $calculated_max_type !== null ? $calculated_max_type->getSingleIntLiteral()->value : null;
-
-                $new_result_type = new Type\Union([new Type\Atomic\TIntRange($min_value, $max_value)]);
-            } else {
-                $new_result_type = Type::getInt(true);
-            }
-
-            if (!$result_type) {
-                $result_type = $new_result_type;
-            } else {
-                $result_type = Type::combineUnionTypes($new_result_type, $result_type);
-            }
-
+            self::analyzeMulBetweenIntRange($right_type_part, $left_type_part, $parent, $result_type);
             return;
         }
 
         if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Pow) {
-            //If Pow first operand is negative, the result will be negative, else it will be positive
-            //If Pow second operand is negative, the result will be float, if it's 0, it will be 1/-1, else positive
-            if ($left_type_part->isPositive()) {
-                if ($right_type_part->isPositive()) {
-                    $new_result_type = new Type\Union([new TIntRange(1, null)]);
-                } elseif ($right_type_part->isNegative()) {
-                    $new_result_type = Type::getFloat();
-                } elseif ($right_type_part->min_bound === 0 && $right_type_part->max_bound === 0) {
-                    $new_result_type = Type::getInt(true, 1);
-                } else {
-                    //$right_type_part may be a mix of positive, negative and 0
-                    $new_result_type = new Type\Union([new TInt(), new TFloat()]);
-                }
-            } elseif ($left_type_part->isNegative()) {
-                if ($right_type_part->isPositive()) {
-                    $new_result_type = new Type\Union([new TIntRange(null, -1)]);
-                } elseif ($right_type_part->isNegative()) {
-                    $new_result_type = Type::getFloat();
-                } elseif ($right_type_part->min_bound === 0 && $right_type_part->max_bound === 0) {
-                    $new_result_type = Type::getInt(true, -1);
-                } else {
-                    //$right_type_part may be a mix of positive, negative and 0
-                    $new_result_type = new Type\Union([new TInt(), new TFloat()]);
-                }
-            } elseif ($left_type_part->min_bound === 0 && $left_type_part->max_bound === 0) {
-                if ($right_type_part->isPositive()) {
-                    $new_result_type = Type::getInt(true, 0);
-                } elseif ($right_type_part->min_bound === 0 && $right_type_part->max_bound === 0) {
-                    $new_result_type = Type::getInt(true, 1);
-                } else {
-                    //technically could be a float(INF)...
-                    $new_result_type = Type::getEmpty();
-                }
-            } else {
-                if ($right_type_part->isPositive()) {
-                    $new_result_type = new Type\Union([new TInt(), new TFloat()]);
-                } elseif ($right_type_part->isNegative()) {
-                    $new_result_type = Type::getFloat();
-                } elseif ($right_type_part->min_bound === 0 && $right_type_part->max_bound === 0) {
-                    $new_result_type = Type::getInt(true, 1);
-                } else {
-                    //$left_type_part may be a mix of positive, negative and 0
-                    $new_result_type = new Type\Union([new TInt(), new TFloat()]);
-                }
-            }
-
-            if (!$result_type) {
-                $result_type = $new_result_type;
-            } else {
-                $result_type = Type::combineUnionTypes($new_result_type, $result_type);
-            }
-
+            self::analyzePowBetweenIntRange($left_type_part, $right_type_part, $result_type);
             return;
         }
 
@@ -1320,6 +1038,311 @@ class ArithmeticOpAnalyzer
             self::analyzeOperandsBetweenIntRange($parent, $result_type, $range_operand, $new_range);
         } else {
             self::analyzeOperandsBetweenIntRange($parent, $result_type, $new_range, $range_operand);
+        }
+    }
+
+    private static function analyzeMulBetweenIntRange(
+        TIntRange $right_type_part,
+        TIntRange $left_type_part,
+        PhpParser\Node\Expr\BinaryOp\Mul $parent,
+        ?Type\Union &$result_type
+    ): void {
+        //Mul is a special case because of double negatives. We can only infer when we know both signs strictly
+        if ($right_type_part->min_bound !== null
+            && $right_type_part->max_bound !== null
+            && $left_type_part->min_bound !== null
+            && $left_type_part->max_bound !== null
+        ) {
+            //everything is known, we can do calculations
+            //[ x_1 , x_2 ] ⋆ [ y_1 , y_2 ] =
+            //      [
+            //          min(x_1 ⋆ y_1 , x_1 ⋆ y_2 , x_2 ⋆ y_1 , x_2 ⋆ y_2),
+            //          max(x_1 ⋆ y_1 , x_1 ⋆ y_2 , x_2 ⋆ y_1 , x_2 ⋆ y_2)
+            //      ]
+            $x_1 = $right_type_part->min_bound;
+            $x_2 = $right_type_part->max_bound;
+            $y_1 = $left_type_part->min_bound;
+            $y_2 = $left_type_part->max_bound;
+            $min_value = min($x_1 * $y_1, $x_1 * $y_2, $x_2 * $y_1, $x_2 * $y_2);
+            $max_value = max($x_1 * $y_1, $x_1 * $y_2, $x_2 * $y_1, $x_2 * $y_2);
+
+            $new_result_type = new Type\Union([new TIntRange($min_value, $max_value)]);
+        } elseif ($right_type_part->isPositiveOrZero() && $left_type_part->isPositiveOrZero()) {
+            // both operands are positive, result will be only positive
+            $min_operand1 = $left_type_part->min_bound;
+            $min_operand2 = $right_type_part->min_bound;
+
+            $max_operand1 = $left_type_part->max_bound;
+            $max_operand2 = $right_type_part->max_bound;
+
+            $calculated_min_type = null;
+            if ($min_operand1 !== null && $min_operand2 !== null) {
+                // when there are two valid numbers, make any operation
+                $calculated_min_type = self::arithmeticOperation(
+                    $parent,
+                    $min_operand1,
+                    $min_operand2,
+                    false
+                );
+            }
+
+            $calculated_max_type = null;
+            if ($max_operand1 !== null && $max_operand2 !== null) {
+                // when there are two valid numbers, make any operation
+                $calculated_max_type = self::arithmeticOperation(
+                    $parent,
+                    $max_operand1,
+                    $max_operand2,
+                    false
+                );
+            }
+
+            $min_value = $calculated_min_type !== null ? $calculated_min_type->getSingleIntLiteral()->value : null;
+            $max_value = $calculated_max_type !== null ? $calculated_max_type->getSingleIntLiteral()->value : null;
+
+            $new_result_type = new Type\Union([new Type\Atomic\TIntRange($min_value, $max_value)]);
+        } elseif ($right_type_part->isPositiveOrZero() && $left_type_part->isNegativeOrZero()) {
+            // one operand is negative, result will be negative and we have to check min vs max
+            $min_operand1 = $left_type_part->max_bound;
+            $min_operand2 = $right_type_part->min_bound;
+
+            $max_operand1 = $left_type_part->min_bound;
+            $max_operand2 = $right_type_part->max_bound;
+
+            $calculated_min_type = null;
+            if ($min_operand1 !== null && $min_operand2 !== null) {
+                // when there are two valid numbers, make any operation
+                $calculated_min_type = self::arithmeticOperation(
+                    $parent,
+                    $min_operand1,
+                    $min_operand2,
+                    false
+                );
+            }
+
+            $calculated_max_type = null;
+            if ($max_operand1 !== null && $max_operand2 !== null) {
+                // when there are two valid numbers, make any operation
+                $calculated_max_type = self::arithmeticOperation(
+                    $parent,
+                    $max_operand1,
+                    $max_operand2,
+                    false
+                );
+            }
+
+            $min_value = $calculated_min_type !== null ? $calculated_min_type->getSingleIntLiteral()->value : null;
+            $max_value = $calculated_max_type !== null ? $calculated_max_type->getSingleIntLiteral()->value : null;
+
+            if ($min_value > $max_value) {
+                [$min_value, $max_value] = [$max_value, $min_value];
+            }
+
+            $new_result_type = new Type\Union([new Type\Atomic\TIntRange($min_value, $max_value)]);
+        } elseif ($right_type_part->isNegativeOrZero() && $left_type_part->isPositiveOrZero()) {
+            // one operand is negative, result will be negative and we have to check min vs max
+            $min_operand1 = $left_type_part->min_bound;
+            $min_operand2 = $right_type_part->max_bound;
+
+            $max_operand1 = $left_type_part->max_bound;
+            $max_operand2 = $right_type_part->min_bound;
+
+            $calculated_min_type = null;
+            if ($min_operand1 !== null && $min_operand2 !== null) {
+                // when there are two valid numbers, make any operation
+                $calculated_min_type = self::arithmeticOperation(
+                    $parent,
+                    $min_operand1,
+                    $min_operand2,
+                    false
+                );
+            }
+
+            $calculated_max_type = null;
+            if ($max_operand1 !== null && $max_operand2 !== null) {
+                // when there are two valid numbers, make any operation
+                $calculated_max_type = self::arithmeticOperation(
+                    $parent,
+                    $max_operand1,
+                    $max_operand2,
+                    false
+                );
+            }
+
+            $min_value = $calculated_min_type !== null ? $calculated_min_type->getSingleIntLiteral()->value : null;
+            $max_value = $calculated_max_type !== null ? $calculated_max_type->getSingleIntLiteral()->value : null;
+
+            if ($min_value > $max_value) {
+                [$min_value, $max_value] = [$max_value, $min_value];
+            }
+
+            $new_result_type = new Type\Union([new Type\Atomic\TIntRange($min_value, $max_value)]);
+        } elseif ($right_type_part->isNegativeOrZero() && $left_type_part->isNegativeOrZero()) {
+            // both operand are negative, result will be positive
+            $min_operand1 = $left_type_part->max_bound;
+            $min_operand2 = $right_type_part->max_bound;
+
+            $max_operand1 = $left_type_part->min_bound;
+            $max_operand2 = $right_type_part->min_bound;
+
+            $calculated_min_type = null;
+            if ($min_operand1 !== null && $min_operand2 !== null) {
+                // when there are two valid numbers, make any operation
+                $calculated_min_type = self::arithmeticOperation(
+                    $parent,
+                    $min_operand1,
+                    $min_operand2,
+                    false
+                );
+            }
+
+            $calculated_max_type = null;
+            if ($max_operand1 !== null && $max_operand2 !== null) {
+                // when there are two valid numbers, make any operation
+                $calculated_max_type = self::arithmeticOperation(
+                    $parent,
+                    $max_operand1,
+                    $max_operand2,
+                    false
+                );
+            }
+
+            $min_value = $calculated_min_type !== null ? $calculated_min_type->getSingleIntLiteral()->value : null;
+            $max_value = $calculated_max_type !== null ? $calculated_max_type->getSingleIntLiteral()->value : null;
+
+            $new_result_type = new Type\Union([new Type\Atomic\TIntRange($min_value, $max_value)]);
+        } else {
+            $new_result_type = Type::getInt(true);
+        }
+
+        if (!$result_type) {
+            $result_type = $new_result_type;
+        } else {
+            $result_type = Type::combineUnionTypes($new_result_type, $result_type);
+        }
+    }
+
+    private static function analyzePowBetweenIntRange(
+        TIntRange $left_type_part,
+        TIntRange $right_type_part,
+        ?Type\Union &$result_type
+    ): void {
+        //If Pow first operand is negative, the result will be negative, else it will be positive
+        //If Pow second operand is negative, the result will be float, if it's 0, it will be 1/-1, else positive
+        if ($left_type_part->isPositive()) {
+            if ($right_type_part->isPositive()) {
+                $new_result_type = new Type\Union([new TIntRange(1, null)]);
+            } elseif ($right_type_part->isNegative()) {
+                $new_result_type = Type::getFloat();
+            } elseif ($right_type_part->min_bound === 0 && $right_type_part->max_bound === 0) {
+                $new_result_type = Type::getInt(true, 1);
+            } else {
+                //$right_type_part may be a mix of positive, negative and 0
+                $new_result_type = new Type\Union([new TInt(), new TFloat()]);
+            }
+        } elseif ($left_type_part->isNegative()) {
+            if ($right_type_part->isPositive()) {
+                $new_result_type = new Type\Union([new TIntRange(null, -1)]);
+            } elseif ($right_type_part->isNegative()) {
+                $new_result_type = Type::getFloat();
+            } elseif ($right_type_part->min_bound === 0 && $right_type_part->max_bound === 0) {
+                $new_result_type = Type::getInt(true, -1);
+            } else {
+                //$right_type_part may be a mix of positive, negative and 0
+                $new_result_type = new Type\Union([new TInt(), new TFloat()]);
+            }
+        } elseif ($left_type_part->min_bound === 0 && $left_type_part->max_bound === 0) {
+            if ($right_type_part->isPositive()) {
+                $new_result_type = Type::getInt(true, 0);
+            } elseif ($right_type_part->min_bound === 0 && $right_type_part->max_bound === 0) {
+                $new_result_type = Type::getInt(true, 1);
+            } else {
+                //technically could be a float(INF)...
+                $new_result_type = Type::getEmpty();
+            }
+        } else {
+            if ($right_type_part->isPositive()) {
+                $new_result_type = new Type\Union([new TInt(), new TFloat()]);
+            } elseif ($right_type_part->isNegative()) {
+                $new_result_type = Type::getFloat();
+            } elseif ($right_type_part->min_bound === 0 && $right_type_part->max_bound === 0) {
+                $new_result_type = Type::getInt(true, 1);
+            } else {
+                //$left_type_part may be a mix of positive, negative and 0
+                $new_result_type = new Type\Union([new TInt(), new TFloat()]);
+            }
+        }
+
+        if (!$result_type) {
+            $result_type = $new_result_type;
+        } else {
+            $result_type = Type::combineUnionTypes($new_result_type, $result_type);
+        }
+    }
+
+    private static function analyzeModBetweenIntRange(
+        TIntRange $right_type_part,
+        TIntRange $left_type_part,
+        ?Type\Union &$result_type
+    ): void {
+        //result of Mod is not directly dependant on the bounds of the range
+        if ($right_type_part->min_bound !== null && $right_type_part->min_bound === $right_type_part->max_bound) {
+            //if the second operand is a literal, we can be pretty detailed
+            if ($right_type_part->min_bound === 0) {
+                $new_result_type = Type::getEmpty();
+            } else {
+                if ($left_type_part->isPositiveOrZero()) {
+                    if ($right_type_part->isPositive()) {
+                        $max = $right_type_part->min_bound - 1;
+                        $new_result_type = new Type\Union([new TIntRange(0, $max)]);
+                    } else {
+                        $max = $right_type_part->min_bound + 1;
+                        $new_result_type = new Type\Union([new TIntRange($max, 0)]);
+                    }
+                } elseif ($left_type_part->isNegativeOrZero()) {
+                    if ($right_type_part->isPositive()) {
+                        $max = $right_type_part->min_bound - 1;
+                        $new_result_type = new Type\Union([new TIntRange(-$max, 0)]);
+                    } else {
+                        $max = $right_type_part->min_bound + 1;
+                        $new_result_type = new Type\Union([new TIntRange(-$max, 0)]);
+                    }
+                } else {
+                    if ($right_type_part->isPositive()) {
+                        $max = $right_type_part->min_bound - 1;
+                    } else {
+                        $max = -$right_type_part->min_bound - 1;
+                    }
+                    $new_result_type = new Type\Union([new TIntRange(-$max, $max)]);
+                }
+            }
+        } elseif ($right_type_part->isPositive()) {
+            if ($left_type_part->isPositiveOrZero()) {
+                $new_result_type = new Type\Union([new TIntRange(0, null)]);
+            } elseif ($left_type_part->isNegativeOrZero()) {
+                $new_result_type = new Type\Union([new TIntRange(null, 0)]);
+            } else {
+                $new_result_type = Type::getInt(true);
+            }
+        } elseif ($right_type_part->isNegative()) {
+            if ($left_type_part->isPositiveOrZero()) {
+                $new_result_type = new Type\Union([new TIntRange(null, 0)]);
+            } elseif ($left_type_part->isNegativeOrZero()) {
+                $new_result_type = new Type\Union([new TIntRange(null, 0)]);
+            } else {
+                $new_result_type = Type::getInt(true);
+            }
+        } else {
+            $new_result_type = Type::getInt(true);
+        }
+
+        if (!$result_type) {
+            $result_type = $new_result_type;
+        } else {
+            $result_type = Type::combineUnionTypes(
+                $new_result_type,
+                $result_type
+            );
         }
     }
 }
