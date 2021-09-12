@@ -178,9 +178,71 @@ class IntRangeTest extends TestCase
                     $e = $a * 1;',
                 'assertions' => [
                     '$b===' => 'int<0, 9>',
-                    '$c===' => 'int<250000, 24990001>',
+                    '$c===' => 'int<1, max>',
                     '$d===' => 'int<495, 4994>',
                     '$e===' => 'int<500, 4999>'
+                ]
+            ],
+            'pow' => [
+                '<?php
+                    function getInt(): int{return 0;}
+                    $a = $b = $c = $d = getInt();
+                    assert($a >= 2);//positive range
+                    assert($b <= -2);//negative range
+                    /** @var int<0, 0> $c */; // 0 range
+                    assert($d >= -100);// mixed range
+                    assert($d <= 100);// mixed range
+
+                    $e = 0 ** $a;
+                    $f = 0 ** $b;
+                    $g = 0 ** $c;
+                    $h = 0 ** $d;
+                    $i = -2 ** $a;
+                    $j = -2 ** $b;
+                    $k = -2 ** $c;
+                    $l = -2 ** $d;
+                    $m = 2 ** $a;
+                    $n = 2 ** $b;
+                    $o = 2 ** $c;
+                    $p = 2 ** $d;
+                    $q = $a ** 0;
+                    $r = $a ** 2;
+                    $s = $a ** -2;
+                    $t = $b ** 0;
+                    $u = $b ** 2;
+                    $v = $b ** -2;
+                    $w = $c ** 0;
+                    $x = $c ** 2;
+                    $y = $c ** -2;
+                    $z = $d ** 0;
+                    $aa = $d ** 2;
+                    $ab = $d ** -2;
+                ',
+                'assertions' => [
+                    '$e===' => '0',
+                    '$f===' => 'empty',
+                    '$g===' => '1',
+                    '$h===' => 'empty',
+                    '$i===' => 'int<min, -1>',
+                    '$j===' => 'float',
+                    '$k===' => '-1',
+                    '$l===' => 'float|int',
+                    '$m===' => 'int<1, max>',
+                    '$n===' => 'float',
+                    '$o===' => '1',
+                    '$p===' => 'float|int',
+                    '$q===' => '1',
+                    '$r===' => 'int<1, max>',
+                    '$s===' => 'float',
+                    '$t===' => '-1',
+                    '$u===' => 'int<min, -1>',
+                    '$v===' => 'float',
+                    '$w===' => '1',
+                    '$x===' => '0',
+                    '$y===' => 'empty',
+                    '$z===' => '1',
+                    '$aa===' => 'float|int',
+                    '$ab===' => 'float',
                 ]
             ],
             'multiplications' => [
@@ -216,25 +278,25 @@ class IntRangeTest extends TestCase
                     $z = $f * $f;
                     ',
                 'assertions' => [
-                    '$g===' => 'int<min, max>',
-                    '$h===' => 'int<min, max>',
-                    '$i===' => 'int<min, max>',
-                    '$j===' => 'int<min, max>',
-                    '$k===' => 'int<min, max>',
+                    '$g===' => 'int',
+                    '$h===' => 'int',
+                    '$i===' => 'int',
+                    '$j===' => 'int',
+                    '$k===' => 'int',
                     '$l===' => 'int<4, max>',
-                    '$m===' => 'int<min, max>',
-                    '$n===' => 'int<min, max>',
+                    '$m===' => 'int',
+                    '$n===' => 'int',
                     '$o===' => 'int<min, -4>',
-                    '$p===' => 'int<min, max>',
-                    '$q===' => 'int<min, max>',
-                    '$r===' => 'int<min, max>',
-                    '$s===' => 'int<min, max>',
-                    '$t===' => 'int<min, max>',
-                    '$u===' => 'int<min, max>',
-                    '$v===' => 'int<min, max>',
-                    '$w===' => 'int<min, max>',
+                    '$p===' => 'int',
+                    '$q===' => 'int',
+                    '$r===' => 'int',
+                    '$s===' => 'int',
+                    '$t===' => 'int',
+                    '$u===' => 'int',
+                    '$v===' => 'int',
+                    '$w===' => 'int',
                     '$x===' => 'int<4, max>',
-                    '$y===' => 'int<min, max>',
+                    '$y===' => 'int',
                     '$z===' => 'int<-4, 4>',
                 ]
             ],
