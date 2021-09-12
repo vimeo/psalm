@@ -3396,6 +3396,8 @@ class AssertionFinder
                 $if_types[$var_name] = [['~' . $var_type->getAssertionString()]];
             }
 
+            // we count the Atomics instead of using isSingle because Psalm considers multiple literals as Single
+            // however, getAssertionString return the assertion for the first Atomic only
             if ($other_var_name && $other_type && count($other_type->getAtomicTypes()) === 1) {
                 if ($identical) {
                     $if_types[$other_var_name] = [['=' . $other_type->getAssertionString(true)]];
