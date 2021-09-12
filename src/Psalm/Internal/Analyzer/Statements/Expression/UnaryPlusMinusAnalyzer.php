@@ -76,7 +76,7 @@ class UnaryPlusMinusAnalyzer
                     if ($type_part instanceof Type\Atomic\TPositiveInt
                         && $stmt instanceof PhpParser\Node\Expr\UnaryMinus
                     ) {
-                        $type_part = new TIntRange(null, 0);
+                        $type_part = new TIntRange(null, -1);
                     }
 
                     $acceptable_types[] = $type_part;

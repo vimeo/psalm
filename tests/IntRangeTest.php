@@ -548,7 +548,7 @@ class IntRangeTest extends TestCase
                     ',
                 'assertions' => [
                     '$b===' => 'int<min, -6>',
-                    '$d===' => 'int<min, 0>',
+                    '$d===' => 'int<min, -1>',
                     '$f===' => 'int<-9, -6>',
                 ],
             ],
