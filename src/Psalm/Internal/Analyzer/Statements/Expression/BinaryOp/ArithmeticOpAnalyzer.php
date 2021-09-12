@@ -915,6 +915,69 @@ class ArithmeticOpAnalyzer
             return;
         }
 
+        if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Mod) {
+            //result of Mod is not directly dependant on the bounds of the range
+            if ($right_type_part->min_bound !== null && $right_type_part->min_bound === $right_type_part->max_bound) {
+                //if the second operand is a literal, we can be pretty detailed
+                if ($right_type_part->min_bound === 0) {
+                    $new_result_type = Type::getEmpty();
+                } else {
+                    if ($left_type_part->isPositiveOrZero()) {
+                        if ($right_type_part->isPositive()) {
+                            $max = $right_type_part->min_bound - 1;
+                            $new_result_type = new Type\Union([new TIntRange(0, $max)]);
+                        } else {
+                            $max = $right_type_part->min_bound + 1;
+                            $new_result_type = new Type\Union([new TIntRange($max, 0)]);
+                        }
+                    } elseif ($left_type_part->isNegativeOrZero()) {
+                        if ($right_type_part->isPositive()) {
+                            $max = $right_type_part->min_bound - 1;
+                            $new_result_type = new Type\Union([new TIntRange(-$max, 0)]);
+                        } else {
+                            $max = $right_type_part->min_bound + 1;
+                            $new_result_type = new Type\Union([new TIntRange(-$max, 0)]);
+                        }
+                    } else {
+                        if ($right_type_part->isPositive()) {
+                            $max = $right_type_part->min_bound - 1;
+                        } else {
+                            $max = -$right_type_part->min_bound - 1;
+                        }
+                        $new_result_type = new Type\Union([new TIntRange(-$max, $max)]);
+                    }
+                }
+            } elseif ($right_type_part->isPositive()) {
+                if ($left_type_part->isPositiveOrZero()) {
+                    $new_result_type = new Type\Union([new TIntRange(0, null)]);
+                } elseif ($left_type_part->isNegativeOrZero()) {
+                    $new_result_type = new Type\Union([new TIntRange(null, 0)]);
+                } else {
+                    $new_result_type = Type::getInt(true);
+                }
+            } elseif ($right_type_part->isNegative()) {
+                if ($left_type_part->isPositiveOrZero()) {
+                    $new_result_type = new Type\Union([new TIntRange(null, 0)]);
+                } elseif ($left_type_part->isNegativeOrZero()) {
+                    $new_result_type = new Type\Union([new TIntRange(null, 0)]);
+                } else {
+                    $new_result_type = Type::getInt(true);
+                }
+            } else {
+                $new_result_type = Type::getInt(true);
+            }
+
+            if (!$result_type) {
+                $result_type = new Type\Union([$new_result_type]);
+            } else {
+                $result_type = Type::combineUnionTypes(
+                    new Type\Union([$new_result_type]),
+                    $result_type
+                );
+            }
+            return;
+        }
+
         if ($parent instanceof PhpParser\Node\Expr\BinaryOp\BitwiseAnd ||
             $parent instanceof PhpParser\Node\Expr\BinaryOp\BitwiseOr ||
             $parent instanceof PhpParser\Node\Expr\BinaryOp\BitwiseXor

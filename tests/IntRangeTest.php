@@ -183,6 +183,67 @@ class IntRangeTest extends TestCase
                     '$e===' => 'int<500, 4999>'
                 ]
             ],
+            'mod' => [
+                '<?php
+                    function getInt(): int{return 0;}
+                    $a = $b = $c = $d = getInt();
+                    assert($a >= 20);//positive range
+                    assert($b <= -20);//negative range
+                    /** @var int<0, 0> $c */; // 0 range
+                    assert($d >= -100);// mixed range
+                    assert($d <= 100);// mixed range
+                    /** @var int<5, 5> $e */; // 5 range
+
+                    $f = $a % $e;
+                    $g = $b % $e;
+                    $h = $d % $e;
+                    $i = -3 % $a;
+                    $j = -3 % $b;
+                    $k = -3 % $c;
+                    $l = -3 % $d;
+                    $m = 3 % $a;
+                    $n = 3 % $b;
+                    $o = 3 % $c;
+                    $p = 3 % $d;
+                    $q = $a % 0;
+                    $r = $a % 3;
+                    $s = $a % -3;
+                    $t = $b % 0;
+                    $u = $b % 3;
+                    $v = $b % -3;
+                    $w = $c % 0;
+                    $x = $c % 3;
+                    $y = $c % -3;
+                    $z = $d % 0;
+                    $aa = $d % 3;
+                    $ab = $d % -3;
+                ',
+                'assertions' => [
+                    '$f===' => 'int<0, 4>',
+                    '$g===' => 'int<-4, 0>',
+                    '$h===' => 'int<-4, 4>',
+                    '$i===' => 'int<min, 0>',
+                    '$j===' => 'int<min, 0>',
+                    '$k===' => 'empty',
+                    '$l===' => 'int',
+                    '$m===' => 'int<0, max>',
+                    '$n===' => 'int<min, 0>',
+                    '$o===' => 'empty',
+                    '$p===' => 'int',
+                    '$q===' => 'empty',
+                    '$r===' => 'int<0, 2>',
+                    '$s===' => 'int<-2, 0>',
+                    '$t===' => 'empty',
+                    '$u===' => 'int<-2, 0>',
+                    '$v===' => 'int<2, 0>',
+                    '$w===' => 'empty',
+                    '$x===' => 'int<0, 2>',
+                    '$y===' => 'int<-2, 0>',
+                    '$z===' => 'empty',
+                    '$aa===' => 'int<-2, 2>',
+                    '$ab===' => 'int<-2, 2>',
+                ]
+            ],
             'pow' => [
                 '<?php
                     function getInt(): int{return 0;}
