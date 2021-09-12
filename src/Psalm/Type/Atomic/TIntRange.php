@@ -144,7 +144,7 @@ class TIntRange extends TInt
             $new_max_bound = self::getNewLowestBound($int_range1->max_bound, $int_range2->max_bound);
         }
 
-        if ($new_min_bound > $new_max_bound) {
+        if ($new_min_bound !== null && $new_max_bound !== null && $new_min_bound > $new_max_bound) {
             return null;
         }
 
