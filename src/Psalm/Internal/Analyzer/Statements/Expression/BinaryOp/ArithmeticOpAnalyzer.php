@@ -934,10 +934,10 @@ class ArithmeticOpAnalyzer
         ) {
             //really complex to calculate
             if (!$result_type) {
-                $result_type = new Type\Union([new Type\Atomic\TIntRange(0, null)]);
+                $result_type = new Type\Union([new Type\Atomic\TInt()]);
             } else {
                 $result_type = Type::combineUnionTypes(
-                    new Type\Union([new Type\Atomic\TIntRange(0, null)]),
+                    new Type\Union([new Type\Atomic\TInt()]),
                     $result_type
                 );
             }

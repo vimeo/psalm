@@ -340,8 +340,8 @@ class IntRangeTest extends TestCase
                     '$d===' => 'int',
                     '$e===' => 'int',
                     '$f===' => 'int',
-                    '$g===' => 'int<0, max>',
-                    '$h===' => 'int<0, max>',
+                    '$g===' => 'int',
+                    '$h===' => 'int',
                 ],
             ],
             'UnaryMinus' => [
