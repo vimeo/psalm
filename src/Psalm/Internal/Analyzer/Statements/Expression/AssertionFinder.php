@@ -1562,13 +1562,20 @@ class AssertionFinder
      * @return false|int
      */
     protected static function hasSuperiorNumberCheck(
+        FileSource $source,
         PhpParser\Node\Expr\BinaryOp $conditional,
         ?int &$literal_value_comparison,
         bool &$isset_assert
     ) {
         $right_assignment = false;
         $value_right = null;
-        if ($conditional->right instanceof LNumber) {
+        if ($source instanceof StatementsAnalyzer
+            && ($type = $source->node_data->getType($conditional->right))
+            && $type->isSingleIntLiteral()
+        ) {
+            $right_assignment = true;
+            $value_right = $type->getSingleIntLiteral()->value;
+        } elseif ($conditional->right instanceof LNumber) {
             $right_assignment = true;
             $value_right = $conditional->right->value;
         } elseif ($conditional->right instanceof UnaryMinus && $conditional->right->expr instanceof LNumber) {
@@ -1589,7 +1596,13 @@ class AssertionFinder
 
         $left_assignment = false;
         $value_left = null;
-        if ($conditional->left instanceof LNumber) {
+        if ($source instanceof StatementsAnalyzer
+            && ($type = $source->node_data->getType($conditional->left))
+            && $type->isSingleIntLiteral()
+        ) {
+            $left_assignment = true;
+            $value_left = $type->getSingleIntLiteral()->value;
+        } elseif ($conditional->left instanceof LNumber) {
             $left_assignment = true;
             $value_left = $conditional->left->value;
         } elseif ($conditional->left instanceof UnaryMinus && $conditional->left->expr instanceof LNumber) {
@@ -1616,13 +1629,20 @@ class AssertionFinder
      * @return false|int
      */
     protected static function hasInferiorNumberCheck(
+        FileSource $source,
         PhpParser\Node\Expr\BinaryOp $conditional,
         ?int &$literal_value_comparison,
         bool &$isset_assert
     ) {
         $right_assignment = false;
         $value_right = null;
-        if ($conditional->right instanceof LNumber) {
+        if ($source instanceof StatementsAnalyzer
+            && ($type = $source->node_data->getType($conditional->right))
+            && $type->isSingleIntLiteral()
+        ) {
+            $right_assignment = true;
+            $value_right = $type->getSingleIntLiteral()->value;
+        } elseif ($conditional->right instanceof LNumber) {
             $right_assignment = true;
             $value_right = $conditional->right->value;
         } elseif ($conditional->right instanceof UnaryMinus && $conditional->right->expr instanceof LNumber) {
@@ -1642,7 +1662,13 @@ class AssertionFinder
 
         $left_assignment = false;
         $value_left = null;
-        if ($conditional->left instanceof LNumber) {
+        if ($source instanceof StatementsAnalyzer
+            && ($type = $source->node_data->getType($conditional->left))
+            && $type->isSingleIntLiteral()
+        ) {
+            $left_assignment = true;
+            $value_left = $type->getSingleIntLiteral()->value;
+        } elseif ($conditional->left instanceof LNumber) {
             $left_assignment = true;
             $value_left = $conditional->left->value;
         } elseif ($conditional->left instanceof UnaryMinus && $conditional->left->expr instanceof LNumber) {
@@ -3676,6 +3702,7 @@ class AssertionFinder
         $isset_assert = false;
         $superior_value_comparison = null;
         $superior_value_position = self::hasSuperiorNumberCheck(
+            $source,
             $conditional,
             $superior_value_comparison,
             $isset_assert
@@ -3791,6 +3818,7 @@ class AssertionFinder
         $isset_assert = false;
         $inferior_value_comparison = null;
         $inferior_value_position = self::hasInferiorNumberCheck(
+            $source,
             $conditional,
             $inferior_value_comparison,
             $isset_assert

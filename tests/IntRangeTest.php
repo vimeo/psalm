@@ -58,6 +58,18 @@ class IntRangeTest extends TestCase
                     '$c===' => 'int<-499, -61>',
                 ]
             ],
+            'complexAssertions' => [
+                '<?php
+                    function getInt(): int{return 0;}
+                    $a = getInt();
+                    assert($a >= 495 + 5);
+                    $b = 5000;
+                    assert($a < $b);
+                    ',
+                'assertions' => [
+                    '$a===' => 'int<500, 4999>',
+                ]
+            ],
             'negatedAssertions' => [
                 '<?php
                     function getInt(): int{return 0;}
