@@ -968,10 +968,10 @@ class ArithmeticOpAnalyzer
             }
 
             if (!$result_type) {
-                $result_type = new Type\Union([$new_result_type]);
+                $result_type = $new_result_type;
             } else {
                 $result_type = Type::combineUnionTypes(
-                    new Type\Union([$new_result_type]),
+                    $new_result_type,
                     $result_type
                 );
             }
