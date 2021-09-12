@@ -183,6 +183,61 @@ class IntRangeTest extends TestCase
                     '$e===' => 'int<500, 4999>'
                 ]
             ],
+            'multiplications' => [
+                '<?php
+                    function getInt(): int{return 0;}
+                    $a = $b = $c = $d = $e = $f = $g = $h = $i = $j = $k = $l = $m = $n = $o = $p = getInt();
+                    assert($b <= -2);
+                    assert($c <= 2);
+                    assert($d >= -2);
+                    assert($e >= 2);
+                    assert($f >= -2);
+                    assert($f <= 2);
+
+                    $g = $a * $b;
+                    $h = $a * $c;
+                    $i = $a * $d;
+                    $j = $a * $e;
+                    $k = $a * $f;
+                    $l = $b * $b;
+                    $m = $b * $c;
+                    $n = $b * $d;
+                    $o = $b * $e;
+                    $p = $b * $f;
+                    $q = $c * $c;
+                    $r = $c * $d;
+                    $s = $c * $e;
+                    $t = $c * $f;
+                    $u = $d * $d;
+                    $v = $d * $e;
+                    $w = $d * $f;
+                    $x = $e * $e;
+                    $y = $d * $f;
+                    $z = $f * $f;
+                    ',
+                'assertions' => [
+                    '$g===' => 'int<min, max>',
+                    '$h===' => 'int<min, max>',
+                    '$i===' => 'int<min, max>',
+                    '$j===' => 'int<min, max>',
+                    '$k===' => 'int<min, max>',
+                    '$l===' => 'int<4, max>',
+                    '$m===' => 'int<min, max>',
+                    '$n===' => 'int<min, max>',
+                    '$o===' => 'int<min, -4>',
+                    '$p===' => 'int<min, max>',
+                    '$q===' => 'int<min, max>',
+                    '$r===' => 'int<min, max>',
+                    '$s===' => 'int<min, max>',
+                    '$t===' => 'int<min, max>',
+                    '$u===' => 'int<min, max>',
+                    '$v===' => 'int<min, max>',
+                    '$w===' => 'int<min, max>',
+                    '$x===' => 'int<4, max>',
+                    '$y===' => 'int<min, max>',
+                    '$z===' => 'int<-4, 4>',
+                ]
+            ],
             'SKIPPED-intLoopPositive' => [
                 '<?php
                     //skipped, int range in loops not supported yet
