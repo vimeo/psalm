@@ -99,7 +99,7 @@ class ObjectComparator
                                 ->getStorageFor($intersection_input_type->defining_class);
 
                             if ($codebase->classlikes->traitExists($container_class)
-                                && !is_null($input_class_like)
+                                && !\is_null($input_class_like)
                                 && isset(
                                     $input_class_like->template_extended_params[$container_class][$container_param]
                                 )) {
