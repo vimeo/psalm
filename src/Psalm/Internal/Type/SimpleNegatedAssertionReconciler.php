@@ -1695,7 +1695,6 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                 if (!$new_range->contains($atomic_type->value)) {
                     //emit an issue here in the future about incompatible type
                     $existing_var_type->removeType($atomic_type->getKey());
-                    $existing_var_type->addType($new_range);
                 } /*elseif ($inside_loop) {
                     //when inside a loop, allow the range to extends the type
                     $existing_var_type->removeType($atomic_type->getKey());
@@ -1741,7 +1740,6 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                 if (!$new_range->contains($atomic_type->value)) {
                     //emit an issue here in the future about incompatible type
                     $existing_var_type->removeType($atomic_type->getKey());
-                    $existing_var_type->addType($new_range);
                 }/* elseif ($inside_loop) {
                     //when inside a loop, allow the range to extends the type
                     $existing_var_type->removeType($atomic_type->getKey());
