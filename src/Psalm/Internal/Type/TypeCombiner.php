@@ -1200,6 +1200,24 @@ class TypeCombiner
                     }
                 );
 
+                if (isset($combination->value_types['int'])) {
+                    $current_int_type = $combination->value_types['int'];
+                    if ($current_int_type instanceof TIntRange) {
+                        foreach ($combination->ints as $int) {
+                            if (!$current_int_type->contains($int->value)) {
+                                $current_int_type->min_bound = TIntRange::getNewLowestBound(
+                                    $current_int_type->min_bound,
+                                    $int->value
+                                );
+                                $current_int_type->max_bound = TIntRange::getNewHighestBound(
+                                    $current_int_type->max_bound,
+                                    $int->value
+                                );
+                            }
+                        }
+                    }
+                }
+
                 $combination->ints = null;
 
                 if (!isset($combination->value_types['int'])) {
