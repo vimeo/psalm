@@ -95,13 +95,14 @@ class ObjectComparator
                         } elseif ($intersection_input_type instanceof TTemplateParam) {
                             $container_param = $intersection_container_type->param_name;
                             $container_class = $intersection_container_type->defining_class;
-                            $input_class_like = $codebase->classlikes->getStorageFor($intersection_input_type->defining_class);
+                            $input_class_like = $codebase->classlikes
+                                ->getStorageFor($intersection_input_type->defining_class);
 
-                            if (
-                                $codebase->classlikes->traitExists($container_class)
+                            if ($codebase->classlikes->traitExists($container_class)
                                 && !is_null($input_class_like)
-                                && isset($input_class_like->template_extended_params[$container_class][$container_param])
-                            ) {
+                                && isset(
+                                    $input_class_like->template_extended_params[$container_class][$container_param]
+                                )) {
                                 continue 2;
                             }
                         }
