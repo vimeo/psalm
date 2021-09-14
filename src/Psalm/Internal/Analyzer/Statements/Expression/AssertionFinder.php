@@ -705,6 +705,22 @@ class AssertionFinder
                     $negate
                 );
             }
+        } elseif (self::hasListCheck($expr)) {
+            if ($first_var_name) {
+                $if_types[$first_var_name] = [['list']];
+            } elseif ($first_var_type
+                && $codebase
+                && $source instanceof StatementsAnalyzer
+            ) {
+                self::processIrreconcilableFunctionCall(
+                    $first_var_type,
+                    Type::getList(),
+                    $expr,
+                    $source,
+                    $codebase,
+                    $negate
+                );
+            }
         } elseif (self::hasBoolCheck($expr)) {
             if ($first_var_name) {
                 $if_types[$first_var_name] = [['bool']];
@@ -1807,6 +1823,15 @@ class AssertionFinder
     protected static function hasArrayCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
     {
         if ($stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->parts[0]) === 'is_array') {
+            return true;
+        }
+
+        return false;
+    }
+
+    protected static function hasListCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
+    {
+        if ($stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->parts[0]) === 'array_is_list') {
             return true;
         }
 
