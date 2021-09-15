@@ -314,11 +314,13 @@ class ArithmeticOpAnalyzer
             && ($left instanceof PhpParser\Node\Scalar
                 || $left instanceof PhpParser\Node\Expr\ConstFetch
                 || $left instanceof PhpParser\Node\Expr\ClassConstFetch
-                || $left instanceof PhpParser\Node\Expr\BinaryOp)
+                || $left instanceof PhpParser\Node\Expr\BinaryOp
+                || $left instanceof PhpParser\Node\Expr\FuncCall)
             && ($right instanceof PhpParser\Node\Scalar
                 || $right instanceof PhpParser\Node\Expr\ConstFetch
                 || $right instanceof PhpParser\Node\Expr\ClassConstFetch
-                || $right instanceof PhpParser\Node\Expr\BinaryOp)
+                || $right instanceof PhpParser\Node\Expr\BinaryOp
+                || $right instanceof PhpParser\Node\Expr\FuncCall)
         ) {
             // time for some arithmetic!
             $calculated_type = self::arithmeticOperation(
