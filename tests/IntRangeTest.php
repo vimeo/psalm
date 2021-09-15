@@ -552,6 +552,19 @@ class IntRangeTest extends TestCase
                     '$f===' => 'int<-9, -6>',
                 ],
             ],
+            'countOnKeyedArray' => [
+                '<?php
+                    $conf   = [
+                       "K",
+                       "M",
+                       "G",
+                    ];
+                    $i = count($conf) - 1;
+                ',
+                'assertions' => [
+                    '$i===' => '2',
+                ],
+            ],
             'intersections' => [
                 '<?php
                     function getInt(): int{return 0;}

@@ -337,11 +337,15 @@ class FunctionCallReturnTypeFetcher
 
                                     if ($atomic_types['array']->sealed) {
                                         //the KeyedArray is sealed, we can use the min and max
+                                        if ($min === $max) {
+                                            return new Type\Union([new Type\Atomic\TLiteralInt($max)]);
+                                        }
+
                                         return new Type\Union([new Type\Atomic\TIntRange($min, $max)]);
-                                    } else {
-                                        //the type is not sealed, we can only use the min
-                                        return new Type\Union([new Type\Atomic\TIntRange($min, null)]);
                                     }
+
+                                    //the type is not sealed, we can only use the min
+                                    return new Type\Union([new Type\Atomic\TIntRange($min, null)]);
                                 }
 
                                 return new Type\Union([
