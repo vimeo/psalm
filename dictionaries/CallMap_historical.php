@@ -16294,7 +16294,7 @@ return [
     'xdebug_get_function_stack' => ['array', 'message='=>'string', 'options='=>'int'],
     'xdebug_get_headers' => ['array'],
     'xdebug_get_monitored_functions' => ['array'],
-    'xdebug_get_profiler_filename' => ['string'],
+    'xdebug_get_profiler_filename' => ['string|false'],
     'xdebug_get_stack_depth' => ['int'],
     'xdebug_get_tracefile_name' => ['string'],
     'xdebug_is_debugger_active' => ['bool'],
