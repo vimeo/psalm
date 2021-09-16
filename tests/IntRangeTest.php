@@ -258,10 +258,10 @@ class IntRangeTest extends TestCase
                     $f = 0 ** $b;
                     $g = 0 ** $c;
                     $h = 0 ** $d;
-                    $i = -2 ** $a;
-                    $j = -2 ** $b;
-                    $k = -2 ** $c;
-                    $l = -2 ** $d;
+                    $i = (-2) ** $a;
+                    $j = (-2) ** $b;
+                    $k = (-2) ** $c;
+                    $l = (-2) ** $d;
                     $m = 2 ** $a;
                     $n = 2 ** $b;
                     $o = 2 ** $c;
@@ -284,7 +284,7 @@ class IntRangeTest extends TestCase
                     '$f===' => 'empty',
                     '$g===' => '1',
                     '$h===' => 'empty',
-                    '$i===' => 'int<min, -1>',
+                    '$i===' => 'int',
                     '$j===' => 'float',
                     '$k===' => '-1',
                     '$l===' => 'float|int',
@@ -296,13 +296,13 @@ class IntRangeTest extends TestCase
                     '$r===' => 'int<1, max>',
                     '$s===' => 'float',
                     '$t===' => '-1',
-                    '$u===' => 'int<min, -1>',
+                    '$u===' => 'int<1, max>',
                     '$v===' => 'float',
                     '$w===' => '1',
                     '$x===' => '0',
                     '$y===' => 'empty',
                     '$z===' => '1',
-                    '$aa===' => 'float|int',
+                    '$aa===' => 'int<1, max>',
                     '$ab===' => 'float',
                 ]
             ],
