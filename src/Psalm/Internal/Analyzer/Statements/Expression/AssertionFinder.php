@@ -1683,15 +1683,19 @@ class AssertionFinder
         bool $negate
     ): array {
         $if_types = [];
+
         if ($stmt->name instanceof PhpParser\Node\Name
             && ($function_name = strtolower($stmt->name->parts[0]))
+            && $source instanceof StatementsAnalyzer
+            && ($source->getNamespace() === null
+                || $stmt->name instanceof PhpParser\Node\Name\FullyQualified
+                || isset($source->getAliases()->functions[$function_name]))
             && isset(self::IS_TYPE_CHECKS[$function_name])
         ) {
             if ($first_var_name) {
                 $if_types[$first_var_name] = [[self::IS_TYPE_CHECKS[$function_name][0]]];
             } elseif ($first_var_type
                 && $codebase
-                && $source instanceof StatementsAnalyzer
             ) {
                 if (isset(self::IS_TYPE_CHECKS[$function_name][1])) {
                     $callable = self::IS_TYPE_CHECKS[$function_name][1];
