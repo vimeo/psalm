@@ -863,6 +863,10 @@ class ArithmeticOpAnalyzer
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\Minus) {
             $result = $operand1 - $operand2;
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\Mod) {
+            if ($operand2 === 0) {
+                return Type::getEmpty();
+            }
+
             $result = $operand1 % $operand2;
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\Mul) {
             $result = $operand1 * $operand2;
@@ -916,7 +920,7 @@ class ArithmeticOpAnalyzer
         }
 
         if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Mod) {
-            self::analyzeModBetweenIntRange($right_type_part, $left_type_part, $result_type);
+            self::analyzeModBetweenIntRange($result_type, $left_type_part, $right_type_part);
             return;
         }
 
@@ -952,12 +956,12 @@ class ArithmeticOpAnalyzer
         }
 
         if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Mul) {
-            self::analyzeMulBetweenIntRange($right_type_part, $left_type_part, $parent, $result_type);
+            self::analyzeMulBetweenIntRange($parent, $result_type, $left_type_part, $right_type_part);
             return;
         }
 
         if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Pow) {
-            self::analyzePowBetweenIntRange($left_type_part, $right_type_part, $result_type);
+            self::analyzePowBetweenIntRange($result_type, $left_type_part, $right_type_part);
             return;
         }
 
@@ -1020,32 +1024,21 @@ class ArithmeticOpAnalyzer
         Atomic $left_type_part,
         Atomic $right_type_part
     ): void {
-        if ($left_type_part instanceof Type\Atomic\TIntRange) {
-            $left_is_range = true;
-            $range_operand = $left_type_part;
-            $other_operand = $right_type_part;
-        } elseif ($right_type_part instanceof Type\Atomic\TIntRange) {
-            $left_is_range = false;
-            $range_operand = $right_type_part;
-            $other_operand = $left_type_part;
-        } else {
-            //this can't happen
-            return;
+        if (!$left_type_part instanceof Type\Atomic\TIntRange) {
+            $left_type_part = TIntRange::convertToIntRange($left_type_part);
+        }
+        if (!$right_type_part instanceof Type\Atomic\TIntRange) {
+            $right_type_part = TIntRange::convertToIntRange($right_type_part);
         }
 
-        $new_range = TIntRange::convertToIntRange($other_operand);
-        if ($left_is_range) {
-            self::analyzeOperandsBetweenIntRange($parent, $result_type, $range_operand, $new_range);
-        } else {
-            self::analyzeOperandsBetweenIntRange($parent, $result_type, $new_range, $range_operand);
-        }
+        self::analyzeOperandsBetweenIntRange($parent, $result_type, $left_type_part, $right_type_part);
     }
 
     private static function analyzeMulBetweenIntRange(
-        TIntRange $right_type_part,
-        TIntRange $left_type_part,
         PhpParser\Node\Expr\BinaryOp\Mul $parent,
-        ?Type\Union &$result_type
+        ?Type\Union &$result_type,
+        TIntRange $left_type_part,
+        TIntRange $right_type_part
     ): void {
         //Mul is a special case because of double negatives. We can only infer when we know both signs strictly
         if ($right_type_part->min_bound !== null
@@ -1223,9 +1216,9 @@ class ArithmeticOpAnalyzer
     }
 
     private static function analyzePowBetweenIntRange(
+        ?Type\Union &$result_type,
         TIntRange $left_type_part,
-        TIntRange $right_type_part,
-        ?Type\Union &$result_type
+        TIntRange $right_type_part
     ): void {
         //If Pow first operand is negative, the result will be negative, else it will be positive
         //If Pow second operand is negative, the result will be float, if it's 0, it will be 1/-1, else positive
@@ -1281,14 +1274,14 @@ class ArithmeticOpAnalyzer
     }
 
     private static function analyzeModBetweenIntRange(
-        TIntRange $right_type_part,
+        ?Type\Union &$result_type,
         TIntRange $left_type_part,
-        ?Type\Union &$result_type
+        TIntRange $right_type_part
     ): void {
         //result of Mod is not directly dependant on the bounds of the range
         if ($right_type_part->min_bound !== null && $right_type_part->min_bound === $right_type_part->max_bound) {
             //if the second operand is a literal, we can be pretty detailed
-            if ($right_type_part->min_bound === 0) {
+            if ($right_type_part->max_bound === 0) {
                 $new_result_type = Type::getEmpty();
             } else {
                 if ($left_type_part->isPositiveOrZero()) {
