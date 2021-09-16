@@ -305,6 +305,9 @@ class DocumentationTest extends TestCase
                     break;
 
                 case 'InvalidEnumBackingType':
+                case 'InvalidEnumCaseValue':
+                case 'DuplicateEnumCase':
+                case 'DuplicateEnumCaseValue':
                     $php_version = '8.1';
                     break;
             }

@@ -550,6 +550,12 @@ class VariableFetchAnalyzer
             return Type::getInt();
         }
 
+        if ($var_id === '$http_response_header') {
+            return new Type\Union([
+                new Type\Atomic\TList(Type::getString())
+            ]);
+        }
+
         if (self::isSuperGlobal($var_id)) {
             $type = Type::getArray();
 

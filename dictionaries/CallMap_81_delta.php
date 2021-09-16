@@ -17,6 +17,12 @@
 return [
   'added' => [
     'array_is_list' => ['bool', 'array' => 'array'],
+    'fsync' => ['bool', 'stream' => 'resource'],
+    'fdatasync' => ['bool', 'stream' => 'resource'],
+    'imageavif' => ['bool', 'image'=>'GdImage', 'file='=>'resource|string|null', 'quality='=>'int', 'speed='=>'int'],
+    'imagecreatefromavif' => ['false|GdImage', 'filename'=>'string'],
+    'mysqli_fetch_column' => ['null|int|float|string|false', 'result'=>'mysqli_result', 'column='=>'int'],
+    'mysqli_result::fetch_column' => ['null|int|float|string|false', 'column='=>'int'],
   ],
 
   'changed' => [
@@ -163,6 +169,30 @@ return [
     'ftp_get_option' => [
       'old' => ['mixed|false', 'ftp' => 'resource', 'option' => 'int'],
       'new' => ['mixed|false', 'ftp' => 'FTP\Connection', 'option' => 'int'],
+    ],
+    'hash' => [
+      'old' => ['string|false', 'algo'=>'string', 'data'=>'string', 'binary='=>'bool'],
+      'new' => ['string|false', 'algo'=>'string', 'data'=>'string', 'binary='=>'bool', 'options='=>'array'],
+    ],
+    'hash_file' => [
+      'old' => ['string|false', 'algo'=>'string', 'filename'=>'string', 'binary='=>'bool'],
+      'new' => ['string|false', 'algo'=>'string', 'filename'=>'string', 'binary='=>'bool', 'options='=>'array'],
+    ],
+    'hash_init' => [
+      'old' => ['HashContext', 'algo'=>'string', 'flags='=>'int', 'key='=>'string'],
+      'new' => ['HashContext', 'algo'=>'string', 'flags='=>'int', 'key='=>'string', 'options='=>'array'],
+    ],
+    'mysqli_execute' => [
+      'old' => ['bool', 'statement' => 'mysqli_stmt'],
+      'new' => ['bool', 'statement' => 'mysqli_stmt', 'params=' => 'list<mixed>|null'],
+    ],
+    'mysqli_stmt_execute' => [
+      'old' => ['bool', 'statement' => 'mysqli_stmt'],
+      'new' => ['bool', 'statement' => 'mysqli_stmt', 'params=' => 'list<mixed>|null'],
+    ],
+    'mysqli_stmt::execute' => [
+      'old' => ['bool'],
+      'new' => ['bool', 'params=' => 'list<mixed>|null'],
     ],
   ],
 

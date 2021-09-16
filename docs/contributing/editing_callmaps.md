@@ -26,7 +26,7 @@ optional parameter is postfixed with `=`.
 ## Delta file format
 
 Delta files (named `CallMap_<PHP major version><PHP minor version>_delta.php`)
-list the changed that happened in the corresponding PHP version. There are
+list changes that happened in the corresponding PHP version. There are
 three section with self-explanatory names: `added` (for functions/methods that
 were added in that PHP version), `removed` (for those that were removed) and
 `changed`.
@@ -43,7 +43,7 @@ the following process to do that:
 
 1. Read `CallMap.php` (Note: it's the one having latest signatures).
 2. If it matches configured PHP version, use it.
-3. If the callmap for previous PHP version exists, read that.
+3. If the callmap delta for previous PHP version exists, read that.
 4. Take previous callmap delta and apply it in reverse order. That is, entries
    in `removed` section are added, those in `added` section are removed and
    `changed.new` signatures in the current callamp are replaced with

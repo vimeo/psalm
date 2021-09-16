@@ -450,6 +450,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             }
         }
 
+        /** @psalm-suppress RedundantCondition can be empty after removing above */
         if ($existing_var_type->getAtomicTypes()) {
             return $existing_var_type;
         }
@@ -516,6 +517,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             }
         }
 
+        /** @psalm-suppress RedundantCondition can be empty after removing above */
         if ($existing_var_type->getAtomicTypes()) {
             return $existing_var_type;
         }
@@ -601,6 +603,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             $existing_var_type->possibly_undefined = false;
             $existing_var_type->possibly_undefined_from_try = false;
 
+            /** @psalm-suppress RedundantCondition can be empty after removing above */
             if ($existing_var_type->getAtomicTypes()) {
                 return $existing_var_type;
             }
@@ -826,6 +829,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             }
         }
 
+        /** @psalm-suppress RedundantCondition can be empty after removing above */
         if ($existing_var_type->getAtomicTypes()) {
             return $existing_var_type;
         }
@@ -1569,6 +1573,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             }
         }
 
+        /** @psalm-suppress RedundantCondition can be empty after removing above */
         if ($existing_var_type->getAtomicTypes()) {
             return $existing_var_type;
         }

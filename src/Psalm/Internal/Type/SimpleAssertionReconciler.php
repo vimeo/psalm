@@ -2364,6 +2364,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
             }
         }
 
+        /** @psalm-suppress RedundantCondition can be empty after removing above */
         if ($existing_var_type->getAtomicTypes()) {
             return $existing_var_type;
         }

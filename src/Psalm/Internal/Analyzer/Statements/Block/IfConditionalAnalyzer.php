@@ -242,7 +242,7 @@ class IfConditionalAnalyzer
                         // fall through
                     }
                 }
-            } elseif ($cond_type->isTrue()) {
+            } elseif ($cond_type->isAlwaysTruthy()) {
                 if ($cond_type->from_docblock) {
                     if (IssueBuffer::accepts(
                         new RedundantConditionGivenDocblockType(
