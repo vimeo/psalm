@@ -59,7 +59,7 @@ class AssertionFinder
         'is_bool' => ['bool', [Type::class, 'getBool']],
         'is_resource' => ['resource', [Type::class, 'getResource']],
         'is_object' => ['object', [Type::class, 'getObject']],
-        'is_array_list' => ['list', [Type::class, 'getList']],
+        'array_is_list' => ['list', [Type::class, 'getList']],
         'is_array' => ['array', [Type::class, 'getArray']],
         'is_numeric' => ['numeric', [Type::class, 'getNumeric']],
         'is_null' => ['null', [Type::class, 'getNull']],
