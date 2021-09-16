@@ -426,7 +426,7 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
 
 interface Serializable {
     /**
-     * @return null|string the string representation of the object or null
+     * @return null|string
      */
     public function serialize();
 
