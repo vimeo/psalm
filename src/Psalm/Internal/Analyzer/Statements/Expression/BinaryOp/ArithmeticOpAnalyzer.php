@@ -1326,10 +1326,10 @@ class ArithmeticOpAnalyzer
             }
         } elseif ($right_type_part->isPositive()) {
             if ($left_type_part->isPositiveOrZero()) {
-                if ($left_type_part->max_bound !== null) {
-                    //we now that the result will be a range between 0 and $left->max - 1
+                if ($right_type_part->max_bound !== null) {
+                    //we now that the result will be a range between 0 and $right->max - 1
                     $new_result_type = new Type\Union(
-                        [new TIntRange(0, $left_type_part->max_bound - 1)]
+                        [new TIntRange(0, $right_type_part->max_bound - 1)]
                     );
                 } else {
                     $new_result_type = new Type\Union([new TIntRange(0, null)]);
