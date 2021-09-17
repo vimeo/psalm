@@ -1719,7 +1719,7 @@ class AssertionFinder
 
     protected static function hasCallableCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
     {
-        return $stmt->name instanceof PhpParser\Node\Name && $stmt->name->parts === ['is_callable'];
+        return $stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->parts[0]) === 'is_callable';
     }
 
     /**
@@ -1787,7 +1787,7 @@ class AssertionFinder
     protected static function hasInArrayCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
     {
         if ($stmt->name instanceof PhpParser\Node\Name
-            && $stmt->name->parts === ['in_array']
+            && strtolower($stmt->name->parts[0]) === 'in_array'
             && isset($stmt->args[2])
         ) {
             $second_arg = $stmt->args[2]->value;
@@ -1804,12 +1804,12 @@ class AssertionFinder
 
     protected static function hasNonEmptyCountCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
     {
-        return $stmt->name instanceof PhpParser\Node\Name && $stmt->name->parts === ['count'];
+        return $stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->parts[0]) === 'count';
     }
 
     protected static function hasArrayKeyExistsCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
     {
-        return $stmt->name instanceof PhpParser\Node\Name && $stmt->name->parts === ['array_key_exists'];
+        return $stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->parts[0]) === 'array_key_exists';
     }
 
     /**
