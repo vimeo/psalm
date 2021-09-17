@@ -1173,6 +1173,8 @@ class AssertionFinder
                         $literal_class_strings[] = $atomic_type->value;
                     } elseif ($atomic_type instanceof Type\Atomic\TTemplateParamClass) {
                         $literal_class_strings[] = $atomic_type->param_name;
+                    } elseif ($atomic_type instanceof Type\Atomic\TClassString && $atomic_type->as !== 'object') {
+                        $literal_class_strings[] = $atomic_type->as;
                     }
                 }
 
