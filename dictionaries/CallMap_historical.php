@@ -10989,7 +10989,7 @@ return [
     'geoip_region_name_by_code' => ['string|false', 'country_code'=>'string', 'region_code'=>'string'],
     'geoip_setup_custom_directory' => ['void', 'path'=>'string'],
     'geoip_time_zone_by_country_and_region' => ['string|false', 'country_code'=>'string', 'region_code='=>'string'],
-    'get_browser' => ['array|object|false', 'user_agent='=>'string', 'return_array='=>'bool'],
+    'get_browser' => ['array|object|false', 'user_agent='=>'?string', 'return_array='=>'bool'],
     'get_call_stack' => [''],
     'get_called_class' => ['class-string'],
     'get_cfg_var' => ['string|false', 'option'=>'string'],

@@ -3702,7 +3702,7 @@ return [
 'GEOSWKTWriter::setOutputDimension' => ['void', 'dim'=>'int'],
 'GEOSWKTWriter::getOutputDimension' => ['int'],
 'GEOSWKTWriter::setOld3D' => ['void', 'val'=>'bool'],
-'get_browser' => ['array|object|false', 'user_agent='=>'string', 'return_array='=>'bool'],
+'get_browser' => ['array|object|false', 'user_agent='=>'?string', 'return_array='=>'bool'],
 'get_call_stack' => [''],
 'get_called_class' => ['class-string'],
 'get_cfg_var' => ['string|false', 'option'=>'string'],
