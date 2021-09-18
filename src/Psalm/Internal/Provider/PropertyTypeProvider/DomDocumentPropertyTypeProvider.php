@@ -15,7 +15,7 @@ class DomDocumentPropertyTypeProvider implements PropertyTypeProviderInterface
     public static function getPropertyType(PropertyTypeProviderEvent $event): ?Union
     {
         if (strtolower($event->getPropertyName()) === 'documentelement') {
-            $type = new Union([new TNamedObject('DomDocument'), new TNull()]);
+            $type = new Union([new TNamedObject('DOMElement'), new TNull()]);
             $type->ignore_nullable_issues = true;
 
             return $type;
