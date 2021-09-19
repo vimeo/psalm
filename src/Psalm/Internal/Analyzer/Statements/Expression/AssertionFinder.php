@@ -1683,14 +1683,18 @@ class AssertionFinder
         bool $negate
     ): array {
         $if_types = [];
-
         if ($stmt->name instanceof PhpParser\Node\Name
             && ($function_name = strtolower($stmt->name->parts[0]))
-            && $source instanceof StatementsAnalyzer
-            && ($source->getNamespace() === null
-                || $stmt->name instanceof PhpParser\Node\Name\FullyQualified
-                || isset($source->getAliases()->functions[$function_name]))
             && isset(self::IS_TYPE_CHECKS[$function_name])
+            && $source instanceof StatementsAnalyzer
+            && ($source->getNamespace() === null //either the namespace is null
+                || $stmt->name instanceof PhpParser\Node\Name\FullyQualified //or we have a FQ to base function
+                || isset($source->getAliases()->functions[$function_name]) //or it is imported
+                || ($codebase && !$codebase->functions->functionExists(
+                    $source,
+                    strtolower($source->getNamespace()."\\".$function_name)
+                )) //or this function name does not exist in current namespace
+            )
         ) {
             if ($first_var_name) {
                 $if_types[$first_var_name] = [[self::IS_TYPE_CHECKS[$function_name][0]]];
