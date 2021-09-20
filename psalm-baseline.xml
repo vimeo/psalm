@@ -179,7 +179,10 @@
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/UnusedAssignmentRemover.php">
-    <PossiblyUndefinedIntArrayOffset occurrences="3">
+    <PossiblyUndefinedIntArrayOffset occurrences="6">
+      <code>$token_list[$iter]</code>
+      <code>$token_list[$iter]</code>
+      <code>$token_list[$iter]</code>
       <code>$token_list[$iter]</code>
       <code>$token_list[0]</code>
       <code>$token_list[1]</code>
