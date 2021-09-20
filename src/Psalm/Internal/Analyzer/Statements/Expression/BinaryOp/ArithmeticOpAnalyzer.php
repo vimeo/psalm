@@ -311,8 +311,12 @@ class ArithmeticOpAnalyzer
     ): ?Type\Union {
         if ($left_type_part instanceof TLiteralInt
             && $right_type_part instanceof TLiteralInt
-            && !$left instanceof PhpParser\Node\Expr\Variable
-            && !$right instanceof PhpParser\Node\Expr\Variable
+            && (
+                //we don't try to do arithmetics on variables in loops
+                $context === null
+                || $context->inside_loop === false
+                || (!$left instanceof PhpParser\Node\Expr\Variable && !$right instanceof PhpParser\Node\Expr\Variable)
+            )
         ) {
             // time for some arithmetic!
             $calculated_type = self::arithmeticOperation(
