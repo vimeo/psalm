@@ -1445,30 +1445,28 @@ class ProjectAnalyzer
             return 1;
         }
 
-        if (!extension_loaded('pcntl')) {
+        if (!extension_loaded('pcntl') || !\function_exists('shell_exec')) {
             return 1;
         }
 
-        if (\function_exists('shell_exec')) {
-            $has_nproc = trim((string) @shell_exec('command -v nproc'));
-            if ($has_nproc) {
-                $ret = @shell_exec('nproc');
-                if (is_string($ret)) {
-                    $ret = trim($ret);
-                    $tmp = filter_var($ret, FILTER_VALIDATE_INT);
-                    if (is_int($tmp)) {
-                        return $tmp;
-                    }
-                }
-            }
-
-            $ret = @shell_exec('sysctl -n hw.ncpu');
+        $has_nproc = trim((string) @shell_exec('command -v nproc'));
+        if ($has_nproc) {
+            $ret = @shell_exec('nproc');
             if (is_string($ret)) {
                 $ret = trim($ret);
                 $tmp = filter_var($ret, FILTER_VALIDATE_INT);
                 if (is_int($tmp)) {
                     return $tmp;
                 }
+            }
+        }
+
+        $ret = @shell_exec('sysctl -n hw.ncpu');
+        if (is_string($ret)) {
+            $ret = trim($ret);
+            $tmp = filter_var($ret, FILTER_VALIDATE_INT);
+            if (is_int($tmp)) {
+                return $tmp;
             }
         }
 
