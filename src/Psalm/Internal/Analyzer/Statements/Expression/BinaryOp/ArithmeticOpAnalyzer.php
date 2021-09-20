@@ -665,11 +665,16 @@ class ArithmeticOpAnalyzer
                     $left_is_positive = $left_type_part instanceof TPositiveInt
                         || ($left_type_part instanceof TLiteralInt && $left_type_part->value > 0);
 
+                    $left_is_posit_or_zero = $left_type_part instanceof TLiteralInt && $left_type_part->value >= 0;
+
                     $right_is_positive = $right_type_part instanceof TPositiveInt
                         || ($right_type_part instanceof TLiteralInt && $right_type_part->value > 0);
 
+                    $right_is_posit_or_zero = $right_type_part instanceof TLiteralInt && $right_type_part->value >= 0;
+
                     if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Minus) {
                         $always_positive = false;
+                        $always_positive_or_zero = false;
                     } elseif ($left_is_positive && $right_is_positive) {
                         if ($parent instanceof PhpParser\Node\Expr\BinaryOp\BitwiseXor
                             || $parent instanceof PhpParser\Node\Expr\BinaryOp\BitwiseAnd
@@ -677,21 +682,32 @@ class ArithmeticOpAnalyzer
                             || $parent instanceof PhpParser\Node\Expr\BinaryOp\ShiftRight
                         ) {
                             $always_positive = false;
+                            $always_positive_or_zero = false;
                         } else {
                             $always_positive = true;
+                            $always_positive_or_zero = false;
                         }
                     } elseif ($parent instanceof PhpParser\Node\Expr\BinaryOp\Plus
-                        && ($left_type_part instanceof TLiteralInt && $left_type_part->value === 0)
+                        && $left_is_posit_or_zero
                         && $right_is_positive
                     ) {
                         $always_positive = true;
+                        $always_positive_or_zero = true;
                     } elseif ($parent instanceof PhpParser\Node\Expr\BinaryOp\Plus
-                        && ($right_type_part instanceof TLiteralInt && $right_type_part->value === 0)
+                        && $right_is_posit_or_zero
                         && $left_is_positive
                     ) {
                         $always_positive = true;
+                        $always_positive_or_zero = true;
+                    } elseif ($parent instanceof PhpParser\Node\Expr\BinaryOp\Plus
+                        && $right_is_posit_or_zero
+                        && $left_is_posit_or_zero
+                    ) {
+                        $always_positive = false;
+                        $always_positive_or_zero = true;
                     } else {
                         $always_positive = false;
+                        $always_positive_or_zero = false;
                     }
 
                     if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Mod) {
@@ -715,8 +731,15 @@ class ArithmeticOpAnalyzer
                             }
                         }
                     } else {
+                        if ($always_positive) {
+                            $new_type = Type::getPositiveInt(true);
+                        } elseif ($always_positive_or_zero) {
+                            $new_type = new Type\Union([new Type\Atomic\TPositiveInt(), new TLiteralInt(0)]);
+                        } else {
+                            $new_type = Type::getInt(true);
+                        }
                         $result_type = Type::combineUnionTypes(
-                            $always_positive ? Type::getPositiveInt(true) : Type::getInt(true),
+                            $new_type,
                             $result_type
                         );
                     }
