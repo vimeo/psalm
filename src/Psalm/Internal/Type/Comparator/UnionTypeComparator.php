@@ -8,6 +8,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
@@ -106,6 +107,15 @@ class UnionTypeComparator
                 && ($container_type->hasInt() && $container_type->hasString())
             ) {
                 continue;
+            }
+
+            if ($input_type_part instanceof Atomic\TIntRange && $container_type->hasInt()) {
+                if (IntegerRangeComparator::isContainedByUnion(
+                    $input_type_part,
+                    $container_type
+                )) {
+                    continue;
+                }
             }
 
             foreach ($container_type->getAtomicTypes() as $container_type_part) {
@@ -394,6 +404,32 @@ class UnionTypeComparator
 
         foreach ($type1->getAtomicTypes() as $type1_part) {
             foreach ($type2->getAtomicTypes() as $type2_part) {
+                //special cases for TIntRange because it can contain a part of the other type.
+                //For exemple int<0,1> and positive-int can be identical but none contain the other
+                if (($type1_part instanceof Atomic\TIntRange && $type2_part instanceof Atomic\TPositiveInt)) {
+                    $intersection_range = TIntRange::intersectIntRanges(
+                        TIntRange::convertToIntRange($type2_part),
+                        $type1_part
+                    );
+                    return $intersection_range !== null;
+                }
+
+                if ($type2_part instanceof Atomic\TIntRange && $type1_part instanceof Atomic\TPositiveInt) {
+                    $intersection_range = TIntRange::intersectIntRanges(
+                        TIntRange::convertToIntRange($type1_part),
+                        $type2_part
+                    );
+                    return $intersection_range !== null;
+                }
+
+                if ($type1_part instanceof Atomic\TIntRange && $type2_part instanceof Atomic\TIntRange) {
+                    $intersection_range = TIntRange::intersectIntRanges(
+                        $type1_part,
+                        $type2_part
+                    );
+                    return $intersection_range !== null;
+                }
+
                 $either_contains = AtomicTypeComparator::canBeIdentical(
                     $codebase,
                     $type1_part,

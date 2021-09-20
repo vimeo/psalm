@@ -410,6 +410,50 @@ class ScalarTypeComparator
             return false;
         }
 
+        if ($input_type_part instanceof TInt && $container_type_part instanceof TIntRange) {
+            if ($input_type_part instanceof TPositiveInt) {
+                if ($container_type_part->min_bound > 1) {
+                    //any positive int can't be pushed inside a range with a min > 1
+                    if ($atomic_comparison_result) {
+                        $atomic_comparison_result->type_coerced = true;
+                        $atomic_comparison_result->type_coerced_from_scalar = true;
+                    }
+
+                    return false;
+                }
+
+                if ($container_type_part->max_bound !== null) {
+                    //any positive int can't be pushed inside a range where the max bound isn't max without coercion
+                    if ($atomic_comparison_result) {
+                        $atomic_comparison_result->type_coerced = true;
+                        $atomic_comparison_result->type_coerced_from_scalar = true;
+                    }
+
+                    return false;
+                }
+
+                return true;
+            }
+            if ($input_type_part instanceof TLiteralInt) {
+                $min_bound = $container_type_part->min_bound;
+                $max_bound = $container_type_part->max_bound;
+
+                return
+                    ($min_bound === null || $min_bound <= $input_type_part->value) &&
+                    ($max_bound === null || $max_bound >= $input_type_part->value);
+            }
+
+            //any int can't be pushed inside a range without coercion (unless the range is from min to max)
+            if ($container_type_part->min_bound !== null || $container_type_part->max_bound !== null) {
+                if ($atomic_comparison_result) {
+                    $atomic_comparison_result->type_coerced = true;
+                    $atomic_comparison_result->type_coerced_from_scalar = true;
+                }
+            }
+
+            return false;
+        }
+
         if (get_class($input_type_part) === TFloat::class && $container_type_part instanceof TLiteralFloat) {
             if ($atomic_comparison_result) {
                 $atomic_comparison_result->type_coerced = true;

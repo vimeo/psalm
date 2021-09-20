@@ -54,7 +54,7 @@ class IncDecExpressionAnalyzer
             $fake_right_expr = new VirtualLNumber(1, $stmt->getAttributes());
             $statements_analyzer->node_data->setType($fake_right_expr, Type::getInt());
 
-            BinaryOp\NonDivArithmeticOpAnalyzer::analyze(
+            BinaryOp\ArithmeticOpAnalyzer::analyze(
                 $statements_analyzer,
                 $statements_analyzer->node_data,
                 $stmt->var,

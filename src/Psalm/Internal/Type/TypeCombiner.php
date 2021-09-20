@@ -21,6 +21,7 @@ use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
@@ -1199,6 +1200,24 @@ class TypeCombiner
                     }
                 );
 
+                if (isset($combination->value_types['int'])) {
+                    $current_int_type = $combination->value_types['int'];
+                    if ($current_int_type instanceof TIntRange) {
+                        foreach ($combination->ints as $int) {
+                            if (!$current_int_type->contains($int->value)) {
+                                $current_int_type->min_bound = TIntRange::getNewLowestBound(
+                                    $current_int_type->min_bound,
+                                    $int->value
+                                );
+                                $current_int_type->max_bound = TIntRange::getNewHighestBound(
+                                    $current_int_type->max_bound,
+                                    $int->value
+                                );
+                            }
+                        }
+                    }
+                }
+
                 $combination->ints = null;
 
                 if (!isset($combination->value_types['int'])) {
@@ -1236,9 +1255,34 @@ class TypeCombiner
                     $combination->value_types['int'] = $type;
                 } elseif (isset($combination->value_types['int'])
                     && get_class($combination->value_types['int'])
-                        !== get_class($type)
+                    !== get_class($type)
                 ) {
                     $combination->value_types['int'] = new TInt();
+                }
+            } elseif ($type instanceof TIntRange) {
+                if ($combination->ints) {
+                    foreach ($combination->ints as $int) {
+                        if (!$type->contains($int->value)) {
+                            $type->min_bound = TIntRange::getNewLowestBound($type->min_bound, $int->value);
+                            $type->max_bound = TIntRange::getNewHighestBound($type->max_bound, $int->value);
+                        }
+                    }
+
+                    $combination->value_types['int'] = $type;
+                } elseif (!isset($combination->value_types['int'])) {
+                    $combination->value_types['int'] = $type;
+                } else {
+                    $old_type = $combination->value_types['int'];
+                    if ($old_type instanceof TIntRange) {
+                        $type->min_bound = TIntRange::getNewLowestBound($old_type->min_bound, $type->min_bound);
+                        $type->max_bound = TIntRange::getNewHighestBound($old_type->max_bound, $type->max_bound);
+                    } elseif ($old_type instanceof TPositiveInt) {
+                        $type->min_bound = TIntRange::getNewLowestBound($type->min_bound, 0);
+                        $type->max_bound = null;
+                    } else {
+                        $type = new TInt();
+                    }
+                    $combination->value_types['int'] = $type;
                 }
             } else {
                 $combination->value_types['int'] = $type;
