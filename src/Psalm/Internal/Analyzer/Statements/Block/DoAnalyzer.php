@@ -31,6 +31,7 @@ class DoAnalyzer
     ): void {
         $do_context = clone $context;
         $do_context->break_types[] = 'loop';
+        $do_context->inside_loop = true;
 
         $codebase = $statements_analyzer->getCodebase();
 
