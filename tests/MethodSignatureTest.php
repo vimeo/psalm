@@ -1376,14 +1376,6 @@ class MethodSignatureTest extends TestCase
                     }',
                 'error_message' => 'MoreSpecificImplementedParamType',
             ],
-            'preventImplementingSerializableWithType' => [
-                '<?php
-                    class Foo implements \Serializable {
-                        public function unserialize(string $serialized) {}
-                        public function serialize() {}
-                    }',
-                'error_message' => 'InvalidReturnType',
-            ],
             'preventImplementingSerializableWithWrongDocblockType' => [
                 '<?php
                     class Foo implements \Serializable {
