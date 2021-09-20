@@ -376,8 +376,8 @@ class AssertionFinder
             return [];
         }
 
-        $min_count = null;
-        $count_equality_position = self::hasCountEqualityCheck($conditional, $min_count);
+        $count = null;
+        $count_equality_position = self::hasCountEqualityCheck($conditional, $count);
 
         if ($count_equality_position) {
             $if_types = [];
@@ -416,8 +416,8 @@ class AssertionFinder
             }
 
             if ($var_name) {
-                if ($min_count) {
-                    $if_types[$var_name] = [['=has-at-least-' . $min_count]];
+                if ($count) {
+                    $if_types[$var_name] = [['=has-at-least-' . $count]];
                 } else {
                     $if_types[$var_name] = [['!non-empty-countable']];
                 }
@@ -1541,12 +1541,12 @@ class AssertionFinder
     }
 
     /**
-     * @param Identical|Equal|NotIdentical|NotEqual $conditional
+     * @param Equal|Identical|NotEqual|NotIdentical $conditional
      * @return false|int
      */
     protected static function hasCountEqualityCheck(
         PhpParser\Node\Expr\BinaryOp $conditional,
-        ?int &$min_count
+        ?int &$count
     ) {
         $left_count = $conditional->left instanceof PhpParser\Node\Expr\FuncCall
             && $conditional->left->name instanceof PhpParser\Node\Name
@@ -1554,7 +1554,7 @@ class AssertionFinder
             && $conditional->left->args;
 
         if ($left_count && $conditional->right instanceof PhpParser\Node\Scalar\LNumber) {
-            $min_count = $conditional->right->value;
+            $count = $conditional->right->value;
 
             return self::ASSIGNMENT_TO_RIGHT;
         }
@@ -1565,7 +1565,7 @@ class AssertionFinder
             && $conditional->right->args;
 
         if ($right_count && $conditional->left instanceof PhpParser\Node\Scalar\LNumber) {
-            $min_count = $conditional->left->value;
+            $count = $conditional->left->value;
 
             return self::ASSIGNMENT_TO_LEFT;
         }
