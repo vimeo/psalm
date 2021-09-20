@@ -1107,7 +1107,7 @@ INFO: PossiblyUndefinedGlobalVariable - somefile.php:17:6 - Possibly undefined g
  <error line="3" column="10" severity="error" message="MixedReturnStatement: Could not infer a return type"/>
 </file>
 <file name="somefile.php">
- <error line="2" column="42" severity="error" message="MixedInferredReturnType: Could not verify return type \'null|string\' for psalmCanVerify"/>
+ <error line="2" column="42" severity="error" message="MixedInferredReturnType: Could not verify return type &apos;null|string&apos; for psalmCanVerify"/>
 </file>
 <file name="somefile.php">
  <error line="8" column="6" severity="error" message="UndefinedConstant: Const CHANGE_ME is not defined"/>

@@ -1,6 +1,6 @@
 # Contributing to Psalm
 
-Psalm is made possible through the contributions of almost 200 developers.
+Psalm is made possible through the contributions of [hundreds of developers](https://github.com/vimeo/psalm/graphs/contributors).
 
 Hopefully you can be one of them?
 
@@ -25,6 +25,10 @@ Day-to-day PHP programming involves solving concrete problems, but they're rarel
 There's a lot of interesting theory behind the things Psalm does, too. If you want you can go very deep, though you don't need to know really any theory to improve Psalm.
 
 Lastly, working to improve static analysis tools will also make you a better PHP developer – it'll help you think more about how values flow through your program.
+
+### Guides
+
+* [Editing callmaps](editing_callmaps.md)
 
 ## Pull Requests
 

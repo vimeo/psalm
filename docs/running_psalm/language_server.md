@@ -47,15 +47,15 @@ In the "Timeouts" tab you can adjust the initialization timeout. This is importa
 
 ## Sublime Text
 
-I use the excellent Sublime [LSP plugin](https://github.com/tomv564/LSP) with the following config:
-
+I use the excellent Sublime [LSP plugin](https://github.com/tomv564/LSP) with the following config(Package Settings > LSP > Settings):
 ```json
-        "psalm":
-        {
+    "clients": {
+        "psalm": {
             "command": ["php", "vendor/bin/psalm-language-server"],
             "selector": "source.php | embedding.php",
             "enabled": true
         }
+    }
 ```
 
 ## Vim & Neovim

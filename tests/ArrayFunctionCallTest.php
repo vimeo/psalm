@@ -2170,6 +2170,20 @@ class ArrayFunctionCallTest extends TestCase
                     }',
                 'error_message' => 'LessSpecificReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:32 - The type \'array{A: int|string}<string, string>\' is more general',
             ],
+            'arrayWalkOverObject' => [
+                '<?php
+                    $o = new stdClass();
+                    array_walk($o, "var_dump");
+                ',
+                'error_message' => 'RawObjectIteration',
+            ],
+            'arrayWalkRecursiveOverObject' => [
+                '<?php
+                    $o = new stdClass();
+                    array_walk_recursive($o, "var_dump");
+                ',
+                'error_message' => 'RawObjectIteration',
+            ],
         ];
     }
 }

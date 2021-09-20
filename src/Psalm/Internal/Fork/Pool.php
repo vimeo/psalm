@@ -17,6 +17,7 @@ use function fclose;
 use function feof;
 use function fread;
 use function fwrite;
+use function get_class;
 use function gettype;
 use function in_array;
 use function ini_get;
@@ -219,7 +220,8 @@ class Pool
             // This can happen when developing Psalm from source without running `composer update`,
             // or because of rare bugs in Psalm.
             $process_done_message = new ForkProcessErrorMessage(
-                $t->getMessage() . "\nStack trace in the forked worker:\n" . $t->getTraceAsString()
+                get_class($t) . " " . $t->getMessage()
+                . "\nStack trace in the forked worker:\n". $t->getTraceAsString()
             );
         }
 

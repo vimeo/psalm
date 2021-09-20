@@ -889,7 +889,7 @@ function str_word_count(string $string, int $format = 0, string|null $characters
  * @param string|array<string|int|float> $replacement
  * @param string|array<string|int|float> $subject
  * @param int $count
- * @return ($subject is array ? array<string> : string)
+ * @return ($subject is array ? array<string> : string|null)
  *
  * @psalm-flow ($replacement, $subject) -> return
  */

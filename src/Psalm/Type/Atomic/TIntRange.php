@@ -1,6 +1,9 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use function max;
+use function min;
+
 /**
  * Denotes an interval of integers between two bounds
  */
@@ -69,5 +72,82 @@ class TIntRange extends TInt
     public function isPositive(): bool
     {
         return $this->min_bound !== null && $this->min_bound > 0;
+    }
+
+    public function isNegative(): bool
+    {
+        return $this->max_bound !== null && $this->max_bound < 0;
+    }
+
+    public function isPositiveOrZero(): bool
+    {
+        return $this->min_bound !== null && $this->min_bound >= 0;
+    }
+
+    public function isNegativeOrZero(): bool
+    {
+        return $this->max_bound !== null && $this->max_bound <= 0;
+    }
+
+    public function contains(int $i): bool
+    {
+        return
+            ($this->min_bound === null && $this->max_bound === null) ||
+            ($this->min_bound === null && $this->max_bound >= $i) ||
+            ($this->max_bound === null && $this->min_bound <= $i) ||
+            ($this->min_bound <= $i && $this->max_bound >= $i);
+    }
+
+    public static function getNewLowestBound(?int $bound1, ?int $bound2): ?int
+    {
+        if ($bound1 === null || $bound2 === null) {
+            return null;
+        }
+        return min($bound1, $bound2);
+    }
+
+    public static function getNewHighestBound(?int $bound1, ?int $bound2): ?int
+    {
+        if ($bound1 === null || $bound2 === null) {
+            return null;
+        }
+        return max($bound1, $bound2);
+    }
+
+    /**
+     * convert any int to its equivalent in int range
+     */
+    public static function convertToIntRange(TInt $int_atomic): TIntRange
+    {
+        if ($int_atomic instanceof TPositiveInt) {
+            return new TIntRange(1, null);
+        }
+
+        if ($int_atomic instanceof TLiteralInt) {
+            return new TIntRange($int_atomic->value, $int_atomic->value);
+        }
+
+        return new TIntRange(null, null);
+    }
+
+    public static function intersectIntRanges(TIntRange $int_range1, TIntRange $int_range2): ?TIntRange
+    {
+        if ($int_range1->min_bound === null || $int_range2->min_bound === null) {
+            $new_min_bound = $int_range1->min_bound ?? $int_range2->min_bound;
+        } else {
+            $new_min_bound = self::getNewHighestBound($int_range1->min_bound, $int_range2->min_bound);
+        }
+
+        if ($int_range1->max_bound === null || $int_range2->max_bound === null) {
+            $new_max_bound = $int_range1->max_bound ?? $int_range2->max_bound;
+        } else {
+            $new_max_bound = self::getNewLowestBound($int_range1->max_bound, $int_range2->max_bound);
+        }
+
+        if ($new_min_bound !== null && $new_max_bound !== null && $new_min_bound > $new_max_bound) {
+            return null;
+        }
+
+        return new self($new_min_bound, $new_max_bound);
     }
 }
