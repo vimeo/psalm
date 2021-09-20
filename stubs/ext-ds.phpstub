@@ -599,7 +599,7 @@ final class Pair implements JsonSerializable
 interface Sequence extends Collection, ArrayAccess
 {
     /**
-     * @return Sequence<int, TValue>
+     * @return Sequence<TValue>
      * @psalm-mutation-free
      */
     public function copy(): Sequence;

@@ -2665,7 +2665,58 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                          $takesValid($val3);
                      }
                  }'
-            ]
+            ],
+            'ternaryRedefineAllVars' => [
+                '<?php
+                    $_a = null;
+                    $b = rand(0,1) ? "" : "a";
+                    $b === "a" ? $_a = "Y" : $_a = "N";',
+                'assertions' => [
+                    '$_a===' => '"N"|"Y"',
+                ]
+            ],
+            'nullErasureWithSmallerAndGreater' => [
+                '<?php
+                    function getIntOrNull(): ?int{return null;}
+                    $a = getIntOrNull();
+
+                    if ($a < 0) {
+                        echo $a + 3;
+                    }
+
+                    if ($a <= 0) {
+                        /** @psalm-suppress PossiblyNullOperand */
+                        echo $a + 3;
+                    }
+
+                    if ($a > 0) {
+                        echo $a + 3;
+                    }
+
+                    if ($a >= 0) {
+                        /** @tmp-psalm-suppress PossiblyNullOperand this should be suppressed but assertions remove null for now */
+                        echo $a + 3;
+                    }
+
+                    if (0 < $a) {
+                        echo $a + 3;
+                    }
+
+                    if (0 <= $a) {
+                        /** @tmp-psalm-suppress PossiblyNullOperand this should be suppressed but assertions remove null for now */
+                        echo $a + 3;
+                    }
+
+                    if (0 > $a) {
+                        echo $a + 3;
+                    }
+
+                    if (0 >= $a) {
+                        /** @psalm-suppress PossiblyNullOperand */
+                        echo $a + 3;
+                    }
+                    ',
+            ],
         ];
     }
 
@@ -2724,24 +2775,6 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                         }
                     }',
                 'error_message' => 'TypeDoesNotContainType',
-            ],
-            'dontEraseNullAfterLessThanCheck' => [
-                '<?php
-                    $a = mt_rand(0, 1) ? mt_rand(-10, 10): null;
-
-                    if ($a < -1) {
-                        echo $a + 3;
-                    }',
-                'error_message' => 'PossiblyNullOperand',
-            ],
-            'dontEraseNullAfterGreaterThanCheck' => [
-                '<?php
-                    $a = mt_rand(0, 1) ? mt_rand(-10, 10): null;
-
-                    if (0 > $a) {
-                      echo $a + 3;
-                    }',
-                'error_message' => 'PossiblyNullOperand',
             ],
             'nonRedundantConditionGivenDocblockType' => [
                 '<?php
@@ -3043,6 +3076,13 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                 '<?php
                     function foo(Exception $e) : void {
                         if (get_class($e) == "InvalidArgumentException") {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'falsyValuesInIf' => [
+                '<?php
+                    if (0) {
+                        echo 123;
                     }',
                 'error_message' => 'TypeDoesNotContainType',
             ],

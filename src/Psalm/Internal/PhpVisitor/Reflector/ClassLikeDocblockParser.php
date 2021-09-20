@@ -284,7 +284,7 @@ class ClassLikeDocblockParser
                 ),
                 'start_offset' => $offset,
                 'end_offset' => $offset + strlen($imported_type_entry),
-                'parts' => CommentAnalyzer::splitDocLine($imported_type_entry) ?: []
+                'parts' => CommentAnalyzer::splitDocLine($imported_type_entry)
             ];
         }
 

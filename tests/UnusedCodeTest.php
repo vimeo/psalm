@@ -1049,6 +1049,13 @@ class UnusedCodeTest extends TestCase
                     }
                 ',
             ],
+            'variableUsedInBacktick' => [
+                '<?php
+                    $used = "echo";
+                    /** @psalm-suppress ForbiddenCode */
+                    `$used`;
+                ',
+            ],
         ];
     }
 

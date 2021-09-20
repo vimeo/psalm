@@ -3,7 +3,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
-use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\NonDivArithmeticOpAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\ArithmeticOpAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\StatementsSource;
@@ -164,7 +164,7 @@ class SimpleTypeInferer
                 || $stmt instanceof PhpParser\Node\Expr\BinaryOp\BitwiseOr
                 || $stmt instanceof PhpParser\Node\Expr\BinaryOp\BitwiseAnd
             ) {
-                NonDivArithmeticOpAnalyzer::analyze(
+                ArithmeticOpAnalyzer::analyze(
                     $file_source instanceof StatementsSource ? $file_source : null,
                     $nodes,
                     $stmt->left,

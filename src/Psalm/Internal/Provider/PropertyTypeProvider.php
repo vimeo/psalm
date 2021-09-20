@@ -2,6 +2,7 @@
 namespace Psalm\Internal\Provider;
 
 use Psalm\Context;
+use Psalm\Internal\Provider\PropertyTypeProvider\DomDocumentPropertyTypeProvider;
 use Psalm\Plugin\EventHandler\Event\PropertyTypeProviderEvent;
 use Psalm\Plugin\EventHandler\PropertyTypeProviderInterface;
 use Psalm\Plugin\Hook\PropertyTypeProviderInterface as LegacyPropertyTypeProviderInterface;
@@ -39,6 +40,8 @@ class PropertyTypeProvider
     {
         self::$handlers = [];
         self::$legacy_handlers = [];
+
+        $this->registerClass(DomDocumentPropertyTypeProvider::class);
     }
 
     /**

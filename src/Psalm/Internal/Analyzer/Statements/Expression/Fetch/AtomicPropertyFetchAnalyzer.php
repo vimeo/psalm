@@ -202,6 +202,7 @@ class AtomicPropertyFetchAnalyzer
                     }
                 }
 
+                // todo: this is suboptimal when we reference enum directly, e.g. Status::Open->value
                 $statements_analyzer->node_data->setType(
                     $stmt,
                     new Type\Union($case_values)
