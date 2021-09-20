@@ -29,21 +29,7 @@ This is the config I used:
 
 ## PhpStorm
 
-I've got it working with `gtache/intellij-lsp` plugin ([Jetbrains-approved version](https://plugins.jetbrains.com/plugin/10209-lsp-support), [latest version](https://github.com/gtache/intellij-lsp/releases/tag/v1.6.0)).
-
-Setup is done via a GUI.
-
-When you install the plugin, you should see a "Language Server Protocol" section under the "Languages & Frameworks" tab.
-
-In the "Server definitions" tab you should add a definition for Psalm:
-
- - Select `Executable`
- - Extension: `php`
- - Path: `<path-to-php-binary>` e.g. `/usr/local/bin/php` or `C:\php\php.exe`
-    - this should be an absolute path, not just `php`
- - Args: `vendor/bin/psalm-language-server` (on Windows use `vendor/vimeo/psalm/psalm-language-server`, or for a 'global' install '%APPDATA%' + `\Composer\vendor\vimeo\psalm\psalm-language-server`, where the '%APPDATA%' environment variable is probably something like `C:\Users\<homedir>\AppData\Roaming\`)
-
-In the "Timeouts" tab you can adjust the initialization timeout. This is important if you have a large project. You should set the "Init" value to the number of milliseconds you allow Psalm to scan your entire project and your project's dependencies. For opening a couple of projects that use large PHP frameworks, on a high end business laptop, try `240000` milliseconds for Init.
+As of PhpStorm 2020.3 support for psalm is supported and on by default, you can read more about that [here](https://www.jetbrains.com/help/phpstorm/using-psalm.html)
 
 ## Sublime Text
 
