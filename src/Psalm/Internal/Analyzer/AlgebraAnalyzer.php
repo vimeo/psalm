@@ -12,6 +12,7 @@ use Psalm\IssueBuffer;
 use function array_intersect_key;
 use function array_unique;
 use function count;
+use function preg_match;
 
 /**
  * @internal
@@ -135,6 +136,12 @@ class AlgebraAnalyzer
                     if ($negated_clause_2->possibilities[$key] != $keyed_possibilities) {
                         $negated_clause_2_contains_1_possibilities = false;
                         break;
+                    }
+                    foreach ($keyed_possibilities as $possibility) {
+                        if (preg_match('@^!?in-array-@', $possibility)) {
+                            $negated_clause_2_contains_1_possibilities = false;
+                            break;
+                        }
                     }
                 }
 

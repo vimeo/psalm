@@ -195,6 +195,34 @@ class InArrayTest extends \Psalm\Tests\TestCase
                 [],
                 '8.0'
             ],
+            'in_array-string-twice' => [
+                '<?php
+                    /**
+                     * @param string[] $list1
+                     * @param string[] $list2
+                     */
+                    function contains(array $list1, array $list2, string $element): void
+                    {
+                        if (in_array($element, $list1, true)) {
+                        } elseif (in_array($element, $list2, true)) {
+                        }
+                    }',
+                [],
+                [],
+                '8.0'
+            ],
+            'in_array-keyed-array-string-twice' => [
+                '<?php
+                    function contains(string $a, string $b, mixed $element): void
+                    {
+                        if (in_array($element, [$a], true)) {
+                        } elseif (in_array($element, [$b], true)) {
+                        }
+                    }',
+                [],
+                [],
+                '8.0'
+            ],
         ];
     }
 
@@ -363,6 +391,28 @@ class InArrayTest extends \Psalm\Tests\TestCase
                     }',
                 'error_message' => 'MixedReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:32 - Could not infer a return type',
                 'error_level' => ['RedundantConditionGivenDocblockType'],
+            ],
+            'inArrayDetectType' => [
+                '<?php
+                    function x($foo, string $bar): void {
+                        if (!in_array($foo, [$bar], true)) {
+                            throw new Exception();
+                        }
+
+                        if (is_string($foo)) {}
+                    }',
+                // foo is always string
+                'error_message' => 'RedundantCondition',
+            ],
+            'inArrayRemoveInvalid' => [
+                '<?php
+                    function x(?string $foo, int $bar): void {
+                        if (!in_array($foo, [$bar], true)) {
+                            throw new Exception();
+                        }
+                    }',
+                // Type null|string is never int
+                'error_message' => 'RedundantCondition',
             ],
         ];
     }

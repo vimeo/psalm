@@ -467,7 +467,7 @@ class AssertionFinder
 
                     if ($var_name_left &&
                         (!$var_type->isSingle() || $var_type->getAssertionString() !== $assertion)) {
-                        $if_types[$var_name_left] = [['~'.$assertion]];
+                        $if_types[$var_name_left] = [['='.$assertion]];
                     }
 
                     $var_name_right = ExpressionIdentifier::getArrayVarId(
@@ -478,7 +478,7 @@ class AssertionFinder
 
                     if ($var_name_right &&
                         (!$other_type->isSingle() || $other_type->getAssertionString() !== $assertion)) {
-                        $if_types[$var_name_right] = [['~'.$assertion]];
+                        $if_types[$var_name_right] = [['='.$assertion]];
                     }
 
                     return $if_types ? [$if_types] : [];
@@ -3531,6 +3531,15 @@ class AssertionFinder
                     $assertions = [];
 
                     if (!$is_sealed) {
+                        // `in-array-*` has special handling in the detection of paradoxical
+                        // conditions and the fact the negation doesn't imply anything.
+                        //
+                        // In the vast majority of cases, the negation of `in-array-*`
+                        // (`Algebra::negateType`) doesn't imply anything because:
+                        // - The array can be empty, or
+                        // - The array may have one of the types but not the others.
+                        //
+                        // NOTE: the negation of the negation is the original assertion.
                         if ($value_type->getId() !== '' && !$value_type->isMixed()) {
                             $assertions[] = 'in-array-' . $value_type->getId();
                         }
@@ -3542,8 +3551,16 @@ class AssertionFinder
                                 || $atomic_value_type instanceof Type\Atomic\TEnumCase
                             ) {
                                 $assertions[] = '=' . $atomic_value_type->getAssertionString();
-                            } else {
+                            } elseif ($atomic_value_type instanceof Type\Atomic\TFalse
+                                || $atomic_value_type instanceof Type\Atomic\TTrue
+                                || $atomic_value_type instanceof Type\Atomic\TNull
+                            ) {
                                 $assertions[] = $atomic_value_type->getAssertionString();
+                            } elseif (!$atomic_value_type instanceof Type\Atomic\TMixed) {
+                                // mixed doesn't tell us anything and can be omitted.
+                                //
+                                // For the meaning of in-array, see the above comment.
+                                $assertions[] = 'in-array-' . $value_type->getId();
                             }
                         }
                     }
