@@ -416,8 +416,8 @@ class AssertionFinder
             }
 
             if ($var_name) {
-                if ($count) {
-                    $if_types[$var_name] = [['=has-at-least-' . $count]];
+                if ($count !== 0) {
+                    $if_types[$var_name] = [['=has-exactly-' . $count]];
                 } else {
                     $if_types[$var_name] = [['!non-empty-countable']];
                 }
