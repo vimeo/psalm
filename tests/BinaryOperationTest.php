@@ -533,10 +533,6 @@ class BinaryOperationTest extends TestCase
                         if (0 === ($a << $d)) {
                             echo "Actually, zero\n";
                         }
-                    } else {
-                        if (0 === ($a << $c)) {
-                            echo "Actually, zero\n";
-                        }
                     }'
             ],
             'IntOverflowMul' => [
