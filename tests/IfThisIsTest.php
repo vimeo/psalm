@@ -9,7 +9,7 @@ class IfThisIsTest extends TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'worksAfterConvert' => [
@@ -114,7 +114,7 @@ class IfThisIsTest extends TestCase
     /**
      * @return array<string, array{0: string, error_message: string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'blocksWithoutConvert' => [

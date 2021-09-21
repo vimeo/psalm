@@ -190,7 +190,7 @@ class FunctionLikeDocblockParser
 
                     $info->if_this_is = [
                         'type' => str_replace("\n", '', $line_parts[0]),
-                        'line_number' => $comment->getStartLine() + substr_count($comment_text, "\n", 0, $offset),
+                        'line_number' => $comment->getStartLine() + substr_count($comment_text, "\n", 0, $offset - $comment->getStartFilePos()),
                     ];
                 }
             }
