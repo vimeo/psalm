@@ -97,19 +97,19 @@
             <xs:element name="file" minOccurs="0" maxOccurs="unbounded" type="NameAttributeType" />
             <xs:element name="ignoreFiles" minOccurs="0" maxOccurs="1" type="IgnoreFilesType" />
         </xs:choice>
-        <xs:anyAttribute/>
+        <xs:anyAttribute processContents="skip"/>
     </xs:complexType>
 
     <xs:complexType name="TaintAnalysisType">
         <xs:choice maxOccurs="unbounded">
             <xs:element name="ignoreFiles" minOccurs="0" maxOccurs="1" type="IgnoreFilesType" />
         </xs:choice>
-        <xs:anyAttribute/>
+        <xs:anyAttribute processContents="skip"/>
     </xs:complexType>
 
     <xs:complexType name="NameAttributeType">
         <xs:attribute name="name" type="xs:string" use="required" />
-        <xs:anyAttribute/>
+        <xs:anyAttribute processContents="skip"/>
     </xs:complexType>
 
     <xs:complexType name="StubsAttributeType">
@@ -124,14 +124,14 @@
         </xs:choice>
 
         <xs:attribute name="allowMissingFiles" type="xs:string" />
-        <xs:anyAttribute/>
+        <xs:anyAttribute processContents="skip"/>
     </xs:complexType>
 
     <xs:complexType name="ProjectDirectoryAttributeType">
         <xs:attribute name="name" type="xs:string" use="required" />
         <xs:attribute name="ignoreTypeStats" type="xs:string" />
         <xs:attribute name="useStrictTypes" type="xs:string" />
-        <xs:anyAttribute/>
+        <xs:anyAttribute processContents="skip"/>
     </xs:complexType>
 
     <xs:complexType name="FileExtensionsType">
@@ -144,21 +144,21 @@
                 </xs:complexType>
             </xs:element>
         </xs:sequence>
-        <xs:anyAttribute/>
+        <xs:anyAttribute processContents="skip"/>
     </xs:complexType>
 
     <xs:complexType name="MockClassesType">
         <xs:sequence>
             <xs:element name="class" maxOccurs="unbounded" type="NameAttributeType" />
         </xs:sequence>
-        <xs:anyAttribute/>
+        <xs:anyAttribute processContents="skip"/>
     </xs:complexType>
 
     <xs:complexType name="UniversalObjectCratesType">
         <xs:sequence>
             <xs:element name="class" maxOccurs="unbounded" type="NameAttributeType" />
         </xs:sequence>
-        <xs:anyAttribute/>
+        <xs:anyAttribute processContents="skip"/>
     </xs:complexType>
 
     <xs:complexType name="ExceptionsType">
@@ -166,21 +166,21 @@
             <xs:element name="class" minOccurs="0" maxOccurs="unbounded" type="ExceptionType" />
             <xs:element name="classAndDescendants" minOccurs="0" maxOccurs="unbounded" type="ExceptionType" />
         </xs:sequence>
-        <xs:anyAttribute/>
+        <xs:anyAttribute processContents="skip"/>
     </xs:complexType>
 
     <xs:complexType name="StubsType">
         <xs:sequence>
             <xs:element name="file" maxOccurs="unbounded" type="StubsAttributeType" />
         </xs:sequence>
-        <xs:anyAttribute/>
+        <xs:anyAttribute processContents="skip"/>
     </xs:complexType>
 
     <xs:complexType name="ExitFunctionsType">
         <xs:sequence>
             <xs:element name="function" maxOccurs="unbounded" type="NameAttributeType" />
         </xs:sequence>
-        <xs:anyAttribute/>
+        <xs:anyAttribute processContents="skip"/>
     </xs:complexType>
 
     <xs:complexType name="PluginsType">
